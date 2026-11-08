@@ -14,7 +14,7 @@ import (
 	"songframe-go/internal/providers"
 )
 
-// Применение готового предложения к пакету (apply класса ProductionWorkflow оригинала). Проверки
+// Применение готового предложения к пакету. Проверки
 // идут под мьютексом Workflow и заканчиваются отметкой busy плана; сами записи (инструменты
 // shot_workflow, файлы пакета, подготовка запроса провайдером) выполняются без мьютекса под
 // журналом замены пакета (journal.go), а запись applied — снова под ним.
@@ -32,7 +32,7 @@ type applyPlan struct {
 	shot    string
 }
 
-// Apply — apply оригинала: применить готовое актуальное предложение id плана shot к его целевому
+// Apply применяет готовое актуальное предложение id плана shot к его целевому
 // пакету (новому attempt-NN для описания, иначе выбранному пакету packageDir). Ответ агента
 // разбирается и сверяется с объявлениями моделей заново, входы — со снимком подготовки. Ошибка
 // записи откатывает пакет к резерву, а предложение остаётся готовым; успех отмечает его applied и
@@ -71,7 +71,7 @@ func replacesAskedFrame(c *Context, after any) bool {
 	return jscompat.Get(after, "stage") == "frames" && jscompat.Truthy(frame) && len(images) == 1 && jscompat.Get(images[0], "id") == frame
 }
 
-// checkApply — синхронная часть apply оригинала до занятия плана: предложение готово, относится
+// checkApply — синхронная часть Apply до занятия плана: предложение готово, относится
 // к выбранному пакету и не устарело, вопрос пакета решён, сценарий утверждён (для нового пакета),
 // задание агента успешно, ответ проходит проверку, изображения и входы не изменились.
 func (w *Workflow) checkApply(project, shot, packageDir, id string) (*applyPlan, error) {
@@ -309,14 +309,9 @@ func (w *Workflow) applyDescription(ctx context.Context, plan *applyPlan) error 
 var audioSlot = regexp.MustCompile(`(?i)^audio`)
 
 // applyRequest — этап запроса: проверка утверждений и речевого входа, затем подготовка нового
-// request-NN платным адаптером видео проекта (замороженный запрос без отправки). Возвращает имя
-// папки запроса.
-//
-// Отличие от оригинала: спецификация запроса <id>-request.json в каталоге состояния больше не
-// пишется. Оригинал записывал её всегда, хотя в приложении она нужна была только тестовой ветке
-// без prepareVideoRequest, и не удалял: файлы копились в production-workflow/ при каждом запросе.
-// Go-версия готовит запрос только адаптером провайдера (Options.VideoMedia), как приложение
-// оригинала.
+// request-NN платным адаптером видео проекта (неизменяемый request.json без отправки). Возвращает
+// имя папки запроса. Запрос готовит только адаптер провайдера (Options.VideoMedia); отдельная
+// спецификация запроса в каталоге состояния не пишется, чтобы там не копились файлы.
 func (w *Workflow) applyRequest(ctx context.Context, plan *applyPlan) (string, error) {
 	c, target := plan.context, plan.stored.Target()
 	prompt, err := c.PromptApproved()
@@ -373,7 +368,7 @@ func (w *Workflow) applyRequest(ctx context.Context, plan *applyPlan) (string, e
 	return requestName, nil
 }
 
-// prepareVideo — prepareVideoRequest приложения оригинала (ipc.ts): доступ к провайдеру видео,
+// prepareVideo — подготовка видеозапроса: доступ к провайдеру видео,
 // его платный адаптер, свежие объявления моделей и локальная подготовка запроса по черновику
 // агента с ограничениями проекта (предпочтительная модель, разрешение, соотношение сторон,
 // options) и правилом длительности окна плана.
@@ -461,14 +456,14 @@ func packageDocument(target, missing string) (*jscompat.Object, error) {
 	return workflow, nil
 }
 
-// writeProjectFile — запись файла пакета атомарной заменой с правами по умолчанию Node
-// (0666 с учётом umask), как writeFileSync оригинала. Родительские папки создаются.
+// writeProjectFile — запись файла пакета атомарной заменой с правами 0666 с учётом umask, как у
+// обычного создания файла. Родительские папки создаются.
 func writeProjectFile(path string, data []byte) error {
 	return projectfs.WriteFile(path, data, 0o666)
 }
 
-// writeProjectJSON — writeProductionJson оригинала для файла проекта:
-// `JSON.stringify(value, null, 2) + '\n'` атомарной заменой.
+// writeProjectJSON — запись JSON файла проекта атомарной заменой: отступ в два пробела и
+// завершающий перевод строки (`JSON.stringify(value, null, 2) + '\n'`).
 func writeProjectJSON(path string, value any) error {
 	return writeProjectFile(path, []byte(jscompat.StringifyIndent(value, "  ")+"\n"))
 }

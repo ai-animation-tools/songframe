@@ -4,13 +4,13 @@
 
 Linux AppImage и deb-пакет описаны ниже; для Windows amd64 NSIS использовать [отдельный рецепт](windows/README.md) и `wails3 task package:windows`. macOS в первый выпуск не входит.
 
-Версия поставки находится в [VERSION](VERSION) и вшивается в бинарник (`internal/appversion`): по ней обновление из приложения сравнивает выпуски. Ранние сборки имеют версию `1.0.0-dev.N` — младше выпуска 1.0.0 и старше выпусков Electron 0.x того же репозитория. Commit, push и публикация в эту процедуру не входят.
+Версия поставки находится в [VERSION](VERSION) и вшивается в бинарник (`internal/appversion`): по ней обновление из приложения сравнивает выпуски. Выпуск требует версии `X.Y.Z` без суффикса. Commit, push и публикация в эту процедуру не входят.
 
 ## Состав и проверяемая платформа
 
 Первая база — **Ubuntu 24.04 amd64, glibc 2.39**. Сборочная и доступная настольная машина — Ubuntu 24.04; изолированная проверка использует Ubuntu 24.04 Docker. Более старые glibc и другие дистрибутивы пока не приняты. Для Windows и macOS рецепт этого пакета не применяется.
 
-AppImage содержит production Go-бинарник со встроенным frontend, GTK4, WebKitGTK 6.0 с helper processes, их библиотеки/ресурсы, bootstrap AppArmor и лицензионные материалы. GStreamer не вкладывается: ядро, plugins-base и плагины берутся из одной системной установки. Вложенная `libgstreamer` искала бы плагины рядом с собой внутри образа, не нашла бы `appsink`/`autoaudiosink`, и процесс страницы WebKit падал бы при первом `<audio>`. Собственных Electron, Node, Python и Git нет. FFmpeg/ffprobe, ORT и модели находятся вне AppImage и устанавливаются пользователем через «Компоненты». Приложение использует app ID `tools.songframe.desktop` и профиль `songframe-desktop`, отличные от Electron-версии (D-038); smoke использует новые временные профили.
+AppImage содержит production Go-бинарник со встроенным frontend, GTK4, WebKitGTK 6.0 с helper processes, их библиотеки/ресурсы, bootstrap AppArmor и лицензионные материалы. GStreamer не вкладывается: ядро, plugins-base и плагины берутся из одной системной установки. Вложенная `libgstreamer` искала бы плагины рядом с собой внутри образа, не нашла бы `appsink`/`autoaudiosink`, и процесс страницы WebKit падал бы при первом `<audio>`. Собственных Node, Python и Git нет. FFmpeg/ffprobe, ORT и модели находятся вне AppImage и устанавливаются пользователем через «Компоненты». Приложение использует app ID `tools.songframe.desktop` и профиль `songframe-desktop`; smoke использует новые временные профили.
 
 Системе нужны графическая сессия X11/Wayland, драйверы Mesa/GL/EGL/GBM, ALSA/PulseAudio, D-Bus, fonts/fontconfig, CA certificates, `bubblewrap`, `xdg-dbus-proxy`, GStreamer с GL-библиотекой и plugins. На Ubuntu базовый runtime устанавливается средствами ОС:
 
@@ -38,7 +38,7 @@ wails3 task package:linux
 - `songframe-<VERSION>-linux-x86_64.AppImage`;
 - рядом `<имя>.sha256` и `<имя>.build.json`: версия, исходный commit и dirty, SHA/размер, распакованный объём, минимум ОС и версия упаковщика.
 
-AppImage оставлять в штатной папке. Повторная локальная сборка этой ранней версии заменяет её предыдущий локальный результат; отчёты проверок создавать в новой папке. Это не рецепт переиздания опубликованных релизов. Состав лицензий собирает [package-notices.py](../scripts/package-notices.py): материалы system/Go/frontend и MIT notice Forktopus. Сетевые компоненты и их собственные notices устанавливаются отдельным менеджером.
+AppImage оставлять в штатной папке. Повторная локальная сборка той же версии заменяет её предыдущий локальный результат; отчёты проверок создавать в новой папке. Это не рецепт переиздания опубликованных релизов. Состав лицензий собирает [package-notices.py](../scripts/package-notices.py): материалы system/Go/frontend и MIT notice Forktopus. Сетевые компоненты и их собственные notices устанавливаются отдельным менеджером.
 
 ## Обычная локальная проверка
 
@@ -54,7 +54,7 @@ wails3 task smoke:host APPIMAGE=/absolute/file.AppImage OUTPUT=/tmp/new-host-che
 
 ```sh
 wails3 task smoke:appimage \
-  APPIMAGE=/absolute/build/release/songframe-1.0.0-dev.47-linux-x86_64.AppImage \
+  APPIMAGE=/absolute/build/release/songframe-<VERSION>-linux-x86_64.AppImage \
   OUTPUT=/tmp/songframe-appimage-new-check
 ```
 

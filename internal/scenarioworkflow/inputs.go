@@ -18,13 +18,13 @@ import (
 	"songframe-go/internal/timing"
 )
 
-// Входы сценарного прохода (inputs оригинала): опись исходников, разметка и документы проекта
+// Входы сценарного прохода: опись исходников, разметка и документы проекта
 // с проверками готовности и SHA-256 всех файлов, от которых зависит предложение. Снимок хешей
 // запоминается при запуске агента и сверяется перед применением: любое изменение входа делает
 // предложение устаревшим.
 
 // hashes — путь файла проекта → SHA-256 (nil — файла нет). Порядок ключей — порядок добавления
-// путей, как у объекта оригинала: он сохраняется в локальной записи.
+// путей: он сохраняется в локальной записи и зафиксирован эталонами.
 type hashes struct {
 	keys   []string
 	values map[string]*string
@@ -46,7 +46,7 @@ func (h *hashes) get(path string) (*string, bool) {
 	return value, ok
 }
 
-// matches — matches оригинала: одинаковые наборы путей и хешей (порядок не важен).
+// matches — одинаковые наборы путей и хешей (порядок не важен).
 func (h *hashes) matches(other *hashes) bool {
 	if other == nil || len(h.keys) != len(other.keys) {
 		return false
@@ -103,9 +103,8 @@ func digestText(data []byte) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// fileHash — hash оригинала: для source/manifest.json — отпечаток входов, для остальных путей —
-// SHA-256 байтов; nil — файла нет (или он не читается: existsSync оригинала тоже давал «нет»
-// только для отсутствующего пути, а ошибку чтения — исключением).
+// fileHash — для source/manifest.json — отпечаток входов, для остальных путей — SHA-256 байтов;
+// nil — файла нет. Ошибка чтения существующего файла возвращается ошибкой, а не «нет файла».
 func fileHash(project, relative string) (*string, error) {
 	data, err := os.ReadFile(filepath.Join(project, filepath.FromSlash(relative)))
 	if errors.Is(err, fs.ErrNotExist) {
@@ -137,8 +136,8 @@ func snapshotMatches(project string, expected *hashes) (bool, error) {
 	return true, nil
 }
 
-// readJSON — json(project, path) оригинала: null для отсутствующего файла, иначе JSON.parse текста
-// UTF-8. Ошибка разбора — текст разборщика jscompat (оригинал показывал SyntaxError V8).
+// readJSON — документ проекта: null для отсутствующего файла, иначе разбор текста UTF-8 в дерево
+// jscompat. Ошибка разбора — текст разборщика jscompat.
 func readJSON(project, relative string) (any, error) {
 	path := filepath.Join(project, filepath.FromSlash(relative))
 	data, err := os.ReadFile(path)
@@ -164,7 +163,7 @@ func lstat(path string) (fs.FileInfo, error) {
 	return info, err
 }
 
-// fixedViews — FIXED_VIEWS: производные виды с постоянными путями.
+// fixedViews — производные виды с постоянными путями.
 var fixedViews = []string{
 	"ROADMAP.md",
 	"plan/edit-list.md",
@@ -175,7 +174,7 @@ var fixedViews = []string{
 	"plan/animatic/cards/manifest.json",
 }
 
-// scenarioOutputPaths — scenarioOutputPaths оригинала: известные производные виды проекта, включая
+// scenarioOutputPaths — известные производные виды проекта, включая
 // отсутствующие фиксированные, существующие PNG карточек и README комплектов. Входят в снимок
 // предложения до запуска агента, чтобы появление нового производного файла делало его устаревшим.
 func scenarioOutputPaths(project string) ([]string, error) {
@@ -253,7 +252,7 @@ type inputs struct {
 	treatmentDraft bool
 }
 
-// sourcePath — sourcePath оригинала: путь из описи или кастинга внутри source/ с прямыми слешами.
+// sourcePath — путь из описи или кастинга внутри source/ с прямыми слешами.
 func sourcePath(project string, value any) (string, error) {
 	path, ok := value.(string)
 	if !ok || path == "" || jscompat.IsAbs(path) {
@@ -267,7 +266,7 @@ func sourcePath(project string, value any) (string, error) {
 	return "source/" + strings.ReplaceAll(local, "\\", "/"), nil
 }
 
-// orderedSet — множество путей в порядке добавления (Set оригинала).
+// orderedSet — множество путей в порядке добавления: порядок попадает в снимок хешей.
 type orderedSet struct {
 	items []string
 	seen  map[string]bool
@@ -283,7 +282,7 @@ func (s *orderedSet) add(path string) {
 	}
 }
 
-// readInputs — inputs(path) оригинала. Ошибка — только исключение до сбора проблем (нет папки
+// readInputs — входы прохода для проекта. Ошибка — только исключение до сбора проблем (нет папки
 // проекта, повреждённая папка карточек); остальное — проблемы вида.
 func readInputs(path string) (*inputs, error) {
 	project, err := jscompat.Realpath(path)
@@ -362,7 +361,7 @@ func readInputs(path string) (*inputs, error) {
 	return result, nil
 }
 
-// readSources — блок try оригинала: маркер проекта, опись с SHA трёх исходников и референсов,
+// readSources — проверка исходников: маркер проекта, опись с SHA трёх исходников и референсов,
 // разметка версии 2 и её согласованность с текстом и треком. Первая ошибка прерывает проверку.
 func readSources(result *inputs, paths *orderedSet) error {
 	project := result.project
@@ -470,7 +469,7 @@ func readSources(result *inputs, paths *orderedSet) error {
 	return nil
 }
 
-// validTiming — проверка формы разметки оригинала: версия 2, непустые строки с целыми id и
+// validTiming — проверка формы разметки: версия 2, непустые строки с целыми id и
 // source_line, числовыми границами и флагом verified, части с конечными границами и
 // положительная конечная duration_decoded.
 func validTiming(document *jscompat.Object) bool {
@@ -504,11 +503,10 @@ func validTiming(document *jscompat.Object) bool {
 // readDocuments — разбор plan/cast.json, plan/treatment.json и plan/scenes.json. Проблема
 // документа — «<имя>.json: <текст>», документ тогда считается отсутствующим.
 //
-// Отличие от 634fd94: трактовка читается черновиком (структурная нормализация), как её сохраняет
-// редактор с этапа 43; проблемы validateTreatment добавляются тем же текстом «treatment.json: …»,
-// но черновик остаётся в документах. Так проход трактовки агентом начинается с черновика
-// пользователя, а ручное утверждение пары и проход сцен по-прежнему требуют трактовки без проблем
-// (pairValid). Оригинал отбрасывал такой черновик целиком.
+// Трактовка читается черновиком (структурная нормализация), как её сохраняет редактор; проблемы
+// scenario.ValidateTreatment добавляются текстом «treatment.json: …», но черновик остаётся в
+// документах. Так проход трактовки агентом начинается с черновика пользователя, а ручное
+// утверждение пары и проход сцен требуют трактовки без проблем (pairValid).
 func readDocuments(result *inputs) {
 	for _, key := range []string{"cast", "treatment", "scenes"} {
 		raw, err := readJSON(result.project, "plan/"+key+".json")

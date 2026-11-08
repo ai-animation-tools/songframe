@@ -143,7 +143,7 @@ export function ScenesSaveStory({ mode = 'production', stale = false, longList =
         setError(SCENARIO_SAVE_ERROR);
         return;
       }
-      // Это ожидаемый снимок UI; настоящие отпечатки, транзакции и производные связи проверяет main.
+      // Это ожидаемый снимок UI; настоящие отпечатки, транзакции и производные связи проверяет Go.
       setSaved(draft);
       setAnimaticStale(true);
       setWrites((value) => value + 1);

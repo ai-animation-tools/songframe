@@ -14,13 +14,13 @@ import (
 // packageFolder — отдельный пакет plan/batches/<имя> или plan/awaiting/<имя> относительно проекта.
 var packageFolder = regexp.MustCompile(`^plan/(batches|awaiting)/[^/]+$`)
 
-// digestHex — SHA-256 текста или байтов в hex (digest оригинала).
+// digestHex — SHA-256 текста или байтов в hex.
 func digestHex(data []byte) string {
 	sum := sha256.Sum256(data)
 	return hex.EncodeToString(sum[:])
 }
 
-// isText — text() оригинала: непустая после trim строка без NUL.
+// isText сообщает, что value — непустая после trim строка без NUL.
 func isText(value any) bool {
 	text, ok := value.(string)
 	return ok && jscompat.Trim(text) != "" && !strings.Contains(text, "\x00")
@@ -38,7 +38,7 @@ func rel(project, path string) string {
 	return filepath.ToSlash(jscompat.Relative(project, path))
 }
 
-// ProductionPath — productionPath(root, value) оригинала: путь value внутри проекта root
+// ProductionPath возвращает путь value внутри проекта root
 // (относительный — от root). Отклоняет пути вне проекта и пути, чей ближайший существующий
 // родитель через ссылку ведёт наружу: запись в пакет не должна уйти за пределы проекта.
 // Возвращает абсолютный путь без разыменования ссылок; сам файл может не существовать.
@@ -72,7 +72,7 @@ func ProductionPath(root, value string) (string, error) {
 	return full, nil
 }
 
-// PackagePath — packagePath оригинала: ProductionPath, который указывает ровно на отдельный пакет
+// PackagePath — ProductionPath, который указывает ровно на отдельный пакет
 // plan/batches/<имя> или plan/awaiting/<имя>. Иначе — packageFolderRequired.
 func PackagePath(project, path string) (string, error) {
 	target, err := ProductionPath(project, path)
@@ -85,7 +85,7 @@ func PackagePath(project, path string) (string, error) {
 	return target, nil
 }
 
-// nextPackage — nextPackage оригинала: первый свободный plan/batches/<план>-attempt-NN.
+// nextPackage — первый свободный plan/batches/<план>-attempt-NN.
 func nextPackage(project, shot string) string {
 	for number := 1; ; number++ {
 		path := filepath.Join(project, "plan", "batches", shot+"-attempt-"+twoDigits(number))

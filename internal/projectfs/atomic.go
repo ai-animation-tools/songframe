@@ -1,8 +1,8 @@
 // Package projectfs записывает файлы проекта и локального состояния атомарно и решает,
 // разрешена ли запись в проект. Чтение и открытие проекта остаются в internal/project.
 //
-// Формат JSON совпадает с writeLocalJson оригинала (JSON.stringify(value, null, 2) + "\n"),
-// поэтому файлы, записанные Go-версией, байт в байт равны файлам Electron при тех же значениях.
+// Формат JSON — JSON.stringify(value, null, 2) + "\n": байты проектных файлов зафиксированы
+// эталонами testdata/golden в этом формате.
 package projectfs
 
 import (
@@ -82,8 +82,8 @@ func jsEscapes(data []byte) []byte {
 	return result
 }
 
-// WriteJSON атомарно заменяет файл JSON-документом в формате оригинала.
-// Ошибка сериализации не трогает файл; сообщение об ошибке записи — как у writeLocalJson.
+// WriteJSON атомарно заменяет файл JSON-документом в формате проекта (MarshalJSON).
+// Ошибка сериализации не трогает файл; сообщение об ошибке — то же, что у сбоя записи.
 func WriteJSON(path string, value any) error {
 	data, err := MarshalJSON(value)
 	if err != nil {
@@ -96,8 +96,8 @@ func WriteJSON(path string, value any) error {
 // (тот же том, поэтому rename атомарен), сбрасываются на диск, затем переименовываются
 // поверх цели. Сбой на любом шаге оставляет прежний файл целым, а временный удаляется.
 //
-// perm 0 сохраняет права существующего файла, а для нового берёт 0600, как оригинал
-// (umask применяется так же, как в Node). Родительские папки создаются при необходимости.
+// perm 0 сохраняет права существующего файла, а для нового берёт 0600 (с учётом umask).
+// Родительские папки создаются при необходимости.
 // После rename на Unix сбрасывается и каталог, чтобы замена пережила сбой питания.
 func WriteFile(path string, data []byte, perm os.FileMode) error {
 	directory := filepath.Dir(path)
@@ -149,14 +149,14 @@ func syncDirectory(directory string) {
 	}
 }
 
-// writeFailed повторяет пользовательское сообщение оригинала localFilesTexts.writeFailed.
+// writeFailed — пользовательское сообщение о сбое записи файла.
 func writeFailed(path string, err error) error {
 	return fmt.Errorf("Не удалось сохранить %s: %w. Проверьте доступ на запись к папке.", path, err)
 }
 
-// ReadJSON читает JSON-объект (или массив, как typeof === 'object' в оригинале) в value.
+// ReadJSON читает JSON-объект (или массив: оба — typeof === 'object') в value.
 // Отсутствующий файл — (false, nil), чтобы вызывающий подставил значение по умолчанию;
-// повреждённый — ошибка с сообщением readLocalJson: файл не трогается и не перезаписывается.
+// повреждённый — ошибка с путём и советом: файл не трогается и не перезаписывается.
 func ReadJSON(path string, value any) (bool, error) {
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {

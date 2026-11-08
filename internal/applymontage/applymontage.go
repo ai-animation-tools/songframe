@@ -1,5 +1,5 @@
-// Package applymontage — перенос tools/apply_montage оригинала: явное применение ручного
-// монтажа (MontageDraft) к принятым комплектам assets/shots одной транзакцией.
+// Package applymontage применяет ручной монтаж (MontageDraft) к принятым комплектам
+// assets/shots одной транзакцией (инструмент apply_montage).
 //
 // Применение проверяет черновик (только видео original или текущего accepted_edit соседних сцен в
 // исходном порядке, внешние границы окна и исходная песня реестра, длины на сетке 30 кадров/с с
@@ -12,8 +12,8 @@
 // прерванную публикацию (Recover) — с остановкой, если файл после сбоя изменён вручную.
 // Прежние клипы и оригиналы не перезаписываются.
 //
-// Вывод CLI (Run) — тексты, коды и JSON оригинала. Recovery этого же журнала без инструмента при
-// открытии проекта выполняет internal/montage (src/main/montage-recovery.ts оригинала).
+// Вывод CLI (Run) — тексты, коды и JSON зафиксированы эталоном testdata/golden/apply-montage.
+// Восстановление этого же журнала без инструмента при открытии проекта выполняет internal/montage.
 package applymontage
 
 import (
@@ -36,10 +36,10 @@ import (
 	"songframe-go/internal/sceneviews"
 )
 
-// History — папка журналов транзакций монтажа от корня проекта (HISTORY оригинала).
+// History — папка журналов транзакций монтажа от корня проекта.
 const History = "plan/montage-history"
 
-// Тексты оригинала (ValueError, печатаются как есть).
+// Тексты отказов (ValueError, печатаются как есть).
 const (
 	AudioPolicy      = "Звук генератора сохранён в оригинале; в монтаже используется непрерывная исходная песня."
 	RebuildNote      = "Принятые байты восстанавливаются копированием video; повтор фильтров сохраняет монтаж, но не обещает побайтово одинаковое перекодирование."
@@ -78,7 +78,7 @@ func textSourceChoice(sid string) string {
 
 func valueError(message string) error { return pycompat.New(pycompat.ValueError, message) }
 
-// Точки подмены для тестов сбоев (patch.object в test_apply_montage оригинала): рендер клипа,
+// Точки подмены для тестов сбоев: рендер клипа,
 // публикация файла и откат. В работе не меняются.
 var (
 	renderEditHook  = RenderEdit
@@ -86,7 +86,7 @@ var (
 	restoreHook     = restore
 )
 
-// NewID — uuid4().hex: ID транзакции и ревизии. Тесты эталонов подменяют его ID оригинала.
+// NewID — uuid4().hex: ID транзакции и ревизии. Тесты эталонов подменяют его ID из эталона.
 var NewID = func() string {
 	data := make([]byte, 16)
 	_, _ = rand.Read(data)
@@ -345,8 +345,7 @@ type prepared struct {
 	plan      *pycompat.Dict
 }
 
-// prepareDraft — prepare_draft(draft, root): проверка черновика и рецепт обрезки. Ошибки — тексты
-// оригинала; ничего не записывается.
+// prepareDraft проверяет черновик и строит рецепт обрезки; ничего не записывает.
 func prepareDraft(ctx context.Context, value any, root string) (*pycompat.Dict, prepared, error) {
 	draft := dict(value)
 	if draft == nil {
@@ -574,7 +573,7 @@ func Media(ctx context.Context, program string, args ...string) ([]byte, error) 
 	return result.Stdout, nil
 }
 
-// probe — probe(path) build_review: потоки и формат ffprobe значением Python.
+// probe — потоки и формат ffprobe значением pycompat (как в build_review).
 func probe(ctx context.Context, path string) (any, error) {
 	data, err := Media(ctx, mediacmd.FFprobe(), "-v", "error", "-show_streams", "-show_format", "-of", "json", path)
 	if err != nil {
@@ -655,7 +654,7 @@ func pyInt(value any) (pycompat.Int, error) {
 	return pycompat.Int{}, pycompat.Raise(pycompat.TypeError, "int() argument must be a string, a bytes-like object or a real number, not '%s'", pycompat.TypeName(value))
 }
 
-// editManifest — edit_manifest: копия принятого комплекта с новым accepted_edit по участку item
+// editManifest — копия принятого комплекта с новым accepted_edit по участку item
 // рецепта. Рецепт повтора читает сохранённые байты выбранного источника, поэтому срез прежнего
 // accepted_edit не повторяет его цепочку ещё одним lossy проходом.
 func editManifest(ctx context.Context, pkg *pycompat.Dict, sourceName string, item *pycompat.Dict, directory, videoName, version, revision string) (*pycompat.Dict, error) {
@@ -767,8 +766,8 @@ func ViewPaths(stage, root string, names map[string]bool) {
 	}
 }
 
-// carriedAcceptance — carried_acceptance(root, candidate, shots, ready): новый статус
-// производства или nil. Граница плана входит в его постановку: принятие переносится только тем
+// carriedAcceptance — новый статус производства или nil. Граница плана входит в его
+// постановку: принятие переносится только тем
 // планам монтажа, что приняты по текущей постановке; план, уже устаревший до монтажа, остаётся
 // stale. Статус переписывается и при сверенной source_review (Apply обновит её SHA видео).
 func carriedAcceptance(root string, candidate *pycompat.Dict, shots []string, ready *pycompat.Dict) (*pycompat.Dict, error) {
@@ -843,11 +842,11 @@ func carriedAcceptance(root string, candidate *pycompat.Dict, shots []string, re
 	return sceneregistry.WithAcceptedFingerprints(status, updates, false)
 }
 
-// Apply — apply(draft, root, update_views): транзакция ручного монтажа. Сначала восстанавливает
+// Apply — транзакция ручного монтажа. Сначала восстанавливает
 // прерванные публикации, затем проверяет черновик, рендерит и собирает новое состояние в staging,
 // повторно сверяет входы и публикует. Сбой до публикации оставляет журнал failed без изменений
 // проекта; сбой во время публикации откатывает уже записанные файлы. Результат — словарь
-// оригинала {status, revision, shots, scene_registry_sha256, history, views_updated}.
+// {status, revision, shots, scene_registry_sha256, history, views_updated}.
 func Apply(ctx context.Context, draftValue any, rootPath string, updateViews bool) (*pycompat.Dict, error) {
 	defer enter()()
 	root := pycompat.ResolvePath(rootPath)
@@ -1001,8 +1000,8 @@ func Apply(ctx context.Context, draftValue any, rootPath string, updateViews boo
 			}
 		}
 		if updateViews {
-			// Штатный update_scene_views оригинала запускался отдельным процессом с check=True:
-			// ненулевой код — CalledProcessError (скрытый текст CLI).
+			// Ненулевой код update_scene_views — CalledProcessError: CLI показывает его скрытым
+			// общим текстом.
 			if output := sceneviews.Run(stage, []string{}); output.Code != 0 {
 				return pycompat.New("CalledProcessError", "update_scene_views returned non-zero exit status")
 			}

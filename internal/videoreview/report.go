@@ -68,11 +68,11 @@ func number(value any) (float64, bool) {
 	return result, ok && !math.IsInf(result, 0) && !math.IsNaN(result)
 }
 
-// ParseReport — parseVideoReviewReport оригинала: ответ агента (строка JSON или уже разобранное
+// ParseReport — разбор отчёта проверки: ответ агента (строка JSON или уже разобранное
 // значение) принимается, только если каждое наблюдение ссылается на реально показанные кадры, а
 // его таймкод совпадает (±1 мс) со временем хотя бы одного из них. Так модель не может приписать
 // вывод непросмотренному моменту. Лишние поля, пустые списки и превышение пределов — отказ.
-// Результат — нормализованный объект с порядком ключей оригинала, готовый к записи в latest.json.
+// Результат — нормализованный объект с порядком ключей latest.json, готовый к записи.
 func ParseReport(value any, frames []Frame, duration float64) (*jscompat.Object, error) {
 	if text, ok := value.(string); ok {
 		parsed, err := jscompat.Parse([]byte(text))
@@ -109,7 +109,7 @@ func ParseReport(value any, frames []Frame, duration float64) (*jscompat.Object,
 		if !ok || !exactKeys(item, "verdict", "timeSeconds", "description", "frameIds") {
 			return nil, errInvalidReport
 		}
-		// String(item.verdict): оригинал сравнивал строковое представление значения.
+		// Сравнивается строковое представление значения (String(item.verdict) JS).
 		switch jscompat.ToString(item.Value("verdict")) {
 		case "match", "mismatch", "uncertain":
 		default:
@@ -180,7 +180,7 @@ func reportDTO(value any) *Report {
 	return report
 }
 
-// textPath — непустой путь без NUL (text оригинала).
+// textPath — непустой после обрезки пробелов путь без NUL.
 func textPath(value string) bool {
 	return jscompat.Trim(value) != "" && !strings.ContainsRune(value, 0)
 }
@@ -190,7 +190,7 @@ func outside(local string) bool {
 	return local == ".." || strings.HasPrefix(local, ".."+string(filepath.Separator)) || jscompat.IsAbs(local)
 }
 
-// productionPath — productionPath оригинала: путь value от root не выходит за root ни строкой, ни
+// productionPath — путь value от root не выходит за root ни строкой, ни
 // через символьную ссылку существующего родителя (проверяется и родитель ещё не созданного файла,
 // чтобы ссылка не перенаправила запись из проекта). Возвращает resolve(root, value).
 func productionPath(root, value string) (string, error) {
@@ -223,5 +223,5 @@ func productionPath(root, value string) (string, error) {
 	return full, nil
 }
 
-// slash — относительный путь с разделителем «/», как в latest.json оригинала.
+// slash — относительный путь с разделителем «/», как он хранится в latest.json на любой ОС.
 func slash(path string) string { return filepath.ToSlash(path) }

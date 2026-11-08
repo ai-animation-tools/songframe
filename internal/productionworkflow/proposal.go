@@ -16,7 +16,7 @@ import (
 	"songframe-go/internal/providers"
 )
 
-// Rules — ProposalRules оригинала: что проверяется в ответе агента. Значения из документов
+// Rules — что проверяется в ответе агента. Значения из документов
 // проекта (правило длительности, requestSeconds, план опор) хранятся как есть: их сравнение
 // повторяет строгое равенство JS. Записываются в локальную запись предложения при подготовке и
 // читаются из неё при обновлении статуса и Apply.
@@ -36,7 +36,7 @@ type Rules struct {
 	LipSync *mediaproviders.LipSync
 }
 
-// Tree — правила в порядке ключей оригинала для локальной записи.
+// Tree — правила для локальной записи; порядок ключей зафиксирован эталоном.
 func (r Rules) Tree() *jscompat.Object {
 	tree := jscompat.NewObject()
 	tree.Set("project", r.Project)
@@ -82,7 +82,7 @@ func RulesFromTree(value any) Rules {
 	return rules
 }
 
-// keys — keys() оригинала: в объекте только разрешённые поля.
+// keys проверяет, что в объекте только разрешённые поля.
 func keys(value *jscompat.Object, allowed ...string) error {
 	for _, key := range value.Keys() {
 		if !slices.Contains(allowed, key) {
@@ -92,7 +92,7 @@ func keys(value *jscompat.Object, allowed ...string) error {
 	return nil
 }
 
-// CheckDuration — checkDuration оригинала: длительность запроса — положительное целое число
+// CheckDuration проверяет, что длительность запроса — положительное целое число
 // секунд по правилу окна (exact_window, min_supported_not_less_than_window или строго больше).
 func CheckDuration(seconds any, window float64, rule any) error {
 	value, isNumber := seconds.(float64)
@@ -126,10 +126,9 @@ type FrameCandidate struct {
 	Path string `json:"path"`
 }
 
-// CheckFrameCandidates — checkFrameCandidates оригинала: кандидаты части опор плана prompts,
-// каждая не больше одного раза и в порядке плана; файл — обычный PNG, JPEG или WebP по
-// абсолютному пути. Возвращает кандидатов с разыменованными путями (45g.3: импорт и задание
-// провайдера-агента).
+// CheckFrameCandidates проверяет кандидатов части опор плана prompts: каждая опора не больше
+// одного раза и в порядке плана; файл — обычный PNG, JPEG или WebP по абсолютному пути.
+// Возвращает кандидатов с разыменованными путями (импорт и задание провайдера-агента).
 func CheckFrameCandidates(value any, prompts any) ([]FrameCandidate, error) {
 	items, ok := jscompat.AsArray(value)
 	if !ok || len(items) == 0 {
@@ -200,7 +199,7 @@ func candidatesTree(candidates []FrameCandidate) *jscompat.Array {
 // agentTextLimit — предел показанного ответа агента в кодовых единицах UTF-16.
 const agentTextLimit = 4000
 
-// AgentResponseText — agentResponseText оригинала: что ответил агент, когда предложение не прошло
+// AgentResponseText — что ответил агент, когда предложение не прошло
 // проверку, — текст основного поля этапа (description, prompt) либо сам ответ, без NUL и
 // распознаваемых секретов, не длиннее agentTextLimit. "" — показывать нечего.
 func AgentResponseText(raw, stage string) string {
@@ -228,7 +227,7 @@ func trimEnd(text string) string {
 	return strings.TrimPrefix(jscompat.Trim("\x00"+text), "\x00")
 }
 
-// IsAgentRefusal — isAgentRefusal оригинала: вместо JSON агент вернул обычный текст с причиной
+// IsAgentRefusal сообщает, что вместо JSON агент вернул обычный текст с причиной
 // (штатный отказ по скиллу). Испорченный JSON, начинающийся с «{» или блока кода, отказом не
 // считается.
 func IsAgentRefusal(raw string) bool {
@@ -247,7 +246,7 @@ var (
 	secretParameter    = regexp.MustCompile(`(?i)token|credential|password|base_url`)
 )
 
-// ParseProposal — parseProductionProposal оригинала: строгая форма ответа агента для этапа
+// ParseProposal разбирает строгую форму ответа агента для этапа
 // rules.Stage. Пути и технические поля проверяются до изменения пакета; кандидаты опор
 // заменяются разыменованными путями. Возвращает документ предложения (ProductionStageProposal)
 // деревом jscompat в порядке ключей ответа.
@@ -396,7 +395,7 @@ func parseRequest(value any, rules Rules) error {
 	return nil
 }
 
-// CheckCapabilities — checkProductionCapabilities оригинала: черновик запроса сверяется со свежим
+// CheckCapabilities сверяет черновик запроса со свежим
 // объявлением моделей аккаунта (capabilities записи) по правилам адаптера провайдера видео
 // проекта, без встроенного каталога. Совместимая модель подбирается до проверки, иначе ошибочный
 // выбор агента блокировал бы штатную замену; выбранная модель и нормализованные параметры

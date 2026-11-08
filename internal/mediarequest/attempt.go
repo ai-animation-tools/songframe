@@ -1,20 +1,17 @@
-// Package mediarequest — перенос tools/media_request оригинала: общий жизненный цикл одной
-// попытки генерации у выбранного провайдера (возможности, подготовка, единственная отправка,
-// получение оригиналов, ручной результат при неизвестном исходе) и CLI media_request.
+// Package mediarequest ведёт жизненный цикл одной попытки генерации у выбранного провайдера
+// (возможности, подготовка, единственная отправка, получение оригиналов, ручной результат при
+// неизвестном исходе) и инструмент media_request.
 //
 // Сервис здесь не известен: команды, разбор ответов и загрузку выполняет адаптер из
 // internal/mediaadapters (возможности — интерфейсы internal/mediaapi). Пакет ведёт состояние
 // attempt.json, файловый замок, SHA, единственную отправку и сохранность оригиналов. Файлы
-// попытки, статусы, тексты ошибок и вывод CLI совпадают с оригиналом (эталоны
-// testdata/golden/media-request).
+// попытки, статусы, тексты ошибок и вывод CLI зафиксированы эталонами
+// testdata/golden/media-request.
 //
-// Отличия устройства от оригинала:
-//   - проект (ROOT оригинала) передаётся параметром root, а не определяется при импорте;
-//   - вызовы сервиса получают context.Context: отмена задания прерывает опрос и ожидание. Отмена
-//     во время отправки оставляет попытку submitting (как обрыв процесса в оригинале), а не
-//     submission_unknown; обе формы одинаково считаются неизвестным исходом;
-//   - адаптер без Submit отклоняется до записи submitting (в оригинале AttributeError внутри
-//     отправки превращался в submission_unknown без обращения к сервису).
+// Проект передаётся параметром root. Вызовы сервиса получают context.Context: отмена задания
+// прерывает опрос и ожидание. Отмена во время отправки оставляет попытку submitting (как обрыв
+// процесса), а не submission_unknown; обе формы одинаково считаются неизвестным исходом. Адаптер
+// без Submit отклоняется до записи submitting, не обращаясь к сервису.
 package mediarequest
 
 import (
@@ -45,7 +42,7 @@ var (
 	Terminal = map[string]bool{"downloaded": true, "failed": true}
 )
 
-// Тексты отказов оригинала (ValueError): CLI печатает их в stderr как есть.
+// Тексты отказов (модель ValueError): CLI печатает их в stderr как есть.
 const (
 	textWorkDir          = "Рабочая папка должна находиться внутри plan/batches, plan/awaiting, plan/reference-images или временной папки ОС."
 	textWorkDirProtected = "Рабочая папка не может заменять исходники или аниматик."
@@ -103,13 +100,13 @@ var (
 // hooks — точки внесения сбоев для тестов (обрыв процесса посреди получения). nil в работе.
 // journal вызывается перед каждой записью attempt.json, link — перед публикацией жёсткой ссылкой
 // оригинала (файлы original*). Тест прерывает работу panic: отложенные снятие замка и удаление
-// временных папок выполняются, как finally при KeyboardInterrupt оригинала.
+// временных папок выполняются, как при обрыве процесса.
 var hooks struct {
 	journal func(state *pycompat.Dict)
 	link    func(destination string)
 }
 
-// writeState — atomic_json(directory / "attempt.json", state).
+// writeState атомарно записывает журнал попытки attempt.json.
 func writeState(directory string, state *pycompat.Dict) error {
 	if hooks.journal != nil {
 		hooks.journal(state)
@@ -137,13 +134,10 @@ func isSymlink(path string) bool {
 // tempDir — tempfile.gettempdir().
 func tempDir() string { return os.TempDir() }
 
-// WorkPath — work_path(value): проверенная рабочая папка попытки. Попытка — внутри
+// WorkPath — проверенная рабочая папка попытки. Попытка — внутри
 // plan/batches, plan/awaiting (отложенная попытка запускается прямо из очереди),
 // plan/reference-images (архив попыток генерации референса) или временной папки ОС; сами
 // корни этих папок проекта, исходники и аниматик попыткой быть не могут.
-//
-// Отличие от 634fd94: оригинал не допускал plan/reference-images, и платная генерация
-// референса отказывала на подготовке; архив референса — его штатное место (этап 45).
 func WorkPath(root, value string) (string, error) {
 	path := pycompat.ResolvePath(value)
 	allowed := []string{
@@ -168,7 +162,7 @@ func WorkPath(root, value string) (string, error) {
 	return path, nil
 }
 
-// insideFile — inside(directory, name): файл попытки внутри её папки после разрешения ссылок.
+// insideFile — файл попытки внутри её папки после разрешения ссылок.
 func insideFile(directory string, name any) (string, error) {
 	text, ok := name.(string)
 	if !ok {
@@ -181,7 +175,7 @@ func insideFile(directory string, name any) (string, error) {
 	return path, nil
 }
 
-// withLock — locked(directory): неблокирующий замок файла .lock попытки на время действия.
+// withLock — неблокирующий замок файла .lock попытки на время действия.
 // Занятая попытка отклоняется сразу (повторная отправка не ждёт первую).
 func withLock(directory string, action func() error) error {
 	path := filepath.Join(directory, ".lock")
@@ -200,7 +194,7 @@ func withLock(directory string, action func() error) error {
 	return action()
 }
 
-// errBusy — замок держит другой процесс (EAGAIN/EACCES/EDEADLK оригинала).
+// errBusy — замок держит другой процесс (EAGAIN/EACCES/EDEADLK).
 var errBusy = errors.New("занято")
 
 // readJSON — json.loads(path.read_text()).
@@ -212,7 +206,7 @@ func item(container any, key string) (any, error) { return pycompat.Item(contain
 // get — container.get(key) (AttributeError у не-словаря).
 func get(container any, key string) (any, error) { return pycompat.DictGet(container, key, nil) }
 
-// LoadAttempt — load_attempt(directory, verify_inputs): замороженный запрос и журнал попытки.
+// LoadAttempt читает зафиксированный запрос и журнал попытки.
 // Запрос должен указывать провайдера подключённого адаптера и совпадать с request_sha256
 // журнала; с verifyInputs сверяются хеши промпта и входов.
 func LoadAttempt(directory string, verifyInputs bool) (*pycompat.Dict, *pycompat.Dict, error) {
@@ -298,7 +292,7 @@ func adapterOf(request *pycompat.Dict) (mediaadapters.Adapter, error) {
 	return mediaadapters.Lookup(provider)
 }
 
-// Prepare — prepare(request, directory): замораживает спецификацию в новой папке попытки.
+// Prepare — замораживает спецификацию в новой папке попытки.
 // Общую форму проверяет requestsnapshot, ограничения сервиса и промпта — адаптер провайдера
 // спецификации до создания папки; FROZEN_FIELDS адаптера входят в запрос и SHA, предупреждения
 // о промпте — в warnings результата. Сервис не вызывается.
@@ -355,7 +349,7 @@ func Prepare(root, request, directory string) (*pycompat.Dict, error) {
 	return prepared, nil
 }
 
-// Status — status(directory): только локальный журнал попытки, без обращения к сервису.
+// Status — только локальный журнал попытки, без обращения к сервису.
 func Status(root, directory string) (*pycompat.Dict, error) {
 	workDir, err := WorkPath(root, directory)
 	if err != nil {
@@ -365,7 +359,7 @@ func Status(root, directory string) (*pycompat.Dict, error) {
 	return state, err
 }
 
-// identifier — identifier(value): ID задания печатаемой ASCII-строкой до 2048 символов, без
+// identifier — ID задания печатаемой ASCII-строкой до 2048 символов, без
 // ведущего «-» и схемы URL (подписанный адрес вместо ID не сохраняется).
 func identifier(value any) (string, error) {
 	text, ok := value.(string)
@@ -387,7 +381,7 @@ func identifier(value any) (string, error) {
 // finite — math.isfinite(value) and value > 0 для таймаута.
 func positive(value float64) bool { return !math.IsNaN(value) && !math.IsInf(value, 0) && value > 0 }
 
-// Submit — submit(directory, confirmation, timeout): единственная отправка подготовленной
+// Submit — единственная отправка подготовленной
 // попытки по подтверждению её SHA. Перед вызовом адаптера сверяются хеши промпта и входов и
 // записывается submitting; generation_id сохраняется сразу после ответа. Повтор запрещён,
 // включая submitting и submission_unknown. Явный отказ и «отправка не начиналась» возвращают
@@ -490,7 +484,7 @@ func unsupported(provider any) error {
 	return valueError("Провайдер " + pycompat.Repr(provider) + " не поддерживает это действие.")
 }
 
-// publish — publish(service, output, destination): адаптер пишет байты результата во временный
+// publish — адаптер пишет байты результата во временный
 // .part рядом, общий код публикует его жёсткой ссылкой без перезаписи. Пустой результат
 // отклоняется; временный файл удаляется в любом случае. Видео не хешируется и не исследуется.
 func publish(ctx context.Context, fetcher mediaapi.Fetcher, output, destination string) error {
@@ -524,7 +518,7 @@ func header(path string) ([]byte, error) {
 	return data[:count], nil
 }
 
-// imageExtension — image_extension(path): контейнер оригинала по сигнатуре, а не по адресу.
+// imageExtension — контейнер оригинала по сигнатуре, а не по адресу.
 func imageExtension(path string) (string, error) {
 	data, err := header(path)
 	if err != nil {
@@ -541,7 +535,7 @@ func imageExtension(path string) (string, error) {
 	return "", valueError(textImageFormat)
 }
 
-// videoExtension — video_extension(path): MP4 по ftyp.
+// videoExtension — MP4 по ftyp.
 func videoExtension(path string) (string, error) {
 	data, err := header(path)
 	if err != nil {
@@ -562,7 +556,7 @@ func size(path string) (pycompat.Int, error) {
 	return pycompat.NewInt(info.Size()), nil
 }
 
-// verifySavedImage — verify_saved_image: сохранённый оригинал без переименования и перекодирования.
+// verifySavedImage — сохранённый оригинал без переименования и перекодирования.
 func verifySavedImage(directory string, entry *pycompat.Dict) error {
 	name, err := item(entry, "path")
 	if err != nil {
@@ -606,7 +600,7 @@ func verifySavedImage(directory string, entry *pycompat.Dict) error {
 	return nil
 }
 
-// verifyDownload — verify_download: зарегистрированный результат на месте и не изменился.
+// verifyDownload — зарегистрированный результат на месте и не изменился.
 func verifyDownload(directory string, request *pycompat.Dict, value any) error {
 	entry, ok := value.(*pycompat.Dict)
 	if !ok {
@@ -637,7 +631,7 @@ func verifyDownload(directory string, request *pycompat.Dict, value any) error {
 	return nil
 }
 
-// receiveImage — receive_image: сначала получает исходные байты, затем фиксирует намерение
+// receiveImage сначала получает исходные байты, затем фиксирует намерение
 // (номер, путь, размер, SHA) и публикует оригинал. После обрыва между публикацией и журналом
 // принимается только тот же оригинал; чужой существующий файл не становится результатом.
 func receiveImage(ctx context.Context, fetcher mediaapi.Fetcher, output, directory, stem string, number int, state *pycompat.Dict) (*pycompat.Dict, error) {
@@ -709,7 +703,7 @@ func receiveImage(ctx context.Context, fetcher mediaapi.Fetcher, output, directo
 	return proof, nil
 }
 
-// receiveVideo — receive_video: намерение записывается до скачивания; если процесс оборвался
+// receiveVideo записывает намерение до скачивания; если процесс оборвался
 // после публикации файла, повтор принимает этот файл.
 func receiveVideo(ctx context.Context, fetcher mediaapi.Fetcher, output, directory, name string, number int, state *pycompat.Dict) (*pycompat.Dict, error) {
 	intent := pycompat.NewDict()
@@ -818,10 +812,9 @@ func twoDigits(number int) string {
 // serviceStatus — допустимая запись статуса сервиса: только строчные латинские буквы и «_».
 var serviceStatus = regexp.MustCompile(`^[a-z_]{1,40}$`)
 
-// Resume — resume(directory, generation_id, wait_seconds, interval, timeout): опрос только
-// сохранённого ID (один раз либо в пределах waitSeconds с шагом interval) и получение готовых
-// оригиналов. generationID привязывает известный ID неизвестной отправки. Ручной результат
-// продолжается без ID и без обращения к сервису.
+// Resume — опрос только сохранённого ID (один раз либо в пределах waitSeconds с шагом interval) и
+// получение готовых оригиналов. generationID привязывает известный ID неизвестной отправки. Ручной
+// результат продолжается без ID и без обращения к сервису.
 func Resume(ctx context.Context, root, directory, generationID string, waitSeconds, interval, timeout float64) (*pycompat.Dict, error) {
 	workDir, err := WorkPath(root, directory)
 	if err != nil {
@@ -976,7 +969,7 @@ func poll(ctx context.Context, service mediaadapters.Adapter, directory string, 
 	return answer, nil
 }
 
-// unknownAttempt — unknown_attempt: попытка с неизвестным исходом без ID и без скачанных файлов.
+// unknownAttempt — попытка с неизвестным исходом без ID и без скачанных файлов.
 func unknownAttempt(directory string) (*pycompat.Dict, *pycompat.Dict, error) {
 	request, state, err := LoadAttempt(directory, false)
 	if err != nil {
@@ -993,7 +986,7 @@ func unknownAttempt(directory string) (*pycompat.Dict, *pycompat.Dict, error) {
 	return request, state, nil
 }
 
-// resolveUnknown — resolve_unknown: решение пользователя с временем UTC в unknown_outcomes.
+// resolveUnknown записывает решение пользователя с временем UTC в unknown_outcomes.
 // По истории видно, что исход установил пользователь, а не сервис.
 func resolveUnknown(state *pycompat.Dict, resolution string) error {
 	entry := pycompat.NewDict()
@@ -1010,7 +1003,7 @@ func resolveUnknown(state *pycompat.Dict, resolution string) error {
 	return nil
 }
 
-// NotCreated — not_created: пользователь не нашёл генерацию в истории сервиса; попытка снова
+// NotCreated — пользователь не нашёл генерацию в истории сервиса; попытка снова
 // готова к одной отправке после нового согласия.
 func NotCreated(root, directory string) (*pycompat.Dict, error) {
 	workDir, err := WorkPath(root, directory)
@@ -1036,8 +1029,8 @@ func NotCreated(root, directory string) (*pycompat.Dict, error) {
 	return result, err
 }
 
-// Attach — attach(directory, files): оригиналы, скачанные пользователем из истории генераций,
-// становятся результатом попытки без новой отправки. Число файлов равно outputs; видео —
+// Attach — оригиналы, скачанные пользователем из истории генераций, становятся результатом
+// попытки без новой отправки. Число файлов равно outputs; видео —
 // сигнатура MP4, изображение — PNG/JPEG/WebP. Файлы копируются без перекодирования, публикуются
 // только все вместе после проверки; существующие не перезаписываются.
 func Attach(root, directory string, files []string) (*pycompat.Dict, error) {
@@ -1148,7 +1141,7 @@ type WatchEntry struct {
 	State *pycompat.Dict
 }
 
-// Watch — watch(directories, max_minutes, interval, timeout, report): одно длинное ожидание
+// Watch — одно длинное ожидание
 // нескольких попыток. Опрашивает их по очереди (resume без ожидания), report получает строку
 // «<папка>: <статус>» только при смене статуса или ошибке попытки. Итог — в порядке завершения;
 // по истечении времени незавершённые получают {status, detail}, задания не отменяются.
@@ -1156,7 +1149,7 @@ func Watch(ctx context.Context, root string, directories []string, maxMinutes, i
 	if !(1 <= maxMinutes && maxMinutes <= 120) || !(5 <= interval && interval <= 300) {
 		return nil, valueError(textWatchLimits)
 	}
-	// Повтор одной папки в списке схлопывается, как ключи dict оригинала.
+	// Повтор одной папки в списке схлопывается с сохранением порядка первого появления.
 	order := []string{}
 	last := map[string]any{}
 	for _, directory := range directories {
@@ -1229,7 +1222,7 @@ func remove(items []string, value string) []string {
 	return result
 }
 
-// Capabilities — capabilities(provider, kind, timeout): объявления моделей провайдера для вида
+// Capabilities — объявления моделей провайдера для вида
 // медиа {"reports", "problems"}; генерации нет.
 func Capabilities(ctx context.Context, provider, kind string, timeout float64) (*pycompat.Dict, error) {
 	if kind != "image" && kind != "video" {
@@ -1247,7 +1240,7 @@ func Capabilities(ctx context.Context, provider, kind string, timeout float64) (
 }
 
 // uuid7 — UUID версии 7 по RFC 9562: 48 бит времени Unix в миллисекундах, версия, вариант и
-// случайные биты (uuid7() из tools/common.py).
+// случайные биты.
 func uuid7() string {
 	var value [16]byte
 	_, _ = rand.Read(value[6:])

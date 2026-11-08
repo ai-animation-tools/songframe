@@ -43,7 +43,7 @@ type goldenStep struct {
 	Tree      map[string]string `json:"tree"`
 }
 
-// goldenFile — testdata/golden/derived-workflow/cases.json (скрипт съёмки — capture-workflow.ts).
+// goldenFile — сценарии эталона testdata/golden/derived-workflow/cases.json.
 type goldenFile struct {
 	Scenarios []struct {
 		Name  string       `json:"name"`
@@ -89,7 +89,7 @@ func (f *fakeJobs) Get(id string) (jobs.Info, bool) {
 
 var uuidPattern = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
 
-// normalizer — normalizer() скрипта съёмки: путь проекта → <project>, UUID → <uuidN> по первому
+// normalizer — нормализация, как в эталоне: путь проекта → <project>, UUID → <uuidN> по первому
 // появлению. back возвращает настоящие значения для входа шагов.
 type normalizer struct {
 	project func() string
@@ -117,7 +117,7 @@ func (n *normalizer) back(value string) string {
 	return strings.ReplaceAll(value, "<project>", n.project())
 }
 
-// tree — tree() скрипта съёмки.
+// tree — снимок дерева проекта в формате эталона.
 func tree(t *testing.T, folder string) map[string]string {
 	t.Helper()
 	result := map[string]string{}
@@ -171,7 +171,7 @@ func copyProject(t *testing.T, from, to string) {
 	}
 }
 
-// applyInput — applyInput() скрипта съёмки.
+// applyInput выполняет входную операцию шага над проектом.
 func applyInput(t *testing.T, project string, step goldenStep, back func(string) string) {
 	t.Helper()
 	name := step.Path
@@ -226,7 +226,7 @@ func sameJSON(t *testing.T, label string, want, got []byte) {
 	}
 }
 
-// diffTrees — diff() скрипта съёмки.
+// diffTrees — изменённые и удалённые файлы между двумя снимками дерева.
 func diffTrees(before, after map[string]string) (map[string]string, []string) {
 	changed := map[string]string{}
 	for path, text := range after {
@@ -244,9 +244,10 @@ func diffTrees(before, after map[string]string) (map[string]string, []string) {
 	return changed, removed
 }
 
-// TestDerivedWorkflowGolden проходит все сценарии эталона оригинала на копии образца с подставным
+// TestDerivedWorkflowGolden проходит все сценарии эталона на копии образца с подставным
 // менеджером заданий: результат или текст ошибки, изменённые файлы побайтно, запущенные задания и
-// дерево после восстановления. Единственное задуманное отличие — текст toolsUnavailable.
+// дерево после восстановления. Текст отказа oldTools в эталоне тест заменяет текущим
+// textToolsUnavailable.
 func TestDerivedWorkflowGolden(t *testing.T) {
 	var file goldenFile
 	if err := json.Unmarshal(golden.ReadFile(t, "derived-workflow", "cases.json"), &file); err != nil {

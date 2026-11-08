@@ -37,7 +37,7 @@ type Prompt struct {
 	Text     string `json:"text"`
 }
 
-// RequestInput — вход замороженного запроса: slot и role как в request.json, ImagePath —
+// RequestInput — вход зафиксированного запроса: slot и role как в request.json, ImagePath —
 // абсолютный путь файла в папке попытки.
 type RequestInput struct {
 	Slot      json.RawMessage `json:"slot,omitempty"`
@@ -46,7 +46,7 @@ type RequestInput struct {
 	ImagePath string          `json:"imagePath"`
 }
 
-// Request — активная попытка пакета: замороженный request.json и состояние attempt.json.
+// Request — активная попытка пакета: неизменяемый request.json и состояние attempt.json.
 // Model, Command, ModelSelection и Parameters — значения request.json как есть.
 type Request struct {
 	Dir            string          `json:"dir"`
@@ -57,7 +57,7 @@ type Request struct {
 	SHA256         *string         `json:"sha256"`
 	Model          json.RawMessage `json:"model,omitempty"`
 	ModelSelection json.RawMessage `json:"modelSelection,omitempty"`
-	// PromptText — замороженный текст запроса; в подтверждении показывается он, а не черновик.
+	// PromptText — зафиксированный текст запроса; в подтверждении показывается он, а не черновик.
 	PromptText      *string         `json:"promptText"`
 	Parameters      json.RawMessage `json:"parameters"`
 	Inputs          []RequestInput  `json:"inputs"`
@@ -69,7 +69,7 @@ type Request struct {
 	Downloads []string `json:"downloads"`
 }
 
-// PackageView — вид рабочего пакета плана (readPackage оригинала). Документы workflow.json без
+// PackageView — вид рабочего пакета плана. Документы workflow.json без
 // схемы (timing, pendingDecision, decision, keyframeNotes) передаются как есть.
 type PackageView struct {
 	// ResultToken — хеш показанных оригиналов: не меняется от записи ответа пользователя.
@@ -113,8 +113,8 @@ type Pending struct {
 	Frame string
 }
 
-// Pending — вопрос пакета или nil, если pending_decision ложен (как `pkg.pendingDecision`
-// в условиях оригинала).
+// Pending — вопрос пакета или nil, если pending_decision ложен по правилам истинности JS:
+// пустая строка, 0 и null вопроса не означают.
 func (p *PackageView) Pending() *Pending {
 	value := jscompat.Get(p.workflow, "pending_decision")
 	if !jscompat.Truthy(value) {
@@ -167,7 +167,7 @@ var originalName = regexp.MustCompile(`^original(-\d+)?\.(mp4|png|jpg|webp)$`)
 // previewName — файлы технической сводки в preview/.
 var previewName = regexp.MustCompile(`(?i)\.(png|jpg|webp)$`)
 
-// readJSON — readJson модуля production: null (nil) при отсутствии и любой ошибке.
+// readJSON — разобранный JSON файла; nil при отсутствии файла и любой ошибке.
 func readJSON(path string) any {
 	value, ok := jscompat.ReadJSONFile(path)
 	if !ok {
@@ -176,7 +176,7 @@ func readJSON(path string) any {
 	return value
 }
 
-// readText — readFileSync(path, 'utf-8') существующего файла; ошибка чтения — исключение.
+// readText — текст существующего файла в UTF-8; ошибка чтения отклоняет вызов.
 func readText(path string) (string, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -260,10 +260,9 @@ func projectFingerprint(project string) fingerprintFunc {
 	}
 }
 
-// ReadPackage — readPackage(project, dir): вид пакета или nil, если workflow.json не читается или
-// поле shot не строка. Проблемы пакета — те же условия, что у оригинала. Ошибка — исключение JS
-// оригинала вне его try (stage не строка, keyframes не массив, нестроковые пути): оригинал
-// отклонял весь вызов. Ничего не пишет.
+// ReadPackage — вид пакета или nil, если workflow.json не читается или поле shot не строка.
+// Условия проблем пакета зафиксированы эталонами. Ошибка (stage не строка, keyframes не массив,
+// нестроковые пути) отклоняет весь вызов, а не превращается в проблему пакета. Ничего не пишет.
 func ReadPackage(project, dir string) (*PackageView, error) {
 	return readPackage(project, dir, func(shot string) string { return CurrentShotFingerprint(project, shot) })
 }
@@ -374,7 +373,7 @@ func readPackage(project, dir string, fingerprint fingerprintFunc) (*PackageView
 		KeyframeNotes:   jscompat.Raw(jscompat.Coalesce(jscompat.Get(parsed, "keyframe_notes"), &jscompat.Array{})),
 		Preview:         preview, workflow: workflow,
 	}
-	// try { resultToken; decisionToken } catch → проблема пакета с текстом исключения.
+	// Сбой расчёта токенов результата и решения — проблема пакета с текстом ошибки, а не отказ вызова.
 	func() {
 		if request != nil && len(request.Downloads) > 0 {
 			token, err := packageResultToken(request.Dir, request.Downloads)
@@ -403,7 +402,7 @@ func readPackage(project, dir string, fingerprint fingerprintFunc) (*PackageView
 	return view, nil
 }
 
-// readRequest — активная попытка пакета (ветка `if (activeRequest)` оригинала).
+// readRequest — активная попытка пакета, если в workflow.json указан active_request.
 func readRequest(dir string, workflow, active any, imageRequest bool, problems *[]string) (*Request, error) {
 	requestDir, err := joinArg(dir, active)
 	if err != nil {
@@ -543,11 +542,11 @@ func readRequest(dir string, workflow, active any, imageRequest bool, problems *
 	return request, nil
 }
 
-// tokenDigest — SHA-256 файла с кэшем по identity (filedigest повторяет tokenDigest оригинала).
+// tokenDigest — SHA-256 файла с кэшем по identity (internal/filedigest).
 func tokenDigest(path string) (string, error) {
 	digest, ok := filedigest.File(path)
 	if !ok {
-		// Файл есть, но не читается (например, это папка): исключение оригинала внутри try.
+		// Файл есть, но не читается (например, это папка): проблема пакета, а не отказ вызова.
 		if _, err := os.ReadFile(path); err != nil {
 			return "", jscompat.FsError("read", path, err)
 		}
@@ -556,16 +555,16 @@ func tokenDigest(path string) (string, error) {
 	return digest, nil
 }
 
-// regularFile — existsSync(file) && lstatSync(file).isFile().
+// regularFile — путь существует и сам является обычным файлом (ссылка не разыменовывается).
 func regularFile(path string) bool {
 	info, err := os.Lstat(path)
 	return err == nil && info.Mode().IsRegular()
 }
 
-// missingFile — маркер отсутствующего файла в SHA материалов (формат токена оригинала).
+// missingFile — маркер отсутствующего файла в SHA материалов; входит в формат токена.
 const missingFile = "<нет файла>"
 
-// packageToken — ответ связан с показанными байтами вопроса, кандидатов и замороженного запроса:
+// packageToken — ответ связан с показанными байтами вопроса, кандидатов и зафиксированного запроса:
 // SHA-256 путей и содержимого материалов пакета, документов проекта (без декоративной обложки
 // описи) и, на этапах просмотра результата, токена результата.
 func packageToken(project, directory string, workflow any, stage, resultToken string) (string, error) {
@@ -680,7 +679,7 @@ func packageToken(project, directory string, workflow any, stage, resultToken st
 		file := filepath.Join(project, filepath.FromSlash(path))
 		digest := missingFile
 		if path == sourceinputs.ManifestPath {
-			// Декоративная обложка не меняет показанное согласование или замороженный платный запрос.
+			// Декоративная обложка не меняет показанное согласование или зафиксированный платный запрос.
 			value, ok, err := sourceinputs.Digest(project)
 			if err != nil {
 				return "", err
@@ -708,7 +707,7 @@ func packageToken(project, directory string, workflow any, stage, resultToken st
 }
 
 // joinRelative — path.join(base, name) для относительных путей токена: нормализация без
-// превращения в абсолютный путь и с разделителем «/», как на Linux у оригинала.
+// превращения в абсолютный путь и с разделителем «/» на любой ОС: от него зависит токен.
 func joinRelative(base, name string) string {
 	return filepath.ToSlash(filepath.Join(filepath.FromSlash(base), filepath.FromSlash(name)))
 }

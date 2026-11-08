@@ -2,8 +2,8 @@ package scenarioapply
 
 import "path/filepath"
 
-// Тексты scenarioTexts.main оригинала; textRecoveryConflict, textBackupDamaged и
-// textDuplicateFile — новые: оригинал таких проверок не делал.
+// Тексты scenarioTexts.main (frontend/src/shared/texts/scenario.ts); textRecoveryConflict,
+// textBackupDamaged и textDuplicateFile — тексты собственных проверок журнала.
 const (
 	textRecoveryPending       = "Не завершено восстановление прошлого применения сценария. Перезапустите приложение."
 	textRecoveryFormatInvalid = "Неизвестный формат pending или недопустимые пути восстановления."

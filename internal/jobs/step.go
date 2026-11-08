@@ -63,7 +63,7 @@ func (e *StepError) Unwrap() error { return e.Err }
 // Exec запускает внешнюю программу в context шага (отмена и таймаут шага завершают её вместе
 // с потомками), передаёт весь вывод в журнал и, если задан, в command.OnOutput.
 //
-// Служебные строки журнала повторяют PythonLauncher оригинала: остановка пользователем,
+// Служебные строки журнала — фиксированные тексты: остановка пользователем,
 // превышение времени (в мс лимита шага или command.Timeout), ошибка запуска «Ошибка запуска
 // <Name>: …», посторонний сигнал. При неудаче возвращается *StepError: код выхода или -1,
 // причина — stderr этого шага вместе со служебной строкой, иначе stdout (после trim).
@@ -128,7 +128,7 @@ func isStepTimeout(ctx context.Context) bool {
 	return errors.As(context.Cause(ctx), &timeout)
 }
 
-// timeoutText — строка оригинала executionTimedOutOutput без переводов строк.
+// timeoutText — служебная строка журнала о превышении лимита шага, без переводов строк.
 func timeoutText(limit time.Duration) string {
 	return fmt.Sprintf("Превышено время выполнения (%d мс).", limit.Milliseconds())
 }

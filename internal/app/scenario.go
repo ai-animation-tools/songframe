@@ -11,10 +11,10 @@ import (
 )
 
 // Документы сценария (кастинг, трактовка, реестр) передаются как json.RawMessage: Go разбирает
-// их в упорядоченное дерево jscompat, чтобы проверки и записанные байты повторяли оригинал
+// их в упорядоченное дерево jscompat, чтобы проверки и записанные байты совпадали с эталонами
 // (порядок ключей, лишние поля, числа), и возвращает записанный документ тем же JSON.
 
-// parseDocument — документ из renderer; пустое тело — null, как отсутствующий аргумент IPC.
+// parseDocument — документ из renderer; пустое тело — null, как отсутствующий аргумент.
 func parseDocument(raw json.RawMessage) (any, error) {
 	if len(raw) == 0 {
 		return nil, nil
@@ -87,8 +87,7 @@ func (s *ScenarioService) SaveTreatment(project string, input json.RawMessage) (
 }
 
 // ValidateTreatment — scenario.validateTreatment: проблемы черновика трактовки (стык частей,
-// длительность трека, коды, названия) без записи. Отличие от 634fd94: в оригинале их показывал
-// только отказ сохранения.
+// длительность трека, коды, названия) без записи, чтобы их можно было показать до сохранения.
 func (s *ScenarioService) ValidateTreatment(project string, input json.RawMessage) ([]string, error) {
 	value, err := parseDocument(input)
 	if err != nil {

@@ -12,14 +12,14 @@ import (
 	"songframe-go/internal/scenario"
 )
 
-// Проверка недоверенного JSON агента (перенос src/main/scenario-proposal.ts): ответ агента
-// разбирается в дерево jscompat и проверяется до любых доменных функций, которые ожидают уже
-// типизированный документ. Тексты отказов — scenarioTexts.main оригинала.
+// Проверка недоверенного JSON агента: ответ агента разбирается в дерево jscompat и проверяется
+// до любых доменных функций, которые ожидают уже типизированный документ. Тексты отказов —
+// scenarioTexts.main (frontend/src/shared/texts/scenario.ts).
 
-// fps — кадровая сетка реестра (FPS из src/shared/video.ts).
+// fps — кадровая сетка реестра (FPS из frontend/src/shared/video.ts).
 const fps = 30.0
 
-// stagingFields — STAGING_FIELDS: поля постановки, которые патч прохода revise может заменить.
+// stagingFields — поля постановки, которые патч прохода revise может заменить.
 var stagingFields = []string{"title", "camera", "action", "continuity", "notes", "references", "lipsync", "card", "state_from", "state_changes", "derived_from"}
 
 // placeholder — /ЗАПОЛНИТЬ/iu: незаполненное место шаблона в любом регистре.
@@ -128,15 +128,15 @@ func deepEqual(left, right any) bool {
 		b, ok := right.(float64)
 		return ok && sameValue(a, b)
 	case scenario.ResolvedState:
-		// Состояние плана из resolveStates — объект { before, after } оригинала.
+		// Состояние плана из scenario.ResolveStates — объект { before, after }.
 		b, ok := right.(scenario.ResolvedState)
 		return ok && deepEqual(a.Object(), b.Object())
 	}
 	return left == right
 }
 
-// checkScenesShape — checkScenesShape оригинала: полная проверка вложенных полей реестра до
-// validateScenes, который ожидает уже типизированный документ. Первая найденная ошибка — отказ.
+// checkScenesShape — полная проверка вложенных полей реестра до scenario.ValidateScenes, который
+// ожидает уже типизированный документ. Первая найденная ошибка — отказ.
 func checkScenesShape(value any) error {
 	document, ok := jscompat.AsObject(value)
 	audio, audioOK := jscompat.AsObject(jscompat.Get(value, "audio"))
@@ -240,7 +240,7 @@ func shotShape(scene *jscompat.Object) bool {
 // filled — непустой после trim текст без «ЗАПОЛНИТЬ».
 func filled(text string) bool { return jscompat.Trim(text) != "" && !placeholder.MatchString(text) }
 
-// checkTreatmentCast — checkTreatmentCast оригинала: логлайн и постановка частей заполнены, части
+// checkTreatmentCast — логлайн и постановка частей заполнены, части
 // ссылаются только на сущности кастинга. Документы уже нормализованы (cast.Normalize, трактовка).
 func checkTreatmentCast(castValue, treatment any) error {
 	entities := map[string]bool{}
@@ -274,7 +274,7 @@ func arrayItems(value any) []any {
 	return items
 }
 
-// checkReadyScenes — checkReadyScenes оригинала: строгая готовность реестра из предложения агента
+// checkReadyScenes — строгая готовность реестра из предложения агента
 // (ручной черновик может быть неполным). Все проблемы — одной ошибкой, по строке на проблему:
 // интерфейс показывает их списком; незаполненные планы сводятся в один первый пункт.
 func checkReadyScenes(scenes, castValue any, duration float64) error {
@@ -352,14 +352,13 @@ func checkReadyScenes(scenes, castValue any, duration float64) error {
 	return nil
 }
 
-// proposalDocuments — proposalDocuments оригинала: разбор и проверка ответа агента для прохода
+// proposalDocuments — разбор и проверка ответа агента для прохода
 // pass. treatment заменяет пару кастинга и трактовки; scenes принимает заполненный каркас без
 // изменения окон; revise применяет патчи постановки выбранных планов. Результат — новые документы;
 // before не изменяется.
 //
-// Отличие от 634fd94: ответ, который не разбирается как JSON, отклоняется текстом
-// proposalInvalidDocument; оригинал показывал англоязычное сообщение SyntaxError движка V8,
-// которое Go воспроизвести не может.
+// Ответ, который не разбирается как JSON, отклоняется понятным пользователю текстом
+// proposalInvalidDocument, а не сообщением разборщика.
 func proposalDocuments(raw, pass string, before Documents, scaffold any, selected []string, duration float64) (Documents, error) {
 	parsed, err := jscompat.Parse([]byte(raw))
 	if err != nil {
@@ -453,8 +452,8 @@ func proposalDocuments(raw, pass string, before Documents, scaffold any, selecte
 	return Documents{Cast: before.Cast, Treatment: before.Treatment, Scenes: scenes}, nil
 }
 
-// initialFrom — Object.fromEntries(cast.entities.map((e) => [e.id, e.initial_state])): начальное
-// состояние сущностей для resolveStates; без кастинга — пустой объект.
+// initialFrom — объект «id сущности → initial_state» из cast.entities: начальное состояние
+// сущностей для scenario.ResolveStates; без кастинга — пустой объект.
 func initialFrom(castValue any) *jscompat.Object {
 	result := jscompat.NewObject()
 	for _, entity := range arrayItems(jscompat.Get(castValue, "entities")) {
@@ -463,7 +462,7 @@ func initialFrom(castValue any) *jscompat.Object {
 	return result
 }
 
-// changedSceneIds — changedSceneIds оригинала: планы предложения, чья постановка или вычисленное
+// changedSceneIds — планы предложения, чья постановка или вычисленное
 // состояние отличается от прежнего реестра (в том числе унаследованное от изменённого плана).
 // Некорректный прежний реестр не мешает: его состояния считаются пустыми.
 func changedSceneIds(before, after Documents) ([]string, error) {

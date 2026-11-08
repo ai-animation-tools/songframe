@@ -25,8 +25,8 @@ export function EnvironmentDiagnostics({ checks, loading, error, logins }: Envir
     );
   }
 
-  // Внешняя программа из поставки относится к ресурсам приложения. Отличие от 634fd94: группы модели
-  // Whisper нет (D-028), локальные модели и программы показывает страница «Компоненты».
+  // Внешняя программа из поставки относится к ресурсам приложения. Локальные модели и программы
+  // показывает страница «Компоненты».
   const coreChecks = checks.filter((check) => !check.external || check.bundled);
   const externalChecks = checks.filter((check) => check.external && !check.bundled);
   const completedCore = coreChecks.filter((check) => check.status === 'done' || check.status === undefined);

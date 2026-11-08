@@ -24,7 +24,7 @@ type Endpoints struct {
 	Scope     string
 }
 
-// Discover — discover(): метаданные сервера (RFC 9728 и RFC 8414) поверх умолчаний
+// Discover — метаданные сервера (RFC 9728 и RFC 8414) поверх умолчаний
 // `<base>/auth/*`; недоступные или неверные метаданные не мешают входу. Ошибка — только неверный
 // адрес сервера (ValueError).
 func (c *Client) Discover(ctx context.Context) (Endpoints, error) {
@@ -98,7 +98,7 @@ func (c *Client) Discover(ctx context.Context) (Endpoints, error) {
 	return endpoints, nil
 }
 
-// oauthPost — oauth_post(url, fields): форма к OAuth; ответ — статус и объект JSON или nil.
+// oauthPost — форма к OAuth; ответ — статус и объект JSON или nil.
 // Тело ответа не журналируется: в нём токены.
 func (c *Client) oauthPost(ctx context.Context, url string, fields []Field) (int, *pycompat.Dict, error) {
 	headers := []Field{{"Content-Type", "application/x-www-form-urlencoded"}, {"Accept", "application/json"}}
@@ -143,7 +143,7 @@ func (c *Client) register(ctx context.Context, endpoints Endpoints) (string, err
 	return clientID, nil
 }
 
-// TokenRecord — token_record(previous, answer, now): новая запись по ответу token endpoint.
+// TokenRecord — новая запись по ответу token endpoint.
 // Поля previous сохраняют порядок; без нового refresh token остаётся прежний; expires_at —
 // int(now + expires_in) или 0, если срок не объявлен. now — секунды Unix.
 func TokenRecord(previous, answer *pycompat.Dict, now float64) (*pycompat.Dict, error) {
@@ -199,7 +199,7 @@ func (c *Client) expiring(record *pycompat.Dict) (bool, error) {
 	return pycompat.Less(left, pycompat.NewInt(RefreshMargin))
 }
 
-// Refresh — refresh(stale_token): обновляет токен под межпроцессной блокировкой. Если другой
+// Refresh — обновляет токен под межпроцессной блокировкой. Если другой
 // процесс уже заменил устаревший токен свежим, запись берётся из файла без запроса. Отказ сервера
 // 400/401 — AuthRequired; прочие сбои обновления — NotSent: вызов инструмента ещё не уходил.
 func (c *Client) Refresh(ctx context.Context, staleToken any) (*pycompat.Dict, error) {
@@ -314,11 +314,11 @@ func PKCE() (verifier, challenge string) {
 // tokenURLSafe — secrets.token_urlsafe(n).
 func tokenURLSafe(size int) string { return urlsafe(randomBytes(size)) }
 
-// tokenHex — secrets.token_hex(n): граница multipart. Переменная — чтобы эталоны фиксировали
-// границу, как съёмка оригинала.
+// tokenHex — secrets.token_hex(n): граница multipart. Переменная — чтобы тесты подставляли
+// границу, зафиксированную эталонами.
 var tokenHex = func(size int) string { return hex.EncodeToString(randomBytes(size)) }
 
-// UUID7 — tools/common.py uuid7(): UUID версии 7 по RFC 9562 (48 бит времени Unix в
+// UUID7 — UUID версии 7 по RFC 9562 (48 бит времени Unix в
 // миллисекундах, версия, вариант, случайные биты). Им попытка связывает загрузки, отправку и
 // опрос одного намерения (taskTraceId).
 func UUID7() string {

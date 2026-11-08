@@ -13,8 +13,7 @@ import (
 
 // VideoReviewService реализует window.api.videoReview: проверку полученного видео агентом без
 // автоматического принятия. Состояние (подготовки кадров) принадлежит videoreview.Service; запуск
-// дополнительно проверяет явный выбор и доступность агента, как маршрут videoReview:start
-// оригинала (ai.requireAccess(project, 'agent')).
+// дополнительно проверяет явный выбор и доступность агента (KindAgent).
 type VideoReviewService struct {
 	review *videoreview.Service
 	access *agents.AccessChecker
@@ -65,8 +64,8 @@ func VideoReviewTools(manager *components.Manager) func() (videoreview.Tools, bo
 	}
 }
 
-// VideoReviewBudget — бюджет изображений проверки выбранного текстового агента (Codex по умолчанию,
-// как AGENT_PROVIDERS[getAgent()?.provider ?? 'codex'] оригинала).
+// VideoReviewBudget — бюджет изображений проверки выбранного текстового агента (Codex, если агент
+// не выбран).
 func VideoReviewBudget(settings *agents.SettingsStore) func() int {
 	return func() int {
 		provider := agents.Codex

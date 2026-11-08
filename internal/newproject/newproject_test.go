@@ -10,7 +10,7 @@ import (
 	"songframe-go/internal/golden"
 )
 
-// TestValidateGolden — validateNewProject на эталонах оригинала (testdata/golden/project-validate-new).
+// TestValidateGolden — Validate на эталонах testdata/golden/project-validate-new.
 func TestValidateGolden(t *testing.T) {
 	var cases []struct {
 		Name  string `json:"name"`
@@ -80,6 +80,6 @@ func TestRenderPlaceholders(t *testing.T) {
 		t.Fatalf("%q", got)
 	}
 	if !isText(".gitignore") || !isText("README.md") || isText("cover.png") || isText("Makefile") {
-		t.Fatal("выбор текстовых файлов отличается от оригинала")
+		t.Fatal("выбор текстовых файлов отличается от эталона")
 	}
 }

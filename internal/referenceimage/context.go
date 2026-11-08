@@ -11,7 +11,8 @@ import (
 	"songframe-go/internal/sources"
 )
 
-// Тексты контекста конструктора (referenceGenerationMessages оригинала).
+// Тексты контекста конструктора (referenceGenerationMessages,
+// frontend/src/shared/texts/reference-images.ts).
 const (
 	TextContextInvalid  = "Не удалось прочитать контекст клипа. Проверьте название, идею, текст песни и визуальный стиль сценария."
 	TextContextTooLarge = "Контекст изображения превышает 256 КБ. Сократите описание, идею или текст песни перед подготовкой."
@@ -38,7 +39,7 @@ var (
 	errContextTooLarge = errors.New(TextContextTooLarge)
 )
 
-// contextText — text оригинала: строка без NUL не длиннее agents.TextLimit байт UTF-8.
+// contextText — строка без NUL не длиннее agents.TextLimit байт UTF-8.
 func contextText(value any) (string, error) {
 	text, ok := value.(string)
 	if !ok || strings.ContainsRune(text, 0) {
@@ -50,8 +51,8 @@ func contextText(value any) (string, error) {
 	return text, nil
 }
 
-// readContextFile — read оригинала: размер проверяется до чтения, байты декодируются как UTF-8
-// (неверные последовательности — U+FFFD, как readFileSync(path, 'utf8')).
+// readContextFile — текст файла контекста: размер проверяется до чтения, байты декодируются как
+// UTF-8 (неверные последовательности — U+FFFD).
 func readContextFile(path string) (string, error) {
 	info, err := os.Stat(path)
 	if err != nil {
@@ -67,7 +68,7 @@ func readContextFile(path string) (string, error) {
 	return contextText(jscompat.DecodeUTF8(data))
 }
 
-// readContextJSON — json оригинала: объект JSON из файла; превышение размера остаётся своим
+// readContextJSON — объект JSON из файла; превышение размера остаётся своим
 // отказом, остальные ошибки — «контекст не прочитан».
 func readContextJSON(path string) (*jscompat.Object, error) {
 	text, err := readContextFile(path)
@@ -88,7 +89,7 @@ func readContextJSON(path string) (*jscompat.Object, error) {
 	return object, nil
 }
 
-// ReadContext — referenceImages.context (readReferenceImageContext оригинала): название клипа,
+// ReadContext — referenceImages.context: название клипа,
 // идея и текст песни (черновики формы важнее сохранённых файлов описи) и визуальный стиль
 // сохранённого сценария. Только чтение: сессия не создаётся, файлы не пишутся.
 //

@@ -5,7 +5,7 @@ set -eu
 
 if [ "$#" -ne 1 ] || [ -z "$1" ]; then
   printf '%s\n' 'Использование: sh scripts/make-media-fixtures.sh КАТАЛОГ' >&2
-  printf '%s\n' 'Укажите каталог вне songframe-go либо внутри игнорируемого build/.' >&2
+  printf '%s\n' 'Укажите каталог вне репозитория либо внутри игнорируемого build/.' >&2
   exit 2
 fi
 command -v ffmpeg >/dev/null 2>&1 || { printf '%s\n' 'Не найден FFmpeg.' >&2; exit 1; }

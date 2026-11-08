@@ -1,10 +1,9 @@
-// Package status вычисляет состояние проекта из файлов его папки (computeStatus оригинала и
-// постобработка обработчика IPC projects:status). Состояние нигде не хранится: приложение,
-// инструменты и агент видят одно и то же без синхронизации полей. Вычисление только читает
-// проект; кэш хешей медиа живёт в памяти процесса (filedigest).
+// Package status вычисляет состояние проекта из файлов его папки (projects.status). Состояние
+// нигде не хранится: приложение, инструменты и агент видят одно и то же без синхронизации полей.
+// Вычисление только читает проект; кэш хешей медиа живёт в памяти процесса (filedigest).
 //
-// Результат должен совпадать с Electron-оригиналом (commit 634fd94) на тех же файлах, включая
-// повреждённые документы: доказательство — эталоны testdata/golden/status.
+// Результат на тех же файлах, включая повреждённые документы, зафиксирован эталонами
+// testdata/golden/status.
 package status
 
 import (
@@ -63,7 +62,7 @@ type Checks struct {
 	// ShotsTotal — число планов-объектов в реестре.
 	ShotsTotal int `json:"shotsTotal"`
 	// ShotsDone — планы, принятые по текущей постановке; без реестра — все комплекты с манифестом,
-	// поэтому может превышать ShotsTotal (как в оригинале).
+	// поэтому может превышать ShotsTotal.
 	ShotsDone        int  `json:"shotsDone"`
 	AnimaticBuilt    bool `json:"animaticBuilt"`
 	AnimaticFresh    bool `json:"animaticFresh"`
@@ -72,7 +71,7 @@ type Checks struct {
 
 // ProjectStatus — ProjectStatus контракта frontend/src/shared/types.ts.
 type ProjectStatus struct {
-	// Path — путь в том виде, в каком его передали (без resolve), как в оригинале.
+	// Path — путь в том виде, в каком его передали (без resolve): по нему renderer находит проект в списке.
 	Path  string `json:"path"`
 	State string `json:"state"`
 	// Name — название из plan/project.json либо basename пути для не-проекта.
@@ -108,21 +107,21 @@ func ReadMarker(path string) *Marker {
 	return marker
 }
 
-// readJSON — readJson оригинала: (значение, true) или (nil, false) при отсутствии и ошибке.
+// readJSON — (значение, true) или (nil, false) при отсутствии файла и ошибке разбора.
 func readJSON(path string) (any, bool) {
 	return jscompat.ReadJSONFile(path)
 }
 
-// Compute — computeStatus с проверкой только входов сценария (reviewProblem без сценарного
+// Compute — статус с проверкой только входов сценария (reviewProblem без сценарного
 // прохода). Полный результат projects:status даёт ComputeWith с проверкой сценарного прохода.
 func Compute(path string) (ProjectStatus, error) {
 	return ComputeWith(path, reviewProblem)
 }
 
-// ComputeWith — результат projects:status: computeStatus и проблема актуальности сценария
-// review(path) (reviewProblem из ipc.ts оригинала). Проблема добавляется в конец списка и снимает
-// свежесть и утверждение аниматика; завершённый проект возвращается в производство. Ошибка
-// соответствует исключению оригинала, например на плане без строкового id.
+// ComputeWith — результат projects.status: базовый статус и проблема актуальности сценария
+// review(path). Проблема добавляется в конец списка и снимает свежесть и утверждение аниматика;
+// завершённый проект возвращается в производство. Ошибка означает, что статус вычислить нельзя,
+// например на плане без строкового id.
 func ComputeWith(path string, review func(string) string) (ProjectStatus, error) {
 	status, err := ComputeBase(path)
 	if err != nil {
@@ -139,7 +138,7 @@ func ComputeWith(path string, review func(string) string) (ProjectStatus, error)
 	return status, nil
 }
 
-// ComputeBase — computeStatus без проверки сценарного процесса; этим срезом сняты эталоны.
+// ComputeBase — статус без проверки сценарного процесса; именно его сверяют эталоны testdata/golden/status.
 func ComputeBase(path string) (ProjectStatus, error) {
 	result := ProjectStatus{Path: path, Problems: []string{}}
 	var marker *Marker

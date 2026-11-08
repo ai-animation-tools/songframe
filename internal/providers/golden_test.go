@@ -16,8 +16,7 @@ import (
 	"songframe-go/internal/tools"
 )
 
-// goldenCases — testdata/golden/media-providers/cases.json, снятый с оригинала
-// (скрипт capture-media-providers.ts не сохранён).
+// goldenCases — эталон testdata/golden/media-providers/cases.json.
 type goldenCases struct {
 	Select []struct {
 		Name      string                     `json:"name"`
@@ -69,7 +68,7 @@ func loadGolden(t *testing.T) goldenCases {
 	return cases
 }
 
-// registerTest — провайдер test оригинала (testPaidAdapter): правила Kling без frameDefined.
+// registerTest — платный провайдер test эталона: правила Kling без frameDefined.
 func registerTest(t *testing.T) Paid {
 	t.Helper()
 	t.Cleanup(mediaproviders.Register("test", mediaproviders.Info{Title: "Тестовый сервис", Kinds: []string{"image", "video"}, Paid: true}))
@@ -78,7 +77,7 @@ func registerTest(t *testing.T) Paid {
 	return Paid{ID: "test", Rules: rules}
 }
 
-// png — заголовок PNG с размерами (как в скрипте съёмки).
+// png — заголовок PNG с размерами, как во входах эталона.
 func png(width, height int) []byte {
 	header := make([]byte, 33)
 	copy(header, []byte{137, 80, 78, 71, 13, 10, 26, 10})
@@ -93,7 +92,7 @@ func png(width, height int) []byte {
 	return header
 }
 
-// paidInput — PreparePaidInput оригинала из JSON случая.
+// paidInput — PaidInput из JSON случая.
 func paidInput(t *testing.T, raw json.RawMessage, project string) PaidInput {
 	t.Helper()
 	value, err := jscompat.Parse(raw)
@@ -134,7 +133,7 @@ func paidInput(t *testing.T, raw json.RawMessage, project string) PaidInput {
 }
 
 // TestSelectPaidRequestGolden сверяет выбор модели, нормализацию запроса и тексты отказов с
-// selectPaidRequest оригинала.
+// эталоном.
 func TestSelectPaidRequestGolden(t *testing.T) {
 	cases := loadGolden(t)
 	test := registerTest(t)
@@ -260,7 +259,7 @@ func jsonEqual(t *testing.T, left, right []byte) bool {
 	return string(x) == string(y)
 }
 
-// TestGuidesGolden сверяет разделы «Указания агенту» с providerGuide оригинала.
+// TestGuidesGolden сверяет разделы «Указания агенту» с эталоном.
 func TestGuidesGolden(t *testing.T) {
 	cases := loadGolden(t)
 	registerTest(t)
@@ -272,7 +271,7 @@ func TestGuidesGolden(t *testing.T) {
 	}
 }
 
-// TestKlingEnvironmentGolden сверяет строку «Среды» Kling и её результат с адаптером оригинала.
+// TestKlingEnvironmentGolden сверяет строку «Среды» Kling и её результат с эталоном.
 func TestKlingEnvironmentGolden(t *testing.T) {
 	cases := loadGolden(t)
 	paid, _ := PaidAdapter("kling")

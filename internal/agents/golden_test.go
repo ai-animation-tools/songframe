@@ -18,8 +18,8 @@ import (
 	"songframe-go/internal/jscompat"
 )
 
-// Эталоны testdata/golden/agents-* сняты с замороженного оригинала (634fd94): чистые функции
-// протокола, SettingsStore и вызовы на тех же поддельных CLI (fake_test.go), что и здесь.
+// Эталоны testdata/golden/agents-* фиксируют чистые функции протокола, SettingsStore и вызовы
+// на поддельных CLI (fake_test.go).
 
 // assertGolden сравнивает значение Go (после JSON) с эталоном как деревья JSON.
 func assertGolden(t *testing.T, label string, want json.RawMessage, got any) {
@@ -33,7 +33,7 @@ func assertGolden(t *testing.T, label string, want json.RawMessage, got any) {
 		t.Fatalf("%s: %v", label, err)
 	}
 	if len(diffs) > 0 {
-		t.Fatalf("%s: отличие от оригинала:\n%s\nполучено: %s", label, strings.Join(diffs, "\n"), data)
+		t.Fatalf("%s: отличие от эталона:\n%s\nполучено: %s", label, strings.Join(diffs, "\n"), data)
 	}
 }
 
@@ -60,7 +60,7 @@ func jsValue(t *testing.T, raw json.RawMessage) any {
 	return value
 }
 
-// tsUpdate — AgentUpdate оригинала: поле сообщения notice называется message.
+// tsUpdate — AgentUpdate в форме эталона: поле сообщения notice называется message.
 func tsUpdate(update Update) map[string]any {
 	result := map[string]any{"type": update.Type}
 	switch update.Type {
@@ -384,8 +384,8 @@ func TestGoldenSettings(t *testing.T) {
 	}
 }
 
-// assertMessage сравнивает текст отказа; причина разбора JSON у Node и Go разная, поэтому в
-// сообщении readFailed сверяются только части, сформированные SongFrame.
+// assertMessage сравнивает текст отказа; причина разбора JSON в эталоне записана другим
+// парсером, поэтому в сообщении readFailed сверяются только части, сформированные SongFrame.
 func assertMessage(t *testing.T, label, want, got string) {
 	t.Helper()
 	const prefix = "Не удалось прочитать <local>/settings.json: "

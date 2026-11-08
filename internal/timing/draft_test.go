@@ -10,8 +10,8 @@ import (
 	"songframe-go/internal/golden"
 )
 
-// draftCase — случай testdata/golden/timing-draft/cases.json: вход build_timing оригинала
-// и его результат (точные байты json.dumps или текст ValueError).
+// draftCase — случай testdata/golden/timing-draft/cases.json: вход сборки черновика и ожидаемый
+// результат (точные байты json.dumps или текст ValueError).
 type draftCase struct {
 	Name  string `json:"name"`
 	Input struct {
@@ -39,9 +39,9 @@ type draftCase struct {
 	} `json:"expected"`
 }
 
-// TestBuildDraftMatchesOriginal сверяет черновик с build_timing оригинала побайтно: перенос
+// TestBuildDraftMatchesGolden сверяет черновик с эталоном timing-draft побайтно: перенос
 // подтверждённых строк, заметки, кандидаты, очередь, части песни, ошибки и формат чисел Python.
-func TestBuildDraftMatchesOriginal(t *testing.T) {
+func TestBuildDraftMatchesGolden(t *testing.T) {
 	root, err := golden.Root()
 	if err != nil {
 		t.Fatal(err)
@@ -85,7 +85,7 @@ func TestBuildDraftMatchesOriginal(t *testing.T) {
 				t.Fatal(err)
 			}
 			if string(encoded) != *item.Expected.Timing {
-				t.Fatalf("черновик отличается от оригинала:\n%s\nожидалось:\n%s", encoded, *item.Expected.Timing)
+				t.Fatalf("черновик отличается от эталона:\n%s\nожидалось:\n%s", encoded, *item.Expected.Timing)
 			}
 		})
 	}
@@ -109,7 +109,7 @@ func TestPyFloatRepr(t *testing.T) {
 	}
 }
 
-// TestPyJSONRoundTrip — прежний файл, записанный Python, перечитывается и записывается теми же
+// TestPyJSONRoundTrip — прежний файл в формате черновика перечитывается и записывается теми же
 // байтами: int и float, порядок ключей, экранирование и пустые коллекции сохраняются.
 func TestPyJSONRoundTrip(t *testing.T) {
 	text := "{\n  \"a\": 1,\n  \"b\": 1.0,\n  \"c\": [],\n  \"d\": {},\n  \"e\": \"«ё»\\n\\t\\u0001\\\"\\\\\",\n  \"f\": [\n    true,\n    null,\n    123456789012345678901234567890\n  ]\n}\n"

@@ -8,10 +8,11 @@ import (
 	"songframe-go/internal/pyre"
 )
 
-// Подмножество JSON Schema оригинала (validate в lint_registry.py): type, const, enum, required,
-// properties, additionalProperties, items, pattern, minimum, minItems, minLength, anyOf, $ref.
-// Сравнения — по правилам Python (1 == 1.0 == True), тексты — с repr значений, порядок проверок
-// и ранний выход после неверного типа или anyOf — как в оригинале.
+// Поддерживаемое подмножество JSON Schema: type, const, enum, required, properties,
+// additionalProperties, items, pattern, minimum, minItems, minLength, anyOf, $ref.
+// Сравнения — по правилам Python (1 == 1.0 == True), тексты — с repr значений. Порядок проверок
+// и ранний выход после неверного типа или anyOf определяют состав отчёта, сверяемого эталоном
+// testdata/golden/lint-registry.
 
 var (
 	schemasOnce sync.Once

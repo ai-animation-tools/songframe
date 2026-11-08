@@ -15,8 +15,8 @@ import (
 	"songframe-go/internal/store"
 )
 
-// Восстановление прерванной публикации ручного монтажа (montage-recovery.ts оригинала) без
-// инструмента: журнал plan/montage-history/<id>/journal.json в состоянии publishing откатывается
+// Восстановление прерванной публикации ручного монтажа без инструмента: журнал
+// plan/montage-history/<id>/journal.json в состоянии publishing откатывается
 // по резервам before/ до того, как проект станет текущим. Журнал пишет internal/applymontage.
 
 // fixedTargets — постоянные файлы, которые публикует применение монтажа.
@@ -219,7 +219,7 @@ func RecoverApplications(project string) error {
 	return nil
 }
 
-// RecoverOpened — восстановление при открытии проекта (projects:open оригинала): живую публикацию
+// RecoverOpened — восстановление при открытии проекта: живую публикацию
 // не откатываем — пока в этом процессе выполняется apply_montage, журнал publishing принадлежит ей.
 func RecoverOpened(project string) error {
 	if applymontage.Active() {

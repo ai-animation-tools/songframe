@@ -33,7 +33,7 @@ interface ComponentProblem {
  *
  * Страница только читает состояние автоматического менеджера: mount и polling не запускают probes.
  * Проверками при старте и после изменения компонентов владеет Go; уход со страницы их не отменяет.
- * Работает через window.api.components (D-027); папка по умолчанию — components в каталоге состояния.
+ * Работает через window.api.components; папка по умолчанию — components в каталоге состояния.
  */
 export function ComponentsPage() {
   const api = window.api.components;

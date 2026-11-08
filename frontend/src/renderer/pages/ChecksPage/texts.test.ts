@@ -1,4 +1,4 @@
-/** Независимые ожидания сохраняют фразы, параметры и пробелы JSX при переносе текстов. */
+/** Независимые ожидания сохраняют фразы, параметры и пробелы JSX при правке словаря. */
 import { createElement, type ComponentProps } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';

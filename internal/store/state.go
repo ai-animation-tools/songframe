@@ -9,15 +9,15 @@ import (
 	"songframe-go/internal/projectfs"
 )
 
-// CurrentFile и HistoryFile — те же имена, что у Electron (src/main/state.ts): текущий проект
-// и история открытых проектов в каталоге состояния приложения.
+// CurrentFile и HistoryFile — текущий проект и история открытых проектов в каталоге состояния
+// приложения.
 const (
 	CurrentFile  = "current-project.json"
 	HistoryFile  = "projects.json"
 	historyLimit = 30
 )
 
-// HistoryEntry — элемент истории для UI (ProjectHistoryEntry в shared/types.ts).
+// HistoryEntry — элемент истории для UI (ProjectHistoryEntry в frontend/src/shared/types.ts).
 // Exists проверяется при каждом чтении: папку могли перенести или удалить.
 type HistoryEntry struct {
 	Path       string `json:"path"`
@@ -26,7 +26,7 @@ type HistoryEntry struct {
 	Exists     bool   `json:"exists"`
 }
 
-// currentDocument и historyDocument сохраняют порядок ключей файлов оригинала.
+// currentDocument и historyDocument задают порядок ключей файлов состояния.
 type currentDocument struct {
 	SchemaVersion int    `json:"schema_version"`
 	Path          string `json:"path"`
@@ -46,7 +46,7 @@ type historyDocument struct {
 
 // LocalState владеет current-project.json и projects.json в каталоге состояния.
 // Повреждённый файл не перезаписывается молча: чтение и запись возвращают ошибку
-// с путём, как в оригинале. Параллельного доступа нет (одно окно управления проектами).
+// с путём. Параллельного доступа нет (одно окно управления проектами).
 type LocalState struct {
 	Dir string
 	Now func() time.Time

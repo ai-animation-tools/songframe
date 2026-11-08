@@ -68,8 +68,7 @@ export function ValidateScenes(project: string, input: json$0.RawMessage): $Canc
 
 /**
  * ValidateTreatment — scenario.validateTreatment: проблемы черновика трактовки (стык частей,
- * длительность трека, коды, названия) без записи. Отличие от 634fd94: в оригинале их показывал
- * только отказ сохранения.
+ * длительность трека, коды, названия) без записи, чтобы их можно было показать до сохранения.
  */
 export function ValidateTreatment(project: string, input: json$0.RawMessage): $CancellablePromise<string[]> {
     return $Call.ByID(1499702565, project, input);

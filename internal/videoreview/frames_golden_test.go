@@ -21,10 +21,10 @@ import (
 	"songframe-go/internal/golden"
 )
 
-// Эталон video-review-frames снят с tools/video_review оригинала (Python + Pillow) на синтетических
-// клипах FFmpeg: тот же FFmpeg воспроизводит входы побайтно, поэтому сравниваются номера, ID, PTS,
-// длительность, manifest.json, размеры и формат каждого изображения. Байты кадров, которые FFmpeg
-// пишет и Go-версия не переупаковывает, совпадают при той же версии FFmpeg. Копии опор и JPEG
+// Эталон video-review-frames построен на синтетических клипах FFmpeg: тот же FFmpeg воспроизводит
+// входы побайтно, поэтому сравниваются номера, ID, PTS, длительность, manifest.json, размеры и
+// формат каждого изображения. Байты кадров, которые пишет FFmpeg и Extract не переупаковывает,
+// совпадают при той же версии FFmpeg. Копии опор и JPEG
 // кодируют разные библиотеки: для них сверяются размеры и средние цвета сетки 4×4.
 
 type framesGolden struct {
@@ -95,7 +95,7 @@ func ffmpegVersion(t *testing.T, tools Tools) string {
 	return strings.SplitN(string(output), "\n", 2)[0]
 }
 
-// injectExif вставляет APP1 с одним тегом Orientation сразу после SOI, как съёмка эталона.
+// injectExif вставляет APP1 с одним тегом Orientation сразу после SOI, как во входах эталона.
 func injectExif(t *testing.T, path string, orientation int) {
 	data, err := os.ReadFile(path)
 	if err != nil || !bytes.HasPrefix(data, []byte{0xff, 0xd8}) {
@@ -125,7 +125,7 @@ func fileSHA(t *testing.T, path string) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// imageGrid — размеры и средний RGB 16 ячеек, как grid съёмки (Pillow convert("RGB")).
+// imageGrid — размеры и средний RGB 16 ячеек, как поле grid эталона (Pillow convert("RGB")).
 func imageGrid(t *testing.T, path string) (int, int, [][3]float64) {
 	file, err := os.Open(path)
 	if err != nil {

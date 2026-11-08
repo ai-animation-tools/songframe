@@ -10,9 +10,9 @@ import (
 	"songframe-go/internal/golden"
 )
 
-// TestSettingsGolden — readProjectSettings/writeProjectSettings на эталонах оригинала
-// (testdata/golden/project-settings): результат, байты plan/project.json и тексты ошибок.
-// Для ошибок чтения Node (ENOENT, разбор JSON) сравнивается только префикс сообщения.
+// TestSettingsGolden — чтение и запись настроек на эталонах testdata/golden/project-settings:
+// результат, байты plan/project.json и тексты ошибок. Для ошибок чтения (нет файла, разбор JSON)
+// сравнивается только префикс сообщения: хвост — текст системной ошибки.
 func TestSettingsGolden(t *testing.T) {
 	for _, item := range golden.Load(t, "project-settings") {
 		t.Run(item.Name, func(t *testing.T) {

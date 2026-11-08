@@ -12,7 +12,7 @@ import (
 	"songframe-go/internal/mediaproviders"
 )
 
-// Распознавание оплаты пакета (production-workflow-apply.ts оригинала). Неопознанная оплата тоже
+// Распознавание оплаты пакета. Неопознанная оплата тоже
 // считается оплатой: платные попытки никогда не откатываются и не заменяются. Исключения задают
 // только проверенные папки image-попыток из истории workflow.json (ImageRoots).
 
@@ -32,16 +32,16 @@ var (
 		"outputs_pending", "watermark_free_pending", "downloaded", "failed"}
 )
 
-// ImageRoot — проверенная image-попытка пакета: папка от пакета, SHA-256 замороженного запроса и
-// опора. Оригиналы изображений в ней не мешают Apply описания или промпта (45g.2 защищает их при
-// замене пакета).
+// ImageRoot — проверенная image-попытка пакета: папка от пакета, SHA-256 зафиксированного запроса
+// и опора. Оригиналы изображений в ней не мешают Apply описания или промпта (журнал замены пакета
+// защищает их, journal.go).
 type ImageRoot struct {
 	RequestDir    string
 	RequestSha256 string
 	FrameID       string
 }
 
-// packageWorkflow — workflow(directory) оригинала: workflow.json пакета; {} без файла,
+// packageWorkflow читает workflow.json пакета; {} без файла,
 // повреждённый документ или не объект — ошибка.
 func packageWorkflow(directory string) (*jscompat.Object, error) {
 	path := filepath.Join(directory, "workflow.json")
@@ -64,7 +64,7 @@ func nested(path, parent string) bool {
 	return path == parent || strings.HasPrefix(path, parent+string(os.PathSeparator))
 }
 
-// attemptsPaid — attemptsPaid оригинала: в каталоге или его подкаталогах есть оригинал платной
+// attemptsPaid сообщает, что в каталоге или его подкаталогах есть оригинал платной
 // попытки либо attempt.json не в состоянии prepared без generation_id (неразборчивый — тоже
 // оплата). Каталоги excluded пропускаются.
 func attemptsPaid(directory string, excluded []string) (bool, error) {
@@ -98,11 +98,11 @@ func attemptsPaid(directory string, excluded []string) (bool, error) {
 	return false, nil
 }
 
-// ImageRoots — imageRoots оригинала: проверенные image-попытки из истории image_requests
+// ImageRoots возвращает проверенные image-попытки из истории image_requests
 // workflow.json пакета directory. Запись истории должна указывать на существующую папку внутри
 // пакета без ссылок, не пересекаться с другими и с video request_dir, совпадать по SHA и виду
 // запроса и не содержать видео или вложенной неизвестной оплаты. Любое нарушение — ошибка с
-// текстом productionTexts.main.apply. workflow nil — прочитать workflow.json.
+// текстом применения предложения. workflow nil — прочитать workflow.json.
 func ImageRoots(directory string, workflow *jscompat.Object) ([]ImageRoot, error) {
 	if workflow == nil {
 		var err error
@@ -203,7 +203,7 @@ func paidProvider(value any) bool {
 	return info.Paid
 }
 
-// PackageVideoPaid — productionPackageVideoPaid оригинала: пакет уже отправлял видео (этап после
+// PackageVideoPaid сообщает, что пакет уже отправлял видео (этап после
 // отправки) или содержит неопознанную оплату вне проверенных image-попыток. Ошибка проверки —
 // тоже оплата: продолжение такого пакета возможно только новой попыткой.
 func PackageVideoPaid(directory string) bool {

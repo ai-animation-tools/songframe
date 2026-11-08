@@ -1,5 +1,5 @@
-// Package pyargparse — argparse CPython 3.12 с подкомандами для перенесённых CLI платной попытки
-// (media_request.py, cost_check.py): parser.add_subparsers(dest=..., required=True), у подкоманд —
+// Package pyargparse — argparse CPython 3.12 с подкомандами для CLI платной попытки
+// (prog media_request.py, cost_check.py): parser.add_subparsers(dest=..., required=True), у подкоманд —
 // опции store_true, с одним значением или nargs="+", required=True, choices, type=float и одна
 // взаимоисключающая группа (в том числе required=True).
 //

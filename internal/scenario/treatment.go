@@ -12,9 +12,8 @@ import (
 	"songframe-go/internal/projectfs"
 )
 
-// writeFile — запись документа сценария. Оригинал писал treatment.json и scenes.json через
-// writeFileSync поверх файла; здесь замена атомарная (сбой не оставляет обрезанный JSON), а права
-// повторяют writeFileSync: существующий файл сохраняет свои, новый создаётся 0666 с umask.
+// writeFile — запись документа сценария (treatment.json, scenes.json). Замена атомарная: сбой не
+// оставляет обрезанный JSON. Существующий файл сохраняет свои права, новый создаётся 0666 с umask.
 // Переменная — точка подмены для тестов сбоя.
 var writeFile = func(path string, data []byte) error {
 	perm := os.FileMode(0o666)
@@ -24,7 +23,7 @@ var writeFile = func(path string, data []byte) error {
 	return projectfs.WriteFile(path, data, perm)
 }
 
-// Encode — байты файла: JSON.stringify(value, null, 2) и перевод строки.
+// Encode — байты файла: JSON с отступом в два пробела и перевод строки (формат эталонов).
 func Encode(value any) []byte { return []byte(jscompat.StringifyIndent(value, "  ") + "\n") }
 
 // round — Math.round(value * 1000) / 1000: половина округляется к +∞.
@@ -37,8 +36,8 @@ func round(value float64) float64 {
 	return result / 1000
 }
 
-// sortByStart — `[...parts].sort((a, b) => a.start - b.start)`: устойчивая сортировка, как
-// Array.prototype.sort V8, по уже проверенным конечным числам.
+// sortByStart — устойчивая сортировка частей по start (уже проверенные конечные числа); новая
+// копия, вход не меняется.
 func sortByStart(parts []any) []any {
 	sorted := append([]any(nil), parts...)
 	sort.SliceStable(sorted, func(i, j int) bool {
@@ -47,7 +46,7 @@ func sortByStart(parts []any) []any {
 	return sorted
 }
 
-// ValidateTreatment — validateTreatment для документа, уже прошедшего проверку типов
+// ValidateTreatment — содержательная проверка документа, уже прошедшего проверку типов
 // NormalizeTreatment: коды, названия, стык частей с допуском 0.06 с и конец по длительности
 // трека. duration — значение из View.Duration (число, null или иное значение как есть).
 func ValidateTreatment(treatment *jscompat.Object, duration any) ([]string, error) {
@@ -102,9 +101,9 @@ func finiteNumber(value any) bool {
 	return ok && !math.IsNaN(number) && !math.IsInf(number, 0)
 }
 
-// NormalizeTreatment — normalizeTreatment: строгая проверка типов (NormalizeTreatmentDraft), затем
-// содержательная проверка ValidateTreatment; любая проблема отклоняет документ, и её текст —
-// сообщения через пробел. Используется для ответа агента (этап 44), где принимается только
+// NormalizeTreatment — строгая проверка типов (NormalizeTreatmentDraft), затем содержательная
+// проверка ValidateTreatment; любая проблема отклоняет документ, и её текст — сообщения через
+// пробел. Используется для ответа агента, где принимается только
 // готовая к построению сцен трактовка. Файлы не пишутся.
 func NormalizeTreatment(value any, duration any) (*jscompat.Object, error) {
 	normalized, err := NormalizeTreatmentDraft(value)
@@ -121,13 +120,13 @@ func NormalizeTreatment(value any, duration any) (*jscompat.Object, error) {
 	return normalized, nil
 }
 
-// NormalizeTreatmentDraft — структурная часть normalizeTreatment: строгая проверка типов документа
+// NormalizeTreatmentDraft — структурная часть NormalizeTreatment: строгая проверка типов документа
 // и частей, затем сортировка частей по началу, trim текстов, округление границ до миллисекунд и
 // отбрасывание пустых кодов сущностей. Поля части сохраняются на своих местах; лишние поля
 // документа отбрасываются (документ строится заново из schema_version, logline и sequences).
 // Содержательные проблемы (коды, стык, длительность, пустой список частей) не проверяются:
-// их даёт ValidateTreatment. Отличие от 634fd94: оригинал не разделял эти шаги, а редактор
-// сохраняет трактовку черновиком (SaveTreatment), поэтому структурная проверка вынесена отдельно.
+// их даёт ValidateTreatment. Структурная проверка отделена, потому что редактор сохраняет
+// трактовку черновиком (SaveTreatment).
 func NormalizeTreatmentDraft(value any) (*jscompat.Object, error) {
 	document, ok := jscompat.AsObject(value)
 	if !ok || !jscompat.StrictEqual(document.Value("schema_version"), 1.0) {
@@ -208,12 +207,11 @@ func projectDuration(project string) (any, error) {
 // запись plan/treatment.json через шлюз записи. Отказ (неверная структура, шлюз, сбой записи) не
 // меняет файл. Возвращает записанный документ.
 //
-// Отличие от 634fd94: оригинал отклонял сохранение при любой проблеме validateTreatment (стык,
-// длительность, коды, пустой список частей). По просьбе пользователя редактор сохраняет черновик
-// по частям: содержательные проблемы запись не блокируют, их показывает ValidateProjectTreatment,
-// а построение каркаса сцен остаётся недоступным, пока они есть. Неверная структура по-прежнему
-// отклоняется. Длительность проекта для записи не нужна, но ViewProject читается, как в
-// оригинале: его исключение на документе другой формы по-прежнему отменяет сохранение.
+// Редактор сохраняет черновик по частям: содержательные проблемы (стык, длительность, коды,
+// пустой список частей) запись не блокируют, их показывает ValidateProjectTreatment, а построение
+// каркаса сцен остаётся недоступным, пока они есть. Неверная структура отклоняется. Длительность
+// проекта для записи не нужна, но проект всё равно читается: ошибка на документе другой формы
+// отменяет сохранение.
 func SaveTreatment(project string, input any) (*jscompat.Object, error) {
 	if _, err := projectDuration(project); err != nil {
 		return nil, err
@@ -233,7 +231,6 @@ func SaveTreatment(project string, input any) (*jscompat.Object, error) {
 // (сортировка, округление), поэтому список совпадает с проблемами файла после сохранения. Неверная
 // структура — одна проблема с текстом отказа сохранения, а не ошибка: страница показывает её в
 // том же списке. Ошибка — только исключение чтения проекта или длительность разметки другой формы.
-// Отличие от 634fd94: в оригинале метода не было — проблемы приходили отказом saveTreatment.
 func ValidateProjectTreatment(project string, input any) ([]string, error) {
 	duration, err := projectDuration(project)
 	if err != nil {

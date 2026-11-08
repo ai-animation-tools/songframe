@@ -24,7 +24,7 @@ export function CopyText(id: string): $CancellablePromise<string> {
 }
 
 /**
- * Get возвращает задание с хвостом журнала или null, если такого нет (как в оригинале).
+ * Get возвращает задание с хвостом журнала или null, если такого нет.
  */
 export function Get(id: string): $CancellablePromise<jobs$0.Info | null> {
     return $Call.ByID(2899269865, id);

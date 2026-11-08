@@ -1,10 +1,10 @@
-// Package assetpackage — перенос проверки комплекта принятого ассета из
-// tools/asset_package/asset_package.py оригинала (validate_package и разрешение файлов
-// комплекта). Комплект assets/shots/<план>/manifest.json сохраняет оригинал генерации, принятый
+// Package assetpackage проверяет комплект принятого ассета и разрешает его файлы.
+// Комплект assets/shots/<план>/manifest.json сохраняет оригинал генерации, принятый
 // монтаж, промпт, входы и рецепт воспроизведения; проверка сверяет технический контракт, SHA-256
 // файлов и длину монтажа с окном плана в реестре. Replay (replay.go) воспроизводит принятый
 // монтаж в новый файл вне assets для verify_asset_replay. Проверка только читает файлы; ошибки —
-// исключения Python с текстами оригинала.
+// исключения Python (pycompat) с фиксированными текстами: инструменты печатают их как есть, а
+// эталоны check-assets и verify-asset-replay сверяют вывод.
 package assetpackage
 
 import (
@@ -28,7 +28,7 @@ var sha256Hex = regexp.MustCompile(`^[0-9a-f]{64}$`)
 // imageSuffixes — допустимые расширения общего референса из source.
 var imageSuffixes = map[string]bool{".png": true, ".jpg": true, ".jpeg": true, ".webp": true, ".gif": true}
 
-// Тексты отказов (дословно из оригинала).
+// Тексты отказов; их показывают инструменты, формулировки зафиксированы эталонами.
 const (
 	textOutsideAsset  = "Файл комплекта находится вне папки ассета."
 	textUnknownRoot   = "Неизвестный корень файла комплекта."
@@ -62,7 +62,7 @@ func pathClass() string {
 	return "PosixPath"
 }
 
-// LocalFile — local_file(directory, name): путь внутри папки комплекта после resolve().
+// LocalFile — путь файла name внутри папки комплекта после resolve().
 func LocalFile(directory string, name any) (string, error) {
 	text, ok := name.(string)
 	if !ok {
@@ -75,7 +75,7 @@ func LocalFile(directory string, name any) (string, error) {
 	return path, nil
 }
 
-// descriptorFile — descriptor_file(directory, item, root): локальный файл либо общий референс
+// descriptorFile — файл описателя item: локальный файл комплекта либо общий референс
 // из source проекта (без абсолютного пути, «..» и выхода по ссылке; только изображения).
 func descriptorFile(directory string, descriptor *pycompat.Dict, root string) (string, error) {
 	scope, _ := pycompat.DictGet(descriptor, "root", "asset")
@@ -108,7 +108,7 @@ func descriptorFile(directory string, descriptor *pycompat.Dict, root string) (s
 	return source, nil
 }
 
-// Descriptors — descriptors(value): словари с path и sha256 в порядке обхода (сам словарь, затем
+// Descriptors — все словари с path и sha256 внутри value в порядке обхода (сам словарь, затем
 // его значения), вложенные — тоже.
 func Descriptors(value any, visit func(*pycompat.Dict) error) error {
 	switch node := value.(type) {
@@ -133,7 +133,7 @@ func Descriptors(value any, visit func(*pycompat.Dict) error) error {
 	return nil
 }
 
-// FileSHA256 — tools/common.py sha(path): SHA-256 файла потоком. Ошибка открытия — OSError.
+// FileSHA256 — SHA-256 файла потоком. Ошибка открытия — OSError.
 func FileSHA256(path string) (string, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -181,8 +181,9 @@ func checkRepeat(edit *pycompat.Dict, repeat any) error {
 	return nil
 }
 
-// ValidatePackage — validate_package(path, shot_id, root): проверенный комплект или исключение.
-// shotID пустой — без сверки кода плана; root — корень проекта (ROOT оригинала).
+// ValidatePackage — проверенный комплект path или исключение.
+// shotID пустой — без сверки кода плана; root — корень проекта, от которого разрешаются общие
+// референсы source.
 func ValidatePackage(path, shotID, root string) (*pycompat.Dict, error) {
 	text, err := pycompat.ReadText(path)
 	if err != nil {
@@ -481,7 +482,7 @@ func ValidatePackage(path, shotID, root string) (*pycompat.Dict, error) {
 	return document, nil
 }
 
-// DescriptorFile — descriptor_file(directory, item, root) для других инструментов (regenerate_shot):
+// DescriptorFile — descriptorFile для других инструментов (regenerate_shot):
 // файл описателя комплекта в его папке либо общий референс из source проекта.
 func DescriptorFile(directory string, descriptor *pycompat.Dict, root string) (string, error) {
 	return descriptorFile(directory, descriptor, root)

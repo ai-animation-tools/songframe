@@ -10,10 +10,9 @@ import (
 	"songframe-go/internal/tools"
 )
 
-// TestProjectChecksGolden запускает перенесённые проверки проекта через tools.Run на входах
-// эталонов lint-registry, check-assets, check-workspace и shot-status (образец checks-base с
-// разностью случая) и сверяет код завершения, stdout и stderr с процессом
-// `python3 -B tools/<имя>/<имя>.py --project <копия> …` оригинала. Инструменты только читают
+// TestProjectChecksGolden запускает проверки проекта через tools.Run на входах эталонов
+// lint-registry, check-assets, check-workspace и shot-status (образец checks-base с разностью
+// случая) и сверяет код завершения, stdout и stderr с ожидаемыми. Инструменты только читают
 // проект: дерево входа после запуска должно совпасть с исходным.
 func TestProjectChecksGolden(t *testing.T) {
 	for _, domain := range []string{"lint-registry", "check-assets", "check-workspace", "shot-status"} {

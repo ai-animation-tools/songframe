@@ -6,7 +6,8 @@ import (
 	"testing"
 )
 
-// TestContractProfileUsesSeparateApplicationDirectory закрепляет изоляцию от прежнего профиля.
+// TestContractProfileUsesSeparateApplicationDirectory закрепляет собственный каталог состояния
+// приложения ProfileName.
 func TestContractProfileUsesSeparateApplicationDirectory(t *testing.T) {
 	base := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", base)

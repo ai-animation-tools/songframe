@@ -87,8 +87,8 @@ export function SaveSettings(settings: agents$0.Settings | null): $CancellablePr
 }
 
 /**
- * Start запускает задание агента после проверки явного выбора и доступности агента, как
- * маршрут agents:start оригинала; итог приходит событием agents:event.
+ * Start запускает задание агента после проверки явного выбора и доступности агента; итог
+ * приходит событием agents:event.
  */
 export function Start(input: agents$0.StartInput): $CancellablePromise<agents$0.Job> {
     return $Call.ByID(3918588899, input);

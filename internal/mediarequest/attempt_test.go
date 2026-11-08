@@ -106,8 +106,8 @@ func TestSubmitUnsupported(t *testing.T) {
 	}
 }
 
-// TestWorkPathReferenceArchive — попытка референса живёт в архиве plan/reference-images/<ID>
-// (отличие от 634fd94, где такая подготовка отказывала); сам корень архива попыткой не бывает.
+// TestWorkPathReferenceArchive — попытка референса живёт в архиве plan/reference-images/<ID>;
+// сам корень архива попыткой не бывает.
 func TestWorkPathReferenceArchive(t *testing.T) {
 	root := t.TempDir()
 	attempt := filepath.Join(root, "plan", "reference-images", "session", "image-jobs", "job")

@@ -13,7 +13,7 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 
 /**
  * FileBase возвращает адрес loopback этого запуска. Адаптер получает его один раз
- * до монтирования React и дальше строит URL файлов синхронно, как local-file:// в Electron.
+ * до монтирования React и дальше строит URL файлов синхронно.
  */
 export function FileBase(): $CancellablePromise<string> {
     return $Call.ByID(3500854150);

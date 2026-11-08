@@ -36,13 +36,12 @@ import (
 	"songframe-go/internal/tools"
 )
 
-// Эталон cover-generation/cases.json снят с CoverGeneration, prepareProjectCover и
-// preparePaidCover оригинала (скрипт capture-cover.ts вне репозитория,
-// не сохранён). Тест повторяет те же шаги на Go-генераторе: провайдер-агент test-agent исполняет
-// подставной runner с очередью поведений, платный провайдер test — Go-перенос тестового сервиса
+// Эталон cover-generation/cases.json описывает шаги генератора, подготовки провайдером проекта и
+// платной подготовки. Тест проходит их на Generator: провайдер-агент test-agent исполняет
+// подставной runner с очередью поведений, платный провайдер test — тестовый сервис
 // (internal/mediatest) через настоящие media_request и cost_check. Сверяются результат или текст
 // ошибки шага, сессия после шага, деревья временной папки обложки и проекта, вызовы сервиса и
-// запуски агента с той же нормализацией, что у скрипта съёмки.
+// запуски агента с нормализацией, принятой в эталоне.
 
 // outputKeys — ключи шага, которые пишет исполнение; остальные — вход шага.
 var outputKeys = map[string]bool{"result": true, "error": true, "session": true, "rootTree": true, "projectTree": true, "calls": true, "runs": true}
@@ -107,7 +106,7 @@ func loadCases(t *testing.T) goldenCases {
 	return cases
 }
 
-// encode — JSON.stringify значения Go без экранирования HTML.
+// encode — JSON значения Go без экранирования HTML.
 func encode(t *testing.T, value any) string {
 	t.Helper()
 	var buffer bytes.Buffer
@@ -120,7 +119,7 @@ func encode(t *testing.T, value any) string {
 }
 
 // object — JSON-объект с ключами в заданном порядке: порядок появления UUID в тексте задаёт их
-// маркеры, поэтому он совпадает с порядком ключей скрипта съёмки.
+// маркеры, поэтому он совпадает с порядком ключей эталона.
 type object struct{ parts []string }
 
 func (o *object) add(t *testing.T, key string, raw string) {
@@ -189,7 +188,7 @@ func writeSpec(t *testing.T, base string, spec fileSpec, root string) {
 var textFile = regexp.MustCompile(`(^|/)session\.json$|^source/manifest\.json$|^plan/cast\.json$|\.prompt\.txt$`)
 var requestFile = regexp.MustCompile(`(^|/)request/`)
 
-// tree — дерево папки в формате скрипта съёмки; nil — папки нет.
+// tree — дерево папки в формате эталона; nil — папки нет.
 func tree(t *testing.T, directory string, skip func(string) bool) []map[string]any {
 	t.Helper()
 	if _, err := os.Stat(directory); err != nil {
@@ -276,7 +275,7 @@ var (
 	isoTime     = regexp.MustCompile(`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})`)
 )
 
-// normalize — normalize скрипта съёмки над JSON-текстом.
+// normalize — замена путей, SHA запросов, UUID и времени маркерами эталона в JSON-тексте.
 func normalize(text string, paths [][2]string, shas []string) string {
 	for _, pair := range paths {
 		text = strings.ReplaceAll(text, pair[0], pair[1])
@@ -322,9 +321,9 @@ func sortTrees(t *testing.T, text string) []byte {
 	return data
 }
 
-// gate повторяет очередь событий оригинала: фоновая генерация CoverGeneration начинается только
-// после того, как скрипт съёмки уступит управление (await в prepare, wait, waitStarted, close,
-// shutdown). Шаги generate закрывают ворота, ожидающие шаги открывают; исполнитель агента и
+// gate упорядочивает события как в эталоне: фоновая генерация начинается только после того, как
+// сценарий уступит управление (ожидание в prepare, wait, waitStarted, close, shutdown). Шаги
+// generate закрывают ворота, ожидающие шаги открывают; исполнитель агента и
 // вызовы тестового сервиса ждут открытия, поэтому запуски и вызовы относятся к тем же шагам, что
 // в эталоне, независимо от планировщика горутин.
 type gate struct {
@@ -446,8 +445,8 @@ func (r agentRunner) Run(ctx context.Context, input agentexec.CoverInput) (strin
 	return next.Path, nil
 }
 
-// rulesService — тестовый сервис с правилами testPaidAdapter оригинала (правила Kling без
-// frameDefined, как в providers/golden_test.go).
+// rulesService — тестовый сервис с правилами testPaidAdapter из providers/golden_test.go
+// (правила платного провайдера без frameDefined).
 type rulesService struct {
 	*mediatest.Service
 	gate *gate
@@ -503,7 +502,7 @@ func mkdirs(t *testing.T, paths ...string) {
 	}
 }
 
-// TestGoldenScenarios повторяет сценарии оригинала на Go-генераторе.
+// TestGoldenScenarios проходит сценарии эталона cover-generation на Generator.
 func TestGoldenScenarios(t *testing.T) {
 	cases := loadCases(t)
 	if len(cases.Scenarios) == 0 {
@@ -524,7 +523,7 @@ func TestGoldenScenarios(t *testing.T) {
 				t.Fatal(err)
 			}
 			if len(diffs) > 0 {
-				t.Fatalf("сценарий отличается от оригинала (%d):\n%s", len(diffs), strings.Join(diffs, "\n"))
+				t.Fatalf("сценарий отличается от эталона (%d):\n%s", len(diffs), strings.Join(diffs, "\n"))
 			}
 		})
 	}
@@ -921,7 +920,7 @@ func deref(value *string) string {
 	return *value
 }
 
-// TestGoldenInspect — inspectReferenceImageInputs оригинала: порядок, повторы и отказы опор.
+// TestGoldenInspect — чтение выбранных опор: порядок, повторы и отказы.
 func TestGoldenInspect(t *testing.T) {
 	for _, raw := range loadCases(t).Inspect {
 		var item struct {
@@ -950,7 +949,7 @@ func TestGoldenInspect(t *testing.T) {
 	}
 }
 
-// TestGoldenContext — readReferenceImageContext оригинала: сохранённые файлы, черновики, пределы;
+// TestGoldenContext — контекст конструктора промпта: сохранённые файлы, черновики, пределы;
 // дерево проекта после чтения не меняется.
 func TestGoldenContext(t *testing.T) {
 	for _, raw := range loadCases(t).Context {
@@ -1013,6 +1012,6 @@ func assertOutcome(t *testing.T, raw json.RawMessage, result any, err error, aft
 		t.Fatal(diffErr)
 	}
 	if len(diffs) > 0 {
-		t.Fatalf("случай отличается от оригинала (%d):\n%s", len(diffs), strings.Join(diffs, "\n"))
+		t.Fatalf("случай отличается от эталона (%d):\n%s", len(diffs), strings.Join(diffs, "\n"))
 	}
 }

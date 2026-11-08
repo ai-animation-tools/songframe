@@ -1,4 +1,4 @@
-/** Обновление по кнопке: renderer видит только состояние, адрес пакета и путь к файлу остаются в main. */
+/** Обновление по кнопке: renderer видит только состояние, адрес пакета и путь к файлу остаются в Go. */
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { Alert, LinearProgress, Link, Paper, Stack, Typography } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
@@ -23,7 +23,7 @@ export function AppUpdates(): ReactElement {
   const poll = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   useEffect(() => {
-    // Состояние живёт в main: после перехода между страницами скачивание и найденная версия не теряются.
+    // Состояние живёт в Go: после перехода между страницами скачивание и найденная версия не теряются.
     void window.api.updates.view().then(setView);
     return () => clearInterval(poll.current);
   }, []);

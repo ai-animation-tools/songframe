@@ -19,8 +19,8 @@ type ProductionWorkflowService struct {
 	access   *agents.AccessChecker
 }
 
-// NewProductionWorkflowService оборачивает проход для Wails; access — ai.requireAccess оригинала
-// (nil — без проверки, только для тестов).
+// NewProductionWorkflowService оборачивает проход для Wails; access — проверка доступа к агенту
+// и провайдерам (nil — без проверки, только для тестов).
 func NewProductionWorkflowService(workflow *productionworkflow.Workflow, access *agents.AccessChecker) *ProductionWorkflowService {
 	return &ProductionWorkflowService{workflow: workflow, access: access}
 }
@@ -30,8 +30,8 @@ func (s *ProductionWorkflowService) View(project, shot, packageDir string) (prod
 	return wire.Done(s.workflow.View(project, shot, packageDir))
 }
 
-// Start — productionWorkflow.start: как в ipc.ts оригинала, сначала ai.requireAccess(project,
-// 'agent') — сохранённый агент, найденная программа и вход, затем запуск подготовки.
+// Start — productionWorkflow.start: сначала проверка доступа KindAgent — сохранённый агент,
+// найденная программа и вход, затем запуск подготовки.
 func (s *ProductionWorkflowService) Start(ctx context.Context, input productionworkflow.StartInput) (productionworkflow.View, error) {
 	if s.access != nil {
 		project := input.Project
@@ -42,9 +42,9 @@ func (s *ProductionWorkflowService) Start(ctx context.Context, input productionw
 	return wire.Done(s.workflow.Start(ctx, input))
 }
 
-// Apply — productionWorkflow.apply: применение готового актуального предложения к пакету. Как в
-// ipc.ts оригинала, доступ к агенту здесь не проверяется: ответ уже получен; доступ к провайдеру
-// видео проверяется внутри при подготовке запроса.
+// Apply — productionWorkflow.apply: применение готового актуального предложения к пакету. Доступ
+// к агенту здесь не проверяется: ответ уже получен; доступ к провайдеру видео проверяется внутри
+// при подготовке запроса.
 func (s *ProductionWorkflowService) Apply(ctx context.Context, project, shot, packageDir, id string) (productionworkflow.View, error) {
 	return wire.Done(s.workflow.Apply(ctx, project, shot, packageDir, id))
 }
@@ -54,10 +54,9 @@ func (s *ProductionWorkflowService) Discard(project, shot, packageDir, id string
 	return wire.Done(s.workflow.Discard(project, shot, packageDir, id))
 }
 
-// GenerateFrames — productionWorkflow.generateFrames: как в ipc.ts оригинала, сначала
-// ai.requireAccess(project, 'image') — выбранный провайдер изображений, его программа-агент или
-// вход в платного провайдера, затем следующая опора плана. Проверка выбора внутри генерации
-// оригинала (assertAiSelection) повторяла эту же и здесь не выполняется второй раз.
+// GenerateFrames — productionWorkflow.generateFrames: сначала проверка доступа KindImage —
+// выбранный провайдер изображений, его программа-агент или вход в платного провайдера, затем
+// следующая опора плана. Внутри генерации выбор второй раз не проверяется.
 func (s *ProductionWorkflowService) GenerateFrames(ctx context.Context, project, shot, packageDir string) (productionworkflow.View, error) {
 	if s.access != nil {
 		selected := project
@@ -69,7 +68,7 @@ func (s *ProductionWorkflowService) GenerateFrames(ctx context.Context, project,
 }
 
 // ImportFrames — productionWorkflow.importFrames: свои изображения опор; проверку «настоящие
-// изображения» маршрута оригинала выполняет сам проход. Доступ к ИИ не нужен.
+// изображения» выполняет сам проход. Доступ к ИИ не нужен.
 func (s *ProductionWorkflowService) ImportFrames(project, shot, packageDir string, images []productionworkflow.FrameCandidate) (productionworkflow.View, error) {
 	return wire.Done(s.workflow.ImportFrames(project, shot, packageDir, images))
 }
@@ -83,12 +82,12 @@ func NewProductionFlow(workflow *productionworkflow.Workflow) ProductionFlow {
 	return productionFlow{workflow: workflow}
 }
 
-// Busy — view(project, shot, packageDir).busy оригинала.
+// Busy сообщает, занят ли план shot (и пакет packageDir) проходом агента.
 func (f productionFlow) Busy(project, shot, packageDir string) bool {
 	return f.workflow.Busy(project, shot, packageDir)
 }
 
-// Proposals — pendingProposals оригинала с подписью proposalAttention.
+// Proposals — непринятые предложения агента по планам с подписью proposalAttention.
 func (f productionFlow) Proposals(project string) map[string]Proposal {
 	result := map[string]Proposal{}
 	for shot, summary := range f.workflow.PendingProposals(project) {

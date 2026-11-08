@@ -1,6 +1,6 @@
 /**
  * Адаптер группы productionWorkflow: все методы (view, start, apply, discard, generateFrames,
- * importFrames) перенесены в Go. Документы
+ * importFrames) вызывают Go. Документы
  * пакета и предложения проходят через json.RawMessage без изменений. Bindings подменяются
  * целиком: Wails runtime и Go не запускаются.
  */

@@ -1,8 +1,8 @@
-// Package scenario переносит вычисления по реестру сцен plan/scenes.json: наследование состояния
-// сущностей по state_from (resolveStates) и отпечаток постановки плана (sceneFingerprints).
+// Package scenario вычисляет данные по реестру сцен plan/scenes.json: наследование состояния
+// сущностей по state_from (ResolveStates) и отпечаток постановки плана (SceneFingerprints).
 //
 // Отпечаток сравнивается с scene_sha256, записанным при приёмке комплекта; он должен совпадать
-// байт в байт с оригиналом и с tools/scene_registry, иначе все принятые планы станут «устаревшими».
+// байт в байт с эталонами и с tools/scene_registry, иначе все принятые планы станут «устаревшими».
 // Поэтому реестр обрабатывается как дерево jscompat по правилам JS, включая тексты исключений:
 // ошибка вычисления состояния попадает в проблему статуса дословно.
 package scenario
@@ -96,8 +96,8 @@ func copyLevels(state *jscompat.Object) *jscompat.Object {
 	return result
 }
 
-// cloneState — clone() оригинала: независимая копия состояния; неизвестная фаза (ok=false) —
-// TypeError Object.entries(undefined).
+// cloneState — независимая копия состояния; неизвестная фаза (ok=false) — ошибка с текстом
+// TypeError Object.entries(undefined), зафиксированным эталонами.
 func cloneState(state tracked, ok bool) (tracked, error) {
 	if !ok {
 		return tracked{}, &jscompat.TypeError{Message: "Cannot convert undefined or null to object"}
@@ -167,7 +167,7 @@ type ResolvedState struct {
 	After  *jscompat.Object
 }
 
-// Object — `{ before, after }` для JSON.stringify: так оригинал сравнивает состояния планов.
+// Object — объект `{ before, after }`: в этой форме состояния планов сравниваются и сериализуются.
 func (s ResolvedState) Object() *jscompat.Object {
 	object := jscompat.NewObject()
 	object.Set("before", s.Before)
@@ -175,10 +175,10 @@ func (s ResolvedState) Object() *jscompat.Object {
 	return object
 }
 
-// ResolveStates — resolveStates: состояние каждого плана с учётом state_from (по умолчанию —
-// итог предыдущего плана, фаза same повторяет источник) и начального состояния кастинга.
-// Ключ результата — String(id) плана. Ошибка — исключение оригинала (цикл, неизвестный источник,
-// неверные изменения, TypeError на нестандартном реестре).
+// ResolveStates — состояние каждого плана с учётом state_from (по умолчанию — итог предыдущего
+// плана, фаза same повторяет источник) и начального состояния кастинга. Ключ результата —
+// String(id) плана. Ошибка — цикл, неизвестный источник, неверные изменения или TypeError на
+// нестандартном реестре; тексты ошибок зафиксированы эталонами.
 func ResolveStates(data any, initial *jscompat.Object) (*jscompat.Object, error) {
 	states, err := resolveTracked(data, initial)
 	if err != nil {
@@ -358,9 +358,9 @@ func resolveTracked(data any, initial *jscompat.Object) (*jscompat.Object, error
 // plain возвращает состояние как объект «сущность → свойство → значение» (уже в этой форме).
 func plain(state *jscompat.Object) *jscompat.Object { return state }
 
-// CanonicalJSON повторяет canonicalJson оригинала (= json.dumps(sort_keys=True, ensure_ascii=False,
-// separators=(",", ":"))): ключи по кодовым единицам UTF-16, undefined пропускается, примитивы —
-// как JSON.stringify.
+// CanonicalJSON — канонический JSON отпечатков (= json.dumps(sort_keys=True, ensure_ascii=False,
+// separators=(",", ":")) в tools/scene_registry): ключи по кодовым единицам UTF-16, undefined
+// пропускается, примитивы сериализуются по правилам jscompat.Stringify.
 func CanonicalJSON(value any) string {
 	var builder strings.Builder
 	canonical(&builder, value)

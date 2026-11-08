@@ -36,7 +36,7 @@ func (s *TimingService) View(project string) (timing.View, error) {
 	return wire.Done(timing.ViewProject(project))
 }
 
-// Save — saveTiming: проверка и нормализация по правилам оригинала, затем атомарная запись
+// Save — saveTiming: проверка и нормализация разметки (internal/timing), затем атомарная запись
 // plan/audio/timing.json через барьер записи проекта. Возвращает сохранённый документ.
 func (s *TimingService) Save(project string, input json.RawMessage) (json.RawMessage, error) {
 	value, err := jscompat.Parse(input)

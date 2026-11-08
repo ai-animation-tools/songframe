@@ -1,9 +1,9 @@
 package videoreview
 
-// Тексты, которые Go отдаёт renderer в состоянии проверки и ошибках. Источник —
-// frontend/src/shared/texts/video-review.ts (videoReviewTexts.main и heading) и
-// production.ts (productionTexts.main.proposal: пути пакета); они совпадают с 634fd94
-// дословно. Тест TestTextsMatchFrontend сверяет каждую строку со словарями TS.
+// Тексты, которые Go отдаёт renderer в состоянии проверки и ошибках. Они дословно совпадают со
+// словарями frontend/src/shared/texts/video-review.ts (videoReviewTexts.main и heading) и
+// production.ts (productionTexts.main.proposal: пути пакета); тест TestTextsMatchGolden сверяет
+// каждую строку.
 const (
 	// textHeading — название задания агента (task) и заголовок панели.
 	textHeading = "Проверка видео агентом"
@@ -20,7 +20,7 @@ const (
 	textCancelled          = "Проверка видео остановлена."
 	textSourceChanged      = "Исходное видео или материалы пакета изменились во время проверки. Запустите проверку заново."
 
-	// Пути внутри пакета (productionPath оригинала).
+	// Отказы проверки путей внутри пакета (productionPath).
 	textPathRequired  = "Нужен путь файла."
 	textParentMissing = "Не найден родитель пути."
 )
@@ -32,8 +32,8 @@ func textLinkOutsideProject(path string) string {
 	return "Ссылка ведёт за пределы проекта: " + path
 }
 
-// Сообщения подготовки кадров (tools/video_review/video_review.py). Пользователь видел их в ошибке
-// проверки как stderr инструмента: «Не удалось подготовить кадры: <причина>».
+// Сообщения подготовки кадров (Extract). Пользователь видит их в ошибке проверки:
+// «Не удалось подготовить кадры: <причина>». Тексты зафиксированы эталоном video-review-frames.
 const (
 	textFramesPrefix      = "Не удалось подготовить кадры: "
 	textMediaFailed       = "Ошибка обработки видео: "

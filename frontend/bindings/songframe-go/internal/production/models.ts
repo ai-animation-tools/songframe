@@ -77,7 +77,7 @@ export interface Keyframe {
 }
 
 /**
- * PackageView — вид рабочего пакета плана (readPackage оригинала). Документы workflow.json без
+ * PackageView — вид рабочего пакета плана. Документы workflow.json без
  * схемы (timing, pendingDecision, decision, keyframeNotes) передаются как есть.
  */
 export interface PackageView {
@@ -141,7 +141,7 @@ export interface Quote {
 }
 
 /**
- * Request — активная попытка пакета: замороженный request.json и состояние attempt.json.
+ * Request — активная попытка пакета: неизменяемый request.json и состояние attempt.json.
  * Model, Command, ModelSelection и Parameters — значения request.json как есть.
  */
 export interface Request {
@@ -155,7 +155,7 @@ export interface Request {
     "modelSelection"?: json$0.RawMessage;
 
     /**
-     * PromptText — замороженный текст запроса; в подтверждении показывается он, а не черновик.
+     * PromptText — зафиксированный текст запроса; в подтверждении показывается он, а не черновик.
      */
     "promptText": string | null;
     "parameters": json$0.RawMessage;
@@ -172,7 +172,7 @@ export interface Request {
 }
 
 /**
- * RequestInput — вход замороженного запроса: slot и role как в request.json, ImagePath —
+ * RequestInput — вход зафиксированного запроса: slot и role как в request.json, ImagePath —
  * абсолютный путь файла в папке попытки.
  */
 export interface RequestInput {

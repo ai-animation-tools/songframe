@@ -12,15 +12,15 @@ import (
 	"songframe-go/internal/pytool"
 )
 
-// interrupt — обрыв процесса посреди действия (KeyboardInterrupt съёмки): panic из точки сбоя.
+// interrupt — обрыв процесса посреди действия: panic из точки сбоя.
 type interrupt struct{}
 
-// TestGolden проигрывает сценарии media_request.py оригинала (testdata/golden/media-request).
+// TestGolden проигрывает сценарии media_request из эталонов testdata/golden/media-request.
 func TestGolden(t *testing.T) {
 	scenario.Play(t, "media-request", runStep)
 }
 
-// runStep — один процесс media_request.py съёмки: часы начинаются с 1000 с, sleep продвигает их
+// runStep — один процесс media_request сценария: часы начинаются с 1000 с, sleep продвигает их
 // без паузы; сбой fault вносится через hooks или удерживаемый замок попытки.
 func runStep(t *testing.T, env *scenario.Env, step scenario.Step, args []string) (output pytool.Output, interrupted bool) {
 	restore := env.Register()

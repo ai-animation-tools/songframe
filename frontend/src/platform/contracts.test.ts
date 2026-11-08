@@ -1,7 +1,6 @@
 /**
  * Общие JSON fixtures (testdata/contracts/api.json) проходят рабочий адаптер TS без нормализации:
- * Go проверяет тот же файл своим маршалингом. Снимки проекта прежнего временного моста (40.3)
- * больше не читаются в TS: их форму проверяет Go, а renderer получает DTO через window.api.
+ * Go проверяет тот же файл своим маршалингом. Снимки проекта TS не читает: их форму проверяет Go, а renderer получает DTO через window.api.
  */
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';

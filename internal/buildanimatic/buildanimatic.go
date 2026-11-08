@@ -1,6 +1,5 @@
-// Package buildanimatic — перенос tools/build_animatic/build_animatic.py и его кэша
-// tools/animatic_cache/animatic_cache.py замороженного оригинала (634fd94): детерминированная
-// сборка единственного полного аниматика plan/animatic/latest.
+// Package buildanimatic детерминированно собирает единственный полный аниматик
+// plan/animatic/latest (инструмент build_animatic) с кэшем проверенных фрагментов.
 //
 // Входы: канонический реестр plan/scenes.json (через internal/sceneregistry), принятые монтажи
 // accepted_edit.video комплектов assets/shots/<план>, карточки plan/animatic/cards (их квитанция
@@ -9,18 +8,17 @@
 // копированием видеопотока, песня накладывается один раз, главы и название — FFmetadata. До
 // успешного завершения всех проверок прежний latest не меняется; затем в него переносятся
 // ровно три файла (MP4, manifest.json, README.md), и в конце запуска обновляются текстовые
-// представления проекта (internal/projectviews), как main() оригинала.
+// представления проекта (internal/projectviews).
 //
 // Внешние программы — только FFmpeg/ffprobe через internal/mediacmd (общий запуск без консоли с
 // отменой через context); параметры кодирования Encode и тексты отказов run/probe общие с
-// accept_shot. Ошибки — исключения pycompat с типом и текстом Python: Run печатает их, как
-// parser.exit(1, …) оригинала, а не перехваченные (TypeError, AttributeError, StopIteration) —
+// accept_shot. Ошибки — исключения pycompat с типом и текстом Python: ожидаемые Run печатает
+// текстом с кодом 1, а не перехваченные (TypeError, AttributeError, StopIteration) —
 // трассировкой.
 //
-// Отличие от оригинала: пути входов в манифесте (shots[].path, path_last) всегда записываются
-// через «/». Оригинал писал str(Path.relative_to) с разделителем ОС, и в Windows проверка
-// свежести приложения (сравнение с путём через «/») навсегда считала сборку устаревшей. В Linux
-// байты не меняются.
+// Пути входов в манифесте (shots[].path, path_last) всегда записываются через «/»: проверка
+// свежести приложения сравнивает их с путём через «/», и разделитель ОС в Windows навсегда
+// делал бы сборку устаревшей.
 package buildanimatic
 
 import (
@@ -45,10 +43,10 @@ import (
 	"songframe-go/internal/sceneregistry"
 )
 
-// fps — FPS оригинала: шкала монтажа и выходного видео.
+// fps — кадровая частота шкалы монтажа и выходного видео.
 const fps = mediacmd.FPS
 
-// Тексты отказов оригинала.
+// Тексты отказов сборки; зафиксированы эталоном build-animatic.
 const (
 	textCardsReceiptMissing = "Нет манифеста карточек; обновите представления реестра сцен."
 	textCardsStale          = "Карточки устарели; обновите представления реестра сцен."
@@ -85,9 +83,9 @@ func readme(video string) string {
 		"правила находятся в [описании](../README.md).\n"
 }
 
-// run — run(args) оригинала (mediacmd.AnimaticRun): stdout программы, ненулевой код — ValueError с
-// хвостом stderr. Переменная — точка подмены для тестов, которые меняют входы между командами
-// сборки, как patch(build_animatic.run) в тестах оригинала; probe идёт через неё же.
+// run — запуск FFmpeg/ffprobe (mediacmd.AnimaticRun): stdout программы, ненулевой код — ValueError
+// с хвостом stderr. Переменная — точка подмены для тестов, которые меняют входы между командами
+// сборки; probe идёт через неё же.
 var run = mediacmd.AnimaticRun
 
 // probe — probe(path): JSON ffprobe потоков, формата и глав.
@@ -106,7 +104,7 @@ func probe(ctx context.Context, path string) (*pycompat.Dict, error) {
 	return info, nil
 }
 
-// sha — sha(path) tools/common.py: SHA-256 файла; ошибка — OSError.
+// sha — SHA-256 файла; ошибка — OSError.
 func sha(path string) (string, error) { return projectviews.FileSHA(path) }
 
 // writeText — Path.write_text(text): UTF-8 в текстовом режиме ОС (в Windows «\n» → «\r\n»).
@@ -223,7 +221,7 @@ func frame(seconds any) (pycompat.Int, error) {
 }
 
 // streamOf — next(s for s in info["streams"] if s["codec_type"] == kind): без такого потока —
-// StopIteration, как в оригинале (не перехватывается main и печатается трассировкой).
+// StopIteration (не перехватывается Run и печатается трассировкой).
 func streamOf(info any, kind string) (any, error) {
 	streams, err := item(info, "streams")
 	if err != nil {
@@ -247,7 +245,7 @@ func streamOf(info any, kind string) (any, error) {
 
 // videoMatches — (width, height, r_frame_rate, int(nb_frames)) == (1920, 1080, "30/1", frames).
 // Поля читаются до сравнения, поэтому отсутствующее поле — KeyError, а нечисловой nb_frames —
-// ValueError, как при построении кортежа в оригинале.
+// ValueError.
 func videoMatches(stream any, frames any) (bool, error) {
 	values := make([]any, 4)
 	for index, key := range []string{"width", "height", "r_frame_rate", "nb_frames"} {
@@ -609,8 +607,8 @@ func cardShot(root string, shot *pycompat.Dict, source string, receipt any, regi
 	return nil
 }
 
-// setKey — dict[key] = value для ключа из JSON: словари pycompat строковые, иной хешируемый ключ
-// оригинал принял бы, но такой путь не прошёл бы последующий local (TypeError деления Path).
+// setKey — dict[key] = value для ключа из JSON. Словари pycompat строковые; нестроковый ключ
+// здесь не встречается, потому что такой путь отвергает уже последующий local.
 func setKey(dict *pycompat.Dict, key, value any) error {
 	if _, err := pycompat.HashKey(key); err != nil {
 		return err
@@ -665,8 +663,8 @@ func cardReferences(shot, registry *pycompat.Dict) ([]any, error) {
 	return pycompat.SortByKeys(used, used)
 }
 
-// decodedAudioDuration — decoded_audio_duration(path) tools/common.py: длительность
-// декодированного звука на шкале разметки (моно 16 кГц s16le, 32000 байт в секунду). Начальная
+// decodedAudioDuration — длительность декодированного звука на шкале разметки (моно 16 кГц
+// s16le, 32000 байт в секунду). Начальная
 // метка MP3 start_time не вычитается.
 func decodedAudioDuration(ctx context.Context, path string) (pycompat.Decimal, error) {
 	result, err := mediacmd.Run(ctx, mediacmd.FFmpeg(), "-v", "error", "-i", path, "-map", "0:a:0", "-ac", "1", "-ar", "16000", "-f", "s16le", "-")
@@ -788,9 +786,9 @@ func seconds(frames int64) string {
 // metadataSpecial — символы FFmetadata, которые экранируются обратной косой чертой.
 var metadataSpecial = regexp.MustCompile(`([\\=;#])`)
 
-// Build — build(root, plan_only): проверка входов и, без planOnly, сборка latest. Отчёт — для
-// --plan-only сводка входов, иначе результат сборки (порядок ключей оригинала). out получает
-// строки «<план> из кэша|подготовлена» по мере готовности фрагментов (print оригинала). Прежний
+// Build проверяет входы и, без planOnly, собирает latest. Отчёт — для --plan-only сводка входов,
+// иначе результат сборки (порядок ключей зафиксирован эталоном). out получает строки
+// «<план> из кэша|подготовлена» по мере готовности фрагментов. Прежний
 // latest заменяется только после всех проверок; временные файлы сборки удаляются в любом случае.
 func Build(ctx context.Context, root string, planOnly bool, out func(line string) error) (*pycompat.Dict, error) {
 	root = pycompat.ResolvePath(root)
@@ -1092,7 +1090,7 @@ func checkInputs(root string, shots []*pycompat.Dict, prepared *plan, registryDi
 	return nil
 }
 
-// manifestOf — манифест latest/manifest.json в порядке полей оригинала.
+// manifestOf — манифест latest/manifest.json; порядок полей зафиксирован эталоном.
 func manifestOf(v, a any, shots []*pycompat.Dict, prepared *plan, inputs *pycompat.Dict, videoName, registryDigest, toolchain, video string) (*pycompat.Dict, error) {
 	frames, err := item(v, "nb_frames")
 	if err != nil {
@@ -1210,14 +1208,14 @@ func unlinkMissingOK(path string) error {
 	return nil
 }
 
-// Parser — argparse оригинала.
+// Parser — разбор аргументов инструмента build_animatic.
 var Parser = pycompat.ArgParser{
 	Prog:        "build_animatic.py",
 	Description: "Детерминированная сборка единственного latest; @link README.md",
 	Flags:       []pycompat.Flag{{Name: "--plan-only", Help: "Проверить входы без записи и кодирования."}},
 }
 
-// Run — main() build_animatic.py на разрешённом корне проекта: сборка (или --plan-only),
+// Run — инструмент build_animatic на разрешённом корне проекта: сборка (или --plan-only),
 // обновление текстовых представлений после сборки и отчёт JSON. ValueError, KeyError и OSError —
 // текст в stderr с кодом 1 (строки готовности фрагментов остаются в stdout); прочие исключения —
 // трассировка.

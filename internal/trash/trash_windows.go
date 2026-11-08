@@ -30,8 +30,8 @@ const (
 
 var shFileOperation = syscall.NewLazyDLL("shell32.dll").NewProc("SHFileOperationW")
 
-// move — удаление с FOF_ALLOWUNDO, то есть в корзину, без диалогов и окна прогресса
-// (как shell.trashItem Electron). pFrom — список путей с двойным нулём в конце.
+// move — удаление с FOF_ALLOWUNDO, то есть в корзину, без диалогов и окна прогресса.
+// pFrom — список путей с двойным нулём в конце.
 func move(path string) error {
 	from, err := syscall.UTF16FromString(path)
 	if err != nil {

@@ -1,5 +1,5 @@
 /**
- * Локальная модель страницы «Проверки» Go-версии: list/run/runAll, пересборка карточек (updateViews),
+ * Локальная модель страницы «Проверки»: list/run/runAll, пересборка карточек (updateViews),
  * сводка производства (production.view) и пробы стыков (buildReview/listReviews/removeReview). Задания
  * создаются выполняющимися и завершаются при следующем опросе jobs.list, как задания общего менеджера;
  * завершённая сборка пробы (не planOnly) добавляет её в список plan/batches.
@@ -10,7 +10,7 @@ import type { StoryOptions } from './storybook';
 
 export const CHECKS_PAGE_PROJECT = '/mock/checks-project';
 
-/** CHECKS Go-сервиса: те же тексты, что у оригинала. */
+/** Список проверок с теми же подписями, что отдаёт Go-сервис. */
 export const CHECKS_PAGE_LIST: CheckInfo[] = [
   { id: 'lint', label: checksTexts.sceneDataLabel, description: checksTexts.sceneDataDescription, tool: 'lint_registry', needsScenes: true },
   { id: 'views', label: checksTexts.viewsLabel, description: checksTexts.viewsDescription, tool: 'update_scene_views', needsScenes: true },

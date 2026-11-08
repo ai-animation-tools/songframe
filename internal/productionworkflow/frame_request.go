@@ -44,7 +44,7 @@ func hasAny(object *jscompat.Object, names []string) bool {
 	return false
 }
 
-// sameMediaProvider — sameMediaProvider оригинала: непустые строки совпадают без учёта регистра и
+// sameMediaProvider сравнивает ID провайдеров: непустые строки совпадают без учёта регистра и
 // крайних пробелов.
 func sameMediaProvider(left any, right string) bool {
 	text, ok := left.(string)
@@ -56,7 +56,7 @@ func sameMediaProvider(left any, right string) bool {
 	return normalized != "" && normalized == other
 }
 
-// frameImageRequest — frameImageRequest оригинала (src/main/frame-image-request.ts): черновик
+// frameImageRequest — черновик
 // платного запроса одной опоры input.Frames[0] в новой папке пакета image-<опора>-<N>. Параметры —
 // options изображений проекта; разрешение, пропорции и число результатов — из настроек или
 // значений провайдера по умолчанию (явный параметр provider-а сохраняется, конфликт выявит общий
@@ -160,8 +160,8 @@ func frameImageRequest(paid providers.Paid, input mediaapi.ImagesInput, settings
 	})
 }
 
-// prepareImageRequest — prepareImageRequest из ipc.ts оригинала: платный провайдер изображений
-// проекта готовит замороженный запрос одной опоры в папке пакета (media_request prepare через
+// prepareImageRequest — платный провайдер изображений проекта готовит неизменяемый запрос одной
+// опоры в папке пакета (media_request prepare через
 // общий платный адаптер), затем shot_workflow set-image-request записывает в workflow.json пакета
 // вопрос согласования. Отправка остаётся за общим quote/submit «Производства» и подтверждением
 // пользователя по показанному SHA и цене. Доступ к провайдеру проверяет сервис до вызова.
@@ -212,8 +212,8 @@ func (w *Workflow) prepareImageRequest(ctx context.Context, input mediaapi.Image
 	return nil
 }
 
-// generateImages — generateImages из ipc.ts оригинала: исполнитель провайдера-агента проекта
-// замораживает запрос опор (SHA), сразу отправляет его по этому SHA (отдельной цены у агента нет;
+// generateImages — исполнитель провайдера-агента проекта фиксирует запрос опор (SHA), сразу
+// отправляет его по этому SHA (отдельной цены у агента нет;
 // согласием служит нажатие кнопки) и возвращает задание менеджера агентов.
 func (w *Workflow) generateImages(project string, input mediaapi.ImagesInput) (agents.Job, error) {
 	generation, err := projectGeneration(project)
@@ -242,7 +242,7 @@ func (w *Workflow) generateImages(project string, input mediaapi.ImagesInput) (a
 	return job, nil
 }
 
-// collectImages — collectImages из ipc.ts оригинала: кандидаты задания опор собирает исполнитель
+// collectImages — кандидаты задания опор собирает исполнитель
 // провайдера, чья программа-агент выполнила задание.
 func (w *Workflow) collectImages(job agents.Job) ([]FrameCandidate, error) {
 	if w.options.Media == nil {

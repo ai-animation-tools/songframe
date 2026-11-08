@@ -11,7 +11,7 @@ import (
 	"songframe-go/internal/tools"
 )
 
-// Тексты каталога (mediaTexts оригинала).
+// Тексты каталога.
 func textInvalidCapabilities(title string) string {
 	return title + " вернул неверное объявление возможностей."
 }
@@ -25,7 +25,7 @@ func textCapabilitiesNotConfirmed(title string) string {
 }
 
 // catalogTimeout — предел запроса каталога: 30 с ожидания сервиса и 5 с на запуск инструмента
-// (--timeout 30 и timeoutMs 35000 оригинала).
+// (--timeout 30 и общий предел 35 с).
 const catalogTimeout = 35 * time.Second
 
 // Runner — запуск инструмента комплекса (tools.RunContext): тесты подменяют его.
@@ -47,7 +47,7 @@ type CatalogProblem struct {
 	Message string
 }
 
-// Catalog — MediaCatalog оригинала: объявления и отказы по командам вида медиа.
+// Catalog — объявления и отказы по командам вида медиа.
 type Catalog struct {
 	Reports  []CatalogReport
 	Problems []CatalogProblem
@@ -60,10 +60,10 @@ type catalogCall struct {
 	err     error
 }
 
-// Catalogs — единый свежий каталог моделей платного провайдера для настроек и производства
-// (readMediaCatalog оригинала). Две панели, StrictMode и возвращение на страницу ждут один текущий
-// запрос к аккаунту; завершённые ответы не кэшируются: после успеха или ошибки следующий вызов
-// получает новый каталог. Нулевое значение готово к работе и использует tools.RunContext.
+// Catalogs — единый свежий каталог моделей платного провайдера для настроек и производства. Две
+// панели, StrictMode и возвращение на страницу ждут один текущий запрос к аккаунту; завершённые
+// ответы не кэшируются: после успеха или ошибки следующий вызов получает новый каталог. Нулевое
+// значение готово к работе и использует tools.RunContext.
 type Catalogs struct {
 	Run Runner
 
@@ -165,7 +165,7 @@ func parseCatalog(value any, title string) (Catalog, error) {
 // audioSlot — имя слота звукового входа.
 var audioSlot = regexp.MustCompile(`(?i)audio|voice|sound`)
 
-// AcceptsAudioInput — acceptsAudioInput оригинала: есть ли у какой-нибудь модели каталога
+// AcceptsAudioInput сообщает, есть ли у какой-нибудь модели каталога
 // звуковой вход (слот с audio, voice или sound в имени). Без него точный липсинк по WAV невозможен.
 func AcceptsAudioInput(reports []CatalogReport) bool {
 	for _, report := range reports {

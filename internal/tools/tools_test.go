@@ -8,8 +8,8 @@ import (
 	"songframe-go/internal/tools"
 )
 
-// TestRunRejectsName — неверное и неизвестное имя отклоняются до запуска, как исключение
-// PythonLauncher оригинала (renderer получает отказ вызова, а не ToolResult).
+// TestRunRejectsName — неверное и неизвестное имя отклоняются до запуска (renderer получает
+// отказ вызова, а не ToolResult).
 func TestRunRejectsName(t *testing.T) {
 	for name, want := range map[string]string{
 		"../scene_scaffold": "Недопустимое имя инструмента: ../scene_scaffold",
@@ -22,7 +22,7 @@ func TestRunRejectsName(t *testing.T) {
 		}
 	}
 	if !tools.Available("scene_scaffold") || !tools.Available("shot_status") || tools.Available("current_project") || !tools.Available("build_animatic") || !tools.Available("export_edit_bundle") {
-		t.Error("Available не соответствует реестру перенесённых инструментов")
+		t.Error("Available не соответствует реестру инструментов")
 	}
 }
 
@@ -39,7 +39,7 @@ func TestRunWithoutProject(t *testing.T) {
 }
 
 // TestRunCommand — строка запуска: имя, разрешённый --project (ссылки разыменованы) и аргументы
-// в кавычках JSON, как command в ToolResult оригинала.
+// в кавычках JSON (поле command в ToolResult).
 func TestRunCommand(t *testing.T) {
 	real := filepath.Join(t.TempDir(), "клип")
 	if err := os.Mkdir(real, 0o755); err != nil {

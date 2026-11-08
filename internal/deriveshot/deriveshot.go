@@ -1,5 +1,5 @@
-// Package deriveshot — перенос tools/derive_shot оригинала: локальная сборка производного плана из
-// принятого клипа другого плана без платной генерации и приёмка показанных байтов.
+// Package deriveshot локально собирает производный план из принятого клипа другого плана без
+// платной генерации и принимает показанные байты (инструмент derive_shot).
 //
 // build применяет рецепт (trim, fit, still или repeat) к текущему accepted_edit обычного плана,
 // указанного в derived_from: кадры кодируются общим рецептом accept_shot, рядом собирается
@@ -11,7 +11,8 @@
 // статусом производства и представлениями, ведёт журнал journal.json с резервами и публикует папку
 // комплекта и документы; прерванная публикация откатывается (Recover), а изменённый после сбоя файл
 // останавливает откат. Восстановление того же журнала при открытии проекта выполняет
-// internal/derivedworkflow. Вывод CLI (Run) — тексты, коды и JSON оригинала.
+// internal/derivedworkflow. Вывод CLI (Run) — тексты, коды и JSON зафиксированы эталоном
+// testdata/golden/derive-shot.
 package deriveshot
 
 import (
@@ -33,13 +34,13 @@ import (
 	"songframe-go/internal/sceneregistry"
 )
 
-// History — папка журналов приёмок производных планов от корня проекта (HISTORY оригинала).
+// History — папка журналов приёмок производных планов от корня проекта.
 const History = "plan/derived-history"
 
 // fps — кадровая сетка производных планов.
 var fps = pycompat.NewInt(30)
 
-// Тексты оригинала (ValueError, печатаются как есть).
+// Тексты отказов (ValueError, печатаются как есть).
 const (
 	textRelative      = "Нужен относительный путь внутри проекта."
 	textRecipeObject  = "Рецепт должен быть объектом JSON."
@@ -61,7 +62,7 @@ const (
 
 func valueError(message string) error { return pycompat.New(pycompat.ValueError, message) }
 
-// Точки подмены для тестов сбоев (patch.object в test_derive_shot оригинала): рендер кандидата,
+// Точки подмены для тестов сбоев: рендер кандидата,
 // публикация папки и файла, итоговая проверка комплекта, откат. В работе не меняются.
 var (
 	renderEdit        = applymontage.RenderEdit
@@ -71,7 +72,7 @@ var (
 	restoreHook       = restore
 )
 
-// NewID — uuid4().hex транзакции приёмки. Тесты эталонов подменяют его ID оригинала; имя временной
+// NewID — uuid4().hex транзакции приёмки. Тесты эталонов подменяют его ID из эталона; имя временной
 // папки сборки берётся из randomHex, чтобы не расходовать эту очередь.
 var NewID = randomHex
 
@@ -127,7 +128,7 @@ func pathText(value any) (string, error) {
 	return text, nil
 }
 
-// projectPath — project_path(root, value, prefix): пути рецепта и результата переносимы и остаются
+// projectPath проверяет, что пути рецепта и результата переносимы и остаются
 // в выбранном проекте. Пустой prefix — без проверки папки.
 func projectPath(root string, value any, prefix string) (string, error) {
 	name, err := pathText(value)
@@ -167,7 +168,7 @@ func relative(path, root string) (string, error) {
 }
 
 // attributeError — AttributeError вызова метода dict у значения другого типа: необработанное
-// исключение оригинала (трассировка, код 1).
+// исключение (трассировка, код 1).
 func attributeError(value any, method string) error {
 	return pycompat.New("AttributeError", "'"+pycompat.TypeName(value)+"' object has no attribute '"+method+"'")
 }
@@ -218,8 +219,8 @@ type cutPlan struct {
 	factor      *big.Rat
 }
 
-// recipePlan — recipe_plan(recipe, frames, source_frames): все интервалы явные, fit дублирует или
-// выбирает кадры, repeat повторяет только заданный цикл. Порядок проверок — оригинала: он задаёт,
+// recipePlan — план кадров рецепта: все интервалы явные, fit дублирует или выбирает кадры,
+// repeat повторяет только заданный цикл. Порядок проверок зафиксирован эталоном: он задаёт,
 // какое сообщение увидит пользователь при нескольких ошибках сразу.
 func recipePlan(recipe, framesValue, sourceFrames any) (*cutPlan, error) {
 	data, ok := recipe.(*pycompat.Dict)

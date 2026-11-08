@@ -25,7 +25,7 @@ func scenarioReviewFailed(reason string) string {
 }
 
 // reviewProblem — проверка актуальности сценария без записи согласования: только исключения сбора
-// входов, которые ScenarioWorkflow.view оригинала выполняет до чтения записи (см. reviewInputs).
+// входов, которые сценарный проход (internal/scenarioworkflow) выполняет до чтения записи (см. reviewInputs).
 // Её используют Compute (открытие и переименование проекта) и тесты. Полная проверка с записью
 // согласования принадлежит сценарному проходу: projects.status передаёт её в ComputeWith
 // (app.ConnectScenarioReview).
@@ -36,7 +36,7 @@ func reviewProblem(path string) string {
 	return ""
 }
 
-// fixedInputs — постоянные входы сценария в порядке Set оригинала.
+// fixedInputs — постоянные входы сценария в порядке набора входов сценарного прохода.
 var fixedInputs = []string{
 	"plan/project.json",
 	"plan/production-status.json",
@@ -50,7 +50,7 @@ var fixedInputs = []string{
 	"plan/scenes.json",
 }
 
-// fixedViews — производные представления сценария (FIXED_VIEWS scenario-apply).
+// fixedViews — производные представления сценария с постоянными путями.
 var fixedViews = []string{
 	"ROADMAP.md",
 	"plan/edit-list.md",
@@ -63,13 +63,13 @@ var fixedViews = []string{
 
 var shotDirectory = regexp.MustCompile(`^M\d{2}(?:\.\d+)?$`)
 
-// reviewInputs воспроизводит части ScenarioWorkflow.inputs, которые выполняются вне try и потому
+// reviewInputs воспроизводит части сбора входов сценарного прохода, которые выполняются вне try и потому
 // превращают reviewProblem в scenarioReviewFailed: realpath проекта, перечень выходов сценария и
 // хеширование всех входов (каталог или недоступный файл на месте входа). Проблемы документов,
-// которые оригинал собирает внутри try, на результат статуса при пустой записи не влияют.
+// которые сценарный проход собирает внутри try, на результат статуса при пустой записи не влияют.
 //
-// Не воспроизведено: пути изображений из нормализованного кастинга (normalizeCast) тоже входят в
-// хешируемый набор; каталог на их месте в оригинале дал бы ту же ошибку.
+// Не воспроизведено: пути изображений из нормализованного кастинга тоже входят в хешируемый
+// набор сценарного прохода; каталог на их месте дал бы там ту же ошибку.
 func reviewInputs(path string) error {
 	project, err := jscompat.Realpath(path)
 	if err != nil {
@@ -181,7 +181,7 @@ func scenarioOutputPaths(project string) ([]string, error) {
 	return items, nil
 }
 
-// manifestSourcePaths — пути source/…, которые оригинал добавляет в набор входов, проверяя опись
+// manifestSourcePaths — пути source/…, которые сценарный проход добавляет в набор входов, проверяя опись
 // исходников внутри try: трек, текст, идея и файлы референсов по порядку до первого отказа
 // (неверная запись, путь вне source/, несовпавший или нечитаемый хеш). Путь добавляется до
 // сверки его хеша, поэтому и нечитаемый файл попадает в набор.
@@ -202,7 +202,7 @@ func manifestSourcePaths(project string) []string {
 	if !jscompat.IsRecord(raw) || !jscompat.StrictEqual(jscompat.Get(raw, "schema_version"), 1.0) || !isArray {
 		return nil
 	}
-	// accept добавляет путь и сообщает, продолжает ли оригинал проверку после сверки хеша.
+	// accept добавляет путь и сообщает, продолжается ли проверка описи после сверки хеша.
 	accept := func(entry any) bool {
 		sha, isString := jscompat.Get(entry, "sha256").(string)
 		if !jscompat.IsRecord(entry) || !isString {
@@ -255,7 +255,7 @@ func sourcePath(project string, value any) (string, bool) {
 }
 
 // hashValue — hash() сценарного процесса: SHA-256 содержимого либо null для отсутствующего файла.
-// Для source/manifest.json оригинал хеширует канонический набор входов, но здесь значение
+// Для source/manifest.json сценарный проход хеширует канонический набор входов, но здесь значение
 // сравнивается только с хешами файлов исходников, поэтому достаточно отказа чтения.
 func hashValue(project, path string) (any, error) {
 	full := filepath.Join(project, filepath.FromSlash(path))

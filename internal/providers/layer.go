@@ -18,7 +18,7 @@ import (
 	"songframe-go/internal/providers/agentexec"
 )
 
-// Тексты строк «Среды» и проверки команд (environmentTexts.main оригинала).
+// Тексты строк «Среды» и проверки команд.
 const (
 	textGitLabel        = "Git"
 	textGitHint         = "Приложению не нужен: все страницы и производство работают без него. Если Git установлен, новый проект сразу создаётся репозиторием, чтобы при желании вести историю версий клипа."
@@ -35,16 +35,16 @@ func textCommandNotFound(command string) string {
 
 const (
 	// authTimeout — проверка входа делает один бесплатный вызов сервиса; предел покрывает
-	// обновление токена (AUTH_TIMEOUT_MS оригинала). Сам вызов ждёт сервис 30 с (--timeout по
-	// умолчанию media_request auth-status).
+	// обновление токена. Сам вызов ждёт сервис 30 с (--timeout по умолчанию media_request
+	// auth-status).
 	authTimeout     = 135 * time.Second
 	authCallTimeout = 30 * time.Second
 	// loginTimeout — адаптер ждёт подтверждения в браузере до пяти минут; наружный предел оставляет
-	// время на обмен кода (LOGIN_TIMEOUT_MS оригинала).
+	// время на обмен кода.
 	loginTimeout     = 330 * time.Second
 	loginWaitTimeout = 300 * time.Second
 	// commandTimeout — первый запуск программы на Windows может идти долго (антивирус, холодный
-	// диск): запас на проверку версии (COMMAND_TIMEOUT_MS оригинала).
+	// диск): запас на проверку версии.
 	commandTimeout = 45 * time.Second
 )
 
@@ -95,7 +95,7 @@ type environmentRun struct {
 	next      int
 }
 
-// Layer — маршруты слоя провайдеров главного процесса оригинала (ipc.ts): проверка и вход к
+// Layer — маршруты слоя провайдеров приложения: проверка и вход к
 // платному провайдеру, проверка среды и возможности медиа, а также платные адаптеры и
 // исполнители опор для производства и обложек. Владеет только состоянием текущих запросов (общая
 // проверка входа, отмена ожидания входа, общая проверка среды); результаты не кэширует.
@@ -131,7 +131,7 @@ func requirePaid(provider any) (Paid, error) {
 	return paid, nil
 }
 
-// PaidMedia — общий платный адаптер провайдера и вида медиа из реестра (paidMedia оригинала);
+// PaidMedia — общий платный адаптер провайдера и вида медиа из реестра;
 // false — провайдер не платный (точный id) или не поддерживает вид медиа.
 func (l *Layer) PaidMedia(provider, kind string) (*PaidMedia, bool) {
 	if !mediaproviders.Supports(provider, kind) {
@@ -152,8 +152,8 @@ func (l *Layer) PaidMedia(provider, kind string) (*PaidMedia, bool) {
 	return media, true
 }
 
-// RequirePaidMedia — платный адаптер для замороженного запроса: id нормализуется, как
-// requirePaid оригинала, вид медиа берётся из реестра.
+// RequirePaidMedia — платный адаптер для зафиксированного запроса: id нормализуется (регистр и
+// крайние пробелы), вид медиа берётся из реестра.
 func (l *Layer) RequirePaidMedia(provider any, kind string) (*PaidMedia, error) {
 	paid, err := requirePaid(provider)
 	if err != nil {
@@ -166,7 +166,7 @@ func (l *Layer) RequirePaidMedia(provider any, kind string) (*PaidMedia, error) 
 	return media, nil
 }
 
-// AgentImages — исполнитель опор провайдера-агента по точному id (agentImages оригинала).
+// AgentImages — исполнитель опор провайдера-агента по точному id.
 func (l *Layer) AgentImages(provider string) (agentexec.Executor, bool) {
 	adapter, ok := Agent(provider)
 	if !ok || adapter.ID != provider || !mediaproviders.Supports(provider, mediaproviders.Image) {
@@ -211,7 +211,7 @@ func (l *Layer) JobAgentImages(job agents.Job) (agentexec.Executor, error) {
 	return nil, errors.New(textImageExecutorMissing)
 }
 
-// Capabilities — media:capabilities оригинала: объявления моделей провайдера для вида медиа без
+// Capabilities — объявления моделей провайдера для вида медиа без
 // загрузки референсов и генерации. Неизвестный провайдер вида даёт недоступный ответ с проблемой
 // «Провайдер не поддерживается», неизвестный вид медиа — ошибку.
 func (l *Layer) Capabilities(ctx context.Context, project, kind, provider string) (mediaapi.Capabilities, error) {
@@ -232,7 +232,7 @@ func (l *Layer) Capabilities(ctx context.Context, project, kind, provider string
 	}, nil
 }
 
-// ProviderAuth — environment:providerAuth оригинала: вход в платного провайдера (без генерации).
+// ProviderAuth — вход в платного провайдера (без генерации).
 // Повторное открытие страницы ждёт уже выполняющуюся проверку; готовый результат не сохраняется,
 // следующая проверка снова обращается к сервису. Не платный провайдер — ошибка.
 func (l *Layer) ProviderAuth(ctx context.Context, provider any) (agents.ProviderAuth, error) {
@@ -295,7 +295,7 @@ func checkAuth(paid Paid) agents.ProviderAuth {
 
 var authorizeLine = regexp.MustCompile(`^AUTHORIZE_URL (\S+)\r?$`)
 
-// Login — environment:loginProvider оригинала: вход к платному провайдеру через браузер. Новый
+// Login — вход к платному провайдеру через браузер. Новый
 // вход к тому же провайдеру отменяет прежнее ожидание. Адрес авторизации приложение открывает
 // само (OpenURL) и сообщает странице через onURL. Отмена через CancelLogin даёт ответ «Вход
 // отменён», не ошибку.
@@ -354,8 +354,8 @@ func (l *Layer) Login(ctx context.Context, provider any, onURL func(LoginURL)) (
 	return LoginResult{OK: answer.OK, Message: answer.Message}, nil
 }
 
-// CancelLogin — environment:cancelLogin оригинала: отменяет ожидание входа к провайдеру. Ключ —
-// id провайдера как есть (без нормализации), как в оригинале.
+// CancelLogin отменяет ожидание входа к провайдеру. Ключ — id провайдера как есть (без
+// нормализации).
 func (l *Layer) CancelLogin(provider string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -364,13 +364,11 @@ func (l *Layer) CancelLogin(provider string) {
 	}
 }
 
-// CheckEnvironment — environment:check оригинала: строки страницы «Среда» с прогрессом.
+// CheckEnvironment — строки страницы «Среда» с прогрессом.
 // onProgress получает каждую строку до и во время проверки; одновременные вызовы ждут одну
 // проверку, поздний подписчик сначала получает последние состояния строк. Возвращает итог в
-// порядке показа.
-//
-// Отличие от оригинала: строки инструментов, Python, библиотек, модели Whisper и FFmpeg заменены
-// страницей «Компоненты» (D-028); остаются строки платных провайдеров и Git.
+// порядке показа. Строки — платные провайдеры и Git; программы и модели проверяет страница
+// «Компоненты».
 func (l *Layer) CheckEnvironment(ctx context.Context, onProgress func(mediaapi.EnvironmentCheck)) ([]mediaapi.EnvironmentCheck, error) {
 	l.mu.Lock()
 	run := l.environment
@@ -538,6 +536,7 @@ func (l *Layer) versionProbe() (bool, string, int) {
 	if message := jscompat.Trim(stderr); message != "" {
 		return false, message, elapsed
 	}
-	// Текст ошибки execFile Node.js: «Command failed: <команда>» и пустой stderr с новой строки.
+	// Текст ошибки без stderr: «Command failed: <команда>» и пустой stderr с новой строки
+	// (формат зафиксирован эталоном «Среды»).
 	return false, "Command failed: " + command + " --version\n", elapsed
 }

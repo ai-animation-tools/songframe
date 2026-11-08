@@ -24,7 +24,7 @@ type MediaRegistry interface {
 	AllowRoot(directory string) error
 }
 
-// ProjectService реализует группу window.api.projects (Projects оригинала, src/main/projects.ts):
+// ProjectService реализует группу window.api.projects:
 // открытие делает папку текущим проектом и поднимает её в истории каталога состояния,
 // статус вычисляется заново из файлов проекта (status.Compute) и нигде не хранится.
 // Запись проекта (создание, переименование, настройки) — в project_edit.go. Сам сервис при открытии
@@ -38,7 +38,7 @@ type ProjectService struct {
 	scenario scenarioapply.Store
 	// template — шаблон нового проекта; nil означает встроенный resources.ProjectTemplate.
 	template fs.FS
-	// review — проблема актуальности сценария для projects.status (reviewProblem оригинала);
+	// review — проблема актуальности сценария для projects.status (reviewProblem);
 	// nil — только проверка входов status.Compute.
 	review func(string) string
 }
@@ -58,14 +58,14 @@ func NewProjectService(media MediaRegistry, localDir string) *ProjectService {
 }
 
 // Open — projects.open: только папка с plan/project.json и названием становится текущей.
-// Ошибка повторяет текст оригинала с абсолютным путём после resolve.
+// Текст ошибки содержит абсолютный путь после resolve.
 func (s *ProjectService) Open(path string) (status.ProjectStatus, error) {
 	target, err := filepath.Abs(path)
 	if err != nil {
 		return status.ProjectStatus{}, err
 	}
-	// Прерванная публикация ручного монтажа откатывается до проверки маркера, как projects:open
-	// оригинала; живое применение этого процесса (apply_montage) не трогается. Ошибка (ручная
+	// Прерванная публикация ручного монтажа откатывается до проверки маркера; живое применение
+	// этого процесса (apply_montage) не трогается. Ошибка (ручная
 	// правка после сбоя, повреждённый резерв) оставляет журнал и не открывает проект.
 	if err := montage.RecoverOpened(target); err != nil {
 		return status.ProjectStatus{}, err
@@ -103,7 +103,7 @@ func (s *ProjectService) Open(path string) (status.ProjectStatus, error) {
 }
 
 // Status — projects.status: полный read-only статус, включая проверку согласования сценария.
-// Ошибка соответствует исключению оригинала на повреждённых данных (например, план без id).
+// На повреждённых данных (например, план без id) возвращается ошибка, а не частичный статус.
 func (s *ProjectService) Status(path string) (status.ProjectStatus, error) {
 	if s.review != nil {
 		return wire.Done(status.ComputeWith(path, s.review))

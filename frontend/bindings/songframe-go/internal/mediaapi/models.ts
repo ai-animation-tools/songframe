@@ -21,7 +21,7 @@ export interface Capabilities {
 
 /**
  * EnvironmentCheck — EnvironmentCheck контракта (frontend/src/shared/types.ts): строка страницы
- * «Среда». Необязательные поля опускаются, как undefined в оригинале.
+ * «Среда». Необязательные поля опускаются из JSON.
  */
 export interface EnvironmentCheck {
     "id": string;

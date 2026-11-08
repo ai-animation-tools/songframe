@@ -36,7 +36,7 @@ type ImageAgents interface {
 	StartImages(input agents.StartInput, workDir string, config agents.Settings) (agents.Job, error)
 }
 
-// KeyframeImages — KeyframeImages оригинала (src/main/keyframe-images.ts): опоры провайдера-агента.
+// KeyframeImages — опоры провайдера-агента.
 // Программа-агент пишет только кандидатов в рабочую папку <LocalDir>/image-jobs/<UUID>; регистрация
 // и принятие принадлежат производственному проходу. Рабочая папка хранит закреплённые копии
 // референсов (только чтение) и job.json — связь задания с согласованным SHA запроса, по которой
@@ -50,7 +50,7 @@ type KeyframeImages struct {
 	LocalDir string
 	// Agents — менеджер агентов (StartImages).
 	Agents ImageAgents
-	// ValidateImage — дополнительная проверка кандидата декодированием (nativeImage оригинала);
+	// ValidateImage — дополнительная проверка кандидата декодированием изображения;
 	// nil — только заголовок формата.
 	ValidateImage func(path string) bool
 }
@@ -64,12 +64,10 @@ type imagesInput struct {
 	SHA256 string `json:"sha256"`
 }
 
-// base — реальный путь каталога заданий опор; создаётся при необходимости.
-//
-// Отличие от оригинала: там рабочая папка бралась от localDir без разыменования ссылок, а
-// кандидат принимался только при realpath(file) === file. Если путь каталога состояния содержит
-// символическую ссылку (например, ~/.config ссылкой на другой диск), оригинал отклонял каждого
-// кандидата. Здесь каталог разыменовывается один раз, и пути кандидатов совпадают с реальными.
+// base — реальный путь каталога заданий опор; создаётся при необходимости. Каталог
+// разыменовывается один раз: кандидат принимается только при совпадении пути с реальным, и без
+// этого символическая ссылка в пути каталога состояния (например, ~/.config на другом диске)
+// отклоняла бы каждого кандидата.
 func (k *KeyframeImages) base(create bool) (string, error) {
 	base := filepath.Join(k.LocalDir, ImageJobsFolder)
 	if create {
@@ -82,7 +80,7 @@ func (k *KeyframeImages) base(create bool) (string, error) {
 	return jscompat.Realpath(base)
 }
 
-// Start — start оригинала: готовит рабочую папку задания (копии референсов и утверждённых опор
+// Start готовит рабочую папку задания (копии референсов и утверждённых опор
 // только для чтения), запускает программу-агента провайдера и записывает job.json. Референсы — файлы
 // изображений внутри проекта (каждый копируется один раз), утверждённые опоры — изображения пакета.
 // Ошибка запуска оставляет рабочую папку без job.json: собрать её нельзя.
@@ -235,7 +233,7 @@ func fileSHA(path string) (string, error) {
 	return hex.EncodeToString(sum[:]), nil
 }
 
-// extname — path.extname(path).toLowerCase() Node.js: у имени из одной точки в начале
+// extname — расширение имени в нижнем регистре: у имени из одной точки в начале
 // (.png) расширения нет.
 func extname(path string) string {
 	name := filepath.Base(path)
@@ -247,7 +245,7 @@ func extname(path string) string {
 }
 
 // jobRecord — job.json задания job: рабочая папка и разобранная запись. found=false — такой
-// записи нет (повреждённые и чужие записи пропускаются, как в оригинале).
+// записи нет (повреждённые и чужие записи пропускаются).
 func (k *KeyframeImages) jobRecord(job agents.Job) (directory string, record any, found bool, err error) {
 	base, err := k.base(false)
 	if err != nil || base == "" {
@@ -274,16 +272,13 @@ func (k *KeyframeImages) jobRecord(job agents.Job) (directory string, record any
 	return "", nil, false, nil
 }
 
-// Collect — collect оригинала: кандидаты завершённого задания job в порядке согласованных опор.
+// Collect возвращает кандидатов завершённого задания job в порядке согласованных опор.
 // Проверяются целостность записи и закреплённых входов, контракт
 // ответа программы и каждый файл: обычное изображение внутри рабочей папки (не ссылка, не копия
-// входа), расширение по фактическому формату, ровно согласованные опоры.
-//
-// Отличия от оригинала (исправленные недочёты): ответ не JSON — textImagesFileListMissing вместо
-// SyntaxError V8; отсутствующий файл кандидата — textImagesFrameImageRequired вместо ошибки lstat
-// ENOENT. Эталон снят с той же правкой оригинала (testdata/golden/README.md). Сравнение
-// requestSha записи с «ожидаемым» убрано: единственный путь сбора (CollectJob исполнителя) брал
-// ожидаемый SHA из этой же записи, и проверка всегда проходила.
+// входа), расширение по фактическому формату, ровно согласованные опоры. Ответ не JSON —
+// textImagesFileListMissing, отсутствующий файл кандидата — textImagesFrameImageRequired.
+// requestSha записи отдельно не сверяется: единственный путь сбора (CollectJob исполнителя) берёт
+// ожидаемый SHA из этой же записи.
 func (k *KeyframeImages) Collect(job agents.Job) ([]mediaapi.FrameCandidate, error) {
 	if job.Status != "completed" || job.ExitCode == nil || *job.ExitCode != 0 {
 		return nil, errors.New(textImagesJobIncomplete)
@@ -395,7 +390,7 @@ func matchesFile(path string, expected any) bool {
 	return err == nil && digest == expected
 }
 
-// RequestSha — getRequestSha оригинала: SHA согласованного запроса задания job из его job.json.
+// RequestSha возвращает SHA согласованного запроса задания job из его job.json.
 // После перезапуска связь задания с запросом восстанавливается из той же записи.
 func (k *KeyframeImages) RequestSha(job agents.Job) (string, error) {
 	_, record, found, err := k.jobRecord(job)

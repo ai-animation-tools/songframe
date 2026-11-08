@@ -1,4 +1,4 @@
-/** Сведения тестового провайдера медиа `test` для реестра; используются только тестами main и renderer. */
+/** Сведения тестового провайдера медиа `test` для реестра; используются только тестами и историями. */
 import type { MediaProviderInfo } from '../media-providers';
 
 export const TEST_PROVIDER = 'test';

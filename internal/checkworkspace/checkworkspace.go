@@ -1,10 +1,9 @@
-// Package checkworkspace — перенос tools/check_workspace/check_workspace.py замороженного
-// оригинала (вместе с tools/montage_files.py): согласованность рабочего дерева проекта после
-// приёмки — карточки и квитанция карточек, лишние пакеты plan/batches и plan/awaiting, пустые
-// папки; готовые экспорты, пробы и материалы ручного монтажа не считаются остатками.
+// Package checkworkspace проверяет согласованность рабочего дерева проекта после приёмки:
+// карточки и квитанция карточек, лишние пакеты plan/batches и plan/awaiting, пустые папки;
+// готовые экспорты, пробы и материалы ручного монтажа не считаются остатками.
 //
-// Вывод совпадает с CLI оригинала (текст или JSON с --json), код 1 при несоответствиях или
-// отказе. Пакет только читает файлы проекта.
+// Вывод (текст или JSON с --json) зафиксирован эталоном testdata/golden/check-workspace, код 1
+// при несоответствиях или отказе. Пакет только читает файлы проекта.
 package checkworkspace
 
 import (
@@ -20,7 +19,7 @@ import (
 	"songframe-go/internal/sceneregistry"
 )
 
-// Parser — argparse оригинала (описание — docstring модуля).
+// Parser — разбор аргументов check_workspace; Prog и описание видны в справке и ошибках разбора.
 var Parser = pycompat.ArgParser{
 	Prog:        "check_workspace.py",
 	Description: "Проверяет согласованность рабочего дерева после приёмки: лишние пакеты, карточки, пустые папки; @link README.md",
@@ -40,7 +39,7 @@ var packageDocuments = []string{"workflow.json", "request.json", "request/reques
 // textNoScenes — отказ без реестра сцен.
 const textNoScenes = "Сначала необходимо создать сценарий: отсутствует plan/scenes.json."
 
-// readJSON — tools/common.py read_json: значение, nil для отсутствующего файла (или null),
+// readJSON — значение JSON-файла, nil для отсутствующего файла (или null),
 // damaged для повреждённого.
 func readJSON(path string) (value any, damaged bool) { return pycompat.ReadJSON(path) }
 
@@ -245,9 +244,9 @@ func newAttempt(folder, root string) bool {
 	return !(truthy(acceptedSHA) && pycompat.Equal(attemptSHA, acceptedSHA))
 }
 
-// retainedMontageFolders — retained_montage_folders(root) из tools/montage_files.py: рабочие
-// папки, нужные черновикам и экспортам ручного монтажа. Повреждённый черновик удерживает все
-// папки plan/batches и plan/awaiting: неизвестные зависимости нельзя очистить.
+// retainedMontageFolders — рабочие папки, нужные черновикам и экспортам ручного монтажа.
+// Повреждённый черновик удерживает все папки plan/batches и plan/awaiting: неизвестные
+// зависимости нельзя очистить.
 func retainedMontageFolders(root string) map[string]bool {
 	root = pycompat.ResolvePath(root)
 	retained := map[string]bool{}

@@ -6,7 +6,7 @@ import (
 	"songframe-go/internal/pycompat"
 )
 
-// TestDecimalText — str(Decimal(text)) Python 3: значения сняты интерпретатором оригинала.
+// TestDecimalText — str(Decimal(text)) Python 3: значения сняты интерпретатором Python.
 // Строка скорости попадает в фильтр setpts и в рецепт; эталоны build-review таких записей не
 // различают, поэтому формат закреплён здесь.
 func TestDecimalText(t *testing.T) {
@@ -27,7 +27,7 @@ func TestDecimalText(t *testing.T) {
 	}
 }
 
-// TestFramesHalfUp — frames(): ROUND_HALF_UP от нуля, как to_integral_value оригинала.
+// TestFramesHalfUp — frames(): ROUND_HALF_UP от нуля, как to_integral_value Decimal.
 func TestFramesHalfUp(t *testing.T) {
 	cases := map[string]int64{"0.5": 1, "1.5": 2, "2.5": 3, "-0.5": -1, "-1.5": -2, "1.49999": 1, "2.5000001": 3}
 	for input, want := range cases {

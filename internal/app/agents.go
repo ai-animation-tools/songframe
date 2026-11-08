@@ -9,7 +9,7 @@ import (
 	"songframe-go/internal/wire"
 )
 
-// AgentEvent — имя события Wails для window.api.agents.onEvent (agents:event в Electron).
+// AgentEvent — имя события Wails для window.api.agents.onEvent.
 const AgentEvent = "agents:event"
 
 // AgentsService реализует группу window.api.agents: настройки агента в settings.json каталога
@@ -67,8 +67,8 @@ func (s *AgentsService) Models(ctx context.Context, settings agents.Settings) (a
 	return wire.Done(agents.ReadModels(ctx, agents.NewAdapter(config.Provider), *config, agents.CheckOptions{}))
 }
 
-// Start запускает задание агента после проверки явного выбора и доступности агента, как
-// маршрут agents:start оригинала; итог приходит событием agents:event.
+// Start запускает задание агента после проверки явного выбора и доступности агента; итог
+// приходит событием agents:event.
 func (s *AgentsService) Start(ctx context.Context, input agents.StartInput) (agents.Job, error) {
 	project := input.Project
 	if err := s.access.RequireAccess(ctx, &project, agents.KindAgent); err != nil {

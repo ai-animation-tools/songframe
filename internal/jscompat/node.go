@@ -11,7 +11,7 @@ import (
 )
 
 // PathArg проверяет аргумент функции node:path. Нестроковое значение — ERR_INVALID_ARG_TYPE с
-// текстом Node: оригинал бросает его, например, на плане без строкового id в join().
+// текстом Node: например, его даёт join() на плане без строкового id.
 func PathArg(name string, value any) (string, error) {
 	if text, ok := value.(string); ok {
 		return text, nil
@@ -105,7 +105,7 @@ var errnoTexts = map[syscall.Errno][2]string{
 }
 
 // NodeError — ошибка node:fs: у неё, в отличие от обычного Error, есть поле code. Часть
-// оригинала различает эти два вида ошибок (`'code' in error`), например генерация обложки
+// кода различает эти два вида ошибок (`'code' in error`), например генерация обложки
 // показывает вместо текста файловой ошибки общее «не удалось прочитать файл».
 type NodeError struct {
 	// Code — код errno Node (ENOENT, EACCES, …) или UNKNOWN.
@@ -159,7 +159,7 @@ func Realpath(path string) (string, error) {
 }
 
 // ReadFileCheck повторяет отказы readFileSync без чтения содержимого: каталог даёт EISDIR,
-// недоступный файл — ошибку open. Нужен там, где оригинал хеширует файл ради одного факта отказа.
+// недоступный файл — ошибку open. Нужен там, где файл хешируется ради одного факта отказа.
 func ReadFileCheck(path string) error {
 	file, err := os.Open(path)
 	if err != nil {

@@ -13,12 +13,12 @@ import (
 	"songframe-go/internal/sceneregistry"
 )
 
-// Output — результат запуска инструмента: код завершения и потоки, как у процесса Python
-// (общий тип перенесённых инструментов, pytool.Output).
+// Output — результат запуска инструмента: код завершения и потоки (общий тип инструментов
+// tools.run, pytool.Output).
 type Output = pytool.Output
 
-// Parser — argparse оригинала: имя программы, описание и флаги в порядке объявления (от них
-// зависят строка usage и справка).
+// Parser — разбор аргументов в семантике argparse: имя программы, описание и флаги в порядке
+// объявления (от них зависят строка usage и справка, зафиксированные эталонами).
 var Parser = pycompat.ArgParser{
 	Prog:        "scene_scaffold.py",
 	Description: "Каркас plan/scenes.json из трактовки, разметки и кастинга.",
@@ -97,10 +97,10 @@ func prepare(root string, force, dryRun bool) (*pycompat.Dict, error) {
 	return BuildScenes(treatment, timing, textLines, cast, duration, existing, initial)
 }
 
-// write — запись plan/scenes.json: json.dumps(indent=2, ensure_ascii=False) + "\n". Оригинал писал
-// write_text поверх файла; здесь замена атомарная и проходит шлюз записи проекта, права прежнего
-// файла сохраняются, новый создаётся 0666 с umask, как open() Python. Строка, не кодируемая в
-// UTF-8 (одиночный суррогат), отклоняется до записи: оригинал успевал обрезать файл до нуля.
+// write — запись plan/scenes.json: json.dumps(indent=2, ensure_ascii=False) + "\n". Замена
+// атомарная и проходит шлюз записи проекта, права прежнего файла сохраняются, новый создаётся
+// 0666 с umask. Строка, не кодируемая в UTF-8 (одиночный суррогат), отклоняется до записи, и
+// прежний файл остаётся целым.
 func write(root string, data *pycompat.Dict) error {
 	encoded, err := pycompat.EncodeIndented(data)
 	if err != nil {
@@ -160,7 +160,7 @@ func report(data *pycompat.Dict, dryRun, asJSON bool) (string, error) {
 	return builder.String(), nil
 }
 
-// Run — main() инструмента на проекте root (уже разрешённом, как ROOT оригинала): разбор
+// Run — запуск инструмента на проекте root (путь уже разрешён вызывающим): разбор
 // аргументов (--force, --dry-run, --json, -h), построение, запись plan/scenes.json (кроме
 // --dry-run) и вывод. Коды: 0 — успех или справка, 1 — отказ с текстом в stderr, 2 — ошибка
 // аргументов.

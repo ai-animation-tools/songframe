@@ -26,7 +26,7 @@ func baseProject(t *testing.T) string {
 	return copyTree(t, filepath.Join(root, domain, "base"))
 }
 
-// withRun подменяет запуск команд сборки на время теста (patch(build_animatic.run) оригинала).
+// withRun подменяет запуск команд сборки на время теста.
 func withRun(t *testing.T, wrap func(next func(ctx context.Context, program string, args ...string) ([]byte, error)) func(ctx context.Context, program string, args ...string) ([]byte, error)) {
 	t.Helper()
 	saved := run
@@ -58,7 +58,7 @@ func writeFile(t *testing.T, path, text string) {
 }
 
 // TestFailedEncodingPreservesLatest — сбой финальной склейки после подготовки фрагментов не
-// трогает прежний latest, включая прежнюю HTML-страницу (test_failed_encoding_preserves_…).
+// трогает прежний latest, включая прежнюю HTML-страницу.
 func TestFailedEncodingPreservesLatest(t *testing.T) {
 	project := baseProject(t)
 	latest := filepath.Join(project, "plan/animatic/latest")
@@ -201,8 +201,8 @@ func TestInvalidMediaChecks(t *testing.T) {
 	}
 }
 
-// TestCachePartialAndCorrupted — test_partial_and_corrupted_entries_are_rebuilt оригинала:
-// повреждённая производная и потерянная квитанция пересоздаются, прерванная запись не готова.
+// TestCachePartialAndCorrupted — повреждённая производная и потерянная квитанция
+// пересоздаются, прерванная запись не считается готовой.
 func TestCachePartialAndCorrupted(t *testing.T) {
 	cache := &artifactCache{directory: t.TempDir()}
 	calls := 0

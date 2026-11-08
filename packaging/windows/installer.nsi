@@ -37,8 +37,8 @@ Unicode true
 !endif
 
 !define PRODUCT "SongFrame"
-; Папка установки и ключ удаления отличаются от Electron SongFrame (D-038): его папка
-; %LOCALAPPDATA%\Programs\SongFrame и профиль не затрагиваются.
+; Папка установки и ключ удаления — собственные имена приложения; другие папки и профили
+; установщик не затрагивает.
 !define INSTALL_NAME "SongFrame Desktop"
 !define EXE "songframe.exe"
 !define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\SongFrameDesktop"

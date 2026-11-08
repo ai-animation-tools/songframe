@@ -9,7 +9,7 @@ import (
 )
 
 // TestPythonJSONGolden сверяет модель Python с эталоном python-json/cases.json, снятым с
-// CPython 3.12 оригинала: json.loads (значения и тексты JSONDecodeError), json.dumps в форматах
+// CPython 3.12: json.loads (значения и тексты JSONDecodeError), json.dumps в форматах
 // инструментов, repr, bytes.decode("utf-8") и float(str).
 func TestPythonJSONGolden(t *testing.T) {
 	cases, ok := golden.PyFile(t, "python-json", "cases.json").([]any)

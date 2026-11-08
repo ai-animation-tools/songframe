@@ -1,9 +1,7 @@
-// Package productionworkflow — проход агента производства (ProductionWorkflow оригинала,
-// src/main/production-workflow.ts, production-proposal.ts и production-workflow-apply.ts на
-// 634fd94): один план и один пакет проходят подготовку предложений описания, видеопромпта и
-// запроса; проект меняется только отдельным Apply.
+// Package productionworkflow ведёт проход агента производства: один план и один пакет проходят
+// подготовку предложений описания, видеопромпта и запроса; проект меняется только отдельным Apply.
 //
-// Перенесены вид плана (View), запуск подготовки (Start), отклонение (Discard), применение
+// Проход даёт вид плана (View), запуск подготовки (Start), отклонение (Discard), применение
 // предложения к пакету (Apply, apply.go) под журналом замены пакета с восстановлением прерванного
 // применения при старте (journal.go), создание и импорт опор (frames.go: задание
 // провайдера-агента — keyframes.go, платный запрос одной опоры — frame_request.go), сводка
@@ -75,7 +73,7 @@ type Options struct {
 	// Media — слой провайдеров медиа для опор: исполнитель провайдера-агента и платный адаптер
 	// изображений. nil — опоры не создаются и задания опор не разбираются.
 	Media MediaLayer
-	// ValidateImage — проверка изображения декодированием (nativeImage оригинала) для референсов
+	// ValidateImage — проверка изображения декодированием для референсов
 	// платной опоры и импортируемых файлов; nil — mediafile.Decodes.
 	ValidateImage func(path string) bool
 	// VideoMedia — платный адаптер видео провайдера проекта для подготовки request-NN при Apply
@@ -86,9 +84,9 @@ type Options struct {
 	RequireVideoAccess func(ctx context.Context, project string) error
 }
 
-// Workflow — ProductionWorkflow. Методы безопасны для конкурентного вызова из сервисов Wails:
-// mu защищает записи предложений и множество busy. Врезки непрерывности и каталог моделей Start
-// получает без блокировки, а вид плана в это время сообщает busy, как в оригинале.
+// Workflow — проход агента производства. Методы безопасны для конкурентного вызова из сервисов
+// Wails: mu защищает записи предложений и множество busy. Врезки непрерывности и каталог моделей
+// Start получает без блокировки, а вид плана в это время сообщает busy.
 type Workflow struct {
 	options Options
 	store   Store
@@ -116,7 +114,7 @@ func New(options Options) *Workflow {
 	return &Workflow{options: options, store: Store{LocalDir: options.LocalDir}, busy: map[string]bool{}}
 }
 
-// Store — записи предложений этого прохода (для Apply и восстановления 45g.2).
+// Store — записи предложений этого прохода (для Apply и восстановления после перезапуска).
 func (w *Workflow) Store() Store { return w.store }
 
 // textAgentsUnavailable — запуск без менеджера агентов.
@@ -199,7 +197,7 @@ func optional(text string) *string {
 	return &text
 }
 
-// View — view оригинала: вид плана shot и пакета packageDir ("" — без пакета). Завершённое
+// View возвращает вид плана shot и пакета packageDir ("" — без пакета). Завершённое
 // задание агента переводит предложение в итоговый статус и пишет запись.
 func (w *Workflow) View(project, shot, packageDir string) (View, error) {
 	w.mu.Lock()
@@ -241,8 +239,8 @@ func (w *Workflow) view(project, shot, packageDir string) (View, error) {
 	enabled := !busy && !proposalPending && len(c.Problems) == 0 && !pending && !c.Paid
 	stage, _ := c.workflowValue("stage").(string)
 	imagePhase := strings.HasPrefix(stage, "image_")
-	// Отличие от оригинала: неприменённое предложение блокирует опоры сразу, а не отказом после
-	// выбора файла; причину reasons.frames уже называет.
+	// Неприменённое предложение блокирует опоры сразу, а не отказом после выбора файла; причину
+	// reasons.frames уже называет.
 	imageEnabled := !busy && !proposalPending && !slices.ContainsFunc(c.Problems, func(problem string) bool { return !strings.HasPrefix(problem, textVideoSettingsIncomplete) }) &&
 		!pending && !c.Paid && !imagePhase
 	scenarioApproved := w.options.IsScenarioApproved(canonical)
@@ -398,7 +396,7 @@ func framesReason(c *Context, derived, common string, imagePhase, framesApproved
 	return ""
 }
 
-// refresh — refresh оригинала: пересчитывает устаревание записи и переводит предложение
+// refresh пересчитывает устаревание записи и переводит предложение
 // выполнявшегося задания в итоговый статус (interrupted, cancelled, failed, ready, invalid).
 // Запись пишется только при смене статуса running. Возвращает задание агента записи или nil.
 func (w *Workflow) refresh(c *Context, stored *Stored) (*agents.Job, error) {
@@ -460,8 +458,8 @@ func (w *Workflow) refresh(c *Context, stored *Stored) (*agents.Job, error) {
 }
 
 // accept разбирает результат завершённого задания: предложение записывается в after до
-// проверки возможностей (как в оригинале — неподходящий запрос остаётся виден вместе с
-// причиной), у опор запоминаются SHA-256 изображений.
+// проверки возможностей (неподходящий запрос остаётся виден вместе с причиной), у опор
+// запоминаются SHA-256 изображений.
 func (w *Workflow) accept(c *Context, stored *Stored, job agents.Job) error {
 	raw := job.Result
 	if stored.ImageJob() {
@@ -511,7 +509,7 @@ type StartInput struct {
 	Stage      *string `json:"stage,omitempty"`
 }
 
-// Start — start оригинала: проверяет доступность этапа, снимает входы, получает врезки
+// Start проверяет доступность этапа, снимает входы, получает врезки
 // непрерывности и каталог моделей, запускает задание агента и записывает предложение running.
 // Доступ к агенту (выбор, программа, вход) проверяет сервис приложения до вызова.
 func (w *Workflow) Start(ctx context.Context, input StartInput) (View, error) {
@@ -823,13 +821,11 @@ func proposalTree(id, jobID, stage, before string) *jscompat.Object {
 	return proposal
 }
 
-// Discard — discard оригинала: отклоняет готовое, недопустимое или завершённое ошибкой
+// Discard отклоняет готовое, недопустимое или завершённое ошибкой
 // предложение плана. Запись заменяется отметкой discarded; история задания агента сохраняется.
-// Выполняющееся и применённое предложение не отклоняются.
-//
-// Отличие от 634fd94: задание могло завершиться после последнего показа плана, а запись ещё
-// хранит running — перед проверкой статус обновляется (refresh). Оригинал в этом случае
-// отказывал, хотя предложение уже готово.
+// Выполняющееся и применённое предложение не отклоняются. Задание могло завершиться после
+// последнего показа плана, пока запись ещё хранит running, поэтому перед проверкой статус
+// обновляется (refresh).
 func (w *Workflow) Discard(project, shot, packageDir, id string) (View, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -862,7 +858,7 @@ type Summary struct {
 	Attention string
 }
 
-// attention — proposalAttention оригинала.
+// attention — признак внимания к предложению в сводке: по статусу и устареванию.
 func attention(status string, stale bool) string {
 	switch {
 	case stale:
@@ -875,7 +871,7 @@ func attention(status string, stale bool) string {
 	return textAttentionFailed
 }
 
-// PendingProposals — pendingProposals оригинала: непринятые предложения (ready, invalid, failed)
+// PendingProposals возвращает непринятые предложения (ready, invalid, failed)
 // по планам проекта path. Записи выполнявшихся заданий сначала обновляются видом плана; записи,
 // которые уже нельзя показать (план убран из реестра или стал производным, пакет удалён,
 // применённый пакет пропал), удаляются. Записи других проектов не трогаются. Ошибки чтения —
@@ -924,7 +920,7 @@ func (w *Workflow) PendingProposals(path string) map[string]Summary {
 		if scene != nil && jscompat.GetPath(value, "proposal", "status") == "running" {
 			packageDir, _ := jscompat.Get(value, "packageDir").(string)
 			if _, err := w.view(project, scene.Value("id").(string), packageDir); err == nil {
-				// Ошибка повторного чтения оставляет прежнее значение, как catch оригинала.
+				// Ошибка повторного чтения оставляет прежнее значение.
 				if updated, err := readJSON(file); err == nil {
 					value = updated
 				}

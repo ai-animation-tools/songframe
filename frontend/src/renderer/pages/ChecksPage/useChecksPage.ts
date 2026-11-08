@@ -73,8 +73,8 @@ export function useChecksPage() {
   const runAll = (): Promise<void> =>
     start(async () => {
       const job = await window.api.checks.runAll(project, { strict, next });
-      // Итог получают только проверки, вошедшие в задание: неперенесённая проверка в общий запуск
-      // не входит и не должна показывать статус чужого задания.
+      // Итог получают только проверки, вошедшие в задание: проверка вне общего запуска
+      // туда не входит и не должна показывать статус чужого задания.
       setLastJob((prev) => ({ ...prev, ...Object.fromEntries(checks.filter((c) => job.steps.some((s) => s.tool === c.tool)).map((c) => [c.id, job.id])) }));
       return job;
     });

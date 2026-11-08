@@ -10,7 +10,7 @@ import (
 	"songframe-go/internal/pyre"
 )
 
-// fps — частота шкалы аниматика (FPS оригинала).
+// fps — частота шкалы аниматика.
 const fps = 30
 
 // Числа и форматы Python, от которых зависят байты пакета: fractions.Fraction, Decimal с контекстом
@@ -129,9 +129,9 @@ func divideDecimal(value *big.Rat) (coefficient *big.Int, exponent int) {
 	return kept, drop - shift
 }
 
-// framesAt — frames_at(seconds, rate): Fraction(str(seconds)) * rate делится как Decimal
+// framesAt — секунды в кадры: Fraction(str(seconds)) * rate делится как Decimal
 // (28 значащих цифр) и затем округляется до целого половиной от нуля (ROUND_HALF_UP).
-// Двойное округление принадлежит результату оригинала и сохраняется.
+// Двойное округление входит в формат пакета, зафиксированный эталоном.
 func framesAt(seconds any, rate *big.Rat) (*big.Int, error) {
 	value, err := parseFraction(pycompat.Str(seconds))
 	if err != nil {
@@ -172,7 +172,7 @@ func pad(value *big.Int, width int) string {
 	return sign + strings.Repeat("0", max(width-len(sign)-len(text), 0)) + text
 }
 
-// timecode — timecode(seconds): ЧЧ:ММ:СС:КК non-drop на 30 кадров/с. Деление с остатком — вниз,
+// timecode — таймкод ЧЧ:ММ:СС:КК non-drop на 30 кадров/с. Деление с остатком — вниз,
 // как // и % Python (big.Int.DivMod евклидов, при положительном делителе это то же самое).
 func timecode(seconds any) (string, error) {
 	total, err := framesAt(seconds, frameGrid)

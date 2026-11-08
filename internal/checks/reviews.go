@@ -19,7 +19,7 @@ import (
 	"songframe-go/internal/tools"
 )
 
-// Пробы стыков (checks.buildReview, listReviews, removeReview из src/main/checks.ts оригинала):
+// Пробы стыков (checks.buildReview, listReviews, removeReview):
 // сборка — задание вида review с одним шагом build_review в новую папку plan/batches/review-…;
 // список — MP4 внутри plan/batches с одноимённым JSON рецепта; удаление — только MP4 и рецепт
 // найденной пробы, опустевшая папка тоже удаляется (иначе её найдёт check_workspace).
@@ -41,13 +41,13 @@ type ReviewInfo struct {
 	CreatedAt   string   `json:"createdAt"`
 }
 
-// shotID — SHOT_ID оригинала: M05 или M05.1.
+// shotID — код плана: M05 или M05.1.
 var shotID = regexp.MustCompile(`^M\d{2}(?:\.\d+)?$`)
 
-// Now — время для имени папки пробы (подменяется в тестах). Метка — местное время, как stamp().
+// Now — время для имени папки пробы (подменяется в тестах). Метка — местное время, см. stamp.
 var Now = time.Now
 
-// stamp — stamp() оригинала: ГГГГММДД-ЧЧММСС местного времени.
+// stamp — метка папки пробы: ГГГГММДД-ЧЧММСС местного времени.
 func stamp() string { return Now().Format("20060102-150405") }
 
 // ReviewOutput — reviewOutput(project, shots, now): plan/batches/review-<планы>-<время>/review.mp4;
@@ -130,7 +130,7 @@ func (s *Service) BuildReview(project string, options ReviewOptions) (jobs.Info,
 }
 
 // RemoveReview — checks.removeReview(project, path): MP4 пробы и одноимённый рецепт найденной
-// пробы удаляются безвозвратно, как unlinkSync оригинала; соседние файлы папки сохраняются,
+// пробы удаляются безвозвратно, без корзины; соседние файлы папки сохраняются,
 // опустевшая папка удаляется. Путь — обычный файл plan/batches/<папка>/<файл> без ссылок.
 func (s *Service) RemoveReview(project, path string) error {
 	video, err := builtoutput.Checked(project, path, builtoutput.File)
@@ -155,7 +155,7 @@ func (s *Service) RemoveReview(project, path string) error {
 	if err != nil {
 		return err
 	}
-	// Шлюз записи Go-версии: незавершённая многофайловая операция проекта запрещает удаление.
+	// Шлюз записи projectfs: незавершённая многофайловая операция проекта запрещает удаление.
 	if err := projectfs.CheckWrite(project); err != nil {
 		return err
 	}

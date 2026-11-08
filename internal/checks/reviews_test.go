@@ -18,13 +18,12 @@ import (
 	"songframe-go/internal/tools"
 )
 
-// Эталон build-review/checks: сценарий checks.buildReview/listReviews/removeReview, снятый с
-// src/main/checks.ts оригинала с подставным менеджером заданий (скрипт съёмки
-// 46a-review/capture-checks-reviews.ts). Здесь менеджер настоящий: задание сборки сверяется по
+// Эталон build-review/checks: сценарий checks.buildReview/listReviews/removeReview с ожидаемыми
+// исходами шагов и заданиями сборки. Менеджер заданий настоящий: задание сборки сверяется по
 // виду, названию, проекту, подписи шага и строке «$ подпись аргументы» журнала; «ещё собирается»
 // воспроизводится отдельным заданием, которое ждёт команды сценария.
 
-// reviewStep — шаг сценария: действие и исход оригинала.
+// reviewStep — шаг сценария: действие и ожидаемый исход.
 type reviewStep struct {
 	Op      string            `json:"op"`
 	Path    string            `json:"path"`
@@ -102,7 +101,7 @@ func TestReviewsGolden(t *testing.T) {
 			t.Fatalf("шаг %d %s: ошибка %v, ожидалась %q", index, step.Op, err, *step.Error)
 		}
 	}
-	// Задания сборки по порядку и их состояние в сценарии оригинала (running до op status).
+	// Задания сборки по порядку и их состояние в сценарии эталона (running до op status).
 	outputs := []string{}
 	running := map[int]chan struct{}{}
 	for index, step := range domain.Steps {
@@ -115,7 +114,8 @@ func TestReviewsGolden(t *testing.T) {
 			var got, want any
 			_ = json.Unmarshal([]byte(mark(string(encoded))), &got)
 			_ = json.Unmarshal(step.Result, &want)
-			// NaN оригинала (Number нечислового total_frames) Wails не передаёт: в Go это 0.
+			// Нечисловой total_frames даёт в эталоне totalFrames null (NaN не сериализуется
+			// в JSON); Go отдаёт для него 0.
 			for _, item := range want.([]any) {
 				if entry := item.(map[string]any); entry["totalFrames"] == nil {
 					entry["totalFrames"] = 0.0
@@ -174,7 +174,7 @@ func TestReviewsGolden(t *testing.T) {
 			if mark(outputs[len(outputs)-1]) != output {
 				t.Fatalf("шаг %d: выход %s, ожидался %s", index, outputs[len(outputs)-1], output)
 			}
-			// Сценарий оригинала считает задание выполняющимся до op status: подставляется
+			// Сценарий эталона считает задание выполняющимся до op status: подставляется
 			// задание, которое ждёт этой команды.
 			release := make(chan struct{})
 			blocker, err := manager.Start(jobs.Spec{Kind: jobs.KindReview, Title: "ожидание", Project: project, Steps: []jobs.Step{{
@@ -252,7 +252,7 @@ func slicesIndex(list []string, value string) int {
 	return -1
 }
 
-// reviewsTree — tree() скрипта съёмки: ссылки — "symlink", каталоги — "dir", файлы — текст.
+// reviewsTree — дерево папки в формате эталона: ссылки — "symlink", каталоги — "dir", файлы — текст.
 func reviewsTree(t *testing.T, folder string, mark func(string) string) map[string]string {
 	t.Helper()
 	result := map[string]string{}

@@ -1,6 +1,6 @@
 /**
- * Настройки: блок агента работает на локальной модели agents (этап 44), обновление приложения —
- * на локальной модели updates (этап 47), переход к компонентам доступен всегда.
+ * Настройки: блок агента работает на локальной модели agents, обновление приложения —
+ * на локальной модели updates, переход к компонентам доступен всегда.
  */
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
@@ -62,7 +62,7 @@ export const Configured: Story = {
     // Аккаунт читается сразу после загрузки профиля: email и предупреждение о почти исчерпанном лимите.
     await expect(await canvas.findByText(SETTINGS_STORY_EMAIL)).toBeVisible();
     await expect(canvas.getByText(settingsTexts.limitAlmostExhausted(technicalTexts.percent('9')))).toBeVisible();
-    // Все блоки страницы перенесены, обновление показывает установленную версию.
+    // Блок обновления показывает установленную версию.
     await expect(await canvas.findByText(updatesTexts.currentVersion({ version: '1.0.0' }))).toBeVisible();
 
     await userEvent.click(canvas.getByRole('button', { name: new RegExp(`^${commonTexts.check}$`) }));

@@ -10,9 +10,9 @@ import (
 // Примитивы ImageDraw Pillow, которыми рисовалась карточка: заливка прямоугольника,
 // скруглённый прямоугольник поля референса, полупрозрачные полосы карточки опор через
 // Image.alpha_composite и смешивание маски текста. Арифметика повторяет libImaging, поэтому
-// фон, полосы и поля карточки совпадают с оригиналом побайтно.
+// фон, полосы и поля карточки совпадают с эталоном побайтно.
 
-// hexColor — цвет «#RRGGBB» (ImageColor.getrgb для констант оригинала).
+// hexColor — цвет «#RRGGBB» (как ImageColor.getrgb для констант макета).
 func hexColor(text string) [3]byte {
 	value, _ := strconv.ParseUint(text[1:], 16, 32)
 	return [3]byte{byte(value >> 16), byte(value >> 8), byte(value)}
@@ -30,7 +30,7 @@ func (m rgbImage) fillRect(x0, y0, x1, y1 int, fill [3]byte) {
 // roundedInsets — отступ заливки от края в строках 0..6 от верхней и нижней границы для
 // rounded_rectangle с radius=9 в Pillow 10.2 (углы рисует draw_pieslice с d=18, все четыре
 // угла симметричны; снято с Pillow). Карточка рисует только такой прямоугольник, поэтому
-// растеризация эллипса Pillow не переносится целиком.
+// растеризация эллипса Pillow целиком не нужна.
 var roundedInsets = [...]int{7, 5, 3, 2, 2, 1, 1}
 
 // fillRoundedRect9 — draw.rounded_rectangle((x0, y0, x1, y1), radius=9, fill).
@@ -88,7 +88,7 @@ func (m rgbImage) blendMask(mask *image.Alpha, ink [3]byte) {
 	}
 }
 
-// encodePNG — card.save(target) в PNG. Пиксели совпадают с оригиналом там, где совпадает
+// encodePNG — card.save(target) в PNG. Пиксели совпадают с эталоном там, где совпадает
 // растеризация, но байты файла другие: zlib Pillow и compress/flate сжимают по-разному.
 func (m rgbImage) encodePNG() ([]byte, error) {
 	rgba := image.NewRGBA(image.Rect(0, 0, m.width, m.height))

@@ -68,7 +68,7 @@ export interface ReferenceInput {
 
 /**
  * TextInput — текст песни или идея: файл ({path}) либо введённый текст ({text}).
- * Ровно одно поле задано; путь имеет приоритет, как 'path' in value в оригинале.
+ * Ровно одно поле задано; если есть ключ path, он имеет приоритет.
  */
 export interface TextInput {
     "path"?: string | null;
@@ -89,14 +89,14 @@ export interface View {
 
     /**
      * PinnedReferences — код референса → планы с готовыми материалами, которые его используют. Файлы
-     * таких референсов при смене типа остаются в прежней папке (SaveOptions.Pinned). Отличие от
-     * 634fd94, как и перенос файлов; заполняет internal/app через internal/referenceimage.
+     * таких референсов при смене типа остаются в прежней папке (SaveOptions.Pinned); заполняет
+     * internal/app через internal/referenceimage.
      */
     "pinnedReferences": { [_ in string]: string[] };
 
     /**
      * EntityKinds — код сущности кастинга → её тип: новый референс с тем же кодом берёт тип сущности.
-     * Отличие от 634fd94: там новый референс всегда начинался с первого типа. Без кастинга пусто.
+     * Без кастинга пусто.
      */
     "entityKinds": { [_ in string]: string };
 }

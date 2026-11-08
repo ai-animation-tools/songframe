@@ -45,7 +45,7 @@ function orderedTimingStoryLines(lines: TimingLine[]): TimingLine[] {
   return [...lines].sort((first, second) => first.start - second.start).map((line, index) => ({ ...line, id: index + 1 }));
 }
 
-/** Повторяет нормализацию ответа main, а общие правила заметок и секций берёт из рабочих чистых функций. @link src/main/timing.ts */
+/** Повторяет нормализацию ответа Go (internal/timing), а общие правила заметок и секций берёт из рабочих чистых функций. */
 export function normalizeTimingStoryFile(timing: TimingFile, view: TimingView): TimingFile {
   const lines = orderedTimingStoryLines(timing.lines).map((line) =>
     withTimingVerification({ ...line, start: round(line.start), end: round(line.end), note: (line.note ?? '').trim() })

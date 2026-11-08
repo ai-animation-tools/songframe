@@ -219,7 +219,7 @@ export const CompactInitial: Story = {
     await expect(notice).toHaveTextContent(texts.recognitionNotice);
     await expect(notice).toHaveClass('MuiAlert-standardInfo');
     await expect(notice).toBeVisible();
-    // Отличие от 634fd94: режима «Исходный трек» (распознавание речи) нет — сразу видна подготовка вокала.
+    // Выбора режима нет: разметка идёт по вокалу, поэтому сразу видна его подготовка.
     await expect(modal.queryByRole('radio')).not.toBeInTheDocument();
     await expect(modal.getByText(texts.vocalPreparation)).toBeVisible();
     await expect(modal.getByRole('button', { name: 'Настройки распознавания' })).toHaveAttribute('aria-expanded', 'false');

@@ -18,7 +18,7 @@ export interface Export {
 
 /**
  * LyricLine — MontageLyricLine: строка песни на кадровой оси трека. ID — id строки разметки как
- * есть (число в принятом формате; тип не проверяется оригиналом).
+ * есть (число в принятом формате; тип не проверяется).
  */
 export interface LyricLine {
     "id": json$0.RawMessage;
@@ -69,7 +69,7 @@ export interface Source {
 
 /**
  * View — MontageView: всё, что нужно странице монтажа. ManifestSha256 — объект «сцена → SHA-256
- * манифеста» в порядке сцен реестра (Record оригинала), поэтому отдаётся сырым JSON.
+ * манифеста» в порядке сцен реестра, поэтому отдаётся сырым JSON.
  */
 export interface View {
     "scenarioStatus": string;

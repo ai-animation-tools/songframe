@@ -24,7 +24,7 @@ import (
 	"songframe-go/internal/pycompat"
 )
 
-// Эталон export-edit-bundle снят с CLI tools/export_edit_bundle оригинала на копиях образца
+// Эталон export-edit-bundle — случаи CLI export_edit_bundle на копиях образца
 // checks-base: разность с образцом хранится в случае, сверяются код, stdout, stderr (у трассировки —
 // заголовок и последняя строка) и всё, что появилось в рабочей папке: тексты пакета побайтно, копии
 // медиа — SHA-256 и размер. Абсолютный путь рабочей папки в текстах заменён на <tmp>.
@@ -57,9 +57,9 @@ type bundleCase struct {
 	} `json:"expected"`
 }
 
-// fixedReadme — исправленные ошибки README пакета оригинала, эталон остаётся снимком оригинала:
-// файлы лежат в папке проекта, а не в репозитории, пример из чужого клипа убран, добавлено
-// пояснение о переносимости timeline.fcpxml.
+// fixedReadme приводит README пакета из эталона к текущему тексту: файлы лежат в папке проекта,
+// а не в репозитории, примера из чужого клипа нет, есть пояснение о переносимости
+// timeline.fcpxml.
 func fixedReadme(text string) string {
 	text = strings.ReplaceAll(text, "- `media/` — копии исходников, если пакет собран с `--copy`.", "- `media/` — копии исходников, если пакет собран с `--copy`; `timeline.fcpxml` ссылается на них относительными путями, поэтому папку пакета можно передавать целиком.")
 	text = strings.ReplaceAll(text, "относительны к корню репозитория;", "относительны к корню папки проекта;")
@@ -68,7 +68,7 @@ func fixedReadme(text string) string {
 
 var relativeSource = regexp.MustCompile(`src="([^"]*)"`)
 
-// absoluteSources возвращает относительные src переносимого FCPXML к абсолютному URI оригинала:
+// absoluteSources возвращает относительные src переносимого FCPXML к абсолютному URI файла:
 // эталон хранит абсолютные пути, а сравнение заодно доказывает, что относительный путь от папки
 // пакета ведёт в тот же файл.
 func absoluteSources(text, bundle string) string {
@@ -231,7 +231,7 @@ func (c bundleCase) prepare(t *testing.T, tmp string) string {
 	return project
 }
 
-// TestExportGolden — CLI оригинала: все случаи домена export-edit-bundle побайтно.
+// TestExportGolden — CLI: все случаи домена export-edit-bundle побайтно.
 func TestExportGolden(t *testing.T) {
 	var document struct {
 		Cases []bundleCase `json:"cases"`
@@ -415,7 +415,7 @@ func firstDifference(got, want string) string {
 	return "получено: " + strings.ToValidUTF8(got[from:min(index+120, len(got))], "?") + "\nожидалось: " + strings.ToValidUTF8(want[from:min(index+120, len(want))], "?")
 }
 
-// TestNumbersGolden — frames_at, timecode, rational, round и форматы float значений оригинала:
+// TestNumbersGolden — framesAt, timecode, rational, round и форматы float по значениям эталона:
 // случайные секунды, половины кадра и дроби на частотах шкалы и генерации.
 func TestNumbersGolden(t *testing.T) {
 	var document struct {
@@ -484,7 +484,7 @@ func TestFileURIWindows(t *testing.T) {
 }
 
 // TestCopyStopsOnCancel — отменённое задание не копирует медиа и завершается без текста; уже
-// начатая папка остаётся, как у процесса оригинала, снятого сигналом.
+// начатая папка остаётся, как у процесса, снятого сигналом.
 func TestCopyStopsOnCancel(t *testing.T) {
 	root := t.TempDir()
 	project := filepath.Join(root, "project")

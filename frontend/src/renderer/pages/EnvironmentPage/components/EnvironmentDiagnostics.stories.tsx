@@ -19,7 +19,7 @@ export const Loading: Story = { name: 'Первичная проверка · р
 export const Empty: Story = { name: 'Проверка вернула пустой список', args: { checks: [] } };
 export const InitialError: Story = { name: 'Ошибка до получения результатов', args: { error: 'Не удалось запустить демонстрационную проверку' } };
 export const OptionalMissing: Story = {
-  // Отличие от 634fd94: строки модели Whisper нет (D-028), «—» остаётся только у Git.
+  // «—» остаётся только у необязательного Git.
   name: 'Ресурсы доступны · Git не установлен',
   args: { checks: environmentChecks() },
   play: async ({ canvasElement }) => {

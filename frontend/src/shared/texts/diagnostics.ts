@@ -1,4 +1,4 @@
-/** Пользовательская диагностика сбоев; формат служебных журналов и отчёта остаётся в main/diagnostics.ts. */
+/** Пользовательская диагностика сбоев; формат служебных журналов и отчёта остаётся в Go (internal/diagnostics). */
 export const diagnosticsTexts = {
   crashTitle: 'SongFrame: ошибка программы',
   crashDetails: ({ details }: { details: string }) =>

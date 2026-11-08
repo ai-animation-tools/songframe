@@ -31,12 +31,12 @@ func round(value float64) float64 {
 	return result / 1000
 }
 
-// Prepare — чистая часть saveTiming(project, timing): проверяет вход по тексту и описи проекта и
+// Prepare — чистая часть сохранения разметки: проверяет вход по тексту и описи проекта и
 // строит документ для записи в plan/audio/timing.json. Строки сортируются по началу и
 // перенумеровываются, границы округляются до миллисекунд, служебная фраза заметки обновляется,
 // автоматическая музыкальная карта пересчитывается, ручные части сохраняются. Файл не пишется:
 // запись (атомарная, с сохранением прав существующего файла; новый — 0600) выполняет вызывающий,
-// байты даёт Encode. Ошибка с текстом проблем через пробел — отказ сохранения оригинала.
+// байты даёт Encode. Отказ сохранения — ошибка с текстом проблем через пробел.
 func Prepare(project string, input any) (*jscompat.Object, error) {
 	view, err := ViewProject(project)
 	if err != nil {
@@ -128,7 +128,8 @@ func Prepare(project string, input any) (*jscompat.Object, error) {
 	return result, nil
 }
 
-// Encode — байты файла, которые пишет оригинал: JSON.stringify(result, null, 2) и перевод строки.
+// Encode — байты сохраняемого файла: JSON.stringify(result, null, 2) и перевод строки (формат
+// зафиксирован эталоном timing-save).
 func Encode(result any) []byte {
 	return []byte(jscompat.StringifyIndent(result, "  ") + "\n")
 }
@@ -259,7 +260,7 @@ var (
 
 // isAutoSection — часть старой или новой автоматики: явный origin либо полная системная подпись
 // (`строки N–M` у части текста, «Вступление»/«Проигрыш после «…»» без вокала, финал до конца
-// трека). Нестроковые name/note дают TypeError вызова .match, как в оригинале.
+// трека). Нестроковые name/note дают TypeError вызова .match: сохранение отклоняется.
 func isAutoSection(section any, partNames map[string]bool) (bool, error) {
 	if origin := jscompat.Get(section, "origin"); origin != jscompat.Undefined {
 		return jscompat.StrictEqual(origin, "auto"), nil
@@ -368,7 +369,7 @@ func resolveSections(sections any, lyrics []LyricsLine, lines []any, duration an
 	return result, nil
 }
 
-// section строит автоматическую часть в порядке ключей оригинала.
+// section строит автоматическую часть; порядок ключей зафиксирован эталоном.
 func section(name string, start, end float64, note string) *jscompat.Object {
 	object := jscompat.NewObject()
 	object.Set("name", name)
@@ -483,7 +484,7 @@ func jsMax(left, right float64) float64 {
 // TimingPath — относительный путь разметки внутри проекта; его пишут сохранение редактора и черновик CTC.
 const TimingPath = "plan/audio/timing.json"
 
-// SaveProject — saveTiming(project, timing) целиком: Prepare строит документ, затем шлюз записи
+// SaveProject сохраняет разметку целиком: Prepare строит документ, затем шлюз записи
 // проверяет отсутствие незавершённых многофайловых публикаций (montage/derived), и байты Encode
 // атомарно заменяют plan/audio/timing.json (права существующего файла сохраняются, новый — 0600).
 // Отказ проверки или записи оставляет прежний файл нетронутым. Возвращает записанный документ.

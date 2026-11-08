@@ -93,7 +93,7 @@ func (klingAdapter) FrozenFields() *pycompat.Dict { return (&kling.Adapter{}).Fr
 
 func (klingAdapter) TaskTraceID() bool { return (&kling.Adapter{}).TaskTraceID() }
 
-// PromptWarningChars — PROMPT_WARNING_CHARS kling_request.py: длиннее — предупреждение shot_workflow.
+// PromptWarningChars — длина промпта Kling, сверх которой shot_workflow предупреждает.
 func (klingAdapter) PromptWarningChars() int { return kling.PromptWarningChars }
 
 func (klingAdapter) PricingData() []byte { return (&kling.Adapter{}).PricingFile() }
@@ -170,8 +170,7 @@ func (k klingAdapter) Account(ctx context.Context, timeout time.Duration) (media
 	return result, nil
 }
 
-// NormalizeInputs раскрывает короткие флаги старых снимков в слоты на месте (Python менял spec
-// и возвращал его же).
+// NormalizeInputs раскрывает короткие флаги входов спецификации в слоты на месте.
 func (k klingAdapter) NormalizeInputs(ctx context.Context, spec *pycompat.Dict, timeout time.Duration) error {
 	adapter, err := k.client()
 	if err != nil {

@@ -20,9 +20,9 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 import * as productionworkflow$0 from "../productionworkflow/models.js";
 
 /**
- * Apply — productionWorkflow.apply: применение готового актуального предложения к пакету. Как в
- * ipc.ts оригинала, доступ к агенту здесь не проверяется: ответ уже получен; доступ к провайдеру
- * видео проверяется внутри при подготовке запроса.
+ * Apply — productionWorkflow.apply: применение готового актуального предложения к пакету. Доступ
+ * к агенту здесь не проверяется: ответ уже получен; доступ к провайдеру видео проверяется внутри
+ * при подготовке запроса.
  */
 export function Apply(project: string, shot: string, packageDir: string, id: string): $CancellablePromise<productionworkflow$0.View> {
     return $Call.ByID(861844771, project, shot, packageDir, id);
@@ -36,10 +36,9 @@ export function Discard(project: string, shot: string, packageDir: string, id: s
 }
 
 /**
- * GenerateFrames — productionWorkflow.generateFrames: как в ipc.ts оригинала, сначала
- * ai.requireAccess(project, 'image') — выбранный провайдер изображений, его программа-агент или
- * вход в платного провайдера, затем следующая опора плана. Проверка выбора внутри генерации
- * оригинала (assertAiSelection) повторяла эту же и здесь не выполняется второй раз.
+ * GenerateFrames — productionWorkflow.generateFrames: сначала проверка доступа KindImage —
+ * выбранный провайдер изображений, его программа-агент или вход в платного провайдера, затем
+ * следующая опора плана. Внутри генерации выбор второй раз не проверяется.
  */
 export function GenerateFrames(project: string, shot: string, packageDir: string): $CancellablePromise<productionworkflow$0.View> {
     return $Call.ByID(616152424, project, shot, packageDir);
@@ -47,15 +46,15 @@ export function GenerateFrames(project: string, shot: string, packageDir: string
 
 /**
  * ImportFrames — productionWorkflow.importFrames: свои изображения опор; проверку «настоящие
- * изображения» маршрута оригинала выполняет сам проход. Доступ к ИИ не нужен.
+ * изображения» выполняет сам проход. Доступ к ИИ не нужен.
  */
 export function ImportFrames(project: string, shot: string, packageDir: string, images: productionworkflow$0.FrameCandidate[]): $CancellablePromise<productionworkflow$0.View> {
     return $Call.ByID(3681883518, project, shot, packageDir, images);
 }
 
 /**
- * Start — productionWorkflow.start: как в ipc.ts оригинала, сначала ai.requireAccess(project,
- * 'agent') — сохранённый агент, найденная программа и вход, затем запуск подготовки.
+ * Start — productionWorkflow.start: сначала проверка доступа KindAgent — сохранённый агент,
+ * найденная программа и вход, затем запуск подготовки.
  */
 export function Start(input: productionworkflow$0.StartInput): $CancellablePromise<productionworkflow$0.View> {
     return $Call.ByID(1180390791, input);

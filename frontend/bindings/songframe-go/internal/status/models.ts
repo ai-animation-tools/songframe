@@ -19,7 +19,7 @@ export interface Checks {
 
     /**
      * ShotsDone — планы, принятые по текущей постановке; без реестра — все комплекты с манифестом,
-     * поэтому может превышать ShotsTotal (как в оригинале).
+     * поэтому может превышать ShotsTotal.
      */
     "shotsDone": number;
     "animaticBuilt": boolean;
@@ -32,7 +32,7 @@ export interface Checks {
  */
 export interface ProjectStatus {
     /**
-     * Path — путь в том виде, в каком его передали (без resolve), как в оригинале.
+     * Path — путь в том виде, в каком его передали (без resolve): по нему renderer находит проект в списке.
      */
     "path": string;
     "state": string;

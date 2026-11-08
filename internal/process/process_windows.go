@@ -28,9 +28,8 @@ func Prepare(command *exec.Cmd) {
 	command.SysProcAttr.CreationFlags |= windows.CREATE_NO_WINDOW
 }
 
-// KillTree завершает процесс вместе с потомками через taskkill /T /F, как Electron-версия
-// (agent-command.ts killProcessTree). taskkill находит потомков только
-// через живого родителя, поэтому уже завершённый процесс не трогается (os.ErrProcessDone).
+// KillTree завершает процесс вместе с потомками через taskkill /T /F. taskkill находит потомков
+// только через живого родителя, поэтому уже завершённый процесс не трогается (os.ErrProcessDone).
 // Пока Go держит handle процесса (до Wait), его pid не может достаться другой программе.
 // taskkill запускается без окна и не дольше 5 секунд; при его сбое убивается сам процесс.
 func KillTree(process *os.Process) error {
@@ -66,8 +65,8 @@ func running(pid int) (alive, known bool) {
 }
 
 // taskkillPath берёт системный taskkill из %SystemRoot%\System32, а не из PATH или cwd.
-// Без переменной окружения используется системный каталог Windows из API (надёжнее голого имени
-// в оригинале); голое имя остаётся последним вариантом.
+// Без переменной окружения используется системный каталог Windows из API: это надёжнее голого
+// имени, которое остаётся последним вариантом.
 func taskkillPath() string {
 	if root := os.Getenv("SystemRoot"); root != "" {
 		return filepath.Join(root, "System32", "taskkill.exe")

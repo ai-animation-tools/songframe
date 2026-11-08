@@ -1,11 +1,12 @@
-// Package continuitybrief — перенос tools/continuity_brief/continuity_brief.py замороженного
-// оригинала (634fd94): врезка непрерывности для плана — состояние мира и героев словами на первый
-// или последний кадр и чек-лист «да или нет» для проверки полученного изображения.
+// Package continuitybrief строит врезку непрерывности для плана (инструмент continuity_brief):
+// состояние мира и героев словами на первый или последний кадр и чек-лист «да или нет» для
+// проверки полученного изображения.
 //
 // Текст детерминированно выводится из вычисленного состояния реестра сцен (sceneregistry) и
 // словаря свойств кастинга: приложение вкладывает абзац в задание агента для дословной вставки в
 // промпты опор и видео, поэтому контроль непрерывности не зависит от памяти агента. Вывод CLI
-// (текст, --paragraph, --json), коды завершения и тексты ошибок совпадают с оригиналом:
+// (текст, --paragraph, --json), коды завершения и тексты ошибок зафиксированы эталоном
+// testdata/golden/continuity-brief:
 // ожидаемые отказы (ValueError, OSError, KeyError) — текст в stderr и код 1, прочие исключения —
 // трассировка. Пакет только читает файлы проекта.
 package continuitybrief
@@ -22,7 +23,8 @@ import (
 	"songframe-go/internal/sceneregistry"
 )
 
-// Parser — argparse оригинала: код плана позиционным аргументом, фаза и формат вывода.
+// Parser — разбор аргументов в семантике argparse: код плана позиционным аргументом, фаза и
+// формат вывода.
 var Parser = pycompat.ArgParser{
 	Prog:        "continuity_brief.py",
 	Description: "Врезка непрерывности и чек-лист для плана.",
@@ -34,12 +36,12 @@ var Parser = pycompat.ArgParser{
 	Positionals: []pycompat.Positional{{Name: "shot", Help: "Код плана, например M37"}},
 }
 
-// phaseTitles — PHASE_TITLES: заголовок врезки по фазе плана.
+// phaseTitles — заголовок врезки по фазе плана.
 var phaseTitles = map[string]string{"before": "Состояние на первый кадр", "after": "Состояние на последний кадр"}
 
-// defaultProperties и genericProperties — DEFAULT_PROPERTIES и GENERIC_PROPERTIES оригинала
-// (tools/cast_registry/default_properties.json) моделью значений Python. Источник — встроенный
-// словарь internal/cast (побайтная копия файла оригинала), разобранный один раз.
+// defaultProperties и genericProperties — словари свойств по типу сущности и общий набор моделью
+// значений Python. Источник — встроенный словарь internal/cast/default_properties.json,
+// разобранный один раз.
 var defaultProperties, genericProperties = loadDefaults()
 
 // loadDefaults переводит встроенный словарь кастинга из модели JS в модель Python через JSON:
@@ -57,7 +59,7 @@ func loadDefaults() (*pycompat.Dict, []any) {
 }
 
 // props — словарь свойств одного типа сущности {key: свойство}: ключи — любые хешируемые
-// значения item["key"] (как dict-comprehension оригинала), поиск — по строковому ключу состояния.
+// значения item["key"] (семантика словаря Python), поиск — по строковому ключу состояния.
 type props map[string]*pycompat.Dict
 
 // get — props.get(key, {}): свойство или nil.
@@ -139,7 +141,7 @@ func entityNames(castData *pycompat.Dict) (map[string]entity, []string) {
 	return names, known
 }
 
-// entityOrder — entity_order: мир первым, дальше порядок кастинга, затем сущности, которых в
+// entityOrder — мир первым, дальше порядок кастинга, затем сущности, которых в
 // кастинге нет (по алфавиту кодовых точек).
 func entityOrder(castData *pycompat.Dict, state *pycompat.Dict) []string {
 	_, known := entityNames(castData)
@@ -268,10 +270,10 @@ func actionHeading(scene *pycompat.Dict) (string, error) {
 	return "", pycompat.Raise(pycompat.TypeError, "'%s' object is not subscriptable", pycompat.TypeName(action))
 }
 
-// Brief — brief(data, cast, sid, phase): врезка плана sid реестра data на фазу before/after.
-// castData — кастинг load_cast (nil — нет кастинга), initial — начальное состояние сущностей
-// (initial_states_for проекта). Результат — словарь {shot, phase, state, paragraph, checklist,
-// text} в порядке ключей оригинала (его печатает --json).
+// Brief — врезка плана sid реестра data на фазу before/after. castData — кастинг
+// castregistry.Load (nil — нет кастинга), initial — начальное состояние сущностей
+// (sceneregistry.InitialStatesFor проекта). Результат — словарь {shot, phase, state, paragraph,
+// checklist, text} в порядке ключей вывода --json.
 func Brief(data *pycompat.Dict, castData *pycompat.Dict, sid, phase string, initial *pycompat.Dict) (*pycompat.Dict, error) {
 	states, err := sceneregistry.SceneState(data, sid, initial)
 	if err != nil {
@@ -328,7 +330,7 @@ func Brief(data *pycompat.Dict, castData *pycompat.Dict, sid, phase string, init
 	), nil
 }
 
-// expected — исключения, которые main() оригинала перехватывает и печатает текстом с кодом 1.
+// expected — ожидаемые исключения: они печатаются текстом с кодом 1, остальные — трассировкой.
 func expected(err error) bool {
 	return pycompat.IsAny(err, pycompat.ValueError, pycompat.OSError, pycompat.KeyError)
 }
@@ -365,13 +367,13 @@ func Run(root string, args []string) pytool.Output {
 		err = printer.Print(result.Value("text").(string))
 	}
 	if err != nil {
-		// Печать вне try оригинала: UnicodeEncodeError одиночного суррогата — трассировка.
+		// Ошибка печати не входит в ожидаемые: UnicodeEncodeError одиночного суррогата — трассировка.
 		return printer.Crash(err)
 	}
 	return printer.Exit(0)
 }
 
-// build — тело try оригинала: load(), load_cast(), проверка плана и brief().
+// build — чтение реестра и кастинга, проверка наличия плана и построение врезки.
 func build(root, shot, phase string) (*pycompat.Dict, error) {
 	data, err := sceneregistry.Load(root)
 	if err != nil {
@@ -391,7 +393,7 @@ func build(root, shot, phase string) (*pycompat.Dict, error) {
 	if !found {
 		return nil, pycompat.Raise(pycompat.ValueError, "%s: сцена отсутствует в реестре.", shot)
 	}
-	// scene_state(data, sid) оригинала берёт начальное состояние initial_states_for() проекта.
+	// Начальное состояние сущностей берётся из кастинга проекта.
 	initial, err := sceneregistry.InitialStatesFor(root)
 	if err != nil {
 		return nil, err

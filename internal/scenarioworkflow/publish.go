@@ -18,7 +18,7 @@ import (
 	"songframe-go/internal/tools"
 )
 
-// Публикация сценарного предложения (publishScenario оригинала, src/main/scenario-apply.ts).
+// Публикация сценарного предложения.
 // Проход трактовки записывает только пару кастинга и трактовки (и описания в описи); проход
 // сцен сначала собирает копию проекта во временной папке (staging), записывает туда новый
 // реестр и прогоняет штатные проверки lint_registry, continuity_brief по каждому плану и фазе,
@@ -26,8 +26,8 @@ import (
 // входы проекта не изменились, в проект публикуются реестр и производные виды копии — одной
 // транзакцией журнала scenarioapply.Store (резервы, замены, откат при сбое).
 //
-// Отличие от оригинала: инструменты — Go-переносы internal/tools в процессе приложения, Python
-// не нужен; карточки копии рисует internal/animaticcards.
+// Инструменты — реализации internal/tools в процессе приложения, внешний интерпретатор не нужен;
+// карточки копии рисует internal/animaticcards.
 
 // Publication — ScenarioPublication: что публикуется и снимок входов, на котором агент готовил
 // предложение.
@@ -38,11 +38,11 @@ type Publication struct {
 	ExpectedHashes *hashes
 }
 
-// copyExtensions — COPY_EXTENSIONS: метаданные и изображения, которые нужны проверкам копии.
+// copyExtensions — метаданные и изображения, которые нужны проверкам копии.
 var copyExtensions = map[string]bool{".json": true, ".md": true, ".txt": true, ".png": true, ".jpg": true, ".jpeg": true, ".webp": true,
 	".gif": true, ".bmp": true, ".tif": true, ".tiff": true, ".avif": true, ".svg": true}
 
-// skipDirectories — SKIP_DIRECTORIES: имена, которые staging не копирует.
+// skipDirectories — имена, которые staging не копирует.
 var skipDirectories = map[string]bool{".git": true, ".local": true, "__pycache__": true, "node_modules": true, "cache": true}
 
 var kitManifest = regexp.MustCompile(`^assets/shots/M\d{2}(?:\.\d+)?/manifest\.json$`)
@@ -72,7 +72,7 @@ func fileDigest(project, relative string) (*string, error) {
 	return &text, nil
 }
 
-// verifyHashes — verifyHashes оригинала: каждый путь снимка с прежним содержимым. Для
+// verifyHashes — каждый путь снимка с прежним содержимым. Для
 // source/manifest.json достаточно совпадения отпечатка входов (обложка и время не важны).
 func verifyHashes(project string, expected *hashes) error {
 	for _, path := range expected.keys {
@@ -93,7 +93,7 @@ func verifyHashes(project string, expected *hashes) error {
 	return nil
 }
 
-// stageInputs — stageInputs оригинала: метаданные и изображения source/, plan/, assets/ и
+// stageInputs — входы копии: метаданные и изображения source/, plan/, assets/ и
 // ROADMAP.md, плюс принятые видео комплектов (их читает update_scene_views). Ссылки и
 // необычные каталоги — отказ: копия не должна подменять рабочие данные. Пути отсортированы.
 func stageInputs(project string) ([]string, error) {
@@ -196,7 +196,7 @@ func sameNames(left, right []string) bool {
 	return true
 }
 
-// jsonBytes — JSON.stringify(value, null, 2) + "\n": формат записи документов сценария.
+// jsonBytes — JSON с отступом в два пробела и переводом строки: формат записи документов сценария.
 func jsonBytes(value any) []byte { return scenario.Encode(value) }
 
 // sliceTail — String.prototype.slice(-limit) по кодовым единицам UTF-16.
@@ -229,7 +229,8 @@ func lastRune(text string) (rune, int) {
 // publisher — публикация через журнал Store каталога состояния.
 type publisher struct{ store scenarioapply.Store }
 
-// publish — publishScenario оригинала.
+// publish — публикация предложения прохода в проект: проход трактовки пишет пару документов,
+// проход сцен — проверенные реестр и производные виды копии.
 func (p publisher) publish(input Publication) error {
 	project, err := filepath.Abs(input.Project)
 	if err != nil {
@@ -328,7 +329,7 @@ func (p publisher) publishPair(project string, input Publication) error {
 	return p.commit(project, candidates)
 }
 
-// commit — changesFrom и publishChanges оригинала.
+// commit — отбор изменённых файлов (scenarioapply.Changes) и их публикация одной транзакцией журнала.
 func (p publisher) commit(project string, candidates []scenarioapply.Change) error {
 	changes, err := p.store.Changes(project, candidates)
 	if err != nil {

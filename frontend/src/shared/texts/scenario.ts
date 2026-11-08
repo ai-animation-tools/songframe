@@ -1,7 +1,7 @@
 import { commonTexts } from './common';
 import { countLabel } from '../plural';
 
-/** Тексты сценария перенесены дословно; правила владения описаны в @link ../../../docs/ui/texts.md. */
+/** Тексты сценария; правила владения описаны в @link ../../../docs/ui/texts.md. */
 export const scenarioTexts = {
   // Сообщения главного процесса сохраняют прежние Error.message и порядок проверок.
   main: {

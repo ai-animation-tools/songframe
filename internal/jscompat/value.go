@@ -1,18 +1,19 @@
-// Package jscompat воспроизводит семантику JavaScript/Node.js, от которой зависит результат
-// перенесённых функций Electron-оригинала SongFrame.
+// Package jscompat воспроизводит семантику JavaScript/Node.js, в которой записаны проектные
+// файлы и ответы приложения.
 //
-// Оригинал читает проектные JSON через JSON.parse без схемы и дальше полагается на правила JS:
-// истинность, строгое равенство, String(x), порядок свойств объекта, JSON.stringify. Поэтому
-// повреждённый или нетипичный документ даёт в оригинале вполне определённый результат (проблему,
-// «устаревший» план или исключение). Чтобы Go-версия на тех же файлах выдавала тот же JSON,
-// перенесённый код работает с деревом значений этого пакета, а не со строгими структурами Go:
+// Байты файлов проекта и ответы renderer зафиксированы эталонами testdata/golden в семантике
+// JavaScript: документ читается без схемы, а результат следует правилам JS — истинность,
+// строгое равенство, String(x), порядок свойств объекта, JSON.stringify. Поэтому и повреждённый
+// или нетипичный документ даёт вполне определённый результат (проблему, «устаревший» план или
+// исключение). Чтобы на тех же файлах получался тот же JSON, доменный код работает с деревом
+// значений этого пакета, а не со строгими структурами Go:
 //
 //   - nil — null; Undefined — отсутствующее свойство;
 //   - bool, float64 (все числа JS — double), string;
 //   - *Array и *Object — массив и объект; указатель даёт идентичность объекта, как в JS.
 //
-// Значения сравнимы оператором ==, поэтому годятся ключами map там, где оригинал использует
-// Map/Set (SameValueZero для всех значений, которые даёт JSON).
+// Значения сравнимы оператором ==, поэтому годятся ключами map вместо Map/Set JS
+// (SameValueZero для всех значений, которые даёт JSON).
 package jscompat
 
 import (
@@ -57,7 +58,7 @@ func NewObject() *Object {
 }
 
 // Get возвращает собственное свойство объекта. Свойства прототипа (toString, constructor и т. п.)
-// не моделируются: проектные данные с такими ключами оригинал тоже не ожидает.
+// не моделируются: проектные данные с такими ключами не ожидаются.
 func (o *Object) Get(key string) (any, bool) {
 	value, ok := o.values[key]
 	return value, ok
@@ -342,8 +343,8 @@ func IsArray(value any) bool {
 	return ok
 }
 
-// TypeError — исключение JS, которое перенесённый код возвращает ошибкой Go. В тех местах, где
-// оригинал ловит исключение и выводит его текст, сообщение повторяет V8 для типичных случаев.
+// TypeError — исключение JS, которое доменный код возвращает ошибкой Go. Там, где текст
+// исключения доходит до пользователя, сообщение повторяет V8 для типичных случаев.
 type TypeError struct{ Message string }
 
 func (e *TypeError) Error() string { return e.Message }
@@ -791,7 +792,7 @@ func stringify(builder *strings.Builder, value any) {
 }
 
 // Raw возвращает значение как json.RawMessage в форме JSON.stringify — для полей DTO, которые
-// оригинал отдаёт как прочитанный документ без схемы (неизвестные поля и порядок сохраняются).
+// отдаются как прочитанный документ без схемы (неизвестные поля и порядок сохраняются).
 func Raw(value any) json.RawMessage {
 	if value == Undefined {
 		return json.RawMessage("null")
@@ -799,8 +800,8 @@ func Raw(value any) json.RawMessage {
 	return json.RawMessage(Stringify(value))
 }
 
-// StringifyIndent — JSON.stringify(value, null, indent): тот же формат, что пишет оригинал в
-// проектные JSON (`JSON.stringify(data, null, 2) + '\n'` даёт побайтно тот же файл).
+// StringifyIndent — JSON.stringify(value, null, indent): формат проектных JSON
+// (`JSON.stringify(data, null, 2) + '\n'` даёт побайтно тот же файл).
 func StringifyIndent(value any, indent string) string {
 	var builder strings.Builder
 	stringifyIndent(&builder, value, indent, "")

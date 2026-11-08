@@ -23,8 +23,8 @@ import (
 
 // Тесты общей логики производства на тестовом провайдере test (internal/mediatest): платные
 // сервисы и сеть не вызываются, отправки считаются по журналу calls.jsonl тестового сервиса.
-// Проект — копия образца checks-base (tools/testdata/sample-project оригинала); пакет M03
-// готовится настоящими перенесёнными инструментами shot_workflow и media_request.
+// Проект — копия образца checks-base; пакет M03 готовится настоящими инструментами shot_workflow
+// и media_request.
 
 const pricing = `{"schema_version": 1, "currency": "credits", "models": {"test-video": {"base_credits": 2, "per_second": {"1080p": 7, "720p": null}}, "test-video-fast": {"base_credits": 0, "per_second": {"1080p": null}}}, "observed": []}`
 

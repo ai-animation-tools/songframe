@@ -18,7 +18,7 @@ import (
 // textBadField — общий текст неверного объявления параметра или слота.
 const textBadField = "who_am_i вернул неверное объявление параметров или слотов."
 
-// capabilityFields — capability_fields(values): объявленные параметры или слоты по имени с
+// capabilityFields — объявленные параметры или слоты по имени с
 // нормализованными именами полей контракта приложения (allowed, max_items).
 func capabilityFields(values any) (*pycompat.Dict, error) {
 	list, ok := values.([]any)
@@ -73,7 +73,7 @@ type catalog struct {
 	body  *pycompat.Dict
 }
 
-// capabilityCatalog — capability_catalog(timeout, commands): один снимок аккаунта обслуживает
+// capabilityCatalog — один снимок аккаунта обслуживает
 // все команды (параллельные who_am_i давали случайные частичные ошибки). Нет входа — ValueError
 // с текстом входа; прочие сбои клиента — ValueError без сырого ответа.
 func (a *Adapter) capabilityCatalog(ctx context.Context, timeout time.Duration, commands []string) (catalog, error) {
@@ -121,7 +121,7 @@ func (a *Adapter) capabilityCatalog(ctx context.Context, timeout time.Duration, 
 	return catalog{tools: names, body: values}, nil
 }
 
-// commandCapabilities — command_capabilities(command, model, tools, body): объявление одной
+// commandCapabilities — объявление одной
 // команды проверяется отдельно, не теряя остальные корректные модели снимка. model nil — все
 // модели, иначе только указанная (необъявленная — ValueError со списком).
 func commandCapabilities(command string, model any, snapshot catalog) (*pycompat.Dict, error) {
@@ -207,7 +207,7 @@ func commandCapabilities(command string, model any, snapshot catalog) (*pycompat
 }
 
 // capabilityReport — отчёт вида медиа по снимку: команды с объявлениями и проблемы отдельных
-// команд (только ValueError проверки объявления; прочие ошибки прерывают отчёт, как в оригинале).
+// команд (только ValueError проверки объявления; прочие ошибки прерывают отчёт).
 func capabilityReport(kind string, snapshot catalog) (*pycompat.Dict, error) {
 	reports, problems := []any{}, []any{}
 	for _, command := range KindCommands[kind] {
@@ -230,7 +230,7 @@ func capabilityReport(kind string, snapshot catalog) (*pycompat.Dict, error) {
 	return result, nil
 }
 
-// Capabilities — capabilities(kind, timeout): согласованный каталог команд вида медиа за два
+// Capabilities — согласованный каталог команд вида медиа за два
 // вызова MCP (tools/list и who_am_i) независимо от числа команд: {"reports": [...],
 // "problems": [{command, message}]}. Не загружает опоры и не создаёт генераций. Неизвестный kind —
 // KeyError Python; общий сбой discovery — ValueError без сырого ответа.
@@ -246,7 +246,7 @@ func (a *Adapter) Capabilities(ctx context.Context, kind string, timeout time.Du
 	return capabilityReport(kind, snapshot)
 }
 
-// legacySlots — LEGACY_INPUT_SLOTS: короткие флаги старых снимков и шаблоны объявленных слотов,
+// legacySlots — короткие флаги входов и шаблоны объявленных слотов,
 // в которые они раскрываются (те же, что inputFlags правил приложения).
 var legacySlots = map[string]*pyre.Regexp{
 	"image":     pyre.MustCompile(`^(?:first_image|image(?:_\d+)?|keyframe_\d+)$`, 0),
@@ -255,8 +255,8 @@ var legacySlots = map[string]*pyre.Regexp{
 	"video":     pyre.MustCompile(`^video(?:_\d+)?$`, 0),
 }
 
-// NormalizeInputs — normalize_inputs(spec, timeout): раскрывает короткие флаги снимков прежнего
-// CLI (image, tailImage, audio, video) в объявленные слоты модели до заморозки запроса повтора.
+// NormalizeInputs раскрывает короткие флаги входов (image, tailImage, audio, video) в
+// объявленные слоты модели до фиксации запроса повтора.
 // Изменяет spec на месте и возвращает его же; если все входы уже именованные, к сервису не
 // обращается. Нет подходящего слота — ValueError с объяснением.
 func (a *Adapter) NormalizeInputs(ctx context.Context, spec *pycompat.Dict, timeout time.Duration) (*pycompat.Dict, error) {

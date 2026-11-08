@@ -28,6 +28,22 @@ func TestDocsReferences(t *testing.T) {
 	}
 }
 
+// TestNoHistoryInSources не даёт истории прежней версии вернуться в код и комментарии.
+func TestNoHistoryInSources(t *testing.T) {
+	problems, err := CheckSources(repoRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(problems) > 0 {
+		var b strings.Builder
+		for _, p := range problems {
+			b.WriteString(p.String())
+			b.WriteByte('\n')
+		}
+		t.Fatalf("история прежней версии в исходниках (%d):\n%s", len(problems), b.String())
+	}
+}
+
 // TestCheckFindsDrift проверяет саму проверку на синтетическом репозитории: каждое правило должно
 // сработать на своём нарушении и промолчать на верной ссылке.
 func TestCheckFindsDrift(t *testing.T) {
@@ -58,6 +74,8 @@ func TestCheckFindsDrift(t *testing.T) {
 	}, "\n"))
 	write("resources/skills/s/SKILL.md", "`plan/scenes.json` `internal/q/q.go` [нет](missing.md)\n")
 	write("resources/skills/README.md", "[нет](missing.md)\n")
+	write("README.md", "# R\n\nСтек Electron.\n\n## История\n\nПрежде был Electron.\n")
+	write("internal/x/old.go", "package x\n\n// Как в Electron-версии.\n")
 
 	problems, err := Check(root)
 	if err != nil {
@@ -68,6 +86,7 @@ func TestCheckFindsDrift(t *testing.T) {
 		got = append(got, p.String())
 	}
 	want := []string{
+		"README.md:3: упоминание прежней версии: история — только в разделе «История» README",
 		"docs/b.md:2: ссылка на несуществующий docs/missing.md",
 		"docs/b.md:2: в docs/a.md нет якоря #нет",
 		"docs/b.md:3: путь `internal/y/y.go` не существует",
@@ -77,6 +96,14 @@ func TestCheckFindsDrift(t *testing.T) {
 		"docs/b.md:7: задачи `wails3 task gone:in-fence` нет в Taskfile.yml",
 		"resources/skills/README.md:1: ссылка на несуществующий resources/skills/missing.md",
 	}
+	src, err := CheckSources(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range src {
+		got = append(got, p.String())
+	}
+	want = append(want, "internal/x/old.go:3: упоминание прежней версии: история — только в разделе «История» README")
 	if strings.Join(got, "\n") != strings.Join(want, "\n") {
 		t.Fatalf("найдено:\n%s\nожидалось:\n%s", strings.Join(got, "\n"), strings.Join(want, "\n"))
 	}

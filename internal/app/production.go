@@ -13,7 +13,7 @@ import (
 	"songframe-go/internal/wire"
 )
 
-// Тексты applicationTexts оригинала для маршрутов производства.
+// Тексты ошибок маршрутов производства.
 const (
 	textPackageBusy            = "Для этого пакета уже выполняется задание. Дождитесь завершения."
 	textShotBusy               = "Для этого кадра уже выполняется задание. Дождитесь завершения."
@@ -24,8 +24,8 @@ func textScenarioReviewFailed(reason string) string {
 	return "Не удалось проверить актуальность сценария: " + reason
 }
 
-// ProductionFlow — проход агента производства (productionFlow оригинала), который переносит
-// следующий этап: занятость плана и непринятые предложения агента. nil — прохода нет, планы не
+// ProductionFlow — то, что маршрутам производства нужно от прохода агента производства:
+// занятость плана и непринятые предложения агента. nil — прохода нет, планы не
 // заняты и предложений нет.
 type ProductionFlow interface {
 	// Busy — у плана shot (и пакета packageDir, если задан) идёт задание прохода.
@@ -42,7 +42,7 @@ type Proposal struct {
 
 // ProductionService реализует window.api.production: просмотр пакетов, ответы на вопросы,
 // оценку и одноразовое согласие стоимости, отправку, получение, повтор и приёмку. Состояние
-// оценок и заданий принадлежит production.Service; здесь — проверки маршрутов ipc.ts оригинала:
+// оценок и заданий принадлежит production.Service; здесь — проверки маршрутов:
 // доступ к сохранённому запросу (выбор и вход провайдера), занятость прохода агента и проблема
 // актуальности сценария.
 type ProductionService struct {
@@ -58,7 +58,7 @@ func NewProductionService(service *production.Service, access *agents.AccessChec
 	return &ProductionService{production: service, access: access, workflow: workflow, flow: flow}
 }
 
-// reviewProblem — reviewProblem(project) оригинала: сценарий требует проверки после правки
+// reviewProblem возвращает проблему актуальности сценария: он требует проверки после правки
 // кастинга, трактовки или исходников.
 func reviewProblem(workflow *scenarioworkflow.Workflow, project string) string {
 	if workflow == nil {
@@ -311,8 +311,8 @@ type ExportBundleOptions struct {
 	Copy   bool   `json:"copy"`
 }
 
-// ExportBundle — задание сборки пакета для монтажёра в пустую папку; маршрут оригинала проверок
-// доступа не имеет: пакет собирается из уже принятых материалов без провайдеров.
+// ExportBundle — задание сборки пакета для монтажёра в пустую папку; проверок доступа маршрут не
+// имеет: пакет собирается из уже принятых материалов без провайдеров.
 func (s *ProductionService) ExportBundle(project string, options ExportBundleOptions) (jobs.Info, error) {
 	return wire.Done(s.production.ExportBundle(project, options.Target, options.Copy))
 }

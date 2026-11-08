@@ -1,17 +1,14 @@
-// Package mediaadapters — таблица Go-адаптеров провайдеров генерации: id провайдера → адаптер.
-// Перенос tools/media_adapters.py оригинала: общий код (lint_registry, media_request, cost_check,
-// shot_workflow, regenerate_shot) узнаёт сервисы только отсюда, не сравнивает имена и не знает их
-// особенностей. Добавление провайдера — строка в adapters и папка internal/providers/<id>;
-// удаление — обратное действие.
+// Package mediaadapters ведёт таблицу адаптеров провайдеров генерации: id провайдера → адаптер.
+// Общий код (lint_registry, media_request, cost_check, shot_workflow, regenerate_shot) узнаёт
+// сервисы только отсюда, не сравнивает имена и не знает их особенностей. Добавление провайдера —
+// строка в adapters и папка internal/providers/<id>; удаление — обратное действие.
 //
 // Возможности адаптера — необязательные интерфейсы с одним методом. SnapshotWarner объявлен
 // здесь; возможности платной попытки (ValidateSpec, ValidatePrompt, FrozenFields, TaskTraceID,
 // Submit, Poll, Fetch, Capabilities, Account, PricingFile, NormalizeInputs, PromptWarningChars,
 // Login, AuthStatus) — в листовом пакете internal/mediaapi, чтобы пакет провайдера мог
-// возвращать его ошибки (NotSubmitted, RejectedRequest), не импортируя эту таблицу.
-//
-// Отличие от оригинала: тестовая переменная SONGFRAME_MEDIA_ADAPTERS (подмена таблицы модулями
-// Python) не переносится — Go-тесты подключают адаптер через Register.
+// возвращать его ошибки (NotSubmitted, RejectedRequest), не импортируя эту таблицу. Тесты
+// подключают адаптер через Register.
 package mediaadapters
 
 import (
@@ -28,11 +25,11 @@ type Warning struct {
 }
 
 // Adapter — адаптер провайдера. Необязательные возможности объявляются отдельными интерфейсами
-// (SnapshotWarner), как hasattr(service, …) оригинала.
+// (SnapshotWarner) и проверяются утверждением типа.
 type Adapter interface{}
 
-// SnapshotWarner — адаптер, который знает модельные предупреждения снимка принятого комплекта
-// (snapshot_warnings оригинала). Ошибка — исключение Python на данных неожиданной формы.
+// SnapshotWarner — адаптер, который знает модельные предупреждения снимка принятого комплекта.
+// Ошибка — исключение модели Python на данных неожиданной формы.
 type SnapshotWarner interface {
 	SnapshotWarnings(snapshot *pycompat.Dict) ([]Warning, error)
 }
@@ -55,7 +52,7 @@ func normalized(provider any) string {
 	return strings.ToLower(pycompat.Strip(text))
 }
 
-// Known — known(provider): у провайдера есть адаптер.
+// Known — у провайдера есть адаптер.
 func Known(provider any) bool {
 	id := normalized(provider)
 	if id == "" {
@@ -67,8 +64,8 @@ func Known(provider any) bool {
 	return ok
 }
 
-// Lookup — adapter(provider) оригинала: адаптер провайдера либо ValueError с текстом оригинала
-// (repr id — как f"{provider!r}" Python: строка в кавычках, None, число).
+// Lookup — адаптер провайдера либо ValueError с текстом, зафиксированным эталонами
+// (id печатается как repr Python: строка в кавычках, None, число).
 func Lookup(provider any) (Adapter, error) {
 	adapter, ok := Get(provider)
 	if !ok {

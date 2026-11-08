@@ -117,7 +117,7 @@ export function scenarioProposal(pass: ScenarioPass = 'treatment', overrides: Pa
   const proposed = scenarioDocuments(true);
   const after = structuredClone(before);
   // Следующий проход продолжает сохранённые документы, а не восстанавливает исходную фикстуру.
-  // Как в main/scenario-workflow.ts, трактовка владеет парой, а сценарий и доработка — только реестром.
+  // Как в Go (internal/scenarioworkflow), трактовка владеет парой, а сценарий и доработка — только реестром.
   if (pass === 'treatment') {
     after.cast = proposed.cast;
     after.treatment = proposed.treatment;
@@ -405,7 +405,7 @@ export function scenarioWorkflowOptions(mode: ScenarioStoryMode = 'prepare'): St
         scenario: {
           brief: async (project, scenes: ScenesFile, shot, phase): Promise<BriefResult> => {
             validate(project);
-            // Для двух демонстрационных планов достаточно применить after предыдущего плана; настоящий расчёт остаётся в main.
+            // Для двух демонстрационных планов достаточно применить after предыдущего плана; настоящий расчёт остаётся в Go.
             const state: EntityState = { hero: { coat: scenes.scenes[0]?.state_changes.after?.hero?.coat ?? 'сухая' } };
             return { shot, phase, state, inherited: structuredClone(state), sources: {}, labels: {}, paragraph: '', checklist: [], text: '' };
           }

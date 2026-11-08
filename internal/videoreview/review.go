@@ -1,13 +1,13 @@
-// Package videoreview переносит проверку полученного видео агентом (videoReview.view/start/cancel,
-// src/main/video-review.ts и tools/video_review оригинала).
+// Package videoreview проверяет полученное видео агентом: кадры по PTS, сверка с утверждёнными
+// опорами и отчёт с наблюдениями (videoReview.view/start/cancel).
 //
 // Проверка помогает человеку просмотреть оригинал попытки и никогда не принимает материал: решение
-// о приёмке остаётся за Production.accept. Сервис извлекает реальные кадры видео с их PTS через
-// FFmpeg (extract.go), готовит копии утверждённых опор в бюджете вложений выбранного CLI, собирает
-// контекст постановки и запускает агента только на чтение с изображениями. Ответ агента принимается,
-// лишь если каждое наблюдение ссылается на показанные кадры (ParseReport).
+// о приёмке остаётся за production.Service.Accept. Сервис извлекает реальные кадры видео с PTS
+// через FFmpeg (extract.go), готовит копии утверждённых опор в бюджете вложений выбранного CLI,
+// собирает контекст постановки и запускает агента только на чтение с изображениями. Ответ агента
+// принимается, лишь если каждое наблюдение ссылается на показанные кадры (ParseReport).
 //
-// Состояние хранится в <пакет>/video-review/latest.json (формат оригинала) и в подпапке выборки
+// Состояние хранится в <пакет>/video-review/latest.json и в подпапке выборки
 // <пакет>/video-review/<id>/ с кадрами F001…, опорами R001… и manifest.json. Просмотр (View) не
 // запускает ни агента, ни FFmpeg: он только сверяет сохранённый снимок с текущими материалами и
 // фиксирует итог уже завершившегося задания агента.
@@ -35,8 +35,8 @@ import (
 	"songframe-go/resources"
 )
 
-// prompt — инструкция агенту skills/ai-clip-video-review/SKILL.md оригинала, байт в байт; общий
-// встроенный ресурс resources/skills, как промпт сценария.
+// prompt — инструкция агенту из встроенного скилла resources/skills (SkillVideoReview), как промпт
+// сценария; её SHA-256 закреплён тестом TestPromptDigest.
 var prompt = mustSkill(resources.SkillVideoReview)
 
 // mustSkill читает встроенный скилл при старте: его отсутствие — ошибка сборки ресурсов, а не
@@ -74,7 +74,7 @@ type Options struct {
 	Extract func(ctx context.Context, input ExtractInput) (Manifest, error)
 	// Brief — состояние сущностей до и после плана; nil — подготовка завершается ошибкой.
 	Brief ContinuityBrief
-	// IsPackageBusy — у пакета идёт производственная операция (Production.isBusy оригинала).
+	// IsPackageBusy — у пакета идёт производственная операция (production.Service).
 	IsPackageBusy func(project, directory string) bool
 	// ImageBudgetBytes — бюджет изображений выбранного CLI; nil — DefaultImageBudget.
 	ImageBudgetBytes func() int
@@ -156,7 +156,7 @@ type reviewContext struct {
 	sourceHash string
 }
 
-// readRegistry — readScenarioRegistry(project).registry: разобранный plan/scenes.json, если он
+// readRegistry — разобранный plan/scenes.json, если он
 // проходит общий контракт (версия, fps, коды и окна планов), иначе nil. Реестр и снимок берутся
 // из одних байтов.
 func readRegistry(project string) any {
@@ -224,7 +224,7 @@ func sha(value any) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// source — source оригинала: пакет с полностью скачанным видео на этапе просмотра результата,
+// source — источник проверки: пакет с полностью скачанным видео на этапе просмотра результата,
 // 1–20 утверждённых опор, текущие отпечаток постановки и кастинг. sourceHash связывает отчёт с
 // постановкой, контекстом агента и байтами видео и опор: их изменение делает отчёт устаревшим.
 func (s *Service) source(project, directory string) (*reviewContext, error) {
@@ -532,10 +532,10 @@ func (s *Service) run(material *reviewContext, record stored, pending *preparati
 	delete(s.preparing, material.directory)
 }
 
-// prepare — prepare оригинала: извлечение кадров, проверка выборки, состояния до и после плана,
+// prepare — извлечение кадров, проверка выборки, состояния до и после плана,
 // повторная сверка материалов и запуск агента с изображениями (сначала кадры F…, затем опоры R…).
-// record меняется на месте (кадры, хеши копий, длительность), как объект оригинала: при отмене
-// или ошибке сохраняется то, что успело заполниться.
+// record меняется на месте (кадры, хеши копий, длительность): при отмене или ошибке сохраняется
+// то, что успело заполниться.
 func (s *Service) prepare(material *reviewContext, record stored, ctx context.Context) error {
 	project, directory := material.project, material.directory
 	out, err := productionPath(directory, filepath.Join(reviewDir, record.id()))
@@ -668,7 +668,7 @@ func (s *Service) prepare(material *reviewContext, record stored, ctx context.Co
 }
 
 // Cancel — videoReview.cancel: останавливает подготовку и задание агента и отмечает проверку
-// остановленной. Повреждённый latest.json — ошибка, как в оригинале.
+// остановленной. Повреждённый latest.json — ошибка.
 func (s *Service) Cancel(project, packageDir string) (View, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

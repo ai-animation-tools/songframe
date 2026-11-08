@@ -154,11 +154,11 @@ func (r *resolver) visit(sid any) (*pycompat.Dict, error) {
 	return value, nil
 }
 
-// ResolveStates — _resolve_states(data, initial): сводка {before, after} каждого плана по
+// ResolveStates — сводка {before, after} каждого плана по
 // сюжетным зависимостям state_from/state_changes, ключ — код плана. initial — состояние сущностей
 // до первого события (начальное состояние кастинга, nil — пустое): источник `state_from: null`
 // стартует с него. Каждый план обязан иметь state_from и state_changes. Реестр не меняется;
-// data — значение Python (не-объект и отсутствие scenes дают исключения оригинала).
+// data — значение Python (не-объект и отсутствие scenes дают исключения).
 func ResolveStates(data any, initial *pycompat.Dict) (*pycompat.Dict, error) {
 	if initial == nil {
 		initial = pycompat.NewDict()
@@ -186,7 +186,7 @@ func ResolveStates(data any, initial *pycompat.Dict) (*pycompat.Dict, error) {
 			return nil, err
 		}
 	}
-	// Порядок результата — порядок завершения обхода (resolved оригинала): план, от которого
+	// Порядок результата — порядок завершения обхода: план, от которого
 	// зависит более ранний (вступление по будущему плану), оказывается раньше него.
 	result := pycompat.NewDict()
 	for index, sid := range r.resolved.order {
@@ -195,7 +195,7 @@ func ResolveStates(data any, initial *pycompat.Dict) (*pycompat.Dict, error) {
 	return result, nil
 }
 
-// SceneState — scene_state(data, sid, initial): независимая копия сводки до/после плана без
+// SceneState — независимая копия сводки до/после плана без
 // записи в реестр; реестр предварительно проверяется Validate.
 func SceneState(data any, sid string, initial *pycompat.Dict) (*pycompat.Dict, error) {
 	document, err := Validate(data, initial)
@@ -233,7 +233,7 @@ func fingerprint(scene, direction, visual, state any) (string, error) {
 	return hex.EncodeToString(digest[:]), nil
 }
 
-// SceneFingerprint — scene_fingerprint(data, sid, initial): отпечаток постановки плана. Отложенный
+// SceneFingerprint — отпечаток постановки плана. Отложенный
 // запрос зависит и от унаследованных условий, не только от самого плана: в контекст входят план,
 // направление его части (первой с таким id), общее визуальное направление и вычисленное состояние.
 func SceneFingerprint(data any, sid string, initial *pycompat.Dict) (string, error) {
@@ -271,7 +271,7 @@ func SceneFingerprint(data any, sid string, initial *pycompat.Dict) (string, err
 	return fingerprint(scene, direction, visual, state)
 }
 
-// SceneFingerprints — scene_fingerprints(data, initial): отпечатки всех планов за одно вычисление
+// SceneFingerprints — отпечатки всех планов за одно вычисление
 // состояния, в порядке планов (код → hex). Значения совпадают с SceneFingerprint, кроме повтора id
 // части: здесь берётся направление последней такой части (словарь Python), там — первой.
 func SceneFingerprints(data any, initial *pycompat.Dict) (*pycompat.Dict, error) {

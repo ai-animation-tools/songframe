@@ -39,7 +39,7 @@ export function editorTimingRows(lyrics: LyricsLine[], lines: TimingLine[], cand
   });
 }
 
-/** Только полностью пустые интервалы пропускаются; частичный ввод получает адресную ошибку до main. */
+/** Только полностью пустые интервалы пропускаются; частичный ввод получает адресную ошибку до вызова Go. */
 export function collectEditorLines(lines: TimingLine[], drafts: TimingBoundaryDrafts): { lines: TimingLine[]; problems: string[] } {
   const problems: string[] = [];
   const result = applyTimingBoundaryDrafts(lines, drafts).filter((line) => {

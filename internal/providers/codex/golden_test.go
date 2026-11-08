@@ -61,7 +61,7 @@ func load(t *testing.T) codexCases {
 	return cases
 }
 
-// png — заголовок PNG с размерами (как в скрипте съёмки).
+// png — заголовок PNG с размерами, как во входах эталона.
 func png(width, height int) []byte {
 	header := make([]byte, 33)
 	copy(header, []byte{137, 80, 78, 71, 13, 10, 26, 10})
@@ -86,7 +86,7 @@ func write(t *testing.T, path string, data []byte) {
 	}
 }
 
-// TestPrepareGolden сверяет замороженный запрос опор и его SHA с CodexImageProvider.prepare.
+// TestPrepareGolden сверяет зафиксированный запрос опор и его SHA с эталоном.
 func TestPrepareGolden(t *testing.T) {
 	cases := load(t)
 	files := cases.Select[0].Files
@@ -117,7 +117,7 @@ func TestPrepareGolden(t *testing.T) {
 			text := strings.ReplaceAll(item.JSON, "<project>", real)
 			sum := sha256.Sum256([]byte(text))
 			if prepared.RequestSha != hex.EncodeToString(sum[:]) {
-				t.Fatalf("SHA %s не совпадает с JSON оригинала %s", prepared.RequestSha, text)
+				t.Fatalf("SHA %s не совпадает с JSON эталона %s", prepared.RequestSha, text)
 			}
 		})
 	}
@@ -139,8 +139,7 @@ func (m *fakeManager) Get(string) (agents.Job, bool)         { return m.job, tru
 func (m *fakeManager) OnEvent(func(agents.Event)) func()     { return func() {} }
 func (m *fakeManager) ShutdownAndWait(context.Context) error { return nil }
 
-// TestCoverRunnerGolden сверяет промпт, контекст, копии опор и разбор ответа с
-// createCodexCoverRunner оригинала.
+// TestCoverRunnerGolden сверяет промпт, контекст, копии опор и разбор ответа с эталоном.
 func TestCoverRunnerGolden(t *testing.T) {
 	for _, item := range load(t).CodexCover {
 		t.Run(item.Name, func(t *testing.T) {

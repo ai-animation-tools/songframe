@@ -11,7 +11,7 @@ import (
 )
 
 // TestCasesAreComplete проверяет целостность снятых эталонов: у каждого случая есть описание,
-// функция оригинала, ожидаемый JSON и вход, наличие которого совпадает с case.json.
+// проверяемая операция, ожидаемый JSON и вход, наличие которого совпадает с case.json.
 func TestCasesAreComplete(t *testing.T) {
 	calls := map[string]string{"status": "computeStatus", "timing-view": "viewTiming", "timing-save": "saveTiming"}
 	for domain, call := range calls {
@@ -63,7 +63,7 @@ func checkSaveCase(t *testing.T, item Case, expected map[string]any) {
 	written := item.Read(t, "expected-timing.json")
 	AssertJSON(t, result, written)
 	if !strings.HasSuffix(string(written), "}\n") {
-		t.Fatal("оригинал завершает timing.json переводом строки")
+		t.Fatal("эталон завершает timing.json переводом строки")
 	}
 }
 

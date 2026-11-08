@@ -22,7 +22,7 @@ type BalanceField struct {
 	Value float64
 }
 
-// FindBalance — find_balance(value, path): числовые поля, имя которых похоже на остаток
+// FindBalance — числовые поля, имя которых похоже на остаток
 // (credit, balance, remain, point), при обходе в глубину; сам ответ не сохраняется. Ошибка —
 // OverflowError для целого вне float.
 func FindBalance(value any, path string) ([]BalanceField, error) {
@@ -71,7 +71,7 @@ func accountResult(balance any, source string) *pycompat.Dict {
 	return result
 }
 
-// Account — account(timeout): остаток кредитов из query_membership_and_credits — только число и
+// Account — остаток кредитов из query_membership_and_credits — только число и
 // имя поля (предпочтительно remain/available/balance/left). Нет входа, нет ответа или нет числа —
 // balance nil (None) с пояснением в source. Ошибка — только непредвиденное исключение.
 func (a *Adapter) Account(ctx context.Context, timeout time.Duration) (*pycompat.Dict, error) {
@@ -107,8 +107,8 @@ func balanceOf(body any) (*pycompat.Dict, error) {
 	return accountResult(choice.Value, choice.Name), nil
 }
 
-// loginIncomplete и loginCancelled — тексты, которые показывал TS-адаптер оригинала, когда
-// процесс входа завершался без JSON (сбой) или был отменён кнопкой.
+// loginIncomplete и loginCancelled — тексты для входа, завершённого непредвиденным сбоем или
+// отменённого кнопкой.
 var (
 	loginIncomplete = "Вход в " + mcp.Title + " не завершён. Подтвердите вход в браузере и повторите при необходимости."
 	loginCancelled  = "Вход в " + mcp.Title + " отменён."
@@ -123,11 +123,11 @@ func loginResult(ok bool, message string) *pycompat.Dict {
 	return result
 }
 
-// Login — login(open_browser, timeout): вход в браузере без исключений наружу: {"ok": true,
+// Login — вход в браузере без исключений наружу: {"ok": true,
 // "message": "Вход в Kling выполнен, авторизация сохранена."} или {"ok": false, "message":
 // "Вход в Kling не завершён: <причина>"}. Адрес авторизации приходит в options.Report строкой
 // «AUTHORIZE_URL <адрес>». Отмена ctx — «Вход в Kling отменён.», непредвиденная ошибка — общий
-// текст незавершённого входа (как у TS-обёртки оригинала loginKling).
+// текст незавершённого входа (loginIncomplete).
 func (a *Adapter) Login(ctx context.Context, options mcp.LoginOptions) *pycompat.Dict {
 	login := a.Client.Login
 	if a.clientLogin != nil {
@@ -155,9 +155,9 @@ func authResult(status, message string) *pycompat.Dict {
 	return result
 }
 
-// AuthStatus — auth_status(timeout): authenticated только после успешного бесплатного who_am_i;
+// AuthStatus — authenticated только после успешного бесплатного who_am_i;
 // без сохранённого входа или с отвергнутым токеном — unauthenticated; без сети или при ошибке
-// сервера — unknown. Непредвиденная ошибка — unknown с текстом TS-обёртки оригинала.
+// сервера — unknown. Непредвиденная ошибка — unknown с общим текстом.
 func (a *Adapter) AuthStatus(ctx context.Context, timeout time.Duration) *pycompat.Dict {
 	if a.Client.ReadCredentials() == nil {
 		return authResult("unauthenticated", mcp.LoginRequired)

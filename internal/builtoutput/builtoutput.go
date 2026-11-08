@@ -1,5 +1,5 @@
-// Package builtoutput — границы удаления готовых результатов (built-output-path.ts оригинала):
-// удалять можно только обычные папки и файлы непосредственно в plan/batches выбранного проекта.
+// Package builtoutput задаёт границы удаления готовых результатов: удалять можно только обычные
+// папки и файлы непосредственно в plan/batches выбранного проекта.
 // Каждый участок пути проверяется lstat: символическая ссылка на папку не должна выводить удаление
 // к исходникам или в другой проект. Пакет только проверяет путь, ничего не удаляет.
 //
@@ -23,7 +23,7 @@ const (
 	File Kind = "file"
 )
 
-// Тексты scenesTexts.main оригинала.
+// Тексты отказов удаления.
 const (
 	textAbsolutePathRequired = "Укажите абсолютный путь собранного результата."
 	textOutsideBatches       = "Удалять можно только собранные результаты внутри plan/batches выбранного проекта."
@@ -32,8 +32,8 @@ const (
 	textFileRequired         = "Собранный результат должен быть обычным файлом."
 )
 
-// Checked — checkedBuiltOutput(project, path, kind): абсолютный нормализованный путь результата
-// или ошибка с текстом оригинала. Папка — ровно plan/batches/<имя>, файл — plan/batches/<имя>/<файл>.
+// Checked возвращает абсолютный нормализованный путь результата или понятную ошибку. Папка —
+// ровно plan/batches/<имя>, файл — plan/batches/<имя>/<файл>.
 func Checked(project, path string, kind Kind) (string, error) {
 	if !filepath.IsAbs(path) {
 		return "", errors.New(textAbsolutePathRequired)

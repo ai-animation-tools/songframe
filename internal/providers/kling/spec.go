@@ -59,10 +59,10 @@ func fullMatch(pattern *pyre.Regexp, value any) (bool, error) {
 	return matched, nil
 }
 
-// valueError — ValueError оригинала с данным текстом.
+// valueError — ValueError с данным текстом.
 func valueError(message string) error { return pycompat.New(pycompat.ValueError, message) }
 
-// FrozenFields — FROZEN_FIELDS: признак входит в замороженный запрос и его SHA, поэтому
+// FrozenFields — признак входит в зафиксированный запрос и его SHA, поэтому
 // получаются только оригиналы без логотипа.
 func (a *Adapter) FrozenFields() *pycompat.Dict {
 	fields := pycompat.NewDict()
@@ -70,13 +70,13 @@ func (a *Adapter) FrozenFields() *pycompat.Dict {
 	return fields
 }
 
-// TaskTraceID — TASK_TRACE_ID: общий код сохраняет в attempt.json UUID v7 попытки, и он уходит с
+// TaskTraceID — true: общий код сохраняет в attempt.json UUID v7 попытки, и он уходит с
 // каждым вызовом попытки как taskTraceId.
 func (a *Adapter) TaskTraceID() bool { return true }
 
-// ValidateSpec — validate_spec(spec): ограничения Kling поверх общей формы спецификации,
-// проверенной request_snapshot. Нарушение — ValueError с текстом оригинала; данные неожиданной
-// формы дают те же TypeError/KeyError/AttributeError, что Python.
+// ValidateSpec — ограничения Kling поверх общей формы спецификации,
+// проверенной request_snapshot. Нарушение — ValueError с текстом для пользователя; данные
+// неожиданной формы дают TypeError/KeyError/AttributeError модели Python.
 func (a *Adapter) ValidateSpec(spec *pycompat.Dict) error {
 	command := spec.Value("command")
 	if _, err := pycompat.HashKey(command); err != nil {
@@ -218,7 +218,7 @@ func (a *Adapter) ValidateSpec(spec *pycompat.Dict) error {
 	return nil
 }
 
-// ValidatePrompt — validate_prompt(prompt): промпт уходит отдельным аргументом prompt без
+// ValidatePrompt — промпт уходит отдельным аргументом prompt без
 // изменений; длиннее PromptWarningChars символов — только предупреждение.
 func (a *Adapter) ValidatePrompt(prompt string) []string {
 	length := pycompat.Len(prompt)

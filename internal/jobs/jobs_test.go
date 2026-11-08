@@ -65,7 +65,7 @@ func helperStep(tool, label string, args []string, stdout, stderr string, code i
 	}}
 }
 
-// readGolden читает эталон оригинала из testdata.
+// readGolden читает эталон менеджера заданий из testdata.
 func readGolden(t *testing.T, name string, value any) {
 	t.Helper()
 	data, err := os.ReadFile(filepath.Join("testdata", name))
@@ -100,16 +100,16 @@ func wait(t *testing.T, m *Manager, id string) Info {
 	return info
 }
 
-// TestRunMatchesOriginal повторяет эталонное задание из шести шагов на настоящих процессах:
-// статусы и коды шагов, код и error задания, журнал и файл сведений совпадают с оригиналом.
-func TestRunMatchesOriginal(t *testing.T) {
+// TestRunMatchesGolden повторяет эталонное задание из шести шагов на настоящих процессах:
+// статусы и коды шагов, код и error задания, журнал и файл сведений совпадают с эталоном.
+func TestRunMatchesGolden(t *testing.T) {
 	var golden struct {
 		Job  map[string]any `json:"job"`
 		File map[string]any `json:"file"`
 		Keys []string       `json:"keys"`
 		Log  string         `json:"log"`
 	}
-	readGolden(t, "original-run-634fd94.json", &golden)
+	readGolden(t, "golden-run.json", &golden)
 	m := New(t.TempDir(), Options{SkipRestore: true})
 	optional := helperStep("optional", "Сопутствующий", nil, "", "необязательный сбой\n", 3)
 	optional.Optional = true
@@ -157,16 +157,16 @@ func TestRunMatchesOriginal(t *testing.T) {
 	}
 }
 
-// TestRestoreMatchesOriginal: восстановление прошлых сеансов (interrupted, лимит, повреждённый
-// и чужой файлы) даёт те же сведения и те же файлы, что loadSavedJobs оригинала.
-func TestRestoreMatchesOriginal(t *testing.T) {
+// TestRestoreMatchesGolden: восстановление прошлых сеансов (interrupted, лимит, повреждённый
+// и чужой файлы) даёт те же сведения и те же файлы, что в эталоне.
+func TestRestoreMatchesGolden(t *testing.T) {
 	var golden struct {
 		Loaded []map[string]any  `json:"loaded"`
 		Files  map[string]string `json:"files"`
 		Tail   []string          `json:"tail"`
 		Rest   map[string]any    `json:"-"`
 	}
-	readGolden(t, "original-634fd94.json", &golden)
+	readGolden(t, "golden.json", &golden)
 	local := t.TempDir()
 	directory := filepath.Join(local, "jobs")
 	os.MkdirAll(directory, 0o700)
@@ -216,12 +216,12 @@ func TestRestoreMatchesOriginal(t *testing.T) {
 	}
 }
 
-// TestReadLogTailMatchesOriginal: обрезка в середине многобайтного символа даёт те же строки.
-func TestReadLogTailMatchesOriginal(t *testing.T) {
+// TestReadLogTailMatchesGolden: обрезка в середине многобайтного символа даёт те же строки.
+func TestReadLogTailMatchesGolden(t *testing.T) {
 	var golden struct {
 		Tail []string `json:"tail"`
 	}
-	readGolden(t, "original-634fd94.json", &golden)
+	readGolden(t, "golden.json", &golden)
 	path := filepath.Join(t.TempDir(), "tail.log")
 	os.WriteFile(path, []byte("ааааaбв"), 0o600)
 	for index, expected := range golden.Tail {
@@ -234,14 +234,14 @@ func TestReadLogTailMatchesOriginal(t *testing.T) {
 	}
 }
 
-// TestCopyTextMatchesOriginal сравнивает текст копирования (сведения, шаги, скрытие домашнего
-// каталога и секретов, пустой журнал) с jobText оригинала.
-func TestCopyTextMatchesOriginal(t *testing.T) {
+// TestCopyTextMatchesGolden сравнивает текст копирования (сведения, шаги, скрытие домашнего
+// каталога и секретов, пустой журнал) с эталоном.
+func TestCopyTextMatchesGolden(t *testing.T) {
 	var golden struct {
 		Text  string `json:"text"`
 		Empty string `json:"empty"`
 	}
-	readGolden(t, "original-634fd94.json", &golden)
+	readGolden(t, "golden.json", &golden)
 	project, finished, message := "/home/tester/Клипы/Огород", "2026-11-04T10:01:00.000Z", `сбой sk-abcdefghijkl и api_key="секрет"`
 	zero, two := 0, 2
 	info := Info{ID: "abc-1", Project: &project, Kind: KindTool, Title: "Сборка", Status: StatusFailed, StartedAt: "2026-11-04T10:00:00.000Z", FinishedAt: &finished, Code: &two, Error: &message, PreviousSession: true,
@@ -312,7 +312,7 @@ func TestCancelStopsProcessAndMarksFailed(t *testing.T) {
 }
 
 // TestCancelContinueSteps: после отмены оставшиеся шаги с Continue не выполняются, а
-// завершаются failed с кодом -1, как пустые запуски launcher оригинала после abort.
+// завершаются failed с кодом -1 без запуска программы.
 func TestCancelContinueSteps(t *testing.T) {
 	m := New(t.TempDir(), Options{SkipRestore: true})
 	release := make(chan struct{})
@@ -332,7 +332,7 @@ func TestCancelContinueSteps(t *testing.T) {
 	}
 }
 
-// TestStepTimeout: истечение лимита шага останавливает программу и даёт причину оригинала.
+// TestStepTimeout: истечение лимита шага останавливает программу и даёт причину timeoutText.
 func TestStepTimeout(t *testing.T) {
 	m := New(t.TempDir(), Options{SkipRestore: true})
 	step := Step{Tool: "hang", Timeout: 300 * time.Millisecond, Run: func(ctx context.Context, step *StepContext) error {

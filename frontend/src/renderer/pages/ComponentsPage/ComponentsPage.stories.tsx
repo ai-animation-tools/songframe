@@ -1,4 +1,4 @@
-/** Менеджер компонентов (этап 41.3) на модели window.api.components; витрина не стартует Wails. */
+/** Менеджер компонентов на модели window.api.components; витрина не стартует Wails. */
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { componentTexts as text } from '@shared/texts/component-manager';

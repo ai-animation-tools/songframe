@@ -12,11 +12,11 @@ import (
 	"songframe-go/internal/scenario"
 )
 
-// TestSaveMatchesOriginal повторяет вызовы страницы сценария на эталонах scenario-scenes: оценку
+// TestSaveMatchesGolden повторяет вызовы страницы сценария на эталонах scenario-scenes: оценку
 // сохранения и проверку черновика до записи, затем saveScenesWithMode в режиме случая и повторное
 // сохранение результата. Сверяются ответы, тексты ошибок, состав и байты изменённых файлов
 // (plan/scenes.json, plan/production-status.json, workflow.json пакетов).
-func TestSaveMatchesOriginal(t *testing.T) {
+func TestSaveMatchesGolden(t *testing.T) {
 	for _, item := range golden.Load(t, "scenario-scenes") {
 		t.Run(item.Name, func(t *testing.T) {
 			project := item.CopyProject(t)
@@ -78,7 +78,7 @@ func TestSaveMatchesOriginal(t *testing.T) {
 	}
 }
 
-// assertOutcome сверяет ответ без записи: значение либо `{throws}` эталона при исключении оригинала.
+// assertOutcome сверяет ответ без записи: значение либо `{throws}` эталона при исключении.
 func assertOutcome(t *testing.T, label string, want []byte, got any, err error, root string) {
 	t.Helper()
 	var thrown struct {
@@ -87,7 +87,7 @@ func assertOutcome(t *testing.T, label string, want []byte, got any, err error, 
 	_ = json.Unmarshal(want, &thrown)
 	switch {
 	case thrown.Throws != nil && err == nil:
-		t.Fatalf("%s: оригинал бросил %q, Go вернул значение", label, *thrown.Throws)
+		t.Fatalf("%s: эталон бросил %q, Go вернул значение", label, *thrown.Throws)
 	case thrown.Throws == nil && err != nil:
 		t.Fatalf("%s: %v", label, err)
 	case err == nil:
@@ -100,9 +100,9 @@ func assertWrite(t *testing.T, dir string, wantError *string, wantResult json.Ra
 	t.Helper()
 	switch {
 	case wantError != nil && err == nil:
-		t.Fatalf("оригинал отказал %q, Go сохранил", *wantError)
+		t.Fatalf("эталон отказал %q, Go сохранил", *wantError)
 	case wantError == nil && err != nil:
-		t.Fatalf("оригинал сохранил, Go: %v", err)
+		t.Fatalf("эталон сохранил, Go: %v", err)
 	case wantError != nil && err.Error() != *wantError:
 		t.Fatalf("ошибка\n  Go:  %s\n  TS:  %s", err, *wantError)
 	}

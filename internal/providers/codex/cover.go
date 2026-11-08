@@ -17,7 +17,7 @@ import (
 )
 
 // Инструкция встроенному image_gen — протокол этого адаптера, а не текст интерфейса; строки
-// совпадают с codex-cover-runner.ts оригинала побайтно (их сверяет эталон cover-runner).
+// зафиксированы побайтно эталоном cover-runner.
 const (
 	referencePrompt         = "Создай одно изображение референса по пользовательскому описанию из дополнительного контекста. "
 	referenceGuidance       = "referenceImages — явно выбранные пользователем опоры запроса. Сначала просмотри все эти файлы и передай их встроенному image_gen как изображения-референсы. Сохрани внешность, узнаваемые черты и конструкцию целевого объекта; назначение дополнительных опор и нужные изменения бери из userPrompt. Следуй общему визуальному стилю клипа из userPrompt; меняй только то, что явно попросил пользователь. Не заменяй опоры посторонними персонажами и не создавай новый дизайн без просьбы. "
@@ -47,7 +47,7 @@ const PurposeReference = agentexec.PurposeReference
 
 var _ agentexec.CoverRunner = CoverRunner{}
 
-// CoverManager — часть менеджера агентов, нужная исполнителю (CoverManager оригинала).
+// CoverManager — часть менеджера агентов, нужная исполнителю.
 type CoverManager interface {
 	StartImages(input agents.StartInput, workDir string, config agents.Settings) (agents.Job, error)
 	Get(id string) (agents.Job, bool)
@@ -215,7 +215,7 @@ func (r CoverRunner) Run(ctx context.Context, input CoverInput) (string, error) 
 	select {
 	case completed = <-finished:
 	case <-ctx.Done():
-		// Остановленный менеджер завершает задание; ждём его итог, как оригинал ждал события.
+		// Остановленный менеджер завершает задание; ждём событие его итога.
 		completed = waitFinished(manager, jobID, finished)
 	}
 	if ctx.Err() != nil {

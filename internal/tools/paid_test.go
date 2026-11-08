@@ -34,7 +34,7 @@ func TestPaidAttemptTools(t *testing.T) {
 }
 
 // TestPaidAttemptStateDir — cost_check learn пишет наблюдение в каталог состояния Go-профиля
-// (LocalDir), а не в SONGFRAME_LOCAL_DIR Electron; отменённый запуск возвращает Code nil.
+// (LocalDir); отменённый запуск возвращает Code nil.
 func TestPaidAttemptStateDir(t *testing.T) {
 	project := t.TempDir()
 	work := filepath.Join(project, "plan", "batches", "M32-attempt-01", "request")

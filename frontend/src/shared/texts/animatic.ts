@@ -3,7 +3,7 @@ import { commonTexts } from './common';
 
 /** Тексты просмотра и принятия аниматика; правила — @link ../../../docs/ui/texts.md. */
 export const animaticTexts = {
-  // Главный процесс возвращает готовые фразы; данные проекта и формат IPC не меняются.
+  // Go возвращает готовые фразы; данные проекта и формат IPC не меняются.
   main: {
     videoMissing: ({ filename }: { filename: string | null | undefined }) =>
       `MP4 сборки не найден: ${filename ?? 'имя не записано'}. Соберите аниматик заново.`,

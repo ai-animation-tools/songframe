@@ -1,5 +1,5 @@
-// Package covergen — генерация обложки проекта и изображений референсов (cover-generation.ts,
-// cover-provider.ts и cover-paid.ts оригинала). Обе формы — одна машина состояний Generator:
+// Package covergen генерирует обложку проекта и изображения референсов. Обе формы — одна машина
+// состояний Generator:
 //
 //   - обложка живёт во временной папке ОС; только принятый квадратный PNG (accepted.png)
 //     переносит форма «Исходники», а закрытие сессии удаляет папку целиком;
@@ -14,9 +14,9 @@
 // нехватка средств отправку запрещает. Подготовку запроса выполняет провайдер изображений
 // проекта (PrepareProject): программа-агент по реестру или платный провайдер (PreparePaid).
 //
-// Сессии живут в памяти процесса, как в оригинале; фоновые подготовка и генерация — горутины с
-// отменой через context, а не задания internal/jobs: оригинал не показывает их в списке заданий,
-// и окно ждёт их само (view). Закрытие сессии отменяет работу и дожидается её завершения до
+// Сессии живут в памяти процесса; фоновые подготовка и генерация — горутины с отменой через
+// context, а не задания internal/jobs: они не показываются в списке заданий, и окно ждёт их само
+// (view). Закрытие сессии отменяет работу и дожидается её завершения до
 // удаления временной папки.
 package covergen
 
@@ -77,8 +77,8 @@ type Quote struct {
 	Message string   `json:"message,omitempty"`
 }
 
-// Session — CoverGenerationSession контракта. Порядок полей — порядок ключей оригинала: он виден
-// в квитанции session.json архива референса.
+// Session — CoverGenerationSession контракта. Порядок полей зафиксирован: он виден в квитанции
+// session.json архива референса.
 type Session struct {
 	ID     string `json:"id"`
 	Prompt string `json:"prompt"`
@@ -121,7 +121,7 @@ type Approval struct {
 }
 
 // Crop — CoverCrop контракта: квадрат обложки в пикселях исходного изображения. Значения —
-// числа JSON: целостность проверяет Accept (Number.isSafeInteger оригинала).
+// числа JSON: целостность (безопасное целое) проверяет Accept.
 type Crop struct {
 	X    float64 `json:"x"`
 	Y    float64 `json:"y"`
@@ -134,8 +134,7 @@ type Accepted struct {
 	Path string `json:"path"`
 }
 
-// CandidateInput — вход подготовки запроса (CoverCandidateInput оригинала без signal: отмену
-// передаёт context).
+// CandidateInput — вход подготовки запроса; отмену передаёт context.
 type CandidateInput = agentexec.CoverInput
 
 // Candidate — подготовленный запрос провайдера (PreparedCoverCandidate). Generate выполняет
@@ -149,12 +148,11 @@ type Candidate struct {
 	Generate   func(ctx context.Context, allowUnknownCost bool) (string, error)
 }
 
-// Options — зависимости генератора (CoverGenerationOptions).
+// Options — зависимости генератора.
 type Options struct {
 	// Reference — режим референса: попытки и квитанции хранятся в архиве проекта.
 	Reference bool
-	// AssertSelection — assertAiSelection(settings, project, 'image'): явный выбор провайдера
-	// изображений без диагностики.
+	// AssertSelection проверяет явный выбор провайдера изображений без диагностики.
 	AssertSelection func(project string) error
 	// ReadImage — размеры изображения, которое декодируется целиком; false — не изображение.
 	ReadImage func(path string) (width, height int, ok bool)
@@ -192,7 +190,7 @@ type record struct {
 	prepared *prepared
 }
 
-// Generator — CoverGeneration оригинала: сессии одной формы (обложки или референса).
+// Generator — сессии одной формы (обложки или референса).
 // Безопасен для одновременных вызовов из Wails: состояние сессий защищено мьютексом, долгие
 // вызовы провайдера выполняются без него.
 type Generator struct {
@@ -223,9 +221,8 @@ func randomUUID() string {
 	return fmt.Sprintf("%x-%x-%x-%x-%x", data[0:4], data[4:6], data[6:8], data[8:10], data[10:16])
 }
 
-// imageSettings — readProjectSettings(project).generation?.image как значение JS: nil — блока
-// нет или он не объект, Undefined — нет блока generation. Ошибка чтения plan/project.json — как
-// у оригинала (projectReadFailed).
+// imageSettings — generation.image настроек проекта как значение JS: nil — блока нет или он не
+// объект, Undefined — нет блока generation. Ошибка чтения plan/project.json — projectReadFailed.
 func imageSettings(project string) (any, error) {
 	settings, err := projectfile.ReadSettings(project)
 	if err != nil {
@@ -238,8 +235,7 @@ func imageSettings(project string) (any, error) {
 	return jscompat.Get(generation, "image"), nil
 }
 
-// trimmedModel — model?.trim() настроек изображения: nil и undefined — "", не строка — TypeError
-// оригинала.
+// trimmedModel — model?.trim() настроек изображения: nil и undefined — "", не строка — TypeError.
 func trimmedModel(settings any) (string, error) {
 	value := jscompat.Get(settings, "model")
 	if jscompat.IsNullish(value) {
@@ -277,7 +273,7 @@ func copyReferences(images []mediaapi.ReferenceImage, directory string) ([]media
 	return mediafile.CheckedReferences(copies)
 }
 
-// copyFile — copyFileSync: байты и права источника в новом (или заменённом) файле.
+// copyFile — байты и права источника в новом (или заменённом) файле.
 func copyFile(from, to string) error {
 	data, err := os.ReadFile(from)
 	if err != nil {
@@ -488,8 +484,9 @@ func (g *Generator) runPrepare(ctx context.Context, item *record, workDir, promp
 	item.session.Quote = candidate.Quote
 }
 
-// priceAllowsGeneration — generation-consent оригинала: цена подтверждена либо пользователь
-// согласился на неизвестную цену, которую можно согласовать (canAgreeToUnknownCost).
+// priceAllowsGeneration — правило frontend/src/shared/generation-consent.ts: цена подтверждена
+// либо пользователь согласился на неизвестную цену, которую можно согласовать
+// (canAgreeToUnknownCost).
 func priceAllowsGeneration(quote *Quote, agreed bool) bool {
 	return quote != nil && (quote.Verdict == VerdictOK || (agreed && canAgreeToUnknownCost(quote)))
 }
@@ -499,8 +496,8 @@ func canAgreeToUnknownCost(quote *Quote) bool {
 	return quote != nil && quote.Verdict == VerdictCostOrBalanceUnknown && quote.Credits == nil
 }
 
-// currentProvider — generation.image.provider проекта (строгое сравнение оригинала: не строка
-// не совпадает ни с одним id).
+// currentProvider — generation.image.provider проекта (строгое сравнение: не строка не совпадает
+// ни с одним id).
 func currentProvider(project string) (any, error) {
 	settings, err := imageSettings(project)
 	if err != nil {
@@ -705,7 +702,7 @@ func (g *Generator) checkedResult(workDir, output string) (*Image, error) {
 	return &Image{Path: path, Width: width, Height: height}, nil
 }
 
-// hasCode — ошибка node:fs или системного вызова (`'code' in error` оригинала): пользователю
+// hasCode — файловая ошибка (jscompat.NodeError) или ошибка системного вызова: пользователю
 // вместо её текста показывается общее «не удалось прочитать файл».
 func hasCode(err error) bool {
 	var node *jscompat.NodeError
@@ -726,7 +723,7 @@ func (g *Generator) View(id string) (Session, error) {
 	return item.session.clone(), nil
 }
 
-// isSafeInteger — Number.isSafeInteger.
+// isSafeInteger — целое по модулю не больше 2^53−1 (точно представимое в JSON-числе).
 func isSafeInteger(value float64) bool {
 	return jscompat.IsSafeInteger(value)
 }

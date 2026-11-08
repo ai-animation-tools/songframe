@@ -50,8 +50,8 @@ func caseArgs(spec *pycompat.Dict) []string {
 }
 
 // TestContinuityBriefGolden запускает continuity_brief через tools.Run на входах эталона
-// continuity-brief (checks-base с разностью случая) и сверяет код, stdout и stderr с процессом
-// оригинала; инструмент только читает проект.
+// continuity-brief (checks-base с разностью случая) и сверяет код, stdout и stderr с эталоном;
+// инструмент только читает проект.
 func TestContinuityBriefGolden(t *testing.T) {
 	for _, c := range golden.Load(t, "continuity-brief") {
 		t.Run(c.Name, func(t *testing.T) {
@@ -72,10 +72,10 @@ func TestContinuityBriefGolden(t *testing.T) {
 	}
 }
 
-// cardRule — сознательное отличие Go от оригинала в списке карточек (internal/sceneviews): Go
-// перерисовывает карточки, не подтверждённые квитанцией, и тогда перечисляет все ожидаемые
-// карточки, а не только те, чьи пиксели изменились у Pillow. cards — все ожидаемые файлы
-// карточек по квитанции оригинала.
+// cardRule — допустимое отличие списка карточек от эталона (internal/sceneviews, записано в
+// testdata/golden/README.md): Go перерисовывает карточки, не подтверждённые квитанцией, и тогда
+// перечисляет все ожидаемые карточки, а не только те, чьи пиксели изменились в эталоне.
+// cards — все ожидаемые файлы карточек по квитанции эталона.
 type cardRule struct{ cards []string }
 
 // split — элементы списка, относящиеся к карточкам, и остальные (в исходном порядке).
@@ -94,7 +94,7 @@ func (r cardRule) split(list []string) (cards, rest []string) {
 	return cards, rest
 }
 
-// sameCards — карточки Go совпадают с оригиналом либо это полный список ожидаемых карточек.
+// sameCards — карточки Go совпадают с эталоном либо это полный список ожидаемых карточек.
 func (r cardRule) sameCards(want, got []string) bool {
 	return strings.Join(want, "\n") == strings.Join(got, "\n") || strings.Join(got, "\n") == strings.Join(r.cards, "\n")
 }
@@ -159,7 +159,7 @@ func normalizeReceipt(t *testing.T, data []byte) string {
 }
 
 // TestSceneViewsGolden запускает update_scene_views через tools.Run на входах эталона scene-views и
-// сверяет с оригиналом код, потоки, состояние файлов после записи (created/changed/removed), точные
+// сверяет с эталоном код, потоки, состояние файлов после записи (created/changed/removed), точные
 // байты записанных текстовых файлов, квитанцию карточек (без SHA-256 PNG) и повторную проверку.
 // Карточки сверяются по правилу cardRule; PNG Go — 1280×720, их SHA-256 в квитанции совпадает с
 // файлами. Режим --check не меняет дерево.
@@ -211,7 +211,7 @@ func TestSceneViewsGolden(t *testing.T) {
 					gotStates[path] = "changed"
 				}
 			}
-			// Карточки: те же, что у оригинала, или все ожидаемые (перерисовка Go).
+			// Карточки: те же, что в эталоне, или все ожидаемые (перерисовка Go).
 			wantCards, gotCards := []string{}, []string{}
 			for _, card := range rule.cards {
 				if states.Has(card) && states.Value(card) != "removed" {
@@ -225,7 +225,7 @@ func TestSceneViewsGolden(t *testing.T) {
 				t.Errorf("перерисованные карточки: ожидалось %v (или все %v), получено %v", wantCards, rule.cards, gotCards)
 			}
 			// Перерисованная Go карточка имеет другой SHA-256, поэтому квитанция меняется и там, где
-			// у оригинала Pillow дал прежние байты (лишняя запись квитанции в выводе и счёте).
+			// в эталоне байты карточек не изменились (лишняя запись квитанции в выводе и счёте).
 			rerendered := len(gotCards) > 0
 			extra := 0
 			const receiptPath = "plan/animatic/cards/manifest.json"
@@ -289,7 +289,7 @@ func TestSceneViewsGolden(t *testing.T) {
 				t.Fatal(err)
 			}
 			if !rerendered {
-				// Карточки Go не рисовал: повторная проверка совпадает с оригиналом.
+				// Карточки Go не рисовал: повторная проверка совпадает с эталоном.
 				recheck.Set("traceback", strings.HasPrefix(golden.PyString(t, recheck, "stderr"), tracebackHeader))
 				checkStreams(t, recheck, again, root, rule.compare)
 				return
@@ -334,10 +334,10 @@ func contains(list []string, item string) bool {
 	return false
 }
 
-// TestSceneViewsSnapshotNotMigrated: проверка снимка Git (--check --staged, --check --ref) —
-// инструмент разработчика оригинала, в Go-версии не перенесена: код 1, пояснение в stderr,
+// TestSceneViewsSnapshotUnavailable: проверка снимка Git (--check --staged, --check --ref)
+// не поддерживается: код 1, пояснение в stderr,
 // проект не читается и не меняется. Без --check отказ argparse сверяет эталон scene-views.
-func TestSceneViewsSnapshotNotMigrated(t *testing.T) {
+func TestSceneViewsSnapshotUnavailable(t *testing.T) {
 	root := t.TempDir()
 	for _, args := range [][]string{{"--check", "--staged"}, {"--check", "--ref", "HEAD"}, {"--ref=main", "--check"}} {
 		result, err := tools.Run(root, "update_scene_views", args)

@@ -1,12 +1,11 @@
-// Package projectfile владеет правкой маркера проекта plan/project.json: переименование
-// (Projects.rename оригинала) и редактируемая часть настроек — название, имя MP4 аниматика,
-// постоянные инструкции агенту и блок generation (readProjectSettings/writeProjectSettings из
-// src/main/checks.ts). Чтение маркера для статуса остаётся у internal/status.
+// Package projectfile владеет правкой маркера проекта plan/project.json: переименование и
+// редактируемая часть настроек — название, имя MP4 аниматика, постоянные инструкции агенту и блок
+// generation. Чтение маркера для статуса остаётся у internal/status.
 //
 // Документ обрабатывается деревом jscompat: неизвестные поля, порядок ключей по правилам JS и
-// форма чисел после JSON.parse/stringify совпадают с оригиналом байт в байт (эталоны
-// testdata/golden/project-rename и project-settings). Запись атомарна и проходит шлюз записи
-// projectfs: проект с незавершённой многофайловой публикацией не правится.
+// форма чисел сохраняются байт в байт (эталоны testdata/golden/project-rename и
+// project-settings). Запись атомарна и проходит шлюз записи projectfs: проект с незавершённой
+// многофайловой публикацией не правится.
 package projectfile
 
 import (
@@ -23,7 +22,8 @@ import (
 	"songframe-go/internal/projectfs"
 )
 
-// Тексты оригинала (projectsTexts.main, checksTexts, projectTexts.agentInstructions, localFilesTexts).
+// Тексты frontend/src/shared/texts (projectsTexts.main, checksTexts,
+// projectTexts.agentInstructions, localFilesTexts).
 const (
 	emptyName            = "Название проекта не может быть пустым."
 	invalidNameCharacter = "Название проекта содержит недопустимый символ."
@@ -33,13 +33,13 @@ const (
 	objectExpected       = "ожидался JSON-объект"
 )
 
-// relativeFile — путь маркера в сообщениях настроек; join даёт системный разделитель, как в оригинале.
+// relativeFile — путь маркера в сообщениях настроек с системным разделителем.
 var relativeFile = filepath.Join("plan", "project.json")
 
 // File — путь маркера внутри проекта.
 func File(project string) string { return filepath.Join(project, "plan", "project.json") }
 
-// encode — JSON.stringify(value, null, 2) + '\n', формат writeLocalJson.
+// encode — JSON с отступом в два пробела и переводом строки в конце.
 func encode(value any) []byte { return []byte(jscompat.StringifyIndent(value, "  ") + "\n") }
 
 // write атомарно заменяет маркер после проверки шлюза; права существующего файла сохраняются.
@@ -50,7 +50,7 @@ func write(project string, value any) error {
 	return projectfs.WriteFile(File(project), encode(value), 0)
 }
 
-// readLocal — readLocalJson оригинала: отсутствие файла даёт (nil, nil), повреждённый или
+// readLocal читает маркер: отсутствие файла даёт (nil, nil), повреждённый или
 // не-объектный JSON — ошибку с путём; файл при этом не трогается.
 func readLocal(path string) (any, error) {
 	data, err := os.ReadFile(path)
@@ -128,8 +128,8 @@ type Settings struct {
 // SettingsInput — ProjectSettings из формы. AgentInstructions nil не меняет поле в файле.
 //
 // Unset — пути внутри generation, значения которых форма задала как undefined (сброс модели,
-// разрешения и т. п.). Electron IPC передавал такие ключи, и запись удаляла их из файла;
-// JSON-мост Wails ключи с undefined теряет, поэтому адаптер передаёт их отдельным списком.
+// разрешения и т. п.): запись удаляет такие ключи из файла. JSON-мост Wails ключи с undefined
+// теряет, поэтому адаптер передаёт их отдельным списком.
 type SettingsInput struct {
 	AgentInstructions *string         `json:"agentInstructions,omitempty"`
 	Name              string          `json:"name"`
@@ -157,7 +157,8 @@ func readProjectFile(project string) (*jscompat.Object, error) {
 	return object, nil
 }
 
-// instructions — agentInstructions: отсутствие поля означает пустые инструкции, другой тип — ошибка.
+// instructions — поле agentInstructions: отсутствие поля означает пустые инструкции, другой
+// тип — ошибка.
 func instructions(data *jscompat.Object) (string, error) {
 	value := data.Value("agent_instructions")
 	if value == jscompat.Undefined {
@@ -216,7 +217,7 @@ var (
 	aspectPattern   = regexp.MustCompile(`^\d+:\d+$`)
 )
 
-// Validate — validateProjectSettings: структурные правила блока generation совпадают с
+// Validate проверяет настройки: структурные правила блока generation совпадают с
 // scene_registry; готовность провайдера проверяется отдельно. generation — разобранный ввод формы.
 func Validate(name, animaticVideo string, generation any) []string {
 	problems := []string{}
@@ -286,7 +287,7 @@ func Validate(name, animaticVideo string, generation any) []string {
 	return problems
 }
 
-// merge — mergeSettings: известные поля формы поверх сохранённых, вложенные объекты (options,
+// merge — известные поля формы поверх сохранённых, вложенные объекты (options,
 // backend провайдера) сливаются рекурсивно, новые ключи встают в конец.
 func merge(previous, current *jscompat.Object) *jscompat.Object {
 	result := previous.Clone()
@@ -303,8 +304,7 @@ func merge(previous, current *jscompat.Object) *jscompat.Object {
 	return result
 }
 
-// unset удаляет из слитого блока ключи, которые форма передала как undefined. В оригинале
-// mergeSettings присваивал undefined, а JSON.stringify пропускал ключ: итог тот же.
+// unset удаляет из слитого блока ключи, которые форма передала как undefined.
 func unset(generation any, paths [][]string) {
 	for _, path := range paths {
 		if len(path) == 0 {

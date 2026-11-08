@@ -23,14 +23,14 @@ type InputImage struct {
 
 // GenerationInput — ReferenceImageGenerationInput контракта: только явно выбранные опоры; видимый
 // отредактированный промпт передаётся отдельной строкой. Images nil (поля нет или null) — неверный
-// ввод, как !Array.isArray оригинала.
+// ввод.
 type GenerationInput struct {
 	Images []InputImage `json:"images"`
 }
 
 var sha256Pattern = regexp.MustCompile(`^[a-f0-9]{64}$`)
 
-// Inspect — inspectReferenceImageInputs оригинала (cover.inspect и referenceImages.inspect): читает
+// Inspect — cover.inspect и referenceImages.inspect: читает
 // выбранные опоры без создания сессии, сохраняя порядок и все повторы. Каждая опора — абсолютный
 // путь без NUL, непустая подпись (обрезается), байты читаются, переданный SHA должен совпасть
 // (иначе TextReferenceInputsChanged: видимые номера относятся к прочитанным байтам), формат
@@ -63,7 +63,7 @@ func Inspect(input GenerationInput) ([]mediaapi.ReferenceImage, error) {
 	return mediafile.CheckedReferences(images)
 }
 
-// Inputs — referenceInputs оригинала: опоры сессии. Одинаковые байты отправляются один раз, а их
+// Inputs — опоры сессии. Одинаковые байты отправляются один раз, а их
 // нейтральные подписи объединяются через « · » без повторов; порядок — по первому появлению.
 // nil — опор нет.
 func Inputs(input *GenerationInput) ([]mediaapi.ReferenceImage, error) {

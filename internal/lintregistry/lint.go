@@ -1,9 +1,8 @@
-// Package lintregistry — перенос tools/lint_registry/lint_registry.py замороженного оригинала:
-// проверка plan/scenes.json, кастинга, описания, комплектов assets, файла принятия и рабочих
-// пакетов по JSON-схемам (подмножество JSON Schema оригинала) и правилам владения сведениями
-// (хроника принятий и технические рецепты не хранятся в постановке).
+// Package lintregistry проверяет plan/scenes.json, кастинг, описание, комплекты assets, файл
+// принятия и рабочие пакеты по встроенным JSON-схемам (подмножество JSON Schema) и правилам
+// владения сведениями (хроника принятий и технические рецепты не хранятся в постановке).
 //
-// Результат совпадает с CLI оригинала: строки «ОШИБКА/предупреждение  файл · место: текст»
+// Вывод зафиксирован эталоном testdata/golden/lint-registry: строки «ОШИБКА/предупреждение  файл · место: текст»
 // и итог, либо JSON {errors, warnings} с --json; код 1 при ошибках (и предупреждениях с --strict).
 // Данные неожиданной формы дают те же исключения Python (трассировка, код 1). Пакет только читает
 // файлы проекта; схемы встроены в бинарник, регулярные выражения — internal/pyre (семантика re).
@@ -27,7 +26,7 @@ import (
 //go:embed schemas/*.schema.json
 var schemaFiles embed.FS
 
-// Parser — argparse оригинала (описание — docstring модуля).
+// Parser — разбор аргументов lint_registry; Prog и описание видны в справке и ошибках разбора.
 var Parser = pycompat.ArgParser{
 	Prog:        "lint_registry.py",
 	Description: "Проверка реестра, комплектов и пакетов по схемам и правилам владения сведениями; @link README.md",
@@ -90,7 +89,7 @@ var snapshotAliases = [][]string{
 // awaitingStages — допустимые этапы пакета в plan/awaiting.
 var awaitingStages = []any{"ready", "needs_revision", "edit_review", "submitted", "downloaded", "image_request_choice", "image_submitted", "image_downloaded"}
 
-// Тексты проверок (дословно из оригинала).
+// Тексты проверок; дословно сверяются эталоном testdata/golden/lint-registry.
 const (
 	textFileMissing      = "файл отсутствует"
 	textAwaitingStage    = "пакет в очереди должен быть на этапе ready, needs_revision, edit_review, submitted, downloaded или image_request_choice/image_submitted/image_downloaded"
@@ -110,7 +109,7 @@ const (
 // item — запись отчёта {level, file, where, message}.
 type item struct{ level, file, where, message string }
 
-// Report — Report оригинала: ошибки и предупреждения в порядке обнаружения.
+// Report — отчёт проверки: ошибки и предупреждения в порядке обнаружения.
 type Report struct {
 	Errors, Warnings []item
 }
@@ -146,7 +145,7 @@ func readJSON(root, name string, r *Report) (any, error) {
 	return nil, err
 }
 
-// expectString — аргумент re.* должен быть строкой (TypeError оригинала).
+// expectString — аргумент re.* должен быть строкой, иначе TypeError, как в Python.
 func expectString(value any) (string, error) {
 	text, ok := value.(string)
 	if !ok {
@@ -339,8 +338,8 @@ func lintScenes(root string, r *Report) (any, error) {
 	return data, nil
 }
 
-// castReferences — references(cast) для сверки с реестром. KeyError и TypeError оригинал
-// перехватывает (ok=false — сверка пропускается), AttributeError (сущность не словарь) — нет.
+// castReferences — references(cast) для сверки с реестром. KeyError и TypeError перехватываются
+// (ok=false — сверка пропускается), AttributeError (сущность не словарь) — нет.
 // nonString — у сущности с изображением нестроковый id: такой ключ не совпадёт с JSON-картой.
 func castReferences(cast *pycompat.Dict) (result *pycompat.Dict, nonString, ok bool, err error) {
 	result = pycompat.NewDict()
@@ -751,7 +750,8 @@ func lintProductionStatus(root string, data any, r *Report) error {
 	return nil
 }
 
-// Lint — lint(root): полный отчёт проекта. Ошибка — необработанное исключение оригинала.
+// Lint — полный отчёт проекта. Ошибка соответствует необработанному исключению Python
+// (трассировка и код 1 в выводе инструмента).
 func Lint(root string) (*Report, error) {
 	r := &Report{}
 	data, err := lintScenes(root, r)

@@ -16,13 +16,13 @@ import (
 	"songframe-go/internal/scenario"
 )
 
-// Локальная запись сценарного прохода (WorkflowState оригинала) хранится вне проекта, в каталоге
+// Локальная запись сценарного прохода хранится вне проекта, в каталоге
 // состояния приложения: scenario-workflow/<sha256 пути проекта>.json. В ней утверждение пары
 // (approval), утверждение сцен (scenesApproval), признак needsScenesReview и ожидающее
 // предложение (pending: proposal, expectedHashes, scaffold, duration).
 //
-// Запись держится деревом jscompat и меняется на месте, как объект оригинала: порядок ключей
-// (в том числе message, добавленного после status) и форма JSON совпадают с Electron-версией.
+// Запись держится деревом jscompat и меняется на месте: порядок ключей (в том числе message,
+// добавленного после status) и форма JSON зафиксированы эталоном testdata/golden/scenario-workflow.
 // Повреждённая или чужая по форме запись не даёт утверждения: читается как пустая
 // {schemaVersion: 1}, проект при этом не меняется.
 
@@ -47,7 +47,7 @@ func emptyState() *jscompat.Object {
 	return state
 }
 
-// readState — read оригинала: проверенная запись или пустая при любой ошибке чтения и формы.
+// readState — проверенная запись или пустая при любой ошибке чтения и формы.
 func readState(localDir, project string) *jscompat.Object {
 	data, err := os.ReadFile(statePath(localDir, project))
 	if err != nil {
@@ -64,7 +64,7 @@ func readState(localDir, project string) *jscompat.Object {
 	return state
 }
 
-// writeState — write оригинала: JSON с отступом в два пробела и переводом строки, атомарная замена.
+// writeState — JSON с отступом в два пробела и переводом строки, атомарная замена.
 func writeState(localDir, project string, state *jscompat.Object) error {
 	path := statePath(localDir, project)
 	if err := os.MkdirAll(filepath.Dir(path), 0o777); err != nil {
@@ -131,7 +131,7 @@ func stringsArray(value any) bool {
 	return true
 }
 
-// checkStoredState — checkStoredState оригинала: форма локальной записи и снимков документов.
+// checkStoredState — проверка формы локальной записи и снимков документов.
 func checkStoredState(value any) error {
 	state, ok := jscompat.AsObject(value)
 	invalid := !ok || !jscompat.StrictEqual(state.Value("schemaVersion"), 1.0)

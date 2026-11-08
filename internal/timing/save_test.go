@@ -12,10 +12,10 @@ import (
 	"songframe-go/internal/projectfs"
 )
 
-// TestSaveProjectMatchesOriginal выполняет saveTiming целиком на копии каждого эталона timing-save:
+// TestSaveProjectMatchesGolden выполняет SaveProject на копии каждого эталона timing-save:
 // записанные байты совпадают с expected-timing.json, повторное сохранение результата не меняет файл,
 // а отказ проверки (validation-error) оставляет прежний timing.json байт в байт.
-func TestSaveProjectMatchesOriginal(t *testing.T) {
+func TestSaveProjectMatchesGolden(t *testing.T) {
 	for _, item := range golden.Load(t, "timing-save") {
 		t.Run(item.Name, func(t *testing.T) {
 			var want struct {
@@ -54,7 +54,7 @@ func TestSaveProjectMatchesOriginal(t *testing.T) {
 				t.Fatal(err)
 			}
 			if string(written) != string(item.Read(t, "expected-timing.json")) {
-				t.Fatalf("байты записанного файла отличаются от оригинала:\n%s", written)
+				t.Fatalf("байты записанного файла отличаются от эталона:\n%s", written)
 			}
 			if _, err := SaveProject(path, result); err != nil {
 				t.Fatal(err)

@@ -8,8 +8,7 @@ import (
 	"testing"
 )
 
-// Поиск и разворачивание обёрток Windows проверяются в Linux: платформа передаётся явно
-// (сценарии agent-command.test.ts оригинала).
+// Поиск и разворачивание обёрток Windows проверяются в Linux: платформа передаётся явно.
 
 func executableFile(t *testing.T, path, body string) string {
 	t.Helper()

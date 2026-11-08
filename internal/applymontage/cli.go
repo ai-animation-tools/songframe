@@ -10,7 +10,7 @@ import (
 	"songframe-go/internal/pytool"
 )
 
-// Parser — argparse apply_montage.py. Группа --spec/--recover обязательна (required=True);
+// Parser — разбор аргументов apply_montage. Группа --spec/--recover обязательна;
 // pycompat.ArgParser знает только необязательные группы, поэтому обязательность и скобки usage
 // проверяет Run.
 var Parser = pycompat.ArgParser{
@@ -24,10 +24,10 @@ var Parser = pycompat.ArgParser{
 	Exclusive: []string{"--spec", "--recover"},
 }
 
-// usage — usage оригинала с обязательной группой в круглых скобках.
+// usage — строка использования с обязательной группой в круглых скобках.
 const usage = "usage: apply_montage.py [-h] (--spec SPEC | --recover) [--no-views]\n"
 
-// help — справка argparse оригинала.
+// help — текст справки --help.
 const help = usage + `
 Применяет явный ручной монтаж к принятым сценам; @link README.md.
 
@@ -52,7 +52,7 @@ func argError(message string) pytool.Output {
 	return pytool.Output{Code: 2, Stderr: pycompat.TextMode(usage + "apply_montage.py: error: " + message + "\n")}
 }
 
-// Run — main() apply_montage.py на разрешённом корне проекта: --recover откатывает прерванные
+// Run — инструмент apply_montage на разрешённом корне проекта: --recover откатывает прерванные
 // публикации и печатает {"status": "recovered"}; --spec читает MontageDraft (относительный путь —
 // от корня проекта) и применяет его. Точный ValueError печатается своим текстом, остальные
 // ожидаемые ошибки — скрытым textHidden, прочие — трассировкой.

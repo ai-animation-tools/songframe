@@ -12,18 +12,18 @@ import (
 	"unicode/utf8"
 )
 
-// Сборка черновика plan/audio/timing.json после автоматической разметки — перенос build_timing
-// из align_lyrics оригинала с той же семантикой Python: подтверждённые строки прежней разметки
+// Сборка черновика plan/audio/timing.json после автоматической разметки (семантика Python
+// зафиксирована эталоном testdata/golden/timing-draft): подтверждённые строки прежней разметки
 // переносятся без изменений, ручные заметки сохраняются, сомнительные пути становятся кандидатами,
 // части песни пересчитываются только в автоматической части карты. Новые границы не публикуются,
 // если они пересекаются между собой или с подтверждёнными строками.
 //
 // Акустику (выделение вокала и CTC) выполняет internal/songml; сюда приходит готовый Recognition.
 // Значения прежнего файла читаются с различием int/float (pyjson.go), чтобы перенесённые строки и
-// числа записывались байт в байт так же, как Python.
+// числа записывались байт в байт в формате черновика.
 
-// AlignmentModel — подпись акустической модели в recognition.alignment оригинала и в статусе
-// черновика: локальное распознавание слов больше не выполняется, границы даёт CTC-модель.
+// AlignmentModel — подпись акустической модели в recognition.alignment и в статусе черновика:
+// распознавания слов нет, границы даёт CTC-модель.
 const AlignmentModel = "wav2vec2-large-xlsr-53-russian ONNX CTC"
 
 // ctcNote — заметка новой строки, найденной акустическим выравниванием.
@@ -38,7 +38,7 @@ const (
 	gapMinimum  = 2.0
 )
 
-// Сообщения align_lyrics оригинала; текст показывается в причине задания без изменений.
+// Сообщения автоматической разметки; текст показывается в причине задания без изменений.
 var (
 	errNoLyrics   = errors.New("В source/text.md нет строк песни.")
 	errDuration   = errors.New("В распознавании или треке указана неверная длительность.")
@@ -46,12 +46,12 @@ var (
 	errNoMatch    = errors.New("Не удалось сопоставить ни одной строки с аудио. Прежняя разметка сохранена; задайте границы вручную или выберите другую модель.")
 	errConflict   = errors.New("Новые границы конфликтуют между собой или с подтверждёнными строками. Прежняя разметка сохранена; исправьте границы вручную.")
 	errNotNumeric = errors.New("В разметке есть нечисловые значения. Прежний JSON сохранён.")
-	// errPrevious — прежний файл с неожиданной структурой: в оригинале Python падал с исключением,
-	// и разметка не записывалась; здесь та же остановка с понятной причиной.
+	// errPrevious — прежний файл с неожиданной структурой: разметка не записывается, причина
+	// объясняет, как продолжить.
 	errPrevious = errors.New("Прежняя разметка имеет неожиданную структуру. Исправьте её вручную или запустите разметку заново без сохранения подтверждённых строк.")
 )
 
-// Segment — строка, принятая акустическим выравниванием (сегмент recognition оригинала).
+// Segment — строка, принятая акустическим выравниванием (сегмент recognition).
 // Start/End — секунды декодированного вокала без округления.
 type Segment struct {
 	SourceLine int
@@ -105,7 +105,7 @@ func pySplitLines(text string) []string {
 	return lines
 }
 
-// Регулярные выражения align_lyrics; \s и \d Python для str — Unicode-классы.
+// Регулярные выражения разбора текста для черновика; \s и \d Python для str — Unicode-классы.
 var (
 	pyHeader       = regexp.MustCompile(`^\[([^\[\]]+)\]$`)
 	pyMarkdown     = regexp.MustCompile(`^(?:#{1,6}[\s\p{Z}\x1c-\x1f\x85]|[-*+][\s\p{Z}\x1c-\x1f\x85]|\p{Nd}+[.)][\s\p{Z}\x1c-\x1f\x85]|` + "```" + `|~~~)`)
@@ -121,7 +121,7 @@ type LyricLine struct {
 	Text   string
 }
 
-// LyricLines — lyric_lines оригинала: строки песни без пустых и заголовков; ошибка формата
+// LyricLines — строки песни без пустых и заголовков; ошибка формата
 // заголовка или Markdown останавливает разметку до долгого вычисления.
 func LyricLines(text string) ([]LyricLine, error) {
 	var lines []LyricLine
@@ -205,7 +205,7 @@ func pyKey(value any) (string, bool) {
 // lineKey — ключ номера строки исходного текста.
 func lineKey(number int) string { return strconv.Itoa(number) }
 
-// asObject — элемент, который Python читал бы как dict (иначе AttributeError в оригинале).
+// asObject — элемент как dict; иное значение означает неожиданную структуру прежнего файла.
 func asObject(value any) (*pyObject, error) {
 	object, ok := value.(*pyObject)
 	if !ok {
@@ -230,7 +230,7 @@ func previousList(previous *pyObject, key string) ([]any, error) {
 	return items, nil
 }
 
-// BuildDraft — build_timing оригинала для акустического выравнивания. previous — прежний
+// BuildDraft собирает черновик разметки по акустическому выравниванию. previous — прежний
 // timing.json в модели pyjson (nil — нет файла, повреждён или выбран сброс). duration —
 // длительность контейнера по ffprobe, округлённая до миллисекунд. sha256 — SHA исходного трека.
 func BuildDraft(text string, recognition Recognition, duration float64, previous any, sha256 string) (*pyObject, error) {
@@ -626,7 +626,7 @@ func pyLess(a, b any) bool {
 	return left < right
 }
 
-// pyBuildSections — build_sections: части по строкам и кандидатам; промежутки от 2 с без вокала
+// pyBuildSections — части песни по строкам и кандидатам; промежутки от 2 с без вокала
 // называются только при полной карте, иначе — «Не размечено». Сохраняется тип чисел Python
 // (min/max возвращают сам элемент, round(int) остаётся int).
 func pyBuildSections(parts []textPart, members map[string]*pyObject, duration float64, uncertain bool) []*pyObject {
@@ -702,7 +702,7 @@ func pyBuildSections(parts []textPart, members map[string]*pyObject, duration fl
 }
 
 // FromAlignment переводит строки CTC-выравнивания в принятые сегменты и сомнительных кандидатов
-// по правилам refine_lines оригинала: строка без пути не попадает никуда (её размечают вручную),
+// по правилам отбора: строка без пути не попадает никуда (её размечают вручную),
 // строка с причиной сомнения или короче 300 мс — кандидат, если средняя вероятность не ниже 0,45,
 // остальные — принятые неподтверждённые строки.
 func FromAlignment(lines []AlignedLine, decodedDuration float64) Recognition {
@@ -739,7 +739,7 @@ type AlignedLine struct {
 	Reason         string
 }
 
-// EncodeDraft — байты timing.json в формате записи оригинала (json.dumps indent=2 + перевод строки).
+// EncodeDraft — байты timing.json в формате черновика (json.dumps indent=2 + перевод строки).
 func EncodeDraft(draft *pyObject) ([]byte, error) {
 	data, err := encodePyJSON(draft)
 	if err != nil {
@@ -749,7 +749,7 @@ func EncodeDraft(draft *pyObject) ([]byte, error) {
 }
 
 // ParsePrevious читает прежний timing.json для переноса подтверждённых строк: повреждённый
-// или не-объектный файл считается отсутствующим, как read_json + isinstance(dict) оригинала.
+// или не-объектный файл считается отсутствующим.
 func ParsePrevious(data []byte) any {
 	if !utf8.Valid(data) {
 		return nil

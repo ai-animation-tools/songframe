@@ -8,14 +8,14 @@ import (
 	"strings"
 )
 
-// Поиск и запуск CLI агентов без shell в Linux и Windows (agent-command.ts и agents.ts оригинала).
+// Поиск и запуск CLI агентов без shell в Linux и Windows.
 //
 // Платформа передаётся явно (значения process.platform: "linux", "win32", …), чтобы поведение
 // Windows — расширения .exe/.cmd, регистр имён переменных, разворачивание обёрток npm — проверялось
-// и на Linux. Разделитель PATH, абсолютность и склейка путей, как в оригинале, берутся у ОС, на
-// которой работает приложение. Окружение — срез "КЛЮЧ=значение" формата os.Environ.
+// и на Linux. Разделитель PATH, абсолютность и склейка путей берутся у ОС, на которой работает
+// приложение. Окружение — срез "КЛЮЧ=значение" формата os.Environ.
 
-// hostPlatform — runtime.GOOS в обозначениях оригинала (Windows — win32).
+// hostPlatform — runtime.GOOS в обозначениях process.platform (Windows — win32).
 func hostPlatform() string {
 	if runtime.GOOS == "windows" {
 		return "win32"

@@ -13,9 +13,9 @@ func sortUTF16(keys []string) {
 	sort.SliceStable(keys, func(i, j int) bool { return jscompat.LessUTF16(keys[i], keys[j]) })
 }
 
-// SceneFingerprints — sceneFingerprints: SHA-256 канонического JSON контекста плана — сам план,
-// направление его части, общее визуальное направление и вычисленное состояние. Ключ — String(id).
-// Ошибка вычисления состояния делает весь реестр непригодным для сверки (как исключение оригинала).
+// SceneFingerprints — SHA-256 канонического JSON контекста плана — сам план, направление его
+// части, общее визуальное направление и вычисленное состояние. Ключ — String(id). Ошибка
+// вычисления состояния делает весь реестр непригодным для сверки.
 func SceneFingerprints(data any, initial *jscompat.Object) (*jscompat.Object, error) {
 	states, err := ResolveStates(data, initial)
 	if err != nil {

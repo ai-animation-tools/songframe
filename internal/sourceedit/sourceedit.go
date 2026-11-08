@@ -1,16 +1,15 @@
-// Package sourceedit ведёт форму «Исходники»: просмотр (viewSources), проверку (validateSources)
-// и сохранение (saveSources) трека, текста песни, идеи, обложки и референсов в source/ вместе с
-// описью source/manifest.json. Имена трека и текстов фиксированы (track.mp3, text.md,
-// description.md): их читают разметка, статус и кастинг.
+// Package sourceedit ведёт форму «Исходники»: просмотр, проверку и сохранение трека, текста
+// песни, идеи, обложки и референсов в source/ вместе с описью source/manifest.json. Имена трека
+// и текстов фиксированы (track.mp3, text.md, description.md): их читают разметка, статус и кастинг.
 //
 // Пакет отделён от internal/sources (чтение описи для статуса и кастинга), потому что проверке
 // нужен разбор текста песни из internal/timing, а timing сам зависит от sources.
 //
-// Результат совпадает с оригиналом (эталоны testdata/golden/sources-*): те же файлы, имена
-// изображений, промпты, порядок полей описи и тексты проблем. Прежняя опись читается деревом
-// jscompat, поэтому неизвестные поля трека, текста, идеи, обложки и типов сохраняются как в JS.
-// Отличия устройства: каждый файл заменяется атомарно (временный файл и rename), запись проходит
-// шлюз projectfs, а удаление по путям прежней описи не выходит за пределы source/.
+// Файлы, имена изображений, промпты, порядок полей описи и тексты проблем зафиксированы эталонами
+// testdata/golden/sources-*. Прежняя опись читается деревом jscompat, поэтому неизвестные поля
+// трека, текста, идеи, обложки и типов сохраняются как есть. Каждый файл заменяется атомарно
+// (временный файл и rename), запись проходит шлюз projectfs, а удаление по путям прежней описи
+// не выходит за пределы source/.
 package sourceedit
 
 import (
@@ -70,7 +69,7 @@ type PathInput struct {
 }
 
 // TextInput — текст песни или идея: файл ({path}) либо введённый текст ({text}).
-// Ровно одно поле задано; путь имеет приоритет, как 'path' in value в оригинале.
+// Ровно одно поле задано; если есть ключ path, он имеет приоритет.
 type TextInput struct {
 	Path *string `json:"path,omitempty"`
 	Text *string `json:"text,omitempty"`
@@ -123,15 +122,15 @@ type View struct {
 	ReferenceFilePaths map[string]string `json:"referenceFilePaths"`
 	Problems           []string          `json:"problems"`
 	// PinnedReferences — код референса → планы с готовыми материалами, которые его используют. Файлы
-	// таких референсов при смене типа остаются в прежней папке (SaveOptions.Pinned). Отличие от
-	// 634fd94, как и перенос файлов; заполняет internal/app через internal/referenceimage.
+	// таких референсов при смене типа остаются в прежней папке (SaveOptions.Pinned); заполняет
+	// internal/app через internal/referenceimage.
 	PinnedReferences map[string][]string `json:"pinnedReferences"`
 	// EntityKinds — код сущности кастинга → её тип: новый референс с тем же кодом берёт тип сущности.
-	// Отличие от 634fd94: там новый референс всегда начинался с первого типа. Без кастинга пусто.
+	// Без кастинга пусто.
 	EntityKinds map[string]string `json:"entityKinds"`
 }
 
-// Тексты sourcesTexts.main оригинала.
+// Тексты sourcesTexts.main (frontend/src/shared/texts/sources.ts).
 const (
 	kindReserved          = "Тип world зарезервирован для общих условий сцены."
 	unnamedReference      = "(без имени)"
@@ -207,7 +206,7 @@ func kindsValue(kinds []Kind) *jscompat.Array {
 	return &jscompat.Array{Items: items}
 }
 
-// ValidateKinds — validateKinds: коды, подписи и папки типов, без повторов; world зарезервирован.
+// ValidateKinds проверяет коды, подписи и папки типов, без повторов; world зарезервирован.
 func ValidateKinds(kinds []Kind) []string {
 	problems := []string{}
 	ids, dirs := map[string]bool{}, map[string]bool{}
@@ -239,7 +238,7 @@ func ValidateKinds(kinds []Kind) []string {
 	return problems
 }
 
-// ValidateReferences — validateReferences: коды, названия, известный тип и изображения референсов.
+// ValidateReferences проверяет коды, названия, известный тип и изображения референсов.
 func ValidateReferences(references []ReferenceInput, kinds []Kind) []string {
 	problems := []string{}
 	known := map[string]bool{}
@@ -290,7 +289,7 @@ func ValidateReferences(references []ReferenceInput, kinds []Kind) []string {
 	return problems
 }
 
-// readText — содержимое текстового файла или "", если его нет (existsSync оригинала).
+// readText — содержимое текстового файла или "", если его нет.
 func readText(path string) (string, error) {
 	if !jscompat.Exists(path) {
 		return "", nil
@@ -433,7 +432,7 @@ func Validate(project string, input Input) ([]string, error) {
 
 // lyricsForCheck — текст песни для разбора: введённый, из выбранного файла или сохранённый.
 func lyricsForCheck(project string, input *TextInput, existing any) (string, bool, error) {
-	// Для разбора введённый текст важнее пути, как 'text' in value в оригинале.
+	// Для разбора введённый текст важнее пути: если есть ключ text, берётся он.
 	if input != nil && input.Text != nil {
 		return *input.Text, true, nil
 	}
@@ -478,7 +477,7 @@ func textFrom(value *TextInput) (string, error) {
 // DurationProbe — путь ffprobe для длительности трека; пустой — FFmpeg не найден, длительность null.
 type DurationProbe string
 
-// probe — probeDuration: длительность в секундах с точностью до миллисекунды или nil.
+// probe — длительность в секундах с точностью до миллисекунды или nil.
 // Отсутствие или сбой ffprobe не блокирует сохранение исходников.
 func (p DurationProbe) probe(ctx context.Context, path string) any {
 	if p == "" {
@@ -531,8 +530,8 @@ func describe(source, relative string) (*jscompat.Object, error) {
 	return object, nil
 }
 
-// fileMode — права для замены: прежние у существующего файла, иначе 0666 с учётом umask,
-// как writeFileSync. copyFileSync переносит права источника, это решает вызывающий.
+// fileMode — права для замены: прежние у существующего файла, иначе 0666 с учётом umask.
+// Копирование переносит права источника, это решает вызывающий.
 func fileMode(path string) os.FileMode {
 	if info, err := os.Stat(path); err == nil {
 		return info.Mode().Perm()
@@ -548,7 +547,7 @@ func writeText(path, text string) error {
 	})
 }
 
-// copyFile — copyFileSync с атомарной заменой: содержимое и права источника, поток без чтения в память.
+// copyFile — копирование с атомарной заменой: содержимое и права источника, поток без чтения в память.
 func copyFile(from, to string) error {
 	source, err := os.Open(from)
 	if err != nil {
@@ -566,8 +565,7 @@ func copyFile(from, to string) error {
 }
 
 // replaceFile пишет во временный файл в той же папке, сбрасывает его на диск и переименовывает
-// поверх цели: сбой оставляет прежний файл целым. Права нового файла проходят через umask, как
-// у writeFileSync/copyFileSync оригинала.
+// поверх цели: сбой оставляет прежний файл целым. Права нового файла проходят через umask.
 func replaceFile(path string, mode os.FileMode, fill func(io.Writer) error) error {
 	suffix := make([]byte, 8)
 	if _, err := rand.Read(suffix); err != nil {
@@ -595,7 +593,7 @@ func replaceFile(path string, mode os.FileMode, fill func(io.Writer) error) erro
 	return nil
 }
 
-// removeLocal — rmSync(join(source, rel), {force: true}) только для путей внутри source:
+// removeLocal удаляет source/rel, если он есть, только для путей внутри source:
 // повреждённая опись с «..» не удаляет файлы вне папки исходников.
 func removeLocal(source, relative string) error {
 	local := filepath.FromSlash(relative)
@@ -622,7 +620,7 @@ func orNull(value any) any {
 	return value
 }
 
-// Save — saveSources оригинала (сохранение без кастинга): проверяет ввод, копирует новые файлы,
+// Save — сохранение без кастинга: проверяет ввод, копирует новые файлы,
 // пишет тексты и промпты и записывает опись. Новые файлы копируются, прежние остаются; изображения и
 // промпты, исчезнувшие из ввода, удаляются, только если они перечислены в прежней описи. ffprobe —
 // путь для длительности. Сервис sources.save вызывает его через internal/referenceimage, который
@@ -811,7 +809,7 @@ func (s *saver) savePrompt(relative, text string) error {
 // fileKey связывает файл ввода с его вычисленным путём: индекс референса и изображения.
 type fileKey struct{ ref, file int }
 
-// references строит референсы новой описи. Порядок шагов повторяет оригинал: сначала имена
+// references строит референсы новой описи. Порядок шагов важен: сначала имена
 // новых изображений (без занятых путей), затем пути промптов, которые перезапишутся, и только
 // потом запись — общий старый путь промпта может требоваться другому виду без изменений.
 func (s *saver) references(inputs []ReferenceInput, previous any, dirOf map[string]string) (*jscompat.Array, error) {

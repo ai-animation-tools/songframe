@@ -1,4 +1,4 @@
-/** Ожидания независимы от словаря: перенос сохраняет целые фразы и безопасный вывод внешних значений. */
+/** Ожидания независимы от словаря: правка словаря сохраняет целые фразы и безопасный вывод внешних значений. */
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';

@@ -14,19 +14,18 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/events"
 )
 
-// События отдельного окна плеера монтажа — те же имена каналов, что у Electron-оригинала
-// (src/main/montage-window.ts): адаптер frontend/src/platform подписывается на них через
-// Events.On. Сообщение получает только противоположная сторона, закрытие — только владелец.
+// События отдельного окна плеера монтажа: адаптер frontend/src/platform подписывается на них
+// через Events.On. Сообщение получает только противоположная сторона, закрытие — только владелец.
 const (
 	montageMessageEvent = "montage-window:message"
 	montageClosedEvent  = "montage-window:closed"
 	// montageBoundsFile хранит последнее обычное положение окна в каталоге состояния профиля.
 	montageBoundsFile = "montage-window.json"
-	// montageWindowTitle и montageOpenFailed повторяют montageTexts.main оригинала: заголовок
-	// нативного окна задаёт Go, а текст ошибки renderer показывает как есть.
+	// montageWindowTitle и montageOpenFailed — тексты окна плеера: заголовок нативного окна
+	// задаёт Go, а текст ошибки renderer показывает как есть.
 	montageWindowTitle = "Плеер монтажа — SongFrame"
 	montageOpenFailed  = "Не удалось открыть отдельное окно плеера."
-	// Размер по умолчанию и минимум окна оригинала (BrowserWindow 820×540, min 480×270).
+	// Размер окна плеера по умолчанию и его минимум.
 	montageDefaultWidth  = 820
 	montageDefaultHeight = 540
 	montageMinWidth      = 480
@@ -44,7 +43,7 @@ type montageOwner interface {
 
 // montagePlayer — окно плеера: кроме возможностей владельца сервис закрывает его и читает
 // положение для montage-window.json. Свёрнутое, развёрнутое и полноэкранное окно не даёт
-// «обычного» положения (getNormalBounds оригинала), поэтому состояние проверяется отдельно.
+// «обычного» положения, поэтому состояние проверяется отдельно.
 type montagePlayer interface {
 	montageOwner
 	Close()
@@ -54,8 +53,8 @@ type montagePlayer interface {
 	IsFullscreen() bool
 }
 
-// montageWindowEvent — MontageWindowEvent общего контракта (shared/montage-window.ts).
-// Сообщение пересылается сырым JSON: сервис его не разбирает и не меняет, как ipcMain оригинала.
+// montageWindowEvent — MontageWindowEvent общего контракта (frontend/src/shared/montage-window.ts).
+// Сообщение пересылается сырым JSON: сервис его не разбирает и не меняет.
 type montageWindowEvent struct {
 	Session string          `json:"session"`
 	Message json.RawMessage `json:"message"`
@@ -76,7 +75,7 @@ type montageSession struct {
 // существует не больше одного окна, и принадлежит оно странице, которая его открыла: сообщения
 // ходят только между владельцем и плеером, закрытие владельца закрывает плеер, а закрытие
 // плеера сообщает владельцу. Окно-источник вызова Wails кладёт в контекст (application.WindowKey),
-// поэтому, как и event.sender оригинала, отправителя не нужно передавать аргументом.
+// поэтому отправителя не нужно передавать аргументом.
 // Положение окна хранится в <каталог состояния>/montage-window.json и восстанавливается, только
 // если окно останется видимым на одном из экранов (usableMontageBounds).
 type MontageWindowService struct {
@@ -105,7 +104,7 @@ func ConfigureMontageWindow(s *MontageWindowService, desktop *application.App) {
 }
 
 // callerWindow достаёт окно-источник вызова binding. Вызов не из окна (без WindowKey) владельца
-// не имеет, и сервис его отвергает так же, как Electron — неизвестный webContents.
+// не имеет, и сервис его отвергает.
 func callerWindow(ctx context.Context) montageOwner {
 	if ctx == nil {
 		return nil
@@ -117,9 +116,9 @@ func callerWindow(ctx context.Context) montageOwner {
 }
 
 // Open создаёт окно плеера для session вызывающего окна. Второе открытие при уже открытом окне,
-// пустая сессия или вызов не из окна — ошибка windowOpenFailed оригинала. В отличие от Electron
-// Open не ждёт загрузки страницы: Wails создаёт окно асинхронно, а готовность плеер сам сообщает
-// владельцу сообщением { type: 'ready' }.
+// пустая сессия или вызов не из окна — ошибка montageOpenFailed. Open не ждёт загрузки страницы:
+// Wails создаёт окно асинхронно, а готовность плеер сам сообщает владельцу сообщением
+// { type: 'ready' }.
 func (s *MontageWindowService) Open(ctx context.Context, session string) error {
 	owner := s.caller(ctx)
 	if owner == nil || session == "" {
@@ -159,7 +158,7 @@ func (s *MontageWindowService) Open(ctx context.Context, session string) error {
 }
 
 // Close закрывает окно только по запросу его владельца и только своей сессии; иначе ничего не
-// делает, как ipcMain оригинала. Завершение выполняется сразу: владелец получает closed, а
+// делает. Завершение выполняется сразу: владелец получает closed, а
 // положение сохраняется до того, как Wails асинхронно уничтожит окно.
 func (s *MontageWindowService) Close(ctx context.Context, session string) error {
 	caller := s.caller(ctx)
@@ -208,7 +207,7 @@ func (s *MontageWindowService) Send(ctx context.Context, message json.RawMessage
 }
 
 // ownerClosing закрывает плеер вместе с владельцем. Владелец уже уходит, поэтому событие
-// closed ему не отправляется (оригинал проверял owner.isDestroyed()).
+// closed ему не отправляется.
 func (s *MontageWindowService) ownerClosing(entry *montageSession) {
 	s.finish(entry, false)
 	s.mu.Lock()
@@ -273,8 +272,8 @@ func (s *MontageWindowService) windowOptions(session string) application.Webview
 	if !ok {
 		return options
 	}
-	// Electron приводил дробные значения к целым отбрасыванием дробной части; сохранённые им
-	// и этим сервисом значения всегда целые.
+	// Дробные значения из файла приводятся к целым отбрасыванием дробной части; сам сервис
+	// записывает только целые.
 	x, y := int(bounds.X), int(bounds.Y)
 	options.Width, options.Height = int(bounds.Width), int(bounds.Height)
 	options.InitialPosition = application.WindowXY
@@ -283,10 +282,9 @@ func (s *MontageWindowService) windowOptions(session string) application.Webview
 	return options
 }
 
-// saveBounds пишет обычное положение окна в формате оригинала
-// (JSON.stringify(getNormalBounds()) — {"x","y","width","height"} без перевода строки).
-// Свёрнутое, развёрнутое или полноэкранное окно файл не меняет: остаётся прежнее обычное
-// положение, как у getNormalBounds. Ошибка записи не мешает закрытию плеера.
+// saveBounds пишет обычное положение окна компактным JSON {"x","y","width","height"} без
+// перевода строки. Свёрнутое, развёрнутое или полноэкранное окно файл не меняет: остаётся
+// прежнее обычное положение. Ошибка записи не мешает закрытию плеера.
 func (s *MontageWindowService) saveBounds(player montagePlayer) {
 	if player.IsMinimised() || player.IsMaximised() || player.IsFullscreen() {
 		return
@@ -310,22 +308,22 @@ func (s *MontageWindowService) saveBounds(player montagePlayer) {
 	_ = os.WriteFile(filepath.Join(s.localDir, montageBoundsFile), data, 0o644)
 }
 
-// montageBounds — сохранённое положение в единицах окна (DIP). Числа дробные, как в JS:
-// проверка оригинала выполняется над значениями файла до приведения к целым.
+// montageBounds — сохранённое положение в единицах окна (DIP). Числа дробные: проверка
+// выполняется над значениями файла до приведения к целым.
 type montageBounds struct {
 	X, Y, Width, Height float64
 }
 
-// usableMontageBounds переносит одноимённую функцию src/main/montage-window-bounds.ts вместе с
-// JSON.parse из registerMontageWindow: data — содержимое montage-window.json, areas — рабочие
-// области экранов. Положение годится, если это объект с четырьмя конечными числами, окно не
+// usableMontageBounds разбирает и проверяет сохранённое положение: data — содержимое
+// montage-window.json, areas — рабочие области экранов. Положение годится, если это объект с
+// четырьмя конечными числами, окно не
 // меньше 480×270 и хотя бы на одном экране видно не меньше 100×100 точек, причём верх окна
 // не выше рабочей области и не ниже её низа минус 30 точек. Возвращает и индекс первого такого
 // экрана — по нему окно ставится в абсолютные координаты. Любой сбой разбора — «нет положения».
 func usableMontageBounds(data []byte, areas []application.Rect) (montageBounds, int, bool) {
 	var raw any
 	if err := json.Unmarshal(data, &raw); err != nil {
-		// Включая числа вне double: JSON.parse даёт Infinity, и оригинал отвергает их как не конечные.
+		// Включая числа вне double: они не конечны, и положение отвергается.
 		return montageBounds{}, 0, false
 	}
 	object, ok := raw.(map[string]any)

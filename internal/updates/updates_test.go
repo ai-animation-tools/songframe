@@ -23,7 +23,7 @@ import (
 )
 
 // Обновления проверяются на подставном GitHub: без сети, с настоящими файлами во временной
-// папке, как updates.test.ts оригинала.
+// папке.
 
 var packageBytes = []byte("новая версия приложения")
 
@@ -169,7 +169,7 @@ func TestCheckCurrentAndErrors(t *testing.T) {
 		t.Fatalf("актуальная версия: %+v", view)
 	}
 	// deb-версия 1.0 против прежнего выпуска только с AppImage: актуальная версия, а не
-	// «нет пакета» (так отвечал публичный выпуск Electron 0.5.0).
+	// «нет пакета».
 	older, _ := manager(t, github{latest: releaseJSON("0.5.0", KindAppImage, packageBytes)}, Options{Kind: KindDeb, CurrentVersion: "1.0.0-dev.47"})
 	if view := older.Check(ctx); view.Status != StatusCurrent || view.Message != textCurrent {
 		t.Fatalf("прежний выпуск без deb: %+v", view)

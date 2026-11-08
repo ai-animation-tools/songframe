@@ -10,7 +10,7 @@ import (
 // jsSpaceClass — содержимое класса \s JavaScript для RE2 (в Go \s только ASCII).
 const jsSpaceClass = `\t\n\v\f\r \x{a0}\x{1680}\x{2000}-\x{200a}\x{2028}\x{2029}\x{202f}\x{205f}\x{3000}\x{feff}`
 
-// Шаблоны redact оригинала (agent-protocol.ts): ключи API, Bearer-токены и значения полей
+// Шаблоны скрытия секретов: ключи API, Bearer-токены и значения полей
 // с секретами заменяются служебным маркером «[скрыто]».
 var (
 	secretToken = regexp.MustCompile(`(?i)\b(?:sk-[A-Za-z0-9_-]{8,}|Bearer[` + jsSpaceClass + `]+[A-Za-z0-9._~-]+)`)
@@ -19,7 +19,7 @@ var (
 
 // Sanitize готовит текст для буфера обмена и отчёта: домашний каталог заменяется на «~»
 // (в обоих видах разделителей), похожие на токены значения скрываются. home пустой или из
-// одного символа не заменяется. Повторяет sanitize/hideHome/redact оригинала.
+// одного символа не заменяется.
 func Sanitize(text, home string) string {
 	if len(home) >= 2 {
 		variants := []string{home}
@@ -35,7 +35,7 @@ func Sanitize(text, home string) string {
 }
 
 // CopyText возвращает сведения задания и его журнал (до 1 МиБ с конца) одним текстом для
-// буфера обмена, построчно как jobText оригинала. Ошибка — только ErrNotFound.
+// буфера обмена. Ошибка — только ErrNotFound.
 func (m *Manager) CopyText(id string) (string, error) {
 	info, ok := m.Get(id)
 	if !ok {
@@ -54,7 +54,7 @@ func JobText(info Info, log, home string) string {
 	return Sanitize(Summary(info)+"\n\nЖурнал:\n"+trimmed+"\n", home)
 }
 
-// Summary — заголовок задания (jobInfo оригинала): ID и название, вид/проект/статус/код,
+// Summary — заголовок задания: ID и название, вид/проект/статус/код,
 // время, шаги и причина. Используется в тексте копирования и в отчёте.
 func Summary(info Info) string {
 	project := "общее задание приложения"

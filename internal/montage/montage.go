@@ -1,11 +1,11 @@
-// Package montage — перенос src/main/montage.ts, montage-video.ts и montage-recovery.ts оригинала:
-// каталог ручного монтажа (ViewProject), черновики plan/montage/<uuid>.json (Load/Save), экспорт
+// Package montage ведёт ручной монтаж соседних сцен: каталог монтажа (ViewProject), черновики
+// plan/montage/<uuid>.json (Load/Save), экспорт
 // пробы заданием build_review (Export), применение к сценам заданием apply_montage (Apply), путь и
 // копия готовой пробы (VideoPath/CopyVideo) и восстановление прерванной публикации журнала
 // plan/montage-history без инструмента (RecoverApplications/RecoverProjects).
 //
 // Черновик хранится деревом jscompat: неизвестные поля, порядок ключей и форма чисел сохраняются,
-// а записанный JSON совпадает с writeLocalJson байт в байт (эталон testdata/golden/montage).
+// а записанный JSON совпадает с эталоном testdata/golden/montage байт в байт.
 // Применение черновика к файлам сцен выполняет internal/applymontage.
 package montage
 
@@ -28,7 +28,7 @@ type Starter interface {
 	Start(spec jobs.Spec) (jobs.Info, error)
 }
 
-// Service — Montage оригинала: операции, которым нужен менеджер заданий (экспорт и применение).
+// Service — операции монтажа, которым нужен менеджер заданий (экспорт и применение).
 // Сам сервис состояния не хранит.
 type Service struct{ jobs Starter }
 
@@ -82,9 +82,9 @@ func writeDraft(project, rel string, value any) error {
 	return projectfs.WriteFile(filepath.Join(project, filepath.FromSlash(rel)), encode(value), 0)
 }
 
-// Save — Montage.save(project, draft, id): незавершённый черновик допустим (длины сверяются перед
-// экспортом и применением). Перезаписываемый файл проверяется только структурно: устаревшие пути
-// прежней версии не мешают сохранить исправленный черновик. id nil — новый UUID.
+// Save сохраняет черновик; незавершённый допустим (длины сверяются перед экспортом и
+// применением). Перезаписываемый файл проверяется только структурно: устаревшие пути в прежней
+// записи черновика не мешают сохранить исправленный. id nil — новый UUID.
 func Save(project string, draft any, id *string) (Saved, error) {
 	name := RandomUUID()
 	if id != nil {
@@ -116,8 +116,8 @@ func Save(project string, draft any, id *string) (Saved, error) {
 	return Saved{ID: name, Name: jscompat.Get(draft, "name").(string), UpdatedAt: isoTime(info)}, nil
 }
 
-// RemoveDraft удаляет сохранённый черновик plan/montage/<id>.json. В оригинале этого действия нет:
-// черновики только копились. Применённые сцены от файла не зависят, история применения хранит
+// RemoveDraft удаляет сохранённый черновик plan/montage/<id>.json. Применённые сцены от файла не
+// зависят, история применения хранит
 // собственную копию draft.json, поэтому удаление не меняет ни сцены, ни возможность восстановления.
 // Уже отсутствующий файл — не ошибка: цель действия достигнута.
 func RemoveDraft(project, id string) error {

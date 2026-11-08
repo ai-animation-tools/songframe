@@ -12,9 +12,9 @@ import (
 	"strings"
 )
 
-// Черновик автоматической разметки в оригинале собирал и записывал Python (align_lyrics,
-// json.dumps(ensure_ascii=False, indent=2)). Чтобы файл, который пишет Go, не отличался от
-// прежнего ни числами, ни форматом, черновик строится на значениях с семантикой Python json:
+// Черновик автоматической разметки записывается в формате json.dumps(ensure_ascii=False,
+// indent=2), зафиксированном эталоном timing-draft. Чтобы числа и формат не расходились с ним,
+// черновик строится на значениях с семантикой Python json:
 // целое и дробное различаются (7 и 7.0 пишутся по-разному и по-разному округляются), порядок
 // ключей — порядок вставки, дробные числа печатаются как repr(float).
 //
@@ -139,7 +139,7 @@ func decodePy(decoder *json.Decoder) (any, error) {
 }
 
 // encodePyJSON — json.dumps(value, ensure_ascii=False, indent=2) + "\n". allow_nan=False:
-// NaN/Infinity — ошибка, как проверка перед записью в оригинале.
+// NaN/Infinity — ошибка: такая разметка не записывается.
 func encodePyJSON(value any) ([]byte, error) {
 	var buffer bytes.Buffer
 	if err := writePy(&buffer, value, ""); err != nil {

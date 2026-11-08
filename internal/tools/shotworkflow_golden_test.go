@@ -23,17 +23,17 @@ import (
 const (
 	tmpMarker = "<tmp>"
 	outMarker = "<out>"
-	// swNow — замороженное now() съёмки (обёртка run_shot_workflow.py).
+	// swNow — фиксированное now() эталона shot-workflow.
 	swNow = "2026-11-04T12:00:00+00:00"
 )
 
-// promptAdapter — поддельный адаптер провайдера test съёмки (fakes/sw_fake_adapter.py):
-// PROMPT_WARNING_CHARS = 40.
+// promptAdapter — поддельный адаптер провайдера test эталона shot-workflow: предупреждение о
+// длине промпта начиная с 40 символов.
 type promptAdapter struct{}
 
 func (promptAdapter) PromptWarningChars() int { return 40 }
 
-// treeEntry — файл дерева: байты и права (st_mode & 0o777), как tree_state скрипта съёмки.
+// treeEntry — файл дерева: байты и права (st_mode & 0o777), как в состоянии дерева эталона.
 type treeEntry struct {
 	data []byte
 	mode fs.FileMode
@@ -103,7 +103,7 @@ func isDir(path string) bool {
 }
 
 // markers — замена путей случая маркерами, длинный путь первым (временная папка может лежать
-// внутри проекта), как normalize_text скрипта съёмки.
+// внутри проекта), так же, как маркеры записаны в эталоне.
 type markers [][2]string
 
 func newMarkers(pairs ...[2]string) markers {
@@ -196,7 +196,8 @@ func (run toolCase) checkStreams(t *testing.T, result tools.Result, sortedStdout
 	}
 }
 
-// sortedLines — строки вывода как мультимножество: оригинал печатал планы по мере завершения потоков.
+// sortedLines — строки вывода как мультимножество: планы печатаются по мере завершения потоков,
+// порядок между ними не определён.
 func sortedLines(text string) string {
 	lines := strings.Split(text, "\n")
 	sort.Strings(lines)
@@ -277,7 +278,7 @@ func (run toolCase) checkTree(t *testing.T, c golden.Case, before snapshot) {
 
 // TestShotWorkflowGolden запускает tools.run("shot_workflow") на входах эталона shot-workflow и
 // сверяет код, stdout, stderr и все изменения файлов проекта и временной папки ОС (байты, права
-// workflow.json, созданные и удалённые каталоги) с процессом оригинала. Время now() заморожено,
+// workflow.json, созданные и удалённые каталоги) с эталоном. Время now() фиксировано,
 // провайдер test проекта-образца получает предел длины промпта 40 символов.
 func TestShotWorkflowGolden(t *testing.T) {
 	previousNow := shotworkflow.Now

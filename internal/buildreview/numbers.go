@@ -8,8 +8,8 @@ import (
 	"songframe-go/internal/pycompat"
 )
 
-// Числовые помощники build_review. Оригинал считает кадры целыми Python произвольной длины и
-// Decimal; здесь кадры — *big.Int, а округления и строки повторяют decimal.Decimal: от записи
+// Числовые помощники build_review. Кадры — целые произвольной длины (*big.Int), секунды —
+// Decimal, а округления и строки повторяют decimal.Decimal Python: от записи
 // скорости и секунд зависят фильтры FFmpeg и байты рецепта.
 
 // bigInt — значение pycompat.Int как *big.Int.
@@ -53,7 +53,7 @@ func roundHalfUp(value *big.Rat) *big.Int {
 	return result
 }
 
-// frames — frames(value) оригинала: int(value.to_integral_value(ROUND_HALF_UP)). У NaN и
+// frames — секунды в кадры: int(value.to_integral_value(ROUND_HALF_UP)). У NaN и
 // бесконечности — ошибки int(): ValueError «cannot convert NaN to integer» и OverflowError.
 func frames(value pycompat.Decimal) (*big.Int, error) {
 	if !isFinite(value) {
@@ -74,7 +74,7 @@ func framesTimesFPS(value pycompat.Decimal) (*big.Int, error) {
 	return roundHalfUp(product), nil
 }
 
-// seconds — seconds(value) оригинала: кадры в секунды строкой format(Decimal/30, "f") с 9 знаками.
+// seconds — кадры в секунды строкой format(Decimal/30, "f") с 9 знаками.
 func seconds(value *big.Int) (string, error) {
 	divided, err := decimalOf(value).Div(pycompat.DecimalInt(FPS))
 	if err != nil {

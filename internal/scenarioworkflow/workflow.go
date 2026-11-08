@@ -1,5 +1,4 @@
-// Package scenarioworkflow — сценарный проход агента (ScenarioWorkflow оригинала,
-// src/main/scenario-workflow.ts и scenario-apply.ts на 634fd94): подготовка предложения кастинга
+// Package scenarioworkflow ведёт сценарный проход агента: подготовка предложения кастинга
 // и трактовки, реестра сцен или доработки выбранных планов, хранение предложения вне проекта,
 // его разбор и проверка, утверждения пары и сцен и применение одной транзакцией.
 //
@@ -74,18 +73,18 @@ type Options struct {
 	LocalDir string
 	// Agents — менеджер внешних агентов; обязателен: без него сценарный проход не создаётся.
 	Agents Agents
-	// RequireAgentAccess — ai.requireAccess(project, 'agent') оригинала перед запуском прохода:
-	// сохранённый агент, найденная программа и вход. nil — проверка у менеджера агентов.
+	// RequireAgentAccess — проверка доступа к агенту перед запуском прохода: сохранённый агент,
+	// найденная программа и вход. nil — проверка у менеджера агентов.
 	RequireAgentAccess func(project string) error
 	// Scaffold — каркас реестра для прохода сцен; nil — scene_scaffold --dry-run --json.
 	Scaffold func(project string) (any, error)
-	// Publish — публикация предложения; nil — publishScenario через журнал LocalDir.
+	// Publish — публикация предложения; nil — штатная публикация (publish) через журнал LocalDir.
 	Publish func(Publication) error
 }
 
-// Workflow — ScenarioWorkflow. Методы безопасны для конкурентного вызова из сервиса Wails:
-// mu защищает локальные записи и множество preparing; подготовка каркаса и публикация идут без
-// блокировки, а вид в это время сообщает busy, как в оригинале.
+// Workflow — сценарный проход проектов. Методы безопасны для конкурентного вызова из сервиса
+// Wails: mu защищает локальные записи и множество preparing; подготовка каркаса и публикация идут
+// без блокировки, а вид в это время сообщает busy.
 type Workflow struct {
 	options   Options
 	mu        sync.Mutex
@@ -109,7 +108,7 @@ func New(options Options) *Workflow {
 	return &Workflow{options: options, preparing: map[string]bool{}}
 }
 
-// defaultScaffold — scaffold из ipc.ts оригинала: каркас scene_scaffold без записи.
+// defaultScaffold — каркас scene_scaffold без записи в проект.
 func defaultScaffold(project string) (any, error) {
 	result, err := tools.Run(project, "scene_scaffold", []string{"--dry-run", "--json"})
 	if err != nil {
@@ -164,7 +163,7 @@ func stringArray(items []string) *jscompat.Array {
 	return &jscompat.Array{Items: values}
 }
 
-// refresh — refresh оригинала: устаревание предложения и итог задания агента. Запись обновляется,
+// refresh — устаревание предложения и итог задания агента. Запись обновляется,
 // только когда работавшее задание завершилось (ready, invalid, failed, cancelled, interrupted).
 func (w *Workflow) refresh(input *inputs, state *jscompat.Object) (*AgentJob, error) {
 	stored, proposal := pendingProposal(state)
@@ -283,7 +282,7 @@ func (w *Workflow) busy(project string) bool {
 	return slices.ContainsFunc(w.options.Agents.List(project), func(job AgentJob) bool { return job.Status == "running" })
 }
 
-// view — view оригинала под блокировкой mu: входы, обновлённая запись и доступность действий.
+// view — вид под блокировкой mu: входы, обновлённая запись и доступность действий.
 func (w *Workflow) view(project string) (View, *inputs, error) {
 	input, err := readInputs(project)
 	if err != nil {
@@ -362,7 +361,7 @@ func blocked(view View, fallback string) error {
 // Start — scenarioWorkflow.start: подготовка контекста и промпта, запуск задания агента и запись
 // ожидающего предложения. Проект не меняется.
 func (w *Workflow) Start(input StartInput) (View, error) {
-	// Как в ipc.ts оригинала: доступ к агенту проверяется до разбора параметров прохода.
+	// Доступ к агенту проверяется до разбора параметров прохода: порядок отказов зафиксирован эталонами.
 	if w.options.RequireAgentAccess != nil {
 		if err := w.options.RequireAgentAccess(input.Project); err != nil {
 			return View{}, err
@@ -378,7 +377,7 @@ func (w *Workflow) Start(input StartInput) (View, error) {
 	return w.View(project)
 }
 
-// start — тело start оригинала до финального view; preparing снимается до возврата.
+// start — запуск прохода до финального view; preparing снимается до возврата.
 func (w *Workflow) start(input StartInput) (string, error) {
 	w.mu.Lock()
 	initial, err := readInputs(input.Project)
@@ -482,7 +481,7 @@ func (w *Workflow) start(input StartInput) (string, error) {
 	return initial.project, writeState(w.options.LocalDir, initial.project, state)
 }
 
-// agentContext — контекст задания: JSON без отступов, как JSON.stringify оригинала.
+// agentContext — контекст задания: JSON без отступов; байты входят в хеш задания и эталоны.
 func agentContext(initial *inputs, pass string, selected []string, note string, scaffold any) (string, error) {
 	idea, err := readText(initial.project, "source", jscompat.ToString(jscompat.GetPath(initial.manifest, "idea", "path")))
 	if err != nil {
@@ -529,7 +528,7 @@ func agentContext(initial *inputs, pass string, selected []string, note string, 
 	return jscompat.Stringify(context), nil
 }
 
-// readText — readFileSync(join(...), 'utf8').
+// readText — содержимое файла проекта как текст UTF-8.
 func readText(project string, parts ...string) (string, error) {
 	path := filepath.Join(append([]string{project}, parts...)...)
 	data, err := os.ReadFile(path)

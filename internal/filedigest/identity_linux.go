@@ -8,7 +8,7 @@ import (
 	"syscall"
 )
 
-// identity — dev:ino:size:mtimeNs:ctimeNs, как ключ кэша оригинала.
+// identity — ключ кэша dev:ino:size:mtimeNs:ctimeNs.
 func identity(info os.FileInfo) string {
 	if stat, ok := info.Sys().(*syscall.Stat_t); ok {
 		return fmt.Sprintf("%d:%d:%d:%d:%d", stat.Dev, stat.Ino, stat.Size,

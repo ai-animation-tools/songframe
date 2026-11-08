@@ -10,13 +10,14 @@ import (
 	"songframe-go/internal/projectfs"
 )
 
-// Тексты animaticTexts.main оригинала для принятия.
+// Тексты ошибок принятия аниматика.
 const (
 	textBuildRequired      = "Нет собранного аниматика: сначала соберите его."
 	textFreshBuildRequired = "Аниматик собран по устаревшему реестру или входам: пересоберите перед принятием."
 )
 
-// Пути оригинала (STATUS_FILE, MANIFEST): относительные, через «/» для записи в production-status.
+// Пути статуса производства и манифеста сборки: относительные, через «/» для записи в
+// production-status.
 const (
 	statusFile   = "plan/production-status.json"
 	manifestFile = "plan/animatic/latest/manifest.json"
@@ -24,7 +25,7 @@ const (
 
 // View — AnimaticView контракта (frontend/src/shared/types.ts): сборка latest, её планы для
 // плеера, принятие, свежесть карточек и проблемы. BlockedReason заполняет сервис приложения,
-// когда сценарий нужно утвердить заново (reviewProblem оригинала).
+// когда сценарий нужно утвердить заново.
 type View struct {
 	Built         *Built   `json:"built"`
 	Shots         []Shot   `json:"shots"`
@@ -33,7 +34,7 @@ type View struct {
 	Problems      []string `json:"problems"`
 	BlockedReason *string  `json:"blockedReason,omitempty"`
 	// videoSha — manifest.video_sha256 ?? null как есть: SetStatus проверяет его истинность и
-	// записывает без преобразования, как оригинал (в DTO уходит строковый VideoSha256).
+	// записывает без преобразования (в DTO уходит строковый VideoSha256).
 	videoSha any
 }
 
@@ -103,8 +104,8 @@ func textPointer(value any) *string {
 	return &result
 }
 
-// number — Number(value ?? 0). JSON Wails не переносит NaN и бесконечности (IPC Electron
-// переносил), поэтому для повреждённого значения отдаётся 0.
+// number — Number(value ?? 0). JSON Wails не переносит NaN и бесконечности, поэтому для
+// повреждённого значения отдаётся 0.
 func number(value any) float64 {
 	result := jscompat.ToNumber(jscompat.Coalesce(value, 0.0))
 	if math.IsNaN(result) || math.IsInf(result, 0) {
@@ -113,7 +114,7 @@ func number(value any) float64 {
 	return result
 }
 
-// readStatus — readStatus оригинала: production-status.json или значения по умолчанию.
+// readStatus читает production-status.json или возвращает значения по умолчанию.
 func readStatus(project string) any {
 	status := readJSON(filepath.Join(project, filepath.FromSlash(statusFile)))
 	if status == nil {
@@ -126,9 +127,9 @@ func readStatus(project string) any {
 	return status
 }
 
-// ViewAnimatic — viewAnimatic(project): чтение latest, свежесть по реестру и фактическим входам
-// (inputProblems), список планов для плеера и состояние принятия. Ничего не пишет; ошибка —
-// исключение оригинала (например, план null или нестроковый путь карточки в манифесте).
+// ViewAnimatic читает latest, проверяет свежесть по реестру и фактическим входам
+// (inputProblems), собирает список планов для плеера и состояние принятия. Ничего не пишет;
+// ошибка — повреждённый манифест (например, план null или нестроковый путь карточки).
 func ViewAnimatic(project string) (View, error) {
 	result, _, err := inspect(project)
 	return result, err
@@ -234,8 +235,8 @@ func digestText(path string) (string, bool) {
 	return text, ok
 }
 
-// shotList — manifest.shots.map(...) оригинала: значения по умолчанию, числа через Number и
-// абсолютные пути карточек. Исключения — как в оригинале: s.id у null и join() с нестроковым путём.
+// shotList — планы манифеста для плеера: значения по умолчанию, числа через Number и
+// абсолютные пути карточек. Ошибки — обращение к id у null и нестроковый путь карточки.
 func shotList(project string, shots []any) ([]Shot, error) {
 	result := make([]Shot, 0, len(shots))
 	for _, item := range shots {
@@ -274,11 +275,11 @@ func shotList(project string, shots []any) ([]Shot, error) {
 	return result, nil
 }
 
-// SetStatus — setAnimaticStatus(project, status): принятие текущей сборки (approved) или возврат
-// на просмотр (иное значение, в контракте — review). Принять можно только собранную и свежую
-// сборку; прочие поля production-status.json сохраняются в порядке JS-объекта, approved_animatic
-// пишется при принятии и удаляется при возврате. Запись атомарна (у оригинала — writeFileSync) и
-// проходит шлюз записи проекта. Возвращает вид после записи.
+// SetStatus принимает текущую сборку (approved) или возвращает её на просмотр (иное значение,
+// в контракте — review). Принять можно только собранную и свежую сборку; прочие поля
+// production-status.json сохраняются в прежнем порядке ключей, approved_animatic пишется при
+// принятии и удаляется при возврате. Запись атомарна и проходит шлюз записи проекта.
+// Возвращает вид после записи.
 func SetStatus(project, status string) (View, error) {
 	view, err := ViewAnimatic(project)
 	if err != nil {

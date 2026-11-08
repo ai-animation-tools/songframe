@@ -1,17 +1,17 @@
-// Package scenescaffold — перенос tools/scene_scaffold/scene_scaffold.py замороженного оригинала:
-// детерминированный каркас реестра сцен plan/scenes.json из сохранённой трактовки
-// (plan/treatment.json), разметки трека (plan/audio/timing.json), текста песни и кастинга.
+// Package scenescaffold строит детерминированный каркас реестра сцен plan/scenes.json
+// (инструмент scene_scaffold) из сохранённой трактовки (plan/treatment.json), разметки трека
+// (plan/audio/timing.json), текста песни и кастинга.
 //
 // Каркас нарезает кадровые окна планов на сетке 30 кадров/с по строкам песни и частям трактовки,
 // выводит карту references из кастинга и заполняет поля постановки заготовками; смысл планов
 // (камера, действие, непрерывность, состояние) дописывает агент или редактор сценария. Результат
 // проходит sceneregistry.Validate.
 //
-// Перенос сохраняет поведение Python-инструмента целиком: те же байты файла, вывод --json и
-// текстовый, тексты ошибок и коды завершения (Run). Значения — модель pycompat: числа трактовки и
-// разметки читаются с различием int/float, а сообщения повторяют repr Python. Трактовка может быть
-// сохранена редактором черновиком с проблемами (scenario.SaveTreatment); каркас, как и оригинал,
-// проверяет её сам (ValidateTreatment) и отказывает тем же текстом.
+// Байты файла, вывод --json и текстовый, тексты ошибок и коды завершения (Run) зафиксированы
+// эталоном testdata/golden/scene-scaffold в семантике Python. Значения — модель pycompat: числа
+// трактовки и разметки читаются с различием int/float, а сообщения повторяют repr Python.
+// Трактовка может быть сохранена редактором черновиком с проблемами (scenario.SaveTreatment),
+// поэтому каркас проверяет её сам (ValidateTreatment) и отказывает текстом проблемы.
 package scenescaffold
 
 import (
@@ -22,7 +22,7 @@ import (
 	"songframe-go/internal/sceneregistry"
 )
 
-// Константы оригинала.
+// Кадровая сетка и пути документов каркаса.
 const (
 	FPS            = 30
 	TreatmentPath  = "plan/treatment.json"
@@ -35,8 +35,9 @@ const (
 	Placeholder    = "ЗАПОЛНИТЬ"
 )
 
-// maxPieces — предел числа равных кусков одного участка. Python строил бы такой список минутами и
-// исчерпал память (шаг в доли кадра на длинном треке); Go отказывает сразу MemoryError.
+// maxPieces — предел числа равных кусков одного участка: такой список строился бы минутами и
+// исчерпал бы память (шаг в доли кадра на длинном треке), поэтому инструмент сразу отказывает
+// MemoryError.
 const maxPieces = 100_000_000
 
 // frame — frame(seconds): int(round(float(seconds) * 30)) с половиной к чётному.
@@ -57,7 +58,7 @@ func trueDiv(a, b int64) (float64, error) {
 	return value, nil
 }
 
-// ValidateTreatment — validate_treatment(data, duration): части трактовки покрывают трек без
+// ValidateTreatment — части трактовки покрывают трек без
 // разрывов и наложений (допуск 0,06 с); возвращает части, отсортированные по началу.
 func ValidateTreatment(data any, duration float64) ([]any, error) {
 	document, ok := data.(*pycompat.Dict)
@@ -126,7 +127,7 @@ func abs(value float64) float64 {
 	return value
 }
 
-// asDict — часть, у которой оригинал вызывает .get: не-словарь — AttributeError.
+// asDict — часть трактовки как словарь: не-словарь — AttributeError (текст зафиксирован эталоном).
 func asDict(value any) (*pycompat.Dict, error) {
 	dict, ok := value.(*pycompat.Dict)
 	if !ok {
@@ -191,7 +192,7 @@ func pieces(start, length, count int64) ([]int64, error) {
 	return result, nil
 }
 
-// ShotBoundaries — shot_boundaries(part, lines, end_frame): начала планов внутри части в кадрах и
+// ShotBoundaries — начала планов внутри части в кадрах и
 // строки песни, середина которых попадает в часть. Границы — начала строк (пауза до первой и после
 // последней строки длиннее 2,5 с — отдельный план), часть без строк делится на равные куски по
 // max_shot_seconds; планы короче 15 кадров сливаются, длинный кусок без строки делится на равные
@@ -305,7 +306,7 @@ func ShotBoundaries(part *pycompat.Dict, lines []any, endFrame int64) ([]int64, 
 	return result, inside, nil
 }
 
-// FormatSeconds — format_seconds(value): f"{float(value):.6f}" без хвостовых нулей и точки.
+// FormatSeconds — f"{float(value):.6f}" без хвостовых нулей и точки.
 func FormatSeconds(value float64) string {
 	text := pycompat.FormatFixed(value, 6)
 	for len(text) > 0 && text[len(text)-1] == '0' {
@@ -383,7 +384,7 @@ func partTitle(part *pycompat.Dict) (any, error) {
 	return pycompat.DictGet(part, "title", id)
 }
 
-// BuildScenes — build_scenes(treatment, timing, textLines, cast, duration, existing): реестр сцен —
+// BuildScenes — реестр сцен —
 // последовательности из частей трактовки, планы по ShotBoundaries, заготовки полей постановки,
 // references из кастинга и visual_direction из прежнего реестра (existing, может быть nil) или
 // заготовка. initial — начальное состояние кастинга для итоговой проверки Validate.

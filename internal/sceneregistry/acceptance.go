@@ -12,7 +12,7 @@ import (
 )
 
 // Принятие плана привязано к постановке: отпечаток хранится в plan/production-status.json →
-// shots.Mxx.scene_sha256. То же правило повторяет главный процесс (internal/acceptance).
+// shots.Mxx.scene_sha256. То же правило для страниц приложения применяет internal/acceptance.
 
 // Состояния принятых комплектов и причины устаревания (значения shot_acceptance).
 const (
@@ -25,7 +25,7 @@ const (
 	SourceChanged        = "source_changed"
 )
 
-// EmptyProductionStatus — EMPTY_PRODUCTION_STATUS: содержимое нового файла принятия, совпадающее с
+// EmptyProductionStatus — содержимое нового файла принятия, совпадающее с
 // шаблоном проекта. Возвращается новая копия.
 func EmptyProductionStatus() *pycompat.Dict {
 	status := pycompat.NewDict()
@@ -36,7 +36,7 @@ func EmptyProductionStatus() *pycompat.Dict {
 	return status
 }
 
-// ReadProductionStatus — read_production_status(root): объект plan/production-status.json;
+// ReadProductionStatus — объект plan/production-status.json;
 // отсутствующий файл — nil, ошибка чтения или разбора — ValueError «Не удалось прочитать …: <текст
 // исключения Python>», не-объект — ValueError.
 func ReadProductionStatus(root string) (*pycompat.Dict, error) {
@@ -57,7 +57,7 @@ func ReadProductionStatus(root string) (*pycompat.Dict, error) {
 	return status, nil
 }
 
-// AcceptedFingerprints — accepted_fingerprints(status): отпечатки постановки, по которым приняты
+// AcceptedFingerprints — отпечатки постановки, по которым приняты
 // комплекты, {Mxx: sha} в порядке файла; nil-статус или пустой объект без shots — пусто. Неверная
 // запись — ValueError.
 func AcceptedFingerprints(status *pycompat.Dict) (*pycompat.Dict, error) {
@@ -84,11 +84,11 @@ func AcceptedFingerprints(status *pycompat.Dict) (*pycompat.Dict, error) {
 	return result, nil
 }
 
-// WithAcceptedFingerprints — with_accepted_fingerprints(status, updates, clear): копия статуса с
+// WithAcceptedFingerprints — копия статуса с
 // новыми отпечатками принятых планов (updates: код → hex). Прочие поля и записи других планов
 // сохраняются; clearSourceReviews удаляет прежнюю сверку source_review (новая приёмка приносит
-// свою квитанцию generation). Записи shots упорядочиваются по монтажному номеру, как у записи
-// главного процесса. nil-статус — EmptyProductionStatus.
+// свою квитанцию generation). Записи shots упорядочиваются по монтажному номеру, как при записи
+// статуса из приложения (internal/acceptance). nil-статус — EmptyProductionStatus.
 func WithAcceptedFingerprints(status *pycompat.Dict, updates *pycompat.Dict, clearSourceReviews bool) (*pycompat.Dict, error) {
 	result := EmptyProductionStatus()
 	if status != nil {
@@ -133,9 +133,9 @@ func WithAcceptedFingerprints(status *pycompat.Dict, updates *pycompat.Dict, cle
 	return result, nil
 }
 
-// WriteAcceptedFingerprints — write_accepted_fingerprints(root, updates, clear): атомарная запись
-// plan/production-status.json с новыми отпечатками (WithAcceptedFingerprints). Отличие от
-// оригинала: запись проходит шлюз projectfs.CheckWrite, как вся запись Go-версии в проект.
+// WriteAcceptedFingerprints — атомарная запись
+// plan/production-status.json с новыми отпечатками (WithAcceptedFingerprints). Запись проходит
+// шлюз projectfs.CheckWrite, как любая запись приложения в проект.
 func WriteAcceptedFingerprints(root string, updates *pycompat.Dict, clearSourceReviews bool) error {
 	status, err := ReadProductionStatus(root)
 	if err != nil {
@@ -170,10 +170,10 @@ func isRelativeTo(path, directory string) bool {
 	return path == directory || strings.HasPrefix(path, strings.TrimSuffix(directory, string(filepath.Separator))+string(filepath.Separator))
 }
 
-// SourceVideoSnapshot — source_video_snapshot(root, shot, allowDerived): фактический SHA-256
+// SourceVideoSnapshot — фактический SHA-256
 // выбранного монтажного ролика комплекта assets/shots/<shot>, если он совпадает с записанным в
 // manifest.json accepted_edit.video.sha256; иначе ok=false. Производный комплект (derived_video)
-// допускается только при allowDerived. Любая ошибка чтения или формы — ok=false, как в оригинале.
+// допускается только при allowDerived. Любая ошибка чтения или формы — ok=false.
 func SourceVideoSnapshot(root, shot string, allowDerived bool) (string, bool) {
 	directory, ok := resolvePath(filepath.Join(root, "assets", "shots", shot))
 	if !ok {
@@ -236,8 +236,8 @@ type AcceptanceInput struct {
 	AcceptedSnapshot Snapshot
 }
 
-// Acceptance — итог shot_acceptance: состояние (completed/stale) планов с комплектом и причины
-// устаревания; оба словаря упорядочены, как в оригинале (причины — по порядку назначения).
+// Acceptance — итог ShotAcceptance: состояние (completed/stale) планов с комплектом и причины
+// устаревания; порядок обоих словарей зафиксирован эталоном (причины — по порядку назначения).
 type Acceptance struct {
 	States  *pycompat.Dict
 	Reasons *pycompat.Dict
@@ -264,11 +264,11 @@ func validReview(value any) bool {
 	return true
 }
 
-// ShotAcceptance — shot_acceptance(data, kits, accepted, …): свежесть комплектов по собственной
+// ShotAcceptance — свежесть комплектов по собственной
 // постановке и сохранённому снимку источника. Комплект принят, если отпечаток плана совпадает с
 // принятым; производный план дополнительно сверяет связь derived_from с квитанцией generation и
 // снимок выбранного ролика источника; действующая сверка source_review приоритетнее исторической
-// квитанции. Реестр проверяется Validate (ошибка — исключение оригинала).
+// квитанции. Реестр проверяется Validate (ошибка — её исключение).
 func ShotAcceptance(data any, input AcceptanceInput) (Acceptance, error) {
 	current, err := SceneFingerprints(data, input.Initial)
 	if err != nil {
@@ -367,7 +367,7 @@ func derivedReason(scene *pycompat.Dict, sid string, input AcceptanceInput, scen
 	return ""
 }
 
-// ProjectShotAcceptance — project_shot_acceptance(root, data): свежесть комплектов по файлам
+// ProjectShotAcceptance — свежесть комплектов по файлам
 // проекта (манифесты assets/shots, plan/production-status.json, кастинг, выбранные ролики) без
 // записи и изменения исторических снимков. data nil — Load(root).
 func ProjectShotAcceptance(root string, data *pycompat.Dict) (Acceptance, error) {

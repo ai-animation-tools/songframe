@@ -11,7 +11,7 @@ import (
 	"songframe-go/internal/sceneregistry"
 )
 
-// approvedKeyframes — approved_keyframes(root, sid): опоры пакета плана, если все они приняты и
+// approvedKeyframes — опоры пакета плана, если все они приняты и
 // их файлы на месте; очередь plan/awaiting/<план> приоритетнее рабочих папок plan/batches/*
 // (по имени), принятые пакеты (stage accepted) не считаются. Нечитаемый как UTF-8 или JSON
 // workflow.json пропускается (ValueError), прочие ошибки чтения и неверная форма — исключения
@@ -125,8 +125,7 @@ type receipt struct {
 // loadReceipt — существующая plan/animatic/cards/manifest.json, если она подтверждает входы
 // текущих карточек: объект, тот же отпечаток текста реестра, те же поля проекта и те же хеши
 // референсов, cards — объект. Любая ошибка чтения или вычисления означает «квитанции нет»: тогда
-// карточки перерисовываются, а исключение (если оно есть у оригинала) возникнет в том же месте,
-// что и у него.
+// карточки перерисовываются, а исключение, если оно есть, возникнет при перерисовке.
 func loadReceipt(sources *projectviews.Sources, prepared *projectviews.Prepared) *receipt {
 	text, err := pycompat.ReadText(pycompat.JoinPath(sources.Root, cardsManifest))
 	if err != nil {
@@ -235,7 +234,7 @@ func keyframeList(keyframes []*pycompat.Dict) []any {
 	return list
 }
 
-// expectedCards — expected_cards(sources, directory): ожидаемые карточки планов без комплекта
+// expectedCards — ожидаемые карточки планов без комплекта
 // assets (текстовая карточка или карточка принятых опор с .last.png при двух и более опорах) —
 // записи квитанции по плану и ожидаемые файлы в порядке планов. Карточка, подтверждённая
 // квитанцией (см. комментарий пакета), не перерисовывается; остальные рисует animaticcards в

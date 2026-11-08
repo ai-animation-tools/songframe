@@ -60,7 +60,7 @@ type installOptions struct {
 }
 
 // activeInstallation адресует неизменяемый payload внутри папки одного артефакта.
-// Единственная точка переключения — атомарная замена маленького active.json.
+// Единственная точка смены активной версии — атомарная замена маленького active.json.
 type activeInstallation struct {
 	Version   string `json:"version"`
 	Directory string `json:"directory"`

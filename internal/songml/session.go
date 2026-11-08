@@ -25,7 +25,7 @@ type Session struct {
 	LoadSeconds float64
 }
 
-// Open создаёт сессию модели с intra-op threads и одним inter-op потоком, как в эксперименте.
+// Open создаёт сессию модели с intra-op threads и одним inter-op потоком.
 // CreateSession binding не принимает context: отменённое во время загрузки задание закрывает
 // сессию сразу после возврата native вызова.
 func Open(ctx context.Context, model string, threads int) (*Session, error) {

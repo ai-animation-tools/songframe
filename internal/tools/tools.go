@@ -1,12 +1,11 @@
-// Package tools — метод контракта tools.run(project, name, args) → ToolResult: запуск инструмента
-// комплекса по имени на папке проекта. В оригинале (src/main/tools.ts, python-launcher.ts) каждый
-// вызов запускал Python-скрипт tools/<name>/<name>.py с `--project <папка>`; здесь известные
-// инструменты перенесены на Go и выполняются в процессе приложения без Python.
+// Package tools запускает инструменты комплекса по имени на папке проекта (метод контракта
+// tools.run(project, name, args) → ToolResult). Инструменты написаны на Go и выполняются в
+// процессе приложения, без внешнего интерпретатора.
 //
-// Результат повторяет то, что видел renderer: код завершения, stdout и stderr процесса Python
-// (тексты, коды и форматы вывода инструмента), поэтому разбор в интерфейсе не меняется. Перед
-// инструментом выполняется выбор проекта tools/common.py: путь разрешается до реального
-// (Path.resolve), отсутствующая папка — код 2 с текстом оригинала.
+// Результат — код завершения, stdout и stderr в формате CLI-инструмента (тексты, коды и форматы
+// вывода зафиксированы эталонами testdata/golden), поэтому разбор в интерфейсе от них зависит.
+// Перед инструментом выбирается проект: путь разрешается до реального (Path.resolve),
+// отсутствующая папка — код 2 с текстом «Папка проекта не найдена».
 package tools
 
 import (
@@ -45,8 +44,8 @@ import (
 )
 
 // Result — ToolResult контракта (frontend/src/shared/types.ts). Code — nil, если процесс не
-// завершился сам (в Go-версии не бывает: инструменты выполняются в процессе). Command — строка
-// запуска для диагностики: имя инструмента и аргументы в кавычках JSON, как в оригинале.
+// завершился сам (только при отмене: инструменты выполняются в процессе). Command — строка
+// запуска для диагностики: имя инструмента и аргументы в кавычках JSON.
 type Result struct {
 	Code    *int   `json:"code"`
 	Stdout  string `json:"stdout"`
@@ -54,9 +53,8 @@ type Result struct {
 	Command string `json:"command"`
 }
 
-// Тексты, которые видит пользователь. toolNameInvalid — environmentTexts.main.toolNameInvalid
-// оригинала, «Папка проекта не найдена» — tools/common.py. textNoProject направляет к выбору
-// проекта в приложении: инструменты выполняются только внутри SongFrame, без отдельного CLI.
+// Тексты, которые видит пользователь. textNoProject направляет к выбору проекта в приложении:
+// инструменты выполняются только внутри SongFrame, без отдельного CLI.
 const (
 	textNoProject = "Проект клипа не выбран. Откройте проект в SongFrame кнопкой «Открыть папку проекта»."
 )
@@ -73,10 +71,10 @@ func textProjectNotFound(root string) string {
 	return "Папка проекта не найдена: " + root + " (источник: argument)."
 }
 
-// toolName — допустимое имя инструмента (проверка PythonLauncher.run).
+// toolName — допустимое имя инструмента: строчные латинские буквы и подчёркивание.
 var toolName = regexp.MustCompile(`^[a-z_]+$`)
 
-// tool — перенесённый инструмент: main() на разрешённом корне проекта.
+// tool — инструмент реестра: точка входа на разрешённом корне проекта.
 type tool func(root string, args []string) pytool.Output
 
 // registry — инструменты приложения по имени. Имя вне реестра — ошибка «Неизвестный инструмент».
@@ -92,11 +90,11 @@ var registry = map[string]tool{
 	"verify_asset_replay": verifyassetreplay.Run,
 }
 
-// contextTool — перенесённый инструмент, обращающийся к сервису провайдера или ждущий его:
+// contextTool — инструмент, обращающийся к сервису провайдера или ждущий его:
 // получает контекст отмены задания.
 type contextTool func(ctx context.Context, root string, args []string) pytool.Output
 
-// LocalDir — каталог состояния Go-версии для инструментов, которые пишут в него (наблюдения
+// LocalDir — каталог состояния приложения для инструментов, которые пишут в него (наблюдения
 // цен cost_check). По умолчанию — профиль store, как у приложения (SONGFRAME_GO_LOCAL_DIR либо
 // стандартная папка ОС); сервисы приложения подменяют mediaadapters.StateDir своим профилем, и
 // наблюдения цен попадают туда же, где лежит вход провайдера.
@@ -133,7 +131,7 @@ func withLocalDir(run func(ctx context.Context, root string, args []string, loca
 	}
 }
 
-// projectFree — действия инструментов без проекта (PROJECT_FREE_ACTIONS оригинала): вход к
+// projectFree — действия инструментов без проекта: вход к
 // провайдеру со страницы «Среда» выполняется без выбранного клипа.
 var projectFree = map[string]map[string]bool{"media_request": mediarequest.ProjectFreeActions}
 
@@ -173,14 +171,14 @@ func quote(part string) string {
 }
 
 // Run — tools.run: проверка имени, выбор проекта и запуск инструмента из реестра. Ошибка —
-// отказ вызова (неверное или неизвестное имя), как исключение оригинала до запуска процесса;
+// отказ вызова (неверное или неизвестное имя), renderer получает его как ошибку метода;
 // отказ самого инструмента — Result с ненулевым кодом.
 func Run(project, name string, args []string) (Result, error) {
 	return RunContext(context.Background(), project, name, args)
 }
 
 // RunContext — Run с отменой: инструменты платной попытки прерывают вызов сервиса и ожидание.
-// Отменённый запуск возвращает Code nil, как процесс оригинала, завершённый сигналом.
+// Отменённый запуск возвращает Code nil, как процесс, завершённый сигналом.
 func RunContext(ctx context.Context, project, name string, args []string) (Result, error) {
 	if !toolName.MatchString(name) {
 		return Result{}, errors.New(textToolNameInvalid(name))

@@ -21,7 +21,7 @@ import (
 var jobFile = regexp.MustCompile(`^([0-9a-z]+-\d+)\.json$`)
 
 // record — содержимое <id>.json: сведения без журнала и признака прошлого сеанса.
-// Порядок полей повторяет JSON оригинала (порядок вставки ключей объекта JobInfo).
+// Порядок полей задаёт порядок ключей файла и закреплён эталоном internal/jobs/testdata.
 type record struct {
 	ID            string         `json:"id"`
 	Project       *string        `json:"project"`
@@ -36,7 +36,7 @@ type record struct {
 	Error         *string        `json:"error,omitempty"`
 }
 
-// saveInfo атомарно записывает сведения. Сбой записи не останавливает задание (как в оригинале):
+// saveInfo атомарно записывает сведения. Сбой записи не останавливает задание:
 // он попадает только в служебный журнал процесса.
 func saveInfo(directory string, info Info) {
 	value := record{info.ID, info.Project, info.Kind, info.Title, info.Status, info.StartedAt, info.FinishedAt, info.Code, info.Steps, info.ModelDownload, info.Error}
@@ -48,7 +48,7 @@ func saveInfo(directory string, info Info) {
 // loadSaved читает сведения прошлых сеансов: новые сверху, не больше limit; лишние удаляются
 // вместе с журналами. Выполнявшееся задание помечается interrupted с InterruptedMessage,
 // его running-шаги — failed, и это сохраняется. Повреждённый или слишком большой файл
-// пропускается (и не удаляется), как в loadSavedJobs оригинала.
+// пропускается (и не удаляется).
 func loadSaved(directory string, limit int, now string) []Info {
 	entries, err := os.ReadDir(directory)
 	if err != nil {
@@ -100,7 +100,7 @@ func loadSaved(directory string, limit int, now string) []Info {
 	return jobs
 }
 
-// readSaved проверяет запись так же, как isJobInfo оригинала: id совпадает с именем файла,
+// readSaved проверяет запись: id совпадает с именем файла,
 // kind/title/startedAt — строки, известные статусы, finishedAt и code присутствуют
 // (null или строка/целое), steps — массив шагов со строковыми label/tool и известным статусом.
 // Необязательные поля неверного типа (project, error, modelDownload, code шага) не делают
@@ -207,7 +207,7 @@ func nullableInt(raw json.RawMessage) (*int, bool) {
 // readLogTail возвращает последние maxBytes журнала без чтения всего файла; отсутствующий
 // файл — пустая строка. Обрезка могла попасть в середину многобайтного символа: такие байты
 // (и заменители U+FFFD) в начале убираются, остальные некорректные последовательности
-// заменяются U+FFFD — так же, как Buffer.toString('utf8') оригинала.
+// заменяются U+FFFD.
 func readLogTail(path string, maxBytes int64) string {
 	file, err := os.Open(path)
 	if err != nil {

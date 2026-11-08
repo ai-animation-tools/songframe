@@ -1,7 +1,7 @@
 /**
  * Браузер и сборщик должны одинаково разрешать последний кадр на половинной границе.
- * Частота кадров сверяется со схемами проекта, которые встраивает Go-перенос lint_registry
- * (internal/lintregistry/schemas), как в 634fd94 со схемами tools/lint_registry.
+ * Частота кадров сверяется со схемами проекта, которые встраивает проверка реестра
+ * (internal/lintregistry/schemas).
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

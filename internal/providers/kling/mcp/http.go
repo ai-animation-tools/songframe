@@ -19,9 +19,9 @@ import (
 	"songframe-go/internal/pycompat"
 )
 
-// Постоянные клиента — те же, что в kling_mcp.py.
+// Постоянные клиента; от них зависят запросы, зафиксированные эталонами.
 const (
-	// Title — название сервиса в сообщениях (TITLE оригинала).
+	// Title — название сервиса в сообщениях.
 	Title = "Kling"
 	// ProviderID — id провайдера и имя папки в каталоге состояния.
 	ProviderID = "kling"
@@ -60,12 +60,12 @@ var LoginPorts = []int{8787, 8788, 8789, 8790}
 var LoginRequired = "Войдите в " + Title + " на странице «Среда»."
 
 // Client — настройки клиента: каталог состояния (владелец записей входа), адрес сервера и
-// подмены для тестов. Нулевые поля берут значения оригинала: адрес — из SONGFRAME_KLING_BASE_URL
+// подмены для тестов. Нулевые поля берут штатные значения: адрес — из SONGFRAME_KLING_BASE_URL
 // или https://kling.ai, файл отладки — из SONGFRAME_KLING_DEBUG_FILE, порты — LoginPorts.
 // Экземпляр безопасен для параллельного использования: общее состояние — только транспорт,
 // а обновление токена сериализуется межпроцессной блокировкой файла.
 type Client struct {
-	// StateDir — каталог состояния приложения (SONGFRAME_LOCAL_DIR оригинала).
+	// StateDir — каталог состояния приложения.
 	StateDir string
 	// BaseURL — адрес сервера; пусто — переменная окружения или DefaultBaseURL.
 	BaseURL string
@@ -85,7 +85,7 @@ type Client struct {
 // NewClient — клиент с каталогом состояния и остальными значениями по умолчанию.
 func NewClient(stateDir string) *Client { return &Client{StateDir: stateDir} }
 
-// baseURL — base_url(): адрес без завершающих «/».
+// baseURL — адрес без завершающих «/».
 func (c *Client) baseURL() string {
 	value := c.BaseURL
 	if value == "" {
@@ -114,8 +114,8 @@ func (c *Client) ports() []int {
 	return LoginPorts
 }
 
-// httpClient — общий HTTP-клиент без перенаправлений, прокси и повторного использования соединений:
-// http.client оригинала открывал одно соединение на запрос и не следовал редиректам.
+// httpClient — общий HTTP-клиент без перенаправлений, прокси и повторного использования
+// соединений: одно соединение на запрос, редиректы не выполняются.
 func (c *Client) httpClient() *http.Client {
 	c.once.Do(func() {
 		c.client = &http.Client{
@@ -171,8 +171,8 @@ func (d *dialFailure) Error() string { return d.err.Error() }
 func (d *dialFailure) Unwrap() error { return d.err }
 
 // NewTransport — транспорт с таймаутом операций из WithSocketTimeout и пометкой сбоев
-// подключения. TLS-рукопожатие входит в подключение, как connect() HTTPSConnection оригинала.
-// proxy — брать прокси из окружения (urlopen оригинала при скачивании; http.client MCP — нет).
+// подключения. TLS-рукопожатие входит в подключение.
+// proxy — брать прокси из окружения (при скачивании результатов; запросы MCP — без прокси).
 func NewTransport(tlsConfig *tls.Config, proxy bool) *http.Transport {
 	dial := func(ctx context.Context, network, address string) (net.Conn, error) {
 		timeout := socketTimeout(ctx)
@@ -215,7 +215,7 @@ func NewTransport(tlsConfig *tls.Config, proxy bool) *http.Transport {
 	return transport
 }
 
-// response — (status, content_type, bytes) http_request оригинала.
+// response — статус, content_type и байты ответа HTTP.
 type response struct {
 	status      int
 	contentType string
@@ -283,7 +283,7 @@ func (c *Client) request(ctx context.Context, method, rawURL string, body []byte
 }
 
 // socketErrorName — имя класса исключения Python для сбоя сокета: оно входит в текст ошибок
-// NotSent и TransportError оригинала. body — сбой при чтении тела ответа.
+// NotSent и TransportError. body — сбой при чтении тела ответа.
 func socketErrorName(err error, body bool) string {
 	var (
 		dns       *net.DNSError
@@ -320,7 +320,7 @@ func socketErrorName(err error, body bool) string {
 	return "OSError"
 }
 
-// jsonBody — json_body(data): JSON из UTF-8 или nil (None), если байты не разбираются.
+// jsonBody — JSON из UTF-8 или nil (None), если байты не разбираются.
 func jsonBody(data []byte) any {
 	text, err := pycompat.DecodeUTF8(data)
 	if err != nil {
@@ -333,8 +333,8 @@ func jsonBody(data []byte) any {
 	return value
 }
 
-// getJSON — get_json(url): объект JSON ответа 200 или nil; ошибки клиента не мешают discovery,
-// а неверный адрес (ValueError) возвращается вызывающему, как в оригинале.
+// getJSON — объект JSON ответа 200 или nil; ошибки клиента не мешают discovery,
+// а неверный адрес (ValueError) возвращается вызывающему.
 func (c *Client) getJSON(ctx context.Context, rawURL string, timeout time.Duration) (*pycompat.Dict, error) {
 	answer, err := c.request(ctx, "GET", rawURL, nil, []Field{{"Accept", "application/json"}}, timeout)
 	if err != nil {

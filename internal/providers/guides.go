@@ -14,11 +14,11 @@ const GuideHeading = "## Указания агенту"
 
 var nextSection = regexp.MustCompile(`\n## `)
 
-// Guide — providerGuide оригинала: раздел «Указания агенту» документа выбранного провайдера вида
+// Guide — раздел «Указания агенту» документа выбранного провайдера вида
 // медиа kind (image, video) с заголовком для промпта задания. Особенности конкретного сервиса
 // агент получает только для провайдера, выбранного в проекте. false — провайдер не выбран, не
 // поддерживает вид медиа или у его документа нет раздела. Документы встроены в бинарник
-// (resources.ProviderDoc) вместо чтения docs/providers из корня комплекса.
+// (resources.ProviderDoc).
 func Guide(kind string, provider any) (string, bool) {
 	id, ok := mediaproviders.Normalize(provider)
 	if !ok || !mediaproviders.Supports(id, kind) {

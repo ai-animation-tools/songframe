@@ -140,7 +140,7 @@ export const RemoveSaveReopen: Story = {
       { id: 1, source_line: 3, start: 1.2, end: 2.2, verified: true, note: 'сверка на слух выполнена; сохранить паузу' },
       { id: 2, source_line: 4, start: 2.6, end: 3.6, verified: false, note: '' }
     ]);
-    // Отличие от 634fd94: ожидание дополнено origin — его пишет buildSections с 390e9e8, история без метки ci устарела.
+    // origin: 'auto' — секцию построил buildSections, а не человек.
     await expect(saved.timing?.sections[0]).toEqual({ name: 'Куплет', start: 1.2, end: 3.6, note: 'строки 1–2', origin: 'auto' });
   }
 };

@@ -1,10 +1,10 @@
-// Package derivedworkflow — перенос src/main/derived-workflow.ts и derived-recovery.ts оригинала:
-// страница производного плана. View собирает контекст плана (источник, кадры, рецепт, последняя
+// Package derivedworkflow обслуживает страницу производного плана. View собирает контекст плана
+// (источник, кадры, рецепт, последняя
 // проба и её свежесть), Save хранит настройки формы, Build и Accept запускают задания инструмента
 // derive_shot (internal/deriveshot), RecoverApplications откатывает прерванную приёмку.
 //
 // Файлы проекта читаются деревом jscompat: черновик и рецепт сохраняются с порядком ключей и формой
-// чисел, а записанный JSON совпадает с writeLocalJson байт в байт (эталон testdata/golden/derived-workflow).
+// чисел, а записанный JSON совпадает с эталоном testdata/golden/derived-workflow байт в байт.
 // Сам пакет платных запросов не делает и данные комплектов не меняет: это работа инструмента.
 package derivedworkflow
 
@@ -84,7 +84,8 @@ type View struct {
 	HasAsset     bool             `json:"hasAsset"`
 }
 
-// Workflow — DerivedWorkflow оригинала. Состояния не хранит: всё читается из проекта и менеджера.
+// Workflow — операции страницы производного плана. Состояния не хранит: всё читается из проекта
+// и менеджера.
 type Workflow struct{ jobs Jobs }
 
 // New связывает страницу производного плана с менеджером заданий.
@@ -287,8 +288,8 @@ func findByID(list []any, id any) any {
 	return jscompat.Undefined
 }
 
-// sequenceTitle — registry.sequences.find(…)?.title. Реестр без массива sequences оригинал не
-// переживал (TypeError на всей странице); здесь название просто не находится.
+// sequenceTitle — registry.sequences.find(…)?.title. Реестр без массива sequences не ломает
+// страницу: название просто не находится.
 func sequenceTitle(registry, sequence any) any {
 	list, _ := jscompat.AsArray(jscompat.Get(registry, "sequences"))
 	return jscompat.Get(findByID(list, sequence), "title")
@@ -370,8 +371,8 @@ func fingerprint(scores acceptance.Result, shot string) any {
 	return jscompat.Undefined
 }
 
-// previewFresh — условие свежести пробы по порядку оригинала. invalid — манифест источника исчез
-// между проверками: оригинал получал исключение и не показывал пробу.
+// previewFresh — условие свежести пробы; порядок проверок зафиксирован эталоном. invalid —
+// манифест источника исчез между проверками: проба не показывается.
 func previewFresh(canonical, shot string, receipt, build, registry, recipe, saved any, problem string, target float64, source sourceState) (fresh, invalid bool) {
 	sourceName, _ := source.shot.(string)
 	field := func(key string) any { return jscompat.Get(receipt, key) }

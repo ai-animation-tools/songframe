@@ -22,7 +22,7 @@ export function useScenario() {
   const [scenes, setScenes] = useState<ScenesFile | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [problems, setProblems] = useState<string[]>([]);
-  // Проблемы текущего черновика трактовки (стык, длительность, коды). Отличие от 634fd94: они не
+  // Проблемы текущего черновика трактовки (стык, длительность, коды): они не
   // блокируют сохранение черновика, а постоянно показываются над частями и закрывают построение каркаса.
   const [treatmentProblems, setTreatmentProblems] = useState<string[]>([]);
   const [brief, setBrief] = useState<ScenarioBrief>(null);

@@ -36,7 +36,7 @@ export function CastPage(): ReactElement {
   const [view, setView] = useState<CastView | null>(null);
   const [cast, setCast] = useState<CastFile | null>(null);
   const [busy, setBusy] = useState(false);
-  // Создание изображения референса переносится отдельно: пока его нет, кнопка объясняет причину.
+  // Код раскрытой карточки сущности; null — все карточки свёрнуты.
   const [expanded, setExpanded] = useState<string | null>(null);
   const [params, setParams] = useSearchParams();
   const entityParam = params.get(ENTITY_PARAM);

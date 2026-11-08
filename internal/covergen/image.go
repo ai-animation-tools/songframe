@@ -26,8 +26,8 @@ func decode(path string) (image.Image, error) {
 	return decoded, err
 }
 
-// ReadImage — размеры изображения, которое декодируется целиком (замена
-// nativeImage.createFromPath(path).getSize() оригинала: пустой образ — false).
+// ReadImage — размеры изображения, которое декодируется целиком; пустое или нераспознанное
+// изображение — false.
 func ReadImage(path string) (width, height int, ok bool) {
 	decoded, err := decode(path)
 	if err != nil {
@@ -37,9 +37,9 @@ func ReadImage(path string) (width, height int, ok bool) {
 	return bounds.Dx(), bounds.Dy(), bounds.Dx() > 0 && bounds.Dy() > 0
 }
 
-// CropImage вырезает квадрат crop из input и пишет его PNG в output (nativeImage.crop().toPNG()
-// оригинала). Пиксели совпадают с оригиналом; байты PNG зависят от кодировщика, поэтому
-// принятая обложка проверяется по размерам, а не по SHA. Ошибка декодирования — coverCropFailed.
+// CropImage вырезает квадрат crop из input и пишет его PNG в output. Байты PNG зависят от
+// кодировщика, поэтому принятая обложка проверяется по размерам, а не по SHA. Ошибка
+// декодирования — coverCropFailed.
 func CropImage(input, output string, crop Crop) error {
 	decoded, err := decode(input)
 	if err != nil {

@@ -181,7 +181,7 @@ func readCodexAgentModels(ctx context.Context, executable string, options Proces
 // textCodexImageModelsOnly — каталог моделей изображений запрошен не у агента Codex.
 const textCodexImageModelsOnly = "Каталог моделей доступен только для агента Codex."
 
-// CodexImageModels — readCodexModels оригинала: каталог моделей программы-агента провайдера
+// CodexImageModels — каталог моделей программы-агента провайдера
 // изображений, которого исполняет Codex. Вызывается штатный model/list найденной в PATH программы
 // с окружением агента; каталог не подтверждает наличие инструмента изображений.
 func CodexImageModels(ctx context.Context, config Settings, options CheckOptions) ([]CodexModel, error) {

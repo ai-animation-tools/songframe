@@ -12,7 +12,7 @@ import (
 	"songframe-go/resources"
 )
 
-// Методы ProjectService, которые пишут проект (этап 43.1): создание из встроенного шаблона,
+// Методы ProjectService, которые пишут проект: создание из встроенного шаблона,
 // переименование и редактируемые настройки plan/project.json. Логика и тексты ошибок — в
 // internal/newproject и internal/projectfile; сервис связывает их с историей и статусом.
 
@@ -31,7 +31,7 @@ func (s *ProjectService) ValidateNew(input newproject.Input) []string {
 
 // Create — projects.create: новая папка из встроенного шаблона, git init при наличии git, затем
 // открытие как текущего проекта. Ошибка открытия (например, кавычка в названии ломает JSON
-// маркера, как в оригинале) возвращается, созданная папка при этом остаётся.
+// маркера) возвращается, созданная папка при этом остаётся.
 func (s *ProjectService) Create(input newproject.Input) (status.ProjectStatus, error) {
 	target, err := newproject.Create(context.Background(), s.projectTemplate(), input)
 	if err != nil {

@@ -5,9 +5,9 @@ import (
 	"strconv"
 )
 
-// Тексты главного процесса оригинала (productionTexts.main.package, productionTexts.attemptLabels,
-// productionTexts.input.sceneChanged, derivedMainTexts.staleReasons, commonTexts). Сообщения
-// ошибок и подписи сохраняют прежний контракт Error.message и полей API дословно.
+// Тексты производства, которые формирует Go: проблемы пакета, подписи попыток и этапов, причины
+// устаревания и отказы. Сообщения ошибок и подписи — часть контракта полей API и эталонов, поэтому
+// меняются только вместе с ними.
 
 // stageLabels — STAGE_LABELS: подписи этапов workflow.json пакета.
 // textDescriptionAccepted — метка попытки с принятым описанием до первой опоры.
@@ -216,7 +216,7 @@ func textBrokenPackageBlocksQueue(path, reason string) string {
 	return path + ": " + reason + ". Папка мешает сохранению в очередь; удалите её в очереди или у плана."
 }
 
-// providerText — `${provider ?? 'не указан'}` оригинала.
+// providerText — имя провайдера или «не указан».
 func providerText(provider *string) string {
 	if provider == nil {
 		return "не указан"
@@ -286,5 +286,5 @@ func TextSpeechDuration(min, max float64) string {
 // TextSpeechUnsupported — productionTexts.productionSpeechPanel.unsupported.
 const TextSpeechUnsupported = "Провайдер видео проекта не синхронизирует губы с заданным звуком."
 
-// number — String(value) для числа JS.
+// number — число в кратчайшей десятичной записи без экспоненты и лишних нулей.
 func number(value float64) string { return strconv.FormatFloat(value, 'f', -1, 64) }

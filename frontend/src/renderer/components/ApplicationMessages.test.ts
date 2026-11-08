@@ -1,4 +1,4 @@
-/** Проверяет показ сообщений main через прежний renderer без изменения маршрутов и экранирования. */
+/** Проверяет показ сообщений Go в renderer без изменения маршрутов и экранирования. */
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';

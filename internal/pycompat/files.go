@@ -8,7 +8,7 @@ import (
 	"songframe-go/internal/projectfs"
 )
 
-// ReadJSON — tools/common.py read_json: (значение, damaged). Отсутствующий файл и документ
+// ReadJSON — чтение JSON инструментами: (значение, damaged). Отсутствующий файл и документ
 // `null` дают (nil, false), как None в Python; ошибка чтения, декодирования или разбора — (nil, true),
 // как False.
 func ReadJSON(path string) (any, bool) {
@@ -22,11 +22,10 @@ func ReadJSON(path string) (any, bool) {
 	return value, false
 }
 
-// WriteJSONAtomic — tools/common.py write_json_atomic: json.dumps(indent=2, ensure_ascii=False) +
-// "\n" во временный файл рядом и замена цели. Оригинал создавал временный файл через
-// NamedTemporaryFile (права 0600) и не сохранял права прежнего файла; запись повторяет это.
-// Отличие от оригинала: перед заменой файл сбрасывается на диск (projectfs.WriteFile), сбой
-// по-прежнему оставляет прежний файл целым.
+// WriteJSONAtomic — атомарная запись JSON инструментами: json.dumps(indent=2, ensure_ascii=False) +
+// "\n" во временный файл рядом и замена цели. Временный файл получает права 0600, как у
+// NamedTemporaryFile, права прежнего файла не сохраняются. Перед заменой файл сбрасывается на
+// диск (projectfs.WriteFile); сбой оставляет прежний файл целым.
 func WriteJSONAtomic(path string, value any) error {
 	data, err := EncodeIndented(value)
 	if err != nil {

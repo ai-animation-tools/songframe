@@ -18,9 +18,9 @@ import (
 	"songframe-go/internal/tools"
 )
 
-// Эталоны build-review и production-tools/accept-edit (этап 46a): build_review и приёмка участка
+// Эталоны build-review и production-tools/accept-edit: build_review и приёмка участка
 // accept_shot на синтетическом мини-проекте с настоящим FFmpeg. Медиа результатов сверяются
-// побайтно только при той же версии FFmpeg, что при съёмке; иначе — сводка ffprobe и рецепт без
+// побайтно только при той же версии FFmpeg, что записана в эталоне; иначе — сводка ffprobe и рецепт без
 // SHA видео и строки версии.
 
 // reviewCase — случай: подготовка, шаги инструментов и ожидаемый исход.
@@ -190,7 +190,7 @@ func runReviewDomain(t *testing.T, name, overlay string) {
 	}
 }
 
-// reviewTree — tree() скрипта съёмки: каталоги — "dir", JSON — текст с маркерами, новые MP4 —
+// reviewTree — дерево папки в формате эталона: каталоги — "dir", JSON — текст с маркерами, новые MP4 —
 // SHA, байты и сводка ffprobe, остальное — SHA. Значения приводятся к виду encoding/json.
 func reviewTree(t *testing.T, folder, base string, mark func(string) string) map[string]any {
 	t.Helper()
@@ -228,7 +228,7 @@ func reviewTree(t *testing.T, folder, base string, mark func(string) string) map
 	return result
 }
 
-// mediaSummary — media() скрипта съёмки: поля видео- и звукового потока ffprobe; nil — не медиа.
+// mediaSummary — сводка медиа в формате эталона: поля видео- и звукового потока ffprobe; nil — не медиа.
 func mediaSummary(path string) any {
 	output, err := exec.Command("ffprobe", "-v", "error", "-show_streams", "-of", "json", path).Output()
 	if err != nil {

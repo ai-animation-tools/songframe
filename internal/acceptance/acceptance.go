@@ -3,9 +3,8 @@
 // Комплект принят, если отпечаток постановки плана совпадает с plan/production-status.json →
 // shots.Mxx.scene_sha256. Производный план (derived_from) дополнительно сверяет снимок выбранного
 // ролика источника: действующее подтверждение source_review приоритетнее исторической квитанции
-// generation. Правило общее для статуса проекта и будущих страниц планов; перенесено из
-// shot-acceptance.ts и derived-source.ts без записи файлов. Хеши роликов считаются через кэш
-// filedigest в памяти процесса.
+// generation. Правило общее для статуса проекта и будущих страниц планов; пакет только читает
+// файлы и ничего не записывает. Хеши роликов считаются через кэш filedigest в памяти процесса.
 package acceptance
 
 import (
@@ -58,7 +57,8 @@ func sceneComparisonFailed(reason string) string {
 	return "Постановку планов не удалось сверить с принятыми комплектами: " + reason
 }
 
-// readJSON — readJson оригинала: undefined при любой ошибке.
+// readJSON читает JSON-файл; при любой ошибке чтения или разбора — undefined, чтобы
+// повреждённый файл принятия считался отсутствующим.
 func readJSON(path string) any {
 	value, ok := jscompat.ReadJSONFile(path)
 	if !ok {
@@ -92,8 +92,8 @@ func ProjectFingerprints(project string, scenes any) (*jscompat.Object, error) {
 }
 
 // Compute — shotAcceptance(project, scenes): scenes — разобранный реестр (объект с непустым
-// массивом scenes). Ошибка означает исключение оригинала (план без строкового id и т. п.), при
-// котором computeStatus тоже завершается исключением.
+// массивом scenes). Ошибка означает непригодный реестр (план без строкового id и т. п.), при
+// котором расчёт статуса проекта тоже завершается ошибкой.
 func Compute(project string, scenes any) (Result, error) {
 	result := Result{Accepted: map[string]string{}, Reasons: map[string]string{}}
 	fingerprints, err := ProjectFingerprints(project, scenes)
@@ -257,7 +257,7 @@ func ReadAcceptedVideo(project, shot string) *Snapshot { return readVideo(projec
 func ReadSourceVideo(project, shot string) *Snapshot { return readVideo(project, shot, false) }
 
 // readVideo проверяет манифест комплекта и сам файл ролика: путь внутри комплекта, обычный файл,
-// хеш байтов равен записанному. Любой отказ — nil, как catch оригинала.
+// хеш байтов равен записанному. Любой отказ — nil: непроверяемый ролик не считается принятым.
 func readVideo(project, shot string, allowDerived bool) *Snapshot {
 	directory, err := jscompat.Realpath(filepath.Join(project, "assets", "shots", shot))
 	if err != nil {

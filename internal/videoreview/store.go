@@ -31,14 +31,14 @@ var (
 	statusNames = map[string]bool{StatusIdle: true, StatusPreparing: true, StatusRunning: true, StatusCompleted: true, StatusFailed: true, StatusCancelled: true}
 )
 
-// stored — снимок проверки в <пакет>/video-review/latest.json (формат оригинала, schemaVersion 1):
+// stored — снимок проверки в <пакет>/video-review/latest.json (schemaVersion 1):
 // schemaVersion, id, shot, sourceHash, status, durationSeconds, frames, imageHashes, jobId, report,
 // error. Документ хранится деревом jscompat: запись меняет только нужные поля и сохраняет
-// остальное (порядок ключей, посторонние поля) так же, как JSON.stringify объекта оригинала.
+// остальное (порядок ключей, посторонние поля) при записи в формате JSON.stringify.
 // Все пути внутри относительны папке пакета, поэтому перенос папки не требует исправления отчёта.
 type stored struct{ doc *jscompat.Object }
 
-// newStored — запись новой проверки в состоянии preparing с ключами в порядке оригинала.
+// newStored — запись новой проверки в состоянии preparing с ключами в порядке формата latest.json.
 func newStored(id, shot, sourceHash string) stored {
 	doc := jscompat.NewObject()
 	doc.Set("schemaVersion", 1.0)
@@ -125,7 +125,7 @@ func inside(path, id string) bool {
 	return strings.HasPrefix(slash(path), reviewDir+"/"+id+"/")
 }
 
-// read — read оригинала: отсутствующий файл — (nil, nil); повреждённый или несогласованный снимок
+// read — чтение снимка: отсутствующий файл — (nil, nil); повреждённый или несогласованный снимок
 // (неверные ID/время кадров, пути вне выборки, нет хеша кадра, готовый статус без кадров или
 // отчёта, отчёт с непоказанными кадрами) — errInvalidReport. Ничего не записывает.
 func read(directory string) (*stored, error) {

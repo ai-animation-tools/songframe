@@ -15,14 +15,14 @@ import (
 	"songframe-go/internal/shotstatus"
 )
 
-// workflowTool — команды инструмента над одним проектом. root — разрешённый корень проекта
-// (ROOT оригинала); каждая команда заново читает workflow.json и записывает его атомарно.
+// workflowTool — команды инструмента над одним проектом. root — разрешённый корень проекта;
+// каждая команда заново читает workflow.json и записывает его атомарно.
 type workflowTool struct {
 	root string
 }
 
-// PromptLimiter — необязательная возможность адаптера провайдера: PROMPT_WARNING_CHARS
-// оригинала, целый предел длины видеопромпта. approve-prompt предупреждает о более длинном
+// PromptLimiter — необязательная возможность адаптера провайдера: целый предел длины
+// видеопромпта. approve-prompt предупреждает о более длинном
 // тексте; адаптер без этой возможности (или с пределом ≤ 0) предупреждения не даёт. Интерфейс
 // узкий и локальный: таблица internal/mediaadapters знает только наличие адаптера.
 type PromptLimiter interface {
@@ -59,7 +59,7 @@ func pathPart(directory string, value any) (string, error) {
 	return pycompat.JoinPath(directory, text), nil
 }
 
-// sha — tools.common.sha: SHA-256 файла (OSError при ошибке открытия).
+// sha — SHA-256 файла (OSError при ошибке открытия).
 func sha(path string) (string, error) { return assetpackage.FileSHA256(path) }
 
 // tempDir — Path(tempfile.gettempdir()).resolve(): временная папка ОС, где тоже разрешены пакеты.
@@ -73,7 +73,7 @@ func resolveFrom(root, value string) string {
 	return pycompat.ResolvePath(pycompat.JoinPath(root, value))
 }
 
-// packageDir — package_dir(value, root, exist): папка пакета внутри plan/batches, plan/awaiting
+// packageDir — папка пакета внутри plan/batches, plan/awaiting
 // или временной папки ОС; сами корни и защищённые папки (assets, source, plan/animatic) запрещены.
 func (t *workflowTool) packageDir(value string, exist bool) (string, error) {
 	root := pycompat.ResolvePath(t.root)
@@ -97,7 +97,7 @@ func (t *workflowTool) packageDir(value string, exist bool) (string, error) {
 	return path, nil
 }
 
-// load — load_workflow(directory): схема 1, известный этап и обязательный список keyframe_notes;
+// load читает workflow.json: схема 1, известный этап и обязательный список keyframe_notes;
 // отсутствующие keyframes и approved_frames добавляются пустыми (setdefault).
 func load(directory string) (*pycompat.Dict, error) {
 	value, err := pycompat.LoadJSONFile(pycompat.JoinPath(directory, "workflow.json"))
@@ -166,8 +166,8 @@ func pendingIDs(data *pycompat.Dict) ([]any, error) {
 	return result, nil
 }
 
-// save — save_workflow: current_keyframe — первая непринятая опора; запись атомарная (0600,
-// как у NamedTemporaryFile оригинала).
+// save записывает workflow.json: current_keyframe — первая непринятая опора; запись атомарная
+// (права 0600, как у NamedTemporaryFile Python; зафиксированы эталоном).
 func save(directory string, data *pycompat.Dict) (*pycompat.Dict, error) {
 	pending, err := pendingIDs(data)
 	if err != nil {
@@ -184,7 +184,7 @@ func save(directory string, data *pycompat.Dict) (*pycompat.Dict, error) {
 	return data, nil
 }
 
-// sceneOf — scene_of(root, shot): проверенный реестр и план; плана нет — ValueError.
+// sceneOf — проверенный реестр и план shot; плана нет — ValueError.
 func (t *workflowTool) sceneOf(shot any) (*pycompat.Dict, *pycompat.Dict, error) {
 	registry, err := sceneregistry.Load(t.root)
 	if err != nil {
@@ -206,7 +206,7 @@ func (t *workflowTool) sceneOf(shot any) (*pycompat.Dict, *pycompat.Dict, error)
 	return nil, nil, valueError(pycompat.Str(shot) + ": план отсутствует в реестре сцен.")
 }
 
-// fingerprint — scene_fingerprint(registry, shot) с начальным состоянием кастинга проекта.
+// fingerprint — отпечаток постановки плана с начальным состоянием кастинга проекта.
 func (t *workflowTool) fingerprint(registry *pycompat.Dict, shot string) (string, error) {
 	initial, err := sceneregistry.InitialStatesFor(t.root)
 	if err != nil {
@@ -217,7 +217,7 @@ func (t *workflowTool) fingerprint(registry *pycompat.Dict, shot string) (string
 
 var batchName = regexp.MustCompile(`^[A-Za-z0-9_.-]{1,40}$`)
 
-// init — init(shot, directory, mode, batch, retry_of): новый пакет на description_review с
+// init — новый пакет на description_review с
 // окном и отпечатком постановки плана; повтор ссылается на пакет того же плана.
 func (t *workflowTool) init(shot, dirArg, mode string, batch, retryOf *string) (*pycompat.Dict, error) {
 	if !contains(modes, mode) {
@@ -329,7 +329,7 @@ func lessText(a, b string) bool {
 	return len(left) < len(right)
 }
 
-// readProject — read_json(root / "plan/project.json"): None для отсутствующего и False для
+// readProject — plan/project.json: None для отсутствующего и False для
 // повреждённого файла (оба не словарь для generation_settings).
 func (t *workflowTool) readProject() any {
 	value, damaged := pycompat.ReadJSON(pycompat.JoinPath(t.root, "plan/project.json"))
@@ -339,7 +339,7 @@ func (t *workflowTool) readProject() any {
 	return value
 }
 
-// planKeyframes — plan_keyframes: каркас K01 (первый кадр), промежуточные по времени и
+// planKeyframes — каркас K01 (первый кадр), промежуточные по времени и
 // конечная опора на границе запроса; длительность проверяется правилом generation.video проекта.
 // Принятые опоры с той же ролью и временем сохраняются.
 func (t *workflowTool) planKeyframes(dirArg string, requestSeconds pycompat.Int, middles []middle) (*pycompat.Dict, error) {
@@ -611,7 +611,7 @@ func (t *workflowTool) approve(dirArg, id, source string, candidate bool) (*pyco
 	return save(directory, data)
 }
 
-// approvePrompt — approve_prompt(directory, file): после всех опор принимает файл промпта из
+// approvePrompt — после всех опор принимает файл промпта из
 // пакета (по умолчанию prompt.path), записывает SHA и число символов; предупреждения о длине —
 // по пределу адаптера провайдера generation.video.
 func (t *workflowTool) approvePrompt(dirArg string, file *string) (*pycompat.Dict, []string, error) {
@@ -693,7 +693,7 @@ func (t *workflowTool) approvePromptData(directory string, data *pycompat.Dict, 
 	return saved, warnings, err
 }
 
-// promptWarningChars — prompt_warning_chars: предел длины видеопромпта адаптера провайдера
+// promptWarningChars — предел длины видеопромпта адаптера провайдера
 // generation.video; нет блока, адаптера или предела — 0 (без предупреждения).
 func (t *workflowTool) promptWarningChars() int {
 	settings, err := sceneregistry.GenerationSettings(t.readProject(), "video")
@@ -711,7 +711,7 @@ func (t *workflowTool) promptWarningChars() int {
 	return 0
 }
 
-// addNote — add_note: непустое замечание к опоре с номером подряд с 1 в пакете; пустое — нет.
+// addNote — непустое замечание к опоре с номером подряд с 1 в пакете; пустое — нет.
 func addNote(data *pycompat.Dict, frame any, note, scope string) (*pycompat.Dict, error) {
 	if !contains(noteScopes, scope) {
 		return nil, valueError("Область замечания: " + strings.Join(noteScopes, ", "))
@@ -745,7 +745,7 @@ func addNote(data *pycompat.Dict, frame any, note, scope string) (*pycompat.Dict
 	return entry, nil
 }
 
-// withdraw — withdraw_candidate: кандидат снимается, файл в пакете остаётся.
+// withdraw — кандидат снимается, файл в пакете остаётся.
 func withdraw(data *pycompat.Dict, keyframe *pycompat.Dict) error {
 	keyframe.Set("path", nil)
 	keyframe.Set("sha256", nil)
@@ -758,7 +758,7 @@ func withdraw(data *pycompat.Dict, keyframe *pycompat.Dict) error {
 	return nil
 }
 
-// ask — ask(stage, question, options, frame): вопрос приложению в pending_decision и очистка
+// ask — вопрос приложению в pending_decision и очистка
 // прежнего ответа; frame — вопрос об одной неутверждённой опоре с кандидатом.
 func (t *workflowTool) ask(dirArg, stage string, question *string, options []string, frame *string) (*pycompat.Dict, error) {
 	directory, err := t.packageDir(dirArg, true)
@@ -818,7 +818,7 @@ func (t *workflowTool) askData(directory string, data *pycompat.Dict, stage stri
 	return save(directory, data)
 }
 
-// decide — decide(verdict, note, note_scope): ответ приложения. На keyframes_review approve
+// decide — ответ приложения. На keyframes_review approve
 // принимает кандидатов (или одну опору вопроса), revise снимает их и сохраняет замечание; на
 // prompt_review approve принимает промпт. Остальные ответы только записываются: отправку,
 // очередь, приёмку и повтор выполняет приложение.
@@ -980,7 +980,7 @@ func (t *workflowTool) decide(dirArg, verdict, note, scope string) (*pycompat.Di
 		if _, err := save(directory, data); err != nil {
 			return nil, err
 		}
-		// approve_prompt оригинала заново читает пакет с диска.
+		// approvePrompt заново читает пакет с диска, поэтому изменения сначала сохраняются.
 		data, _, err = t.approvePrompt(dirArg, nil)
 		if err != nil {
 			return nil, err
@@ -1003,9 +1003,9 @@ func sameDigest(path string, expected any) (bool, error) {
 	return pycompat.Equal(digest, expected), nil
 }
 
-// reopen — reopen(frame, note, scope): утверждённая опора возвращается на доработку с
+// reopen — утверждённая опора возвращается на доработку с
 // обязательным замечанием; промпт согласуется заново. Пока видеопромпт не утверждён, нет
-// video-запроса и этап из REOPEN_STAGES.
+// video-запроса и этап из reopenStages.
 func (t *workflowTool) reopen(dirArg, frame, note, scope string) (*pycompat.Dict, error) {
 	directory, err := t.packageDir(dirArg, true)
 	if err != nil {
@@ -1092,7 +1092,7 @@ func AddFrameNote(directory, frame, note, scope string) error {
 	return err
 }
 
-// setNote — set_note(id, active): включение или выключение замечания к опорам.
+// setNote — включение или выключение замечания к опорам.
 func (t *workflowTool) setNote(dirArg string, id pycompat.Int, active bool) (*pycompat.Dict, error) {
 	directory, err := t.packageDir(dirArg, true)
 	if err != nil {
@@ -1112,7 +1112,7 @@ func (t *workflowTool) setNote(dirArg string, id pycompat.Int, active bool) (*py
 	return nil, valueError("Замечания " + id.String() + " нет в пакете.")
 }
 
-// allowedTransition — allowed_transition: вперёд только на следующий этап (и request_choice →
+// allowedTransition — вперёд только на следующий этап (и request_choice →
 // submitted, downloaded → accepted), назад — на любой; needs_revision — с любого, кроме accepted;
 // image-ветка — по своему словарю переходов.
 func allowedTransition(current, target string) bool {
@@ -1144,7 +1144,7 @@ func index(items []string, value string) int {
 	return -1
 }
 
-// setStage — set_stage(stage, wait_reason, request_dir): переход этапа с проверками
+// setStage — переход этапа с проверками
 // image-ветки (запрос, send, состояние attempt), причины ожидания и подготовленного запроса.
 func (t *workflowTool) setStage(dirArg, stage string, waitReason, requestDir *string) (*pycompat.Dict, error) {
 	directory, err := t.packageDir(dirArg, true)

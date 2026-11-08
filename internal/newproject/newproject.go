@@ -1,11 +1,10 @@
-// Package newproject создаёт папку клипа из встроенного шаблона: проверка формы «Новый проект»
-// (validateNewProject оригинала), копирование шаблона с подстановкой плейсхолдеров (copyTemplate)
-// и необязательный git init. Открытие созданного проекта и история остаются у сервиса проектов.
+// Package newproject создаёт папку клипа из встроенного шаблона: проверка формы «Новый проект»,
+// копирование шаблона с подстановкой плейсхолдеров и необязательный git init. Открытие созданного
+// проекта и история остаются у сервиса проектов.
 //
-// Результат совпадает с Electron-оригиналом байт в байт (эталоны testdata/golden/project-create):
-// те же файлы, те же подстановки и те же тексты проблем. Отличие устройства — шаблон собирается
-// во временной соседней папке и переносится на место одним rename, поэтому сбой посередине
-// копирования не оставляет полупустой проект на выбранном пути.
+// Файлы, подстановки и тексты проблем зафиксированы эталонами testdata/golden/project-create.
+// Шаблон собирается во временной соседней папке и переносится на место одним rename, поэтому сбой
+// посередине копирования не оставляет полупустой проект на выбранном пути.
 package newproject
 
 import (
@@ -26,7 +25,8 @@ import (
 	"songframe-go/internal/process"
 )
 
-// Тексты проблем projectsTexts.main оригинала: форма показывает их пользователю как есть.
+// Тексты проблем projectsTexts.main (frontend/src/shared/texts/projects.ts): форма показывает их
+// пользователю как есть.
 const (
 	nameRequired         = "Укажите название проекта."
 	pathRequired         = "Укажите полный путь к папке проекта."
@@ -39,7 +39,7 @@ func parentMissing(path string) string {
 	return "Родительская папка не существует: " + path
 }
 
-// GitFailedFile — служебный файл, который оригинал оставляет в проекте, если git есть, но init не удался.
+// GitFailedFile — служебный файл, который остаётся в проекте, если git есть, но init не удался.
 const GitFailedFile = "GIT-INIT-FAILED.txt"
 
 // Input — CreateProjectInput контракта: название, абсолютный путь новой папки и необязательное имя MP4.
@@ -53,7 +53,7 @@ type Input struct {
 // animaticPattern — допустимое явное имя MP4 в форме создания (регистр расширения важен).
 var animaticPattern = regexp.MustCompile(`^[A-Za-z0-9._-]+\.mp4$`)
 
-// slugPattern заменяет всё, кроме латиницы и цифр, дефисом, как /[^a-z0-9]+/g оригинала.
+// slugPattern — каждая серия символов, кроме латиницы и цифр, заменяется одним дефисом.
 var slugPattern = regexp.MustCompile(`[^a-z0-9]+`)
 
 // DefaultAnimaticName — имя MP4 аниматика из названия: латиница, цифры и дефисы; для названия
@@ -72,7 +72,7 @@ func jsLower(text string) string {
 	return strings.ToLower(strings.ReplaceAll(text, "İ", "i̇"))
 }
 
-// Validate — validateNewProject: список проблем формы в порядке оригинала; пустой — можно создавать.
+// Validate — список проблем формы в порядке эталонов project-validate-new; пустой — можно создавать.
 // Функция только читает файловую систему (существование цели и родителя).
 func Validate(input Input) []string {
 	problems := []string{}
@@ -105,9 +105,9 @@ func Validate(input Input) []string {
 // Create проверяет ввод, копирует шаблон в новую папку и, если в системе есть git, делает её
 // репозиторием (git init -q). Возвращает абсолютный путь проекта; открывает его вызывающий.
 //
-// Ошибка проверки — проблемы формы через пробел, как Error(problems.join(' ')) оригинала;
-// в этом случае ничего не создаётся. Отсутствие git не ошибка; другой сбой git init записывается
-// в GIT-INIT-FAILED.txt внутри проекта и тоже не отменяет создание.
+// Ошибка проверки — проблемы формы через пробел; в этом случае ничего не создаётся. Отсутствие
+// git не ошибка; другой сбой git init записывается в GIT-INIT-FAILED.txt внутри проекта и тоже не
+// отменяет создание.
 func Create(ctx context.Context, template fs.FS, input Input) (string, error) {
 	if problems := Validate(input); len(problems) > 0 {
 		return "", errors.New(strings.Join(problems, " "))
@@ -166,7 +166,7 @@ func stagingDir(target string) (string, error) {
 	}
 }
 
-// initGit — spawnSync('git', ['init', '-q', target]) оригинала. Git необязателен: если программы нет,
+// initGit выполняет git init -q в папке проекта. Git необязателен: если программы нет,
 // проект остаётся обычной папкой. Запуск идёт через общий process.Run (без консоли в Windows).
 func initGit(ctx context.Context, target string) {
 	git, err := exec.LookPath("git")
@@ -188,7 +188,7 @@ func initGit(ctx context.Context, target string) {
 	if reason == "" {
 		reason = "неизвестная ошибка"
 	}
-	// Служебная заметка в папке проекта, как у оригинала; создание проекта при этом не отменяется.
+	// Служебная заметка в папке проекта; создание проекта при этом не отменяется.
 	_ = os.WriteFile(filepath.Join(target, GitFailedFile), []byte("git init не удался: "+reason+"\n"), 0o666)
 }
 
@@ -199,7 +199,7 @@ type Placeholders map[string]string
 var placeholderPattern = regexp.MustCompile(`\{\{\s*([a-z_]+)\s*\}\}`)
 
 // textExtensions — файлы, в которых выполняется подстановка; имя без расширения (.gitignore)
-// сравнивается целиком, как extname(name) || name в оригинале.
+// сравнивается целиком.
 var textExtensions = map[string]bool{".md": true, ".json": true, ".txt": true, ".gitignore": true, ".gitkeep": true, ".yml": true, ".yaml": true}
 
 // RenderPlaceholders подставляет известные ключи за один проход; неизвестные плейсхолдеры и
@@ -214,7 +214,8 @@ func RenderPlaceholders(text string, values Placeholders) string {
 	})
 }
 
-// isText повторяет выбор оригинала: расширение Node (extname) или всё имя для «.gitignore».
+// isText выбирает файлы для подстановки: по расширению (jsExtname) или по всему имени, если
+// расширения нет, как у «.gitignore».
 func isText(name string) bool {
 	extension := jsExtname(name)
 	if extension == "" {
@@ -234,7 +235,7 @@ func jsExtname(name string) string {
 
 // CopyTemplate рекурсивно копирует дерево шаблона в target (папка создаётся при необходимости):
 // текстовые файлы проходят подстановку, остальные копируются байт в байт. Значения не экранируются
-// для JSON, как в оригинале: название с кавычкой даёт нечитаемый plan/project.json.
+// для JSON: название с кавычкой даёт нечитаемый plan/project.json.
 func CopyTemplate(template fs.FS, target string, values Placeholders) error {
 	return fs.WalkDir(template, ".", func(name string, entry fs.DirEntry, err error) error {
 		if err != nil {
@@ -251,7 +252,7 @@ func CopyTemplate(template fs.FS, target string, values Placeholders) error {
 		if isText(path.Base(name)) {
 			data = []byte(RenderPlaceholders(jscompat.DecodeUTF8(data), values))
 		}
-		// writeFileSync/copyFileSync оригинала создают файл 0666 с учётом umask.
+		// Новый файл создаётся с правами 0666 с учётом umask.
 		return os.WriteFile(destination, data, 0o666)
 	})
 }

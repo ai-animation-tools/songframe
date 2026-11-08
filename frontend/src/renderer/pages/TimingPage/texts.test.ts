@@ -1,4 +1,4 @@
-/** Ожидания независимы от словаря: первый перенос сохраняет фразы, числа и служебные поля. */
+/** Ожидания независимы от словаря: правка словаря сохраняет фразы, числа и служебные поля. */
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';

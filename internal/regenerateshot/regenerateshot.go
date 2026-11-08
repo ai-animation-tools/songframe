@@ -1,13 +1,14 @@
-// Package regenerateshot — перенос tools/regenerate_shot/regenerate_shot.py: повтор генерации плана
-// по сохранённому запросу без нового согласования. Берёт замороженный запрос плана (последний
+// Package regenerateshot повторяет генерацию плана по сохранённому запросу без нового
+// согласования (инструмент regenerate_shot). Берёт зафиксированный запрос плана (последний
 // пакет в plan/batches или plan/awaiting с подготовленной попыткой, иначе снимок принятого
 // комплекта assets/shots/Mxx/generation-request.json), создаёт новый пакет с попыткой retry_of и
 // вопросом отправки для приложения, печатает request_sha256 и оценку стоимости. Отправку выполняет
 // приложение после ответа send. Данных запроса нет или они в чужом формате — код 3.
 //
-// Инструмент работает в процессе приложения: шаги shot_workflow выполняет перенесённый
-// shotworkflow.Run, подготовку попытки — mediarequest.Prepare (подключённый адаптер) или
-// requestsnapshot.Prepare, оценку — costcheck. Коды, stdout и тексты ошибок совпадают с оригиналом.
+// Инструмент работает в процессе приложения: шаги shot_workflow выполняет shotworkflow.Run,
+// подготовку попытки — mediarequest.Prepare (подключённый адаптер) или requestsnapshot.Prepare,
+// оценку — costcheck. Коды, stdout и тексты ошибок зафиксированы эталоном
+// testdata/golden/production-tools.
 package regenerateshot
 
 import (
@@ -32,16 +33,16 @@ import (
 	"songframe-go/internal/shotworkflow"
 )
 
-// noData — код «нет данных запроса» (NO_DATA оригинала).
+// noData — код завершения «нет данных запроса».
 const noData = 3
 
-// lookupError — LookupError оригинала: нет данных или они в чужом формате.
+// lookupError — класс исключения «нет данных или они в чужом формате»; Run завершает его кодом noData.
 const lookupError = "LookupError"
 
 // packageRoots — папки рабочих пакетов и очереди.
 var packageRoots = []string{"plan/batches", "plan/awaiting"}
 
-// Parser — argparse regenerate_shot.py.
+// Parser — аргументы инструмента regenerate_shot в стиле argparse.
 var Parser = pycompat.ArgParser{
 	Prog:        "regenerate_shot.py",
 	Description: "Повтор генерации плана по сохранённому запросу.",
@@ -58,8 +59,8 @@ var Parser = pycompat.ArgParser{
 // lookup — LookupError с текстом.
 func lookup(message string) error { return pycompat.New(lookupError, message) }
 
-// inputNormalizer — normalize_inputs адаптера (hasattr оригинала): снимок прежнего формата входов
-// приводится к объявленным слотам до проверки.
+// inputNormalizer — необязательная возможность адаптера: снимок с короткими флагами входов
+// приводится к объявленным слотам до проверки. Адаптер без неё получает спецификацию как есть.
 type inputNormalizer interface {
 	NormalizeInputs(ctx context.Context, spec *pycompat.Dict, timeout time.Duration) error
 }
@@ -184,7 +185,7 @@ func damaged(prefix string, err error) error {
 	return err
 }
 
-// specFromFrozen — request.json попытки в общем замороженном формате.
+// specFromFrozen — спецификация из request.json попытки в общем зафиксированном формате.
 func specFromFrozen(requestPath, shot string) (*pycompat.Dict, error) {
 	value, _ := pycompat.ReadJSON(requestPath)
 	data := dict(value)
@@ -470,8 +471,8 @@ func carrySpeech(source, directory string, spec *pycompat.Dict) error {
 	return requestsnapshot.CopyFile(pycompat.JoinPath(source, "audio-recipe.json"), pycompat.JoinPath(target, "audio-recipe.json"))
 }
 
-// workflow — шаг shot_workflow перенесённым инструментом; отказ — ValueError с его текстом, как
-// исключение функции оригинала.
+// workflow выполняет шаг shot_workflow в процессе; отказ — ValueError с текстом stderr (иначе
+// stdout) инструмента.
 func workflow(root string, args ...string) error {
 	output := shotworkflow.Run(root, args)
 	if output.Code == 0 {
@@ -484,7 +485,7 @@ func workflow(root string, args ...string) error {
 	return pycompat.New(pycompat.ValueError, message)
 }
 
-// Options — параметры regenerate().
+// Options — параметры Regenerate.
 type Options struct {
 	Source      string
 	WorkDir     string
@@ -494,7 +495,7 @@ type Options struct {
 	LocalDir string
 }
 
-// Regenerate — regenerate(root, shot, …): новый пакет и подготовленная попытка по сохранённому
+// Regenerate создаёт новый пакет и подготовленную попытку по сохранённому
 // запросу; результат — сведения для таблицы и JSON.
 func Regenerate(ctx context.Context, root, shot string, options Options) (*pycompat.Dict, error) {
 	source := options.Source
@@ -667,7 +668,7 @@ func Regenerate(ctx context.Context, root, shot string, options Options) (*pycom
 	), nil
 }
 
-// Run — main() regenerate_shot.py на разрешённом корне проекта: LookupError — код 3, ValueError —
+// Run — инструмент regenerate_shot на разрешённом корне проекта: LookupError — код 3, ValueError —
 // код 1 с текстом, прочие исключения — трассировка.
 func Run(ctx context.Context, root string, args []string, localDir string) pytool.Output {
 	parsed, exit := pytool.Args(Parser, args)

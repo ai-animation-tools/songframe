@@ -17,14 +17,13 @@ import (
 	"songframe-go/internal/jscompat"
 )
 
-// Эталоны testdata/golden/scenario-workflow сняты с ScenarioWorkflow замороженного оригинала с
-// поддельным менеджером агентов и настоящей публикацией (Python-инструменты 634fd94 в staging).
-// Тест повторяет те же шаги на Go: виды и тексты отказов, вход задания агента (промпт и контекст
-// дословно), изменения файлов проекта и локальную запись сценария. PNG карточек Go рисует своим
-// растеризатором, поэтому у них сравнивается только состав, а SHA в манифесте карточек — с
-// фактическими файлами.
+// Эталоны testdata/golden/scenario-workflow описывают шаги сценарного прохода с поддельным
+// менеджером агентов и настоящей публикацией. Тест проходит эти шаги и сверяет виды и тексты
+// отказов, вход задания агента (промпт и контекст дословно), изменения файлов проекта и
+// локальную запись сценария. Байты PNG карточек зависят от растеризатора, поэтому у них
+// сравнивается только состав, а SHA в манифесте карточек — с фактическими файлами.
 
-// fakeAgents — поддельный менеджер агентов FakeManager из съёмки: задания в памяти, ID job-N.
+// fakeAgents — поддельный менеджер агентов для шагов эталона: задания в памяти, ID job-N.
 type fakeAgents struct {
 	mu     sync.Mutex
 	jobs   []AgentJob
@@ -109,7 +108,7 @@ type goldenStep struct {
 	} `json:"agent"`
 }
 
-// normalizer — замена путей и случайных ID предложений маркерами съёмки.
+// normalizer — замена путей и случайных ID предложений маркерами эталона.
 type normalizer struct {
 	project, state string
 	ids            []string
@@ -172,9 +171,9 @@ func (n *normalizer) json(t *testing.T, value any) []byte {
 // v8Message — текст SyntaxError JSON.parse движка V8 в эталоне.
 var v8Message = regexp.MustCompile(`^(Unexpected .*JSON.*|Expected .* in JSON at position \d+.*|.* is not valid JSON)$`)
 
-// v8Deviation — осознанное отличие: ответ агента, который не разбирается как JSON, Go отклоняет
-// текстом proposalInvalidDocument вместо англоязычного SyntaxError V8 (см. proposalDocuments).
-// Функция заменяет такие сообщения эталона и сохраняет его форму (отступы state.json).
+// v8Deviation — ответ агента, который не разбирается как JSON, отклоняется текстом
+// proposalInvalidDocument (см. proposalDocuments), а эталон хранит на этом месте сообщение
+// SyntaxError V8. Функция заменяет такие сообщения эталона и сохраняет его форму (отступы state.json).
 func v8Deviation(t *testing.T, data []byte) []byte {
 	t.Helper()
 	value, err := jscompat.Parse(data)
@@ -235,7 +234,7 @@ func treeFiles(t *testing.T, root string) map[string][]byte {
 	return result
 }
 
-// maskCards — манифест карточек без SHA PNG: Go рисует карточки иначе, чем Pillow.
+// maskCards — манифест карточек без SHA PNG: байты PNG зависят от растеризатора и с эталоном не сравниваются.
 func maskCards(t *testing.T, data []byte) []byte {
 	t.Helper()
 	value, err := jscompat.Parse(data)
@@ -291,12 +290,12 @@ func TestGoldenWorkflow(t *testing.T) {
 					count := len(agents.inputs)
 					view, err = workflow.Start(StartInput{Project: path, Pass: step.Pass, Note: step.Note, SelectedIDs: step.SelectedIDs})
 					if (step.Agent != nil) != (len(agents.inputs) > count) {
-						t.Fatalf("%s: запуск агента %v, в оригинале %v", label, len(agents.inputs) > count, step.Agent != nil)
+						t.Fatalf("%s: запуск агента %v, в эталоне %v", label, len(agents.inputs) > count, step.Agent != nil)
 					}
 					if step.Agent != nil {
 						input := agents.inputs[len(agents.inputs)-1]
 						if names.text(input.Project) != step.Agent.Project || input.Task != step.Agent.Task {
-							t.Fatalf("%s: задание %s %s, в оригинале %s %s", label, input.Project, input.Task, step.Agent.Project, step.Agent.Task)
+							t.Fatalf("%s: задание %s %s, в эталоне %s %s", label, input.Project, input.Task, step.Agent.Project, step.Agent.Task)
 						}
 						if input.Prompt != prompts[step.Pass] {
 							t.Fatalf("%s: промпт отличается от %s", label, step.Agent.Prompt)
@@ -365,7 +364,7 @@ func TestGoldenWorkflow(t *testing.T) {
 				}
 				if step.Error != nil {
 					if err == nil || names.text(err.Error()) != *step.Error {
-						t.Fatalf("%s: ошибка %v, в оригинале %q", label, err, *step.Error)
+						t.Fatalf("%s: ошибка %v, в эталоне %q", label, err, *step.Error)
 					}
 					continue
 				}
@@ -374,7 +373,7 @@ func TestGoldenWorkflow(t *testing.T) {
 				}
 				names.remember(view)
 				if diffs, err := golden.Diff(v8Deviation(t, step.View), names.json(t, view)); err != nil || len(diffs) > 0 {
-					t.Fatalf("%s: вид отличается от оригинала: %v %s", label, err, strings.Join(diffs, "\n"))
+					t.Fatalf("%s: вид отличается от эталона: %v %s", label, err, strings.Join(diffs, "\n"))
 				}
 			}
 			compareFiles(t, item, project, before)
@@ -390,7 +389,7 @@ func TestGoldenWorkflow(t *testing.T) {
 	}
 }
 
-// editCast — правка роли второй сущности, как editCast съёмки (JSON.stringify с отступом 2).
+// editCast — правка роли второй сущности по шагу эталона; JSON записывается с отступом 2.
 func editCast(t *testing.T, project string) {
 	t.Helper()
 	path := filepath.Join(project, "plan", "cast.json")
@@ -440,22 +439,22 @@ func compareFiles(t *testing.T, item golden.Case, project string, before map[str
 		if strings.HasSuffix(path, ".png") {
 			// Состав PNG совпадает; перерисовка существующей карточки — допустимое отличие растеризатора.
 			if listed && (expected.After != nil) != hasRight {
-				t.Fatalf("%s: наличие PNG после %v, в оригинале %v", path, hasRight, expected.After != nil)
+				t.Fatalf("%s: наличие PNG после %v, в эталоне %v", path, hasRight, expected.After != nil)
 			}
 			if !listed && changed && (!hadLeft || !hasRight) {
-				t.Fatalf("%s: PNG появилась или исчезла, в оригинале без изменений", path)
+				t.Fatalf("%s: PNG появилась или исчезла, в эталоне без изменений", path)
 			}
 			continue
 		}
 		if !listed {
 			if changed {
-				t.Fatalf("%s изменён, в оригинале без изменений", path)
+				t.Fatalf("%s изменён, в эталоне без изменений", path)
 			}
 			continue
 		}
 		if expected.After == nil {
 			if hasRight {
-				t.Fatalf("%s: файл остался, в оригинале удалён", path)
+				t.Fatalf("%s: файл остался, в эталоне удалён", path)
 			}
 			continue
 		}
@@ -463,16 +462,16 @@ func compareFiles(t *testing.T, item golden.Case, project string, before map[str
 		if path == "plan/animatic/cards/manifest.json" {
 			checkCardHashes(t, project, right)
 			if !bytes.Equal(maskCards(t, wantBytes), maskCards(t, right)) {
-				t.Fatalf("%s отличается от оригинала без учёта SHA PNG:\n%s", path, right)
+				t.Fatalf("%s отличается от эталона без учёта SHA PNG:\n%s", path, right)
 			}
 			continue
 		}
 		if path == "source/manifest.json" {
-			// updated_at описи — время записи (у съёмки зафиксировано): сравнивается остальное.
+			// updated_at описи — время записи (в эталоне зафиксировано): сравнивается остальное.
 			wantBytes, right = maskUpdated(t, wantBytes), maskUpdated(t, right)
 		}
 		if !bytes.Equal(wantBytes, right) {
-			t.Fatalf("%s отличается от оригинала:\n--- ожидалось\n%s\n--- получено\n%s", path, wantBytes, right)
+			t.Fatalf("%s отличается от эталона:\n--- ожидалось\n%s\n--- получено\n%s", path, wantBytes, right)
 		}
 	}
 }
@@ -521,7 +520,7 @@ func compareState(t *testing.T, item golden.Case, localDir, project string, name
 	data, err := os.ReadFile(statePath(localDir, project))
 	if os.IsNotExist(err) {
 		if strings.TrimSpace(string(want)) != "null" {
-			t.Fatal("нет локальной записи, в оригинале есть")
+			t.Fatal("нет локальной записи, в эталоне есть")
 		}
 		return
 	}

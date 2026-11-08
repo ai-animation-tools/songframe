@@ -15,7 +15,7 @@ import (
 	"songframe-go/internal/jscompat"
 )
 
-// Шаблоны оригинала: UUID черновика (без учёта регистра), SHA-256 снимка и код сцены.
+// Шаблоны: UUID черновика (без учёта регистра), SHA-256 снимка и код сцены.
 var (
 	uuidPattern   = regexp.MustCompile(`^(?i)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 	sha256Pattern = regexp.MustCompile(`^(?i)[0-9a-f]{64}$`)
@@ -80,7 +80,7 @@ func win32Absolute(value string) bool {
 	return len(value) > 2 && letter >= 'a' && letter <= 'z' && value[1] == ':' && (value[2] == '/' || value[2] == '\\')
 }
 
-// projectPath — projectPath(project, value, requireFile): переносимый путь от корня проекта через «/»
+// projectPath проверяет переносимый путь от корня проекта через «/»
 // без пустых компонентов, «.» и «..»; оба вида абсолютных путей отклоняются на любой ОС. С
 // requireFile путь обязан указывать на существующий обычный файл. Возвращает абсолютный путь.
 func projectPath(project string, value any, requireFile bool) (string, error) {

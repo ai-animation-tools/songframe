@@ -1,4 +1,4 @@
-/** Проверки переноса сравнивают целые фразы и видимый SSR-текст с независимыми ожиданиями. */
+/** Проверки сравнивают целые фразы и видимый SSR-текст с независимыми ожиданиями. */
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';

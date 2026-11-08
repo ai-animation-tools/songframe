@@ -10,8 +10,8 @@ import (
 	"songframe-go/internal/jscompat"
 )
 
-// TestViewMatchesOriginal сверяет viewTiming с эталонами оригинала и неизменность входа.
-func TestViewMatchesOriginal(t *testing.T) {
+// TestViewMatchesGolden сверяет ViewProject с эталонами timing-view и неизменность входа.
+func TestViewMatchesGolden(t *testing.T) {
 	for _, item := range golden.Load(t, "timing-view") {
 		t.Run(item.Name, func(t *testing.T) {
 			path := item.ProjectPath()
@@ -28,8 +28,8 @@ func TestViewMatchesOriginal(t *testing.T) {
 	}
 }
 
-// TestValidateMatchesOriginal сверяет validateTiming с timing-validation/cases.json.
-func TestValidateMatchesOriginal(t *testing.T) {
+// TestValidateMatchesGolden сверяет validateTiming с timing-validation/cases.json.
+func TestValidateMatchesGolden(t *testing.T) {
 	for _, item := range golden.ValidationCases(t) {
 		t.Run(item.Name, func(t *testing.T) {
 			timing, err := jscompat.Parse(item.Input.Timing)
@@ -82,7 +82,7 @@ func TestValidateSaveInputs(t *testing.T) {
 			}
 			switch {
 			case want.Error == nil && len(problems) > 0:
-				t.Fatalf("оригинал сохранил, Go видит проблемы: %v", problems)
+				t.Fatalf("эталон сохранил, Go видит проблемы: %v", problems)
 			case want.Error != nil && joined != *want.Error:
 				t.Fatalf("ошибка сохранения %q, Go: %q", *want.Error, joined)
 			}
@@ -120,10 +120,10 @@ func digestIfExists(t *testing.T, path string) string {
 	return digest
 }
 
-// TestPrepareMatchesOriginal сверяет чистую часть saveTiming с эталонами timing-save: документ,
+// TestPrepareMatchesGolden сверяет чистую часть saveTiming с эталонами timing-save: документ,
 // байты файла (expected-timing.json) и отказ с текстом проблем. Запись не выполняется, поэтому
 // вход эталона не меняется.
-func TestPrepareMatchesOriginal(t *testing.T) {
+func TestPrepareMatchesGolden(t *testing.T) {
 	for _, item := range golden.Load(t, "timing-save") {
 		t.Run(item.Name, func(t *testing.T) {
 			var want struct {

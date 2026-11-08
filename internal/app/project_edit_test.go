@@ -118,7 +118,7 @@ func treeOf(t *testing.T, root string) (map[string]string, []string) {
 }
 
 // TestProjectCreateGolden — projects.create из встроенного шаблона: то же дерево и байты, статус,
-// текущий проект и история, что у оригинала (testdata/golden/project-create).
+// текущий проект и история, что в эталоне testdata/golden/project-create.
 func TestProjectCreateGolden(t *testing.T) {
 	_, gitErr := exec.LookPath("git")
 	for _, item := range golden.Load(t, "project-create") {
@@ -241,7 +241,7 @@ func TestProjectCreateTemplateFailure(t *testing.T) {
 	}
 }
 
-// TestProjectRenameGolden — projects.rename: байты plan/project.json, история и статус, как у оригинала.
+// TestProjectRenameGolden — projects.rename: байты plan/project.json, история и статус, как в эталоне.
 func TestProjectRenameGolden(t *testing.T) {
 	for _, item := range golden.Load(t, "project-rename") {
 		t.Run(item.Name, func(t *testing.T) {

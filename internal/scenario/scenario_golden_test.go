@@ -12,9 +12,9 @@ import (
 	"songframe-go/internal/jscompat"
 )
 
-// TestViewMatchesOriginal сверяет viewScenario, readScenarioRegistry и validateScenes с эталонами
+// TestViewMatchesGolden сверяет viewScenario, readScenarioRegistry и validateScenes с эталонами
 // scenario-view и проверяет, что чтение не пишет.
-func TestViewMatchesOriginal(t *testing.T) {
+func TestViewMatchesGolden(t *testing.T) {
 	for _, item := range golden.Load(t, "scenario-view") {
 		t.Run(item.Name, func(t *testing.T) {
 			path := item.ProjectPath()
@@ -32,8 +32,8 @@ func TestViewMatchesOriginal(t *testing.T) {
 	}
 }
 
-// TestBriefMatchesOriginal сверяет buildBrief для всех пар план/фаза эталонов scenario-brief.
-func TestBriefMatchesOriginal(t *testing.T) {
+// TestBriefMatchesGolden сверяет buildBrief для всех пар план/фаза эталонов scenario-brief.
+func TestBriefMatchesGolden(t *testing.T) {
 	for _, item := range golden.Load(t, "scenario-brief") {
 		t.Run(item.Name, func(t *testing.T) {
 			path := item.ProjectPath()
@@ -93,17 +93,17 @@ type writeExpectation struct {
 }
 
 // treatmentExpectation — expected.json scenario-treatment: общий формат записи и originalError —
-// текст отказа оригинала для случаев, которые Go сохраняет черновиком (см. README эталонов).
+// текст отказа строгой проверки для случаев, которые сохраняются черновиком (см. README эталонов).
 type treatmentExpectation struct {
 	writeExpectation
 	OriginalError *string `json:"originalError"`
 }
 
-// TestSaveTreatmentMatchesOriginal сверяет saveTreatment: ошибка, результат, байты файла и повтор,
-// а также проблемы ValidateProjectTreatment того же входа. Отличие от 634fd94: содержательные
-// проблемы не отклоняют сохранение; у таких случаев проблемы через пробел равны отказу оригинала
-// (originalError), у принятых оригиналом — пусты, у неверной структуры — один текст отказа.
-func TestSaveTreatmentMatchesOriginal(t *testing.T) {
+// TestSaveTreatmentMatchesGolden сверяет saveTreatment: ошибка, результат, байты файла и повтор,
+// а также проблемы ValidateProjectTreatment того же входа. Содержательные проблемы не отклоняют
+// сохранение; у таких случаев проблемы через пробел равны тексту строгого отказа (originalError),
+// у корректных трактовок — пусты, у неверной структуры — один текст отказа.
+func TestSaveTreatmentMatchesGolden(t *testing.T) {
 	for _, item := range golden.Load(t, "scenario-treatment") {
 		t.Run(item.Name, func(t *testing.T) {
 			project := item.CopyProject(t)
@@ -130,7 +130,7 @@ func TestSaveTreatmentMatchesOriginal(t *testing.T) {
 					t.Fatalf("проблемы черновика\n  Go: %s\n  TS: %s", got, *want.OriginalError)
 				}
 			case len(problems) != 0:
-				t.Fatalf("оригинал принял трактовку, Go нашёл проблемы: %q", problems)
+				t.Fatalf("эталон принял трактовку, Go нашёл проблемы: %q", problems)
 			}
 			if diff := changes(before, treeFiles(t, project)); len(diff) > 0 {
 				t.Fatalf("проверка черновика изменила файлы: %v", diff)
@@ -149,8 +149,8 @@ func TestSaveTreatmentMatchesOriginal(t *testing.T) {
 	}
 }
 
-// TestNormalizeTreatmentRejectsProblems — строгая нормализация (ответ агента) по-прежнему
-// отклоняет трактовку с содержательными проблемами тем же текстом, что оригинал.
+// TestNormalizeTreatmentRejectsProblems — строгая нормализация (ответ агента) отклоняет
+// трактовку с содержательными проблемами текстом originalError эталона.
 func TestNormalizeTreatmentRejectsProblems(t *testing.T) {
 	for _, item := range golden.Load(t, "scenario-treatment") {
 		t.Run(item.Name, func(t *testing.T) {
@@ -173,7 +173,7 @@ func TestNormalizeTreatmentRejectsProblems(t *testing.T) {
 			}
 			switch {
 			case expected == nil && err != nil:
-				t.Fatalf("оригинал принял, Go: %v", err)
+				t.Fatalf("эталон принял, Go: %v", err)
 			case expected != nil && (err == nil || err.Error() != *expected):
 				t.Fatalf("ошибка\n  Go: %v\n  TS: %s", err, *expected)
 			}
@@ -187,9 +187,9 @@ func AssertWrite(t *testing.T, dir string, wantError *string, wantResult json.Ra
 	t.Helper()
 	switch {
 	case wantError != nil && err == nil:
-		t.Fatalf("оригинал отказал %q, Go сохранил", *wantError)
+		t.Fatalf("эталон отказал %q, Go сохранил", *wantError)
 	case wantError == nil && err != nil:
-		t.Fatalf("оригинал сохранил, Go: %v", err)
+		t.Fatalf("эталон сохранил, Go: %v", err)
 	case wantError != nil && err.Error() != *wantError:
 		t.Fatalf("ошибка\n  Go:  %s\n  TS:  %s", err, *wantError)
 	}

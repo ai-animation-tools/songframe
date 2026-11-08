@@ -1,10 +1,9 @@
 // Package animatic проверяет сборку аниматика plan/animatic/latest: собрана ли она, свежа ли по
 // реестру сцен и фактическим входам и принята ли именно она в plan/production-status.json.
 //
-// Это viewAnimatic, animaticInputProblems и setAnimaticStatus оригинала (src/main/animatic.ts,
-// animatic-freshness.ts). Один разбор (inspect) даёт и вид страницы «Аниматик», и признаки
-// built/fresh/approved статуса проекта; порядок проверок и исключения (например, нестроковый путь
-// в манифесте) повторены полностью, потому что исключение оригинала прерывает и страницу, и
+// Один разбор (inspect) даёт и вид страницы «Аниматик», и признаки built/fresh/approved статуса
+// проекта; порядок проверок и ошибки (например, нестроковый путь в манифесте) зафиксированы
+// эталоном testdata/golden/animatic-view, потому что такая ошибка прерывает и страницу, и
 // computeStatus. Чтение не меняет файлов; хеши входов берутся из кэша filedigest. Запись —
 // только SetStatus в plan/production-status.json; задание сборки — Service.Build.
 package animatic
@@ -19,7 +18,7 @@ import (
 	"songframe-go/internal/jscompat"
 )
 
-// fps — кадровая сетка приложения (shared/video.ts).
+// fps — кадровая сетка приложения.
 const fps = 30.0
 
 var sha256Pattern = regexp.MustCompile(`^[a-f0-9]{64}$`)
@@ -64,7 +63,7 @@ func referencePathMissing(shot, id any) string {
 
 // State — признаки сборки для статуса проекта и страницы аниматика.
 type State struct {
-	// Built — манифест сборки читается и содержит массив shots (built !== null оригинала).
+	// Built — манифест сборки читается и содержит массив shots.
 	Built bool
 	// Fresh — сборка соответствует текущим байтам scenes.json, MP4 на месте и все входы совпадают.
 	Fresh bool
@@ -74,18 +73,18 @@ type State struct {
 	ApprovalStatus string
 	// CardsFresh — квитанция карточек построена по текущему реестру.
 	CardsFresh bool
-	// Problems — проблемы сборки в порядке оригинала.
+	// Problems — проблемы сборки в порядке проверок, зафиксированном эталоном.
 	Problems []string
 }
 
-// readJSON — readJson оригинала: null при любой ошибке.
+// readJSON читает JSON-файл; при любой ошибке возвращает nil.
 func readJSON(path string) any {
 	value, _ := jscompat.ReadJSONFile(path)
 	return value
 }
 
-// Inspect — viewAnimatic(project) в части признаков и проблем для статуса проекта. Это тот же
-// разбор, что и ViewAnimatic (inspect в view.go). Ошибка — исключение оригинала.
+// Inspect возвращает признаки и проблемы сборки для статуса проекта. Это тот же разбор, что и
+// ViewAnimatic (inspect в view.go); ошибка означает повреждённые данные сборки или реестра.
 func Inspect(project string) (State, error) {
 	_, state, err := inspect(project)
 	return state, err
@@ -351,7 +350,7 @@ func normalizeFrames(frames any) (any, error) {
 	return result, nil
 }
 
-// selectFrames — selectedFrames оригинала (= approved_keyframes в update_scene_views): первая
+// selectFrames выбирает опоры плана так же, как approved_keyframes в update_scene_views: первая
 // подходящая очередь plan/awaiting/<план>, затем рабочие пакеты plan/batches в порядке имён.
 // Подходит workflow этого плана, не принятый, со всеми утверждёнными и существующими опорами.
 func selectFrames(project, shot string) (any, error) {

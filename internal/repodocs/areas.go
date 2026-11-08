@@ -69,6 +69,7 @@ var Areas = []Area{
 	},
 	{
 		Title:    "Разметка песни",
+		Docs:     []string{"docs/timing.md"},
 		Packages: []string{"internal/timing", "internal/songtiming", "internal/songml", "internal/speech", "internal/cutspeech"},
 		Pages:    []string{"TimingPage"},
 	},
@@ -134,7 +135,7 @@ var Areas = []Area{
 		Paths:    []string{"resources/skills", "resources/fonts"},
 	},
 	{
-		Title: "Семантика оригинала и эталоны",
+		Title: "Семантика форматов и эталоны",
 		Docs:  []string{"testdata/golden/README.md", "testdata/README.md"},
 		Packages: []string{
 			"internal/pycompat", "internal/pyre", "internal/pyargparse", "internal/pytool",

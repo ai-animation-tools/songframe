@@ -24,7 +24,7 @@ export interface ContextDrafts {
 /**
  * GenerationInput — ReferenceImageGenerationInput контракта: только явно выбранные опоры; видимый
  * отредактированный промпт передаётся отдельной строкой. Images nil (поля нет или null) — неверный
- * ввод, как !Array.isArray оригинала.
+ * ввод.
  */
 export interface GenerationInput {
     "images": InputImage[];

@@ -65,7 +65,7 @@ func digest(t *testing.T, root string) map[string]string {
 	return result
 }
 
-// TestViewGolden — viewSources на эталонах оригинала; просмотр не меняет дерево.
+// TestViewGolden — просмотр на эталонах sources-view; просмотр не меняет дерево.
 func TestViewGolden(t *testing.T) {
 	for _, item := range golden.Load(t, "sources-view") {
 		t.Run(item.Name, func(t *testing.T) {
@@ -83,7 +83,7 @@ func TestViewGolden(t *testing.T) {
 	}
 }
 
-// TestValidateGolden — validateSources: те же проблемы в том же порядке.
+// TestValidateGolden — проверка формы: проблемы и их порядок по эталонам sources-validate.
 func TestValidateGolden(t *testing.T) {
 	for _, item := range golden.Load(t, "sources-validate") {
 		t.Run(item.Name, func(t *testing.T) {
@@ -104,8 +104,8 @@ func TestValidateGolden(t *testing.T) {
 
 var updatedAt = regexp.MustCompile(`"updated_at": "\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z"`)
 
-// TestSaveGolden — saveSources без кастинга: опись (байты файла и результат), дерево source/ и
-// тексты ошибок совпадают с оригиналом; время updated_at заменяется маркером.
+// TestSaveGolden — сохранение без кастинга: опись (байты файла и результат), дерево source/ и
+// тексты ошибок совпадают с эталонами sources-save; время updated_at заменяется маркером.
 func TestSaveGolden(t *testing.T) {
 	for _, item := range golden.Load(t, "sources-save") {
 		t.Run(item.Name, func(t *testing.T) {

@@ -6,9 +6,9 @@ import (
 	"songframe-go/internal/jscompat"
 )
 
-// Тексты оригинала, которые Go отдаёт renderer через ошибки, результаты диагностики и задания.
+// Тексты, которые Go отдаёт renderer через ошибки, результаты диагностики и задания.
 // Источники — frontend/src/shared/texts/agents.ts (agentsTexts), settings.ts (settingsTexts.main),
-// ai-access.ts (aiAccessTexts.main) и common.ts; они совпадают с 634fd94 дословно. Тест
+// ai-access.ts (aiAccessTexts.main) и common.ts. Тест
 // TestTextsMatchFrontend проверяет, что каждая постоянная строка присутствует в TS-словарях.
 const (
 	textAgentLabel  = "Агент"
@@ -194,8 +194,8 @@ func textLoginRequired(title string) string {
 	return "Выполните вход в " + title + " в настройках приложения."
 }
 
-// textCheckAuthenticated — подтверждения входа, которые принадлежат проверке конкретного CLI
-// (agent-probes.ts): Claude подтверждает вход, Codex — наличие учётных данных.
+// textCheckAuthenticated — подтверждения входа, которые принадлежат проверке конкретного CLI:
+// Claude подтверждает вход, Codex — наличие учётных данных.
 func textCheckAuthenticated(provider string) string {
 	if provider == Codex {
 		return Title(Codex) + " сообщает, что учётные данные для входа найдены."
@@ -203,5 +203,5 @@ func textCheckAuthenticated(provider string) string {
 	return Title(Claude) + " сообщает, что вход выполнен."
 }
 
-// textCodexLoggedOut — явный ответ сервера Codex об отсутствии аккаунта (agent-account.ts).
+// textCodexLoggedOut — явный ответ сервера Codex об отсутствии аккаунта.
 var textCodexLoggedOut = "Codex сообщает, что вход не выполнен. Выполните " + strings.TrimSpace(Providers[Codex].LoginCommand) + " в терминале."

@@ -20,8 +20,8 @@ export interface Settings {
  * SettingsInput — ProjectSettings из формы. AgentInstructions nil не меняет поле в файле.
  *
  * Unset — пути внутри generation, значения которых форма задала как undefined (сброс модели,
- * разрешения и т. п.). Electron IPC передавал такие ключи, и запись удаляла их из файла;
- * JSON-мост Wails ключи с undefined теряет, поэтому адаптер передаёт их отдельным списком.
+ * разрешения и т. п.): запись удаляет такие ключи из файла. JSON-мост Wails ключи с undefined
+ * теряет, поэтому адаптер передаёт их отдельным списком.
  */
 export interface SettingsInput {
     "agentInstructions"?: string | null;

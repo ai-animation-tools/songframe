@@ -8,7 +8,7 @@ import (
 	"syscall"
 )
 
-// Типы исключений Python, которые встречаются в перенесённых инструментах. Значение — имя
+// Типы исключений Python, которые встречаются в инструментах. Значение — имя
 // класса; полное имя для трассировки даёт qualifiedNames.
 const (
 	ValueError         = "ValueError"
@@ -112,7 +112,7 @@ func IsAny(err error, kinds ...string) bool {
 
 // Traceback — stderr необработанного исключения. Кадры стека Python в Go не существуют, поэтому
 // между заголовком и последней строкой их нет; последняя строка («Тип: текст») совпадает с
-// оригиналом, а интерфейс показывает именно последние строки stderr.
+// выводом Python, а интерфейс показывает именно последние строки stderr.
 func Traceback(err error) string {
 	var exception *Exception
 	if !errors.As(err, &exception) {

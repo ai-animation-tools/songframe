@@ -1,8 +1,7 @@
 // Package scenarioapply — хранилище многофайловой публикации семейства «сценарий» (кастинг,
 // трактовка, реестр, опись исходников и их производные виды) с журналом и восстановлением после
-// сбоя. Перенос резервов, журнала и восстановления из scenario-apply.ts оригинала; само применение
-// предложений агента (проверка в копии, штатные инструменты) переносит этап 44 и публикует через
-// Store.Publish.
+// сбоя. Само применение предложений агента (проверка в копии, штатные инструменты) выполняет
+// internal/scenarioworkflow и публикует через Store.Publish.
 //
 // Устройство. Журнал живёт в каталоге состояния приложения, вне проекта:
 // scenario-apply/<sha256(абсолютный путь проекта)>/pending.json и резервы <i>.bak. До первой
@@ -11,10 +10,9 @@
 // любую запись в проект (Store.WriteProblems), а восстановление выполняется при старте приложения
 // (RecoverAll) и при открытии проекта (Recover) до снятия запрета.
 //
-// Отличие от оригинала: перед откатом каждый файл сверяется с журналом. Допустимы только прежнее
-// и опубликованное содержимое; всё иное — внешняя правка после сбоя, её восстановление не
-// перезаписывает: ничего не трогается, журнал и резервы остаются, запись в проект запрещена до
-// ручного разрешения. Оригинал в этом случае молча возвращал резервы поверх новых данных.
+// Перед откатом каждый файл сверяется с журналом. Допустимы только прежнее и опубликованное
+// содержимое; всё иное — внешняя правка после сбоя, её восстановление не перезаписывает: ничего
+// не трогается, журнал и резервы остаются, запись в проект запрещена до ручного разрешения.
 package scenarioapply
 
 import (
@@ -36,7 +34,7 @@ import (
 	"songframe-go/internal/status"
 )
 
-// fixedViews — производные виды с постоянными путями (FIXED_VIEWS оригинала).
+// fixedViews — производные виды с постоянными путями.
 var fixedViews = []string{
 	"ROADMAP.md",
 	"plan/edit-list.md",
@@ -47,7 +45,7 @@ var fixedViews = []string{
 	"plan/animatic/cards/manifest.json",
 }
 
-// canonical — канонические документы семейства «сценарий» (CANONICAL оригинала).
+// canonical — канонические документы семейства «сценарий».
 var canonical = []string{"plan/cast.json", "plan/treatment.json", "plan/scenes.json", "source/manifest.json"}
 
 var (
@@ -70,7 +68,7 @@ func relativePath(path string) bool {
 	return true
 }
 
-// RelativePath — relativePath оригинала для других пакетов сценария.
+// RelativePath — путь файла относительно проекта с прямыми слешами; общий для пакетов сценария.
 func RelativePath(path string) bool { return relativePath(path) }
 
 // AllowedTarget — может ли публикация сценария менять этот файл проекта.
@@ -112,11 +110,11 @@ func checkedPath(project, relative string) (string, error) {
 	return filepath.Join(project, filepath.FromSlash(relative)), nil
 }
 
-// CheckedPath — путь файла проекта для применения сценария без перехода по ссылкам (checkedPath
-// оригинала); его использует и проверка в копии internal/scenarioworkflow.
+// CheckedPath — путь файла проекта для применения сценария без перехода по ссылкам; его
+// использует и проверка в копии internal/scenarioworkflow.
 func CheckedPath(project, relative string) (string, error) { return checkedPath(project, relative) }
 
-// ReadFile — bytes оригинала: байты файла проекта по CheckedPath или nil, если файла нет.
+// ReadFile — байты файла проекта по CheckedPath или nil, если файла нет.
 func ReadFile(project, relative string) ([]byte, error) { return readCurrent(project, relative) }
 
 // readCurrent — байты файла проекта или nil, если его нет.
@@ -169,7 +167,7 @@ type entry struct {
 	Next   *string `json:"next"`
 }
 
-// journal — pending.json: формат каталога состояния Go-версии (профиль Electron не читается).
+// journal — pending.json в каталоге состояния приложения.
 type journal struct {
 	SchemaVersion int     `json:"schemaVersion"`
 	Project       string  `json:"project"`
@@ -186,13 +184,13 @@ type Store struct {
 // NewStore — хранилище в каталоге состояния localDir.
 func NewStore(localDir string) Store { return Store{localDir: localDir} }
 
-// directory — каталог журнала проекта: sha256 абсолютного пути, как backupDirectory оригинала.
+// directory — каталог журнала проекта: sha256 абсолютного пути.
 func (s Store) directory(project string) string {
 	sum := sha256.Sum256([]byte(project))
 	return filepath.Join(s.localDir, "scenario-apply", hex.EncodeToString(sum[:]))
 }
 
-// absolute — абсолютный путь проекта (resolve оригинала).
+// absolute — абсолютный нормализованный путь проекта.
 func absolute(project string) (string, error) {
 	if project == "" {
 		return "", fmt.Errorf("не задана папка проекта")
@@ -235,7 +233,7 @@ func ignoreMissing(err error) error {
 	return err
 }
 
-// Changes — changesFrom оригинала: из кандидатов остаются только файлы, чьё содержимое
+// Changes — из кандидатов остаются только файлы, чьё содержимое
 // действительно меняется (удаление отсутствующего и запись тех же байтов отбрасываются).
 func (s Store) Changes(project string, candidates []Change) ([]Change, error) {
 	result := []Change{}
@@ -325,7 +323,7 @@ func apply(project string, changes []Change) error {
 	return nil
 }
 
-// Publish — publishChanges оригинала: резервы и журнал, затем замены. Сбой замены сразу
+// Publish — резервы и журнал, затем замены. Сбой замены сразу
 // откатывает уже заменённые файлы и возвращает исходную ошибку; если откат не удался, журнал
 // остаётся (запись в проект запрещена до восстановления) и ошибка объясняет обе причины. Пустой
 // список ничего не делает. Запись проверяет шлюз projectfs (журналы других областей).
@@ -495,7 +493,7 @@ func (s Store) Recover(project string) error {
 	return nil
 }
 
-// RecoverAll — recoverScenarioApplications: при старте приложения восстанавливает все
+// RecoverAll — при старте приложения восстанавливает все
 // незавершённые публикации каталога состояния. Сбой одной не мешает остальным; ошибки собираются
 // в одно сообщение recoveryFailed.
 func (s Store) RecoverAll() error {

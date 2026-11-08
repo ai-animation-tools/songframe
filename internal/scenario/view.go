@@ -13,7 +13,7 @@ import (
 	"songframe-go/internal/timing"
 )
 
-// FPS — кадровая сетка реестра (FPS shared/video оригинала).
+// FPS — кадровая сетка реестра, кадров в секунду.
 const FPS = 30
 
 // sceneID — код плана: M01, M23.5.
@@ -39,12 +39,12 @@ type View struct {
 	TrackPath *string  `json:"trackPath"`
 	Problems  []string `json:"problems"`
 	// ReferencesStale — карта references реестра расходится с кастингом (в Problems — textReferencesRefresh).
-	// Отличие от 634fd94: по нему страница разрешает сохранить реестр без правок, иначе обещанное
-	// в предупреждении обновление карты было недостижимо — «Сохранить» выключена без изменений.
+	// По нему страница разрешает сохранить реестр без правок: иначе обещанное в предупреждении
+	// обновление карты недостижимо, ведь «Сохранить» без изменений выключена.
 	ReferencesStale bool `json:"referencesStale"`
 }
 
-// readDocument — readJson модуля scenario: (значение, true) или (nil, false) для отсутствующего
+// readDocument — чтение документа проекта: (значение, true) или (nil, false) для отсутствующего
 // файла; повреждённый файл добавляет проблему. Ложное значение JSON считается отсутствием
 // (`value || null`).
 func readDocument(project, relative string, problems *[]string) any {
@@ -71,9 +71,8 @@ func rawOrNull(value any) json.RawMessage {
 	return jscompat.Raw(value)
 }
 
-// ViewProject — viewScenario: реестр, трактовка, кастинг и разметка для страницы «Сценарий» с
-// проблемами проверки реестра. Ничего не пишет. Ошибка — исключение оригинала на документе
-// другой формы.
+// ViewProject — реестр, трактовка, кастинг и разметка для страницы «Сценарий» с проблемами
+// проверки реестра. Ничего не пишет. Ошибка — документ другой формы.
 func ViewProject(project string) (View, error) {
 	problems := []string{}
 	stale := false
@@ -130,9 +129,9 @@ func ViewProject(project string) (View, error) {
 	}, nil
 }
 
-// ValidateScenes — validateScenes: структурная проверка реестра как в scene_registry.validate с
-// сообщениями для редактора. castValue — кастинг проекта (его начальное состояние входит в проверку
-// наследования) или nil. Ошибка — исключение оригинала на реестре другой формы (части не массив,
+// ValidateScenes — структурная проверка реестра как в scene_registry.validate с сообщениями для
+// редактора. castValue — кастинг проекта (его начальное состояние входит в проверку
+// наследования) или nil. Ошибка — реестр другой формы (части не массив,
 // камера не строка и т. п.); исключение вычисления состояния, напротив, становится проблемой.
 func ValidateScenes(data, castValue any) ([]string, error) {
 	scenes, isArray := jscompat.AsArray(jscompat.Get(data, "scenes"))
@@ -264,7 +263,7 @@ func trimmedText(value any, name string) (string, error) {
 	return jscompat.Trim(text), nil
 }
 
-// DerivedFromProblems — derivedFromProblems (derived_from_problems инструментов): производный план
+// DerivedFromProblems — проверка derived_from (derived_from_problems инструментов): производный план
 // ссылается объектом {"shot": "Mxx"} на существующий план с собственной генерацией. Отсутствующее
 // поле означает обычный план.
 func DerivedFromProblems(scenes []any) ([]string, error) {

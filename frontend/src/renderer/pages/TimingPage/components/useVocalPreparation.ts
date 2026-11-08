@@ -11,7 +11,7 @@ interface Props {
   onBusy?(busy: boolean): void;
 }
 
-/** Кэш читает main; новый запуск никогда не сбрасывает прежние варианты и явный выбор. */
+/** Кэш читает Go; новый запуск никогда не сбрасывает прежние варианты и явный выбор. */
 export function useVocalPreparation({ project, onReady, onJob, onBusy }: Props) {
   const { describeError } = useApp();
   const [view, setView] = useState<VocalPreparationView | null>(null);
@@ -167,7 +167,7 @@ export function useVocalPreparation({ project, onReady, onJob, onBusy }: Props) 
     download: (model: VocalModelId) => act(() => window.api.timing.downloadVocalModel(model)),
     separate: (model: VocalModelId) => act(() => window.api.timing.separateVocals(project, model)),
     select: (id: string) => act(() => window.api.timing.selectVocal(project, id), true),
-    // Удаление меняет выбор только по подтверждённому ответу main; ошибка сохраняет прежний view.
+    // Удаление меняет выбор только по подтверждённому ответу Go; ошибка сохраняет прежний view.
     remove: (id: string) => act(() => window.api.timing.deleteVocal(project, id)),
     cancel: () =>
       act(async () => {

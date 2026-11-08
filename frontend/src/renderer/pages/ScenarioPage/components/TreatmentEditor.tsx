@@ -41,7 +41,7 @@ export function TreatmentEditor({
             placeholder={scenarioTexts.treatment.loglineHint}
           />
           {problems.length ? (
-            // Отличие от 634fd94: черновик с проблемами сохраняется, поэтому список виден над частями, а не только в отказе сохранения.
+            // Черновик с проблемами сохраняется, поэтому список виден над частями постоянно.
             <Alert severity="warning" id={TREATMENT_PROBLEMS_ID}>
               <AlertTitle>{scenarioTexts.treatment.problemsTitle}</AlertTitle>
               <Typography variant="body2">{scenarioTexts.treatment.problemsHint}</Typography>

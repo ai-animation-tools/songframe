@@ -1,11 +1,10 @@
-// Package requestsnapshot — перенос tools/request_snapshot.py замороженного оригинала: общая
-// локальная подготовка неизменяемого запроса генерации (снимок спецификации, промпта и входов в
-// новой папке попытки) и атомарная запись его JSON.
+// Package requestsnapshot готовит неизменяемый запрос генерации локально, без отправки: снимок
+// спецификации, промпта и входов в новой папке попытки и атомарная запись его JSON.
 //
 // Пакет не отправляет запросы и не выбирает провайдера: допустимую рабочую папку проверяет
 // вызывающий (internal/mediarequest), ограничения сервиса — его адаптер. Байты request.json и
-// attempt.json, а значит и request_sha256, совпадают с оригиналом: JSON пишется моделью значений
-// pycompat (sort_keys, indent=2, ensure_ascii=False, allow_nan=False) + "\n".
+// attempt.json, а значит и request_sha256, зафиксированы эталоном request-snapshot: JSON пишется
+// моделью значений pycompat (sort_keys, indent=2, ensure_ascii=False, allow_nan=False) + "\n".
 package requestsnapshot
 
 import (
@@ -21,7 +20,7 @@ import (
 	"songframe-go/internal/pycompat"
 )
 
-// Тексты отказов оригинала (ValueError): media_request показывает их пользователю как есть.
+// Тексты отказов (ValueError): media_request показывает их пользователю как есть.
 const (
 	textUnknownSchema    = "Неизвестная схема запроса."
 	textNoKind           = "Не указан вид результата."
@@ -53,7 +52,7 @@ var (
 	sha256Pattern   = regexp.MustCompile(`^[a-f0-9]{64}$`)
 )
 
-// Encoded — encoded(value): байты JSON замороженного запроса и журнала попытки. От них
+// Encoded — байты JSON зафиксированного запроса и журнала попытки. От них
 // считается request_sha256, поэтому формат неизменен: ключи по кодовым точкам, отступ 2,
 // не-ASCII как есть, NaN/бесконечность и одиночный суррогат — ValueError/UnicodeEncodeError.
 func Encoded(value any) ([]byte, error) {
@@ -64,7 +63,7 @@ func Encoded(value any) ([]byte, error) {
 	return pycompat.EncodeUTF8(text + "\n")
 }
 
-// Digest — sha256(encoded(value)).hexdigest(): SHA подготовленного запроса.
+// Digest — SHA-256 байтов Encoded(value) в hex: SHA подготовленного запроса.
 func Digest(value any) (string, error) {
 	data, err := Encoded(value)
 	if err != nil {
@@ -74,9 +73,9 @@ func Digest(value any) (string, error) {
 	return hex.EncodeToString(sum[:]), nil
 }
 
-// AtomicJSON — atomic_json(path, value): замена файла через соседний временный файл со сбросом
+// AtomicJSON заменяет файл через соседний временный файл со сбросом
 // на диск. Состояние отправки должно пережить обрыв до получения ID; подписанные адреса и сырые
-// ответы сервиса сюда не попадают. Права нового файла 0600, как у NamedTemporaryFile оригинала.
+// ответы сервиса сюда не попадают. Права нового файла 0600, как у NamedTemporaryFile Python.
 // Ошибка записи — OSError (в CLI — общее сообщение без пути).
 func AtomicJSON(path string, value any) error {
 	data, err := Encoded(value)
@@ -89,7 +88,7 @@ func AtomicJSON(path string, value any) error {
 	return nil
 }
 
-// FileSHA — sha(path) из tools/common.py: SHA-256 файла потоком. Ошибка — OSError Python.
+// FileSHA — SHA-256 файла потоком. Ошибка — OSError Python.
 func FileSHA(path string) (string, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -109,9 +108,9 @@ func nonEmptyString(value any) bool {
 	return ok && pycompat.Strip(text) != ""
 }
 
-// ValidateSpec — validate_spec(spec): общая форма спецификации без предположений о командах и
-// слотах провайдера. spec — любое значение json.loads; нарушение — ValueError с текстом
-// оригинала, проверки идут в его порядке (первая нарушенная даёт сообщение).
+// ValidateSpec проверяет общую форму спецификации без предположений о командах и слотах
+// провайдера. spec — любое значение json.loads; нарушение — ValueError, сообщение даёт первая
+// нарушенная проверка, поэтому порядок проверок зафиксирован эталоном.
 func ValidateSpec(value any) error {
 	spec, ok := value.(*pycompat.Dict)
 	if !ok || !pycompat.Equal(spec.Value("schema_version"), pycompat.NewInt(1)) {
@@ -207,15 +206,15 @@ func hasAll(dict *pycompat.Dict, keys []string) bool {
 	return true
 }
 
-// Prepare — request_snapshot.prepare(request, directory, extra_fields): результат —
-// frozen | {request_sha256, prompt_text, work_dir, warnings} оригинала (warnings пуст, его
-// дополняет вызывающий предупреждениями адаптера). Читает спецификацию
-// request (пути промпта и входов отсчитываются от её папки), проверяет общую форму и создаёт новую
+// Prepare готовит попытку; результат — зафиксированный запрос, дополненный полями
+// request_sha256, prompt_text, work_dir и warnings (warnings пуст, его дополняет вызывающий
+// предупреждениями адаптера). Читает спецификацию request (пути промпта и входов отсчитываются
+// от её папки), проверяет общую форму и создаёт новую
 // папку directory с prompt.txt, inputs/, request.json и attempt.json (status prepared).
 //
 // Папка появляется только целиком: всё собирается во временной .prepare-* рядом и
 // переименовывается в конце, поэтому недописанный запрос отправить нельзя. Одинаковые байты
-// входов копируются один раз с сохранением всех ролей. extraFields (FROZEN_FIELDS адаптера)
+// входов копируются один раз с сохранением всех ролей. extraFields (FrozenFields адаптера)
 // входят в запрос и его SHA. Существующая папка не перезаписывается.
 func Prepare(request, directory string, extraFields *pycompat.Dict) (*pycompat.Dict, error) {
 	request = pycompat.ResolvePath(request)
@@ -252,7 +251,7 @@ func Prepare(request, directory string, extraFields *pycompat.Dict) (*pycompat.D
 	if err != nil {
 		return nil, pycompat.OSErrorFrom(err, parent)
 	}
-	// TemporaryDirectory оригинала: после переименования удалять нечего, при отказе — вся заготовка.
+	// Временная заготовка: после переименования удалять нечего, при отказе удаляется целиком.
 	defer os.RemoveAll(staging)
 	frozen, digest, err := freeze(spec, base, staging, promptBytes, extraFields)
 	if err != nil {
@@ -269,7 +268,7 @@ func Prepare(request, directory string, extraFields *pycompat.Dict) (*pycompat.D
 	return result, nil
 }
 
-// freeze собирает содержимое попытки в staging и возвращает замороженный запрос и его SHA.
+// freeze собирает содержимое попытки в staging и возвращает зафиксированный запрос и его SHA.
 func freeze(spec *pycompat.Dict, base, staging string, promptBytes []byte, extraFields *pycompat.Dict) (*pycompat.Dict, string, error) {
 	if err := os.Mkdir(filepath.Join(staging, "inputs"), 0o777); err != nil {
 		return nil, "", pycompat.OSErrorFrom(err, staging)

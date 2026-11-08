@@ -1,8 +1,7 @@
 // Package songtiming — локальная автоматическая разметка трека: кэш выделенного вокала вне
 // проекта, задания выделения вокала и CTC-выравнивания и загрузка нужных компонентов.
 //
-// Перенос src/main/{timing-local,vocal-preparation}.ts и инструментов separate_vocals/align_lyrics
-// оригинала. Арифметику ML выполняет internal/songml, сборку черновика timing.json —
+// Арифметику ML выполняет internal/songml, сборку черновика timing.json —
 // internal/timing; здесь — файлы кэша, проверки исходников и порядок публикации. Распознавания
 // слов нет: границы строк даёт принятое глобальное CTC-выравнивание по выбранному вокалу.
 package songtiming
@@ -50,7 +49,7 @@ func textVocalDownload(model string) string {
 }
 
 // VocalModel — известная модель выделения вокала: ID, подпись и SHA-256 закреплённых весов
-// (models.json оригинала). Результаты прежних Kim-моделей читаются и удаляются, но новое
+// Результаты прежних Kim-моделей читаются и удаляются, но новое
 // выделение выполняется только Voc FT.
 type VocalModel struct {
 	ID     string
@@ -104,7 +103,7 @@ type VocalPreparationView struct {
 	Problems     []string           `json:"problems"`
 }
 
-// metadata — result.json готового вокала; порядок полей — как у separate_vocals оригинала.
+// metadata — result.json готового вокала; порядок полей входит в формат кэша вокала.
 type metadata struct {
 	SchemaVersion int    `json:"schemaVersion"`
 	SourceSHA256  string `json:"sourceSha256"`
@@ -185,7 +184,7 @@ func fileSHA256(path string) (string, error) {
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-// result проверяет готовый вокал как VocalPreparation.result оригинала: метаданные рецепта,
+// result проверяет готовый вокал: метаданные рецепта,
 // канонический заголовок PCM WAV, размер и SHA-256. full=true пересчитывает SHA без кэша.
 // Любая неисправность — textResultInvalid.
 func (s *Store) result(sourceSHA, id string, full bool) (VocalResult, metadata, error) {

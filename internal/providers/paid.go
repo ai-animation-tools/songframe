@@ -20,7 +20,7 @@ import (
 	"songframe-go/internal/mediafile"
 )
 
-// Тексты общего платного адаптера (mediaTexts оригинала). TestTextsMatchFrontend сверяет
+// Тексты общего платного адаптера. TestTextsMatchFrontend сверяет
 // постоянные строки со словарём frontend/src/shared/texts/media.ts.
 const (
 	textJSONObjectRequired     = "Ожидается JSON-объект медиа."
@@ -176,7 +176,7 @@ type ModelSelection struct {
 	Reason         string  `json:"reason"`
 }
 
-// object — model_selection снимка в порядке ключей оригинала.
+// object — model_selection снимка в порядке ключей, зафиксированном эталонами.
 func (s ModelSelection) object() *jscompat.Object {
 	object := jscompat.NewObject()
 	if s.PreferredModel == nil {
@@ -189,8 +189,8 @@ func (s ModelSelection) object() *jscompat.Object {
 	return object
 }
 
-// PaidInput — PreparePaidInput оригинала: черновик платного запроса до фиксации SHA. Значения
-// параметров — значения JS (internal/jscompat): сравнение и тексты ошибок повторяют оригинал.
+// PaidInput — черновик платного запроса до фиксации SHA. Значения параметров — значения JS
+// (internal/jscompat): от их сравнения и печати зависят тексты ошибок, проверяемые эталонами.
 type PaidInput struct {
 	Project string
 	WorkDir string
@@ -240,12 +240,12 @@ func declared(declarations *jscompat.Object, name string) any { return declarati
 
 var underscoreLetter = regexp.MustCompile(`_([a-z])`)
 
-// camel — snake_case → camelCase, как замена /_([a-z])/g оригинала.
+// camel — snake_case → camelCase: «_» перед строчной латинской буквой заменяется её заглавной.
 func camel(name string) string {
 	return underscoreLetter.ReplaceAllStringFunc(name, func(match string) string { return strings.ToUpper(match[1:]) })
 }
 
-// ArgumentName — argumentName оригинала: объявленное имя параметра и его camelCase-написание
+// ArgumentName — объявленное имя параметра и его camelCase-написание
 // равнозначны; в снимок попадает точное имя объявления. "" — параметр не объявлен.
 func ArgumentName(arguments *jscompat.Object, supplied string) string {
 	if arguments.Has(supplied) {
@@ -672,10 +672,10 @@ type CandidateParameters func(model mediaapi.Model) *jscompat.Object
 
 // CheckedCandidateParameters — CandidateParameters, которые могут отказать для модели (обложка:
 // конфликт явного разрешения или включённая серия). Отказ — причина отклонения этой модели в
-// тексте «нет совместимой модели», как исключение candidateParameters оригинала.
+// тексте «нет совместимой модели».
 type CheckedCandidateParameters func(model mediaapi.Model) (*jscompat.Object, error)
 
-// SelectPaidRequest — selectPaidRequest оригинала: проверяет весь запрос для каждой модели до
+// SelectPaidRequest проверяет весь запрос для каждой модели до
 // записи попытки и возвращает нормализованный запрос с выбором модели. Сначала пробуется
 // предпочтение, затем модель запроса, затем остальные модели команды в порядке каталога;
 // предпочтение не ограничивает совместимый выбор. ModelSelection результата заполнен всегда.
@@ -793,7 +793,7 @@ func modelIDs(models []mediaapi.Model) []string {
 	return ids
 }
 
-// PreparedRequest — PreparedMediaRequest оригинала: замороженная попытка платного провайдера.
+// PreparedRequest — зафиксированная попытка платного провайдера.
 type PreparedRequest struct {
 	Provider   string `json:"provider"`
 	Kind       string `json:"kind"`
@@ -803,9 +803,9 @@ type PreparedRequest struct {
 	FrameID    string `json:"frameId,omitempty"`
 }
 
-// Executor — MediaExecutor оригинала: отправка ("submit") или продолжение ("resume") замороженной
-// попытки. Его предоставляет владелец согласования стоимости и заданий; адаптер не создаёт второй
-// журнал отправки.
+// Executor — отправка ("submit") или продолжение ("resume") зафиксированной попытки. Его
+// предоставляет владелец согласования стоимости и заданий; адаптер не создаёт второй журнал
+// отправки.
 type Executor func(ctx context.Context, action string, request PreparedRequest) error
 
 // PaidOptions — зависимости общего платного адаптера.
@@ -822,9 +822,9 @@ type PaidOptions struct {
 	Now func() time.Time
 }
 
-// PaidMedia — PaidMediaProvider оригинала: общий платный адаптер одного провайдера и вида медиа.
+// PaidMedia — общий платный адаптер одного провайдера и вида медиа.
 // Обнаружение и локальная подготовка не разрешают отправку; Submit и Resume делегируют её
-// владельцу согласования и используют прежний замороженный запрос.
+// владельцу согласования и используют уже зафиксированный запрос.
 type PaidMedia struct {
 	Paid    Paid
 	Kind    string
@@ -842,7 +842,7 @@ func NewPaidMedia(paid Paid, kind string, options PaidOptions) *PaidMedia {
 // title — название провайдера для текстов.
 func (p *PaidMedia) title() string { return Title(p.Paid.ID, p.Paid.ID) }
 
-// argumentsOK — argumentMap оригинала: объект объявлений, где required — bool, allowed — массив
+// argumentsOK проверяет объект объявлений, где required — bool, allowed — массив
 // строк, max_items — целое не меньше 1.
 func argumentsOK(value any) bool {
 	object, ok := value.(*jscompat.Object)
@@ -933,7 +933,7 @@ func (p *PaidMedia) Capabilities(ctx context.Context, project string) mediaapi.C
 	}
 }
 
-// specInput — вход spec.json в порядке ключей оригинала с абсолютным путём.
+// specInput — вход spec.json в порядке ключей формата с абсолютным путём.
 func specInput(project string, item PaidInputItem) *jscompat.Object {
 	object := jscompat.NewObject()
 	object.Set("flag", item.Flag)
@@ -1048,7 +1048,7 @@ func fileHash(path string) (string, error) {
 	return hex.EncodeToString(sum[:]), nil
 }
 
-// verify сверяет замороженную попытку с подготовкой: SHA request.json, вид медиа и хеши промпта и
+// verify сверяет зафиксированную попытку с подготовкой: SHA request.json, вид медиа и хеши промпта и
 // входов внутри папки попытки.
 func (p *PaidMedia) verify(reference PreparedRequest) (*jscompat.Object, *jscompat.Object, error) {
 	if reference.Provider != p.Paid.ID || reference.Kind != p.Kind {

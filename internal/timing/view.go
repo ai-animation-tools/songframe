@@ -33,7 +33,7 @@ type View struct {
 	Problems []string `json:"problems"`
 }
 
-// readTiming — readJson модуля timing: Undefined для отсутствующего файла, false для битого JSON.
+// readTiming читает timing.json: Undefined для отсутствующего файла, false для битого JSON.
 func readTiming(path string) any {
 	if !jscompat.Exists(path) {
 		return nil
@@ -90,9 +90,9 @@ func usableTiming(timing any) bool {
 	return true
 }
 
-// ViewProject — viewTiming(project): текст песни с проблемами разбора, сохранённая разметка и
-// сведения трека. Ошибка — только исключение оригинала при чтении source/text.md (например,
-// это каталог); отсутствие и повреждение файлов выражаются проблемами.
+// ViewProject — вид редактора таймингов: текст песни с проблемами разбора, сохранённая разметка
+// и сведения трека. Ошибка — только сбой чтения source/text.md (например, это каталог);
+// отсутствие и повреждение файлов выражаются проблемами.
 func ViewProject(project string) (View, error) {
 	view := View{Timing: json.RawMessage("null"), Lyrics: []LyricsLine{}, Problems: []string{}}
 	textPath := filepath.Join(project, "source", "text.md")

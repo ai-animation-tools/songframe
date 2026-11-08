@@ -1,4 +1,4 @@
-// Package speech — речевые планы (speech.ts оригинала): строки песни в окне плана для выбора
+// Package speech описывает речевые планы: строки песни в окне плана для выбора
 // границ среза липсинка и подготовленный точный WAV пакета (audio/speech.wav и его рецепт
 // audio/audio-recipe.json, которые режет штатный cut_speech). Пакет только читает файлы проекта.
 //
@@ -18,7 +18,7 @@ import (
 	"songframe-go/internal/jscompat"
 )
 
-// Тексты productionTexts.main.speech оригинала.
+// Текст ошибки чтения реестра для речевого плана.
 const textSceneRegistryUnreadable = "Не удалось прочитать реестр сцен."
 
 func textShotMissing(shot string) string {
@@ -71,7 +71,7 @@ type Package struct {
 	Lines  []Line  `json:"lines"`
 }
 
-// readJSON — readJson оригинала: null (nil) при отсутствии файла и любой ошибке разбора.
+// readJSON читает JSON-файл: nil при отсутствии файла и любой ошибке разбора.
 func readJSON(path string) any {
 	value, ok := jscompat.ReadJSONFile(path)
 	if !ok {
@@ -86,7 +86,7 @@ func finite(value any) (float64, bool) {
 	return number, ok && jscompat.IsFinite(number)
 }
 
-// newline — /\r?\n/ оригинала.
+// newline — разделитель строк текста песни: /\r?\n/.
 var newline = regexp.MustCompile(`\r?\n`)
 
 // round3 — Math.round(value * 1000) / 1000: половина округляется к +∞, как в JS.
@@ -94,10 +94,10 @@ func round3(value float64) float64 {
 	return math.Floor(value*1000+0.5) / 1000
 }
 
-// PlanFor — speechPlan(project, shot, limits). Срез начинается с начала окна: в монтаже клип плана
-// тоже начинается с этой точки песни, и губы совпадают со звуком без сдвига. Длина — не меньше
+// PlanFor — речевой план для страницы производства. Срез начинается с начала окна: в монтаже
+// клип плана тоже начинается с этой точки песни, и губы совпадают со звуком без сдвига. Длина — не меньше
 // окна, длительности запроса и минимума звукового входа провайдера. Ошибка — реестр не читается
-// или плана в нём нет (тексты оригинала).
+// или плана в нём нет.
 func PlanFor(project, shot string, limits Limits) (Plan, error) {
 	scenes := readJSON(filepath.Join(project, "plan", "scenes.json"))
 	list, isList := jscompat.AsArray(jscompat.Get(scenes, "scenes"))

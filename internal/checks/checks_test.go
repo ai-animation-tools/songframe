@@ -12,7 +12,7 @@ import (
 	"songframe-go/internal/pycompat"
 )
 
-// sample — вход и ожидаемый вывод снятого с оригинала случая домена проверок.
+// sample — вход и ожидаемый вывод эталонного случая домена проверок.
 func sample(t *testing.T, domain, name string) (golden.Case, string, string) {
 	t.Helper()
 	for _, c := range golden.Load(t, domain) {
@@ -42,8 +42,8 @@ func waiter(t *testing.T, manager *jobs.Manager) func(jobs.Info, error) jobs.Inf
 	}
 }
 
-// TestListMatchesOriginal — CHECKS оригинала: порядок, инструменты и тексты.
-func TestListMatchesOriginal(t *testing.T) {
+// TestListMatchesGolden — список проверок: порядок, инструменты и тексты.
+func TestListMatchesGolden(t *testing.T) {
 	list := checks.List()
 	want := []struct{ id, label, tool string }{
 		{"lint", "Данные сцен", "lint_registry"},
@@ -64,7 +64,7 @@ func TestListMatchesOriginal(t *testing.T) {
 }
 
 // TestRunAllJournal — «Все проверки» на образце: все пять шагов по порядку, журнал
-// «$ подпись аргументы» + вывод инструмента, как в оригинале; strict делает lint неудачным, но
+// «$ подпись аргументы» + вывод инструмента; strict делает lint неудачным, но
 // остальные шаги выполняются, а причина задания — вывод первого неудачного шага.
 func TestRunAllJournal(t *testing.T) {
 	lintCase, lint, _ := sample(t, "lint-registry", "sample")

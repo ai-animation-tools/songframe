@@ -14,7 +14,6 @@ import { PageActionBar } from '../../components/PageActionBar';
 export function ChecksPage(): ReactElement {
   const page = useChecksPage();
   // Причины блокировки общие для проверок и пробы; показываются в подсказках выключенных кнопок.
-  // Отличие от 634fd94: проверки и проба стыков выполняются в Go и Python не требуют.
   const reviewReason = page.running ? checksTexts.jobPending : null;
   const checksReason = page.running ? checksTexts.jobPending : !page.scenesReady ? checksTexts.scenesRequired : null;
 

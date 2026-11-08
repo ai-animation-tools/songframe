@@ -1,4 +1,4 @@
-// Package derivedshot — производный план по сценарию (derived-shot.ts оригинала): план, материал
+// Package derivedshot определяет производный план по сценарию: план, материал
 // которого собирается из принятого видео другого плана (derived_from.shot). Выбор источника
 // принадлежит только актуальному сценарию; исторический generation.source_shot принятого комплекта
 // описывает сохранённый материал и на выбор не влияет. Пакет ничего не читает с диска.
@@ -13,7 +13,7 @@ import (
 	"songframe-go/internal/jscompat"
 )
 
-// shotID — SHOT_ID оригинала: Mxx или Mxx.N.
+// shotID — код плана: Mxx или Mxx.N.
 var shotID = regexp.MustCompile(`^M\d{2}(?:\.\d+)?$`)
 
 // Source — derivedShotSource(project, scene): ID плана-источника из scene.derived_from.shot или "".

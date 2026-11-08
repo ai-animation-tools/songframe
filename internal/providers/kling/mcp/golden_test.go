@@ -21,9 +21,9 @@ import (
 	"songframe-go/internal/pycompat"
 )
 
-// Эталоны kling-request сняты с kling_mcp.py оригинала (capture-kling.py этапа 45b): cases.json —
-// чистые функции, traces.json — точные HTTP-запросы клиента на сценарии ответов, callback.json —
-// ответы колбэка входа. Значения записаны строками json.dumps Python, исключения — {type, message}.
+// Эталоны kling-request: cases.json — чистые функции, traces.json — точные HTTP-запросы клиента на
+// сценарии ответов, callback.json — ответы колбэка входа. Значения записаны строками json.dumps
+// Python, исключения — {type, message}.
 
 const domain = "kling-request"
 
@@ -219,7 +219,7 @@ func (s *scripted) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 	_, _ = writer.Write(data)
 }
 
-// traceBase — адрес сервера при съёмке трасс.
+// traceBase — адрес сервера в трассах эталона.
 const traceBase = "http://kling.test"
 
 // fromTrace переводит текст эталона на адрес тестового сервера (и обратно — toTrace), включая
@@ -324,7 +324,7 @@ func compareRequest(t *testing.T, index int, want *pycompat.Dict, got *http.Requ
 	}
 }
 
-// traceAction — действие сценария трассы (то же, что лямбда съёмки).
+// traceAction — действие сценария трассы.
 func traceAction(t *testing.T, client *Client, name, upload string) (any, error) {
 	ctx := context.Background()
 	record := func() *pycompat.Dict { return client.ReadCredentials() }
@@ -397,7 +397,7 @@ func traceAction(t *testing.T, client *Client, name, upload string) (any, error)
 	return nil, nil
 }
 
-// recordFor — запись входа съёмки для отзыва (record в capture-kling.py).
+// recordFor — запись входа сценария для отзыва.
 func recordFor(client *Client) *pycompat.Dict {
 	base := client.baseURL()
 	record := pycompat.NewDict()

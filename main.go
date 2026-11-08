@@ -129,8 +129,7 @@ func run() error {
 		}
 	}
 	// Прерванное применение предложения производства (замена рабочего пакета) возвращается к
-	// резерву до открытия окна, как recoverInterruptedProductionApplies оригинала: сбой так же
-	// снимает текущий проект, а журнал остаётся для разбора.
+	// резерву до открытия окна: сбой снимает текущий проект, а журнал остаётся для разбора.
 	if err := productionworkflow.RecoverInterrupted(profilePath); err != nil {
 		log.Print(err)
 		if closeErr := projects.Close(); closeErr != nil {
@@ -138,7 +137,7 @@ func run() error {
 		}
 	}
 	// Прерванное применение монтажа (журналы apply_montage) откатывается в текущем проекте и в
-	// проектах истории до открытия окна, как recoverMontageApplications оригинала при запуске.
+	// проектах истории до открытия окна.
 	if err := montage.RecoverProjects(profilePath); err != nil {
 		log.Print(err)
 		if closeErr := projects.Close(); closeErr != nil {
@@ -217,7 +216,7 @@ func run() error {
 	productionService := production.New(production.Options{Jobs: jobManager, Layer: providerLayer})
 	// Проход агента производства: записи предложений в каталоге состояния, тот же каталог моделей,
 	// что у настроек, и занятость пакета производственной операцией. Сценарий утверждён, когда
-	// утверждена трактовка и сцены не требуют проверки (isScenarioApproved из ipc.ts оригинала).
+	// утверждена трактовка и сцены не требуют проверки.
 	productionWorkflow := productionworkflow.New(productionworkflow.Options{
 		LocalDir: profilePath, Agents: agentManager, Catalog: providerLayer.Catalogs(), Media: providerLayer,
 		IsScenarioApproved: func(project string) bool {
@@ -226,7 +225,7 @@ func run() error {
 		},
 		IsPackageBusy: productionService.IsBusy,
 		// Apply запроса готовит request-NN платным адаптером видео слоя провайдеров после
-		// ai.requireAccess(project, 'video') — prepareVideoRequest из ipc.ts оригинала.
+		// проверки доступа к провайдеру видео.
 		VideoMedia: func(provider string) (*providers.PaidMedia, bool) {
 			return providerLayer.PaidMedia(provider, agents.KindVideo)
 		},
@@ -272,7 +271,7 @@ func run() error {
 		application.NewService(shell.NewAgentsService(agentSettings, agentManager, aiAccess)), application.NewService(shell.NewAIService(aiAccess)),
 		application.NewService(environmentService), application.NewService(shell.NewMediaService(providerLayer)),
 		// Сценарный проход агента: журнал публикаций тот же каталог состояния, что у scenarioJournal;
-		// перед запуском — ai.requireAccess(project, 'agent') оригинала.
+		// перед запуском проверяется доступ к агенту.
 		application.NewService(shell.NewScenarioWorkflowService(scenarioWorkflow)),
 		// Проверка видео агентом не запускается, пока над пакетом идёт производственная операция.
 		application.NewService(shell.NewVideoReviewService(videoreview.New(videoreview.Options{
@@ -284,7 +283,8 @@ func run() error {
 		application.NewService(shell.NewCoverService(coverGenerators.Cover, aiAccess)),
 		application.NewService(shell.NewReferenceImagesService(coverGenerators.Reference, aiAccess)),
 		// Производство: отправка через платный адаптер слоя провайдеров, проблема «проверьте
-		// сценарий» — из того же сценарного прохода. Проход агента производства подключит этап 45.5.
+		// сценарий» — из того же сценарного прохода, занятость и предложения — из прохода агента
+		// производства.
 		application.NewService(shell.NewProductionService(productionService, aiAccess, scenarioWorkflow, shell.NewProductionFlow(productionWorkflow))),
 		application.NewService(shell.NewProductionWorkflowService(productionWorkflow, aiAccess)),
 		application.NewService(shell.NewDashboardService(scenarioWorkflow)),
@@ -315,9 +315,8 @@ func run() error {
 		Name:        "SongFrame",
 		Description: "SongFrame — производство музыкальных клипов с помощью ИИ",
 		Linux:       application.LinuxOptions{ApplicationID: shell.AppID, ProgramName: shell.AppID},
-		// Electron по умолчанию разрешал воспроизведение без жеста пользователя (autoplayPolicy
-		// no-user-gesture-required, явно — у окна плеера монтажа): плеер второго окна запускают
-		// кнопкой или клавишей в основном окне. WebView2 делит одно окружение на все окна, поэтому
+		// Воспроизведение без жеста пользователя нужно окну плеера монтажа: плеер второго окна
+		// запускают кнопкой или клавишей в основном окне. WebView2 делит одно окружение на все окна, поэтому
 		// флаг общий; в WebKitGTK политику получает только окно плеера (internal/app/montage_window_linux.go).
 		Windows: application.WindowsOptions{
 			WebviewUserDataPath:   filepath.Join(profilePath, "webview"),

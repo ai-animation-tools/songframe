@@ -10,9 +10,9 @@ import (
 	"songframe-go/internal/jscompat"
 )
 
-// TestComputeMatchesOriginal сверяет внутренний итог shotAcceptance (отпечатки, состояние и
-// причины) с expected-acceptance.json эталонов статуса.
-func TestComputeMatchesOriginal(t *testing.T) {
+// TestComputeMatchesGolden сверяет итог Compute (отпечатки, состояние и причины) с
+// expected-acceptance.json эталонов статуса.
+func TestComputeMatchesGolden(t *testing.T) {
 	checked := 0
 	for _, item := range golden.Load(t, "status") {
 		want, err := os.ReadFile(filepath.Join(item.Dir, "expected-acceptance.json"))
@@ -32,7 +32,7 @@ func TestComputeMatchesOriginal(t *testing.T) {
 			}
 			if json.Unmarshal(want, &throws) == nil && throws.Throws != nil {
 				if err == nil {
-					t.Fatalf("оригинал бросает %q, Go вернул %+v", *throws.Throws, result)
+					t.Fatalf("эталон бросает %q, Go вернул %+v", *throws.Throws, result)
 				}
 				return
 			}

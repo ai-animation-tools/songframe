@@ -25,7 +25,7 @@ type Info struct {
 	// Executor — программа-агент, которую приложение запускает для генерации; "" — провайдер
 	// вызывается напрямую.
 	Executor string
-	// Paid — платный замороженный запрос: цена, баланс и отдельное подтверждение отправки.
+	// Paid — платный зафиксированный запрос: цена, баланс и отдельное подтверждение отправки.
 	Paid bool
 	// DefaultImageResolution — defaults.image.resolution реестра: разрешение обложки и референса,
 	// если модель объявляет параметр, а проект его не задал; "" — значения по умолчанию нет.
@@ -92,8 +92,8 @@ func Normalize(value any) (string, bool) {
 	return id, known
 }
 
-// Register — тестовая регистрация провайдера (например, test), как registerMediaProviderForTests.
-// Возвращает откат к прежнему состоянию.
+// Register — тестовая регистрация провайдера (например, test). Возвращает откат к прежнему
+// состоянию.
 func Register(id string, info Info) (restore func()) {
 	mu.Lock()
 	defer mu.Unlock()

@@ -1,8 +1,8 @@
 package updates
 
-// Сообщения обновления — дословно updatesTexts (frontend/src/shared/texts/updates.ts), как
-// их возвращал main оригинала (src/main/updates.ts). Go отдаёт их в UpdateView.message; тест
-// TestTextsMatchFrontend проверяет, что каждая строка есть в словаре renderer.
+// Сообщения обновления — дословно updatesTexts (frontend/src/shared/texts/updates.ts).
+// Go отдаёт их в UpdateView.message; тест TestTextsMatchFrontend проверяет, что каждая строка
+// есть в словаре renderer.
 const (
 	textCurrent        = "У вас актуальная версия приложения."
 	textAvailable      = "Доступна версия %s."

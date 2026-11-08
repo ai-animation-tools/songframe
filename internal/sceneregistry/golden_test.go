@@ -12,10 +12,9 @@ import (
 	"songframe-go/internal/sceneregistry"
 )
 
-// Эталоны scene-registry сняты с функций tools/scene_registry/scene_registry.py оригинала
-// (capture-python.py): cases.json — чистые функции на синтетических данных, каталоги случаев —
+// Эталоны scene-registry: cases.json — чистые функции на синтетических данных, каталоги случаев —
 // функции, читающие проект. Каждый исход — строка json.dumps результата или {type, message}
-// исключения; Go-перенос должен давать те же значения, порядок ключей и тексты.
+// исключения; пакет должен давать те же значения, порядок ключей и тексты.
 
 // item — поле объекта эталона.
 func item(value any, key string) any { return value.(*pycompat.Dict).Value(key) }
@@ -102,7 +101,7 @@ func checkOutcomes(t *testing.T, expected *pycompat.Dict, outcomes map[string]fu
 
 // checkRegistry — validate, scene_fingerprints, _resolve_states, derived_from_problems, shots и
 // по каждому коду плана scene_state и scene_fingerprint. Каждый вызов получает свою копию
-// реестра, как deepcopy при съёмке.
+// реестра: функции не должны видеть изменений друг друга.
 func checkRegistry(t *testing.T, args, expected *pycompat.Dict) {
 	t.Helper()
 	data := func() any { return golden.PyParse(t, golden.PyString(t, args, "data")) }
@@ -294,7 +293,7 @@ func checkWrite(t *testing.T, c golden.Case, root string, write, expected *pycom
 			t.Errorf("байты plan/production-status.json:\n--- ожидалось\n%s\n--- получено\n%s", want, after)
 		}
 		if info, err := os.Stat(path); err == nil && info.Mode().Perm() != 0o600 {
-			t.Errorf("права файла принятия %v, оригинал создаёт 0600", info.Mode().Perm())
+			t.Errorf("права файла принятия %v, эталон создаёт 0600", info.Mode().Perm())
 		}
 	}
 }

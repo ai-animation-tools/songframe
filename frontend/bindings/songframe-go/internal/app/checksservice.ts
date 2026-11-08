@@ -28,7 +28,7 @@ export function BuildReview(project: string, options: checks$0.ReviewOptions): $
 }
 
 /**
- * List — CHECKS оригинала: id, подписи, инструмент и needsScenes каждой проверки.
+ * List — перечень проверок: id, подписи, инструмент и needsScenes каждой проверки.
  */
 export function List(): $CancellablePromise<checks$0.Info[]> {
     return $Call.ByID(2224773806);

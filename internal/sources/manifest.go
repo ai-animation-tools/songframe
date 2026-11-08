@@ -1,6 +1,6 @@
-// Package sources читает опись исходников source/manifest.json так же, как readManifest и
-// descriptionManifest оригинала. Документ возвращается деревом jscompat без схемы: потребители
-// (статус, кастинг, разметка) проверяют только нужные им поля, а неизвестные поля сохраняются.
+// Package sources читает опись исходников source/manifest.json. Документ возвращается деревом
+// jscompat без схемы: потребители (статус, кастинг, разметка) проверяют только нужные им поля, а
+// неизвестные поля сохраняются.
 package sources
 
 import (
@@ -19,7 +19,7 @@ func ManifestPath(project string) string {
 }
 
 // ReadManifest возвращает опись схемы 1 или nil: отсутствие, битый JSON и другая версия
-// неразличимы, как в оригинале. Любое истинное значение с schema_version === 1 подходит.
+// неразличимы. Любое истинное значение с schema_version === 1 подходит.
 func ReadManifest(project string) any {
 	data, ok := jscompat.ReadJSONFile(ManifestPath(project))
 	if !ok || !jscompat.Truthy(data) || !jscompat.StrictEqual(jscompat.Get(data, "schema_version"), 1.0) {

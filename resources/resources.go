@@ -18,7 +18,8 @@ import (
 var templates embed.FS
 
 // ProjectTemplate возвращает дерево шаблона проекта с корнем в templates/project.
-// Содержимое неизменяемо и совпадает с templates/project оригинала на 634fd94.
+// Содержимое неизменяемо (embed); изменение контракта хранения вносится в шаблон вместе с кодом
+// и эталонами.
 func ProjectTemplate() fs.FS {
 	tree, err := fs.Sub(templates, "templates/project")
 	if err != nil {
@@ -48,9 +49,9 @@ func Font(name string) ([]byte, error) {
 	return fonts.ReadFile(path.Join("fonts", name))
 }
 
-// skills хранит промпты агента (skills/ оригинала на 634fd94, git archive байт в байт): тексты,
-// которые приложение вкладывает в задания агента в режиме предложения. Владелец — этот каталог;
-// оригинал заморожен, правки промптов вносятся здесь вместе с эталонами промптов заданий.
+// skills хранит промпты агента: тексты, которые приложение вкладывает в задания агента в режиме
+// предложения. Владелец — этот каталог; правки промптов вносятся здесь вместе с эталонами
+// промптов заданий.
 //
 //go:embed skills
 var skills embed.FS
@@ -63,30 +64,29 @@ const (
 )
 
 // SkillFile возвращает файл встроенного скилла по пути от его папки (SKILL.md или
-// references/<имя>.md). Заменяет чтение `<toolsRoot>/skills/<имя>/<файл>` оригинала для скиллов
-// с дополнительными справками (ai-clip-scene). Нет файла — ошибка fs.ErrNotExist.
+// references/<имя>.md) — для скиллов с дополнительными справками (ai-clip-scene). Нет файла —
+// ошибка fs.ErrNotExist.
 func SkillFile(name, file string) (string, error) {
 	data, err := skills.ReadFile(path.Join("skills", name, file))
 	return string(data), err
 }
 
-// Skill возвращает SKILL.md встроенного скилла по имени папки (SkillScenario). Заменяет чтение
-// `<toolsRoot>/skills/<имя>/SKILL.md` оригинала: промпт не зависит от корня комплекса или
-// каталога установки. Неизвестное имя — ошибка fs.ErrNotExist.
+// Skill возвращает SKILL.md встроенного скилла по имени папки (SkillScenario). Промпт встроен в
+// бинарник и не зависит от каталога установки. Неизвестное имя — ошибка fs.ErrNotExist.
 func Skill(name string) (string, error) {
 	data, err := skills.ReadFile(path.Join("skills", name, "SKILL.md"))
 	return string(data), err
 }
 
-// providers хранит документы провайдеров медиа (docs/providers оригинала на 634fd94, git archive
-// байт в байт): один документ на вид медиа и провайдера, providers/<вид>/<id>.md. Их раздел
-// «Указания агенту» слой провайдеров (internal/providers) вкладывает в промпт задания.
+// providers хранит документы провайдеров медиа: один документ на вид медиа и провайдера,
+// providers/<вид>/<id>.md. Их раздел «Указания агенту» слой провайдеров (internal/providers)
+// вкладывает в промпт задания.
 //
 //go:embed providers
 var providers embed.FS
 
-// ProviderDoc возвращает документ провайдера id вида медиа kind (image, video). Заменяет чтение
-// `<toolsRoot>/docs/providers/<вид>/<id>.md` оригинала. Документа нет — ошибка fs.ErrNotExist.
+// ProviderDoc возвращает документ провайдера id вида медиа kind (image, video). Документа нет —
+// ошибка fs.ErrNotExist.
 func ProviderDoc(kind, id string) ([]byte, error) {
 	return providers.ReadFile(path.Join("providers", kind, id+".md"))
 }

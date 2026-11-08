@@ -7,7 +7,7 @@ import (
 	"songframe-go/internal/pycompat"
 )
 
-// TestGolden сверяет validate_spec и SHA encoded() с tools/request_snapshot.py оригинала
+// TestGolden сверяет ValidateSpec и SHA Encoded с эталоном
 // (testdata/golden/request-snapshot/cases.json): вход — JSON-текст, разобранный json.loads Python.
 func TestGolden(t *testing.T) {
 	cases, _ := golden.PyFile(t, "request-snapshot", "cases.json").([]any)

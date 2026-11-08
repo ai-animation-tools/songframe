@@ -147,7 +147,7 @@ export function TimingPage(): ReactElement {
   const verifiedCount = editorRows.filter((line) => line.verified).length;
   const invalidBindings = selectLyricTimings(view?.timing?.lines ?? [], view?.lyrics ?? []).invalidIds.length > 0;
   const hasLyrics = !!view?.lyrics.some((line) => line.text && !line.header);
-  // Отличие от 634fd94: разметка не использует Python-комплекс, поэтому папка инструментов не требуется.
+  // Для разметки нужны только трек и текст песни.
   const canGenerate = !!view?.trackPath && hasLyrics;
 
   const confirmAll = (): void => {
@@ -226,7 +226,7 @@ export function TimingPage(): ReactElement {
       boundaryDrafts
     );
     const payload = { ...base, lines: collected.lines, sections, candidates, line_order: lineOrder };
-    // Проверка запускается только явным сохранением и совпадает с обязательной проверкой main перед записью.
+    // Проверка запускается только явным сохранением и совпадает с обязательной проверкой Go перед записью.
     const problems = [...collected.problems, ...validateTiming(payload, view?.lyrics ?? [], duration || null)];
     setSaveProblems(problems);
     if (problems.length) {
@@ -267,7 +267,7 @@ export function TimingPage(): ReactElement {
       await refresh();
       if (!mounted.current || currentProject.current !== project) return;
       setResultReady(true);
-      // Отличие от 634fd94: после успешной разметки окно закрывается, а следующее открытие начинается
+      // После успешной разметки окно закрывается, а следующее открытие начинается
       // с чистого окна без журнала прошлого задания: итог — в уведомлении и на странице.
       // Ошибка чтения оставляет окно открытым для повтора.
       setGenerateOpen(false);
@@ -387,7 +387,7 @@ export function TimingPage(): ReactElement {
     setResultReady(false);
     setGenerationJob(null);
     try {
-      // Отличие от 634fd94: модель распознавания и устройство не передаются (D-028), разметка всегда идёт по вокалу.
+      // Разметка всегда идёт по вокалу: модель распознавания и устройство не выбираются.
       const job = await window.api.timing.start(project, { reset: resetAll, vocals: true });
       if (!mounted.current || currentProject.current !== project) return;
       setGenerationJob(job);

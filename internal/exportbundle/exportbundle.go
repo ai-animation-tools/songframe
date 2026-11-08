@@ -1,21 +1,22 @@
-// Package exportbundle — перенос tools/export_edit_bundle/export_edit_bundle.py замороженного
-// оригинала (634fd94): пакет для монтажёра из реестра сцен, манифестов комплектов и разметки песни.
+// Package exportbundle собирает пакет для монтажёра из реестра сцен, манифестов комплектов и
+// разметки песни (инструмент export_edit_bundle).
 //
 // Инструмент создаёт в пустой папке таблицу планов shots.csv, строки песни lyrics.csv, EDL
 // timeline.edl, FCPXML timeline.fcpxml, машиночитаемый bundle.json и README.md для монтажёра; с
 // --copy кладёт в media/ побайтовые копии исходников и переписывает пути относительно пакета.
 // Проект инструмент только читает: assets и реестр не меняются.
 //
-// Сохраняется результат оригинала байт в байт: float-repr в CSV и JSON, round(v, 6), `:g`,
-// `:05.1f`, таймкоды Fraction + Decimal (28 значащих цифр, затем половина вверх), csv с окончаниями
-// \r\n и QUOTE_MINIMAL, quoteattr, Path.as_uri, порядок ключей bundle.json, порядок записи файлов
+// Эталон testdata/golden/export-edit-bundle фиксирует байты пакета: float-repr в CSV и JSON,
+// round(v, 6), `:g`, `:05.1f`, таймкоды Fraction + Decimal (28 значащих цифр, затем половина
+// вверх), csv с окончаниями \r\n и QUOTE_MINIMAL, quoteattr, Path.as_uri, порядок ключей
+// bundle.json, порядок записи файлов
 // (отказ на середине оставляет уже записанное), тексты argparse и отказов: ValueError печатается,
 // OSError, KeyError и JSONDecodeError скрываются общей фразой, прочие исключения — трассировка.
-// Отличие от оригинала: пути копий в bundle.json и CSV на Windows пишутся через «/» (оригинал
-// отдавал str(Path) с обратными слэшами, и пакет не переносился между ОС).
+// Пути копий в bundle.json и CSV пишутся через «/» на любой ОС, чтобы пакет переносился между
+// Linux и Windows.
 //
-// Значения проекта остаются значениями pycompat: данные неожиданной формы дают то же исключение,
-// что и в Python. Копирование идёт потоком и прерывается отменой задания.
+// Значения проекта остаются значениями pycompat: данные неожиданной формы дают исключение с
+// типом и текстом Python. Копирование идёт потоком и прерывается отменой задания.
 package exportbundle
 
 import (
@@ -26,7 +27,7 @@ import (
 	"songframe-go/internal/pytool"
 )
 
-// Тексты оригинала: отказы и скрытая ошибка.
+// Тексты отказов и скрытой ошибки.
 const (
 	textOutsideProject = "Пакет собирается вне папки проекта или в plan/batches."
 	textFolderNotEmpty = "Папка пакета должна быть пустой."
@@ -34,8 +35,8 @@ const (
 	textHidden         = "Ошибка данных проекта; сырой вывод скрыт."
 )
 
-// parser — argparse оригинала. Опция --out в оригинале обязательная (required=True), а
-// pycompat.ArgParser знает только необязательные опции: разница достраивается в parseArgs.
+// parser — разбор аргументов export_edit_bundle. Опция --out обязательна, а pycompat.ArgParser
+// знает только необязательные опции: разница достраивается в parseArgs.
 var parser = pycompat.ArgParser{
 	Prog:        "export_edit_bundle.py",
 	Description: "Пакет для монтажёра: таблица планов, EDL, FCPXML, строки песни и исходники; @link README.md",
@@ -45,13 +46,13 @@ var parser = pycompat.ArgParser{
 	},
 }
 
-// optionalOut и requiredOut — запись опции в usage: у pycompat и у оригинала.
+// optionalOut и requiredOut — запись опции в usage: как её пишет pycompat и как она выводится.
 const (
 	optionalOut = "[--out OUT]"
 	requiredOut = "--out OUT"
 )
 
-// parseArgs — parse_args оригинала: разобранные аргументы либо готовое завершение (справка, код 2).
+// parseArgs — разобранные аргументы либо готовое завершение (справка, код 2).
 func parseArgs(args []string) (pycompat.Args, *pytool.Output) {
 	parsed, exit := pytool.Args(parser, args)
 	required := func() *pytool.Output {
@@ -90,7 +91,7 @@ func namesOut(args []string) bool {
 }
 
 // Run — main() инструмента на разрешённом корне проекта root. Контекст прерывает копирование
-// медиа (остановка задания). Результат — код, stdout и stderr процесса оригинала; остановленный
+// медиа (остановка задания). Результат — код, stdout и stderr инструмента; остановленный
 // запуск завершается без текста, как процесс, снятый сигналом.
 func Run(ctx context.Context, root string, args []string) pytool.Output {
 	parsed, exit := parseArgs(args)
@@ -113,7 +114,7 @@ func Run(ctx context.Context, root string, args []string) pytool.Output {
 	return printer.Crash(err)
 }
 
-// run — тело try оригинала: сборка пакета и печать сводки, которую разбирает страница проекта.
+// run — сборка пакета и печать сводки, которую разбирает страница проекта.
 func run(ctx context.Context, root, out string, copyMedia bool, printer *pytool.Printer) error {
 	summary, err := export(ctx, root, out, copyMedia)
 	if err != nil {
@@ -126,8 +127,9 @@ func run(ctx context.Context, root, out string, copyMedia bool, printer *pytool.
 	return printer.Print(text)
 }
 
-// export — export(target, root, copy): проверка папки, сбор данных, копии и запись файлов пакета в
-// порядке оригинала. Папка создаётся до чтения проекта, поэтому отказ по данным оставляет её пустой.
+// export проверяет папку, собирает данные, копирует медиа и записывает файлы пакета в порядке,
+// зафиксированном эталоном. Папка создаётся до чтения проекта, поэтому отказ по данным оставляет
+// её пустой.
 func export(ctx context.Context, root, out string, copyMedia bool) (*pycompat.Dict, error) {
 	root = pycompat.ResolvePath(root)
 	target := pycompat.ResolvePath(out)

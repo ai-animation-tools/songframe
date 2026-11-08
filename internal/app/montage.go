@@ -14,8 +14,8 @@ import (
 	"songframe-go/internal/wire"
 )
 
-// MontageService реализует window.api.montage страницы ручного монтажа (маршруты montage:* ipc.ts
-// оригинала): каталог материалов, черновики, экспорт пробы, применение к сценам и сохранение
+// MontageService реализует window.api.montage страницы ручного монтажа (маршруты montage:*):
+// каталог материалов, черновики, экспорт пробы, применение к сценам и сохранение
 // готовой пробы MP4 через системный диалог. Логика — в internal/montage; применение к файлам
 // сцен выполняет задание apply_montage (internal/applymontage). Черновик приходит и уходит сырым
 // JSON (json.RawMessage, в bindings — any): неизвестные поля и порядок ключей сохраняются.
@@ -43,8 +43,7 @@ func ConfigureMontageDesktop(s *MontageService, desktop *application.App) {
 	}
 }
 
-// Тексты диалога: applicationTexts.saveMontageVideo, productionTexts.packageResume.video и имя
-// файла по умолчанию оригинала.
+// Тексты диалога сохранения пробы и имя файла по умолчанию.
 const (
 	textSaveMontageVideo   = "Сохранить видеопробу"
 	textMontageVideoFilter = "Видео MP4"

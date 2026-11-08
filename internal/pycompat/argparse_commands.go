@@ -11,9 +11,9 @@ import (
 // (required=True), type=int и type=float, action="append" и значения по умолчанию. Классификация строк, префиксы
 // длинных опций, «=значение», склейка коротких флагов, порядок ошибок, usage и справка повторяют
 // ArgParser (общие помощники getLines, fill и negativeNumber); отдельный тип не меняет поведение
-// уже перенесённых инструментов.
+// инструментов, которые используют ArgParser.
 //
-// Подкоманда разбирается так же, как в оригинале: её parse_known_args получает все строки после
+// Подкоманда разбирается как в argparse: её parse_known_args получает все строки после
 // имени (nargs=PARSER), свои ошибки сообщает со своим prog («prog имя»), а нераспознанные строки
 // возвращает родителю, который завершает разбор ошибкой «unrecognized arguments» со своим usage.
 
@@ -41,7 +41,7 @@ type Action struct {
 	// Int — type=int: значение преобразуется int(строка), ошибка — «invalid int value».
 	Int bool
 	// Float — type=float: значение преобразуется float(строка) (FloatFromString), ошибка —
-	// «invalid float value». Default такой опции задаётся уже числом float64, как в оригинале.
+	// «invalid float value». Default такой опции задаётся уже числом float64.
 	Float bool
 	// Default — значение по умолчанию (строка или nil); у append без значения — пустой список.
 	Default any

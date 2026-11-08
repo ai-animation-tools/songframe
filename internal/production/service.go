@@ -27,21 +27,21 @@ import (
 	"songframe-go/internal/tools"
 )
 
-// Runner — запуск инструмента комплекса по имени (tools.RunContext): Go-версии инструментов
-// выполняются в процессе приложения с теми же кодами, stdout и stderr, что процессы Python.
+// Runner — запуск инструмента комплекса по имени (tools.RunContext): инструменты выполняются в
+// процессе приложения и возвращают код, stdout и stderr, как отдельная программа.
 type Runner func(ctx context.Context, project, name string, args []string) (tools.Result, error)
 
 // Options — зависимости сервиса производства.
 type Options struct {
 	// Jobs — общий менеджер заданий (отправка, получение, повтор, приёмка).
 	Jobs *jobs.Manager
-	// Layer — слой провайдеров: платный адаптер замороженного запроса проверяет попытку перед
+	// Layer — слой провайдеров: платный адаптер зафиксированного запроса проверяет попытку перед
 	// отправкой и собирает скачанные оригиналы. nil — адаптеры не подключены (служебные проверки
-	// оригинала без setMediaProviders): отправка идёт без проверки адаптера.
+	// без провайдеров): отправка идёт без проверки адаптера.
 	Layer *providers.Layer
 	// Run — запуск инструментов; nil — tools.RunContext.
 	Run Runner
-	// PricingFile — подмена таблицы цен (SONGFRAME_PRICING_FILE оригинала) для прогонов без
+	// PricingFile — подмена таблицы цен (SONGFRAME_PRICING_FILE) для прогонов без
 	// расхода; "" — таблица адаптера провайдера.
 	PricingFile string
 	// NewToken — одноразовый токен оценки (randomUUID); nil — случайный UUID v4.
@@ -86,7 +86,7 @@ func priceAllowsGeneration(quote Quote, agreed bool) bool {
 	return quote.Verdict == VerdictOK || (agreed && canAgreeToUnknownCost(quote))
 }
 
-// Service — Production оригинала: решения по пакетам, оценки и одноразовые согласования
+// Service — сервис производства: решения по пакетам, оценки и одноразовые согласования
 // стоимости, задания отправки, получения, повтора и приёмки. Состояние (выданные оценки,
 // выполняющиеся операции и задания пакетов) живёт в памяти процесса: перезапуск сбрасывает
 // оценки, поэтому прежнее согласие не переживает его. Методы безопасны для параллельного вызова
@@ -141,7 +141,7 @@ func (s *Service) run(project, name string, args ...string) (tools.Result, error
 	return s.options.Run(context.Background(), project, name, args)
 }
 
-// failure — `(stderr || stdout).trim() || fallback` оригинала.
+// failure — ошибка инструмента: обрезанный stderr, иначе stdout, иначе fallback.
 func failure(result tools.Result, fallback string) error {
 	text := result.Stderr
 	if text == "" {
@@ -156,7 +156,7 @@ func failure(result tools.Result, fallback string) error {
 // ok — инструмент завершился с кодом 0.
 func ok(result tools.Result) bool { return result.Code != nil && *result.Code == 0 }
 
-// realpath — realpathSync: ошибка с текстом Node.
+// realpath — канонический путь; текст ошибки в формате Node (jscompat), как ждут эталоны.
 func realpath(path string) (string, error) { return jscompat.Realpath(path) }
 
 // packagePattern — допустимое положение пакета внутри проекта.
@@ -259,8 +259,8 @@ func (s *Service) release(directory string) {
 	s.mu.Unlock()
 }
 
-// mustPackage — пакет как объект или nil без ошибки (readPackage вне try оригинала бросал
-// исключение — тогда ошибка).
+// mustPackage — пакет как объект или nil без ошибки; повреждённый пакет, который ReadPackage
+// отклоняет целиком, возвращается ошибкой.
 func mustPackage(project, directory string) (*PackageView, error) {
 	return ReadPackage(project, directory)
 }
@@ -551,7 +551,7 @@ func (s *Service) AddKeyframeNote(project, packageDir, frame, note, noteScope st
 	return shotworkflow.AddFrameNote(directory, frame, jscompat.Trim(note), scope(noteScope))
 }
 
-// restampPackage — restampPackage оригинала: в тексте workflow.json меняется только первое значение
+// restampPackage — в тексте workflow.json меняется только первое значение
 // "scene_sha256" (строка from или null), остальной файл сохраняется байт в байт. false — значения нет.
 func restampPackage(directory string, from *string, to string) (bool, error) {
 	path := filepath.Join(directory, "workflow.json")
@@ -678,7 +678,7 @@ func (s *Service) DiscardAttempt(project, packageDir string) error {
 	return removeAll(directory)
 }
 
-// removeAll — rmSync(directory, { recursive: true, force: true }) через шлюз записи проекта.
+// removeAll — рекурсивное удаление папки через шлюз записи проекта; отсутствующая папка не ошибка.
 func removeAll(directory string) error {
 	if err := projectfs.CheckWrite(directory); err != nil {
 		return err
@@ -743,9 +743,9 @@ type Bounds struct {
 // PrepareSpeech — точный срез песни для речевого плана (cut_speech cut в audio/ пакета). WAV
 // перезаписывается только до отправки: запрос и приёмка ссылаются на один файл. cut_speech не
 // перезаписывает WAV, поэтому прежние speech.wav и audio-recipe.json пакета удаляются перед
-// запуском (и при отказе среза пакет остаётся без него, как в оригинале). Пакет занят на время
-// среза: проверка и отметка операции — одна блокировка claim. Границы bounds передаются
-// инструменту строками Number.toString, без них срез предлагает инструмент по разметке.
+// запуском (и при отказе среза пакет остаётся без него). Пакет занят на время среза: проверка и
+// отметка операции — одна блокировка claim. Границы bounds передаются инструменту строками в
+// записи чисел JS (Number.toString), без них срез предлагает инструмент по разметке.
 // Отказ инструмента — его stderr (иначе stdout) или код; результат — свежий PackageView.
 func (s *Service) PrepareSpeech(project, packageDir string, bounds *Bounds) (*PackageView, error) {
 	directory, release, err := s.claim(project, packageDir)
@@ -791,7 +791,7 @@ func (s *Service) PrepareSpeech(project, packageDir string, bounds *Bounds) (*Pa
 	return next, nil
 }
 
-// removeSpeech — rmSync(…, { force: true }) прежнего среза пакета: отсутствующий файл не ошибка.
+// removeSpeech — удаляет файл прежнего среза пакета; отсутствующий файл не ошибка.
 // Запись в проект проходит шлюз projectfs (незавершённая публикация её запрещает).
 func removeSpeech(project, audio string) error {
 	if err := projectfs.CheckWrite(project); err != nil {
@@ -807,7 +807,7 @@ func removeSpeech(project, audio string) error {
 }
 
 // toolStep — шаг задания, запускающий инструмент комплекса: вывод уходит в журнал, ненулевой код
-// — сбой шага с причиной из stderr (иначе stdout), как у исполнителя шагов оригинала.
+// — сбой шага с причиной из stderr (иначе stdout).
 func (s *Service) toolStep(project, tool string, args []string, label string, optional bool, before func(context.Context) error) jobs.Step {
 	arguments := append([]string(nil), args...)
 	return jobs.Step{
@@ -1393,7 +1393,7 @@ func (s *Service) Accept(project, shot, packageDir string, options AcceptOptions
 	return info, nil
 }
 
-// ContactSheet — contactSheet(project, packageDir) оригинала: задание «Сводка <пакет>» с одним
+// ContactSheet — задание «Сводка <пакет>» с одним
 // шагом contact_sheet --package <пакет> --json. Пакет должен быть свободен; задание отмечается за
 // пакетом, поэтому до его конца другие операции с пакетом получают «пакет занят». Сам инструмент
 // пишет только preview/ пакета (контактный лист, граничные кадры, сравнения, превью 2×).
@@ -1499,14 +1499,14 @@ func ListBundles(project string) ([]Bundle, error) {
 	return result, nil
 }
 
-// ExportBundle — exportBundle(project, options) оригинала: пакет для монтажёра в пустую папку
+// ExportBundle — пакет для монтажёра в пустую папку
 // target; внутри проекта допускается только plan/batches. Папка создаётся сразу, задание вида tool
 // запоминается за ней, и до его конца RemoveBundle отказывает. С копированием первым идёт
 // необязательный шаг update_scene_views: в пакет входят карточки неготовых планов, а их рисует
 // обновление представлений; его сбой не отменяет сборку.
 //
-// Отличие от оригинала: plan/batches проверяется по границе компонента пути. Оригинал сверял
-// только префикс, поэтому plan/batches-x получала пустую папку и отказ уже от инструмента.
+// plan/batches проверяется по границе компонента пути: соседняя папка вроде plan/batches-x
+// отклоняется сразу, без создания папки и запуска инструмента.
 func (s *Service) ExportBundle(project, requested string, copyMedia bool) (jobs.Info, error) {
 	target := jscompat.Resolve(requested)
 	if !filepath.IsAbs(requested) {

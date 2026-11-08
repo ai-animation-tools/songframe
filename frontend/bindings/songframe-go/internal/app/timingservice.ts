@@ -55,7 +55,7 @@ export function DownloadVocalModel(model: string): $CancellablePromise<jobs$0.In
 }
 
 /**
- * Save — saveTiming: проверка и нормализация по правилам оригинала, затем атомарная запись
+ * Save — saveTiming: проверка и нормализация разметки (internal/timing), затем атомарная запись
  * plan/audio/timing.json через барьер записи проекта. Возвращает сохранённый документ.
  */
 export function Save(project: string, input: json$0.RawMessage): $CancellablePromise<json$0.RawMessage> {

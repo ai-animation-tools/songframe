@@ -11,9 +11,6 @@ import { PageActionBar } from '../../components/PageActionBar';
 
 /**
  * Настройки: выбор агента и его модели, переход к компонентам и обновление приложения.
- *
- * Отличие от 634fd94: добавлен переход к странице «Компоненты» (замена Python/Whisper-части среды,
- * этап 41.3).
  */
 export function SettingsPage(): ReactElement {
   return (

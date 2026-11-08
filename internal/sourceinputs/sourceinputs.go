@@ -1,5 +1,5 @@
-// Package sourceinputs — отпечаток содержательных входов описи исходников (source-input-hash.ts
-// оригинала). Декоративная обложка (cover) и время сохранения (updated_at) не являются входами
+// Package sourceinputs вычисляет отпечаток содержательных входов описи исходников.
+// Декоративная обложка (cover) и время сохранения (updated_at) не являются входами
 // сценария или производства: их смена не должна делать устаревшими предложения сценария, вопросы
 // пакетов и показанные согласования платной отправки. Пакет только читает файлы.
 //
@@ -28,7 +28,7 @@ func digest(data []byte) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// canonical — canonical оригинала: ключи объектов по возрастанию (сравнение строк JS по кодовым
+// canonical — канонический вид значения: ключи объектов по возрастанию (сравнение строк JS по кодовым
 // единицам UTF-16), массивы поэлементно; остальные значения без изменений.
 func canonical(value any) any {
 	switch typed := value.(type) {
@@ -50,7 +50,7 @@ func canonical(value any) any {
 	return value
 }
 
-// DigestBytes — sourceInputDigestFromBytes: SHA-256 канонического JSON описи без cover и
+// DigestBytes — SHA-256 канонического JSON описи без cover и
 // updated_at. Повреждённый JSON или не-объект — SHA-256 самих байтов, чтобы порча не
 // маскировалась под прежний корректный набор входов.
 func DigestBytes(data []byte) string {
@@ -65,8 +65,7 @@ func DigestBytes(data []byte) string {
 	return digest([]byte(jscompat.Stringify(canonical(inputs))))
 }
 
-// Digest — sourceInputDigest(project): отпечаток описи проекта; ok=false — файла нет. Ошибка —
-// опись есть, но не читается (readFileSync оригинала бросал исключение).
+// Digest — отпечаток описи проекта; ok=false — файла нет. Ошибка — опись есть, но не читается.
 func Digest(project string) (value string, ok bool, err error) {
 	path := filepath.Join(project, filepath.FromSlash(ManifestPath))
 	data, readErr := os.ReadFile(path)

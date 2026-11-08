@@ -20,12 +20,11 @@ import (
 	"songframe-go/internal/jscompat"
 )
 
-// Эталон video-review снят с VideoReview оригинала (src/main/video-review.ts) на подставных
-// инструментах и модели, как в video-review.test.ts: поддельный video_review пишет кадры
-// F001–F003 (0; 0,5; 0,9 с) и копии опор, continuity_brief возвращает {phase, entities}. Go-тест
-// повторяет каждый сценарий теми же действиями и сравнивает представления (job — только id и
-// статус), ошибки, вызовы инструментов, вход агента (задача, промпт, изображения, строка
-// контекста) и точные байты latest.json после каждого шага. Пути проекта заменены <project>,
+// Эталон video-review задан на подставных инструментах и модели: поддельный video_review пишет
+// кадры F001–F003 (0; 0,5; 0,9 с) и копии опор, continuity_brief возвращает {phase, entities}.
+// Тест повторяет каждый сценарий эталона и сравнивает представления (job — только id и статус),
+// ошибки, вызовы инструментов, вход агента (задача, промпт, изображения, строка контекста) и
+// точные байты latest.json после каждого шага. Пути проекта заменены <project>,
 // UUID выборки — <id>.
 
 const onePixelPNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aM6sAAAAASUVORK5CYII="
@@ -120,7 +119,7 @@ func sameJSON(t *testing.T, left, right []byte) bool {
 	return reflect.DeepEqual(a, b)
 }
 
-// fakeAgents — подставной менеджер заданий: тот же жизненный цикл, что в тесте оригинала.
+// fakeAgents — подставной менеджер заданий агента в памяти теста: запоминает запуски и их входы.
 type fakeAgents struct {
 	mu     sync.Mutex
 	jobs   map[string]*agents.Job
@@ -284,7 +283,7 @@ func (h *harness) record(name string, args []string) {
 	h.toolCalls = append(h.toolCalls, map[string]any{"name": name, "args": items})
 }
 
-// extract — поддельный video_review оригинала.
+// extract — поддельный video_review: пишет кадры и копии опор эталона без FFmpeg.
 func (h *harness) extract(ctx context.Context, input ExtractInput) (Manifest, error) {
 	args := []string{"--video", input.Video, "--out", input.Out, "--json", "--image-budget-bytes", fmt.Sprint(input.BudgetBytes)}
 	for _, path := range input.References {
@@ -376,7 +375,7 @@ func (h *harness) latest() *string {
 	return &text
 }
 
-// viewJSON — представление в форме съёмки: job сокращено до id и статуса.
+// viewJSON — представление в форме эталона: job сокращено до id и статуса.
 func (h *harness) viewJSON(view View) []byte {
 	value := map[string]any{
 		"status": view.Status, "report": view.Report, "frames": view.Frames, "stale": view.Stale, "canStart": view.CanStart,
@@ -450,7 +449,7 @@ func complete(h *harness, index int, result string) {
 
 func intPointer(value int) *int { return &value }
 
-// scenarios — те же действия, что в capture-video-review.ts.
+// scenarios — действия сценариев эталона video-review по их именам.
 var scenarios = map[string]func(h *harness, s *steps){
 	"complete": func(h *harness, s *steps) {
 		review := h.service(nil)

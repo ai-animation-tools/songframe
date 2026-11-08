@@ -258,7 +258,7 @@ func lanczosFilter(x float64) float64 {
 }
 
 // bicubicFilter — bicubic_filter Pillow (a = -0.5, опора 2): фильтр Image.resize по умолчанию,
-// которым contact_sheet оригинала масштабировал опоры и кадры сравнения.
+// которым масштабируются опоры и кадры сравнения.
 func bicubicFilter(x float64) float64 {
 	const a = -0.5
 	if x < 0 {

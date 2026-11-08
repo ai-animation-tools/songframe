@@ -15,8 +15,8 @@ import (
 	"songframe-go/internal/production"
 )
 
-// speechStep — шаг сценария prepareSpeech домена cut-speech (service.json): вызов на пакете с
-// границами или без, правка файлов до вызова, исход оригинала и содержимое audio/ пакета после.
+// speechStep — шаг сценария PrepareSpeech домена cut-speech (service.json): вызов на пакете с
+// границами или без, правка файлов до вызова, ожидаемый исход и содержимое audio/ пакета после.
 type speechStep struct {
 	Label      string             `json:"label"`
 	PackageDir string             `json:"packageDir"`
@@ -31,10 +31,9 @@ type speechStep struct {
 	} `json:"audio"`
 }
 
-// TestPrepareSpeechGolden — Production.prepareSpeech оригинала на образце checks-base с
-// настоящим cut_speech (FFmpeg, песня MP3): предложенный и явный срез, замена прежнего среза,
-// отказы проверок и инструмента (с удалением прежнего WAV), отправленная попытка, пакет без shot и
-// папка не пакета. SHA-256 WAV (декодирование MP3) сверяется только при той же версии FFmpeg.
+// TestPrepareSpeechGolden — PrepareSpeech на образце checks-base с настоящим cut_speech (FFmpeg,
+// песня MP3): предложенный и явный срез, замена прежнего среза, отказы проверок и инструмента
+// (с удалением прежнего WAV), отправленная попытка, пакет без shot и папка не пакета. SHA-256 WAV (декодирование MP3) сверяется только при той же версии FFmpeg.
 func TestPrepareSpeechGolden(t *testing.T) {
 	if _, err := exec.LookPath("ffmpeg"); err != nil {
 		t.Skip("нет ffmpeg в PATH")
@@ -56,7 +55,7 @@ func TestPrepareSpeechGolden(t *testing.T) {
 	}
 	project = filepath.Join(project, "project")
 	copyTree(t, filepath.Join("..", "..", "testdata", "golden", "checks-base", "project"), project)
-	// Пакет отправленной попытки — копия M03-attempt-01 с запросом (как в скрипте съёмки).
+	// Пакет отправленной попытки — копия M03-attempt-01 с запросом, как в случаях эталона.
 	copyTree(t, filepath.Join(project, "plan", "batches", "M03-attempt-01"), filepath.Join(project, "plan", "batches", "M03-attempt-02"))
 	write := func(rel, text string) {
 		path := filepath.Join(project, filepath.FromSlash(rel))

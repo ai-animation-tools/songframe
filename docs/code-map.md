@@ -32,7 +32,7 @@
 
 | Пакет | Назначение |
 | --- | --- |
-| [`internal/store`](../internal/store) | Отделяет постоянный профиль новой оболочки от профиля Electron. |
+| [`internal/store`](../internal/store) | Определяет постоянный каталог состояния приложения и хранит в нём текущий проект и историю открытых проектов. |
 | [`internal/diagnostics`](../internal/diagnostics) | Хранит журнал и признак штатного завершения только в профиле новой оболочки. |
 | [`internal/process`](../internal/process) | Единственный путь запуска внешних программ SongFrame (FFmpeg, ffprobe, агенты). |
 | [`internal/jobs`](../internal/jobs) | Общий менеджер длительных заданий приложения: отправка и ожидание генерации, приёмка, сборки, проверки, загрузка моделей. |
@@ -40,7 +40,7 @@
 | [`internal/filedigest`](../internal/filedigest) | Считает SHA-256 файлов проекта с кэшем в памяти процесса. |
 | [`internal/media`](../internal/media) | Отдаёт разрешённые приложением файлы системному WebView через loopback. |
 | [`internal/desktop`](../internal/desktop) | Открывает файлы и папки системными средствами и читает небольшие тексты, выбранные пользователем. |
-| [`internal/trash`](../internal/trash) | Перемещает файлы и папки в корзину ОС вместо безвозвратного удаления (shell.trashItem оригинала). |
+| [`internal/trash`](../internal/trash) | Перемещает файлы и папки в корзину ОС вместо безвозвратного удаления. |
 | [`internal/components`](../internal/components) | Хранит закреплённый состав производственных зависимостей. |
 | [`internal/appversion`](../internal/appversion) | Хранит версию собранного приложения. |
 | [`internal/updates`](../internal/updates) | Обновляет приложение по явному действию пользователя: читает последний выпуск публичного репозитория на GitHub, скачивает пакет своей поставки и сверяет его с digest SHA-256 и размером из GitHub API — тем же, что проверяет публикация выпуска. |
@@ -57,17 +57,17 @@
 | Пакет | Назначение |
 | --- | --- |
 | [`internal/project`](../internal/project) | Содержит общие сведения о папке проекта, которые нужны нескольким областям: описание медиафайла для медиасервера и распознавание незавершённых многофайловых публикаций. |
-| [`internal/projectfile`](../internal/projectfile) | Владеет правкой маркера проекта plan/project.json: переименование (Projects.rename оригинала) и редактируемая часть настроек — название, имя MP4 аниматика, постоянные инструкции агенту и блок generation (readProjectSettings/writeProjectSettings из src/main/checks.ts). |
-| [`internal/newproject`](../internal/newproject) | Создаёт папку клипа из встроенного шаблона: проверка формы «Новый проект» (validateNewProject оригинала), копирование шаблона с подстановкой плейсхолдеров (copyTemplate) и необязательный git init. |
-| [`internal/status`](../internal/status) | Вычисляет состояние проекта из файлов его папки (computeStatus оригинала и постобработка обработчика IPC projects:status). |
-| [`internal/sources`](../internal/sources) | Читает опись исходников source/manifest.json так же, как readManifest и descriptionManifest оригинала. |
-| [`internal/sourceedit`](../internal/sourceedit) | Ведёт форму «Исходники»: просмотр (viewSources), проверку (validateSources) и сохранение (saveSources) трека, текста песни, идеи, обложки и референсов в source/ вместе с описью source/manifest.json. |
-| [`internal/sourceinputs`](../internal/sourceinputs) | Отпечаток содержательных входов описи исходников (source-input-hash.ts оригинала). |
-| [`internal/referenceimage`](../internal/referenceimage) | Переносит reference-image-storage.ts оригинала: референсы исходников и сущности кастинга делят одни файлы в source/, поэтому их запись согласуется здесь, а не в internal/sourceedit (форма «Исходники») или internal/cast (документ кастинга). |
+| [`internal/projectfile`](../internal/projectfile) | Владеет правкой маркера проекта plan/project.json: переименование и редактируемая часть настроек — название, имя MP4 аниматика, постоянные инструкции агенту и блок generation. |
+| [`internal/newproject`](../internal/newproject) | Создаёт папку клипа из встроенного шаблона: проверка формы «Новый проект», копирование шаблона с подстановкой плейсхолдеров и необязательный git init. |
+| [`internal/status`](../internal/status) | Вычисляет состояние проекта из файлов его папки (projects.status). |
+| [`internal/sources`](../internal/sources) | Читает опись исходников source/manifest.json. |
+| [`internal/sourceedit`](../internal/sourceedit) | Ведёт форму «Исходники»: просмотр, проверку и сохранение трека, текста песни, идеи, обложки и референсов в source/ вместе с описью source/manifest.json. |
+| [`internal/sourceinputs`](../internal/sourceinputs) | Вычисляет отпечаток содержательных входов описи исходников. |
+| [`internal/referenceimage`](../internal/referenceimage) | Согласует запись референсов исходников и сущностей кастинга: они делят одни файлы в source/, поэтому их запись согласуется здесь, а не в internal/sourceedit (форма «Исходники») или internal/cast (документ кастинга). |
 | [`internal/cast`](../internal/cast) | Читает кастинг plan/cast.json для вычислений, которым нужны сущности проекта: начальное состояние сущностей входит в отпечаток постановки каждого плана. |
-| [`internal/castregistry`](../internal/castregistry) | Перенос чтения кастинга из tools/cast_registry/cast_registry.py замороженного оригинала для Python-инструментов (scene_registry, scene_scaffold и проверок, которые переносятся следом): load_cast, validate_cast, проекция описаний из source/manifest.json, initial_states и references. |
-| [`internal/covergen`](../internal/covergen) | Генерация обложки проекта и изображений референсов (cover-generation.ts, cover-provider.ts и cover-paid.ts оригинала). |
-| [`internal/projectviews`](../internal/projectviews) | Перенос tools/project_views/project_views.py замороженного оригинала (634fd94): производные Markdown/JSON-представления реестра сцен и технических комплектов — монтажный список, раскадровка, индекс комплектов assets, ROADMAP с готовностью, справочник визуальных правил с речевыми планами, README комплектов и таблица разметки трека. |
+| [`internal/castregistry`](../internal/castregistry) | Читает кастинг для инструментов tools.run (scene_registry, scene_scaffold, проверки): load_cast, validate_cast, проекция описаний из source/manifest.json, initial_states и references. |
+| [`internal/covergen`](../internal/covergen) | Генерирует обложку проекта и изображения референсов. |
+| [`internal/projectviews`](../internal/projectviews) | Строит производные Markdown/JSON-представления реестра сцен и технических комплектов — монтажный список, раскадровка, индекс комплектов assets, ROADMAP с готовностью, справочник визуальных правил с речевыми планами, README комплектов и таблица разметки трека. |
 
 | Страница | Назначение |
 | --- | --- |
@@ -81,15 +81,15 @@
 
 ## Разметка песни
 
-Отдельного документа нет: правила области описаны комментариями пакетов и страниц.
+Документы: [docs/timing.md](timing.md).
 
 | Пакет | Назначение |
 | --- | --- |
-| [`internal/timing`](../internal/timing) | Переносит разметку песни plan/audio/timing.json: разбор текста source/text.md (shared/lyrics.ts), проверку разметки перед сохранением (shared/timing-validation.ts) и просмотр для редактора таймингов (viewTiming). |
+| [`internal/timing`](../internal/timing) | Ведёт разметку песни plan/audio/timing.json: разбор текста source/text.md, вид для редактора таймингов, проверку и сохранение ручной разметки и сборку черновика после автоматической разметки. |
 | [`internal/songtiming`](../internal/songtiming) | Локальная автоматическая разметка трека: кэш выделенного вокала вне проекта, задания выделения вокала и CTC-выравнивания и загрузка нужных компонентов. |
-| [`internal/songml`](../internal/songml) | Принятый ML-путь разметки песни (D-018/D-019): выделение вокала Voc FT (MDX-Net) и глобальное CTC-выравнивание известного текста в режиме margin/adaptive. |
-| [`internal/speech`](../internal/speech) | Речевые планы (speech.ts оригинала): строки песни в окне плана для выбора границ среза липсинка и подготовленный точный WAV пакета (audio/speech.wav и его рецепт audio/audio-recipe.json, которые режет штатный cut_speech). |
-| [`internal/cutspeech`](../internal/cutspeech) | Перенос tools/cut_speech/cut_speech.py: точный WAV липсинка и его рецепт audio-recipe.json из исходной песни проекта. |
+| [`internal/songml`](../internal/songml) | Выполняет ML-часть разметки песни: выделение вокала Voc FT (MDX-Net) и глобальное CTC-выравнивание известного текста в режиме margin/adaptive. |
+| [`internal/speech`](../internal/speech) | Описывает речевые планы: строки песни в окне плана для выбора границ среза липсинка и подготовленный точный WAV пакета (audio/speech.wav и его рецепт audio/audio-recipe.json, которые режет штатный cut_speech). |
+| [`internal/cutspeech`](../internal/cutspeech) | Вырезает точный WAV липсинка и его рецепт audio-recipe.json из исходной песни проекта (инструмент cut_speech). |
 
 | Страница | Назначение |
 | --- | --- |
@@ -101,15 +101,15 @@
 
 | Пакет | Назначение |
 | --- | --- |
-| [`internal/scenario`](../internal/scenario) | Переносит вычисления по реестру сцен plan/scenes.json: наследование состояния сущностей по state_from (resolveStates) и отпечаток постановки плана (sceneFingerprints). |
-| [`internal/sceneregistry`](../internal/sceneregistry) | Перенос tools/scene_registry/scene_registry.py замороженного оригинала: единственный источник постановки и монтажного времени для Python-инструментов. |
-| [`internal/scenesave`](../internal/scenesave) | Сохранение реестра планов с учётом производства (scenario-save оригинала): какие планы меняют отпечаток постановки при сохранении черновика, с какой формальной причиной и что с ними станет. |
-| [`internal/scenescaffold`](../internal/scenescaffold) | Перенос tools/scene_scaffold/scene_scaffold.py замороженного оригинала: детерминированный каркас реестра сцен plan/scenes.json из сохранённой трактовки (plan/treatment.json), разметки трека (plan/audio/timing.json), текста песни и кастинга. |
-| [`internal/sceneviews`](../internal/sceneviews) | Перенос tools/update_scene_views/update_scene_views.py замороженного оригинала (634fd94): обновление и проверка производных представлений единого реестра сцен — документов internal/projectviews, PNG-карточек аниматика plan/animatic/cards/<план>.png (и .last.png последней опоры) и их квитанции plan/animatic/cards/manifest.json. |
-| [`internal/scenarioworkflow`](../internal/scenarioworkflow) | Сценарный проход агента (ScenarioWorkflow оригинала, src/main/scenario-workflow.ts и scenario-apply.ts на 634fd94): подготовка предложения кастинга и трактовки, реестра сцен или доработки выбранных планов, хранение предложения вне проекта, его разбор и проверка, утверждения пары и сцен и применение одной транзакцией. |
+| [`internal/scenario`](../internal/scenario) | Вычисляет данные по реестру сцен plan/scenes.json: наследование состояния сущностей по state_from (ResolveStates) и отпечаток постановки плана (SceneFingerprints). |
+| [`internal/sceneregistry`](../internal/sceneregistry) | Проверяет реестр сцен и проект для инструментов tools.run: единственный источник постановки и монтажного времени инструментов. |
+| [`internal/scenesave`](../internal/scenesave) | Сохраняет реестр планов с учётом производства: определяет, какие планы меняют отпечаток постановки при сохранении черновика, с какой формальной причиной и что с ними станет. |
+| [`internal/scenescaffold`](../internal/scenescaffold) | Строит детерминированный каркас реестра сцен plan/scenes.json (инструмент scene_scaffold) из сохранённой трактовки (plan/treatment.json), разметки трека (plan/audio/timing.json), текста песни и кастинга. |
+| [`internal/sceneviews`](../internal/sceneviews) | Обновляет и проверяет производные представления единого реестра сцен (инструмент update_scene_views): документы internal/projectviews, PNG-карточки аниматика plan/animatic/cards/<план>.png (и .last.png последней опоры) и их квитанцию plan/animatic/cards/manifest.json. |
+| [`internal/scenarioworkflow`](../internal/scenarioworkflow) | Ведёт сценарный проход агента: подготовка предложения кастинга и трактовки, реестра сцен или доработки выбранных планов, хранение предложения вне проекта, его разбор и проверка, утверждения пары и сцен и применение одной транзакцией. |
 | [`internal/scenarioapply`](../internal/scenarioapply) | Хранилище многофайловой публикации семейства «сценарий» (кастинг, трактовка, реестр, опись исходников и их производные виды) с журналом и восстановлением после сбоя. |
-| [`internal/continuitybrief`](../internal/continuitybrief) | Перенос tools/continuity_brief/continuity_brief.py замороженного оригинала (634fd94): врезка непрерывности для плана — состояние мира и героев словами на первый или последний кадр и чек-лист «да или нет» для проверки полученного изображения. |
-| [`internal/lintregistry`](../internal/lintregistry) | Перенос tools/lint_registry/lint_registry.py замороженного оригинала: проверка plan/scenes.json, кастинга, описания, комплектов assets, файла принятия и рабочих пакетов по JSON-схемам (подмножество JSON Schema оригинала) и правилам владения сведениями (хроника принятий и технические рецепты не хранятся в постановке). |
+| [`internal/continuitybrief`](../internal/continuitybrief) | Строит врезку непрерывности для плана (инструмент continuity_brief): состояние мира и героев словами на первый или последний кадр и чек-лист «да или нет» для проверки полученного изображения. |
+| [`internal/lintregistry`](../internal/lintregistry) | Проверяет plan/scenes.json, кастинг, описание, комплекты assets, файл принятия и рабочие пакеты по встроенным JSON-схемам (подмножество JSON Schema) и правилам владения сведениями (хроника принятий и технические рецепты не хранятся в постановке). |
 
 | Страница | Назначение |
 | --- | --- |
@@ -123,24 +123,24 @@
 
 | Пакет | Назначение |
 | --- | --- |
-| [`internal/production`](../internal/production) | Страница «Производство» главного процесса (production.ts оригинала): вид планов и рабочих пакетов по файлам проекта, решения пользователя (через shot_workflow), согласование стоимости и платная отправка замороженного запроса, получение результата, повтор по сохранённому запросу и приёмка в assets. |
-| [`internal/productionworkflow`](../internal/productionworkflow) | Проход агента производства (ProductionWorkflow оригинала, src/main/production-workflow.ts, production-proposal.ts и production-workflow-apply.ts на 634fd94): один план и один пакет проходят подготовку предложений описания, видеопромпта и запроса; проект меняется только отдельным Apply. |
-| [`internal/shotworkflow`](../internal/shotworkflow) | Перенос tools/shot_workflow/shot_workflow.py замороженного оригинала: ведение workflow.json рабочего пакета одного плана (создание, план опор, кандидаты и принятие опор, промпт, вопросы и ответы приложения, этапы, image-ветка платных опор, перенос в очередь plan/awaiting и проверка целостности). |
-| [`internal/shotstatus`](../internal/shotstatus) | Перенос tools/shot_status/shot_status.py замороженного оригинала: статусы планов по реестру сцен, выбранным комплектам assets, очереди plan/awaiting и рабочим попыткам plan/batches; кандидат next, таблица для человека, JSON для приложения и проверка независимости партии планов (--independent). |
-| [`internal/regenerateshot`](../internal/regenerateshot) | Перенос tools/regenerate_shot/regenerate_shot.py: повтор генерации плана по сохранённому запросу без нового согласования. |
-| [`internal/requestsnapshot`](../internal/requestsnapshot) | Перенос tools/request_snapshot.py замороженного оригинала: общая локальная подготовка неизменяемого запроса генерации (снимок спецификации, промпта и входов в новой папке попытки) и атомарная запись его JSON. |
-| [`internal/costcheck`](../internal/costcheck) | Перенос tools/cost_check/cost_check.py замороженного оригинала: оценка стоимости запроса генерации и сверка с остатком кредитов до таблицы согласования (check), а после отправки — запись фактического расхода наблюдением (learn). |
+| [`internal/production`](../internal/production) | Ведёт страницу «Производство»: вид планов и рабочих пакетов по файлам проекта, решения пользователя (через shot_workflow), согласование стоимости и платную отправку зафиксированного запроса, получение результата, повтор по сохранённому запросу и приёмку в assets. |
+| [`internal/productionworkflow`](../internal/productionworkflow) | Ведёт проход агента производства: один план и один пакет проходят подготовку предложений описания, видеопромпта и запроса; проект меняется только отдельным Apply. |
+| [`internal/shotworkflow`](../internal/shotworkflow) | Ведёт workflow.json рабочего пакета одного плана (инструмент shot_workflow): создание, план опор, кандидаты и принятие опор, промпт, вопросы и ответы приложения, этапы, image-ветка платных опор, перенос в очередь plan/awaiting и проверка целостности. |
+| [`internal/shotstatus`](../internal/shotstatus) | Считает статусы планов (инструмент shot_status) по реестру сцен, выбранным комплектам assets, очереди plan/awaiting и рабочим попыткам plan/batches; кандидат next, таблица для человека, JSON для приложения и проверка независимости партии планов (--independent). |
+| [`internal/regenerateshot`](../internal/regenerateshot) | Повторяет генерацию плана по сохранённому запросу без нового согласования (инструмент regenerate_shot). |
+| [`internal/requestsnapshot`](../internal/requestsnapshot) | Готовит неизменяемый запрос генерации локально, без отправки: снимок спецификации, промпта и входов в новой папке попытки и атомарная запись его JSON. |
+| [`internal/costcheck`](../internal/costcheck) | Оценивает стоимость запроса генерации и сверяет её с остатком кредитов до таблицы согласования (check), а после отправки записывает фактический расход наблюдением (learn); это инструмент cost_check. |
 | [`internal/acceptance`](../internal/acceptance) | Определяет, какие комплекты assets/shots/Mxx приняты по текущей постановке. |
-| [`internal/acceptshot`](../internal/acceptshot) | Перенос tools/accept_shot/accept_shot.py: перенос принятой генерации в комплект assets/shots/Mxx по контракту assets. |
-| [`internal/assetpackage`](../internal/assetpackage) | Перенос проверки комплекта принятого ассета из tools/asset_package/asset_package.py оригинала (validate_package и разрешение файлов комплекта). |
-| [`internal/verifyassetreplay`](../internal/verifyassetreplay) | Перенос tools/verify_asset_replay/verify_asset_replay.py: проверка воспроизведения всех принятых комплектов планов из индекса assets/shots/manifest.json. |
-| [`internal/videoreview`](../internal/videoreview) | Переносит проверку полученного видео агентом (videoReview.view/start/cancel, src/main/video-review.ts и tools/video_review оригинала). |
-| [`internal/contactsheet`](../internal/contactsheet) | Перенос tools/contact_sheet/contact_sheet.py замороженного оригинала (634fd94): техническая сводка полученного видео для быстрого просмотра. |
-| [`internal/dashboard`](../internal/dashboard) | Дашборд сцен (src/main/dashboard.ts оригинала): по каждому плану реестра собирается всё, что о нём известно в проекте, в одну карточку: постановка и строка песни, положение на шкале, комплект в assets (оригинал против принятого монтажа, рецепт, промпт, входы), пакеты с опорами (production.ViewProduction), карточка аниматика, состояние героев до и после (scenario.ProjectBrief). |
-| [`internal/checks`](../internal/checks) | Перенос группы checks.list/run/runAll из src/main/checks.ts замороженного оригинала: проверки проекта запускаются заданиями общего менеджера с журналом и кодом завершения. |
-| [`internal/checkassets`](../internal/checkassets) | Перенос tools/check_assets/check_assets.py замороженного оригинала: проверка всех выбранных комплектов assets/shots/M*/manifest.json проекта (validate_package, internal/assetpackage) и сводка по их числу. |
-| [`internal/checkworkspace`](../internal/checkworkspace) | Перенос tools/check_workspace/check_workspace.py замороженного оригинала (вместе с tools/montage_files.py): согласованность рабочего дерева проекта после приёмки — карточки и квитанция карточек, лишние пакеты plan/batches и plan/awaiting, пустые папки; готовые экспорты, пробы и материалы ручного монтажа не считаются остатками. |
-| [`internal/tools`](../internal/tools) | Метод контракта tools.run(project, name, args) → ToolResult: запуск инструмента комплекса по имени на папке проекта. |
+| [`internal/acceptshot`](../internal/acceptshot) | Принимает генерацию плана: инструмент accept_shot собирает комплект assets/shots/Mxx по контракту assets. |
+| [`internal/assetpackage`](../internal/assetpackage) | Проверяет комплект принятого ассета и разрешает его файлы. |
+| [`internal/verifyassetreplay`](../internal/verifyassetreplay) | Проверяет воспроизведение всех принятых комплектов планов из индекса assets/shots/manifest.json (инструмент verify_asset_replay). |
+| [`internal/videoreview`](../internal/videoreview) | Проверяет полученное видео агентом: кадры по PTS, сверка с утверждёнными опорами и отчёт с наблюдениями (videoReview.view/start/cancel). |
+| [`internal/contactsheet`](../internal/contactsheet) | Собирает техническую сводку полученного видео для быстрого просмотра (инструмент contact_sheet). |
+| [`internal/dashboard`](../internal/dashboard) | Собирает дашборд сцен: по каждому плану реестра собирается всё, что о нём известно в проекте, в одну карточку: постановка и строка песни, положение на шкале, комплект в assets (оригинал против принятого монтажа, рецепт, промпт, входы), пакеты с опорами (production.ViewProduction), карточка аниматика, состояние героев до и после (scenario.ProjectBrief). |
+| [`internal/checks`](../internal/checks) | Запускает проверки проекта (checks.list/run/runAll) заданиями общего менеджера с журналом и кодом завершения. |
+| [`internal/checkassets`](../internal/checkassets) | Проверяет все выбранные комплекты assets/shots/M*/manifest.json проекта (validate_package, internal/assetpackage) и печатает сводку по их числу. |
+| [`internal/checkworkspace`](../internal/checkworkspace) | Проверяет согласованность рабочего дерева проекта после приёмки: карточки и квитанция карточек, лишние пакеты plan/batches и plan/awaiting, пустые папки; готовые экспорты, пробы и материалы ручного монтажа не считаются остатками. |
+| [`internal/tools`](../internal/tools) | Запускает инструменты комплекса по имени на папке проекта (метод контракта tools.run(project, name, args) → ToolResult). |
 
 | Страница | Назначение |
 | --- | --- |
@@ -157,16 +157,16 @@
 | Пакет | Назначение |
 | --- | --- |
 | [`internal/animatic`](../internal/animatic) | Проверяет сборку аниматика plan/animatic/latest: собрана ли она, свежа ли по реестру сцен и фактическим входам и принята ли именно она в plan/production-status.json. |
-| [`internal/animaticcards`](../internal/animaticcards) | Рисует условные PNG-карточки аниматика — перенос tools/render_animatic_cards/render_animatic_cards.py замороженного оригинала (634fd94). |
-| [`internal/buildanimatic`](../internal/buildanimatic) | Перенос tools/build_animatic/build_animatic.py и его кэша tools/animatic_cache/animatic_cache.py замороженного оригинала (634fd94): детерминированная сборка единственного полного аниматика plan/animatic/latest. |
-| [`internal/buildreview`](../internal/buildreview) | Перенос tools/build_review/build_review.py: временная видеопроба стыков из соседних сцен. |
-| [`internal/montage`](../internal/montage) | Перенос src/main/montage.ts, montage-video.ts и montage-recovery.ts оригинала: каталог ручного монтажа (ViewProject), черновики plan/montage/<uuid>.json (Load/Save), экспорт пробы заданием build_review (Export), применение к сценам заданием apply_montage (Apply), путь и копия готовой пробы (VideoPath/CopyVideo) и восстановление прерванной публикации журнала plan/montage-history без инструмента (RecoverApplications/RecoverProjects). |
-| [`internal/applymontage`](../internal/applymontage) | Перенос tools/apply_montage оригинала: явное применение ручного монтажа (MontageDraft) к принятым комплектам assets/shots одной транзакцией. |
-| [`internal/derivedshot`](../internal/derivedshot) | Производный план по сценарию (derived-shot.ts оригинала): план, материал которого собирается из принятого видео другого плана (derived_from.shot). |
-| [`internal/derivedworkflow`](../internal/derivedworkflow) | Перенос src/main/derived-workflow.ts и derived-recovery.ts оригинала: страница производного плана. |
-| [`internal/deriveshot`](../internal/deriveshot) | Перенос tools/derive_shot оригинала: локальная сборка производного плана из принятого клипа другого плана без платной генерации и приёмка показанных байтов. |
-| [`internal/exportbundle`](../internal/exportbundle) | Перенос tools/export_edit_bundle/export_edit_bundle.py замороженного оригинала (634fd94): пакет для монтажёра из реестра сцен, манифестов комплектов и разметки песни. |
-| [`internal/builtoutput`](../internal/builtoutput) | Границы удаления готовых результатов (built-output-path.ts оригинала): удалять можно только обычные папки и файлы непосредственно в plan/batches выбранного проекта. |
+| [`internal/animaticcards`](../internal/animaticcards) | Рисует условные PNG-карточки аниматика для планов без видео. |
+| [`internal/buildanimatic`](../internal/buildanimatic) | Детерминированно собирает единственный полный аниматик plan/animatic/latest (инструмент build_animatic) с кэшем проверенных фрагментов. |
+| [`internal/buildreview`](../internal/buildreview) | Собирает временную видеопробу стыков из соседних сцен (инструмент build_review). |
+| [`internal/montage`](../internal/montage) | Ведёт ручной монтаж соседних сцен: каталог монтажа (ViewProject), черновики plan/montage/<uuid>.json (Load/Save), экспорт пробы заданием build_review (Export), применение к сценам заданием apply_montage (Apply), путь и копия готовой пробы (VideoPath/CopyVideo) и восстановление прерванной публикации журнала plan/montage-history без инструмента (RecoverApplications/RecoverProjects). |
+| [`internal/applymontage`](../internal/applymontage) | Применяет ручной монтаж (MontageDraft) к принятым комплектам assets/shots одной транзакцией (инструмент apply_montage). |
+| [`internal/derivedshot`](../internal/derivedshot) | Определяет производный план по сценарию: план, материал которого собирается из принятого видео другого плана (derived_from.shot). |
+| [`internal/derivedworkflow`](../internal/derivedworkflow) | Обслуживает страницу производного плана. |
+| [`internal/deriveshot`](../internal/deriveshot) | Локально собирает производный план из принятого клипа другого плана без платной генерации и принимает показанные байты (инструмент derive_shot). |
+| [`internal/exportbundle`](../internal/exportbundle) | Собирает пакет для монтажёра из реестра сцен, манифестов комплектов и разметки песни (инструмент export_edit_bundle). |
+| [`internal/builtoutput`](../internal/builtoutput) | Задаёт границы удаления готовых результатов: удалять можно только обычные папки и файлы непосредственно в plan/batches выбранного проекта. |
 
 | Страница | Назначение |
 | --- | --- |
@@ -180,20 +180,20 @@
 
 | Пакет | Назначение |
 | --- | --- |
-| [`internal/agents`](../internal/agents) | Переносит в Go внешних текстовых агентов SongFrame (Codex и Claude Code): реестр исполнителей, глобальный выбор агента в settings.json, диагностику программы (поиск, версия, вход), сведения аккаунта и каталог моделей, аргументы и потоковые протоколы обоих CLI, задания с историей, отменой дерева процессов и вложениями изображений, а также явный выбор исполнителей ИИ (ai.access). |
-| [`internal/providers`](../internal/providers) | Слой провайдеров медиа приложения, единственный владелец того, что в оригинале делали src/main/providers/{types,index}.ts, src/main/media-providers.ts, media-catalog.ts и provider-guides.ts, а также маршруты environment:* и media:capabilities из ipc.ts и environment.ts: |
-| [`internal/providers/agentexec`](../internal/providers/agentexec) | Контракт исполнителя опор провайдера-агента (AgentImageExecutor и KeyframeImages из src/main/providers/types.ts оригинала): провайдер, генерацию которого исполняет программа-агент из реестра (MediaProviderInfo.executor). |
+| [`internal/agents`](../internal/agents) | Ведёт внешних текстовых агентов SongFrame (Codex и Claude Code): реестр исполнителей, глобальный выбор агента в settings.json, диагностику программы (поиск, версия, вход), сведения аккаунта и каталог моделей, аргументы и потоковые протоколы обоих CLI, задания с историей, отменой дерева процессов и вложениями изображений, а также явный выбор исполнителей ИИ (ai.access). |
+| [`internal/providers`](../internal/providers) | Слой провайдеров медиа приложения: адаптеры, каталог моделей, вход и строки страницы «Среда». |
+| [`internal/providers/agentexec`](../internal/providers/agentexec) | Задаёт контракт исполнителя опор провайдера-агента: провайдер, генерацию которого исполняет программа-агент из реестра (MediaProviderInfo.executor). |
 | [`internal/providers/codex`](../internal/providers/codex) | Адаптер провайдера изображений Codex: опоры и обложки рисует программа-агент из реестра (internal/agents), отдельной программы провайдера нет. |
-| [`internal/providers/kling`](../internal/providers/kling) | Go-адаптер провайдера генерации kling (перенос нужного из tools/kling_request/kling_request.py оригинала). |
+| [`internal/providers/kling`](../internal/providers/kling) | Адаптер провайдера генерации kling. |
 | [`internal/providers/kling/mcp`](../internal/providers/kling/mcp) | Клиент MCP-сервера Kling на стандартной библиотеке Go: вход OAuth, хранение и обновление токенов, вызовы инструментов и загрузка файлов. |
 | [`internal/mediaproviders`](../internal/mediaproviders) | Go-часть реестра провайдеров медиа (frontend/src/shared/media-providers.ts). |
-| [`internal/mediaadapters`](../internal/mediaadapters) | Таблица Go-адаптеров провайдеров генерации: id провайдера → адаптер. |
+| [`internal/mediaadapters`](../internal/mediaadapters) | Ведёт таблицу адаптеров провайдеров генерации: id провайдера → адаптер. |
 | [`internal/mediaapi`](../internal/mediaapi) | Контракт адаптера провайдера генерации: необязательные возможности, их результаты и ошибки отправки. |
-| [`internal/mediarequest`](../internal/mediarequest) | Перенос tools/media_request оригинала: общий жизненный цикл одной попытки генерации у выбранного провайдера (возможности, подготовка, единственная отправка, получение оригиналов, ручной результат при неизвестном исходе) и CLI media_request. |
-| [`internal/mediatest`](../internal/mediatest) | Тестовый провайдер генерации `test` без сети и платных запросов: перенос tools/testing/fake_media_request.py оригинала. |
-| [`internal/mediatest/scenario`](../internal/mediatest/scenario) | Проигрывает сценарии эталонов платной попытки (домены media-request и cost-check в testdata/golden) на Go-переносе и сравнивает каждый шаг с оригиналом. |
+| [`internal/mediarequest`](../internal/mediarequest) | Ведёт жизненный цикл одной попытки генерации у выбранного провайдера (возможности, подготовка, единственная отправка, получение оригиналов, ручной результат при неизвестном исходе) и инструмент media_request. |
+| [`internal/mediatest`](../internal/mediatest) | Тестовый провайдер генерации `test` без сети и платных запросов. |
+| [`internal/mediatest/scenario`](../internal/mediatest/scenario) | Проигрывает сценарии эталонов платной попытки (домены media-request и cost-check в testdata/golden) и сравнивает каждый шаг с эталоном. |
 | [`internal/mediafile`](../internal/mediafile) | Проверки файлов медиа, общие для слоя провайдеров (оригиналы платного провайдера, опоры провайдера-агента, референсы обложки) и производства: |
-| [`internal/mediacmd`](../internal/mediacmd) | Общий запуск FFmpeg/ffprobe для перенесённых медиаинструментов (этап 46): cut_speech, contact_sheet, build_review, build_animatic и рендер участка accept_shot. |
+| [`internal/mediacmd`](../internal/mediacmd) | Запускает FFmpeg/ffprobe для медиаинструментов: cut_speech, contact_sheet, build_review, build_animatic и рендер участка accept_shot. |
 
 | Страница | Назначение |
 | --- | --- |
@@ -212,18 +212,18 @@
 
 Ещё: [`resources/skills`](../resources/skills), [`resources/fonts`](../resources/fonts).
 
-## Семантика оригинала и эталоны
+## Семантика форматов и эталоны
 
 Документы: [testdata/golden/README.md](../testdata/golden/README.md), [testdata/README.md](../testdata/README.md).
 
 | Пакет | Назначение |
 | --- | --- |
-| [`internal/pycompat`](../internal/pycompat) | Воспроизводит семантику значений Python 3.12, на которой работали инструменты замороженного оригинала (`tools/*.py` Electron-версии SongFrame на срезе `634fd94`): разбор и запись JSON модулем json, repr/str, равенство и истинность, индексацию, приведение float()/round() и десятичную арифметику Decimal. |
-| [`internal/pyre`](../internal/pyre) | Регулярные выражения с семантикой модуля re CPython 3.12 для строковых шаблонов перенесённых Python-инструментов (lint_registry, shot_status, check_workspace и др.). |
-| [`internal/pyargparse`](../internal/pyargparse) | Argparse CPython 3.12 с подкомандами для перенесённых CLI платной попытки (media_request.py, cost_check.py): parser.add_subparsers(dest=..., required=True), у подкоманд — опции store_true, с одним значением или nargs="+", required=True, choices, type=float и одна взаимоисключающая группа (в том числе required=True). |
-| [`internal/pytool`](../internal/pytool) | Общий каркас CLI-инструментов, перенесённых с Python: результат процесса (код, stdout, stderr), print() с кодированием UTF-8 и завершение необработанным исключением или parser.exit. |
-| [`internal/jscompat`](../internal/jscompat) | Воспроизводит семантику JavaScript/Node.js, от которой зависит результат перенесённых функций Electron-оригинала SongFrame. |
-| [`internal/golden`](../internal/golden) | Читает эталоны поведения замороженного Electron-оригинала SongFrame (commit 634fd94) из testdata/golden и сравнивает с ними результаты Go-переноса. |
+| [`internal/pycompat`](../internal/pycompat) | Воспроизводит семантику значений Python 3.12, в которой записаны файлы и вывод инструментов комплекса: разбор и запись JSON модулем json, repr/str, равенство и истинность, индексацию, приведение float()/round() и десятичную арифметику Decimal. |
+| [`internal/pyre`](../internal/pyre) | Регулярные выражения с семантикой модуля re CPython 3.12 для строковых шаблонов инструментов (lint_registry, shot_status, check_workspace и др.). |
+| [`internal/pyargparse`](../internal/pyargparse) | Argparse CPython 3.12 с подкомандами для CLI платной попытки (prog media_request.py, cost_check.py): parser.add_subparsers(dest=..., required=True), у подкоманд — опции store_true, с одним значением или nargs="+", required=True, choices, type=float и одна взаимоисключающая группа (в том числе required=True). |
+| [`internal/pytool`](../internal/pytool) | Общий каркас CLI-инструментов с семантикой Python: результат процесса (код, stdout, stderr), print() с кодированием UTF-8 и завершение необработанным исключением или parser.exit. |
+| [`internal/jscompat`](../internal/jscompat) | Воспроизводит семантику JavaScript/Node.js, в которой записаны проектные файлы и ответы приложения. |
+| [`internal/golden`](../internal/golden) | Читает эталоны поведения testdata/golden и сравнивает с ними результаты. |
 | [`internal/repodocs`](../internal/repodocs) | Проверяет, что документация репозитория не разошлась с кодом, и генерирует карту кода docs/code-map.md. |
 
 Ещё: [`testdata`](../testdata).

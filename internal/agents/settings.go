@@ -18,12 +18,12 @@ type Settings struct {
 	Model    string `json:"model,omitempty"`
 }
 
-// SettingsFile — имя файла настроек в каталоге состояния (тот же, что у Electron).
+// SettingsFile — имя файла настроек в каталоге состояния.
 const SettingsFile = "settings.json"
 
-// Normalize — normalizeAgentSettings для типизированного ввода из renderer: nil — выбора нет,
+// Normalize нормализует выбор агента из типизированного ввода renderer: nil — выбора нет,
 // неизвестный исполнитель или модель с нулевым символом — ошибка, модель без пробелов по краям,
-// пустая модель опускается. Лишние поля (прежний executablePath) отбрасывает уже разбор JSON.
+// пустая модель опускается. Лишние поля (например, executablePath) отбрасывает уже разбор JSON.
 func Normalize(value *Settings) (*Settings, error) {
 	if value == nil {
 		return nil, nil
@@ -37,7 +37,7 @@ func Normalize(value *Settings) (*Settings, error) {
 	return &Settings{Provider: value.Provider, Model: jscompat.Trim(value.Model)}, nil
 }
 
-// normalizeValue — normalizeAgentSettings для значения из settings.json со строгими типами JS.
+// normalizeValue нормализует выбор агента из значения settings.json со строгими типами JS.
 func normalizeValue(value any) (*Settings, error) {
 	if jscompat.IsNullish(value) {
 		return nil, nil
@@ -61,7 +61,7 @@ func normalizeValue(value any) (*Settings, error) {
 	return &Settings{Provider: provider, Model: model}, nil
 }
 
-// object — запись настроек в порядке ключей оригинала: provider, затем model при наличии.
+// object — запись настроек в порядке ключей формата: provider, затем model при наличии.
 func (s Settings) object() *jscompat.Object {
 	object := jscompat.NewObject()
 	object.Set("provider", s.Provider)
@@ -98,7 +98,7 @@ func normalizeProfiles(value any) (*jscompat.Object, error) {
 	return result, nil
 }
 
-// SettingsStore владеет settings.json каталога состояния Go-версии (SettingsStore оригинала).
+// SettingsStore владеет settings.json каталога состояния.
 //
 // Файл общий для глобального выбора агента (agent), личных профилей исполнителей (agentProfiles)
 // и полей других областей (toolsRootOverride и будущих): запись меняет только свои ключи, а
@@ -276,7 +276,7 @@ func ImageAgent(executor, model string) (Settings, error) {
 	return Settings{Provider: executor, Model: jscompat.Trim(model)}, nil
 }
 
-// readLocal — readLocalJson оригинала: отсутствие файла — (nil, nil); повреждённый или
+// readLocal читает локальный JSON: отсутствие файла — (nil, nil); повреждённый или
 // не-объектный JSON — ошибка с путём, файл не трогается.
 func readLocal(path string) (any, error) {
 	data, err := os.ReadFile(path)

@@ -1,10 +1,9 @@
-// Package golden читает эталоны поведения замороженного Electron-оригинала SongFrame (commit 634fd94)
-// из testdata/golden и сравнивает с ними результаты Go-переноса.
+// Package golden читает эталоны поведения testdata/golden и сравнивает с ними результаты.
 //
-// Эталон состоит из случаев testdata/golden/<домен>/<случай>/: case.json с описанием и именем функции
-// оригинала, входной мини-проект project/ и ожидаемые JSON. Пакет только загружает случаи, нормализует
-// абсолютные пути в маркер <project> и сравнивает деревья JSON; сами функции домена вызывает тест
-// соответствующего пакета. Все эталоны лежат в Git; тесты не зависят от файлов вне репозитория.
+// Эталон состоит из случаев testdata/golden/<домен>/<случай>/: case.json с описанием и именем
+// проверяемой операции, входной мини-проект project/ и ожидаемые JSON. Пакет только загружает
+// случаи, нормализует абсолютные пути в маркер <project> и сравнивает деревья JSON; сами функции
+// домена вызывает тест соответствующего пакета. Все эталоны лежат в Git; тесты не зависят от файлов вне репозитория.
 package golden
 
 import (
@@ -45,11 +44,11 @@ type Case struct {
 	Dir string `json:"-"`
 	// Description — что проверяет случай, по-русски.
 	Description string `json:"description"`
-	// Call — функция оригинала: computeStatus, viewTiming или saveTiming.
+	// Call — проверяемая операция: computeStatus, viewTiming или saveTiming.
 	Call string `json:"call"`
-	// Project — имя входного каталога проекта или nil, если оригинал вызывался на несуществующем пути.
+	// Project — имя входного каталога проекта или nil, если операция вызывается на несуществующем пути.
 	Project *string `json:"project"`
-	// Covers — ветки оригинала, которые доказывает случай.
+	// Covers — ветки поведения, которые доказывает случай.
 	Covers []string `json:"covers"`
 	// StubbedMedia — медиафайлы входа, заменённые текстовыми заглушками без изменения результата.
 	StubbedMedia []string `json:"stubbedMedia"`
@@ -122,7 +121,7 @@ func (c Case) ProjectPath() string {
 	return filepath.Join(c.Dir, projectDir)
 }
 
-// HasProject сообщает, был ли у оригинала существующий входной каталог.
+// HasProject сообщает, есть ли у случая существующий входной каталог.
 func (c Case) HasProject() bool {
 	return c.Project != nil
 }
@@ -187,7 +186,7 @@ type ValidationCase struct {
 		Lyrics   json.RawMessage `json:"lyrics"`
 		Duration *float64        `json:"duration"`
 	} `json:"input"`
-	// Expected — проблемы в порядке оригинала; пустой список означает корректную разметку.
+	// Expected — проблемы в ожидаемом порядке; пустой список означает корректную разметку.
 	Expected []string `json:"expected"`
 }
 

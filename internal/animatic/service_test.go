@@ -12,7 +12,7 @@ import (
 )
 
 // TestBuildJobSteps — задание через настоящий менеджер: шаги запускают инструменты по порядку с
-// аргументами оригинала, сбой build_animatic даёт причину из stderr и код шага.
+// аргументами из эталона, сбой build_animatic даёт причину из stderr и код шага.
 func TestBuildJobSteps(t *testing.T) {
 	project := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(project, "plan"), 0o755); err != nil {

@@ -1,7 +1,6 @@
 package montage
 
-// Тексты montageTexts.main оригинала (frontend/src/shared/texts/montage.ts): главный процесс
-// возвращает готовые фразы, renderer показывает их как есть.
+// Тексты ошибок монтажа: Go возвращает готовые фразы, renderer показывает их как есть.
 const (
 	textRelativePathRequired = "Укажите относительный путь от корня проекта через /."
 	textInvalidData          = "Некорректная структура данных."

@@ -3,8 +3,9 @@
 //
 // Проверка ссылок (Check) читает Markdown-файлы репозитория и находит утверждения, которые можно
 // сверить механически: относительные ссылки и якоря, пути к файлам в `обратных кавычках`,
-// переменные окружения SONGFRAME_*, задачи `wails3 task` и скрипты `yarn`. Она не понимает смысл
-// текста: устаревшее описание процесса ловит только ревизия перед выпуском.
+// переменные окружения SONGFRAME_*, задачи `wails3 task` и скрипты `yarn`. CheckSources и Check
+// также не пускают упоминания прежней версии приложения за пределы раздела «История» README.
+// Смысл текста проверка не понимает: устаревшее описание процесса ловит ревизия перед выпуском.
 //
 // Карта кода (RenderCodeMap) собирается из таблицы областей areas.go и первых предложений
 // комментариев `// Package`; тест требует, чтобы каждый Go-пакет и каждая страница интерфейса
@@ -163,11 +164,13 @@ var yarnBuiltins = map[string]bool{
 	"npm": true, "cache": true, "dedupe": true, "node": true, "version": true, "init": true,
 }
 
-// historicalEnv — переменные, которые документы упоминают как часть Electron-оригинала (рецепты
-// съёмки эталонов), с причиной. Go-код их не читает, и это верно.
-var historicalEnv = map[string]string{
-	"SONGFRAME_PROJECT": "переменная инструментов оригинала в рецепте съёмки testdata/golden",
-}
+// historyMarker находит упоминания прежней версии приложения. История проекта живёт только в
+// разделе «История» корневого README (правило AGENTS.md «Документация и код»): в остальных
+// документах, коде и комментариях текст описывает то, что есть сейчас.
+var historyMarker = regexp.MustCompile(`Electron|634fd94`)
+
+// historySection — заголовок раздела README, где история разрешена.
+const historySection = "## История"
 
 // generatedOutputs — результаты сборки, которых нет в исходниках, но на которые законно
 // ссылаются руководства.
@@ -362,9 +365,16 @@ func Check(root string) ([]Problem, error) {
 			return nil, err
 		}
 		dir := path.Dir(rel)
+		inHistory := false
 		for _, l := range lines {
 			add := func(format string, args ...any) {
 				problems = append(problems, Problem{rel, l.n, fmt.Sprintf(format, args...)})
+			}
+			if !l.fence && strings.HasPrefix(l.text, "## ") {
+				inHistory = rel == "README.md" && strings.TrimSpace(l.text) == historySection
+			}
+			if !inHistory && historyMarker.MatchString(l.text) {
+				add("упоминание прежней версии: история — только в разделе «История» README")
 			}
 			var targets []string
 			plain := stripCode(l.text)
@@ -381,7 +391,7 @@ func Check(root string) ([]Problem, error) {
 				checkLink(root, rel, dir, t, idx, add)
 			}
 			for _, v := range envVar.FindAllString(l.text, -1) {
-				if !vars[v] && historicalEnv[v] == "" {
+				if !vars[v] {
 					add("переменная %s не встречается в исходниках", v)
 				}
 			}
@@ -449,4 +459,47 @@ func checkLink(root, rel, dir, target string, idx anchorIndex, add func(string, 
 	if !idx.anchors(filepath.Join(root, filepath.FromSlash(targetRel)))[strings.ToLower(anchor)] {
 		add("в %s нет якоря #%s", targetRel, anchor)
 	}
+}
+
+// sourceExts — расширения исходников, комментарии и тексты которых проверяет CheckSources.
+var sourceExts = map[string]bool{
+	".go": true, ".ts": true, ".tsx": true, ".js": true, ".mjs": true, ".sh": true, ".py": true,
+	".yml": true, ".yaml": true, ".nsi": true, ".nsh": true, ".css": true, ".html": true,
+}
+
+// CheckSources находит упоминания прежней версии в исходниках репозитория. Эталоны и fixtures
+// (каталоги testdata), сгенерированные bindings и сам пакет repodocs, где задано правило, не
+// проверяются.
+func CheckSources(root string) ([]Problem, error) {
+	var problems []Problem
+	err := filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(root, p)
+		if err != nil {
+			return err
+		}
+		rel = filepath.ToSlash(rel)
+		if d.IsDir() {
+			if p != root && (skippedDirs[d.Name()] || d.Name() == "testdata" || rel == "internal/repodocs") {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if d.Type()&fs.ModeSymlink != 0 || !sourceExts[filepath.Ext(d.Name())] && d.Name() != "Taskfile.yml" {
+			return nil
+		}
+		data, err := os.ReadFile(p)
+		if err != nil {
+			return err
+		}
+		for n, line := range strings.Split(string(data), "\n") {
+			if historyMarker.MatchString(line) {
+				problems = append(problems, Problem{rel, n + 1, "упоминание прежней версии: история — только в разделе «История» README"})
+			}
+		}
+		return nil
+	})
+	return problems, err
 }

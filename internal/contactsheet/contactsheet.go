@@ -1,5 +1,5 @@
-// Package contactsheet — перенос tools/contact_sheet/contact_sheet.py замороженного оригинала
-// (634fd94): техническая сводка полученного видео для быстрого просмотра.
+// Package contactsheet собирает техническую сводку полученного видео для быстрого просмотра
+// (инструмент contact_sheet).
 //
 // Инструмент берёт видео попытки пакета shot_workflow (--package), папки попытки media_request
 // (--work-dir) или произвольный файл (--video), читает параметры потока ffprobe, одним проходом
@@ -8,15 +8,15 @@
 // first/last и превью на скорости 2×. Отчёт печатается таблицей или JSON (--json). Ничего не
 // оценивает и не принимает, хеши не считает, assets и реестр не меняет.
 //
-// Сохраняется результат оригинала: аргументы и тексты argparse, тексты и коды отказов (ValueError
-// печатается, ошибки файлов, ключей и JSON скрываются общей фразой, прочие исключения — трассировка),
-// отчёт и таблица побайтно, состав и размеры файлов, пиксели кадров (их декодирует тот же FFmpeg) и
-// фона. Отличаются байты PNG (сжатие Go, а не zlib Pillow), сглаживание букв подписей (растеризатор
-// x/image без хинтинга FreeType, см. animaticcards) и байты превью H.264 (их пишет FFmpeg, как и в
-// оригинале, но x264 с автоматическим числом потоков недетерминирован между машинами).
+// Эталон testdata/golden/contact-sheet фиксирует аргументы и тексты argparse, тексты и коды отказов
+// (ValueError печатается, ошибки файлов, ключей и JSON скрываются общей фразой, прочие исключения —
+// трассировка), отчёт и таблицу побайтно, состав и размеры файлов, пиксели кадров (их декодирует
+// FFmpeg) и фона. Байты PNG, сглаживание букв подписей (растеризатор x/image без хинтинга FreeType,
+// см. animaticcards) и байты превью H.264 эталон не фиксирует: x264 с автоматическим числом потоков
+// недетерминирован между машинами.
 //
 // Внешние программы запускаются через mediacmd (пути менеджера компонентов, отмена задания);
-// рисование — примитивами animaticcards.Picture, перенесёнными с Pillow.
+// рисование — примитивами animaticcards.Picture с семантикой Pillow.
 package contactsheet
 
 import (
@@ -30,7 +30,7 @@ import (
 	"songframe-go/internal/pytool"
 )
 
-// Тексты оригинала: отказы, примечание отчёта и последняя строка таблицы.
+// Тексты отказов, примечание отчёта и последняя строка таблицы; зафиксированы эталоном.
 const (
 	textNoSource      = "Укажите пакет, папку попытки или файл видео."
 	textNotDownloaded = "Попытка ещё не скачана: сводка делается по полученному файлу."
@@ -47,7 +47,7 @@ const (
 // классов Pillow, поэтому ветка except OSError проверяет его отдельно.
 const unidentifiedImage = "PIL.UnidentifiedImageError"
 
-// parser — argparse оригинала. Группа источников в оригинале обязательная (required=True), а
+// parser — аргументы инструмента в стиле argparse. Группа источников обязательная (required=True), а
 // pycompat.ArgParser знает только необязательную группу: разница (скобки в usage и ошибка
 // «one of the arguments … is required») достраивается в parseArgs.
 var parser = pycompat.ArgParser{
@@ -68,13 +68,14 @@ var parser = pycompat.ArgParser{
 var sources = []string{"--package", "--work-dir", "--video"}
 
 // optionalGroup и requiredGroup — запись группы в usage: необязательная у pycompat, обязательная
-// (в круглых скобках) у оригинала. Длина одинакова, поэтому перенос строк usage не меняется.
+// (в круглых скобках) у этого инструмента. Длина одинакова, поэтому перенос строк usage не меняется.
 const (
 	optionalGroup = "[--package PACKAGE | --work-dir WORK_DIR | --video VIDEO]"
 	requiredGroup = "(--package PACKAGE | --work-dir WORK_DIR | --video VIDEO)"
 )
 
-// parseArgs — parse_args оригинала: результат либо готовое завершение (справка, код 2).
+// parseArgs — разбор аргументов как parse_args argparse: результат либо готовое завершение
+// (справка, код 2).
 func parseArgs(args []string) (pycompat.Args, *pytool.Output) {
 	parsed, exit := pytool.Args(parser, args)
 	required := func() *pytool.Output {
@@ -133,8 +134,8 @@ func namesSource(args []string) bool {
 	return false
 }
 
-// Run — main() инструмента на разрешённом корне проекта root. Контекст отменяет запущенные
-// FFmpeg/ffprobe (остановка задания). Результат — код, stdout и stderr процесса оригинала.
+// Run — инструмент contact_sheet на разрешённом корне проекта root. Контекст отменяет запущенные
+// FFmpeg/ffprobe (остановка задания). Результат — код, stdout и stderr процесса инструмента.
 func Run(ctx context.Context, root string, args []string) pytool.Output {
 	parsed, exit := parseArgs(args)
 	if exit != nil {
@@ -162,7 +163,8 @@ func value(parsed pycompat.Args, name string) *string {
 	return &values[len(values)-1]
 }
 
-// run — тело try оригинала: источник, папка сводки, сводка и печать отчёта.
+// run — работа инструмента под перехватом ожидаемых исключений: источник, папка сводки, сводка и
+// печать отчёта.
 func run(ctx context.Context, root string, parsed pycompat.Args, printer *pytool.Printer) error {
 	video, base, keyframes, err := resolve(root, value(parsed, "--package"), value(parsed, "--work-dir"), value(parsed, "--video"))
 	if err != nil {
@@ -193,7 +195,7 @@ type keyframe struct {
 	file   string
 }
 
-// resolve — resolve(package, work_dir, video, root): файл видео, папка по умолчанию для сводки
+// resolve — файл видео, папка по умолчанию для сводки
 // (пакет, папка попытки или папка видео) и принятые опоры с путём. Пакет и папка попытки
 // относительно корня проекта, --video — относительно текущей папки процесса, как Path.resolve().
 func resolve(root string, packageDir, workDir, video *string) (string, string, []keyframe, error) {

@@ -62,7 +62,7 @@ export function deliveryQuote(pkg: PackageView, overrides: Partial<ProductionQuo
   return { token: 'quote-demo-1', requestSha: pkg.request!.sha256!, verdict: 'ok', credits: 12, balance: 100, reasons: [], ...overrides };
 }
 
-/** Повторяет границу IPC Production.accept: неточные и пустые срезы не запускают задание.
+/** Повторяет проверку Go в Production.Accept: неточные и пустые срезы не запускают задание.
  * Реальную обработку медиа и полный контракт accept_shot по-прежнему проверяют тесты приложения. */
 export function assertDeliveryAcceptOptions(options: AcceptOptions): void {
   if (options.mode === 'full') return;

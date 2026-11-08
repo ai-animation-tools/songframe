@@ -9,7 +9,7 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-// lockFile — fcntl.flock(LOCK_EX): ждёт освобождения без срока, как оригинал в Linux.
+// lockFile — flock(LOCK_EX): ждёт освобождения без срока.
 func lockFile(file *os.File, _ time.Duration) error {
 	for {
 		err := unix.Flock(int(file.Fd()), unix.LOCK_EX)

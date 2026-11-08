@@ -1,10 +1,11 @@
-// Package shotstatus — перенос tools/shot_status/shot_status.py замороженного оригинала: статусы
-// планов по реестру сцен, выбранным комплектам assets, очереди plan/awaiting и рабочим попыткам
+// Package shotstatus считает статусы планов (инструмент shot_status) по реестру сцен,
+// выбранным комплектам assets, очереди plan/awaiting и рабочим попыткам
 // plan/batches; кандидат next, таблица для человека, JSON для приложения и проверка независимости
 // партии планов (--independent).
 //
-// Вывод совпадает с CLI оригинала на всех ветках: ожидаемые отказы (ValueError, OSError, KeyError)
-// — текст в stderr и код 1, прочие исключения — трассировка. Пакет только читает файлы проекта.
+// Вывод всех веток зафиксирован эталоном testdata/golden/shot-status: ожидаемые отказы
+// (ValueError, OSError, KeyError) — текст в stderr и код 1, прочие исключения — трассировка.
+// Пакет только читает файлы проекта.
 package shotstatus
 
 import (
@@ -17,7 +18,7 @@ import (
 	"songframe-go/internal/sceneregistry"
 )
 
-// Parser — argparse оригинала (описание — docstring модуля).
+// Parser — аргументы инструмента shot_status в стиле argparse.
 var Parser = pycompat.ArgParser{
 	Prog:        "shot_status.py",
 	Description: "Статусы планов по реестру, assets, очереди и рабочим попыткам; @link README.md",
@@ -29,7 +30,7 @@ var Parser = pycompat.ArgParser{
 	},
 }
 
-// statusOrder и statusLabels — STATUS_LABELS: порядок ключей задаёт порядок сводки таблицы.
+// statusOrder и statusLabels — подписи статусов плана: порядок ключей задаёт порядок сводки таблицы.
 var (
 	statusOrder  = []string{"planned", "progress", "completed", "stale", "unknown"}
 	statusLabels = map[string]string{
@@ -41,7 +42,7 @@ var (
 	}
 )
 
-// stageLabels — STAGE_LABELS: этапы workflow.json пакета.
+// stageLabels — подписи этапов workflow.json пакета.
 var stageLabels = map[string]string{
 	"description_review":   "описание на согласовании",
 	"image_request_choice": "запрос изображения на подтверждении",
@@ -59,7 +60,7 @@ var stageLabels = map[string]string{
 	"downloaded":           "результат получен, ожидает просмотра",
 }
 
-// attemptLabels — ATTEMPT_LABELS: состояния исполнения attempt.json.
+// attemptLabels — подписи состояний исполнения attempt.json.
 var attemptLabels = map[string]string{
 	"prepared":               "запрос на подтверждении",
 	"submitting":             "исход отправки неизвестен",
@@ -74,14 +75,14 @@ var attemptLabels = map[string]string{
 	"failed":                 "ошибка генерации, требует решения",
 }
 
-// waitLabels — WAIT_LABELS: причины отложенного пакета.
+// waitLabels — подписи причин отложенного пакета.
 var waitLabels = map[string]string{
 	"user_saved":              "отложено по решению пользователя",
 	"insufficient_balance":    "нехватка средств",
 	"cost_or_balance_unknown": "стоимость или баланс неизвестны",
 }
 
-// shotPrefix — SHOT_PREFIX: код плана в начале имени папки без учёта регистра.
+// shotPrefix — код плана в начале имени папки без учёта регистра.
 var shotPrefix = pyre.MustCompile(`^(m\d{2}(?:\.\d+)?)(?![\d.])`, pyre.IgnoreCase)
 
 // label — словарь_меток.get(key): только строковый ключ может совпасть со строковым ключом
@@ -98,14 +99,14 @@ func label(labels map[string]string, key any) (string, bool, error) {
 	return found, ok, nil
 }
 
-// document — результат read_json: значение, отсутствие файла (None) или повреждение (False;
-// документ `false` Python тоже не отличает от повреждённого).
+// document — результат readJSON: значение, отсутствие файла (None) или повреждение (False;
+// документ `false` тоже считается повреждённым, как `is False` Python).
 type document struct {
 	value   any
 	damaged bool
 }
 
-// readJSON — read_json(path) инструмента.
+// readJSON читает JSON-документ пакета: отсутствующий файл — None, нечитаемый или битый — False.
 func readJSON(path string) document {
 	value, damaged := pycompat.ReadJSON(path)
 	return document{value: value, damaged: damaged}
@@ -136,7 +137,7 @@ type pkg struct {
 	path    string
 }
 
-// shotOf — shot_of(directory, workflow, request): поле shot документов или код в имени папки.
+// shotOf — план пакета: поле shot документов или код в имени папки.
 func shotOf(directory string, documents ...*pycompat.Dict) any {
 	for _, document := range documents {
 		if document == nil {
@@ -162,7 +163,7 @@ func childPath(directory string, value any) (string, error) {
 	return pycompat.JoinPath(directory, text), nil
 }
 
-// packageState — package_state(directory): этап одного пакета очереди или попытки; nil — в папке
+// packageState — этап одного пакета очереди или попытки; nil — в папке
 // нет ни одного документа пакета.
 func packageState(directory string) (*pkg, error) {
 	workflow := readJSON(pycompat.JoinPath(directory, "workflow.json"))
@@ -242,7 +243,7 @@ func packageState(directory string) (*pkg, error) {
 	return result, nil
 }
 
-// packages — словарь packages оригинала: пакеты по ключу плана в порядке первого появления.
+// packages — пакеты по ключу плана в порядке первого появления.
 type packages struct {
 	order []string
 	items map[string][]*pkg
@@ -264,7 +265,7 @@ func packageKey(state *pkg, folder string) string {
 	return pycompat.PathName(folder)
 }
 
-// workPackages — work_packages(root): пакеты очереди и рабочих папок по планам и пробы
+// workPackages — пакеты очереди и рабочих папок по планам и пробы
 // review_pending (ключ — HashKey кода плана из рецепта).
 func workPackages(root string) (*packages, map[string][]string, error) {
 	result := &packages{items: map[string][]*pkg{}}
@@ -303,7 +304,7 @@ func workPackages(root string) (*packages, map[string][]string, error) {
 			state.kind, state.path = "batch", relative(folder)
 			result.add(packageKey(state, folder), state)
 		}
-		// folder.glob("*.json") без сортировки: порядок каталога, как у оригинала.
+		// folder.glob("*.json") без сортировки: рецепты проб обходятся в порядке каталога.
 		for _, review := range pycompat.Glob(folder, "*.json") {
 			recipe := readJSON(review).dict()
 			if recipe == nil || !pycompat.Equal(recipe.Value("status"), "review_pending") {
@@ -341,7 +342,7 @@ type row struct {
 	notes                  []string
 }
 
-// result — collect(root): строки планов, очередь, кандидат next и пакеты вне реестра.
+// result — итог collect: строки планов, очередь, кандидат next и пакеты вне реестра.
 type result struct {
 	rows       []row
 	queue      []string
@@ -373,7 +374,7 @@ func get(value any, key string) (any, error) {
 	return document.Value(key), nil
 }
 
-// collect — collect(root) оригинала.
+// collect собирает статусы всех планов реестра проекта root: комплекты, очередь и рабочие пакеты.
 func collect(root string) (*result, error) {
 	root = pycompat.ResolvePath(root)
 	data, err := sceneregistry.Load(root)
@@ -484,7 +485,7 @@ func anyUnknown(own []*pkg) bool {
 	return false
 }
 
-// document — JSON результата collect, как dict оригинала.
+// document — JSON результата collect для --json; порядок полей зафиксирован эталоном.
 func (r *result) document() *pycompat.Dict {
 	shots := make([]any, len(r.rows))
 	for index, line := range r.rows {
@@ -496,7 +497,7 @@ func (r *result) document() *pycompat.Dict {
 	return pytool.Record("shots", shots, "queue", pytool.Strings(r.queue), "next", r.next, "unassigned_packages", r.unassigned)
 }
 
-// table — table(result, status_filter): таблица Markdown, сводка, очередь и кандидат next.
+// table — таблица Markdown с фильтром статуса, сводка, очередь и кандидат next.
 func (r *result) table(filter string) string {
 	lines := []string{"| План | Окно | Статус | Этап | Примечания |", "| --- | --- | --- | --- | --- |"}
 	for _, line := range r.rows {
@@ -589,7 +590,7 @@ func (s *sceneIndex) position(sid any) (int, error) {
 	return 0, pycompat.New(pycompat.ValueError, pycompat.Repr(sid)+" is not in list")
 }
 
-// ancestors — ancestors(data, sid): все планы, от которых наследуется состояние sid, включая
+// ancestors — все планы, от которых наследуется состояние sid, включая
 // повтор same.
 func (s *sceneIndex) ancestors(sid any) ([]any, error) {
 	result := []any{}
@@ -621,7 +622,7 @@ func (s *sceneIndex) ancestors(sid any) ([]any, error) {
 	}
 }
 
-// hasChanges — has_changes(scene): изменения состояния до или после плана.
+// hasChanges — есть ли у плана изменения состояния до или после него.
 func hasChanges(scene *pycompat.Dict) (bool, error) {
 	changes, err := pycompat.DictGet(scene, "state_changes", pycompat.NewDict())
 	if err != nil {
@@ -639,7 +640,7 @@ func hasChanges(scene *pycompat.Dict) (bool, error) {
 	return false, nil
 }
 
-// independence — independence(data, ids): более поздний план партии наследует изменения более
+// independence проверяет партию ids: более поздний план партии наследует изменения более
 // раннего из той же партии.
 func (s *sceneIndex) independence(ids []string) ([]any, error) {
 	missing := []string{}
@@ -684,7 +685,7 @@ func (s *sceneIndex) independence(ids []string) ([]any, error) {
 	return conflicts, nil
 }
 
-// adjacentPairs — adjacent_pairs(data, ids): соседи по шкале, стык которых сверяется только после
+// adjacentPairs — соседи по шкале, стык которых сверяется только после
 // получения обоих.
 func (s *sceneIndex) adjacentPairs(ids []string) ([]any, error) {
 	type position struct {
@@ -716,12 +717,12 @@ func (s *sceneIndex) adjacentPairs(ids []string) ([]any, error) {
 	return pairs, nil
 }
 
-// expected — ожидаемый отказ main: ValueError, OSError, KeyError.
+// expected — ожидаемый отказ Run: ValueError, OSError, KeyError.
 func expected(err error) bool {
 	return pycompat.IsAny(err, pycompat.ValueError, pycompat.OSError, pycompat.KeyError)
 }
 
-// failure — завершение main по исключению: parser.exit(1, …) или трассировка.
+// failure — завершение Run по исключению: parser.exit(1, …) или трассировка.
 func failure(printer *pytool.Printer, err error) pytool.Output {
 	if expected(err) {
 		return printer.Fail(err.Error())
@@ -780,7 +781,7 @@ func runIndependent(root string, ids []string, asJSON bool, printer *pytool.Prin
 	return printer.Exit(0)
 }
 
-// Run — main() инструмента на разрешённом корне проекта.
+// Run — инструмент shot_status на разрешённом корне проекта.
 func Run(root string, args []string) pytool.Output {
 	parsed, exit := pytool.Args(Parser, args)
 	if exit != nil {
@@ -817,7 +818,7 @@ func Run(root string, args []string) pytool.Output {
 		err = printer.Print(output.table(filter))
 	}
 	if err != nil {
-		// UnicodeEncodeError — подкласс ValueError: print внутри try оригинала.
+		// UnicodeEncodeError — подкласс ValueError: сбой печати — ожидаемый отказ с кодом 1.
 		return failure(printer, err)
 	}
 	return printer.Exit(0)

@@ -1,4 +1,4 @@
-/** Реальный MP3 и hook проверяют загрузку волны, ограниченное прослушивание и остановку без Electron. */
+/** Реальный MP3 и hook проверяют загрузку волны, ограниченное прослушивание и остановку без Wails. */
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { timingTexts } from '@shared/texts/timing';
 import { timingSelectionTexts as selectionTexts } from '@shared/texts/timing-selection';

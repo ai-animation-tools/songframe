@@ -16,7 +16,7 @@ import (
 )
 
 // DefaultStepTimeout — лимит шага по умолчанию: ожидание провайдера генерации допускает
-// до двух часов, как в оригинале.
+// до двух часов.
 const DefaultStepTimeout = 2 * time.Hour
 
 // logEventInterval прореживает события «изменился журнал»: поток вывода ffmpeg/Python
@@ -25,7 +25,7 @@ const logEventInterval = 250 * time.Millisecond
 
 // Step — один шаг задания.
 //
-// Required/stop оригинала выражены нулевыми значениями по умолчанию: шаг обязателен,
+// Нулевые значения флагов означают поведение по умолчанию: шаг обязателен,
 // а его сбой останавливает задание. Optional — сбой не делает задание неудачным (сопутствующий
 // шаг); Continue — сбой обязательного шага делает задание неудачным, но следующие шаги идут.
 type Step struct {
@@ -41,7 +41,7 @@ type Step struct {
 	// Timeout — лимит шага; 0 — DefaultStepTimeout. Истечение отменяет context шага.
 	Timeout time.Duration
 	// Before — проверка локального результата перед Run; ошибка — сбой шага
-	// с записью «Ошибка запуска: …» в журнал, как у before оригинала.
+	// с записью «Ошибка запуска: …» в журнал.
 	Before func(ctx context.Context) error
 	// Run выполняет шаг. nil — успех (код 0). Ошибка с методом ExitCode() даёт код шага,
 	// иначе код -1; текст причины — StepError.Message или текст ошибки.
@@ -195,8 +195,8 @@ func (m *Manager) Start(spec Spec) (Info, error) {
 	return snapshot, nil
 }
 
-// run выполняет шаги и завершает задание. Логика статусов повторяет оригинал:
-// код первого сбоя обязательного шага становится кодом задания, его причина — error.
+// run выполняет шаги и завершает задание. Код первого сбоя обязательного шага становится
+// кодом задания, его причина — error.
 func (m *Manager) run(ctx context.Context, j *job, steps []Step) {
 	defer j.cancel(nil)
 	var failed *int
@@ -258,7 +258,7 @@ func (m *Manager) run(ctx context.Context, j *job, steps []Step) {
 
 // runStep выполняет один шаг и возвращает его код и причину сбоя (для кода 0 — пусто).
 // Отменённое задание: шаг не запускается, если отмена пришла раньше, а причиной любого
-// сбоя становится текст отмены — как String(signal.reason) оригинала.
+// сбоя становится текст отмены.
 func (m *Manager) runStep(ctx context.Context, j *job, step Step) (int, string) {
 	m.write(j, "\n$ "+step.label()+" "+strings.Join(step.Args, " ")+"\n")
 	if ctx.Err() != nil {
@@ -424,8 +424,8 @@ func (m *Manager) LogPath(id string) string {
 }
 
 // Cancel отменяет выполняющееся задание: context шагов отменяется с причиной reason
-// (пусто — StoppedMessage), внешние программы завершаются вместе с потомками. Итог как
-// в оригинале: прерванный шаг и оставшиеся шаги до первого останавливающего получают
+// (пусто — StoppedMessage), внешние программы завершаются вместе с потомками. Итог:
+// прерванный шаг и оставшиеся шаги до первого останавливающего получают
 // failed с кодом -1, задание — failed с error = reason. Завершённое задание не меняется.
 // Возвращает текущий снимок (ещё running: итог приходит событием и onFinished); false — нет задания.
 func (m *Manager) Cancel(id, reason string) (Info, bool) {
@@ -565,7 +565,7 @@ func cancelText(ctx context.Context) string {
 	return StoppedMessage
 }
 
-// lastRunes оставляет последние limit символов (slice(-limit) оригинала по кодовым точкам).
+// lastRunes оставляет последние limit символов, считая кодовые точки Unicode.
 func lastRunes(text string, limit int) string {
 	if len(text) <= limit {
 		return text

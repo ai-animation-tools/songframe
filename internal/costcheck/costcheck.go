@@ -1,15 +1,13 @@
-// Package costcheck — перенос tools/cost_check/cost_check.py замороженного оригинала: оценка
-// стоимости запроса генерации и сверка с остатком кредитов до таблицы согласования (check), а
-// после отправки — запись фактического расхода наблюдением (learn).
+// Package costcheck оценивает стоимость запроса генерации и сверяет её с остатком кредитов до
+// таблицы согласования (check), а после отправки записывает фактический расход наблюдением
+// (learn); это инструмент cost_check.
 //
 // Генерацию пакет не отправляет; единственное обращение к сервису — информационный остаток через
 // Account адаптера провайдера запроса. Базовая таблица цен — PricingFile адаптера (в поставке,
 // только читается), наблюдения — <каталог состояния>/providers/<id>/pricing-observations.json.
 // Вердикты (ok, insufficient_balance, cost_or_balance_unknown), тексты, коды выхода и записанный
-// файл наблюдений совпадают с оригиналом (эталоны testdata/golden/cost-check).
-//
-// Отличие от оригинала: каталог состояния передаётся параметром (у Go-версии свой профиль,
-// SONGFRAME_LOCAL_DIR Electron не читается), а не вычисляется при импорте.
+// файл наблюдений зафиксированы эталонами testdata/golden/cost-check. Каталог состояния
+// передаётся параметром.
 package costcheck
 
 import (
@@ -33,7 +31,7 @@ import (
 // ObservationsFile — файл наблюдений расхода в папке провайдера каталога состояния.
 const ObservationsFile = "pricing-observations.json"
 
-// verdictLabels — VERDICTS оригинала.
+// verdictLabels — подписи вердиктов оценки.
 var verdictLabels = map[string]string{
 	"ok":                      "средств достаточно",
 	"insufficient_balance":    "средств не хватает",
@@ -42,7 +40,7 @@ var verdictLabels = map[string]string{
 
 func valueError(message string) error { return pycompat.New(pycompat.ValueError, message) }
 
-// PricingPath — pricing_path(request, path): явный файл тарифов (прогоны без расхода) либо
+// PricingPath — явный файл тарифов (прогоны без расхода) либо
 // базовая таблица адаптера провайдера запроса.
 func PricingPath(request *pycompat.Dict, path string) (string, error) {
 	if path != "" {
@@ -67,7 +65,7 @@ func PricingPath(request *pycompat.Dict, path string) (string, error) {
 	return file, nil
 }
 
-// ObservationsPath — observations_path(provider): файл наблюдений провайдера в каталоге
+// ObservationsPath — файл наблюдений провайдера в каталоге
 // состояния localDir. Id провайдера — одно имя папки.
 func ObservationsPath(localDir string, provider any) (string, error) {
 	text, ok := provider.(string)
@@ -77,7 +75,7 @@ func ObservationsPath(localDir string, provider any) (string, error) {
 	return filepath.Join(pycompat.ResolvePath(localDir), "providers", text, ObservationsFile), nil
 }
 
-// LoadObservations — load_observations: отсутствующий файл — пустой список, повреждённый —
+// LoadObservations — отсутствующий файл — пустой список, повреждённый —
 // ValueError (файл не перезаписывается).
 func LoadObservations(localDir string, provider any) ([]any, error) {
 	path, err := ObservationsPath(localDir, provider)
@@ -96,7 +94,7 @@ func LoadObservations(localDir string, provider any) ([]any, error) {
 	return observed, nil
 }
 
-// LoadPricing — load_pricing(path, provider): базовая таблица; с провайдером к её наблюдениям
+// LoadPricing — базовая таблица; с провайдером к её наблюдениям
 // добавляются наблюдения каталога состояния. Они идут после базовых, а оценка берёт последнее
 // подходящее, поэтому наблюдения состояния в приоритете.
 func LoadPricing(path, localDir string, provider any) (*pycompat.Dict, error) {
@@ -134,7 +132,7 @@ func pricingTable(value any, localDir string, provider any) (*pycompat.Dict, err
 	return data, nil
 }
 
-// PricingFor — pricing_for(request, path): таблица цен запроса вместе с наблюдениями.
+// PricingFor — таблица цен запроса вместе с наблюдениями.
 func PricingFor(request *pycompat.Dict, path, localDir string) (*pycompat.Dict, error) {
 	if path == "" {
 		// Таблица, встроенная в адаптер (Go-поставка без файлов tools), читается из памяти.
@@ -155,7 +153,7 @@ func PricingFor(request *pycompat.Dict, path, localDir string) (*pycompat.Dict, 
 	return LoadPricing(file, localDir, request.Value("provider"))
 }
 
-// LoadRequest — load_request(work_dir, request): замороженный request.json попытки либо
+// LoadRequest — зафиксированный request.json попытки либо
 // спецификация до подготовки (её проверяют общая форма и адаптер провайдера).
 func LoadRequest(root, workDir, request string) (*pycompat.Dict, error) {
 	if workDir != "" {
@@ -185,8 +183,8 @@ func LoadRequest(root, workDir, request string) (*pycompat.Dict, error) {
 	return spec, nil
 }
 
-// loadDict — json.loads(path.read_text()) для документа-объекта; иное — AttributeError первого
-// обращения .get, как у оригинала.
+// loadDict — JSON-документ файла как объект; иное значение — AttributeError первого обращения
+// .get (модель Python, от неё зависит текст ошибки).
 func loadDict(path string) (*pycompat.Dict, error) {
 	value, err := pycompat.LoadJSONFile(path)
 	if err != nil {
@@ -271,7 +269,7 @@ func parametersOnly(value any) any {
 	return value
 }
 
-// ImageSignature — image_signature(request): тариф изображения связан со всей конфигурацией
+// ImageSignature — тариф изображения связан со всей конфигурацией
 // запроса (команда, параметры без промпта и секретов, число результатов, flag/slot входов) в
 // canonical JSON; содержимое и подпись role входов тариф не задают.
 func ImageSignature(request *pycompat.Dict) (string, error) {
@@ -345,7 +343,7 @@ func modelEntry(pricing *pycompat.Dict, model any) (any, error) {
 	return pycompat.DictGet(models, text, nil)
 }
 
-// estimateImage — estimate_image: наблюдение не переносится на другую команду, разрешение,
+// estimateImage — наблюдение не переносится на другую команду, разрешение,
 // quality, число результатов или референсов; ручной per_image — явное решение владельца таблицы.
 func estimateImage(pricing, request *pycompat.Dict) (Estimate, error) {
 	model := request.Value("model")
@@ -396,7 +394,7 @@ func estimateImage(pricing, request *pycompat.Dict) (Estimate, error) {
 	return Estimate{Missing: []string{"цена изображения " + pycompat.Str(model) + " не задана и точная конфигурация запроса не наблюдалась"}}, nil
 }
 
-// EstimateCost — estimate(pricing, request): оценка в кредитах по таблице цен, при пробеле — по
+// EstimateCost — оценка в кредитах по таблице цен, при пробеле — по
 // наблюдениям того же тарифа (точная по длительности либо пересчёт по секундам).
 func EstimateCost(pricing, request *pycompat.Dict) (Estimate, error) {
 	model, kind := request.Value("model"), request.Value("kind")
@@ -524,7 +522,7 @@ func EstimateCost(pricing, request *pycompat.Dict) (Estimate, error) {
 	return Estimate{Missing: []string{"цена " + pycompat.Str(model) + " при " + *resolution + " не задана и не наблюдалась"}}, nil
 }
 
-// Check — check(request, pricing, balance, balance_source, use_account, timeout): отчёт с
+// Check — отчёт с
 // вердиктом. balance — остаток вручную (nil — спросить адаптер, если useAccount).
 func Check(ctx context.Context, request, pricing *pycompat.Dict, balance *float64, useAccount bool, timeout float64) (*pycompat.Dict, error) {
 	estimated, err := EstimateCost(pricing, request)
@@ -594,7 +592,7 @@ func floatOrNone(value *float64) any {
 	return *value
 }
 
-// Learn — learn(work_dir, pricing): фактический credits_consumed отправленной попытки
+// Learn — фактический credits_consumed отправленной попытки
 // наблюдением в каталоге состояния. Таблица поставки не меняется; совпадающее с таблицей или
 // состоянием наблюдение повторно не добавляется.
 func Learn(root, workDir, pricing, localDir string) (*pycompat.Dict, error) {
@@ -684,7 +682,7 @@ func Learn(root, workDir, pricing, localDir string) (*pycompat.Dict, error) {
 	return observation, nil
 }
 
-// formatCredits — format_credits: f"{value:g} кредитов" либо «неизвестно».
+// formatCredits — «<value:g> кредитов» либо «неизвестно».
 func formatCredits(value any) string {
 	number, ok := value.(float64)
 	if !ok {
@@ -706,7 +704,7 @@ func formatCredits(value any) string {
 	return text + " кредитов"
 }
 
-// Table — table(report): таблица Markdown для человека.
+// Table — таблица Markdown для человека.
 func Table(report *pycompat.Dict) (string, error) {
 	parameters := report.Value("parameters")
 	parameter := func(key string) (string, error) {
@@ -751,7 +749,7 @@ func Table(report *pycompat.Dict) (string, error) {
 	return strings.Join(lines, "\n"), nil
 }
 
-// Parser — argparse cost_check.py оригинала.
+// Parser — аргументы инструмента cost_check в модели argparse.
 var Parser = pyargparse.Parser{
 	Prog:        "cost_check.py",
 	Description: "Оценка стоимости запроса и остатка кредитов перед таблицей; @link README.md",
@@ -776,7 +774,7 @@ var Parser = pyargparse.Parser{
 // textHidden — общий отказ без сырого вывода.
 const textHidden = "Ошибка локальных данных; сырой вывод скрыт."
 
-// Run — main() cost_check.py на проекте root с каталогом состояния localDir. Код 2 — любой
+// Run выполняет cost_check на проекте root с каталогом состояния localDir. Код 2 — любой
 // вердикт кроме ok (вызывающий код не может пропустить проверку молча), 1 — ошибка: текст
 // ValueError (кроме ошибки разбора JSON) либо общий текст для OSError/KeyError/TypeError.
 func Run(ctx context.Context, root string, args []string, localDir string) pytool.Output {
@@ -857,5 +855,5 @@ func run(ctx context.Context, root string, args pyargparse.Result, localDir stri
 	return printer.Exit(0), nil
 }
 
-// VerdictLabel — VERDICTS[verdict] оригинала: подпись вердикта оценки.
+// VerdictLabel — подпись вердикта оценки.
 func VerdictLabel(verdict string) string { return verdictLabels[verdict] }

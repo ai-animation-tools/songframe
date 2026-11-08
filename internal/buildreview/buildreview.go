@@ -1,5 +1,5 @@
-// Package buildreview — перенос tools/build_review/build_review.py: временная видеопроба стыков
-// из соседних сцен. Prepare проверяет спецификацию (участки, скорость, удержания, переходы, звук)
+// Package buildreview собирает временную видеопробу стыков из соседних сцен (инструмент
+// build_review). Prepare проверяет спецификацию (участки, скорость, удержания, переходы, звук)
 // и медиа и возвращает рецепт с фильтрами FFmpeg по кадрам сетки 30 к/с; Build по рецепту
 // кодирует MP4 с непрерывным участком песни и публикует его рядом с одноимённым JSON рецепта.
 //
@@ -8,7 +8,8 @@
 // ссылками. Проба не меняет assets, исходники и аниматик. Prepare зовёт и приёмка участка
 // accept_shot (internal/acceptshot): рецепт одного плана даёт ей фильтр рендера.
 //
-// Ошибки — исключения pycompat с текстами оригинала: Run печатает текст ValueError, остальные
+// Ошибки — исключения pycompat, тексты зафиксированы эталоном build-review: Run печатает текст
+// ValueError, остальные
 // ожидаемые ошибки (KeyError, TypeError, OSError, InvalidOperation…) — общим текстом без сырого
 // вывода, прочее — трассировкой. FFmpeg и ffprobe запускаются через internal/mediacmd.
 package buildreview
@@ -32,10 +33,10 @@ import (
 // FPS — монтажная сетка пробы.
 const FPS = 30
 
-// transitions — TRANSITIONS оригинала: допустимые типы xfade.
+// transitions — допустимые типы перехода xfade.
 var transitions = map[string]bool{"fade": true, "fadeblack": true, "fadewhite": true, "dissolve": true, "wipeleft": true, "wiperight": true}
 
-// Тексты оригинала.
+// Тексты ошибок пробы; зафиксированы эталоном build-review.
 const (
 	textHidden       = "Ошибка параметров или медиа пробы; сырой вывод скрыт."
 	textMedia        = "Ошибка обработки медиа; исходники не изменены, сырой вывод скрыт."
@@ -190,8 +191,8 @@ func firstStream(items []any, kind string) (any, error) {
 	return nil, pycompat.New("StopIteration", "")
 }
 
-// decodedAudioDuration — decoded_audio_duration tools/common.py: длительность декодированного
-// звука (моно 16 кГц s16le) в секундах Decimal; начальная метка MP3 не вычитается. Ошибка
+// decodedAudioDuration — длительность декодированного звука (моно 16 кГц s16le) в секундах
+// Decimal; начальная метка MP3 не вычитается. Ошибка
 // декодирования — ValueError с хвостом stderr (его Run печатает как текст ошибки).
 func decodedAudioDuration(ctx context.Context, path string) (pycompat.Decimal, error) {
 	result, err := mediacmd.Run(ctx, mediacmd.FFmpeg(), "-v", "error", "-i", path, "-map", "0:a:0", "-ac", "1", "-ar", "16000", "-f", "s16le", "-")
@@ -204,7 +205,7 @@ func decodedAudioDuration(ctx context.Context, path string) (pycompat.Decimal, e
 	return pycompat.DecimalInt(int64(len(result.Stdout))).Div(pycompat.DecimalInt(32000))
 }
 
-// integer — integer(value, name, minimum): точный int Python (не bool и не float) не меньше
+// integer — точное целое JSON (не bool и не float) не меньше
 // minimum, иначе ValueError «Неверное целое поле …».
 func integer(value any, name string, minimum int64) (*big.Int, error) {
 	number, ok := value.(pycompat.Int)
@@ -245,7 +246,7 @@ func get(container any, key string, fallback any) (any, error) {
 	return pycompat.DictGet(container, key, fallback)
 }
 
-// sha — sha(path) tools/common.py.
+// sha — SHA-256 файла.
 func sha(path string) (string, error) { return assetpackage.FileSHA256(path) }
 
 // registryShot — план реестра с его позицией для проверки последовательности.
@@ -254,10 +255,10 @@ type registryShot struct {
 	position int
 }
 
-// Prepare — prepare(spec, root): проверенный рецепт пробы без кодирования и записи. spec —
-// разобранный JSON спецификации (формат tools/build_review/spec-format.md), root — корень
-// проекта. Рецепт — упорядоченный словарь ровно с полями оригинала (порядок важен для байтов
-// JSON), пути входов — абсолютные. ffprobe читает видео и песню, FFmpeg декодирует песню для
+// Prepare возвращает проверенный рецепт пробы без кодирования и записи. spec — разобранный JSON
+// спецификации, root — корень проекта. Рецепт — упорядоченный словарь с полями, зафиксированными
+// эталоном (порядок важен для байтов JSON), пути входов — абсолютные. ffprobe читает видео и
+// песню, FFmpeg декодирует песню для
 // проверки длины; ctx прерывает их.
 func Prepare(ctx context.Context, spec any, root string) (*pycompat.Dict, error) {
 	root = pycompat.ResolvePath(root)
@@ -1124,8 +1125,9 @@ func checkResult(ctx context.Context, target string, total *big.Int) error {
 	return nil
 }
 
-// Parser — argparse build_review.py. Обязательные --output и группа --shots/--spec проверяются в
-// Run (у общего ArgParser нет обязательных опций), usage и справка — как у оригинала.
+// Parser — разбор аргументов build_review. Обязательные --output и группа --shots/--spec
+// проверяются в Run (у общего ArgParser нет обязательных опций); usage и справка зафиксированы
+// эталоном.
 var Parser = pycompat.ArgParser{
 	Prog:        "build_review.py",
 	Description: "Сборка временной пробы по параметрам; @link README.md",
@@ -1138,21 +1140,21 @@ var Parser = pycompat.ArgParser{
 	Exclusive: []string{"--shots", "--spec"},
 }
 
-// usage — format_usage оригинала: обязательная группа в круглых скобках, --output без скобок.
+// usage — строка использования: обязательная группа в круглых скобках, --output без скобок.
 const usage = "usage: build_review.py [-h] (--shots SHOTS [SHOTS ...] | --spec SPEC) --output\n" +
 	"                       OUTPUT [--plan-only]\n"
 
-// fixUsage — usage общего парсера заменяется usage оригинала в справке и ошибках argparse.
+// fixUsage заменяет usage общего парсера на usage в справке и ошибках разбора.
 func fixUsage(text string) string {
 	return pycompat.TextMode(strings.Replace(text, Parser.Usage(), usage, 1))
 }
 
-// argError — parser.error(message) с usage оригинала.
+// argError — ошибка разбора аргументов (код 2) с usage.
 func argError(message string) pytool.Output {
 	return pytool.Output{Code: 2, Stderr: pycompat.TextMode(usage + "build_review.py: error: " + message + "\n")}
 }
 
-// Run — main() build_review.py на разрешённом корне проекта: спецификация из --spec или
+// Run — инструмент build_review на разрешённом корне проекта: спецификация из --spec или
 // --shots, сборка или --plan-only и печать рецепта JSON.
 func Run(ctx context.Context, root string, args []string) pytool.Output {
 	parsed, exit := Parser.ParseArgs(args)

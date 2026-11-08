@@ -1,7 +1,6 @@
-// Package agentexec — контракт исполнителя опор провайдера-агента (AgentImageExecutor и
-// KeyframeImages из src/main/providers/types.ts оригинала): провайдер, генерацию которого
-// исполняет программа-агент из реестра (MediaProviderInfo.executor). Пакет-лист: его реализуют
-// адаптеры (internal/providers/codex), используют слой провайдеров (internal/providers) и
+// Package agentexec задаёт контракт исполнителя опор провайдера-агента: провайдер, генерацию
+// которого исполняет программа-агент из реестра (MediaProviderInfo.executor). Пакет-лист: его
+// реализуют адаптеры (internal/providers/codex), используют слой провайдеров (internal/providers) и
 // производство, которое владеет регистрацией кандидатов (Images).
 package agentexec
 
@@ -12,7 +11,7 @@ import (
 	"songframe-go/internal/mediaapi"
 )
 
-// ImagesRequest — KeyframeImagesRequest оригинала: согласованный запуск опор — провайдер, SHA
+// ImagesRequest — согласованный запуск опор — провайдер, SHA
 // запроса и программа-агент с моделью.
 type ImagesRequest struct {
 	Provider   string
@@ -20,7 +19,7 @@ type ImagesRequest struct {
 	Agent      agents.Settings
 }
 
-// Images — KeyframeImages оригинала (владелец — производство): запуск задания опор менеджером
+// Images — интерфейс производства (его владелец): запуск задания опор менеджером
 // агентов (StartImages в рабочей папке кандидатов), проверка записи задания (RequestSha — SHA
 // согласованного запроса из job.json) и сбор кандидатов завершённого задания.
 type Images interface {
@@ -29,7 +28,7 @@ type Images interface {
 	RequestSha(job agents.Job) (string, error)
 }
 
-// Prepared — подготовленный запрос опор: SHA согласуется до отправки. Data — замороженный запрос
+// Prepared — подготовленный запрос опор: SHA согласуется до отправки. Data — зафиксированный запрос
 // адаптера; отправка принимает именно этот объект, повторная отправка того же объекта запрещена.
 type Prepared struct {
 	Provider   string
@@ -58,7 +57,7 @@ type Executor interface {
 	CollectJob(job agents.Job) ([]mediaapi.Artifact, error)
 }
 
-// Deps — общие зависимости исполнителя опор (AgentImageDeps оригинала).
+// Deps — общие зависимости исполнителя опор.
 type Deps struct {
 	// Images — запуск и сбор заданий опор (производство).
 	Images Images
@@ -70,7 +69,7 @@ type Deps struct {
 // требований к квадратной обложке.
 const PurposeReference = "reference"
 
-// CoverInput — CoverCandidateInput оригинала (владелец — генерация обложек и референсов).
+// CoverInput — вход исполнителя обложки (владелец — генерация обложек и референсов).
 type CoverInput struct {
 	// WorkDir — папка попытки <каталог>/image-jobs/<попытка>; временный проект агента — на два
 	// уровня выше, его история и настройки остаются рядом с кандидатом.
@@ -84,7 +83,7 @@ type CoverInput struct {
 	References []mediaapi.ReferenceImage
 }
 
-// CoverRunner — CoverCandidateRunner оригинала: исполнитель обложки и референса проекта.
+// CoverRunner — исполнитель обложки и референса проекта.
 type CoverRunner interface {
 	// Run создаёт одно изображение и возвращает путь результата относительно WorkDir. Отмена ctx
 	// останавливает генерацию.

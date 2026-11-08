@@ -1,6 +1,5 @@
 // Package desktop открывает файлы и папки системными средствами и читает небольшие тексты,
-// выбранные пользователем. Поведение повторяет оригинал (src/main/desktop.ts и shell:readText):
-// в Linux папка показывается через org.freedesktop.FileManager1.ShowFolders, иначе xdg-open
+// выбранные пользователем. В Linux папка показывается через org.freedesktop.FileManager1.ShowFolders, иначе xdg-open
 // с проверкой кода выхода; ошибки объясняют, что не удалось открыть.
 package desktop
 
@@ -19,7 +18,7 @@ import (
 	"songframe-go/internal/process"
 )
 
-// TextLimit — предел readText оригинала: текст песни или идея, а не произвольный документ.
+// TextLimit — предел ReadText: текст песни или идея, а не произвольный документ.
 const TextLimit = 2 * 1024 * 1024
 
 // Runner запускает системную команду без shell и возвращает понятную ошибку.
@@ -84,7 +83,7 @@ func (d Desktop) open(path string, directory bool) error {
 	return d.Open(path)
 }
 
-// ReadText читает небольшой UTF-8 файл для подстановки в форму, как shell:readText оригинала.
+// ReadText читает небольшой UTF-8 файл для подстановки в форму (shell.readText).
 func ReadText(path string) (string, error) {
 	info, err := os.Stat(path)
 	if err != nil {

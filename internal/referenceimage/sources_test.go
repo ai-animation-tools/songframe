@@ -139,7 +139,7 @@ func assertCase(t *testing.T, item golden.Case) {
 	golden.AssertValue(t, mustJSON(t, tree.Dirs), dirs(source), "")
 }
 
-// TestSaveSourcesGolden — saveSourcesWithCastImages на эталонах оригинала обоих доменов: без
+// TestSaveSourcesGolden — SaveSources на эталонах обоих доменов: без
 // кастинга (sources-save) и с ним (sources-save-cast: новые виды, отказы, откат).
 func TestSaveSourcesGolden(t *testing.T) {
 	for _, item := range golden.Load(t, "sources-save-cast") {

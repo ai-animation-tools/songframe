@@ -1,4 +1,4 @@
-/** Независимые ожидания охраняют целые фразы, пустые JSX-значения и согласования после переноса текстов. */
+/** Независимые ожидания охраняют целые фразы, пустые JSX-значения и согласования при правке словаря. */
 import { createElement, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';

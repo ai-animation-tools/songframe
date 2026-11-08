@@ -10,9 +10,9 @@ import (
 	"songframe-go/resources"
 )
 
-// promptContract — инструкция и JSON-контракт задания агента производства после текста скилла
-// (production-workflow.ts оригинала дословно). Владелец промпта — этот проход; текст входит в SHA
-// задания агента.
+// promptContract — инструкция и JSON-контракт задания агента производства после текста скилла.
+// Владелец промпта — этот проход; текст входит в SHA задания агента и зафиксирован эталоном
+// testdata/golden/production-workflow.
 const promptContract = "" +
 	"Форма: description={\"schemaVersion\":1,\"stage\":\"description\",\"description\":\"текст\",\"requestSeconds\":целое,\"keyframes\":[{\"id\":\"K01\",\"role\":\"first\",\"timeSeconds\":0,\"prompt\":\"полный промпт изображения\",\"referencePaths\":[\"source/...\"]},...,{\"id\":\"KNN\",\"role\":\"last\",\"timeSeconds\":requestSeconds,\"prompt\":\"...\",\"referencePaths\":[]}]}; " +
 	"prompt={\"schemaVersion\":1,\"stage\":\"prompt\",\"prompt\":\"полный видеопромпт\"}; request={\"schemaVersion\":1,\"stage\":\"request\",\"request\":{\"model\":\"точное имя из capabilities\",\"command\":\"точное имя команды из capabilities\",\"parameters\":{\"duration\":requestSeconds,...параметры capabilities},\"inputs\":[{\"flag\":\"input\",\"slot\":\"слот из capabilities\",\"path\":\"объявленный путь\",\"role\":\"назначение файла\"}],\"outputs\":1}}. " +
@@ -50,7 +50,7 @@ func agentPrompt(stage string, videoProvider, imageProvider any) string {
 		". Верни ровно один JSON без Markdown, записей файлов, shell и вызовов инструментов. " + promptContract
 }
 
-// readText — text() оригинала: содержимое файла или "" без файла; ошибка чтения возвращается.
+// readText — содержимое файла или "" без файла; ошибка чтения возвращается.
 func readText(path string) (string, error) {
 	if !jscompat.Exists(path) {
 		return "", nil
@@ -75,7 +75,7 @@ type contextInput struct {
 	note                any
 }
 
-// agentContext — JSON контекста задания (порядок ключей оригинала): план, кастинг, врезки,
+// agentContext — JSON контекста задания (порядок ключей зафиксирован эталоном): план, кастинг, врезки,
 // настройки, текущий пакет, допустимые пути, возможности моделей и замечание.
 func agentContext(c *Context, input contextInput) string {
 	value := jscompat.NewObject()

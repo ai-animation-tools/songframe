@@ -1,12 +1,11 @@
 // Package mediafile — проверки файлов медиа, общие для слоя провайдеров (оригиналы платного
 // провайдера, опоры провайдера-агента, референсы обложки) и производства:
 //
-//   - формат и размеры изображения по байтам, без перекодирования и переименования — перенос
-//     imageDimensions, imageExtensionMatches и isImageFile из src/main/keyframe-images.ts
-//     оригинала. Поддерживаются PNG, JPEG и WebP (VP8X, VP8, VP8L) с теми же заголовками и
-//     маркерами; повреждённый или иной файл даёт «не изображение», а не ошибку;
-//   - LocalFile — localFile из src/main/media-providers.ts: файл попытки или референс только
-//     как обычный файл внутри своей папки, без символических ссылок.
+//   - формат и размеры изображения по байтам, без перекодирования и переименования.
+//     Поддерживаются PNG, JPEG и WebP (VP8X, VP8, VP8L); повреждённый или иной файл даёт
+//     «не изображение», а не ошибку;
+//   - LocalFile — файл попытки или референс только как обычный файл внутри своей папки, без
+//     символических ссылок.
 package mediafile
 
 import (
@@ -35,8 +34,7 @@ var pngSignature = []byte{137, 80, 78, 71, 13, 10, 26, 10}
 // sofMarkers — маркеры JPEG с размерами кадра (SOF0–SOF15 без DHT, JPG и DAC).
 var sofMarkers = []byte{192, 193, 194, 195, 197, 198, 199, 201, 202, 203, 205, 206, 207}
 
-// read — байты обычного файла. Как existsSync+lstatSync оригинала: символическая ссылка — «не
-// файл», потому что lstat по ней не следует.
+// read — байты обычного файла. Проверка идёт через lstat: символическая ссылка — «не файл».
 func read(path string) ([]byte, bool) {
 	info, err := os.Lstat(path)
 	if err != nil || !info.Mode().IsRegular() {
@@ -128,13 +126,13 @@ func IsImage(path string) bool {
 	return ok
 }
 
-// TextLocalFileRequired — mediaTexts.localFileRequired оригинала.
+// TextLocalFileRequired — отказ LocalFile для пути вне папки, ссылки или не обычного файла.
 const TextLocalFileRequired = "Нужен локальный файл внутри рабочей папки."
 
 // LocalFile — path.resolve(directory, path) при условии, что это обычный файл внутри directory
 // (после разыменования ссылок у папки и файла), а сам путь — не символическая ссылка. Нарушение —
-// ошибка TextLocalFileRequired; отсутствующий файл или папка — ошибка node:fs realpath/lstat, как
-// у оригинала.
+// ошибка TextLocalFileRequired; отсутствующий файл или папка — ошибка realpath/lstat в форме
+// node:fs (её текст видит пользователь).
 func LocalFile(directory, path string) (string, error) {
 	file := jscompat.Resolve(directory, path)
 	root, err := jscompat.Realpath(directory)
@@ -163,13 +161,13 @@ func LocalFile(directory, path string) (string, error) {
 	return file, nil
 }
 
-// Тексты отказа закреплённых опор (referenceGenerationMessages оригинала).
+// Тексты отказа закреплённых опор.
 const (
 	TextReferenceInputsChanged = "Опорные изображения изменились. Подготовьте новый запрос изображения."
 	TextReferenceInputsInvalid = "Не удалось прочитать опорные изображения. Проверьте файлы объекта."
 )
 
-// CheckedReferences — checkedCoverReferences оригинала: каждая закреплённая копия опоры — обычный
+// CheckedReferences проверяет, что каждая закреплённая копия опоры — обычный
 // файл изображения с расширением своего формата и теми же размером и SHA-256, что при
 // согласовании. Изменённые байты — TextReferenceInputsChanged, иное — TextReferenceInputsInvalid.
 // Возвращает копию списка; исходники не меняются.
@@ -193,9 +191,8 @@ func CheckedReferences(references []mediaapi.ReferenceImage) ([]mediaapi.Referen
 	return result, nil
 }
 
-// Decodes — изображение декодируется целиком (PNG, JPEG, WebP): замена проверки
-// nativeImage.createFromPath(path).isEmpty() оригинала для оригиналов платного провайдера.
-// Обрезанный файл с верным заголовком декодирование не проходит.
+// Decodes — изображение декодируется целиком (PNG, JPEG, WebP): так проверяются оригиналы
+// платного провайдера. Обрезанный файл с верным заголовком декодирование не проходит.
 func Decodes(path string) bool {
 	file, err := os.Open(path)
 	if err != nil {

@@ -26,8 +26,8 @@ const (
 	CodeRateLimit          = "RATE_LIMIT"
 )
 
-// Error — AgentError оригинала: код диагностики и пользовательская причина. Текст ошибки
-// «[КОД] причина» доходит до renderer как сообщение отказа agents.start, как в Electron.
+// Error — AgentError контракта: код диагностики и пользовательская причина. Текст ошибки
+// «[КОД] причина» доходит до renderer как сообщение отказа agents.start.
 type Error struct {
 	Code   string
 	Detail string
@@ -37,7 +37,7 @@ func (e *Error) Error() string { return "[" + e.Code + "] " + e.Detail }
 
 func agentError(code, detail string) *Error { return &Error{Code: code, Detail: detail} }
 
-// DefaultLineBytes — предел одной строки JSONL (256 КиБ), как у JsonLines оригинала.
+// DefaultLineBytes — предел одной строки JSONL (256 КиБ).
 const DefaultLineBytes = 256 * 1024
 
 // JSONLines разбирает поток JSONL по строкам независимо от границ фрагментов вывода.

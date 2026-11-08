@@ -21,7 +21,7 @@ type View struct {
 	Problems   []string          `json:"problems"`
 }
 
-// joinSource — join(project, 'source', path) с проверкой аргумента node:path.
+// joinSource — путь project/source/path с проверкой аргумента path (jscompat.PathArg).
 func joinSource(project string, value any) (string, error) {
 	path, err := jscompat.PathArg("path", value)
 	if err != nil {
@@ -30,9 +30,9 @@ func joinSource(project string, value any) (string, error) {
 	return filepath.Join(project, "source", filepath.FromSlash(path)), nil
 }
 
-// ViewProject — viewCast: кастинг для страницы «Кастинг» и выбора изображений на «Исходниках».
+// ViewProject — кастинг для страницы «Кастинг» и выбора изображений на «Исходниках».
 // Ничего не пишет. Проблемы: повреждённый файл, ошибки Validate, описание из исходников, которое
-// разошлось с сохранённой копией, и референсы без сущности. Ошибка — исключение оригинала на
+// разошлось с сохранённой копией, и референсы без сущности. Ошибка — исключение JS-семантики на
 // документе другой формы.
 func ViewProject(project string) (View, error) {
 	problems := []string{}
@@ -158,7 +158,7 @@ func ViewProject(project string) (View, error) {
 	return View{Cast: castValue, Manifest: manifestValue, ImagePaths: images, Problems: problems}, nil
 }
 
-// descriptionDrifts — castDescriptionDrifts: коды сущностей, чьё сохранённое описание отличается
+// descriptionDrifts — коды сущностей, чьё сохранённое описание отличается
 // от описания связанного референса описи. Без массива entities или описи — пусто.
 func descriptionDrifts(stored, manifest any) ([]string, error) {
 	entities, ok := jscompat.AsArray(jscompat.Get(stored, "entities"))

@@ -23,8 +23,7 @@ import (
 	"songframe-go/internal/tools"
 )
 
-// Эталон production-workflow/cases.json снят с замороженного оригинала скриптом
-// capture-production-workflow.ts (вне репозитория, не сохранён): шаги
+// Эталон testdata/golden/production-workflow/cases.json: шаги
 // сценариев над копией checks-base/project с поддельным менеджером агентов, настоящим
 // continuity_brief и подставным каталогом моделей тестового провайдера. Go-тест повторяет те же
 // шаги и сверяет результат, ошибки, локальные записи, запуски агента и вызовы инструментов.
@@ -38,7 +37,7 @@ type goldenFile struct {
 	} `json:"scenarios"`
 }
 
-// goldenStep — вход шага (op и параметры) и исход оригинала.
+// goldenStep — вход шага (op и параметры) и ожидаемый исход.
 type goldenStep struct {
 	Op          string                     `json:"op"`
 	Path        string                     `json:"path"`
@@ -74,7 +73,7 @@ type toolCall struct {
 	Args []string `json:"args"`
 }
 
-// fakeAgents — подставной менеджер агентов съёмки: задания не запускают CLI, итог задаёт шаг.
+// fakeAgents — подставной менеджер агентов эталона: задания не запускают CLI, итог задаёт шаг.
 type fakeAgents struct {
 	mu     sync.Mutex
 	jobs   []*agents.Job
@@ -124,8 +123,8 @@ func (f *fakeAgents) last(t *testing.T) *agents.Job {
 	return f.jobs[len(f.jobs)-1]
 }
 
-// testRules — тестовый провайдер с правилами testPaidAdapter оригинала (правила Kling без
-// frameDefined).
+// testRules — тестовый провайдер с правилами запроса адаптера kling без FrameDefined, на которых
+// записан эталон.
 type testRules struct{ *mediatest.Service }
 
 func (testRules) RequestRules() mediaapi.RequestRules {
@@ -134,7 +133,7 @@ func (testRules) RequestRules() mediaapi.RequestRules {
 	return rules
 }
 
-// captureConfig — Config скрипта съёмки.
+// captureConfig — настройки сценария эталона (поле config случая).
 type captureConfig struct {
 	ScenarioApproved   bool                       `json:"scenarioApproved"`
 	PackageBusy        bool                       `json:"packageBusy"`
@@ -153,8 +152,9 @@ var (
 	videoCmds   = []string{"text_to_video", "image_to_video", "omni_ref_video", "motion_control"}
 )
 
-// v8Deviation — осознанное отличие: ответ, который не разбирается как JSON, Go отклоняет текстом
-// textProposalNotJSON вместо SyntaxError V8. Заменяет такие строки в дереве эталона.
+// v8Deviation — осознанное отличие от эталона: ответ, который не разбирается как JSON,
+// отклоняется текстом textProposalNotJSON, а эталон хранит сообщение SyntaxError разборщика.
+// Заменяет такие строки в дереве эталона.
 func v8Deviation(value any) any {
 	switch typed := value.(type) {
 	case string:
@@ -173,8 +173,8 @@ func v8Deviation(value any) any {
 	return value
 }
 
-// originalFields убирает поля вида, которых не было в оригинале и которые служат только новому
-// интерфейсу (этап 51): остальной вид сверяется с эталоном как есть.
+// originalFields убирает поля вида, которых нет в эталоне и которые служат только интерфейсу
+// (NextStage, ReplaceFrame): остальной вид сверяется с эталоном как есть.
 func originalFields(value any) any {
 	if view, ok := value.(View); ok {
 		view.NextStage, view.ReplaceFrame = nil, nil
@@ -183,7 +183,7 @@ func originalFields(value any) any {
 	return value
 }
 
-// canonical — JSON в форме JSON.stringify после замены сообщений V8.
+// canonical — JSON в форме JSON.stringify после замены сообщений SyntaxError.
 func canonical(t *testing.T, data []byte) string {
 	t.Helper()
 	value, err := jscompat.Parse(data)
@@ -308,7 +308,7 @@ func (r *goldenRun) runTool(ctx context.Context, project, name string, args []st
 	return result, err
 }
 
-// normalize — маркеры путей и UUID, как normalize скрипта съёмки.
+// normalize — маркеры путей и UUID, как в эталоне.
 func (r *goldenRun) normalize(text string) string {
 	text = strings.ReplaceAll(text, r.local, "<local>")
 	text = strings.ReplaceAll(text, r.project, "<project>")
@@ -398,7 +398,7 @@ func (r *goldenRun) compareResult(t *testing.T, label string, want json.RawMessa
 	}
 	gotText := canonical(t, []byte(r.normalize(jscompat.Stringify(mustParse(t, data)))))
 	if summaries, ok := got.(map[string]Summary); ok {
-		// Порядок ключей сводки в оригинале — порядок файлов каталога состояния; план ищется по ID.
+		// Порядок ключей сводки в эталоне — порядок файлов каталога состояния; план ищется по ID.
 		expected := mustParse(t, want).(*jscompat.Object)
 		if len(expected.Keys()) != len(summaries) {
 			t.Fatalf("%s: сводка %s, ожидалась %s", label, gotText, want)
@@ -474,7 +474,7 @@ func keysOf(values map[string]string) []string {
 	return keys
 }
 
-// execute — execute скрипта съёмки.
+// execute выполняет шаг сценария эталона.
 func (r *goldenRun) execute(t *testing.T, step goldenStep) (any, error) {
 	t.Helper()
 	switch step.Op {

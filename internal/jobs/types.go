@@ -5,7 +5,7 @@
 // программу он запускает через StepContext.Exec (internal/process). Сведения задания без текста
 // журнала хранятся в <localDir>/jobs/<id>.json (атомарно), журнал — в <id>.log рядом; оба
 // переживают перезапуск и сбой. Наблюдаемая семантика (JobInfo, статусы шагов, коды, error,
-// «прервано» после перезапуска, текст копирования) совпадает с src/main/jobs.ts оригинала.
+// «прервано» после перезапуска, текст копирования) закреплена эталонами internal/jobs/testdata.
 package jobs
 
 // Kind — вид задания; значения совпадают с JobKind в frontend/src/shared/types.ts.
@@ -48,13 +48,12 @@ const (
 // (JOB_INTERRUPTED_MESSAGE = projectDataTexts.jobInterrupted во frontend).
 const InterruptedMessage = "Прервано закрытием или сбоем программы"
 
-// StoppedMessage — причина отмены по умолчанию и строка журнала остановленной программы
-// (environmentTexts.main.executionStopped оригинала).
+// StoppedMessage — причина отмены по умолчанию и строка журнала остановленной программы.
 const StoppedMessage = "Выполнение остановлено пользователем."
 
 const (
 	// LogTail — сколько последних символов журнала отдаётся в JobInfo.log
-	// (для заданий прошлых сеансов — байт файла, как readLogTail оригинала).
+	// (для заданий прошлых сеансов — байт файла, см. readLogTail).
 	LogTail = 12000
 	// ErrorLimit — сколько последних символов причины хранится в JobInfo.error.
 	ErrorLimit = 2000
@@ -62,7 +61,7 @@ const (
 	SavedJobsLimit = 200
 	// savedFileLimit — сведения больше 1 МиБ считаются повреждёнными и пропускаются.
 	savedFileLimit = 1024 * 1024
-	// copyLogLimit — сколько байт журнала с конца входит в текст копирования (readLog оригинала).
+	// copyLogLimit — сколько байт журнала с конца входит в текст копирования.
 	copyLogLimit = 1024 * 1024
 )
 
@@ -105,7 +104,7 @@ type Info struct {
 }
 
 // clone возвращает независимую копию: подписчики и вызывающие не видят дальнейших изменений
-// и не могут испортить состояние менеджера (structuredClone оригинала).
+// и не могут испортить состояние менеджера.
 func (info Info) clone() Info {
 	result := info
 	result.Steps = make([]StepInfo, len(info.Steps))

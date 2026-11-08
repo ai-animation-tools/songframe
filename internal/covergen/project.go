@@ -15,10 +15,9 @@ import (
 	"songframe-go/internal/providers/agentexec"
 )
 
-// ProjectOptions — зависимости подготовки запроса провайдером изображений проекта
-// (prepareProjectCover оригинала).
+// ProjectOptions — зависимости подготовки запроса провайдером изображений проекта.
 type ProjectOptions struct {
-	// AssertSelection — assertAiSelection(settings, project, 'image').
+	// AssertSelection проверяет явный выбор провайдера изображений в проекте.
 	AssertSelection func(project string) error
 	// Paid готовит запрос платного провайдера provider (PreparePaid с адаптером слоя провайдеров).
 	Paid func(ctx context.Context, input CandidateInput, provider string) (*Candidate, error)
@@ -28,7 +27,7 @@ type ProjectOptions struct {
 }
 
 // adapterCover — исполнитель обложки из адаптера провайдера-агента. Текст отсутствия адаптера —
-// всегда текст обложки, как в оригинале.
+// всегда текст обложки, и для референса тоже.
 func adapterCover(provider string, config agents.Settings) (agentexec.CoverRunner, error) {
 	adapter, ok := providers.Agent(provider)
 	if !ok || adapter.Cover == nil {
@@ -38,7 +37,7 @@ func adapterCover(provider string, config agents.Settings) (agentexec.CoverRunne
 	return adapter.Cover(config), nil
 }
 
-// PrepareProject — prepareProjectCover оригинала: запрос готовит провайдер изображений проекта;
+// PrepareProject — запрос готовит провайдер изображений проекта;
 // выбранный текстовый агент на него не влияет. Платный провайдер делегируется options.Paid.
 // Провайдер-агент получает программу из реестра медиа и модель проекта (пустая модель — настройки
 // самой программы); исполнитель проверяет свой транспорт до выдачи SHA. SHA запроса агента —
@@ -112,7 +111,7 @@ func PrepareProject(ctx context.Context, input CandidateInput, options ProjectOp
 	}, nil
 }
 
-// agentRequestSha — SHA-256 JSON.stringify({prompt, config, workDir, references?}) оригинала.
+// agentRequestSha — SHA-256 JSON {prompt, config, workDir, references?} в порядке ключей JS.
 func agentRequestSha(prompt string, config agents.Settings, workDir string, references []mediaapi.ReferenceImage) string {
 	value := jscompat.NewObject()
 	value.Set("prompt", prompt)

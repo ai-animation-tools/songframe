@@ -48,7 +48,7 @@ func (s *CallbackServer) Close() {
 	_ = s.server.Close()
 }
 
-// reply — страница ответа колбэка: та же разметка, что у оригинала.
+// reply — страница ответа колбэка; разметка зафиксирована эталоном callback.json.
 func reply(writer http.ResponseWriter, status int, text string) {
 	body := []byte("<!doctype html><meta charset='utf-8'><title>SongFrame</title><p>" + text + "</p>")
 	writer.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -57,7 +57,7 @@ func reply(writer http.ResponseWriter, status int, text string) {
 	_, _ = writer.Write(body)
 }
 
-// ServeHTTP — do_GET CallbackHandler оригинала.
+// ServeHTTP принимает GET колбэка входа и отвечает страницей reply.
 func (s *CallbackServer) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	if request.Method != http.MethodGet {
 		// BaseHTTPRequestHandler без do_<метод> отвечал 501.
@@ -97,7 +97,7 @@ func (s *CallbackServer) ServeHTTP(writer http.ResponseWriter, request *http.Req
 	s.once.Do(func() { close(s.done) })
 }
 
-// Listen — listen(state): сервер колбэка на первом свободном порту из списка клиента. Занятый
+// Listen — сервер колбэка на первом свободном порту из списка клиента. Занятый
 // порт пропускается (Go в Windows не ставит SO_REUSEADDR, поэтому чужой слушающий порт не
 // перехватывается). Все порты заняты — NotSent.
 func (c *Client) Listen(state string) (*CallbackServer, error) {
@@ -108,7 +108,7 @@ func (c *Client) Listen(state string) (*CallbackServer, error) {
 		}
 		server := &CallbackServer{listener: listener, state: state, done: make(chan struct{})}
 		server.server = &http.Server{Handler: server, ReadHeaderTimeout: 30 * time.Second}
-		// HTTP/1.0 оригинала закрывал соединение после ответа.
+		// Соединение закрывается после ответа (как у сервера HTTP/1.0).
 		server.server.SetKeepAlivesEnabled(false)
 		go func() { _ = server.server.Serve(listener) }()
 		return server, nil
@@ -120,15 +120,15 @@ func (c *Client) Listen(state string) (*CallbackServer, error) {
 type LoginOptions struct {
 	// Timeout — ожидание подтверждения; 0 — LoginTimeout.
 	Timeout time.Duration
-	// Report получает строки «AUTHORIZE_URL <адрес>» и «BROWSER_NOT_OPENED», которые оригинал
-	// печатал в stderr: приложение показывает адрес, если браузер не открылся. nil — не сообщать.
+	// Report получает строки «AUTHORIZE_URL <адрес>» и «BROWSER_NOT_OPENED»: приложение
+	// показывает адрес, если браузер не открылся. nil — не сообщать.
 	Report func(line string)
 	// OpenBrowser открывает адрес авторизации средствами оболочки; nil или ошибка — браузер не
-	// открыт (--no-browser оригинала).
+	// открыт (как --no-browser).
 	OpenBrowser func(url string) error
 }
 
-// Login — login(): регистрация клиента, loopback-колбэк, PKCE S256, state и resource, обмен кода
+// Login — регистрация клиента, loopback-колбэк, PKCE S256, state и resource, обмен кода
 // и замена сохранённой записи под блокировкой; прежний refresh token после замены отзывается без
 // влияния на результат. Отмена ctx прекращает ожидание: ошибка тогда errors.Is(context.Canceled),
 // сохранённая запись не меняется.

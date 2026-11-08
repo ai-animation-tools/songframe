@@ -15,9 +15,9 @@ type expectation struct {
 	Throws *string `json:"throws"`
 }
 
-// TestComputeMatchesOriginal сверяет computeStatus с каждым эталоном оригинала и проверяет, что
+// TestComputeMatchesGolden сверяет ComputeBase с каждым эталоном testdata/golden/status и проверяет, что
 // вычисление ничего не пишет во входной проект.
-func TestComputeMatchesOriginal(t *testing.T) {
+func TestComputeMatchesGolden(t *testing.T) {
 	for _, item := range golden.Load(t, "status") {
 		t.Run(item.Name, func(t *testing.T) {
 			path := item.ProjectPath()
@@ -29,7 +29,7 @@ func TestComputeMatchesOriginal(t *testing.T) {
 			}
 			if want.Throws != nil {
 				if err == nil {
-					t.Fatalf("оригинал бросает %q, Go вернул %+v", *want.Throws, result)
+					t.Fatalf("эталон бросает %q, Go вернул %+v", *want.Throws, result)
 				}
 			} else {
 				if err != nil {
@@ -45,7 +45,7 @@ func TestComputeMatchesOriginal(t *testing.T) {
 }
 
 // TestOpenExpectations проверяет срез Projects.open, зависящий от этого пакета: ошибка открытия —
-// отсутствие маркера (с абсолютным путём) либо исключение computeStatus; иначе статус открытия
+// отсутствие маркера (с абсолютным путём) либо ошибка ComputeBase; иначе статус открытия
 // совпадает со статусом.
 func TestOpenExpectations(t *testing.T) {
 	for _, item := range golden.Load(t, "status") {
@@ -70,7 +70,7 @@ func TestOpenExpectations(t *testing.T) {
 				}
 			case err != nil:
 				if want.Error == nil {
-					t.Fatalf("Go бросает %v, оригинал открыл проект", err)
+					t.Fatalf("Go бросает %v, эталон открыл проект", err)
 				}
 			default:
 				if want.Error != nil || want.SameAsStatus == nil || !*want.SameAsStatus {
@@ -81,8 +81,8 @@ func TestOpenExpectations(t *testing.T) {
 	}
 }
 
-// TestReviewProblem проверяет постобработку projects:status: без записи сценарного процесса она не
-// меняет статус существующих проектов, а несуществующий путь даёт ошибку realpath оригинала.
+// TestReviewProblem проверяет постобработку projects.status: без записи сценарного процесса она не
+// меняет статус существующих проектов, а несуществующий путь даёт ошибку realpath.
 func TestReviewProblem(t *testing.T) {
 	for _, item := range golden.Load(t, "status") {
 		t.Run(item.Name, func(t *testing.T) {
@@ -111,7 +111,7 @@ func TestReviewProblem(t *testing.T) {
 	}
 }
 
-// TestReviewInputsFailures — отказы сбора входов сценария вне try оригинала.
+// TestReviewInputsFailures — отказы сбора входов сценария, выполняемого вне try.
 func TestReviewInputsFailures(t *testing.T) {
 	project := t.TempDir()
 	write := func(name, text string) {

@@ -1,4 +1,4 @@
-// Package scenesave — сохранение реестра планов с учётом производства (scenario-save оригинала):
+// Package scenesave сохраняет реестр планов с учётом производства: определяет,
 // какие планы меняют отпечаток постановки при сохранении черновика, с какой формальной причиной
 // и что с ними станет. Обычное сохранение (production) делает принятые комплекты затронутых планов
 // устаревшими само — по несовпадению отпечатков. Режим keep («правка не меняет результат»)
@@ -31,7 +31,7 @@ const (
 	ModeKeep       = "keep"
 )
 
-// Тексты scenarioTexts.main и productionTexts.main.acceptance оригинала.
+// Тексты scenarioTexts.main и productionTexts.main.acceptance (frontend/src/shared/texts).
 const (
 	textImpactNewShot      = "новый план в реестре"
 	textImpactStaging      = "изменена постановка плана"
@@ -96,7 +96,7 @@ func initialStates(project string) (*jscompat.Object, error) {
 	return cast.InitialStates(value)
 }
 
-// fingerprintsOf — projectFingerprints в try оригинала: nil, если реестра нет или отпечатки
+// fingerprintsOf — отпечатки планов реестра: nil, если реестра нет или отпечатки
 // не вычисляются (цикл состояний, неверные изменения и т. п.).
 func fingerprintsOf(project string, scenes any) *jscompat.Object {
 	if scenes == nil {
@@ -137,7 +137,7 @@ func withoutBounds(scene any) string {
 	return jscompat.Stringify(rest)
 }
 
-// stateJSON — JSON.stringify(resolveStates(registry, initial)[id]); второй результат — значение есть.
+// stateJSON — компактный JSON вычисленного состояния плана id; второй результат — значение есть.
 func stateJSON(registry any, initial *jscompat.Object, id string) (string, bool, error) {
 	states, err := scenario.ResolveStates(registry, initial)
 	if err != nil {
@@ -194,7 +194,7 @@ func reasonOf(project string, before, after any, id string) (string, error) {
 
 // affectedShots — планы, чей отпечаток различается у сохранённого реестра и черновика, плюс
 // производные от них планы (derived_from.shot). Порядок — порядок планов черновика; повтор кода
-// в черновике повторяется и в ответе, как filter оригинала. Без прежнего реестра или при
+// в черновике повторяется и в ответе. Без прежнего реестра или при
 // невычислимых отпечатках — пусто.
 func affectedShots(project string, before, after any) ([]affected, error) {
 	previous := fingerprintsOf(project, before)
@@ -258,7 +258,7 @@ func SaveImpact(project string, draft any) (Impact, error) {
 	return result, nil
 }
 
-// writableStatus — writableProductionStatus: текущий plan/production-status.json, nil без файла;
+// writableStatus — текущий plan/production-status.json для записи, nil без файла;
 // повреждённый файл (не объект) — ошибка, чтобы keep не оставил полусохранение.
 func writableStatus(project string) (*jscompat.Object, error) {
 	path := filepath.Join(project, statusPath)
@@ -355,7 +355,7 @@ func writeAcceptedFingerprints(project string, ids []string, updates map[string]
 // jsSpace — класс \s регулярного выражения JS (RE2 понимает \s только как ASCII).
 const jsSpace = `[\t\n\v\f\r \x{a0}\x{1680}\x{2000}-\x{200a}\x{2028}\x{2029}\x{202f}\x{205f}\x{3000}\x{feff}]`
 
-// restampPackage — restampPackage оригинала: в тексте workflow.json заменяется только первое
+// restampPackage — в тексте workflow.json заменяется только первое
 // значение "scene_sha256": "<from>", остальной файл (форматирование, порядок полей) не меняется.
 // false — значения нет, файл не трогается.
 func restampPackage(directory, from, to string) (bool, error) {

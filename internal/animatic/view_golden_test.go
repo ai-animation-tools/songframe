@@ -13,8 +13,8 @@ import (
 	"songframe-go/internal/jobs"
 )
 
-// viewStep — шаг сценария эталона animatic-view (capture-view.ts): запись/удаление файла,
-// fixture или вызов view / setStatus / build с исходом оригинала.
+// viewStep — шаг сценария эталона animatic-view: запись/удаление файла, fixture или вызов
+// view / setStatus / build с ожидаемым исходом.
 type viewStep struct {
 	Op       string          `json:"op"`
 	Path     string          `json:"path"`
@@ -33,7 +33,7 @@ type viewScenario struct {
 	Steps []viewStep `json:"steps"`
 }
 
-// viewCases — cases.json домена: общий вход animatic-freshness.test.ts и сценарии.
+// viewCases — cases.json домена: общий вход проверок свежести и сценарии.
 type viewCases struct {
 	Fixture   []viewStep     `json:"fixture"`
 	Scenarios []viewScenario `json:"scenarios"`
@@ -50,8 +50,8 @@ func decodeJSON(t *testing.T, data []byte) any {
 	return value
 }
 
-// TestViewGolden воспроизводит сценарии оригинала viewAnimatic / setAnimaticStatus /
-// Animatic.build и сверяет вид, тексты ошибок, текст production-status.json и аргументы задания.
+// TestViewGolden воспроизводит сценарии эталона (вид, принятие, сборка) и сверяет вид, тексты
+// ошибок, текст production-status.json и аргументы задания.
 func TestViewGolden(t *testing.T) {
 	var cases viewCases
 	if err := json.Unmarshal(golden.ReadFile(t, "animatic-view", "cases.json"), &cases); err != nil {

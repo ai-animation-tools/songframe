@@ -7,7 +7,7 @@ import "songframe-go/internal/agents"
 // Prompt и Context; Images и RetryOf не использует.
 type AgentStartInput = agents.StartInput
 
-// AgentInputHashes — inputHashes задания: SHA-256 промпта и контекста.
+// AgentInputHashes — хеши входа задания агента: SHA-256 промпта и контекста.
 type AgentInputHashes = agents.InputHashes
 
 // AgentJob — снимок задания внешнего агента (Job менеджера internal/agents, ключи TS AgentJob),
@@ -15,8 +15,8 @@ type AgentInputHashes = agents.InputHashes
 // ExitCode, Message и Result: в Result итоговый текст агента — JSON предложения.
 type AgentJob = agents.Job
 
-// Agents — узкая часть менеджера внешних агентов, нужная сценарию (Pick<AgentManager, 'start' |
-// 'get' | 'list'> оригинала). Реализация — менеджер internal/agents: он проверяет вход, выбранного
+// Agents — узкая часть менеджера внешних агентов, нужная сценарию (запуск, чтение и список
+// заданий). Реализация — менеджер internal/agents: он проверяет вход, выбранного
 // агента и занятость проекта, добавляет постоянные инструкции проекта к промпту и запускает CLI
 // через internal/process. Методы вызываются из сервисного потока Wails и должны быть безопасны
 // для конкурентного вызова.

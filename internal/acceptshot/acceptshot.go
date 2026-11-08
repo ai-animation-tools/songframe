@@ -1,5 +1,5 @@
-// Package acceptshot — перенос tools/accept_shot/accept_shot.py: перенос принятой генерации в
-// комплект assets/shots/Mxx по контракту assets. Режим --full копирует скачанный оригинал, уже
+// Package acceptshot принимает генерацию плана: инструмент accept_shot собирает комплект
+// assets/shots/Mxx по контракту assets. Режим --full копирует скачанный оригинал, уже
 // совпадающий с окном плана и шкалой 30 кадров/с, побайтово; --cut НАЧАЛО:КОНЕЦ и --review
 // (рецепт пробы build_review) с --speed, --hold-first и --hold-last рендерят участок FFmpeg по
 // фильтру, который считает buildreview.Prepare для одного плана. Рядом сохраняются входы, промпт,
@@ -8,8 +8,8 @@
 // представления и (с --clean) удаляются рабочие пакеты плана и использованная проба.
 //
 // ffprobe и ffmpeg ищутся через internal/mediacmd (пара компонентов приложения или имена в PATH);
-// без них приёмка завершается общей ошибкой медиа, как FileNotFoundError оригинала.
-// --preparation приложение не передаёт, и он не перенесён.
+// без них приёмка завершается общей ошибкой медиа (FileNotFoundError). Опция --preparation есть
+// только в справке: приложение её не передаёт, и разбор её не поддерживает.
 package acceptshot
 
 import (
@@ -41,7 +41,8 @@ var Now = func() time.Time { return time.Now().UTC() }
 // fps — шкала монтажа.
 const fps = 30
 
-// Тексты оригинала.
+// Тексты отказов и примечаний манифеста; их видит пользователь, формулировки зафиксированы
+// эталоном testdata/golden/production-tools.
 const (
 	audioPolicy = "Звук генератора сохранён в оригинале; в монтаже используется непрерывная исходная песня."
 	rebuildNote = "Принятые байты восстанавливаются копированием video; повтор фильтров сохраняет монтаж, " +
@@ -53,13 +54,13 @@ const (
 	textBadEdit    = "Принятый монтаж имеет неверный формат или число кадров."
 )
 
-// roleLabels — ROLE_LABELS оригинала.
+// roleLabels — подписи ролей опорных кадров в манифесте комплекта.
 var roleLabels = map[string]string{"first": "Первый кадр", "last": "Последний кадр", "middle": "Промежуточный кадр"}
 
-// Parser — argparse accept_shot.py. Общий ArgParser знает одну необязательную группу: ею служит
-// группа режима (--review | --cut | --full); группа источника, обязательность обеих групп и
-// type=int удержаний проверяются в Run, usage и справка подменяются текстом оригинала.
-// --preparation приложение не передаёт, и он не перенесён.
+// Parser — разбор аргументов accept_shot в стиле argparse. Общий ArgParser знает одну
+// необязательную группу: ею служит группа режима (--review | --cut | --full); группа источника,
+// обязательность обеих групп и type=int удержаний проверяются в Run, usage и справка заданы
+// готовым текстом. --preparation приложение не передаёт, и он не разбирается.
 var Parser = pycompat.ArgParser{
 	Prog:        "accept_shot.py",
 	Description: "Перенос принятой генерации в комплект assets по контракту; @link README.md",
@@ -82,8 +83,8 @@ var Parser = pycompat.ArgParser{
 	Exclusive:   []string{"--review", "--cut", "--full"},
 }
 
-// usage и help — format_usage и format_help оригинала (с группами в круглых скобках и
-// --preparation), снятые с Python 3.12.
+// usage и help — готовые тексты в формате argparse Python 3.12 (format_usage и format_help с
+// группами в круглых скобках и --preparation): общий ArgParser такие группы не печатает.
 const usage = "usage: accept_shot.py [-h] (--package PACKAGE | --work-dir WORK_DIR)\n" +
 	"                      (--review REVIEW | --cut НАЧАЛО:КОНЕЦ | --full)\n" +
 	"                      [--speed SPEED] [--hold-first HOLD_FIRST]\n" +
@@ -125,7 +126,7 @@ options:
                         assets/replaced/Mxx/<время>
 `
 
-// argError — parser.error(message) с usage оригинала: код 2.
+// argError — отказ разбора аргументов как parser.error(message) argparse: usage и код 2.
 func argError(message string) pytool.Output {
 	return pytool.Output{Code: 2, Stderr: pycompat.TextMode(usage + "accept_shot.py: error: " + message + "\n")}
 }
@@ -192,7 +193,7 @@ func probe(ctx context.Context, path string) (*pycompat.Dict, error) {
 	return mediacmd.AnimaticProbe(ctx, path)
 }
 
-// attemptData — resolve_package: пакет, папка попытки, запрос, состояние и workflow.
+// attemptData — разрешённый источник приёмки: пакет, папка попытки, запрос, состояние и workflow.
 type attemptData struct {
 	packageDir, workDir string
 	request, attempt    *pycompat.Dict
@@ -312,7 +313,7 @@ func frozenRequestFiles(request *pycompat.Dict, workDir string) (string, []strin
 	return promptFile, files, nil
 }
 
-// Options — параметры accept(). Режим — Full либо участок: Review (путь рецепта пробы) или Cut
+// Options — параметры Accept. Режим — Full либо участок: Review (путь рецепта пробы) или Cut
 // (НАЧАЛО и КОНЕЦ на сетке 30 кадров/с) со Speed (строка Decimal, как --speed; «1» — без
 // изменения скорости) и удержаниями.
 type Options struct {
@@ -389,8 +390,7 @@ func pyInt(value any) (*big.Int, error) {
 	return nil, pycompat.Raise(pycompat.TypeError, "int() argument must be a string, a bytes-like object or a real number, not '%s'", pycompat.TypeName(value))
 }
 
-// planEdit — edit_plan(shot, original, frames, root, review, cut, speed, hold_first, hold_last):
-// параметры обрезки из рецепта пробы (того же оригинала) или аргументов; фильтр и длительности
+// planEdit — параметры обрезки из рецепта пробы (того же оригинала) или аргументов; фильтр и длительности
 // считает buildreview.Prepare по спецификации из одного плана с явным path оригинала. Участок с
 // удержаниями обязан дать ровно окно плана.
 func planEdit(ctx context.Context, shot, original string, frames pycompat.Int, root string, options Options) (editPlan, error) {
@@ -498,7 +498,7 @@ func planEdit(ctx context.Context, shot, original string, frames pycompat.Int, r
 	}, nil
 }
 
-// renderEdit — render_edit: участок оригинала по фильтру плана кодируется ENCODE build_animatic
+// renderEdit — участок оригинала по фильтру плана кодируется параметрами ENCODE build_animatic
 // без звука ровно в frames кадров; результат обязан быть 1920×1080, 30/1.
 func renderEdit(ctx context.Context, original, filter string, frames pycompat.Int, target string) error {
 	args := append([]string{"-v", "error", "-nostdin", "-n", "-threads", "2", "-i", original, "-map", "0:v:0", "-vf", filter},
@@ -678,7 +678,7 @@ func cleanWork(root, shot, packageDir, workDir string, review *string) ([]any, e
 	return removed, nil
 }
 
-// Accept — accept(shot, …): комплект assets/shots/<shot> из скачанного оригинала — полной копией
+// Accept собирает комплект assets/shots/<shot> из скачанного оригинала — полной копией
 // (Full) или рендером участка (Review/Cut со скоростью и удержаниями).
 func Accept(ctx context.Context, root, shot string, options Options) (*pycompat.Dict, error) {
 	root = pycompat.ResolvePath(root)
@@ -828,7 +828,7 @@ func Accept(ctx context.Context, root, shot string, options Options) (*pycompat.
 	return result, nil
 }
 
-// buildKit — тело try оригинала: собирает комплект в staging и переносит его на место target
+// buildKit собирает комплект в staging и переносит его на место target
 // (прежний комплект уходит в assets/replaced). Возвращает описатель video и путь прежнего комплекта.
 func buildKit(ctx context.Context, root, shot string, frames pycompat.Int, staging, target, original, promptFile string,
 	inputFiles []string, data attemptData, lipsync bool, options Options) (*pycompat.Dict, string, error) {
@@ -1132,7 +1132,7 @@ func sourceOrder(args []string) []string {
 	return order
 }
 
-// Run — main() accept_shot.py на разрешённом корне проекта: разбор аргументов с группами
+// Run — инструмент accept_shot на разрешённом корне проекта: разбор аргументов с группами
 // источника и режима, участок --cut, приёмка и печать итога JSON.
 func Run(ctx context.Context, root string, args []string, localDir string) pytool.Output {
 	parsed, exit := Parser.ParseArgs(args)
@@ -1189,7 +1189,7 @@ func Run(ctx context.Context, root string, args []string, localDir string) pytoo
 		options.Review = &review
 	}
 	result, err := func() (*pycompat.Dict, error) {
-		// Пустой --cut оригинал считает отсутствующим участком (if args.cut).
+		// Пустой --cut означает отсутствие участка (проверка на истинность, как if args.cut).
 		if text := value("--cut"); text != "" {
 			parts := strings.Split(text, ":")
 			numbers := []pycompat.Int{}

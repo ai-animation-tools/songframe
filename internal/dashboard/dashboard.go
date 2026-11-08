@@ -1,4 +1,4 @@
-// Package dashboard — дашборд сцен (src/main/dashboard.ts оригинала): по каждому плану реестра
+// Package dashboard собирает дашборд сцен: по каждому плану реестра
 // собирается всё, что о нём известно в проекте, в одну карточку: постановка и строка песни,
 // положение на шкале, комплект в assets (оригинал против принятого монтажа, рецепт, промпт,
 // входы), пакеты с опорами (production.ViewProduction), карточка аниматика, состояние героев до и
@@ -21,7 +21,7 @@ import (
 // image — расширения изображений-входов запроса.
 var image = regexp.MustCompile(`(?i)\.(png|jpe?g|webp)$`)
 
-// Тексты scenesTexts.main и productionTexts.main.package оригинала.
+// Тексты scenesTexts.main и productionTexts.main.package (frontend/src/shared/texts).
 const (
 	textRequestInput = "вход запроса"
 	textNotStarted   = "постановка есть, работа не начата"
@@ -326,7 +326,7 @@ func brief(project string, scenes any, sid, phase string, problems *[]string) *P
 	return &Phase{State: result.State, Lines: body, Checklist: checklist}
 }
 
-// ViewDashboard — viewDashboard(project): карточки планов, сводка и проблемы чтения.
+// ViewDashboard — карточки планов, сводка и проблемы чтения.
 func ViewDashboard(project string) (View, error) {
 	scenes, ok := jscompat.ReadJSONFile(filepath.Join(project, "plan", "scenes.json"))
 	if !ok || jscompat.IsNullish(scenes) {

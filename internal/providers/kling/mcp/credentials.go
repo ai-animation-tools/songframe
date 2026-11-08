@@ -12,7 +12,7 @@ import (
 // Записи входа: `<каталог состояния>/providers/kling/credentials.json` с полями client_id,
 // access_token, refresh_token, expires_at (секунды Unix, 0 — срок неизвестен), token_endpoint,
 // revocation_endpoint, resource, scope. Запись хранится словарём pycompat, чтобы порядок ключей
-// и байты файла совпадали с json.dumps(indent=2) оригинала.
+// и байты файла совпадали с json.dumps(indent=2) (формат зафиксирован эталонами).
 
 // CredentialsPath — путь записи входа в каталоге состояния, вне проекта и вне файлов
 // официального CLI.
@@ -20,7 +20,7 @@ func (c *Client) CredentialsPath() string {
 	return filepath.Join(c.StateDir, "providers", ProviderID, "credentials.json")
 }
 
-// ReadCredentials — read_credentials(): запись с непустым access_token или nil. Отсутствующий,
+// ReadCredentials — запись с непустым access_token или nil. Отсутствующий,
 // повреждённый файл и не-объект одинаково означают «нет входа».
 func (c *Client) ReadCredentials() *pycompat.Dict {
 	value, _ := pycompat.ReadJSON(c.CredentialsPath())
@@ -31,7 +31,7 @@ func (c *Client) ReadCredentials() *pycompat.Dict {
 	return record
 }
 
-// WriteCredentials — write_credentials(record): атомарная замена через временный файл с правами
+// WriteCredentials — атомарная замена через временный файл с правами
 // 0600 и явные права 0600 там, где ОС их поддерживает (в Windows права наследуются от каталога
 // профиля пользователя).
 func (c *Client) WriteCredentials(record *pycompat.Dict) error {
@@ -47,10 +47,10 @@ func (c *Client) WriteCredentials(record *pycompat.Dict) error {
 	return nil
 }
 
-// lockWait — ожидание блокировки в Windows (в Linux flock ждёт без срока, как в оригинале).
+// lockWait — ожидание блокировки в Windows (в Linux flock ждёт без срока).
 const lockWait = 60 * time.Second
 
-// withCredentialsLock — credentials_lock(): межпроцессная блокировка файла credentials.lock
+// withCredentialsLock — межпроцессная блокировка файла credentials.lock
 // рядом с записью. Ротируемый refresh token должен обновлять ровно один процесс; блокировка
 // также сериализует горутины одного процесса, потому что каждая открывает файл заново
 // (flock и LockFileEx действуют на открытое описание файла).

@@ -11,8 +11,8 @@ import (
 	"songframe-go/internal/pycompat"
 )
 
-// Эталон testdata/golden/animatic-cards снят с render_animatic_cards оригинала (Pillow 10.2 +
-// Raqm): textlength.json — ширины строк, cases.json — трассировка карточек. Пиксели глифов не
+// Эталон testdata/golden/animatic-cards снят с Pillow 10.2 + Raqm: textlength.json — ширины
+// строк, cases.json — трассировка карточек. Пиксели глифов не
 // сравниваются (растеризация другая), сравниваются раскладка, вставленные изображения и ошибки.
 
 // TestGoldenTextLength — ширина каждой строки эталона совпадает с draw.textlength до 1/64 px.

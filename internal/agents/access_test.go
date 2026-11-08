@@ -11,7 +11,7 @@ import (
 )
 
 // ai.access: явный выбор до диагностики, независимость агента и провайдеров медиа, повторная
-// проверка выбора после асинхронной диагностики (сценарии ai-access.test.ts оригинала).
+// проверка выбора после асинхронной диагностики.
 
 func accessFixture(t *testing.T, agent *Settings) (*AccessChecker, string, *int) {
 	t.Helper()

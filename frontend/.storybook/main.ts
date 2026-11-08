@@ -1,7 +1,7 @@
 /**
  * Витрина собирает только renderer: Wails runtime и Go-сервисы не стартуют, window.api — модель истории.
- * Отличие от 634fd94: медиа витрины лежат прямо в .storybook/assets (синтетические файлы проекта-образца
- * оригинала), поэтому отдельный шаг prepare-assets не нужен; alias совпадают с vite.config.ts.
+ * Медиа витрины лежат прямо в .storybook/assets (синтетические файлы проекта-образца), поэтому
+ * отдельный шаг подготовки не нужен; alias совпадают с vite.config.ts.
  */
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';

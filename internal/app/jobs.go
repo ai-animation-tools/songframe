@@ -16,7 +16,7 @@ func NewJobsService(manager *jobs.Manager) *JobsService { return &JobsService{ma
 // List — задания этого и прошлых сеансов, новые сверху; у прошлых журнал пуст до Get.
 func (s *JobsService) List() []jobs.Info { return wire.Fill(s.manager.List()) }
 
-// Get возвращает задание с хвостом журнала или null, если такого нет (как в оригинале).
+// Get возвращает задание с хвостом журнала или null, если такого нет.
 func (s *JobsService) Get(id string) *jobs.Info {
 	info, ok := s.manager.Get(id)
 	if !ok {

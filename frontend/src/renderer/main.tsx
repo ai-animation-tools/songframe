@@ -1,7 +1,7 @@
 /**
- * Точка входа renderer Go-версии. Отличия от 634fd94:
+ * Точка входа renderer:
  * - window.api устанавливает адаптер Wails (installApi) до первого рендера: media-компоненты синхронно
- *   вызывают shell.fileUrl, а preload Electron больше нет;
+ *   вызывают shell.fileUrl;
  * - после первого успешного app.state окно подтверждает готовность Go (signalFrontendReady, smoke);
  * - ошибка рендера изолируется RenderBoundary и уходит в журнал через diagnostics.reportRendererError.
  */

@@ -18,7 +18,7 @@ import (
 	"songframe-go/internal/sceneviews"
 )
 
-// Тексты транзакции приёмки (ValueError оригинала).
+// Тексты отказов транзакции приёмки (ValueError).
 const (
 	textKitAfterCrash     = "После аварии изменён комплект; журнал: "
 	textKitBackupBroken   = "Повреждена резервная копия комплекта; журнал: "
@@ -593,7 +593,7 @@ var stageExclusions = map[string]map[string]bool{
 	"plan/animatic": {".cache": true},
 }
 
-// copyTree — shutil.copytree(source, target, copy_function=…) без symlinks: ссылки разыменовываются,
+// copyTree — копия дерева, как shutil.copytree без symlinks: ссылки разыменовываются,
 // права каталогов переносятся. name — путь source от корня проекта для исключений stageExclusions;
 // пустой — без исключений.
 func copyTree(source, target, name string, copyFile func(from, to string) error) error {
@@ -657,7 +657,7 @@ func stageProject(root, stage string) error {
 	return nil
 }
 
-// moveDirectory — publish_directory(source, target, retired): прежний комплект уходит в архив,
+// moveDirectory публикует папку: прежний комплект уходит в архив,
 // новый занимает его место. Отдельная точка для проверки сбоя между двумя переносами.
 func moveDirectory(source, target, retired string) error {
 	if pycompat.Exists(target) {
@@ -762,8 +762,8 @@ func prepareStage(result *checkedResult, status *pycompat.Dict, journal *pycompa
 	if _, err := assetpackage.ValidatePackage(filepath.Join(stagedKit, "manifest.json"), shot, stage); err != nil {
 		return nil, err
 	}
-	// Штатный update_scene_views оригинала запускался отдельным процессом с check=True: ненулевой
-	// код — CalledProcessError (скрытый текст CLI).
+	// Ненулевой код update_scene_views — CalledProcessError: CLI показывает его скрытым общим
+	// текстом.
 	if output := sceneviews.Run(stage, []string{}); output.Code != 0 {
 		return nil, pycompat.New("CalledProcessError", "update_scene_views returned non-zero exit status")
 	}

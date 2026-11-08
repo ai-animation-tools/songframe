@@ -9,9 +9,9 @@ import (
 	"songframe-go/internal/pycompat"
 )
 
-// Эталоны Python-инструментов (домены python-json, scene-registry, scene-scaffold) снимает
-// capture-python.py: ожидаемые значения записаны строками json.dumps Python, а исключения —
-// парой {type, message}. Такие файлы читаются разбором pycompat, а не encoding/json: он сохраняет
+// Эталоны инструментов в семантике Python 3.12 (домены python-json, scene-registry,
+// scene-scaffold): ожидаемые значения записаны строками json.dumps, а исключения — парой
+// {type, message}. Такие файлы читаются разбором pycompat, а не encoding/json: он сохраняет
 // различие int/float, порядок ключей и одиночные суррогаты (\uD800), которые есть во входах.
 
 // PyFile читает JSON-файл домена (например, scene-registry/cases.json) моделью значений Python.

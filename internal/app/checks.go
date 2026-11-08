@@ -16,7 +16,7 @@ func NewChecksService(manager *jobs.Manager) *ChecksService {
 	return &ChecksService{checks: checks.New(manager)}
 }
 
-// List — CHECKS оригинала: id, подписи, инструмент и needsScenes каждой проверки.
+// List — перечень проверок: id, подписи, инструмент и needsScenes каждой проверки.
 func (s *ChecksService) List() []checks.Info { return wire.Fill(checks.List()) }
 
 // Run — checks.run(project, id, options): одна проверка заданием с журналом и кодом.

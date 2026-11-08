@@ -1,4 +1,4 @@
-# Проверки исходников Go-версии: то же, что `wails3 task check:all`, разбитое на два независимых job.
+# Проверки исходников: то же, что `wails3 task check:all`, разбитое на два независимых job.
 # Go-часть требует CGO с GTK4/WebKitGTK 6.0, frontend-часть — только Node/Yarn и Chromium.
 # Поставки (AppImage, NSIS) здесь не собираются: их собирают и проверяют локально (packaging/README.md).
 name: CI

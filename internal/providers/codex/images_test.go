@@ -11,8 +11,7 @@ import (
 	"songframe-go/internal/mediaapi"
 )
 
-// TestCapabilities — возможности по диагностике программы и каталогу моделей (capabilities
-// CodexImageProvider оригинала).
+// TestCapabilities — возможности по диагностике программы и каталогу моделей.
 func TestCapabilities(t *testing.T) {
 	now := func() time.Time { return time.Date(2026, 11, 4, 1, 2, 3, 4_000_000, time.UTC) }
 	check := func(result agents.CheckResult, err error) func(context.Context) (agents.CheckResult, error) {

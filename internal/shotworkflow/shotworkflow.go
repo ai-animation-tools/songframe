@@ -1,11 +1,11 @@
-// Package shotworkflow — перенос tools/shot_workflow/shot_workflow.py замороженного оригинала:
-// ведение workflow.json рабочего пакета одного плана (создание, план опор, кандидаты и принятие
+// Package shotworkflow ведёт workflow.json рабочего пакета одного плана (инструмент
+// shot_workflow): создание, план опор, кандидаты и принятие
 // опор, промпт, вопросы и ответы приложения, этапы, image-ветка платных опор, перенос в очередь
-// plan/awaiting и проверка целостности).
+// plan/awaiting и проверка целостности.
 //
 // Пакет вызывает менеджер производства через tools.Run("shot_workflow", …): аргументы, тексты
-// stdout/stderr, коды завершения и байты записанных файлов совпадают с CLI оригинала (эталоны
-// testdata/golden/shot-workflow). Ожидаемые отказы (ValueError, OSError, KeyError, TypeError)
+// stdout/stderr, коды завершения и байты записанных файлов зафиксированы эталонами
+// testdata/golden/shot-workflow. Ожидаемые отказы (ValueError, OSError, KeyError, TypeError)
 // печатаются в stderr с кодом 1 — текст ValueError как есть, прочие «Ошибка файлов пакета; сырой
 // вывод скрыт.»; остальные исключения Python (AttributeError на данных неожиданной формы) дают
 // трассировку. Пакет не обращается к сервисам генерации и не меняет attempt.json и оригиналы.
@@ -38,7 +38,7 @@ var (
 
 const revision = "needs_revision"
 
-// defaultQuestion — DEFAULT_QUESTIONS: вопрос и варианты ответа этапа по умолчанию.
+// defaultQuestion — вопрос и варианты ответа этапа по умолчанию.
 var defaultQuestions = map[string]struct {
 	question string
 	options  []string
@@ -52,8 +52,8 @@ var defaultQuestions = map[string]struct {
 	"edit_review":          {"Принять этот монтажный участок?", []string{"accept", "revise"}},
 }
 
-// Now — время отметок asked_at/at/selected_at (now() оригинала): UTC с точностью до секунды в
-// isoformat «2026-11-04T12:00:00+00:00». Эталоны сняты с замороженным временем, тест подменяет Now.
+// Now — время отметок asked_at/at/selected_at: UTC с точностью до секунды в isoformat
+// «2026-11-04T12:00:00+00:00». Эталоны записаны с фиксированным временем, тест подменяет Now.
 var Now = func() string {
 	return time.Now().UTC().Format("2006-01-02T15:04:05") + "+00:00"
 }
@@ -76,7 +76,7 @@ func containsValue(items []string, value any) bool {
 // valueError — ValueError с текстом, который CLI печатает пользователю.
 func valueError(message string) error { return pycompat.New(pycompat.ValueError, message) }
 
-// Parser — argparse оригинала: верхний парсер с обязательной подкомандой action.
+// Parser — аргументы инструмента в стиле argparse: верхний парсер с обязательной подкомандой action.
 func Parser() *pycompat.Command {
 	dir := pycompat.Action{Name: "--dir", Required: true}
 	waitChoices := append([]string(nil), shotstatus.WaitReasons...)
@@ -139,7 +139,7 @@ func optional(args pycompat.Namespace, key string) *string {
 	return nil
 }
 
-// Run — main() оригинала на корне проекта root (уже выбранном tools.Run).
+// Run — инструмент shot_workflow на корне проекта root (уже выбранном tools.Run).
 func Run(root string, argv []string) pytool.Output {
 	args, exit := Parser().ParseArgs(argv)
 	if exit != nil {
@@ -308,7 +308,7 @@ type exitCode int
 
 func (e exitCode) Error() string { return "SystemExit" }
 
-// finish — обработка исключений main(): ожидаемые типы — текст в stderr и код 1.
+// finish — обработка исключений Run: ожидаемые типы — текст в stderr и код 1.
 func finish(out *pytool.Printer, err error) pytool.Output {
 	if err == nil {
 		return out.Exit(0)
@@ -329,7 +329,7 @@ func finish(out *pytool.Printer, err error) pytool.Output {
 	return out.Fail("Ошибка файлов пакета; сырой вывод скрыт.")
 }
 
-// printTable — print(table(report(dir))).
+// printTable печатает таблицу сводки пакета dir.
 func printTable(out *pytool.Printer, tool *workflowTool, dir string) error {
 	info, err := tool.report(dir)
 	if err != nil {

@@ -1,6 +1,6 @@
 /**
  * Адаптер группы derivedShots: четыре метода идут в DerivedShotService без изменения рецепта
- * (Go сам проверяет его, как checkedDerivedRecipe оригинала), задание вида приводится к JobInfo
+ * (Go сам проверяет его), задание вида приводится к JobInfo
  * контракта, ошибка Go становится SERVICE_FAILED. Bindings подменяются целиком.
  */
 import { describe, expect, it, vi } from 'vitest';

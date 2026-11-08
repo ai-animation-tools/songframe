@@ -24,7 +24,7 @@ const watchTimeout = 15 * time.Minute
 // Runner — запуск инструмента платной попытки (media_request, cost_check) с отменой.
 type Runner func(ctx context.Context, project, name string, args []string) (tools.Result, error)
 
-// PaidOptions — зависимости платной обложки (PaidCoverOptions оригинала).
+// PaidOptions — зависимости платной обложки.
 type PaidOptions struct {
 	// Media — общий платный адаптер провайдера для изображений (возможности, подготовка,
 	// отправка через владельца согласования, сбор оригиналов).
@@ -35,7 +35,7 @@ type PaidOptions struct {
 	PricingArgs func() []string
 }
 
-// PricingArgs — pricingArgs оригинала: SONGFRAME_PRICING_FILE подменяет базовую таблицу цен в
+// PricingArgs — аргументы цены: SONGFRAME_PRICING_FILE подменяет базовую таблицу цен в
 // тестовых прогонах; наблюдения расхода cost_check learn пишет в каталог состояния.
 func PricingArgs() []string {
 	if file := os.Getenv("SONGFRAME_PRICING_FILE"); file != "" {
@@ -44,7 +44,7 @@ func PricingArgs() []string {
 	return []string{}
 }
 
-// paidAttempt — состояние подготовленной платной попытки: замороженный запрос, цена подготовки
+// paidAttempt — состояние подготовленной платной попытки: зафиксированный запрос, цена подготовки
 // и признак единственного запуска.
 type paidAttempt struct {
 	options  PaidOptions
@@ -166,7 +166,7 @@ func anyDeclared(declared func(string) bool, keys []string) bool {
 	return false
 }
 
-// PreparePaid — preparePaidCover оригинала: готовит отдельную попытку платного провайдера в
+// PreparePaid готовит отдельную попытку платного провайдера в
 // <WorkDir>/request и показывает цену, ничего не отправляя. Проект должен выбрать этого же
 // провайдера; модель выбирает общий селектор (предпочтение проекта не ограничивает совместимый
 // выбор), опоры передаются именованными слотами с нейтральными подписями. Сбой проверки цены
@@ -243,7 +243,7 @@ func PreparePaid(ctx context.Context, input CandidateInput, options PaidOptions)
 	return &Candidate{Provider: paid.ID, Model: &selectedModel, RequestSha: prepared.RequestSha, Quote: &frozen, Generate: attempt.generate}, nil
 }
 
-// finiteNumber — typeof value === 'number' && Number.isFinite(value).
+// finiteNumber — значение, если это конечное число JSON; иначе nil.
 func finiteNumber(value any) *float64 {
 	number, ok := value.(float64)
 	if !ok || math.IsNaN(number) || math.IsInf(number, 0) {
@@ -406,7 +406,7 @@ func (p *paidAttempt) generate(ctx context.Context, allowUnknownCost bool) (stri
 	return path, nil
 }
 
-// sameMediaProvider — sameMediaProvider оригинала: непустые id совпадают без учёта регистра и
+// sameMediaProvider — непустые id совпадают без учёта регистра и
 // пробелов по краям.
 func sameMediaProvider(left, right string) bool {
 	left, right = jscompat.Trim(left), jscompat.Trim(right)

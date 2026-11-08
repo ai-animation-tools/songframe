@@ -11,8 +11,8 @@ import (
 	"songframe-go/internal/wire"
 )
 
-// AppID отличается от app ID Electron-версии (tools.songframe.app), чтобы окна, ярлыки и
-// единственный экземпляр GTK не смешивались с ней (D-038).
+// AppID — собственный идентификатор приложения: по нему GTK держит единственный экземпляр, а
+// окна и ярлыки не смешиваются с программами под другим app ID.
 const AppID = "tools.songframe.desktop"
 
 // ProfileStore — нужная оболочке граница файловой системы. Сервис не определяет
@@ -47,7 +47,7 @@ type RootAllower interface {
 }
 
 // AppService обслуживает только реализованные операции оболочки. Здесь нет
-// поиска Python/Node/ORT, автоматического открытия клипа или чтения старого профиля.
+// поиска Python/Node/ORT и автоматического открытия клипа.
 // Callback готовности принадлежит smoke-проверке main, а не пользовательскому workflow.
 type AppService struct {
 	profile   ProfileStore
@@ -84,8 +84,8 @@ func (s *AppService) State() (AppState, error) {
 		History:  []ProjectHistoryEntry{},
 		Platform: s.platform,
 	}
-	// Текущий проект и история — те же файлы и правила, что Projects.appState оригинала:
-	// пропавшая папка текущего проекта даёт null, повреждённый файл — ошибку старта с путём.
+	// Текущий проект и история читаются из каталога состояния: пропавшая папка текущего
+	// проекта даёт null, повреждённый файл — ошибку старта с путём.
 	local := store.NewLocalState(directory)
 	current, err := local.Current()
 	if err != nil {
@@ -96,7 +96,7 @@ func (s *AppService) State() (AppState, error) {
 			state.Current = &current
 			// Текущий проект из прошлого сеанса renderer не открывает заново (projects.open), а сразу
 			// показывает его медиа: корень разрешается здесь, как в Open. Без этого трек, обложка и
-			// референсы получали бы отказ медиасервера (в Electron local-file:// отдавал любой путь).
+			// референсы получали бы отказ медиасервера: он отдаёт файлы только разрешённых корней.
 			// Ошибка разрешения не мешает старту: страница покажет обычную ошибку проигрывателя.
 			if s.media != nil && info.IsDir() {
 				_ = s.media.AllowRoot(current)

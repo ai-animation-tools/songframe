@@ -13,11 +13,11 @@ import (
 	"songframe-go/internal/jscompat"
 )
 
-// fixedNow — время съёмки эталонов (FIXED_NOW скрипта capture-scenario.ts).
+// fixedNow — фиксированное время updated_at, записанное в эталонах.
 var fixedNow = time.Date(2026, 11, 4, 12, 0, 0, 0, time.UTC)
 
-// TestViewMatchesOriginal сверяет viewCast с эталонами cast-view и проверяет, что чтение не пишет.
-func TestViewMatchesOriginal(t *testing.T) {
+// TestViewMatchesGolden сверяет viewCast с эталонами cast-view и проверяет, что чтение не пишет.
+func TestViewMatchesGolden(t *testing.T) {
 	for _, item := range golden.Load(t, "cast-view") {
 		t.Run(item.Name, func(t *testing.T) {
 			path := item.ProjectPath()
@@ -29,7 +29,7 @@ func TestViewMatchesOriginal(t *testing.T) {
 			_ = json.Unmarshal(item.Expected(t), &want)
 			if want.Throws != nil {
 				if err == nil {
-					t.Fatalf("оригинал завершился исключением %q, Go вернул результат", *want.Throws)
+					t.Fatalf("эталон завершился исключением %q, Go вернул результат", *want.Throws)
 				}
 				return
 			}
@@ -55,9 +55,9 @@ type writeExpectation struct {
 	} `json:"resave"`
 }
 
-// TestWriteMatchesOriginal сверяет initCast/writeCast: текст ошибки, результат, состав и байты
+// TestWriteMatchesGolden сверяет initCast/writeCast: текст ошибки, результат, состав и байты
 // изменённых файлов, стабильность повторного сохранения. Запись — на копии входа.
-func TestWriteMatchesOriginal(t *testing.T) {
+func TestWriteMatchesGolden(t *testing.T) {
 	previous := now
 	now = func() time.Time { return fixedNow }
 	defer func() { now = previous }()
@@ -91,7 +91,7 @@ func TestWriteMatchesOriginal(t *testing.T) {
 			}
 			again, err := run(jscompat.DeepClone(result))
 			if want.Resave.Error != nil || err != nil {
-				t.Fatalf("повторное сохранение: оригинал %v, Go %v", want.Resave.Error, err)
+				t.Fatalf("повторное сохранение: эталон %v, Go %v", want.Resave.Error, err)
 			}
 			if same := jscompat.Stringify(again) == jscompat.Stringify(result); same != want.Resave.SameResult {
 				t.Fatalf("повторный результат совпадает: %v, ожидалось %v", same, want.Resave.SameResult)
@@ -106,9 +106,9 @@ func assertWrite(t *testing.T, item golden.Case, wantError *string, wantResult j
 	t.Helper()
 	switch {
 	case wantError != nil && err == nil:
-		t.Fatalf("оригинал отказал %q, Go сохранил", *wantError)
+		t.Fatalf("эталон отказал %q, Go сохранил", *wantError)
 	case wantError == nil && err != nil:
-		t.Fatalf("оригинал сохранил, Go: %v", err)
+		t.Fatalf("эталон сохранил, Go: %v", err)
 	case wantError != nil && err.Error() != *wantError:
 		t.Fatalf("ошибка\n  Go:  %s\n  TS:  %s", err, *wantError)
 	}
@@ -168,7 +168,7 @@ func treeFiles(t *testing.T, root string) map[string][]byte {
 	return result
 }
 
-// changes — created/changed/removed по пути, как treeChanges скрипта съёмки.
+// changes — created/changed/removed по пути, в формате изменений дерева эталона.
 func changes(before, after map[string][]byte) map[string]string {
 	result := map[string]string{}
 	for path, data := range after {

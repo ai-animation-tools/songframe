@@ -93,10 +93,10 @@ func (index lyricIndex) get(number any) (LyricsLine, bool) {
 	return line, found
 }
 
-// Validate — validateTiming(timing, lyrics, duration): проблемы разметки в порядке оригинала;
-// пустой список означает, что файл можно сохранить. timing — недоверенный документ (дерево
-// jscompat), duration nil или 0 — длительность неизвестна. Ошибка — исключение оригинала
-// (например, lines не массив), при котором сохранение тоже отклоняется.
+// Validate возвращает проблемы разметки в порядке проверок, зафиксированном эталоном
+// timing-validation; пустой список означает, что файл можно сохранить. timing — недоверенный
+// документ (дерево jscompat), duration nil или 0 — длительность неизвестна. Ошибка — документ
+// неверной формы (например, lines не массив), сохранение тоже отклоняется.
 func Validate(timing any, lyrics []LyricsLine, duration *float64) ([]string, error) {
 	problems := []string{}
 	byNumber := lyricIndex{}

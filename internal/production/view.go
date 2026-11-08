@@ -15,7 +15,7 @@ import (
 	"songframe-go/internal/providers"
 )
 
-// FPS — частота кадров шкалы клипа (FPS оригинала); реестр сцен хранит свою и её же требует.
+// FPS — частота кадров шкалы клипа; реестр сцен хранит свою и её же требует.
 const FPS = 30
 
 // Asset — принятые материалы плана в assets/shots/Mxx: пути только к существующим файлам.
@@ -271,7 +271,7 @@ func selectedVideoProvider(project string) (string, error) {
 }
 
 // ViewProduction — viewProduction(project): состояние планов по файлам проекта. Без реестра —
-// пустой вид с просьбой создать сценарий. Ошибка — исключение оригинала (повреждённый
+// пустой вид с просьбой создать сценарий. Ошибка отклоняет весь вызов (повреждённый
 // workflow.json, нечитаемый plan/project.json при непустом реестре). Ничего не пишет.
 func ViewProduction(project string) (View, error) {
 	view := View{Shots: []*ShotProduction{}, Broken: []Broken{}, Problems: []string{}, Tools: toolsAvailability()}
@@ -295,7 +295,7 @@ func ViewProduction(project string) (View, error) {
 		if jscompat.IsNullish(sequence) {
 			return View{}, &jscompat.TypeError{Message: "Cannot read properties of " + jscompat.TypeOf(sequence) + " (reading 'id')"}
 		}
-		// new Map(...): повтор ID заменяет прежнее название.
+		// Повтор ID заменяет прежнее название.
 		titles[jscompat.ToString(jscompat.Get(sequence, "id"))] = jscompat.Get(sequence, "title")
 	}
 	list, err := jscompat.Iterate(jscompat.Get(scenes, "scenes"))

@@ -1,12 +1,11 @@
-// Package mediacmd — общий запуск FFmpeg/ffprobe для перенесённых медиаинструментов (этап 46):
-// cut_speech, contact_sheet, build_review, build_animatic и рендер участка accept_shot.
+// Package mediacmd запускает FFmpeg/ffprobe для медиаинструментов: cut_speech, contact_sheet,
+// build_review, build_animatic и рендер участка accept_shot.
 //
-// В оригинале каждый инструмент звал subprocess.run(["ffmpeg", …], capture_output=True) и сам
-// составлял текст ошибки из хвоста stderr; тексты различаются, поэтому пакет отдаёт сырой исход
-// (код, stdout, stderr), а формулировку оставляет инструменту. Общими здесь являются только поиск
-// программ (пара менеджера компонентов или имена из PATH), исход незапустившейся программы
-// (FileNotFoundError, как у subprocess) и параметры кодирования и probe build_animatic, которые
-// оригинал импортировал из build_animatic в accept_shot.
+// Каждый инструмент сам составляет текст ошибки из хвоста stderr, и тексты различаются, поэтому
+// пакет отдаёт сырой исход (код, stdout, stderr), а формулировку оставляет инструменту. Общими
+// здесь являются только поиск программ (пара менеджера компонентов или имена из PATH), исход
+// незапустившейся программы (FileNotFoundError, как у subprocess) и параметры кодирования и probe
+// build_animatic, которые использует и accept_shot.
 //
 // Запуск идёт через internal/process: без shell и окна консоли, с отменой через context и
 // завершением потомков. Пакет не владеет состоянием, кроме подменяемой функции Programs.
@@ -22,7 +21,7 @@ import (
 )
 
 // Programs — пути FFmpeg и ffprobe. Приложение подставляет пару менеджера компонентов (main.go);
-// пустой путь означает голое имя, которое ищется в PATH, как в оригинале. Тесты подменяют функцию.
+// пустой путь означает голое имя, которое ищется в PATH. Тесты подменяют функцию.
 var Programs = func() (ffmpeg, ffprobe string) { return "", "" }
 
 // FFmpeg — путь FFmpeg или имя «ffmpeg» для поиска в PATH.
@@ -121,7 +120,7 @@ func Tail(data []byte, limit int) string {
 }
 
 // AnimaticRun — run(args) build_animatic: stdout программы; ненулевой код — ValueError с
-// последними 1200 знаками stderr. Его же зовёт accept_shot оригинала.
+// последними 1200 знаками stderr. Его же зовёт accept_shot.
 func AnimaticRun(ctx context.Context, program string, args ...string) ([]byte, error) {
 	result, err := Run(ctx, program, args...)
 	if err != nil {
@@ -144,8 +143,7 @@ func AnimaticProbe(ctx context.Context, path string) (*pycompat.Dict, error) {
 }
 
 // LoadProbe — json.loads(bytes) вывода ffprobe: строгий UTF-8 и JSON Python. Если JSON — не
-// объект, возвращается nil без ошибки: оригинал сразу индексировал результат, и какое исключение
-// поднять, решает вызывающий.
+// объект, возвращается nil без ошибки: какое исключение поднять, решает вызывающий.
 func LoadProbe(data []byte) (*pycompat.Dict, error) {
 	text, err := pycompat.DecodeUTF8(data)
 	if err != nil {

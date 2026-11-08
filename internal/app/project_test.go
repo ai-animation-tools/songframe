@@ -63,7 +63,7 @@ func TestProjectServiceMediaValidation(t *testing.T) {
 
 // Незавершённый проект не регистрирует трек; исправный snapshot получает URL только в памяти.
 // TestProjectServiceOpenMatchesGolden проходит все эталоны status: open либо отклоняет папку
-// текстом оригинала, либо возвращает тот же статус, что status, и делает проект текущим.
+// текстом эталона, либо возвращает тот же статус, что status, и делает проект текущим.
 func TestProjectServiceOpenMatchesGolden(t *testing.T) {
 	for _, item := range golden.Load(t, "status") {
 		if !item.HasProject() {
@@ -85,7 +85,7 @@ func TestProjectServiceOpenMatchesGolden(t *testing.T) {
 			value, err := service.Open(root)
 			if open.Error != nil || open.Throws != nil {
 				if err == nil {
-					t.Fatal("открыт проект, который оригинал отклоняет")
+					t.Fatal("открыт проект, который эталон отклоняет")
 				}
 				if open.Error != nil && strings.ReplaceAll(err.Error(), root, "<project>") != *open.Error {
 					t.Fatalf("текст ошибки: %q", err.Error())

@@ -26,8 +26,8 @@ func (noAgents) Get(string) (scenarioworkflow.AgentJob, bool) {
 func (noAgents) List(string) []scenarioworkflow.AgentJob { return []scenarioworkflow.AgentJob{} }
 
 // TestStatusScenarioReview — projects.status добавляет проблему «проверьте сценарий», когда после
-// утверждения трактовки изменился кастинг (reviewProblem из ipc.ts оригинала), и снимает
-// свежесть аниматика. Открытие проекта этой проверки не делает, как в оригинале.
+// утверждения трактовки изменился кастинг (reviewProblem), и снимает свежесть аниматика.
+// Открытие проекта этой проверки не делает.
 func TestStatusScenarioReview(t *testing.T) {
 	root, err := golden.Root()
 	if err != nil {

@@ -140,8 +140,8 @@ func expectEvents(t *testing.T, window *fakeMontageWindow, want ...string) {
 	}
 }
 
-// TestMontageWindowSessionIsolation повторяет первый сценарий montage-window.test.ts:
-// пересылка только между владельцем и плеером, закрытие чужой сессии ничего не делает.
+// TestMontageWindowSessionIsolation — пересылка только между владельцем и плеером, закрытие
+// чужой сессии ничего не делает.
 func TestMontageWindowSessionIsolation(t *testing.T) {
 	h := newMontageHarness(t)
 	owner, other := newFakeMontageWindow(1), newFakeMontageWindow(2)
@@ -200,7 +200,7 @@ func TestMontageWindowSessionIsolation(t *testing.T) {
 }
 
 // TestMontageWindowSingleOwner — повторное открытие при открытом окне отвергается текстом
-// оригинала и не создаёт второе окно; вызов без окна и пустая сессия тоже отвергаются.
+// montageOpenFailed и не создаёт второе окно; вызов без окна и пустая сессия тоже отвергаются.
 func TestMontageWindowSingleOwner(t *testing.T) {
 	h := newMontageHarness(t)
 	owner := newFakeMontageWindow(1)
@@ -233,7 +233,7 @@ func TestMontageWindowSingleOwner(t *testing.T) {
 }
 
 // TestMontageWindowClosesWithOwner — закрытие владельца закрывает плеер; closed владельцу не
-// отправляется, потому что он уже уходит (третий и четвёртый сценарии оригинала).
+// отправляется, потому что он уже уходит.
 func TestMontageWindowClosesWithOwner(t *testing.T) {
 	h := newMontageHarness(t)
 	owner := newFakeMontageWindow(1)
@@ -276,8 +276,8 @@ func TestMontageWindowUserClose(t *testing.T) {
 	expectEvents(t, owner, `montage-window:closed "a"`, `montage-window:closed "b"`)
 }
 
-// TestMontageWindowCloseWhileCreating — закрытие владельцем до того, как фабрика вернула окно
-// (в оригинале — ещё загружающееся окно): созданное окно закрывается, closed приходит один раз.
+// TestMontageWindowCloseWhileCreating — закрытие владельцем до того, как фабрика вернула окно:
+// созданное окно закрывается, closed приходит один раз.
 func TestMontageWindowCloseWhileCreating(t *testing.T) {
 	h := newMontageHarness(t)
 	owner := newFakeMontageWindow(1)
@@ -330,8 +330,8 @@ func TestMontageWindowRestoresBounds(t *testing.T) {
 	}
 }
 
-// TestUsableMontageBoundsGolden сверяет перенос с эталоном montage-window-bounds, снятым с
-// usableMontageBounds и JSON.parse registerMontageWindow оригинала.
+// TestUsableMontageBoundsGolden сверяет разбор и проверку сохранённого положения с эталоном
+// testdata/golden/montage-window-bounds.
 func TestUsableMontageBoundsGolden(t *testing.T) {
 	var file struct {
 		Written string `json:"written"`
@@ -375,7 +375,7 @@ func TestUsableMontageBoundsGolden(t *testing.T) {
 			}
 		})
 	}
-	// Формат записи совпадает с JSON.stringify(getNormalBounds()) оригинала.
+	// Формат записи — компактный JSON {"x","y","width","height"} без перевода строки.
 	h := newMontageHarness(t)
 	h.service.saveBounds(newFakeMontageWindow(1))
 	if data, _ := os.ReadFile(filepath.Join(h.dir, "montage-window.json")); string(data) != file.Written {

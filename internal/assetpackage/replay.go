@@ -10,19 +10,19 @@ import (
 	"songframe-go/internal/pycompat"
 )
 
-// textReplayTarget, textReplayCopy и textReplayFilter — тексты отказов replay оригинала.
+// textReplayTarget, textReplayCopy и textReplayFilter — тексты отказов Replay.
 const (
 	textReplayTarget = "Нужен новый выходной файл вне assets."
 	textReplayCopy   = "Копия принятого монтажа не совпадает с оригиналом."
 	textReplayFilter = "Не удалось воспроизвести сохранённый монтажный фильтр."
 )
 
-// Replay — replay(path, destination, from_original, root) оригинала: воспроизведение принятого
-// монтажа комплекта path в новый файл destination вне assets. Штатный режим копирует принятые
+// Replay воспроизводит принятый монтаж комплекта path в новый файл destination вне assets.
+// Штатный режим копирует принятые
 // байты и сверяет SHA; fromOriginal повторяет этапы фильтров rebuild.stages из оригинала
 // генерации программой ffmpeg (путь ffmpeg) во временной папке. Комплект проверяется
-// ValidatePackage без сверки кода плана. Ошибки — исключения Python с текстами оригинала;
-// незапустившийся ffmpeg — FileNotFoundError, как у subprocess.run.
+// ValidatePackage без сверки кода плана. Ошибки — исключения Python (pycompat) с фиксированными
+// текстами; незапустившийся ffmpeg — FileNotFoundError, как у subprocess.run.
 func Replay(ctx context.Context, path, destination string, fromOriginal bool, root, ffmpeg string) error {
 	pack, err := ValidatePackage(path, "", root)
 	if err != nil {

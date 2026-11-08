@@ -64,7 +64,7 @@ func entityImages(cast map[string]any) map[string][]any {
 
 // TestKindChangeMovesFiles — смена типа переносит изображения, их промпты и общий промпт в папку
 // нового типа (байты те же), опустевшая папка без .gitkeep удаляется, а images кастинга получают
-// новые пути без расширения выбора пользователя. Отличие от 634fd94.
+// новые пути без расширения выбора пользователя.
 func TestKindChangeMovesFiles(t *testing.T) {
 	item := caseByName(t, "sources-save-cast", "unchanged")
 	project := item.CopyProject(t)

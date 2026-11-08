@@ -1,12 +1,11 @@
-// Package agents переносит в Go внешних текстовых агентов SongFrame (Codex и Claude Code):
+// Package agents ведёт внешних текстовых агентов SongFrame (Codex и Claude Code):
 // реестр исполнителей, глобальный выбор агента в settings.json, диагностику программы (поиск,
 // версия, вход), сведения аккаунта и каталог моделей, аргументы и потоковые протоколы обоих CLI,
 // задания с историей, отменой дерева процессов и вложениями изображений, а также явный выбор
 // исполнителей ИИ (ai.access).
 //
-// Владельцы поведения в замороженном оригинале — src/main/agent-*.ts, agents.ts, settings.ts,
-// ai-access.ts и src/shared/agent-providers.ts. Результат программы сохраняется: те же аргументы
-// CLI и stdin, тексты ошибок, формат settings.json и файлов истории jobs/agent-<uuid>.json.
+// Аргументы CLI и stdin, тексты ошибок, формат settings.json и файлов истории
+// jobs/agent-<uuid>.json зафиксированы эталонами testdata/golden/agents-*.
 // Внешние программы запускаются только общим internal/process: без shell и консоли, с
 // завершением дерева при отмене или тайм-ауте.
 package agents

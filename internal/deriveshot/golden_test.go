@@ -19,8 +19,8 @@ import (
 	"songframe-go/internal/pycompat"
 )
 
-// goldenFile — testdata/golden/derive-shot/cases.json: случаи CLI оригинала на копии общего образца
-// checks-base с настоящим FFmpeg (скрипт съёмки — capture-derive.py вне репозитория).
+// goldenFile — testdata/golden/derive-shot/cases.json: случаи CLI на копии общего образца
+// checks-base с настоящим FFmpeg.
 type goldenFile struct {
 	FFmpegVersion string       `json:"ffmpegVersion"`
 	Base          string       `json:"base"`
@@ -60,7 +60,7 @@ type stepSpec struct {
 	Setup []setupOp `json:"setup"`
 }
 
-// treeEntry — запись снимка дерева, как tree() скрипта съёмки.
+// treeEntry — запись снимка дерева в формате эталона.
 type treeEntry struct {
 	Dir    bool
 	Text   *string
@@ -75,7 +75,7 @@ func real(text, project, inputs string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(text, "<project>", project), "<inputs>", inputs)
 }
 
-// applyOps — apply_ops скрипта съёмки.
+// applyOps выполняет операции подготовки случая над копией проекта.
 func applyOps(t *testing.T, project, inputs string, ops []setupOp) {
 	t.Helper()
 	locate := func(name string) string {
@@ -135,8 +135,9 @@ func applyOps(t *testing.T, project, inputs string, ops []setupOp) {
 	}
 }
 
-// localCards подставляет в журнал из эталона отпечатки карточек, нарисованных Go: журнал снят с
-// карточками Pillow, а откат сверяет их с файлами проекта. Прочие записи журнала не меняются.
+// localCards подставляет в журнал из эталона отпечатки карточек, нарисованных Go: в эталоне
+// записаны отпечатки карточек Pillow, а откат сверяет их с файлами проекта. Прочие записи
+// журнала не меняются.
 func localCards(t *testing.T, project, path string) {
 	t.Helper()
 	value, err := readJSON(path)
@@ -173,7 +174,7 @@ func localCards(t *testing.T, project, path string) {
 	}
 }
 
-// mediaSummary — media() скрипта съёмки: сводка ffprobe видео и звука.
+// mediaSummary — сводка ffprobe видео и звука в формате эталона.
 func mediaSummary(t *testing.T, path string) any {
 	t.Helper()
 	result, err := mediacmd.Run(context.Background(), mediacmd.FFprobe(), "-v", "error", "-show_streams", "-of", "json", path)
@@ -205,7 +206,7 @@ func mediaSummary(t *testing.T, path string) any {
 	return summary
 }
 
-// treeSnapshot — tree(folder, base) скрипта съёмки.
+// treeSnapshot — снимок дерева folder относительно base в формате эталона.
 func treeSnapshot(t *testing.T, folder, base string) map[string]treeEntry {
 	t.Helper()
 	result := map[string]treeEntry{}
@@ -440,7 +441,7 @@ func copyDir(t *testing.T, from, to string) {
 	}
 }
 
-// injectIDs подменяет NewID идентификаторами транзакций оригинала по порядку создания.
+// injectIDs подменяет NewID идентификаторами транзакций эталона по порядку создания.
 func injectIDs(t *testing.T, ids []string) {
 	t.Helper()
 	queue := append([]string{}, ids...)
@@ -461,7 +462,7 @@ func injectIDs(t *testing.T, ids []string) {
 	})
 }
 
-// loadGolden читает эталон и сообщает, совпадает ли локальный FFmpeg с версией съёмки.
+// loadGolden читает эталон и сообщает, совпадает ли локальный FFmpeg с версией из эталона.
 func loadGolden(t *testing.T) (goldenFile, bool) {
 	t.Helper()
 	var file goldenFile
@@ -488,9 +489,9 @@ func baseProject(t *testing.T, base string) string {
 	return filepath.Join(root, base, "project")
 }
 
-// TestDeriveShotGolden запускает Run на каждом случае эталона оригинала и сверяет коды, потоки и всё
+// TestDeriveShotGolden запускает Run на каждом случае эталона и сверяет коды, потоки и всё
 // изменённое дерево проекта: тексты манифестов, журналов и представлений побайтно, новые MP4 —
-// SHA-256, размером и сводкой ffprobe. ID транзакций выдаются те же, что у оригинала. Случаи со
+// SHA-256, размером и сводкой ffprobe. ID транзакций выдаются те же, что в эталоне. Случаи со
 // сборкой требуют той же версии FFmpeg: токен результата зависит от байтов кандидата.
 func TestDeriveShotGolden(t *testing.T) {
 	file, sameFFmpeg := loadGolden(t)

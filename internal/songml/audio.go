@@ -24,8 +24,8 @@ func AcceptedOptions(duration float64) Options {
 // AcceptedEngine — идентификатор рецепта для ключа кэша emissions и журнала задания.
 const AcceptedEngine = "go-ctc-global-v2"
 
-// ToPCM16 переводит float32 в 16-битный PCM так же, как separate_vocals оригинала
-// (np.rint(np.clip(x, -1, 32767/32768) * 32768)) и FFmpeg f32le→s16le: умножение на 2^15 точное,
+// ToPCM16 переводит float32 в 16-битный PCM
+// (np.rint(np.clip(x, -1, 32767/32768) * 32768), как FFmpeg f32le→s16le): умножение на 2^15 точное,
 // округление к чётному, насыщение до [-32768, 32767]. Это граница «PCM16 stereo44100» рецепта.
 func ToPCM16(value float32) int16 {
 	scaled := math.RoundToEven(float64(value) * 32768)
@@ -42,7 +42,7 @@ func ToPCM16(value float32) int16 {
 const WAVHeaderSize = 44
 
 // WriteStereoWAV пишет канонический PCM16 WAV 44,1 кГц стерео (RIFF/fmt 16/data) — формат
-// vocals.wav кэша вокала, который проверяют VocalStore и прежний оригинал.
+// vocals.wav кэша вокала, который проверяет VocalStore.
 func WriteStereoWAV(w io.Writer, signal [2][]float32) error {
 	n := len(signal[0])
 	if len(signal[1]) != n || n == 0 {
@@ -119,7 +119,7 @@ func DecodePCM16(data []byte) ([]float32, error) {
 	return out, nil
 }
 
-// MonoInput готовит вход CTC из готового vocals.wav так же, как принятый эксперимент:
+// MonoInput готовит вход CTC из готового vocals.wav:
 // FFmpeg сводит PCM16 stereo 44,1 кГц в PCM16 mono 16 кГц (штатный ресемплер swresample), затем
 // s16 переводится в float32. Промежуточный PCM16 — часть рецепта: прямой f32-выход FFmpeg дал бы
 // другие отсчёты. Программа запускается через общий process (отмена завершает её с потомками);
@@ -150,7 +150,7 @@ func MonoInput(ctx context.Context, ffmpeg, wav string) ([]float32, error) {
 }
 
 // DecodeStereo декодирует полный трек в interleaved float32 stereo 44,1 кГц без обрезки и
-// нормализации (mdx.decode_stereo оригинала) и раскладывает каналы для Separate.
+// нормализации и раскладывает каналы для Separate.
 func DecodeStereo(ctx context.Context, ffmpeg, source string) ([2][]float32, error) {
 	var signal [2][]float32
 	var stdout bytes.Buffer

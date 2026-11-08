@@ -15,11 +15,12 @@ type checkedDraft struct {
 	clips  []*jscompat.Object
 }
 
-// validate — Montage.validate(project, value, complete, view, checkFiles). Незавершённый черновик
+// validate проверяет черновик монтажа. Незавершённый черновик
 // (complete=false) проверяется структурно: снимок SHA, переносимые пути (с checkFiles — и наличие
 // файлов), кадровые границы, неповторяющиеся сцены и фрагменты, длина участка в пределах известной
 // длины исходника. Полный (complete) дополнительно требует сцены текущего реестра, равенство длины
-// видеодорожки участку музыки, текущий трек и участок внутри песни. Первая ошибка — текст оригинала.
+// видеодорожки участку музыки, текущий трек и участок внутри песни. Возвращается первая ошибка;
+// порядок проверок зафиксирован эталоном.
 func validate(project string, value any, complete bool, view *View, checkFiles bool) (checkedDraft, error) {
 	object, ok := jscompat.AsObject(value)
 	if !ok {

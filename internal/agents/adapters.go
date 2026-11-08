@@ -193,7 +193,7 @@ func (a *claudeAdapter) Args(config Settings, version string, mode Mode, images 
 }
 
 // Input передаёт промпт как есть, а с вложениями — user-конвертом потокового SDK: байты
-// изображений идут в content base64, а не текстом путей. Ключи — в порядке JSON.stringify оригинала.
+// изображений идут в content base64, а не текстом путей. Порядок ключей зафиксирован эталонами.
 func (a *claudeAdapter) Input(prompt string, images []Image) (string, error) {
 	input := prompt
 	if len(images) > 0 {

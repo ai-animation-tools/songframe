@@ -1,13 +1,11 @@
-// Package checks — перенос группы checks.list/run/runAll из src/main/checks.ts замороженного
-// оригинала: проверки проекта запускаются заданиями общего менеджера с журналом и кодом
-// завершения. Каждая проверка — один шаг с инструментом комплекса; в Go-версии перенесённые
-// инструменты (internal/tools) выполняются в процессе приложения, поэтому проверкам не нужны
-// Python и FFmpeg (оригинал перед запуском требовал оба, см. requireMediaBinaries).
+// Package checks запускает проверки проекта (checks.list/run/runAll) заданиями общего менеджера
+// с журналом и кодом завершения. Каждая проверка — один шаг с инструментом комплекса; инструменты
+// (internal/tools) выполняются в процессе приложения, поэтому проверкам не нужны Python и FFmpeg.
 //
-// Журнал повторяет оригинал: строка «$ <подпись> <аргументы>» (пишет менеджер), затем stdout и
+// Журнал: строка «$ <подпись> <аргументы>» (пишет менеджер), затем stdout и
 // stderr инструмента; причина сбоя шага — stderr, иначе stdout (после trim), иначе «Шаг … завершился
 // с кодом N.». Пересборка карточек и списков (checks.updateViews) — задание вида tool с одним шагом
-// update_scene_views без --check, как в оригинале. Пробы стыков (buildReview, listReviews,
+// update_scene_views без --check. Пробы стыков (buildReview, listReviews,
 // removeReview) — в reviews.go.
 package checks
 
@@ -48,7 +46,7 @@ type Options struct {
 	Next   bool `json:"next,omitempty"`
 }
 
-// all — CHECKS оригинала в том же порядке и с теми же текстами.
+// all — проверки контракта; порядок и тексты видны в UI и сверяются TestListMatchesGolden.
 var all = []Info{
 	{ID: Lint, Label: textSceneDataLabel, Description: textSceneDataDescription, Tool: "lint_registry", NeedsScenes: true},
 	{ID: Views, Label: textViewsLabel, Description: textViewsDescription, Tool: "update_scene_views", NeedsScenes: true},
@@ -57,10 +55,10 @@ var all = []Info{
 	{ID: Status, Label: textStatusLabel, Description: textStatusDescription, Tool: "shot_status", NeedsScenes: true},
 }
 
-// List — CHECKS: все проверки контракта в порядке оригинала.
+// List — все проверки контракта в порядке показа (копия, вызывающий может её менять).
 func List() []Info { return append([]Info(nil), all...) }
 
-// find — проверка по ID; неизвестный ID — ошибка вызова с текстом оригинала.
+// find — проверка по ID; неизвестный ID — ошибка вызова с текстом textUnknownCheck.
 func find(id ID) (Info, error) {
 	for _, info := range all {
 		if info.ID == id {
@@ -70,7 +68,7 @@ func find(id ID) (Info, error) {
 	return Info{}, errors.New(textUnknownCheck(string(id)))
 }
 
-// args — checkStep оригинала: аргументы инструмента по проверке и параметрам.
+// args — аргументы инструмента по проверке и параметрам.
 func args(id ID, options Options) []string {
 	result := []string{}
 	switch {
@@ -84,7 +82,7 @@ func args(id ID, options Options) []string {
 	return result
 }
 
-// step — шаг задания для перенесённой проверки: инструмент на папке проекта, вывод в журнал.
+// step — шаг задания проверки: инструмент на папке проекта, вывод в журнал.
 func step(project string, info Info, options Options, continueOnFailure bool) jobs.Step {
 	arguments := args(info.ID, options)
 	return jobs.Step{
@@ -95,7 +93,7 @@ func step(project string, info Info, options Options, continueOnFailure bool) jo
 				return err
 			}
 			// Инструменты печатают stdout до stderr (отказы parser.exit и трассировка — в конце),
-			// поэтому последовательная запись совпадает с порядком журнала PYTHONUNBUFFERED.
+			// поэтому последовательная запись даёт тот же порядок, что вывод процесса без буфера.
 			journal.Log(result.Stdout)
 			journal.Log(result.Stderr)
 			if result.Code == nil || *result.Code == 0 {
@@ -151,8 +149,8 @@ func (s *Service) UpdateViews(project string) (jobs.Info, error) {
 		Steps: []jobs.Step{step(project, info, Options{}, false)}})
 }
 
-// jsTrim — String.prototype.trim причины сбоя, как в PythonLauncher оригинала: пробельные
-// символы Unicode и BOM, кроме U+0085.
+// jsTrim — обрезка причины сбоя по правилам String.prototype.trim: пробельные символы Unicode
+// и BOM, кроме U+0085; от неё зависит текст причины задания.
 func jsTrim(text string) string {
 	return strings.TrimFunc(text, func(r rune) bool { return r == 0xFEFF || (r != '\u0085' && unicode.IsSpace(r)) })
 }

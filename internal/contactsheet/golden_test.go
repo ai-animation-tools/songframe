@@ -20,8 +20,8 @@ import (
 	"songframe-go/internal/mediacmd"
 )
 
-// Эталон contact-sheet снят с CLI tools/contact_sheet оригинала (Python + Pillow 10.2) на
-// синтетических проектах: входы воспроизводятся тем же FFmpeg из описания случая. Сверяются код,
+// Эталон contact-sheet описывает синтетические проекты (семантика Python + Pillow 10.2): входы
+// воспроизводятся FFmpeg из описания случая. Сверяются код,
 // stdout (отчёт и таблица побайтно), stderr (у трассировки — заголовок и последняя строка), состав
 // файлов проекта, размеры и средние цвета сетки 4×4 каждого PNG, поля ffprobe превью, неизменность
 // входов и пустой TMPDIR. Граничные кадры совпадают по пикселям точно (их декодирует FFmpeg); лист и
@@ -90,7 +90,7 @@ func digest(t *testing.T, path string) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// projectFiles — файлы проекта относительно корня через «/», по алфавиту (как rglob съёмки).
+// projectFiles — файлы проекта относительно корня через «/», по алфавиту (как в списке эталона).
 func projectFiles(t *testing.T, root string) []string {
 	files := []string{}
 	err := filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
@@ -110,7 +110,7 @@ func projectFiles(t *testing.T, root string) []string {
 	return files
 }
 
-// pictureGrid — размеры и средний RGB 16 ячеек, как grid съёмки (Pillow convert("RGB")).
+// pictureGrid — размеры и средний RGB 16 ячеек, как поле grid эталона (Pillow convert("RGB")).
 func pictureGrid(t *testing.T, path string) (int, int, [][3]float64) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -144,7 +144,7 @@ func pictureGrid(t *testing.T, path string) (int, int, [][3]float64) {
 	return w, h, cells
 }
 
-// videoFields — поля ffprobe превью, как video_fields съёмки.
+// videoFields — поля ffprobe превью для сверки с ожидаемыми полями эталона.
 func videoFields(t *testing.T, path string) sheetProduced {
 	output, err := exec.Command("ffprobe", "-v", "error", "-show_streams", "-show_format", "-of", "json", path).Output()
 	if err != nil {

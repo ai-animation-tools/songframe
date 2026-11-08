@@ -1,9 +1,8 @@
 import { settingsTexts } from '@shared/texts/settings';
 import { commonTexts } from '@shared/texts/common';
 /**
- * Блок агента страницы настроек. Отличие от 634fd94: вынесен из SettingsPage без изменения разметки,
- * чтобы при неперенесённых методах агентов страница показывала причину, но оставалась доступной
- * (переход к компонентам и обновлениям).
+ * Блок агента страницы настроек. Вынесен отдельно, чтобы при ошибке методов агентов страница
+ * показывала причину, но оставалась доступной (переход к компонентам и обновлениям).
  */
 import type { ReactElement } from 'react';
 import { Alert, LinearProgress, Paper, Stack, Typography } from '@mui/material';
@@ -19,7 +18,7 @@ import { useAgentAccount } from '../useAgentAccount';
 import { useAgentModels } from '../useAgentModels';
 import { useInstalledAgents } from '../useInstalledAgents';
 
-/** Настройки агента: форма, проверка программы и аккаунт; монтируется, когда методы агентов перенесены в Go. */
+/** Настройки агента: форма, проверка программы и аккаунт; ошибка загрузки показывается внутри блока. */
 export function AgentSettingsSection(): ReactElement {
   const form = useAgentSettings();
   const { online } = useApp();

@@ -18,7 +18,7 @@ import (
 	"songframe-go/internal/golden"
 )
 
-// domain — каталог эталона CLI build_animatic (снят с оригинала 634fd94, см. testdata/golden/README.md).
+// domain — каталог эталона CLI build_animatic (см. testdata/golden/README.md).
 const domain = "build-animatic"
 
 // goldenCases — cases.json домена.
@@ -69,7 +69,7 @@ func requireMedia(t *testing.T, want string) bool {
 	return strings.SplitN(string(output), "\n", 2)[0] == want
 }
 
-// TestGolden воспроизводит сценарии CLI оригинала на копиях входного клипа: код, stdout, stderr,
+// TestGolden воспроизводит сценарии CLI эталона на копиях входного клипа: код, stdout, stderr,
 // разность дерева проекта, тексты latest и сводку ffprobe готового MP4.
 func TestGolden(t *testing.T) {
 	var data goldenCases
@@ -132,7 +132,7 @@ var (
 	durationPattern = regexp.MustCompile(`"(video_duration|source_audio_duration)": [0-9.e-]+`)
 )
 
-// normalize — нормализация вывода съёмки: путь проекта, время сборки и адреса FFmpeg.
+// normalize — нормализация вывода, как в эталоне: путь проекта, время сборки и адреса FFmpeg.
 func normalize(text, project string) string {
 	text = strings.ReplaceAll(text, project, "<project>")
 	text = addressPattern.ReplaceAllString(text, "@ <addr>")
@@ -306,7 +306,7 @@ func copyTree(t *testing.T, source string) string {
 	return target
 }
 
-// probeSummary — сводка ffprobe MP4, как probe() скрипта съёмки.
+// probeSummary — сводка ffprobe MP4 в формате эталона.
 func probeSummary(t *testing.T, path string) []byte {
 	t.Helper()
 	output, err := exec.Command("ffprobe", "-v", "error", "-show_streams", "-show_format", "-show_chapters", "-of", "json", path).Output()

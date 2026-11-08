@@ -8,7 +8,7 @@ argument-hint: "[version=X.Y.Z]"
 
 Прочитай `AGENTS.md`, `packaging/README.md`, `packaging/windows/README.md` и фактические `Taskfile.yml`/`scripts/`. Сборку и smoke выполняй по соседнему [songframe-go-build](../songframe-go-build/SKILL.md). Собственного скрипта выпуска нет: механические шаги ниже выполняются `wails3 task`, `git` и `gh`.
 
-Канал выпуска один — публичный `ai-animation-tools/songframe`: выпуски, сайт `https://ai-animation-tools.github.io/songframe/` (`www/` и `.github/workflows/pages.yml`), issues и адрес обновлений из приложения. Поставки: Linux x86_64 AppImage и deb, Windows amd64 NSIS. Первый Go-выпуск — `v1.0.0`; выпуски Electron 0.x и их теги `v0.*` остаются в истории, их не удаляют и не переносят.
+Канал выпуска один — публичный `ai-animation-tools/songframe`: выпуски, сайт `https://ai-animation-tools.github.io/songframe/` (`www/` и `.github/workflows/pages.yml`), issues и адрес обновлений из приложения. Поставки: Linux x86_64 AppImage и deb, Windows amd64 NSIS. Опубликованные выпуски и их теги не удаляют и не переносят.
 
 ## Объём поручения
 
@@ -22,7 +22,7 @@ argument-hint: "[version=X.Y.Z]"
 ## Постоянные условия выпуска
 
 1. **Имена файлов.** Скрипты выпускают `songframe-<VERSION>-linux-x86_64.AppImage`, `songframe-<VERSION>-linux-amd64.deb` и `songframe-<VERSION>-win-x64-setup.exe` — имена, которые ищут обновление из приложения и сайт.
-2. **Идентификаторы продукта** (D-038 в spec): имя «SongFrame», бинарник `songframe`, app ID `tools.songframe.desktop`, профиль `songframe-desktop`, папка Windows `%LOCALAPPDATA%\Programs\SongFrame Desktop`, ключ удаления `SongFrameDesktop`. Без решения пользователя не меняются.
+2. **Идентификаторы продукта:** имя «SongFrame», бинарник `songframe`, app ID `tools.songframe.desktop`, профиль `songframe-desktop`, папка Windows `%LOCALAPPDATA%\Programs\SongFrame Desktop`, ключ удаления `SongFrameDesktop`. Без решения пользователя не меняются.
 3. **Версия.** `packaging/VERSION` — единственный источник версии поставки; выпуск требует `X.Y.Z` без prerelease-суффикса, тег — `vX.Y.Z`. Числовая версия PE для Windows выводится из того же файла. `frontend/package.json` версией поставки не является.
 4. **Обновление из приложения** (`internal/updates`): последний выпуск, вложение своей поставки по точному имени из условия 1, digest SHA-256 и размер. Каждый выпуск обязан содержать все три пакета; пропущенный пакет пользователи этой поставки увидят как «В выпуске нет пакета для этой системы». Проверка — `smoke:update` для AppImage и сценарий Windows из packaging/windows/README.
 5. **Нативная Windows-проверка.** Сборка установщика на Linux не доказывает работу в Windows. Прогон в VM — только по явному поручению; без него Windows в описании указывается как проверенный только по составу установщика.

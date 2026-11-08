@@ -44,7 +44,7 @@ var (
 	alignmentComponents  = []string{"ffmpeg", "ort-cpu", "ctc-ru", "ctc-vocab"}
 )
 
-// stepTimeout — лимит шага выделения и разметки, как timeoutMs оригинала.
+// stepTimeout — лимит шага выделения и разметки.
 const stepTimeout = 90 * time.Minute
 
 // Components — часть менеджера компонентов, нужная разметке (в тестах — заглушка).
@@ -65,8 +65,9 @@ type SongModelSetup struct {
 	TotalBytes int64  `json:"totalBytes"`
 }
 
-// GenerateOptions — TimingGenerateOptions. Vocals сохранён в контракте: разметка всегда идёт по
-// выбранному готовому вокалу, режима распознавания исходного трека больше нет.
+// GenerateOptions — TimingGenerateOptions. Reset — разметить заново без переноса подтверждённых
+// строк. Vocals остаётся в контракте, но выбора не даёт: разметка всегда идёт по выбранному
+// готовому вокалу.
 type GenerateOptions struct {
 	Vocals bool `json:"vocals,omitempty"`
 	Reset  bool `json:"reset,omitempty"`
@@ -173,7 +174,7 @@ func (s *Service) SelectVocal(project, id string) (VocalPreparationView, error) 
 	return s.VocalsView(project), nil
 }
 
-// DeleteVocal — deleteVocal: перенос варианта в корзину ОС; занятый заданием вокал не удаляется.
+// DeleteVocal перемещает вариант вокала в корзину ОС; занятый заданием вокал не удаляется.
 func (s *Service) DeleteVocal(project, id string, discard func(string) error) (VocalPreparationView, error) {
 	if err := s.store.Delete(project, id, s.projectBusy(project), discard); err != nil {
 		return VocalPreparationView{}, err
@@ -317,7 +318,7 @@ func (s *Service) Cancel(id string) (jobs.Info, error) {
 	return info, nil
 }
 
-// threads — потоки ORT: политика оригинала max(1, min(8, число CPU)).
+// threads — потоки ORT: max(1, min(8, число CPU)).
 func threads() int { return max(1, min(8, runtime.NumCPU())) }
 
 // ready проверяет операцию менеджером компонентов (ожидая занятый менеджер) и возвращает

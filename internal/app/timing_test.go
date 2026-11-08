@@ -10,7 +10,7 @@ import (
 )
 
 // TestTimingServiceSave — сохранение через Wails-метод: тот же документ JSON на входе
-// (json.RawMessage), побайтно тот же timing.json, что у saveTiming оригинала, и ответ —
+// (json.RawMessage), побайтно тот же timing.json, что в эталоне timing-save, и ответ —
 // сохранённый документ без потери неизвестных полей.
 func TestTimingServiceSave(t *testing.T) {
 	service := NewTimingService(nil, nil, nil, t.TempDir())
@@ -29,7 +29,7 @@ func TestTimingServiceSave(t *testing.T) {
 				t.Fatal(err)
 			}
 			if string(written) != string(item.Read(t, "expected-timing.json")) || string(result) != string(written) {
-				t.Fatalf("сохранение отличается от оригинала:\n%s", written)
+				t.Fatalf("сохранение отличается от эталона:\n%s", written)
 			}
 		})
 	}

@@ -15,7 +15,7 @@ import (
 	"songframe-go/internal/projectfs"
 )
 
-// Узкий журнал замены рабочего пакета (production-workflow-apply.ts оригинала). Перед Apply
+// Узкий журнал замены рабочего пакета. Перед Apply
 // изменяемая часть пакета копируется в каталог состояния, а намерение отката записывается в
 // pending.json; после успеха журнал удаляется, после ошибки или обрыва процесса пакет
 // возвращается к резерву. Платные попытки никогда не откатываются и не заменяются: пакет с
@@ -30,8 +30,8 @@ import (
 // ApplyFolder — каталог журналов замены пакета внутри каталога состояния приложения.
 const ApplyFolder = "production-apply"
 
-// pendingSchema — версия pending.json. Go-версия пишет и читает только v2 (с защищёнными
-// image-попытками): v1 оригинала — прежний формат, который Go никогда не записывает.
+// pendingSchema — версия pending.json: пишется и читается только v2 (с защищёнными
+// image-попытками), другие версии отклоняются.
 const pendingSchema = 2
 
 var journalName = regexp.MustCompile(`^[a-f0-9]{64}$`)
@@ -44,7 +44,8 @@ type protectedImage struct {
 	Files *jscompat.Object
 }
 
-// tree — ProtectedImage оригинала в порядке ключей { requestDir, requestSha256, frameId, files }.
+// tree — запись защищённой попытки в pending.json в порядке ключей { requestDir, requestSha256,
+// frameId, files }.
 func (p protectedImage) tree() *jscompat.Object {
 	object := jscompat.NewObject()
 	object.Set("requestDir", p.RequestDir)
@@ -63,7 +64,7 @@ type pending struct {
 	Protected  []protectedImage
 }
 
-// tree — pending.json в порядке ключей оригинала.
+// tree — pending.json в зафиксированном порядке ключей (байты журнала сверяет эталон).
 func (p pending) tree() *jscompat.Object {
 	images := make([]any, len(p.Protected))
 	for index, image := range p.Protected {
@@ -101,7 +102,7 @@ func videoStage(workflow *jscompat.Object) bool {
 	return slices.Contains(videoStages, jscompat.ToString(workflow.Value("stage")))
 }
 
-// packagePaid — productionPackagePaid оригинала: пакет есть и уже отправлял видео либо содержит
+// packagePaid сообщает, что пакет есть и уже отправлял видео либо содержит
 // любую оплату, включая проверенные image-попытки. Резерв с такой оплатой не восстанавливается.
 func packagePaid(directory string) (bool, error) {
 	if !jscompat.Exists(directory) {
@@ -117,7 +118,7 @@ func packagePaid(directory string) (bool, error) {
 	return attemptsPaid(directory, nil)
 }
 
-// imageFiles — files оригинала: отпечатки всех файлов и папок image-попытки directory (ключ —
+// imageFiles — отпечатки всех файлов и папок image-попытки directory (ключ —
 // путь от неё с разделителем ОС). Ссылка или особый файл — отказ: их байты нельзя доказать.
 // Ключи упорядочены по кодовым единицам UTF-16, а не localeCompare: порядок влияет только на
 // байты pending.json, сравнение снимков от порядка не зависит.
@@ -197,7 +198,7 @@ func roots(target string, images []protectedImage) []string {
 	return result
 }
 
-// verifyImages — verifyImages оригинала: история image-попыток пакета target (workflow — его
+// verifyImages проверяет, что история image-попыток пакета target (workflow — его
 // workflow.json или доказательство из резерва) совпадает со снимком, файлы попыток не изменились,
 // а нового видео или неизвестной оплаты в пакете нет. Снимки сравниваются как множества путей.
 func verifyImages(target string, images []protectedImage, workflow *jscompat.Object) error {
@@ -241,8 +242,8 @@ func verifyImages(target string, images []protectedImage, workflow *jscompat.Obj
 	return nil
 }
 
-// copyMutable — cpSync(source, target, { recursive, filter }) оригинала: изменяемая часть пакета
-// без защищённых image-попыток. Папки создаются (в том числе пустые), файлы перезаписываются с
+// copyMutable рекурсивно копирует изменяемую часть пакета source в target без защищённых
+// image-попыток. Папки создаются (в том числе пустые), файлы перезаписываются с
 // правами источника. Ссылок в пакете нет: снимок предложения их отклоняет, резерв их не содержит.
 func copyMutable(source, target string, images []protectedImage) error {
 	excluded := roots(source, images)
@@ -278,8 +279,7 @@ func copyMutable(source, target string, images []protectedImage) error {
 	return copyTree(source, target)
 }
 
-// copyFile копирует байты файла с правами perm (как copyFile Node: существующий файл
-// перезаписывается).
+// copyFile копирует байты файла с правами perm; существующий файл перезаписывается.
 func copyFile(from, to string, perm fs.FileMode) error {
 	source, err := os.Open(from)
 	if err != nil {
@@ -300,7 +300,7 @@ func copyFile(from, to string, perm fs.FileMode) error {
 	return os.Chmod(to, perm)
 }
 
-// removeMutable — removeMutable оригинала: удаляется только изменяемая часть пакета; ни пакет
+// removeMutable удаляет только изменяемую часть пакета; ни пакет
 // целиком, ни папки защищённых image-попыток не заменяются (папки-предки попыток остаются).
 func removeMutable(target string, images []protectedImage) error {
 	if !jscompat.Exists(target) {
@@ -331,7 +331,7 @@ func removeMutable(target string, images []protectedImage) error {
 	return visit(target)
 }
 
-// restore — restore оригинала: вернуть пакет к резерву журнала directory. Отказывает, сохраняя
+// restore возвращает пакет к резерву журнала directory. Отказывает, сохраняя
 // журнал, если проект недоступен, резерва нет, защищённые попытки изменились или в пакете
 // (резерве) появилась оплата.
 func restore(directory string, record pending) error {
@@ -381,18 +381,16 @@ func restore(directory string, record pending) error {
 	return nil
 }
 
-// errorString — String(error) оригинала для текстов журнала: «Error: сообщение».
+// errorString — вид ошибки в текстах журнала: «Error: сообщение» (формат зафиксирован эталоном).
 func errorString(err error) string { return "Error: " + err.Error() }
 
-// applyPackage — applyProductionPackage оригинала: выполнить apply над пакетом target проекта
+// applyPackage выполняет apply над пакетом target проекта
 // project (реальный путь) под журналом замены. Пакет с отправленным видео или неизвестной
 // оплатой и пакет, ждущий решения по image-попытке, не меняются. Ошибка apply или проверки
 // защищённых попыток откатывает пакет к резерву; если откат не удался, журнал остаётся для
 // восстановления при следующем запуске. Обрыв процесса внутри apply оставляет pending.json.
-//
-// Отличие от оригинала: pending.json пишется атомарно. Оригинал писал его writeFileSync, и обрыв
-// посреди записи оставлял нечитаемый журнал: восстановление и любые следующие Apply пакета
-// отказывали до ручной уборки каталога состояния.
+// pending.json пишется атомарно: обрыв посреди записи не оставляет нечитаемый журнал, который
+// блокировал бы восстановление и следующие Apply пакета.
 func applyPackage(localDir, project, target string, apply func() error) error {
 	packageDir, err := applyPackagePath(project, target)
 	if err != nil {
@@ -447,7 +445,7 @@ func applyPackage(localDir, project, target string, apply func() error) error {
 	return os.RemoveAll(directory)
 }
 
-// rollback — ветка catch applyProductionPackage: откат к резерву и исходная ошибка, либо ошибка
+// rollback — откат applyPackage после ошибки: откат к резерву и исходная ошибка, либо ошибка
 // с обоими текстами, если откат не удался (журнал тогда остаётся).
 func rollback(directory string, record pending, cause error) error {
 	if err := restore(directory, record); err != nil {
@@ -459,7 +457,7 @@ func rollback(directory string, record pending, cause error) error {
 	return cause
 }
 
-// readPending — разбор pending.json с проверками оригинала: только v2, абсолютный проект,
+// readPending — разбор pending.json с проверками: только v2, абсолютный проект,
 // относительный пакет, снимки защищённых попыток без выхода за их папку.
 func readPending(path string) (pending, error) {
 	value, err := readJSON(path)
@@ -500,7 +498,7 @@ func readPending(path string) (pending, error) {
 	return record, nil
 }
 
-// RecoverInterrupted — recoverInterruptedProductionApplies оригинала: до открытия проектов
+// RecoverInterrupted до открытия проектов
 // восстанавливает только явно записанные незавершённые замены пакетов (каталоги с pending.json)
 // в каталоге состояния localDir. Сбой одного журнала не мешает остальным; журнал с ошибкой
 // остаётся для разбора, а итоговая ошибка перечисляет причины. Каталоги без pending.json — резерв

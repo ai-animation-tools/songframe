@@ -11,7 +11,7 @@ import (
 	"songframe-go/internal/tools"
 )
 
-// Тексты задания сборки: animaticTexts.main и notificationsTexts.animaticCheckTitle оригинала.
+// Тексты задания сборки и уведомления о проверке аниматика.
 const (
 	textUpdateViewsStep = "карточки и представления"
 	textCheckInputsStep = "проверка входов"
@@ -24,11 +24,11 @@ const (
 // Runner — запуск инструмента комплекса по имени (tools.RunContext); тесты подменяют его.
 type Runner func(ctx context.Context, project, name string, args []string) (tools.Result, error)
 
-// Service — класс Animatic оригинала: сборка аниматика заданием менеджера. Сам ничего не пишет
+// Service — сборка аниматика заданием менеджера. Сам ничего не пишет
 // в проект; файлы меняют инструменты шагов (update_scene_views, build_animatic).
 type Service struct {
 	// start — Manager.Start; nil — менеджер не подключён. Тесты эталона подменяют его записью
-	// аргументов, как подставной jobs.start при съёмке.
+	// аргументов задания.
 	start func(jobs.Spec) (jobs.Info, error)
 	run   Runner
 }
@@ -67,7 +67,7 @@ func (s *Service) Build(project string, planOnly bool) (jobs.Info, error) {
 }
 
 // toolStep — шаг, запускающий инструмент: вывод уходит в журнал задания, ненулевой код — сбой с
-// причиной из stderr (иначе stdout), как у шагов Python оригинала; отмена — StoppedMessage.
+// причиной из stderr (иначе stdout), как у остальных шагов-инструментов; отмена — StoppedMessage.
 func (s *Service) toolStep(project, tool string, args []string, label string) jobs.Step {
 	return jobs.Step{
 		Tool: tool, Label: label, Args: args,

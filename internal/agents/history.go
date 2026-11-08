@@ -32,10 +32,10 @@ type InputHashes struct {
 	Context string `json:"context"`
 }
 
-// Job — AgentJob контракта и запись истории jobs/agent-<id>.json. Порядок полей — порядок ключей
-// объекта оригинала (сначала поля создания, затем назначаемые по ходу cliVersion, sessionId,
-// diagnostic, message), поэтому файлы истории совпадают с Electron байт в байт. Промпт, контекст,
-// stderr и сырые события провайдера сюда не попадают; result и task очищены Redact.
+// Job — AgentJob контракта и запись истории jobs/agent-<id>.json. Порядок полей (сначала поля
+// создания, затем назначаемые по ходу cliVersion, sessionId, diagnostic, message) входит в формат
+// файлов истории и зафиксирован эталонами. Промпт, контекст, stderr и сырые события провайдера
+// сюда не попадают; result и task очищены Redact.
 //
 // FinishedAt и ExitCode — nullable-поля контракта; менеджер всегда заменяет указатель новым
 // значением и не меняет указываемое, поэтому поверхностная копия Job — независимый снимок.
@@ -104,7 +104,7 @@ func (h *History) Read() []Job {
 	return jobs
 }
 
-// readJob проверяет запись по правилам оригинала (типы JS и закрытые наборы значений), затем
+// readJob проверяет запись по правилам формата истории (типы JS и закрытые наборы значений), затем
 // декодирует её в Job.
 func readJob(path, name string) (Job, bool) {
 	info, err := os.Stat(path)

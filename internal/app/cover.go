@@ -20,8 +20,8 @@ import (
 // textCoverWindowClosed — applicationTexts.coverWindowClosed.
 const textCoverWindowClosed = "Окно генерации обложки закрыто."
 
-// CoverGenerators — генераторы обложки и референсов приложения (cover и referenceImages
-// оригинала): общая подготовка провайдером изображений проекта, различается только назначение.
+// CoverGenerators — генераторы обложки и референсов приложения (группы cover и
+// referenceImages): общая подготовка провайдером изображений проекта, различается только назначение.
 type CoverGenerators struct {
 	Cover     *covergen.Generator
 	Reference *covergen.Generator
@@ -57,7 +57,7 @@ func NewCoverGenerators(access *agents.AccessChecker, layer *providers.Layer, me
 	return CoverGenerators{Cover: covergen.New(options), Reference: covergen.New(reference)}
 }
 
-// coverRoutes — общая часть маршрутов cover:* и referenceImages:* оригинала: проверка доступа,
+// coverRoutes — общая часть маршрутов cover:* и referenceImages:*: проверка доступа,
 // проект каждой сессии и владелец-окно. Перезагрузка или закрытие окна закрывает его сессии, не
 // оставляя непринятые картинки до завершения приложения.
 type coverRoutes struct {
@@ -68,7 +68,7 @@ type coverRoutes struct {
 	// owners — сессии по ID окна; watched — окна, на события которых уже подписаны.
 	owners  map[uint]map[string]bool
 	watched map[uint]bool
-	// projects — проект, переданный при создании сессии (coverProjects оригинала): им проверяется
+	// projects — проект, переданный при создании сессии: им проверяется
 	// доступ при подготовке и запуске.
 	projects map[string]string
 }
@@ -87,8 +87,8 @@ func window(ctx context.Context) application.Window {
 	return value
 }
 
-// closeOwned закрывает сессии окна: закрытие окна и новая загрузка страницы (WindowRuntimeReady
-// после первой) заменяют destroyed, render-process-gone и навигацию webContents оригинала.
+// closeOwned закрывает сессии окна при его закрытии и при новой загрузке страницы
+// (WindowRuntimeReady после первой): у перезагруженной страницы прежних сессий нет.
 func (r *coverRoutes) closeOwned(windowID uint) {
 	r.mu.Lock()
 	owned := r.owners[windowID]

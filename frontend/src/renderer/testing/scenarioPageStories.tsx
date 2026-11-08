@@ -359,7 +359,7 @@ function applyDelta(base: ResolvedBrief, delta: StateDelta | undefined, source: 
   return next;
 }
 
-/** Упрощённое наследование для витрины: начальное состояние кастинга и изменения по цепочке state_from; полный расчёт остаётся в main. */
+/** Упрощённое наследование для витрины: начальное состояние кастинга и изменения по цепочке state_from; полный расчёт остаётся в Go. */
 function resolveState(
   scenes: ScenesFile,
   cast: CastFile | null,
@@ -503,7 +503,7 @@ export function scenarioPageOptions({
           canRevise: !view.busy && view.treatmentApproved && !!model.saved.scenes
         });
       };
-      // Как в main: предложение хранит хеши сохранённых документов, любая запись делает неприменённое предложение устаревшим,
+      // Как в Go: предложение хранит хеши сохранённых документов, любая запись делает неприменённое предложение устаревшим,
       // а утверждение пары включает трактовку и снимается её записью.
       const documentsWritten = (treatment: boolean): void => {
         const view = model.workflow;
@@ -639,7 +639,7 @@ export function scenarioPageOptions({
               throw new Error(scenarioTexts.main.proposalNotApplicable);
             if (proposal.pass !== 'treatment' && !model.workflow.treatmentApproved) throw new Error(scenarioTexts.main.pairApprovalStale);
             model.applies++;
-            // Как в main: трактовка владеет кастингом и трактовкой, сценарий и доработка — только реестром.
+            // Как в Go: трактовка владеет кастингом и трактовкой, сценарий и доработка — только реестром.
             if (proposal.pass === 'treatment') {
               model.saved.cast = structuredClone(proposal.after.cast);
               model.saved.treatment = structuredClone(proposal.after.treatment);

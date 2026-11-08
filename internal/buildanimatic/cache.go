@@ -10,8 +10,8 @@ import (
 	"songframe-go/internal/pytool"
 )
 
-// artifactCache — ArtifactCache из tools/animatic_cache/animatic_cache.py: кэш проверенных
-// производных plan/animatic/.cache/<kind>/<ключ><suffix> с квитанцией <ключ>.json.
+// artifactCache — кэш проверенных производных plan/animatic/.cache/<kind>/<ключ><suffix> с
+// квитанцией <ключ>.json.
 //
 // Ключ — SHA-256 канонического JSON {schema, kind, recipe}, поэтому зависит только от содержимого
 // входов и параметров кодирования (рецепт включает SHA-256 входа и полную строку версии FFmpeg).
@@ -26,8 +26,7 @@ type artifactCache struct {
 	events    []cacheEvent
 }
 
-// cacheEvent — запись self.events оригинала: попадание в кэш и путь производной. Время обращения
-// оригинал тоже записывал, но в отчёт сборки оно не входит.
+// cacheEvent — запись журнала обращений: попадание в кэш и путь производной (для отчёта сборки).
 type cacheEvent struct {
 	kind string
 	hit  bool
@@ -53,9 +52,9 @@ func (c *artifactCache) paths(kind string, recipe *pycompat.Dict, suffix string)
 	return key, pycompat.JoinPath(folder, key+suffix), pycompat.JoinPath(folder, key+".json"), nil
 }
 
-// lookup — lookup(kind, recipe, suffix): готовая производная и её details, если квитанция читается
-// и совпадает по ключу, размеру и SHA-256 файла. Любая ошибка чтения или неверный тип поля
-// (OSError, ValueError, KeyError, TypeError оригинала) означает промах, а не отказ сборки.
+// lookup — готовая производная и её details, если квитанция читается и совпадает по ключу,
+// размеру и SHA-256 файла. Любая ошибка чтения или неверный тип поля (OSError, ValueError,
+// KeyError, TypeError) означает промах, а не отказ сборки.
 func (c *artifactCache) lookup(key, artifact, receipt string) (any, bool) {
 	value, err := pycompat.LoadJSONFile(receipt)
 	if err != nil {
@@ -88,7 +87,7 @@ func (c *artifactCache) lookup(key, artifact, receipt string) (any, bool) {
 	return details, true
 }
 
-// obtain — obtain(kind, recipe, suffix, producer): производная из кэша или новая. producer пишет
+// obtain — производная из кэша или новая. producer пишет
 // файл по переданному пути внутри .pending-* и возвращает details; его ошибка прерывает запись,
 // временная папка удаляется, прежнее содержимое кэша остаётся. Возвращает путь производной.
 func (c *artifactCache) obtain(kind string, recipe *pycompat.Dict, suffix string, producer func(path string) (any, error)) (string, error) {

@@ -1,4 +1,4 @@
-/** Проверки формы без Electron: неизвестные предпочтения остаются видимыми, провайдер-агент не обещает параметры платного провайдера. */
+/** Проверки формы без Wails: неизвестные предпочтения остаются видимыми, провайдер-агент не обещает параметры платного провайдера. */
 
 import { Children, createElement, isValidElement, type ChangeEvent } from 'react';
 import type * as Material from '@mui/material';

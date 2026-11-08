@@ -7,9 +7,9 @@ import (
 	"songframe-go/internal/mediaproviders"
 )
 
-// Тексты прохода агента производства: productionTexts.main.workflow, main.proposal и main.apply
-// оригинала (src/shared/texts/production.ts на 634fd94) дословно. Они уходят в ошибки Wails и в
-// записи предложений, поэтому меняются только вместе с оригиналом поведения.
+// Тексты прохода агента производства: подготовка, проверка предложения и его применение. Они
+// уходят в ошибки Wails и в записи предложений и зафиксированы эталонами
+// testdata/golden/production-workflow*, поэтому меняются только вместе с поведением.
 const (
 	textSceneChangedReason          = "постановка плана изменилась после подготовки попытки: оставьте попытку для текущей постановки, доработайте описание или подготовьте новую попытку"
 	textPackageFolderRequired       = "Выберите отдельный пакет в plan/batches или plan/awaiting."
@@ -54,10 +54,10 @@ const (
 	textDiscardUnavailable          = "Предложение недоступно для отклонения; выполняющееся задание сначала отмените."
 	textProposalDiscarded           = "Предложение отклонено пользователем."
 	// TextDescriptionAndFramePlanRequired — messages.descriptionAndFramePlanRequired: generateFrames
-	// и importFrames без утверждённого описания и плана опор (45g.3).
+	// и importFrames без утверждённого описания и плана опор.
 	TextDescriptionAndFramePlanRequired = "Сначала утвердите описание и план опор."
 	// TextApplyUnavailable — applyUnavailable: Apply возможен только для завершённого актуального
-	// предложения (45g.2).
+	// предложения.
 	TextApplyUnavailable = "Применимо только завершённое актуальное предложение."
 )
 
@@ -83,9 +83,9 @@ const (
 	textRequestInputInvalid          = "Неверный вход запроса."
 	textRequestInputPathInvalid      = "Вход запроса должен ссылаться на объявленный исходник или утверждённую опору."
 	textProviderUnspecified          = "не указан"
-	// textProposalNotJSON — осознанное отличие от оригинала: ответ, который не разбирается как JSON,
-	// оригинал отклонял англоязычным SyntaxError V8 (зависит от версии движка). Go пишет русский
-	// текст; распознанный отказ текстом по-прежнему заменяется на textAgentRefused.
+	// textProposalNotJSON — ответ, который не разбирается как JSON: русский текст вместо сообщения
+	// разборщика (осознанное отличие, записанное в README эталонов); распознанный отказ текстом
+	// заменяется на textAgentRefused.
 	textProposalNotJSON = "Ответ агента не является JSON-документом предложения."
 )
 

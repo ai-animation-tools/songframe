@@ -27,16 +27,15 @@ import (
 	"songframe-go/internal/tools"
 )
 
-// Эталон production-frames/cases.json снят скриптом capture-production-frames.ts (вне репозитория,
-// не сохранён) с временной копии оригинала с двумя исправлениями
-// keyframe-images.ts (README эталонов). Зависимости — как в ipc.ts: исполнитель провайдера-агента
-// test-agent (адаптер codex) поверх KeyframeImages, платный test через общий PaidMedia, настоящие
-// media_request и shot_workflow (здесь — их Go-порты) и тестовый сервис mediatest. Менеджер
+// Эталон testdata/golden/production-frames/cases.json (осознанные отличия — в README эталонов).
+// Зависимости — как в приложении: исполнитель провайдера-агента test-agent (адаптер codex),
+// платный test через общий платный адаптер, инструменты media_request и shot_workflow и
+// тестовый сервис mediatest. Менеджер
 // агентов подставной: задание опор не запускает программу, файлы кандидатов и итог задают шаги.
 // Сверяются результат или ошибка, записи каталога состояния, дерево plan/batches, рабочие папки
 // image-jobs, запуски заданий опор, вызовы инструментов и вызовы тестового сервиса.
 
-// framesStep — шаг сценария эталона: вход (op и параметры) и исход оригинала.
+// framesStep — шаг сценария эталона: вход (op и параметры) и ожидаемый исход.
 type framesStep struct {
 	Op         string                     `json:"op"`
 	Path       string                     `json:"path"`
@@ -73,7 +72,7 @@ type imageStart struct {
 	config  agents.Settings
 }
 
-// imageAgents — fakeAgents съёмки с запуском заданий опор: задание получает программу config.
+// imageAgents — fakeAgents с запуском заданий опор: задание получает программу config.
 type imageAgents struct {
 	*fakeAgents
 	images []imageStart
@@ -139,7 +138,7 @@ type framesRun struct {
 	calls                         []toolCall
 	requests                      []string
 	serviceSeen                   int
-	// expected — последнее записанное оригиналом состояние local/packages/jobs ("unchanged" — прежнее).
+	// expected — ожидаемое последнее записанное состояние local/packages/jobs ("unchanged" — прежнее).
 	expected map[string]json.RawMessage
 }
 
@@ -176,7 +175,7 @@ func newFramesRun(t *testing.T, base string, blobs map[string]string) *framesRun
 	return r
 }
 
-// create — проход с зависимостями, как в ipc.ts; новый вызов — перезапуск приложения.
+// create — проход с зависимостями, как в приложении; новый вызов — перезапуск приложения.
 func (r *framesRun) create() *Workflow {
 	images := &KeyframeImages{LocalDir: r.local, Agents: r.agents, ValidateImage: mediafile.Decodes}
 	catalogs := &providers.Catalogs{Run: r.runTool}
@@ -190,7 +189,7 @@ func (r *framesRun) create() *Workflow {
 	})
 }
 
-// runTool — Go-порты инструментов с записью вызовов.
+// runTool — инструменты с записью вызовов.
 func (r *framesRun) runTool(ctx context.Context, project, name string, args []string) (tools.Result, error) {
 	r.mu.Lock()
 	r.calls = append(r.calls, toolCall{Name: name, Args: slices.Clone(args)})
@@ -256,7 +255,7 @@ func (r *framesRun) jobDir(t *testing.T) string {
 	return r.agents.images[len(r.agents.images)-1].workDir
 }
 
-// execute — execute скрипта съёмки.
+// execute выполняет шаг сценария эталона.
 func (r *framesRun) execute(t *testing.T, step framesStep) (any, error) {
 	t.Helper()
 	packageDir := ""

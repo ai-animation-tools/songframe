@@ -12,9 +12,9 @@ import (
 	"songframe-go/internal/pycompat"
 )
 
-// Текстовые поля карточки — перенос text_box/wrapped/shortened оригинала. Раскладка (кегль,
-// строки, их координаты) совпадает с Pillow, потому что ширины строк считает face.length
-// (см. shaping.go). Начертание глифов не побайтное: Pillow растеризовал контуры FreeType с
+// Текстовые поля карточки: выбор кегля, перенос по словам и сокращение многоточием. Раскладка
+// (кегль, строки, их координаты) совпадает с Pillow, потому что ширины строк считает face.length
+// (см. shaping.go). Начертание глифов не побайтное: Pillow растеризует контуры FreeType с
 // TrueType-хинтингом, здесь — те же контуры без хинтинга растеризатором x/image/vector в тех
 // же целопиксельных позициях глифов; отличие — горизонтальные края штрихов не притянуты к
 // сетке пикселей и выглядят чуть мягче (доли пикселя по вертикали).
@@ -46,8 +46,8 @@ func fits(f *face, text string, width int) bool {
 	return f.length(text) <= width*64
 }
 
-// wrapped — жадный перенос по словам. Слово шире поля — AssertionError с самим словом: так
-// оригинал отказывался рисовать текст, который нельзя разбить (assert ширины слова).
+// wrapped — жадный перенос по словам. Слово шире поля — AssertionError с самим словом: текст,
+// который нельзя разбить, не рисуется.
 func wrapped(f *face, text string, width int) ([]string, error) {
 	lines := []string{""}
 	for _, word := range splitWords(text) {
@@ -99,7 +99,7 @@ func layoutTextBox(text string, width, height, size int, isBold bool) (int, []st
 			return point, lines, f, nil
 		}
 	}
-	// Цикл for…else оригинала: point остаётся последним значением диапазона (16).
+	// Если ни один кегль не подошёл, point остаётся последним значением диапазона (16).
 	point++
 	count := height / leading
 	if count < 1 {
@@ -108,8 +108,8 @@ func layoutTextBox(text string, width, height, size int, isBold bool) (int, []st
 	return point, shortened(f, lines, width, count), f, nil
 }
 
-// textBox — text_box(draw, text, xy, width, height, size, color, bold): рисует поле и возвращает
-// выбранный кегль. Нестроковый текст — AttributeError, как вызов text.split() в оригинале.
+// textBox рисует текстовое поле с подбором кегля и возвращает
+// выбранный кегль. Нестроковый текст — AttributeError, как у text.split() в Python.
 func (c *card) textBox(value any, x, y, width, height, size int, color string, isBold bool) (int, error) {
 	text, ok := value.(string)
 	if !ok {

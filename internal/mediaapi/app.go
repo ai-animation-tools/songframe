@@ -8,22 +8,21 @@ import (
 )
 
 // Здесь — часть контракта адаптера, которую использует слой провайдеров приложения
-// (internal/providers, перенос src/main/providers/types.ts оригинала): правила нормализации
-// замороженного запроса, строки страницы «Среда» и DTO возможностей. Конкретный провайдер
-// объявляет их методами своей строки таблицы internal/mediaadapters (RulesProvider,
-// EnvironmentProvider), поэтому добавление провайдера по-прежнему — одна строка таблицы и папка
-// его пакета; второй таблицы адаптеров главного процесса, как в оригинале, нет.
+// (internal/providers): правила нормализации зафиксированного запроса, строки страницы «Среда»
+// и DTO возможностей. Конкретный провайдер объявляет их методами своей строки таблицы
+// internal/mediaadapters (RulesProvider, EnvironmentProvider), поэтому добавление провайдера —
+// одна строка таблицы и папка его пакета, без второй таблицы адаптеров.
 
 // Alias — синонимы одного параметра у провайдера: каноническое имя и все его написания.
-// Порядок групп важен: первая группа, содержащая имя, задаёт синонимы (Object.values оригинала).
+// Порядок групп важен: первая группа, содержащая имя, задаёт синонимы.
 type Alias struct {
 	Name  string
 	Names []string
 }
 
 // InputFlag — короткий флаг входа (image, tailImage, …) и шаблон объявленных слотов, в которые он
-// раскрывается до фиксации SHA. Порядок флагов — порядок ключей inputFlags оригинала: он виден в
-// тексте ошибки «Не смешивайте именованные входы с короткими флагами image/tailImage/…».
+// раскрывается до фиксации SHA. Порядок флагов виден в тексте ошибки «Не смешивайте именованные
+// входы с короткими флагами image/tailImage/…».
 type InputFlag struct {
 	Flag    string
 	Pattern *regexp.Regexp
@@ -61,9 +60,9 @@ type FrameDefined struct {
 	Parameters []string
 }
 
-// RequestRules — PaidRequestRules оригинала: правила нормализации замороженного запроса, которые
-// общий платный адаптер (internal/providers) получает из конфигурации провайдера. Значения
-// параметров — значения JS (internal/jscompat): сравнение и тексты ошибок повторяют оригинал.
+// RequestRules — правила нормализации зафиксированного запроса, которые общий платный адаптер
+// (internal/providers) получает из конфигурации провайдера. Значения параметров — значения JS
+// (internal/jscompat): от их сравнения и печати зависят тексты ошибок, проверяемые эталонами.
 type RequestRules struct {
 	// Aliases — синонимы параметров по виду медиа.
 	Aliases map[string][]Alias
@@ -81,13 +80,13 @@ type RequestRules struct {
 
 // RulesProvider — платный провайдер с правилами запроса для общего платного адаптера
 // приложения. Только такие строки таблицы internal/mediaadapters слой провайдеров считает
-// платными адаптерами (paidAdapter оригинала).
+// платными адаптерами.
 type RulesProvider interface {
 	RequestRules() RequestRules
 }
 
 // EnvironmentCheck — EnvironmentCheck контракта (frontend/src/shared/types.ts): строка страницы
-// «Среда». Необязательные поля опускаются, как undefined в оригинале.
+// «Среда». Необязательные поля опускаются из JSON.
 type EnvironmentCheck struct {
 	ID             string `json:"id"`
 	Label          string `json:"label"`
@@ -113,7 +112,7 @@ type EnvironmentUpdate struct {
 	ElapsedMs *int
 }
 
-// Environment — ProviderEnvironment оригинала: начальные строки страницы «Среда» в порядке
+// Environment — начальные строки страницы «Среда» в порядке
 // показа и проверка, которая сообщает результаты через update.
 type Environment struct {
 	Checks []EnvironmentCheck
@@ -127,13 +126,13 @@ type EnvironmentProvider interface {
 
 // LoginOptions — параметры входа к провайдеру.
 type LoginOptions struct {
-	// OpenBrowser — открыть адрес авторизации самому (флаг open_browser оригинала); false — как
-	// --no-browser: адрес открывает вызывающий по строке AUTHORIZE_URL.
+	// OpenBrowser — открыть адрес авторизации самому; false — как --no-browser: адрес
+	// открывает вызывающий по строке AUTHORIZE_URL.
 	OpenBrowser bool
 	// Timeout — ожидание подтверждения в браузере; 0 — предел адаптера.
 	Timeout time.Duration
-	// Report получает строки «AUTHORIZE_URL <адрес>» и «BROWSER_NOT_OPENED», которые Python-клиент
-	// печатал в stderr. nil — не сообщать.
+	// Report получает строки «AUTHORIZE_URL <адрес>» и «BROWSER_NOT_OPENED», которые CLI входа
+	// печатает в stderr. nil — не сообщать.
 	Report func(line string)
 }
 
@@ -160,8 +159,8 @@ type Capabilities struct {
 	GenerationVerified bool     `json:"generationVerified"`
 }
 
-// Общие тексты строк провайдеров на странице «Среда» (environmentTexts.main.waiting и
-// providerTexts.bundledClient оригинала): их подставляют адаптеры разных провайдеров.
+// Общие тексты строк провайдеров на странице «Среда»: их подставляют адаптеры разных
+// провайдеров.
 const (
 	TextEnvironmentWaiting = "Ожидание проверки"
 	TextBundledClient      = "Клиент SongFrame входит в поставку"
@@ -202,7 +201,7 @@ type FrameCandidate struct {
 	Path string `json:"path"`
 }
 
-// Artifact — MediaArtifact оригинала: результат генерации (оригинал платного провайдера или
+// Artifact — результат генерации (оригинал платного провайдера или
 // кандидат опоры провайдера-агента) с номером, SHA-256 и размерами изображения.
 type Artifact struct {
 	Path    string `json:"path"`
@@ -222,7 +221,7 @@ type AgentExecutionRef struct {
 	AgentJobID string `json:"agentJobId"`
 }
 
-// PaidExecutionRef — PaidMediaExecutionRef контракта: замороженная попытка платного провайдера.
+// PaidExecutionRef — PaidMediaExecutionRef контракта: зафиксированная попытка платного провайдера.
 type PaidExecutionRef struct {
 	Provider   string `json:"provider"`
 	Kind       string `json:"kind"`

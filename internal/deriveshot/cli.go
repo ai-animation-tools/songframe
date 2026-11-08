@@ -11,7 +11,7 @@ import (
 // вывод FFmpeg и пути ОС не показываются.
 const textHidden = "Ошибка файлов или медиа производного плана."
 
-// Parser — argparse derive_shot.py: подкоманды build, accept и recover, у всех --json.
+// Parser — разбор аргументов derive_shot: подкоманды build, accept и recover, у всех --json.
 func Parser() *pycompat.Command {
 	jsonFlag := pycompat.Action{Name: "--json", Kind: pycompat.StoreTrue}
 	return &pycompat.Command{
@@ -36,7 +36,7 @@ func Parser() *pycompat.Command {
 	}
 }
 
-// Run — main() derive_shot.py на корне проекта. ValueError печатается своим текстом, остальные
+// Run — инструмент derive_shot на корне проекта. ValueError печатается своим текстом, остальные
 // ожидаемые ошибки — скрытым textHidden, прочие — трассировкой; --json превращает отказ в
 // {"status": "error", "message": …} на stdout.
 func Run(ctx context.Context, root string, argv []string) pytool.Output {

@@ -22,7 +22,7 @@ import (
 	"songframe-go/internal/pycompat"
 )
 
-// Image-ветка: платная опора готовится замороженной попыткой media_request (request.json,
+// Image-ветка: платная опора готовится зафиксированной попыткой media_request (request.json,
 // attempt.json) внутри пакета. Инструмент только читает попытку и её оригиналы, проверяет SHA
 // запроса и входов и ведёт историю image_requests в workflow.json; отправку и получение
 // выполняют media_request и приложение.
@@ -42,7 +42,7 @@ func asDict(value any, method string) (*pycompat.Dict, error) {
 	return dict, nil
 }
 
-// encoded — request_snapshot.encoded: канонические байты JSON попытки (sort_keys, indent=2,
+// encoded — канонические байты JSON попытки, как requestsnapshot.Encoded (sort_keys, indent=2,
 // allow_nan=False, перевод строки в конце), по которым считается request_sha256.
 func encoded(value any) ([]byte, error) {
 	text, err := pycompat.DumpsJSON(value, pycompat.DumpOptions{Indent: 2, Pretty: true, SortKeys: true, RejectNaN: true})
@@ -52,7 +52,7 @@ func encoded(value any) ([]byte, error) {
 	return pycompat.EncodeUTF8(text + "\n")
 }
 
-// inside — attempt.inside: обычный файл внутри папки попытки после resolve().
+// inside — обычный файл внутри папки попытки после resolve().
 func inside(directory string, name any) (string, error) {
 	joined, err := pathPart(directory, name)
 	if err != nil {
@@ -65,11 +65,10 @@ func inside(directory string, name any) (string, error) {
 	return path, nil
 }
 
-// loadAttempt — media_request.attempt.load_attempt(directory, verify_inputs=True): запрос
-// подключённого провайдера, attempt.json с SHA канонических байтов запроса и неизменные промпт
-// и входы. Узкая локальная копия чтения попытки: запись и отправка принадлежат media_request.
-// Отличие от оригинала: файлы читаются как UTF-8 на любой ОС (оригинал брал кодировку локали,
-// с которой на Windows SHA запроса с кириллицей не совпал бы).
+// loadAttempt читает попытку с проверкой входов: запрос подключённого провайдера, attempt.json с
+// SHA канонических байтов запроса и неизменные промпт и входы. Узкая локальная копия чтения
+// попытки: запись и отправка принадлежат media_request. Файлы читаются как UTF-8 на любой ОС:
+// с кодировкой локали на Windows SHA запроса с кириллицей не совпал бы.
 func loadAttempt(directory string) (*pycompat.Dict, *pycompat.Dict, error) {
 	path, err := inside(directory, "request.json")
 	if err != nil {
@@ -173,7 +172,7 @@ func historyEntry(history []any, name any) *pycompat.Dict {
 	return nil
 }
 
-// imageAttempt — image_attempt(directory, data, request_dir): замороженная попытка kind=image
+// imageAttempt — зафиксированная попытка kind=image
 // этого плана внутри пакета. Без requestDir — активная попытка, которая обязана совпасть с
 // записью истории (SHA запроса, опора, провайдер).
 func imageAttempt(directory string, data *pycompat.Dict, requestDir *string) (string, *pycompat.Dict, *pycompat.Dict, error) {
@@ -226,7 +225,7 @@ func imageAttempt(directory string, data *pycompat.Dict, requestDir *string) (st
 	return path, request, attempt, nil
 }
 
-// imageDownloads — image_downloads(directory, attempt): только зарегистрированные оригиналы
+// imageDownloads — только зарегистрированные оригиналы
 // попытки с тем же размером; посторонний файл кандидатом не становится.
 func imageDownloads(directory string, attempt *pycompat.Dict) ([]string, error) {
 	downloads, ok := attempt.Value("downloads").([]any)
@@ -256,7 +255,7 @@ func frameCode(value string) bool {
 	return len(runes) == 3 && runes[0] == 'K' && unicode.Is(unicode.Nd, runes[1]) && unicode.Is(unicode.Nd, runes[2])
 }
 
-// setImageRequest — set_image_request(frame, request_dir): назначает prepared-попытку kind=image
+// setImageRequest назначает prepared-попытку kind=image
 // непринятой опоре, дополняет историю и выставляет вопрос send/park/revise. Неизвестная или
 // невыбранная прежняя отправка блокирует переключение: продолжение — resume той же попытки.
 func (t *workflowTool) setImageRequest(dirArg, frameID, requestDir string) (*pycompat.Dict, error) {
@@ -414,7 +413,7 @@ func imageFormat(path string) (string, error) {
 	return "", os.ErrInvalid
 }
 
-// selectImage — select_image(file): выбранный пользователем оригинал активной downloaded-попытки
+// selectImage — выбранный пользователем оригинал активной downloaded-попытки
 // копируется без перекодировки в keyframes/Kxx.ext непринятым кандидатом; запись истории получает
 // selected_sha256 и selected_at. Оригиналы и принятые опоры не перезаписываются.
 func (t *workflowTool) selectImage(dirArg, file string) (*pycompat.Dict, error) {

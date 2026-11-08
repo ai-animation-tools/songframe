@@ -16,14 +16,14 @@ import (
 // now — источник времени updated_at описи; тесты подменяют его фиксированным значением эталонов.
 var now = time.Now
 
-// writeFile — атомарная замена файла проекта (права существующего сохраняются, новый — 0600, как
-// writeAtomicBytes оригинала). Точка подмены для тестов сбоя посреди публикации.
+// writeFile — атомарная замена файла проекта (права существующего сохраняются, новый — 0600).
+// Точка подмены для тестов сбоя посреди публикации.
 var writeFile = func(path string, data []byte) error { return projectfs.WriteFile(path, data, 0) }
 
-// encode — байты файла: JSON.stringify(value, null, 2) и перевод строки.
+// encode — байты файла: JSON с отступом в два пробела и перевод строки.
 func encode(value any) []byte { return []byte(jscompat.StringifyIndent(value, "  ") + "\n") }
 
-// FromSources — castFromSources: кастинг из референсов описи. Существующие сущности сохраняют
+// FromSources строит кастинг из референсов описи. Существующие сущности сохраняют
 // свои правки и порядок изображений, получая только описание референса; новые референсы
 // становятся сущностями (тип world или неверный тип — prop). Без сущности world она добавляется
 // первой. Результат дополнен словарём свойств; existing не меняется.
@@ -34,7 +34,7 @@ func FromSources(manifest, existing any, defaults Defaults) (*jscompat.Object, e
 	}
 	if cast == nil {
 		if jscompat.Truthy(existing) {
-			// Истинное значение не-объект (строка, число): `cast.entities.map` оригинала — TypeError.
+			// Истинное значение не-объект (строка, число) — TypeError обращения к cast.entities.map.
 			return nil, &jscompat.TypeError{Message: "cast.entities.map is not a function"}
 		}
 		cast = jscompat.NewObject()
@@ -109,7 +109,7 @@ func FromSources(manifest, existing any, defaults Defaults) (*jscompat.Object, e
 		created.Set("name", name)
 		created.Set("short_name", short)
 		created.Set("role", "")
-		// Отсутствующее описание остаётся undefined, как в оригинале: Normalize отклонит такую сущность.
+		// Отсутствующее описание остаётся undefined: Normalize отклонит такую сущность.
 		created.Set("appearance", jscompat.Get(ref, "description"))
 		created.Set("images", &jscompat.Array{Items: images})
 		created.Set("initial_state", jscompat.NewObject())
@@ -129,9 +129,9 @@ func FromSources(manifest, existing any, defaults Defaults) (*jscompat.Object, e
 	return EnsureProperties(cast, defaults)
 }
 
-// Init — cast.init (initCast): создаёт кастинг из референсов исходников или дополняет
-// существующий, затем записывает его через Save-путь. Повреждённый кастинг заменяется новым,
-// как в оригинале. Без описи — ошибка, файлы не меняются.
+// Init — cast.init: создаёт кастинг из референсов исходников или дополняет
+// существующий, затем записывает его через Save-путь. Повреждённый кастинг заменяется новым.
+// Без описи — ошибка, файлы не меняются.
 func Init(project string) (*jscompat.Object, error) {
 	manifest := sources.ReadManifest(project)
 	if manifest == nil {
@@ -197,8 +197,8 @@ type DescriptionPlan struct {
 	Cast     *jscompat.Object
 }
 
-// PlanDescriptions — planCastDescriptions. Описание связанного референса принадлежит описи, а
-// appearance кастинга — его проекция. fromCast=true — явная запись из кастинга: appearance
+// PlanDescriptions согласует описания кастинга и описи. Описание связанного референса
+// принадлежит описи, а appearance кастинга — его проекция. fromCast=true — явная запись из кастинга: appearance
 // сущностей переносится в description референсов, а при изменении обновляется updated_at.
 // Исходные cast и manifest не меняются.
 func PlanDescriptions(cast *jscompat.Object, manifest any, fromCast bool) (DescriptionPlan, error) {
@@ -245,7 +245,7 @@ type fileChange struct {
 	next   []byte
 }
 
-// publish — publishCastDescriptionPlan: узкая публикация двух JSON. Опись (canonical-описание)
+// publish — узкая публикация двух JSON. Опись (canonical-описание)
 // пишется до кастинга, поэтому прерванный процесс всегда оставляет читаемую пару: кастинг
 // проецирует описание из описи при каждом чтении. Сбой записи восстанавливает прежние байты;
 // если и восстановление не удалось, прежние байты сохраняются во временный резерв, путь которого

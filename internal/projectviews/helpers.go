@@ -7,8 +7,8 @@ import (
 )
 
 // Операции над значениями из JSON с семантикой Python: представления строятся из полей реестра и
-// манифестов без предварительной проверки типов, поэтому неверные данные должны давать то же
-// исключение (KeyError, TypeError, AttributeError), что и оригинал.
+// манифестов без предварительной проверки типов, поэтому неверные данные дают исключение Python
+// (KeyError, TypeError, AttributeError): его текст входит в вывод, проверяемый эталонами scene-views.
 
 // get — container[key].
 func get(container any, key string) (any, error) { return pycompat.GetItem(container, key) }

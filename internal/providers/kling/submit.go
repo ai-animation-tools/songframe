@@ -99,13 +99,13 @@ func inside(directory string, name any) (string, error) {
 	return path, nil
 }
 
-// notSubmittedCause — исключения, которые оригинал переводил в NotSubmitted до вызова генерации:
+// notSubmittedCause — исключения, которые до вызова генерации переводятся в NotSubmitted:
 // (KlingError, OSError, ValueError).
 func notSubmittedCause(err error) bool {
 	return mcp.IsKlingError(err) || pycompat.IsAny(err, pycompat.OSError, pycompat.ValueError)
 }
 
-// Submit — submit(directory, request, state, timeout): загрузка входов и единственный tools/call
+// Submit — загрузка входов и единственный tools/call
 // команды генерации. Всё до вызова генерации (нет входа, соединения, сбой initialize или
 // загрузки) — NotSubmittedError; isError генерации — RejectedRequestError; HTTP-ошибка, ошибка
 // JSON-RPC, таймаут или обрыв после отправки и ответ без generationId — прочая ошибка
@@ -246,7 +246,7 @@ func (a *Adapter) Submit(ctx context.Context, directory string, request, state *
 	return answer, nil
 }
 
-// Poll — poll(directory, request, state, timeout): состояние задания state.generation_id через
+// Poll — состояние задания state.generation_id через
 // query_tasks. Результат — {"service_status", "status"[, "outputs"]}: failed, running,
 // outputs_pending, watermark_free_pending или completed с адресами оригиналов. Явный адрес без
 // логотипа приоритетен у обоих медиа; видео без него ждёт (обычный url не скачивается), у
@@ -386,11 +386,10 @@ func (a *Adapter) fetcher() *http.Client {
 	return a.fetchClient
 }
 
-// Fetch — fetch(url, destination): скачивает полный оригинал по HTTPS в destination (создаётся
+// Fetch — скачивает полный оригинал по HTTPS в destination (создаётся
 // или перезаписывается только после ответа сервера) и сверяет размер с Content-Length.
-// Публикацию и защиту от перезаписи результата выполняет общий код. Отличие от оригинала:
-// обрыв тела до объявленной длины даёт тот же текст «Загрузка не завершена.», а не
-// IncompleteRead http.client.
+// Публикацию и защиту от перезаписи результата выполняет общий код. Обрыв тела до объявленной
+// длины даёт текст «Загрузка не завершена.».
 func (a *Adapter) Fetch(ctx context.Context, url, destination string) error {
 	scheme, err := mcp.URLScheme(url)
 	if err != nil {

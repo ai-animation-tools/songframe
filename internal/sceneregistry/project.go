@@ -1,24 +1,22 @@
-// Package sceneregistry — перенос tools/scene_registry/scene_registry.py замороженного оригинала:
-// единственный источник постановки и монтажного времени для Python-инструментов. Пакет проверяет
-// plan/project.json и plan/scenes.json, разворачивает сюжетные состояния планов, считает отпечатки
-// постановки, свежесть принятых комплектов и монтажное время планов.
+// Package sceneregistry проверяет реестр сцен и проект для инструментов tools.run: единственный
+// источник постановки и монтажного времени инструментов. Пакет проверяет plan/project.json и
+// plan/scenes.json, разворачивает сюжетные состояния планов, считает отпечатки постановки,
+// свежесть принятых комплектов и монтажное время планов.
 //
-// Пакет — общая основа для перенесённых инструментов (scene_scaffold, lint_registry, check_assets,
-// check_workspace, shot_status): все они в оригинале импортировали этот модуль. Поэтому значения —
-// модель pycompat, а ошибки — исключения Python (*pycompat.Exception) с текстами оригинала:
-// инструмент печатает str(error) и выбирает код завершения по типу исключения.
+// Пакет — общая основа инструментов scene_scaffold, lint_registry, check_assets, check_workspace и
+// shot_status. Их вывод зафиксирован эталонами в семантике Python, поэтому значения — модель
+// pycompat, а ошибки — исключения Python (*pycompat.Exception): инструмент печатает str(error) и
+// выбирает код завершения по типу исключения.
 //
-// Отличия устройства от Python, не меняющие результат:
-//   - начальное состояние сущностей передаётся явно (initial). В Python initial=None означал
-//     initial_states_for(ROOT) — кастинг проекта, на котором запущен инструмент; в Go это
-//     InitialStatesFor(root) у вызывающего. Кэша по проекту нет: каждый вызов читает кастинг заново,
-//     поэтому долгоживущий процесс приложения не видит устаревших данных (Python кэшировал на
-//     время одного запуска инструмента);
-//   - хеши роликов кэширует internal/filedigest (та же идентичность файла, что stat-кэш оригинала).
+// Устройство:
+//   - начальное состояние сущностей передаётся явно (initial): вызывающий получает его через
+//     InitialStatesFor(root). Кэша по проекту нет: каждый вызов читает кастинг заново, поэтому
+//     долгоживущий процесс приложения не видит устаревших данных;
+//   - хеши роликов кэширует internal/filedigest по идентичности файла.
 //
-// Страницы приложения используют перенос TS-оригинала (internal/scenario, internal/acceptance):
-// он принимает и проверяет данные по правилам главного процесса Electron, которые в краевых
-// случаях отличаются от Python (см. testdata/golden/README.md, домен scene-registry).
+// Страницы приложения используют internal/scenario и internal/acceptance: они принимают и
+// проверяют данные по правилам JS, которые в краевых случаях отличаются от Python (см.
+// testdata/golden/README.md, домен scene-registry).
 package sceneregistry
 
 import (
@@ -36,9 +34,9 @@ const (
 	ProductionStatus = "plan/production-status.json"
 )
 
-// Регулярные выражения оригинала. \d и \w Python для str — классы Unicode.
+// Регулярные выражения проверок. \d и \w Python для str — классы Unicode, поэтому здесь \p{Nd}.
 var (
-	// ShotID — SHOT_ID: код плана Mxx или Mxx.n.
+	// ShotID — код плана Mxx или Mxx.n.
 	ShotID = regexp.MustCompile(`^M\p{Nd}{2}(?:\.\p{Nd}+)?$`)
 	// SHA256 — hex-отпечаток в нижнем регистре.
 	SHA256       = regexp.MustCompile(`^[0-9a-f]{64}$`)
@@ -62,13 +60,13 @@ func valueError(format string, args ...any) error {
 	return pycompat.Raise(pycompat.ValueError, format, args...)
 }
 
-// GenerationFields — GENERATION_FIELDS: обязательные поля generation.video и их типы.
+// GenerationFields — обязательные поля generation.video и их типы.
 var GenerationFields = []string{"provider", "resolution", "aspect_ratio", "watermark", "duration_rule"}
 
-// DurationRules — DURATION_RULES: допустимые правила длительности видео.
+// DurationRules — допустимые правила длительности видео.
 var DurationRules = []string{"min_supported_strictly_greater_than_window", "min_supported_not_less_than_window", "exact_window"}
 
-// ValidateProject — validate_project: схема, название без переводов строк, имя MP4 аниматика,
+// ValidateProject — схема, название без переводов строк, имя MP4 аниматика,
 // строковые agent_instructions и, если validateGeneration, независимые блоки generation.video и
 // generation.image (GenerationSettings). Возвращает тот же документ.
 func ValidateProject(data any, validateGeneration bool) (*pycompat.Dict, error) {
@@ -107,7 +105,7 @@ func ValidateProject(data any, validateGeneration bool) (*pycompat.Dict, error) 
 	return document, nil
 }
 
-// GenerationSettings — generation_settings(data, kind): копия проверенного блока generation.video
+// GenerationSettings — копия проверенного блока generation.video
 // или generation.image без изменения данных проекта.
 func GenerationSettings(data any, kind string) (*pycompat.Dict, error) {
 	if kind != "video" && kind != "image" {
@@ -188,7 +186,7 @@ func GenerationSettings(data any, kind string) (*pycompat.Dict, error) {
 	return pycompat.DeepCopy(block).(*pycompat.Dict), nil
 }
 
-// LoadProject — load_project(root): plan/project.json, проверенный ValidateProject. Ошибки чтения
+// LoadProject — plan/project.json, проверенный ValidateProject. Ошибки чтения
 // и разбора — OSError, UnicodeDecodeError или JSONDecodeError Python.
 func LoadProject(root string, validateGeneration bool) (*pycompat.Dict, error) {
 	value, err := pycompat.LoadJSONFile(filepath.Join(root, filepath.FromSlash(ProjectPath)))

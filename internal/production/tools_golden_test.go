@@ -25,7 +25,7 @@ type goldenStep struct {
 	Files []string `json:"files"`
 }
 
-// goldenOutcome — исход шага оригинала.
+// goldenOutcome — ожидаемый исход шага из эталона production-tools.
 type goldenOutcome struct {
 	Label  string             `json:"label"`
 	Code   int                `json:"code"`
@@ -34,13 +34,13 @@ type goldenOutcome struct {
 	Files  map[string]*string `json:"files"`
 }
 
-// captureFrame — байты кадра скрипта захвата (PNG 1×1, отличается от builtin_png оригинала).
+// captureFrame — кадр опоры эталона production-tools (PNG 1×1): его байты входят в ожидаемые файлы.
 var captureFrame, _ = hex.DecodeString("89504e470d0a1a0a0000000d4948445200000001000000010802000000907753de0000000c4944415408d763f8cfc000000301010018dd8db00000000049454e44ae426082")
 
 var goldenTime = regexp.MustCompile(`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})`)
 
-// TestToolsGolden — regenerate_shot и accept_shot --full против CLI оригинала на тестовом
-// провайдере: те же шаги подготовки пакета, повтор по пакету и по снимку комплекта, приёмка
+// TestToolsGolden — regenerate_shot и accept_shot --full против эталона production-tools на
+// тестовом провайдере: шаги подготовки пакета, повтор по пакету и по снимку комплекта, приёмка
 // полного оригинала с подставными ffprobe/ffmpeg. Сравниваются код, stdout, stderr и байты файлов
 // (пути — маркерами, время — <time>).
 func TestToolsGolden(t *testing.T) {

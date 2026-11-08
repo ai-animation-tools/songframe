@@ -17,7 +17,7 @@ import (
 	"songframe-go/internal/sceneregistry"
 )
 
-// speech — результат speech_lines оригинала: путь песни из реестра (значение JSON как есть),
+// speech — результат speechLines: путь песни из реестра (значение JSON как есть),
 // окно плана в секундах, строки разметки в окне (словари timing.json с добавленным ключом
 // «text») и признак lipsync плана.
 type speech struct {
@@ -29,8 +29,8 @@ type speech struct {
 
 // speechLines — строки разметки, пересекающие окно плана. Реестр читается и проверяется
 // sceneregistry.Load; текст строки берётся из source/text.md по source_line (целое, включая bool,
-// как isinstance(…, int) Python) и очищается от пробелов по краям, иначе — None. Ошибки — те же
-// исключения, что у оригинала: битые данные дают KeyError/TypeError/AttributeError Python.
+// как isinstance(…, int) Python) и очищается от пробелов по краям, иначе — None. Битые данные
+// дают KeyError/TypeError/AttributeError Python.
 func speechLines(root, shot string) (speech, error) {
 	registry, err := sceneregistry.Load(root)
 	if err != nil {
@@ -139,7 +139,7 @@ func speechLines(root, shot string) (speech, error) {
 }
 
 // propose — границы по строкам: от начала первой минус lead до конца последней плюс tail, не
-// короче minSeconds; round(…, 3) и начало не меньше 0.0, как у оригинала. Значения — числа Python
+// короче minSeconds; round(…, 3) и начало не меньше 0.0. Значения — числа Python
 // (float или int), поэтому min/max/арифметика идут через pycompat с его текстами TypeError.
 func propose(lines []*pycompat.Dict, lead, tail, minSeconds any) (any, any, error) {
 	if len(lines) == 0 {
@@ -300,7 +300,7 @@ func pathDiv(base string, part any) (string, error) {
 	return pycompat.JoinPath(base, text), nil
 }
 
-// fileSHA — SHA-256 файла потоком (sha() tools/common.py) и его размер.
+// fileSHA — SHA-256 файла потоком и его размер.
 func fileSHA(path string) (string, int64, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -317,10 +317,10 @@ func fileSHA(path string) (string, int64, error) {
 
 // cut — срез песни source (путь из реестра, от корня проекта) с start по end секунд в
 // out/speech.wav и рецепт out/audio-recipe.json; возвращает рецепт. Существующий WAV не
-// перезаписывается, рецепт перезаписывается, как в оригинале. Файлы пишутся атомарно через
-// projectfs.WriteFile с правами нового файла 0666 (с umask), как open()/write_text Python: сбой
-// не оставляет частичного WAV. Порядок проверок и записи — оригинала: песня, границы, декодирование,
-// конец песни, папка, отсутствие WAV, WAV, рецепт.
+// перезаписывается, рецепт перезаписывается. Файлы пишутся атомарно через
+// projectfs.WriteFile с правами нового файла 0666 (с umask): сбой не оставляет частичного WAV.
+// Порядок проверок и записи зафиксирован эталоном: песня, границы, декодирование, конец песни,
+// папка, отсутствие WAV, WAV, рецепт.
 func cut(ctx context.Context, root string, source, start, end any, out, shot string, lines []*pycompat.Dict) (*pycompat.Dict, error) {
 	joined, err := pathDiv(root, source)
 	if err != nil {
@@ -341,7 +341,7 @@ func cut(ctx context.Context, root string, source, start, end any, out, shot str
 	if last.Cmp(first) <= 0 {
 		return nil, pycompat.New(pycompat.ValueError, textEmptyInterval)
 	}
-	// Исправление оригинала: отрицательный индекс Python отсчитывал от конца PCM.
+	// Отрицательное начало отклоняется: срез с отрицательным индексом отсчитывался бы от конца PCM.
 	if first.Sign() < 0 {
 		return nil, pycompat.New(pycompat.ValueError, textNegativeStart)
 	}

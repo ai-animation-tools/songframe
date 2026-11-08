@@ -1,7 +1,7 @@
 /**
- * Маршруты приложения. Отличия от 634fd94 (D-028):
- * - добавлен маршрут /components (менеджер компонентов этапа 41.3) и служебные /native-check и /preview
- *   (второе окно) для нативной проверки Wails (флаг --native-check);
+ * Маршруты приложения:
+ * - /components — менеджер компонентов; служебные /native-check и /preview (второе окно) — для
+ *   нативной проверки Wails (флаг --native-check);
  * - onReady подтверждает Go готовность окна после первого app.state.
  */
 import { navigationTexts } from '@shared/texts/navigation';

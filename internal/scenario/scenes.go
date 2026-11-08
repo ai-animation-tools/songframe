@@ -28,7 +28,7 @@ func isFrame(value any) bool {
 	return ok && jscompat.IsSafeInteger(value) && number >= 0
 }
 
-// RegistryStatus — readScenarioRegistry(project).status: проверяется только общий контракт
+// RegistryStatus — статус реестра сцен проекта: проверяется только общий контракт
 // реестра (версия, fps, коды и кадровые окна планов), художественную полноту оценивает страница
 // сценария. Отсутствующий файл — missing, ошибка чтения и неверная структура — invalid.
 func RegistryStatus(project string) Status {
@@ -80,7 +80,7 @@ func ValidateProjectScenes(project string, data any) ([]string, error) {
 	return ValidateScenes(data, readCastValue(project))
 }
 
-// SaveScenes — saveScenes: карта references заменяется картой из кастинга (без кастинга остаётся
+// SaveScenes — сохранение реестра: карта references заменяется картой из кастинга (без кастинга остаётся
 // из черновика), реестр проверяется ValidateScenes и записывается в plan/scenes.json. Отказ —
 // ошибка с проблемами через пробел, файл не меняется. Возвращает записанный реестр.
 func SaveScenes(project string, data any) (*jscompat.Object, error) {

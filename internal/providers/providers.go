@@ -1,7 +1,5 @@
-// Package providers — слой провайдеров медиа приложения, единственный владелец того, что в
-// оригинале делали src/main/providers/{types,index}.ts, src/main/media-providers.ts,
-// media-catalog.ts и provider-guides.ts, а также маршруты environment:* и media:capabilities
-// из ipc.ts и environment.ts:
+// Package providers — слой провайдеров медиа приложения: адаптеры, каталог моделей, вход и строки
+// страницы «Среда». Его части:
 //
 //   - таблица адаптеров: платные провайдеры — строки internal/mediaadapters с правилами запроса
 //     (mediaapi.RulesProvider), провайдеры-агенты — таблица agentAdapters этого пакета (codex);
@@ -15,11 +13,7 @@
 // Общий код и интерфейс узнают о провайдере только из реестра internal/mediaproviders и этих
 // таблиц: имена сервисов здесь не сравниваются, особенности сервиса живут в папке его адаптера
 // (internal/providers/<id>). Пакет не знает, что такое Kling или Codex, кроме строки таблицы.
-//
-// Отличия от оригинала: Python-клиент провайдера заменён Go-адаптером, поэтому вход и проверка
-// входа вызывают mediaapi.Loginer/AuthStatusReader напрямую, без разбора stdout процесса;
-// строки Python/Whisper/FFmpeg страницы «Среда» заменены страницей «Компоненты» (D-028),
-// smoke-проверки Python-поставки (smokeChecks) не переносятся.
+// Вход и проверка входа вызывают mediaapi.Loginer/AuthStatusReader адаптера напрямую.
 package providers
 
 import (
@@ -35,7 +29,7 @@ import (
 	"songframe-go/internal/providers/codex"
 )
 
-// Тексты оригинала (applicationTexts и providerTexts из frontend/src/shared/texts), которые слой
+// Тексты (applicationTexts и providerTexts из frontend/src/shared/texts), которые слой
 // отдаёт renderer ошибками и результатами. TestTextsMatchFrontend сверяет их со словарями.
 const (
 	textPaidExecutorMissing   = "Для провайдера не подключён исполнитель платного запроса."
@@ -68,8 +62,8 @@ func Title(value any, fallback string) string {
 	return fallback
 }
 
-// Paid — платный провайдер таблицы: id и правила нормализации запроса (PaidProviderAdapter
-// оригинала). Вход, проверка входа и строки «Среды» берутся из той же строки таблицы адаптеров.
+// Paid — платный провайдер таблицы: id и правила нормализации запроса. Вход, проверка входа и
+// строки «Среды» берутся из той же строки таблицы адаптеров.
 type Paid struct {
 	ID    string
 	Rules mediaapi.RequestRules
@@ -86,7 +80,7 @@ func normalizedID(provider any) string {
 	return strings.ToLower(jscompat.Trim(text))
 }
 
-// PaidAdapter — paidAdapter оригинала: платный адаптер по id (регистр и крайние пробелы
+// PaidAdapter — платный адаптер по id (регистр и крайние пробелы
 // несущественны). Платный — строка таблицы internal/mediaadapters с правилами запроса.
 func PaidAdapter(provider any) (Paid, bool) {
 	id := normalizedID(provider)
@@ -115,7 +109,7 @@ func PaidAdapters() []Paid {
 	return result
 }
 
-// AgentAdapter — AgentProviderAdapter оригинала: провайдер, генерацию которого исполняет
+// AgentAdapter — провайдер, генерацию которого исполняет
 // программа-агент из реестра. Images создаёт исполнителя опор, Cover — исполнителя обложки и
 // референса с программой и моделью, закреплёнными при подготовке.
 type AgentAdapter struct {
@@ -148,7 +142,7 @@ var (
 	}
 )
 
-// Agent — agentAdapter оригинала: адаптер провайдера-агента по id (регистр и крайние пробелы
+// Agent — адаптер провайдера-агента по id (регистр и крайние пробелы
 // несущественны).
 func Agent(provider any) (AgentAdapter, bool) {
 	agentMu.RLock()

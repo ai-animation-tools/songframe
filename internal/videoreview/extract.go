@@ -19,14 +19,14 @@ import (
 	"songframe-go/internal/pycompat"
 )
 
-// Пределы подготовки кадров; значения совпадают с tools/video_review/video_review.py.
+// Пределы подготовки кадров; от них зависят выборка и отказы, проверяемые эталоном video-review-frames.
 const (
 	maxDuration      = 600
 	maxDecodedFrames = 72_000
 	maxFrames        = 32
 	commandTimeout   = 120 * time.Second
 	imageFileBudget  = 1024 * 1024
-	// stderrTail — хвост stderr FFmpeg в сообщении, в символах (как [-1200:] Python).
+	// stderrTail — хвост stderr FFmpeg в сообщении, в символах (срез [-1200:] Python).
 	stderrTail = 1200
 	// probeOutput — предел stdout ffprobe: список PTS 72 000 кадров занимает несколько мегабайт.
 	probeOutput = 64 * 1024 * 1024
@@ -54,7 +54,7 @@ type ManifestFrame struct {
 	Path        string
 }
 
-// ManifestReference — подготовленная копия опоры R001… и путь её оригинала (realpath).
+// ManifestReference — подготовленная копия опоры R001… и канонический путь исходного файла опоры.
 type ManifestReference struct {
 	ID         string
 	SourcePath string
@@ -69,14 +69,14 @@ type Manifest struct {
 	Frames          []ManifestFrame
 }
 
-// valueError — причина отказа подготовки (ValueError инструмента оригинала).
+// valueError — причина отказа подготовки; её текст попадает в сообщение пользователю.
 type valueError struct{ message string }
 
 func (e *valueError) Error() string { return e.message }
 
 func fail(message string) error { return &valueError{message} }
 
-// Extract — Go-версия tools/video_review: извлекает реальные кадры видео (ближайшие к шагу 0,5 с,
+// Extract — подготовка кадров video_review: извлекает реальные кадры видео (ближайшие к шагу 0,5 с,
 // обязательно первый и последний, не больше 32) с фактическими PTS, готовит копии опор с
 // EXIF-ориентацией и уменьшением до 960×960 без увеличения и упаковывает все изображения в общий
 // бюджет, не теряя ни одного ID. Результат публикуется в Out только целиком: всё готовится во
@@ -230,8 +230,9 @@ func extract(ctx context.Context, input ExtractInput) (Manifest, error) {
 	return manifest, nil
 }
 
-// manifestJSON — json.dumps(report, ensure_ascii=False, indent=2) + "\n" в UTF-8, порядок ключей
-// оригинала. Числа — float Python (0.0, 2.5), schema_version — int.
+// manifestJSON — json.dumps(report, ensure_ascii=False, indent=2) + "\n" в UTF-8 по семантике
+// Python: порядок ключей и запись чисел (float 0.0, 2.5; schema_version — int) зафиксированы
+// эталоном video-review-frames.
 func manifestJSON(manifest Manifest) ([]byte, error) {
 	references := []any{}
 	for _, item := range manifest.References {

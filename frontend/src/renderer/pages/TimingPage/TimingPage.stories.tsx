@@ -53,7 +53,7 @@ async function openAutomatic(canvasElement: HTMLElement): Promise<void> {
   await userEvent.click(await within(canvasElement.ownerDocument.body).findByRole('menuitem', { name: editorTexts.automatic }));
 }
 
-/** Отличие от 634fd94: успешная разметка закрывает окно, итог — в уведомлении страницы. */
+/** Успешная разметка закрывает окно, итог — в уведомлении страницы. */
 async function expectTimingReady(canvasElement: HTMLElement): Promise<void> {
   const screen = within(canvasElement.ownerDocument.body);
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument(), { timeout: 5000 });

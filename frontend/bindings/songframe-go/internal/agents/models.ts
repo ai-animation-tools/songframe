@@ -74,10 +74,10 @@ export interface InputHashes {
 }
 
 /**
- * Job — AgentJob контракта и запись истории jobs/agent-<id>.json. Порядок полей — порядок ключей
- * объекта оригинала (сначала поля создания, затем назначаемые по ходу cliVersion, sessionId,
- * diagnostic, message), поэтому файлы истории совпадают с Electron байт в байт. Промпт, контекст,
- * stderr и сырые события провайдера сюда не попадают; result и task очищены Redact.
+ * Job — AgentJob контракта и запись истории jobs/agent-<id>.json. Порядок полей (сначала поля
+ * создания, затем назначаемые по ходу cliVersion, sessionId, diagnostic, message) входит в формат
+ * файлов истории и зафиксирован эталонами. Промпт, контекст, stderr и сырые события провайдера
+ * сюда не попадают; result и task очищены Redact.
  *
  * FinishedAt и ExitCode — nullable-поля контракта; менеджер всегда заменяет указатель новым
  * значением и не меняет указываемое, поэтому поверхностная копия Job — независимый снимок.
@@ -126,7 +126,7 @@ export interface ModelsResult {
 }
 
 /**
- * ProviderAuth — вход в платного провайдера, проверенный его программой (ProviderAuth оригинала).
+ * ProviderAuth — вход в платного провайдера, проверенный его программой.
  */
 export interface ProviderAuth {
     /**
@@ -146,8 +146,8 @@ export interface Settings {
 }
 
 /**
- * StartInput — AgentStartInput контракта. Пустой Context равнозначен отсутствующему: и хеш, и
- * промпт оригинала их не различают.
+ * StartInput — AgentStartInput контракта. Пустой Context равнозначен отсутствующему: ни хеш, ни
+ * промпт их не различают.
  */
 export interface StartInput {
     "project": string;

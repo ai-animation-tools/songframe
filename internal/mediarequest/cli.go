@@ -11,7 +11,7 @@ import (
 	"songframe-go/internal/pytool"
 )
 
-// Parser — argparse media_request.py оригинала (описание — docstring модуля).
+// Parser — аргументы инструмента media_request в модели argparse.
 var Parser = pyargparse.Parser{
 	Prog:        "media_request.py",
 	Description: "Попытка генерации у выбранного провайдера: возможности, подготовка, отправка и получение; @link README.md",
@@ -64,14 +64,14 @@ var Parser = pyargparse.Parser{
 	},
 }
 
-// ProjectFreeActions — действия без проекта (PROJECT_FREE_ACTIONS оригинала): вход к провайдеру
+// ProjectFreeActions — действия без проекта: вход к провайдеру
 // выполняется со страницы «Среда» без выбранного клипа.
 var ProjectFreeActions = map[string]bool{"login": true, "auth-status": true}
 
 // textHidden — общий отказ: пути, ответы сервиса и сетевые ошибки могут содержать секреты.
 const textHidden = "Ошибка локальных данных или файлов; сырой вывод скрыт."
 
-// Run — main() media_request.py на проекте root: разбор аргументов, действие и вывод JSON.
+// Run выполняет media_request на проекте root: разбор аргументов, действие и вывод JSON.
 // Ошибка — код 1 и одна строка в stderr: текст ValueError/NotSubmitted как есть, прочие
 // ожидаемые отказы (KeyError, TypeError, OSError и подклассы ValueError) — общий текст без
 // сырого вывода; неожиданное исключение — трассировка, как у Python. report получает строки
@@ -92,7 +92,7 @@ func Run(ctx context.Context, root string, args []string, report func(string)) p
 	return output
 }
 
-// failure — except (ValueError, KeyError, TypeError, OSError) оригинала.
+// failure — ответ на ожидаемые отказы (модель ValueError, KeyError, TypeError, OSError).
 func failure(printer *pytool.Printer, err error) pytool.Output {
 	var exception *pycompat.Exception
 	switch {
@@ -118,12 +118,12 @@ func printJSON(printer *pytool.Printer, value any) error {
 	return printer.Print(text)
 }
 
-// adapterFunction — provider_function(provider, name): необязательная возможность адаптера.
+// adapterFunction — необязательная возможность адаптера.
 func adapterFunction(provider string) (mediaadapters.Adapter, error) {
 	return mediaadapters.Lookup(provider)
 }
 
-// run — тело try оригинала: действие и печать результата.
+// run — действие и печать результата; ошибки разбирает Run.
 func run(ctx context.Context, root string, args pyargparse.Result, printer *pytool.Printer, report func(string)) (pytool.Output, error) {
 	value := func(name string) string { text, _ := args.Value(name); return text }
 	var result *pycompat.Dict

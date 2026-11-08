@@ -15,7 +15,7 @@ import (
 	"songframe-go/internal/pycompat"
 )
 
-// Макет оригинала: 12 кадров сеткой в 4 столбца, ячейка 480×270 и полоса подписи 26 px; сравнение
+// Макет сводки: 12 кадров сеткой в 4 столбца, ячейка 480×270 и полоса подписи 26 px; сравнение
 // с опорой — по высоте 540 px; цвета и кегль 16 — те же, что у карточек аниматика.
 const (
 	samples       = 12
@@ -30,7 +30,7 @@ const (
 	captionColor  = "#E8B975"
 )
 
-// report — результат summarize: поля отчёта и словарь files в порядке оригинала.
+// report — результат summarize: поля отчёта и словарь files в порядке вывода, зафиксированном эталоном.
 type report struct {
 	video, outputDir string
 	media            media
@@ -54,7 +54,7 @@ func (r report) dict() *pycompat.Dict {
 	return result
 }
 
-// table — table(report): Markdown-таблица параметров и строка статуса.
+// table — Markdown-таблица параметров отчёта и строка статуса.
 func (r report) table() string {
 	m := r.media
 	audio := "нет"
@@ -89,9 +89,9 @@ func (r report) table() string {
 	return strings.Join(lines, "\n") + "\n\n" + textStatus
 }
 
-// summarize — summarize(video, out, keyframes, preview): папка out, лист, граничные кадры,
+// summarize создаёт папку out, лист, граничные кадры,
 // сравнения с опорами first/last и превью. Временные кадры — во временной папке «contact-*»,
-// которая удаляется и при ошибке; уже записанные файлы сводки при ошибке остаются, как в оригинале.
+// которая удаляется и при ошибке; уже записанные файлы сводки при ошибке остаются.
 func summarize(ctx context.Context, video, out string, keyframes []keyframe, withPreview bool) (report, error) {
 	if err := os.MkdirAll(out, 0o777); err != nil {
 		return report{}, pycompat.OSErrorFrom(err, out)
@@ -105,7 +105,7 @@ func summarize(ctx context.Context, video, out string, keyframes []keyframe, wit
 	}
 	total, ok := info.frames.Int64()
 	if !ok {
-		// Число кадров вне int64 ffprobe не сообщает; у оригинала range() отказал бы так же.
+		// Число кадров вне int64 ffprobe не сообщает; range() Python на таком значении тоже отказал бы.
 		return report{}, pycompat.New(pycompat.OverflowError, "Python int too large to convert to C ssize_t")
 	}
 	last := total - 1
@@ -231,9 +231,9 @@ func thumbnailSize(width, height, boxW, boxH int) (int, int, bool) {
 	return x, y, x != width || y != height
 }
 
-// sheet — sheet(frames, fps, target): холст 4 столбца × ceil(n/4) строк, кадр в ячейке по центру
+// sheet — лист кадров: холст 4 столбца × ceil(n/4) строк, кадр в ячейке по центру
 // по горизонтали и прижат к верху, под ним подпись «кадр N · T с». Кадры FFmpeg уже вписаны в
-// ячейку (force_original_aspect_ratio=decrease), поэтому thumbnail оригинала их не меняет; ветка
+// ячейку (force_original_aspect_ratio=decrease), поэтому thumbnail Pillow их не меняет; ветка
 // уменьшения оставлена бикубической без reduce() Pillow (недостижима с кадрами FFmpeg).
 func sheet(indices []int64, paths []string, fps float64, target string) error {
 	rows := (len(paths) + columns - 1) / columns
@@ -266,7 +266,7 @@ func sheet(indices []int64, paths []string, fps float64, target string) error {
 	return savePicture(canvas, target)
 }
 
-// compare — compare(keyframe, actual, caption, target): опора слева, фактический кадр справа,
+// compare — картинка сравнения: опора слева, фактический кадр справа,
 // обе высотой 540 (бикубический Image.resize, ширина round() Python), поля 10 px и подписи сверху.
 func compare(keyframePath, actualPath, caption, target string) error {
 	left, err := animaticcards.OpenPicture(keyframePath)

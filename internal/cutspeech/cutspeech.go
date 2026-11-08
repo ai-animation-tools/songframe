@@ -1,5 +1,5 @@
-// Package cutspeech — перенос tools/cut_speech/cut_speech.py: точный WAV липсинка и его рецепт
-// audio-recipe.json из исходной песни проекта.
+// Package cutspeech вырезает точный WAV липсинка и его рецепт audio-recipe.json из исходной
+// песни проекта (инструмент cut_speech).
 //
 // Действие cut находит план в реестре сцен, выбирает строки plan/audio/timing.json, пересекающие
 // его окно, предлагает границы среза по ним (или берёт явные --start/--end), декодирует всю песню
@@ -8,13 +8,13 @@
 // SHA-256 результата и строки разметки. Действие verify повторяет срез по рецепту в памяти и
 // сверяет SHA-256, а при наличии сохранённого WAV — ещё и его PCM.
 //
-// Наружу отдаётся ровно то, что видел вызывающий процесс Python: коды выхода, stdout, stderr,
-// байты WAV (как у модуля wave) и JSON рецепта. Владельцы: файлы пишет только cut (в папку --out),
-// песня и разметка только читаются; FFmpeg запускается через общий mediacmd с отменой по context.
+// Коды выхода, stdout, stderr, байты WAV (как у модуля wave Python) и JSON рецепта
+// зафиксированы эталоном testdata/golden/cut-speech. Владельцы: файлы пишет только cut (в папку
+// --out), песня и разметка только читаются; FFmpeg запускается через общий mediacmd с отменой по
+// context.
 //
-// Отличие от оригинала (исправленная ошибка): отрицательное начало среза Python резал срезом
-// bytes «с конца» PCM и записывал пустой или чужой участок с отрицательным start_sample в рецепте;
-// здесь такое начало — отказ ValueError без записи.
+// Отрицательное начало среза — отказ ValueError без записи: иначе срез отсчитывался бы от конца
+// PCM и записал бы пустой или чужой участок.
 package cutspeech
 
 import (
@@ -37,7 +37,7 @@ const (
 		"без фильтров, нормализации и изменения скорости."
 )
 
-// Тексты оригинала. textNegativeStart — текст исправления (в оригинале проверки не было).
+// Тексты отказов и описания инструмента.
 const (
 	textDescription   = "Точный WAV липсинка и его рецепт из исходной песни по разметке или заданным границам; @link README.md"
 	textHidden        = "Ошибка файлов или аудио; сырой вывод скрыт."
@@ -50,8 +50,8 @@ const (
 	textConfirm       = "Границы строк — оценки разметки; подтвердите их на слух до генерации."
 )
 
-// Parser — argparse cut_speech.py: подкоманды cut и verify. Значения по умолчанию — как у
-// оригинала: --lead/--tail — float 0.5, --min-seconds — целое 0.
+// Parser — разбор аргументов cut_speech: подкоманды cut и verify. Значения по умолчанию:
+// --lead/--tail — float 0.5, --min-seconds — целое 0.
 func Parser() *pycompat.Command {
 	return &pycompat.Command{
 		Prog:        "cut_speech.py",
@@ -73,7 +73,7 @@ func Parser() *pycompat.Command {
 	}
 }
 
-// Run — main() cut_speech.py на корне проекта root (уже выбранном tools.Run). Ошибки ValueError
+// Run — инструмент cut_speech на корне проекта root (уже выбранном tools.Run). Ошибки ValueError
 // (кроме JSONDecodeError) печатаются своим текстом, OSError, KeyError и битый JSON — общим
 // текстом без сырого вывода, прочие исключения — трассировкой; везде код 1. verify без
 // совпадения SHA и PCM завершается кодом 1 после печати отчёта. Отмена context останавливает
@@ -110,7 +110,7 @@ func Run(ctx context.Context, root string, argv []string) pytool.Output {
 	return pytool.Output{Code: code, Stdout: out.String(), Stderr: pycompat.TextMode(stderr.String())}
 }
 
-// run — тело try оригинала: код выхода (1 — SystemExit verify) либо исключение.
+// run выполняет действие: код выхода (1 — несовпадение verify) либо исключение.
 func run(ctx context.Context, root string, args pycompat.Namespace, out *pytool.Printer, stderr *strings.Builder) (int, error) {
 	if args["action"] == "verify" {
 		recipePath := args["recipe"].(string)

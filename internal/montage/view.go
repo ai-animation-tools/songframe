@@ -48,7 +48,7 @@ type Saved struct {
 }
 
 // LyricLine — MontageLyricLine: строка песни на кадровой оси трека. ID — id строки разметки как
-// есть (число в принятом формате; тип не проверяется оригиналом).
+// есть (число в принятом формате; тип не проверяется).
 type LyricLine struct {
 	ID         json.RawMessage `json:"id"`
 	Text       string          `json:"text"`
@@ -57,7 +57,7 @@ type LyricLine struct {
 }
 
 // View — MontageView: всё, что нужно странице монтажа. ManifestSha256 — объект «сцена → SHA-256
-// манифеста» в порядке сцен реестра (Record оригинала), поэтому отдаётся сырым JSON.
+// манифеста» в порядке сцен реестра, поэтому отдаётся сырым JSON.
 type View struct {
 	ScenarioStatus string          `json:"scenarioStatus"`
 	TrackPath      *string         `json:"trackPath"`
@@ -76,7 +76,7 @@ type View struct {
 	manifests map[string]string
 }
 
-// registry — readScenarioRegistry: статус, реестр и SHA-256 тех же байтов (повторное чтение могло
+// registry — чтение реестра сцен: статус, реестр и SHA-256 тех же байтов (повторное чтение могло
 // бы захватить другую версию).
 type registry struct {
 	status string
@@ -85,7 +85,7 @@ type registry struct {
 	sha256 string
 }
 
-// readRegistry — readScenarioRegistry(project): общий контракт реестра (версия 1, fps 30, коды и
+// readRegistry — чтение реестра сцен проекта: общий контракт реестра (версия 1, fps 30, коды и
 // кадровые окна планов). Отсутствующий файл — missing, ошибка чтения и неверная структура — invalid.
 func readRegistry(project string) registry {
 	raw, err := os.ReadFile(filepath.Join(project, "plan", "scenes.json"))
@@ -130,7 +130,7 @@ func readRegistry(project string) registry {
 	return registry{status: status, value: object, scenes: scenes, sha256: hex.EncodeToString(sum[:])}
 }
 
-// originalFrames — originalFrames(original_media): длина оригинала в кадрах 30 к/с по duration,
+// originalFrames — длина оригинала видео (original_media) в кадрах 30 к/с по duration,
 // иначе по nb_frames и r_frame_rate ffprobe; неизвестная — nil.
 func originalFrames(value any) *float64 {
 	media, ok := jscompat.AsObject(value)
@@ -167,11 +167,11 @@ var (
 	originalVideo = regexp.MustCompile(`(?i)^original(?:-\d+)?\.mp4$`)
 )
 
-// ViewProject — Montage.view(project): каталог монтажа. Читает только небольшие JSON и метаданные
-// файлов: Python и FFmpeg не запускаются, байты видеороликов не перечитываются (полные платные
+// ViewProject собирает каталог монтажа. Читает только небольшие JSON и метаданные
+// файлов: инструменты и FFmpeg не запускаются, байты видеороликов не перечитываются (полные платные
 // оригиналы не хешируются). Сценарий без готового реестра останавливает каталог до музыки и
 // материалов; ошибки отдельных комплектов, пакетов и черновиков становятся problems. Ошибка —
-// только исключение оригинала при чтении (например, каталог пакетов оказался файлом).
+// только сбой чтения самого проекта (например, каталог пакетов оказался файлом).
 func ViewProject(project string) (*View, error) {
 	view := &View{
 		ScenarioStatus: "missing", LyricLines: []LyricLine{}, Scenes: []Scene{}, Sources: []Source{},

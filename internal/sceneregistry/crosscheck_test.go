@@ -10,10 +10,9 @@ import (
 	"songframe-go/internal/sceneregistry"
 )
 
-// tsDivergences — случаи cases.json, на которых отпечатки Python и TS-переноса
-// (internal/scenario.SceneFingerprints, sceneFingerprints оригинального приложения) расходятся
-// по природе языков. Для путей Python-инструментов действует Python (sceneregistry), для
-// интерфейса — TS (scenario).
+// tsDivergences — случаи cases.json, на которых отпечатки по правилам Python (sceneregistry,
+// инструменты tools.run) и по правилам JS (internal/scenario.SceneFingerprints, страницы
+// приложения) расходятся по природе этих правил.
 var tsDivergences = map[string]string{
 	// Python печатает float как repr (1.0, 1e-07, 1e+16), JS — как Number#toString (1, 1e-7, 10000000000000000).
 	"floats-in-scene": "запись чисел float",
@@ -22,8 +21,8 @@ var tsDivergences = map[string]string{
 	"astral-keys": "порядок ключей вне BMP",
 }
 
-// TestFingerprintsMatchTS доказывает, что Python- и TS-отпечатки совпадают на корректных реестрах
-// эталона: интерфейс и инструменты сверяют принятие по одному SHA.
+// TestFingerprintsMatchTS доказывает, что отпечатки sceneregistry и internal/scenario совпадают
+// на корректных реестрах эталона: интерфейс и инструменты сверяют принятие по одному SHA.
 func TestFingerprintsMatchTS(t *testing.T) {
 	cases := golden.PyFile(t, "scene-registry", "cases.json").([]any)
 	compared := 0

@@ -15,7 +15,7 @@ import (
 	"songframe-go/internal/projectfs"
 )
 
-// Восстановление прерванной приёмки (derived-recovery.ts оригинала) без инструмента: журнал
+// Восстановление прерванной приёмки без инструмента: журнал
 // plan/derived-history/<id>/journal.json в состоянии publishing откатывается до открытия проекта.
 // В отличие от CLI recover здесь журналу не доверяют: откат трогает только файлы публикации, и весь
 // набор со всеми резервами сверяется до первой записи.
@@ -323,7 +323,7 @@ func RecoverApplications(project string) error {
 // toolActive — признак выполняющейся команды инструмента; точка подмены теста живой публикации.
 var toolActive = deriveshot.Active
 
-// RecoverOpened — восстановление при открытии проекта (projects:open оригинала): живую публикацию не
+// RecoverOpened — восстановление при открытии проекта: живую публикацию не
 // откатываем — пока в этом процессе выполняется derive_shot над проектом, журнал принадлежит ему.
 func RecoverOpened(project string) error {
 	if toolActive(project) {

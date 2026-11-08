@@ -29,7 +29,7 @@ func NewShellService(files FileServer, open desktop.Opener) *ShellService {
 }
 
 // FileBase возвращает адрес loopback этого запуска. Адаптер получает его один раз
-// до монтирования React и дальше строит URL файлов синхронно, как local-file:// в Electron.
+// до монтирования React и дальше строит URL файлов синхронно.
 func (s *ShellService) FileBase() (string, error) {
 	if s.files == nil {
 		return "", fmt.Errorf("медиасервер не запущен")

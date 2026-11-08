@@ -1,4 +1,4 @@
-/** Ресурсы приложения: в Go-версии шаблон, промпты и документы провайдеров встроены в бинарник. */
+/** Ресурсы приложения: шаблон, промпты и документы провайдеров встроены в бинарник. */
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
 import type { AppState } from '@shared/types';

@@ -21,10 +21,11 @@ import (
 	"songframe-go/internal/jscompat"
 )
 
-// promptDigest — SHA-256 skills/ai-clip-video-review/SKILL.md оригинала 634fd94.
+// promptDigest — закреплённый SHA-256 встроенного скилла проверки видео.
 const promptDigest = "edacbfacff0237f9b918ed559b105527e912f881b7749312cf26c3aecac64aad"
 
-// TestPromptDigest фиксирует байты промпта: встроенный SKILL.md совпадает с оригиналом 634fd94.
+// TestPromptDigest фиксирует байты промпта: правка встроенного SKILL.md меняет вход агента и
+// должна быть осознанной.
 func TestPromptDigest(t *testing.T) {
 	sum := sha256.Sum256([]byte(prompt))
 	if got := hex.EncodeToString(sum[:]); got != promptDigest {
@@ -32,10 +33,10 @@ func TestPromptDigest(t *testing.T) {
 	}
 }
 
-// TestTextsMatchOriginal — тексты renderer совпадают с frontend/src/shared/texts, остальные тексты
-// подготовки кадров — с сообщениями tools/video_review оригинала 634fd94. Строки исходника Python,
-// в которых они стоят (плейсхолдеры подставлены), сняты в testdata/golden/video-review-frames/texts.json.
-func TestTextsMatchOriginal(t *testing.T) {
+// TestTextsMatchGolden — тексты renderer совпадают с frontend/src/shared/texts, остальные тексты
+// подготовки кадров — со строками эталона testdata/golden/video-review-frames/texts.json
+// (плейсхолдеры подставлены).
+func TestTextsMatchGolden(t *testing.T) {
 	var frontend strings.Builder
 	for _, name := range []string{"video-review.ts", "production.ts"} {
 		data, err := os.ReadFile(filepath.Join("..", "..", "frontend", "src", "shared", "texts", name))

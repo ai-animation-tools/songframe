@@ -17,11 +17,11 @@ var Statuses = []string{"running", "ready", "invalid", "failed", "cancelled", "i
 // StoreFolder — каталог записей предложений внутри каталога состояния приложения.
 const StoreFolder = "production-workflow"
 
-// Stored — локальная запись предложения одного плана (Stored оригинала) в представлении
+// Stored — локальная запись предложения одного плана в представлении
 // jscompat: { proposal, packageDir, target, hashes, rules, capabilities?, imageJob?, imageHashes? }.
 // Дерево сохраняет порядок ключей, поэтому запись после изменения статуса пишется тем же
-// JSON, что у оригинала. Владелец — Workflow; 45g.2 (Apply, восстановление после перезапуска)
-// и 45g.3 (опоры) читают и дополняют её через эти методы.
+// JSON, что зафиксирован эталоном. Владелец — Workflow; Apply, восстановление после перезапуска
+// и опоры читают и дополняют её через эти методы.
 type Stored struct {
 	Tree *jscompat.Object
 }
@@ -64,7 +64,7 @@ func (s *Stored) Rules() Rules { return RulesFromTree(s.Tree.Value("rules")) }
 // Capabilities — объявления моделей провайдера видео на момент подготовки (Undefined — нет).
 func (s *Stored) Capabilities() any { return s.Tree.Value("capabilities") }
 
-// ImageJob — предложение опор, созданных заданием провайдера-агента (45g.3).
+// ImageJob — предложение опор, созданных заданием провайдера-агента.
 func (s *Stored) ImageJob() bool { return s.Tree.Value("imageJob") == true }
 
 // ImageHashes — SHA-256 изображений готового предложения опор по абсолютным путям; nil — нет.
@@ -78,7 +78,7 @@ func (s *Stored) active() bool {
 	return s != nil && (s.Status() == "running" || s.Status() == "ready")
 }
 
-// CheckStored — checkedStored оригинала: запись проекта project с известным статусом и путями
+// CheckStored проверяет запись проекта project: известный статус и пути
 // пакетов внутри проекта. nil — форма записи не та (её не показывают); ошибка — пакет записи вне
 // plan/batches|awaiting. project — реальный путь проекта.
 func CheckStored(project string, value any) (*Stored, error) {
@@ -131,7 +131,7 @@ func (s Store) Path(project, shot string) string {
 	return filepath.Join(s.Folder(), FileName(project, shot))
 }
 
-// Read — read оригинала: проверенная запись плана или nil (нет файла, повреждена, чужая,
+// Read возвращает проверенную запись плана или nil (нет файла, повреждена, чужая,
 // отклонена, пакет вне проекта).
 func (s Store) Read(project, shot string) *Stored {
 	value, err := readJSON(s.Path(project, shot))
@@ -159,13 +159,12 @@ func (s Store) WriteDiscarded(project, shot, id string) error {
 	return writeJSON(s.Path(project, shot), marker)
 }
 
-// writeJSON — writeProductionJson оригинала для любого дерева jscompat.
+// writeJSON — writeProjectJSON для любого дерева jscompat.
 func writeJSON(path string, value any) error {
 	return projectfs.WriteFile(path, []byte(jscompat.StringifyIndent(value, "  ")+"\n"), 0)
 }
 
-// readJSON — json() оригинала: null (nil) при отсутствии файла; ошибка чтения или разбора
-// возвращается (оригинал бросал исключение).
+// readJSON — null (nil) при отсутствии файла; ошибка чтения или разбора возвращается.
 func readJSON(path string) (any, error) {
 	if !jscompat.Exists(path) {
 		return nil, nil

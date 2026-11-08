@@ -47,9 +47,9 @@ func (k *keyed) get(key any) (any, bool, error) {
 	return k.values[position], true, nil
 }
 
-// InitialStatesFor — initial_states_for(root): начальное состояние сущностей из plan/cast.json
+// InitialStatesFor — начальное состояние сущностей из plan/cast.json
 // проекта; без кастинга или при ValueError чтения кастинга — пустое. Прочие исключения чтения
-// (TypeError на данных неожиданной формы) передаются вызывающему, как в оригинале.
+// (TypeError на данных неожиданной формы) передаются вызывающему.
 func InitialStatesFor(root string) (*pycompat.Dict, error) {
 	cast, err := castregistry.Load(root)
 	if err != nil {
@@ -61,7 +61,7 @@ func InitialStatesFor(root string) (*pycompat.Dict, error) {
 	return castregistry.InitialStates(cast), nil
 }
 
-// DerivedFormat — DERIVED_FORMAT: текст неверной формы derived_from.
+// DerivedFormat — текст неверной формы derived_from.
 const DerivedFormat = `derived_from должен быть объектом {"shot": "Mxx"}.`
 
 // DerivedProblem — нарушение derived_from: код плана (значение Python, обычно строка) и текст.
@@ -70,7 +70,7 @@ type DerivedProblem struct {
 	Message string
 }
 
-// DerivedFromProblems — derived_from_problems(scenes): нарушения необязательного derived_from.
+// DerivedFromProblems — нарушения необязательного derived_from.
 // Производный план собирается из материала одного исходного плана: цепочки запрещены, чтобы монтаж
 // и представления всегда указывали план с собственной генерацией. Не-словари в списке пропускаются.
 func DerivedFromProblems(scenes any) ([]DerivedProblem, error) {
@@ -174,8 +174,8 @@ func Validate(data any, initial *pycompat.Dict) (*pycompat.Dict, error) {
 	return document, nil
 }
 
-// validateWindow — проверка одного плана validate: условия в порядке оригинала (короткое замыкание
-// `or` определяет, какое исключение возникнет на неполных данных).
+// validateWindow — проверка одного плана для Validate. Порядок условий зафиксирован эталонами:
+// короткое замыкание `or` определяет, какое исключение возникнет на неполных данных.
 func validateWindow(document *pycompat.Dict, scene any, seen, groups map[string]bool, end *pycompat.Int) error {
 	sid, err := pycompat.GetItem(scene, "id")
 	if err != nil {

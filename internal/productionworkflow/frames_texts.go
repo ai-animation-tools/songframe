@@ -6,10 +6,10 @@ import (
 	"songframe-go/internal/jscompat"
 )
 
-// Тексты создания и импорта опор (этап 45g.3) дословно из оригинала на 634fd94:
-// productionTexts.main.workflow (generateFrames), main.images (keyframe-images.ts), main.imageRequest
-// (frame-image-request.ts) и applicationTexts (маршруты ipc.ts). Уходят в ошибки Wails и в записи
-// предложений, поэтому меняются только вместе с поведением.
+// Тексты создания и импорта опор: проверок генерации, задания опор провайдера-агента, платного
+// запроса изображения и входа импорта. Уходят в ошибки Wails и в записи предложений и
+// зафиксированы эталоном testdata/golden/production-frames, поэтому меняются только вместе с
+// поведением.
 const (
 	textAllFramesCreated = "Все опоры уже созданы."
 
@@ -37,7 +37,7 @@ const (
 
 	// generationProviderFallback — providerTexts.generationProvider: подпись неизвестного провайдера.
 	generationProviderFallback = "провайдер генерации"
-	// framesCorrectionsLabel — исправления пользователя в замороженном промпте платной опоры: входят
+	// framesCorrectionsLabel — исправления пользователя в зафиксированном промпте платной опоры: входят
 	// в SHA запроса и подтверждаются вместе с ценой.
 	framesCorrectionsLabel = "\n\nИсправления к прежним вариантам: "
 )
@@ -98,7 +98,7 @@ func textChoosePaidImageProvider(titles []string) string {
 	return "Выберите " + joined + " для изображений в настройках проекта."
 }
 
-// textImagesPrompt — промпт задания опор провайдера-агента (KeyframeImages.start оригинала):
+// textImagesPrompt — промпт задания опор провайдера-агента:
 // инструкция и формат ответа генератора; абзацы об утверждённых кадрах и замечаниях — только при
 // их наличии.
 func textImagesPrompt(approved, notes bool) string {

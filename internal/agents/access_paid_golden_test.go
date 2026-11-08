@@ -12,8 +12,7 @@ import (
 )
 
 // TestPaidAccessGolden сверяет платную часть ai.access (выбор provider_selected, вход платного
-// провайдера, тексты подтверждения и запрета) с createAiAccess оригинала
-// (testdata/golden/ai-access-paid; скрипт съёмки capture-ai-access-paid.ts не сохранён).
+// провайдера, тексты подтверждения и запрета) с эталоном testdata/golden/ai-access-paid.
 func TestPaidAccessGolden(t *testing.T) {
 	var cases []struct {
 		Name         string                     `json:"name"`
@@ -43,7 +42,7 @@ func TestPaidAccessGolden(t *testing.T) {
 				}
 			}
 			if answer.ThrowsText != nil {
-				t.Skip("исключение не-Error оригинала Go выразить не может")
+				t.Skip("эталон фиксирует исключение не-Error, которое Go выразить не может")
 			}
 			project := t.TempDir()
 			data, _ := json.Marshal(map[string]any{"name": "Клип", "generation": item.Generation})

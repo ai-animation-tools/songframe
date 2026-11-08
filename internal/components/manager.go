@@ -157,7 +157,7 @@ func (m *Manager) Configure(selection Selection) (Snapshot, error) {
 }
 
 // configureLocked сохраняет выбор под уже захваченным work, в том числе после успешной установки.
-// Подтверждения неизменных реальных файлов сохраняются и при автоматическом переключении на managed.
+// Подтверждения неизменных реальных файлов сохраняются и при автоматическом переходе на managed.
 func (m *Manager) configureLocked(selection Selection) (Snapshot, error) {
 	for _, p := range []*string{&selection.FFmpegDirectory, &selection.ORTDirectory, &selection.ORTLibraryFile, &selection.VocalsFile, &selection.CTCDirectory, &selection.CTCModelFile, &selection.CTCVocabFile, &selection.ManagedDirectory} {
 		if *p != "" {

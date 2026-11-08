@@ -14,9 +14,9 @@ import (
 	"songframe-go/resources"
 )
 
-// Раскладка строки повторяет то, что делал Pillow 10.2 с движком Raqm 0.10 и HarfBuzz поверх
+// Раскладка строки повторяет то, что делает Pillow 10.2 с движком Raqm 0.10 и HarfBuzz поверх
 // FreeType: от суммы продвижений глифов зависят переносы и выбор кегля карточки, поэтому
-// ширина строки должна совпадать с draw.textlength оригинала с точностью до 1/64 пикселя.
+// ширина строки должна совпадать с draw.textlength эталона с точностью до 1/64 пикселя.
 //
 // Что воспроизводится (проверено эталоном testdata/golden/animatic-cards/textlength.json):
 //   - продвижения глифов без хинтинга (hb-ft по умолчанию грузит их с FT_LOAD_NO_HINTING),
@@ -33,7 +33,7 @@ import (
 // контекстные подстановки GSUB (тип 6: в DejaVu они переставляют точки над i/j перед
 // комбинируемыми знаками и обслуживают арабское письмо), нормализация составных символов
 // HarfBuzz, справа-налево и сложные шейперы (арабский, иврит), системы языка из локали
-// процесса (Raqm брал язык из LC_CTYPE; в DejaVu особые формы есть только у сербского и
+// процесса (Raqm берёт язык из LC_CTYPE; в DejaVu особые формы есть только у сербского и
 // македонского), таблицы Device и фильтры классов меток в флагах lookup.
 
 // fontFile — разобранный встроенный шрифт: sfnt даёт cmap, продвижения, метрики и контуры, а
@@ -71,7 +71,7 @@ func loadFonts() error {
 	return fontsErr
 }
 
-// fontFor — обычный или полужирный шрифт (BOLD if bold else FONT оригинала).
+// fontFor — обычный или полужирный шрифт карточки.
 func fontFor(isBold bool) (*fontFile, error) {
 	if err := loadFonts(); err != nil {
 		return nil, err
@@ -648,7 +648,7 @@ type shapedGlyph struct {
 	hidden  bool
 }
 
-// face — шрифт заданного кегля в пикселях (ImageFont.truetype(path, point) оригинала).
+// face — шрифт заданного кегля в пикселях (как ImageFont.truetype(path, point)).
 type face struct {
 	file *fontFile
 	size int

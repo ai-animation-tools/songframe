@@ -16,8 +16,8 @@ import (
 	"songframe-go/internal/jscompat"
 )
 
-// Эталон testdata/golden/montage/cases.json снят с Montage, montageVideoPath, copyMontageVideo и
-// recoverMontageApplications замороженного оригинала (скрипт capture-montage.ts вне репозитория).
+// Эталон testdata/golden/montage/cases.json фиксирует операции монтажа: черновики, экспорт и
+// применение, путь и копию пробы, восстановление прерванной публикации.
 // Сценарий — последовательность шагов над пустой папкой проекта: входные операции (write, remove,
 // mkdir, mtime) и действия с ожидаемым исходом (result/error, записанные файлы, запущенное
 // задание, копия пробы, дерево после восстановления).
@@ -36,7 +36,8 @@ func (f *fakeJobs) Start(spec jobs.Spec) (jobs.Info, error) {
 	return jobs.Info{ID: "job-" + strconv.Itoa(len(f.started)), Kind: spec.Kind, Title: spec.Title, Status: jobs.StatusRunning}, nil
 }
 
-// jobJSON — JobInfo фальшивого менеджера оригинала: только id, kind, title и status.
+// jobJSON — сведения о задании подставного менеджера в форме эталона: только id, kind, title и
+// status.
 func jobJSON(info jobs.Info) map[string]any {
 	return map[string]any{"id": info.ID, "kind": string(info.Kind), "title": info.Title, "status": string(info.Status)}
 }
@@ -60,7 +61,7 @@ var (
 	marker  = regexp.MustCompile(`<uuid\d+>`)
 )
 
-// marks — нормализация исхода, как mark() съёмки: пути проекта и назначения — маркерами, случайные
+// marks — нормализация исхода, как в эталоне: пути проекта и назначения — маркерами, случайные
 // UUID — <uuidN> по первому появлению, время изменения в пределах прогона — <time>.
 type marks struct {
 	project, out string
@@ -110,7 +111,7 @@ func (m *marks) unmark(text string) string {
 	})
 }
 
-// treeText — tree() съёмки: каталоги «dir», файлы — текстом UTF-8, ключи по возрастанию.
+// treeText — снимок дерева: каталоги «dir», файлы — текстом UTF-8, ключи по возрастанию.
 func treeText(t *testing.T, root string) map[string]any {
 	t.Helper()
 	result := map[string]any{}
@@ -146,7 +147,7 @@ func sameError(want, got string) bool {
 	return parts != nil && strings.HasPrefix(got, parts[1]) && strings.HasSuffix(got, parts[2])
 }
 
-// TestMontageGolden воспроизводит сценарии оригинала и сверяет каждый исход действия.
+// TestMontageGolden воспроизводит сценарии эталона и сверяет каждый исход действия.
 func TestMontageGolden(t *testing.T) {
 	var file struct {
 		Scenarios []goldenScenario `json:"scenarios"`

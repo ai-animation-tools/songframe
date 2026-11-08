@@ -8,7 +8,7 @@ import (
 )
 
 // TestAnimaticServiceRoutes — маршруты группы без сценарного прохода: пустой проект даёт вид с
-// [] вместо null, сборка без сценария и принятие без сборки отклоняются текстами оригинала.
+// [] вместо null, сборка без сценария и принятие без сборки отклоняются принятыми текстами.
 func TestAnimaticServiceRoutes(t *testing.T) {
 	project := t.TempDir()
 	service := NewAnimaticService(nil, nil)

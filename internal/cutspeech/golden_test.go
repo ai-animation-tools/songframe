@@ -20,7 +20,7 @@ import (
 	"songframe-go/internal/tools"
 )
 
-// goldenStep — шаг случая домена cut-speech: запуск CLI с исходом оригинала либо правка
+// goldenStep — шаг случая домена cut-speech: запуск CLI с ожидаемым исходом либо правка
 // проекта (запись текста или входного файла, порча байта, удаление).
 type goldenStep struct {
 	Run        []string `json:"run"`
@@ -64,7 +64,7 @@ type goldenCase struct {
 	GoDiffers string                     `json:"goDiffers"`
 }
 
-// addresses — адреса структур FFmpeg в stderr, нормализованные при съёмке.
+// addresses — адреса структур FFmpeg в stderr, нормализованные в эталоне.
 var addresses = regexp.MustCompile(`0x[0-9a-f]+`)
 
 // ffmpegVersion — первая строка `ffmpeg -version` или пусто без FFmpeg.
@@ -111,9 +111,9 @@ func copyDir(t *testing.T, from, to string) {
 	}
 }
 
-// TestGolden — CLI cut_speech против оригинала: коды, stdout, stderr (трассировки — последней
+// TestGolden — CLI cut_speech против эталона: коды, stdout, stderr (трассировки — последней
 // строкой) и итоговые файлы. Тексты FFmpeg и байты передискретизации сверяются только при той же
-// версии FFmpeg, что при съёмке; без FFmpeg тест пропускается.
+// версии FFmpeg, что записана в эталоне; без FFmpeg тест пропускается.
 func TestGolden(t *testing.T) {
 	version := ffmpegVersion(t)
 	if version == "" {

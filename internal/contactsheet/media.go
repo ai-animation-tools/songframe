@@ -18,7 +18,7 @@ import (
 // stderrTail — сколько последних символов stderr FFmpeg/ffprobe попадает в текст ошибки ([-600:]).
 const stderrTail = 600
 
-// runMedia — run(argv) оригинала: stdout программы; ненулевой код — ValueError «Ошибка обработки медиа: »
+// runMedia запускает программу и возвращает её stdout; ненулевой код — ValueError «Ошибка обработки медиа: »
 // с хвостом stderr. Незапустившаяся программа — FileNotFoundError (скрытый текст), отмена — ошибка
 // контекста.
 func runMedia(ctx context.Context, program string, args ...string) ([]byte, error) {
@@ -32,7 +32,7 @@ func runMedia(ctx context.Context, program string, args ...string) ([]byte, erro
 	return result.Stdout, nil
 }
 
-// media — параметры потока probe(path); поля в порядке словаря оригинала. Значения из JSON
+// media — параметры потока probe; поля в порядке словаря media отчёта. Значения из JSON
 // ffprobe (codec, pixFmt, rFrameRate) хранятся как есть: отчёт печатает их без преобразования.
 type media struct {
 	width, height pycompat.Int
@@ -60,10 +60,10 @@ func (m media) dict() *pycompat.Dict {
 	return result
 }
 
-// probe — probe(path): первый видеопоток ffprobe, частота Decimal(числитель)/Decimal(знаменатель)
+// probe — первый видеопоток ffprobe, частота Decimal(числитель)/Decimal(знаменатель)
 // (28 знаков), длительность потока или формата, число кадров из nb_frames либо округлённое
-// произведение длительности на частоту. Порядок обращений к полям повторяет оригинал, поэтому
-// неполный JSON даёт то же исключение (KeyError — скрытый текст, прочее — трассировка).
+// произведение длительности на частоту. Порядок обращений к полям определяет, какое исключение даёт
+// неполный JSON (KeyError — скрытый текст, прочее — трассировка); он зафиксирован эталоном.
 func probe(ctx context.Context, path string) (media, error) {
 	output, err := runMedia(ctx, mediacmd.FFprobe(), "-v", "error", "-show_streams", "-show_format", "-of", "json", path)
 	if err != nil {
@@ -186,7 +186,7 @@ func probe(ctx context.Context, path string) (media, error) {
 }
 
 // frameRate — Decimal(r.split("/")[0]) / Decimal(r.split("/")[1]): 0/0 — decimal.InvalidOperation,
-// N/0 — DivisionByZero, строка без «/» — IndexError (все — трассировка, как в оригинале).
+// N/0 — DivisionByZero, строка без «/» — IndexError (все — трассировка).
 func frameRate(video any) (pycompat.Decimal, error) {
 	raw, err := pycompat.Item(video, "r_frame_rate")
 	if err != nil {
@@ -373,10 +373,10 @@ func roundedProduct(duration, rate pycompat.Decimal) (pycompat.Int, error) {
 	return pycompat.IntFromBig(coef), nil
 }
 
-// extract — extract(video, indices, directory, scale): один проход FFmpeg с фильтром select по
+// extract — один проход FFmpeg с фильтром select по
 // номерам кадров, PNG frame-NNN.png по порядку. Номер сопоставляется с файлом по порядку (zip):
 // если кадров оказалось меньше, чем обещал ffprobe, у последних номеров файла нет, и обращение к
-// ним даёт KeyError (скрытый текст), как в оригинале.
+// ним даёт KeyError (скрытый текст).
 func extract(ctx context.Context, video string, indices []int64, directory string, scale bool) (map[int64]string, error) {
 	unique := uniqueSorted(indices)
 	selection := make([]string, len(unique))
@@ -423,7 +423,7 @@ func uniqueSorted(indices []int64) []int64 {
 	return result
 }
 
-// preview — превью на скорости 2×: 960 px по ширине, без звука, H.264 CRF 28, как в оригинале.
+// preview — превью на скорости 2×: 960 px по ширине, без звука, H.264 CRF 28.
 func preview(ctx context.Context, video, target string) error {
 	_, err := runMedia(ctx, mediacmd.FFmpeg(), "-v", "error", "-nostdin", "-y", "-i", video, "-vf", "setpts=PTS/2,scale=960:-2",
 		"-an", "-c:v", "libx264", "-preset", "veryfast", "-crf", "28", "-pix_fmt", "yuv420p", target)

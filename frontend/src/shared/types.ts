@@ -159,9 +159,9 @@ export interface SourcesView {
   coverPath: string | null;
   referenceFilePaths: Record<string, string>;
   problems: string[];
-  /** Код референса → планы с готовыми материалами: файлы такого референса при смене типа остаются на месте. Отличие от 634fd94. */
+  /** Код референса → планы с готовыми материалами: файлы такого референса при смене типа остаются на месте. */
   pinnedReferences: Record<string, string[]>;
-  /** Код сущности кастинга → её тип: новый референс с тем же кодом берёт этот тип. Отличие от 634fd94. */
+  /** Код сущности кастинга → её тип: новый референс с тем же кодом берёт этот тип. */
   entityKinds: Record<string, string>;
 }
 
@@ -386,14 +386,14 @@ export interface ScenarioView {
   duration: number | null;
   trackPath: string | null;
   problems: string[];
-  /** Карта references реестра расходится с кастингом: сохранение доступно без правок и обновит её. Отличие от 634fd94. */
+  /** Карта references реестра расходится с кастингом: сохранение доступно без правок и обновит её. */
   referencesStale: boolean;
 }
 
 /** Где задано значение состояния: начальное состояние кастинга или изменение плана в его фазе. */
 export type StateSource = { kind: 'cast' } | { kind: 'plan'; shot: string; phase: 'before' | 'after' };
 
-/** Префикс формата вычисленной врезки: main создаёт строку, renderer распознаёт отсутствие состояния. */
+/** Префикс формата вычисленной врезки: Go создаёт строку, renderer распознаёт отсутствие состояния. */
 // eslint-disable-next-line no-restricted-syntax -- Служебный маркер данных BriefResult сохраняет прежнюю фильтрацию, это не редактируемая UI-подпись.
 export const BRIEF_STATE_UNSET_PREFIX = 'Состояние не задано';
 

@@ -1,13 +1,12 @@
-// Package mediatest — тестовый провайдер генерации `test` без сети и платных запросов: перенос
-// tools/testing/fake_media_request.py оригинала. Общая логика платной попытки (media_request,
+// Package mediatest — тестовый провайдер генерации `test` без сети и платных запросов. Общая
+// логика платной попытки (media_request,
 // cost_check, shot_workflow, производство) тестируется на нём, поэтому удаление реального
 // провайдера не ломает общие тесты.
 //
 // Поведение задаёт JSON-файл <Dir>/service.json, читаемый при каждом вызове (его можно менять
-// между шагами), каждый вызов дописывается строкой JSON в <Dir>/calls.jsonl — тот же формат, что
-// у Python-адаптера, поэтому эталоны оригинала сверяются и по журналу вызовов. Поля конфигурации —
-// README tools/testing оригинала: reports, problems, capabilities, submit, poll, results,
-// balance, pricing. Дополнения для внесения сбоев (их же понимает адаптер съёмки эталонов):
+// между шагами), каждый вызов дописывается строкой JSON в <Dir>/calls.jsonl; формат журнала
+// зафиксирован эталонами, и они сверяются и по нему. Поля конфигурации: reports, problems,
+// capabilities, submit, poll, results, balance, pricing. Поля для внесения сбоев:
 //   - fetch_errors — номера вызовов fetch (по журналу, с 1), которые после записи в журнал
 //     завершаются OSError (обрыв загрузки);
 //   - task_trace_id — адаптер объявляет TASK_TRACE_ID;
@@ -36,11 +35,11 @@ const ID = "test"
 // BuiltinVideo — встроенный результат видео: минимальный файл с сигнатурой MP4.
 var BuiltinVideo = []byte("\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42isom")
 
-// BuiltinPNG — встроенный результат изображения: PNG 1×1 (байты builtin_png() оригинала).
+// BuiltinPNG — встроенный результат изображения: PNG 1×1 (байты зафиксированы эталонами).
 var BuiltinPNG = []byte("\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde" +
 	"\x00\x00\x00\x0cIDATx\x9cchhh\x00\x00\x03\x04\x01\x81K\xd3\xd2\x10\x00\x00\x00\x00IEND\xaeB`\x82")
 
-// defaultReports — DEFAULT_REPORTS оригинала в порядке ключей Python.
+// defaultReports — отчёты возможностей по умолчанию; порядок ключей виден в выводе.
 const defaultReports = `{
  "image": [
   {"command": "text_to_image", "models": {"test-image": {"arguments": {"aspect_ratio": {"default": "16:9", "allowed": ["16:9", "9:16", "1:1"]}}, "slots": {}, "limits": {}}}},
@@ -108,7 +107,7 @@ func (s *Service) Configure(values *pycompat.Dict) error {
 // local — пути конфигурации отсчитываются от её папки.
 func (s *Service) local(value string) string { return pycompat.JoinPath(s.Dir, value) }
 
-// journal дописывает вызов в calls.jsonl: {"action", …поля} в порядке оригинала.
+// journal дописывает вызов в calls.jsonl: {"action", …поля} в порядке, зафиксированном эталонами.
 func (s *Service) journal(action string, pairs ...any) error {
 	entry := pycompat.NewDict()
 	entry.Set("action", action)
@@ -153,7 +152,7 @@ func (s *Service) Calls(action string) []*pycompat.Dict {
 	return entries
 }
 
-// failure — исключение адаптера (тип и текст как у Python-сервиса).
+// failure — исключение адаптера с типом и текстом из конфигурации сервиса.
 func failure(kind, message string) error { return pycompat.New(kind, message) }
 
 // ValidateSpec — тестовый сервис принимает любые команды и параметры общей формы.
@@ -260,7 +259,7 @@ func (s *Service) Submit(_ context.Context, directory string, request, state *py
 	if value, has := dict.Get("generation_id"); has {
 		text, ok := value.(string)
 		if !ok {
-			// В оригинале нестроковый ID отвергала проверка identifier: тот же неизвестный исход.
+			// Нестроковый ID отвергает проверка identifier: это неизвестный исход.
 			return mediaapi.SubmitResult{}, failure(pycompat.ValueError, "Некорректный generationId.")
 		}
 		result.GenerationID = text
@@ -309,7 +308,7 @@ func (s *Service) Poll(_ context.Context, directory string, request, state *pyco
 	if value, has := dict.Get("service_status"); has {
 		result.ServiceStatus = value
 		if value == nil {
-			// Явный null — str(None) оригинала: в attempt.json попадёт «none», а не «unknown».
+			// Явный null печатается как str(None): в attempt.json попадёт «none», а не «unknown».
 			result.ServiceStatus = "None"
 		}
 	}

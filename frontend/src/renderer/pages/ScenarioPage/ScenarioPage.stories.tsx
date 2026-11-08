@@ -222,7 +222,7 @@ export const WorkflowWithManualEditing: Story = {
   play: async (context) => {
     const screen = await ready(context);
     await editorHeading(screen, 'M01');
-    // Процесс с агентом перенесён в Go: вместо заметки о переносе страница показывает рабочую панель.
+    // Сценарный проход агента ведёт рабочая панель страницы.
     await expect(screen.getByText(scenarioTexts.workflow.title)).toBeVisible();
     await expect(await screen.findByRole('button', { name: scenarioTexts.workflow.createScenes })).toBeVisible();
     await userEvent.type(field(screen, scenarioTexts.fields.action), ' Ручная правка.');

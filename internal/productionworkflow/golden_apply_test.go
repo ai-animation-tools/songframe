@@ -26,14 +26,13 @@ import (
 	"songframe-go/internal/tools"
 )
 
-// Эталон production-workflow-apply/cases.json снят скриптом capture-production-workflow-apply.ts
-// (этап 45g.2, см. README эталонов) с копии оригинала с точечным исправлением: сценарии 45g1
-// дополнены операциями Apply, обрыва процесса на границе вызова инструмента, восстановления при
-// старте и прямого журнала замены пакета. shot_workflow, continuity_brief и media_request prepare —
-// настоящие инструменты (здесь их Go-порты), каталог моделей тестового провайдера подставной.
+// Эталон testdata/golden/production-workflow-apply/cases.json (осознанные отличия — в README
+// эталонов): сценарии прохода с операциями Apply, обрыва процесса на границе вызова инструмента,
+// восстановления при старте и прямого журнала замены пакета. shot_workflow, continuity_brief и
+// media_request prepare — настоящие инструменты, каталог моделей тестового провайдера подставной.
 // После шагов, меняющих проект, сверяются все файлы plan/ (права и содержимое) и каталог журнала.
 
-// applyStep — шаг эталона Apply: операции 45g1 и новые поля.
+// applyStep — шаг эталона Apply: операции эталона production-workflow и поля Apply.
 type applyStep struct {
 	goldenStep
 	Crash *struct {
@@ -57,7 +56,7 @@ type applyStep struct {
 	State   json.RawMessage `json:"state"`
 }
 
-// applyConfig — Config скрипта съёмки 45g.2.
+// applyConfig — настройки сценария эталона Apply (поле config случая).
 type applyConfig struct {
 	ScenarioApproved bool `json:"scenarioApproved"`
 	PackageBusy      bool `json:"packageBusy"`
@@ -115,8 +114,8 @@ func TestGoldenProductionWorkflowApply(t *testing.T) {
 	}
 }
 
-// preserveModes — права файлов копии как у cpSync оригинала при съёмке эталона: образец распакован
-// из Git с umask 002, поэтому обычный файл — 0664, исполняемый — 0775. Права checkout не берутся:
+// preserveModes — права файлов копии, зафиксированные эталоном: образец там распакован с
+// umask 002, поэтому обычный файл — 0664, исполняемый — 0775. Права checkout не берутся:
 // Git хранит только бит исполнения, а остальное зависит от umask клонирования (на CI — 022).
 func preserveModes(t *testing.T, base, project string) {
 	err := filepath.WalkDir(base, func(path string, entry os.DirEntry, err error) error {
@@ -139,7 +138,7 @@ func preserveModes(t *testing.T, base, project string) {
 	}
 }
 
-// applyRun — сценарий эталона Apply поверх состояния 45g1 (проект, каталог состояния, агенты).
+// applyRun — сценарий эталона Apply поверх состояния goldenRun (проект, каталог состояния, агенты).
 type applyRun struct {
 	*goldenRun
 	config applyConfig
@@ -152,8 +151,8 @@ type applyRun struct {
 	lastTexts map[string]string
 }
 
-// create — новый экземпляр прохода с платным адаптером видео тестового провайдера, как
-// prepareVideoRequest ipc.ts без ai.requireAccess.
+// create — новый экземпляр прохода с платным адаптером видео тестового провайдера, как в
+// приложении, но без проверки доступа к провайдеру.
 func (r *applyRun) create() *Workflow {
 	paid, ok := providers.PaidAdapter(mediatest.ID)
 	if !ok {
@@ -172,9 +171,9 @@ func (r *applyRun) create() *Workflow {
 	})
 }
 
-// runTool — launcher.run скрипта съёмки: подставные capabilities (с limits) и сбой ask, остальное —
+// runTool — запуск инструментов сценария: подставные capabilities (с limits) и сбой ask, остальное —
 // настоящие инструменты. Обрыв процесса имитируется вечным ожиданием вызова: незавершённый Apply
-// остаётся висеть, как промис оригинала, а сценарий продолжает новый экземпляр.
+// остаётся висеть, а сценарий продолжает новый экземпляр.
 func (r *applyRun) runTool(ctx context.Context, project, name string, args []string) (tools.Result, error) {
 	r.guard.Lock()
 	r.calls = append(r.calls, toolCall{Name: name, Args: slices.Clone(args)})
@@ -216,7 +215,7 @@ func (r *applyRun) runTool(ctx context.Context, project, name string, args []str
 	return result, err
 }
 
-// normalize — normalize скрипта съёмки 45g.2: пути, временные папки подготовки, UUID.
+// normalize — маркеры эталона Apply: пути, временные папки подготовки, UUID.
 func (r *applyRun) normalize(text string) string {
 	text = strings.ReplaceAll(text, r.local, "<local>")
 	text = strings.ReplaceAll(text, r.project, "<project>")
@@ -270,7 +269,7 @@ func (r *applyRun) entry(t *testing.T, path string, texts map[string]string) str
 	return mode + ":bin:" + hex.EncodeToString(sum[:])
 }
 
-// walk — walk скрипта съёмки: файлы folder в порядке имён с путями от prefix.
+// walk — файлы folder в порядке имён с путями от prefix.
 func (r *applyRun) walk(t *testing.T, folder, prefix string, result, texts map[string]string, rename func(string) string) {
 	entries, err := os.ReadDir(folder)
 	if errors.Is(err, os.ErrNotExist) {
@@ -425,7 +424,7 @@ func (r *applyRun) snapshotTexts(t *testing.T) (map[string]string, map[string]st
 	return r.snapshotInto(t, r.lastTexts)
 }
 
-// execute — execute скрипта съёмки 45g.2; операции 45g1 исполняет goldenRun.
+// execute выполняет шаг эталона Apply; операции эталона production-workflow исполняет goldenRun.
 func (r *applyRun) execute(t *testing.T, step applyStep) (any, error) {
 	t.Helper()
 	ctx := context.Background()
@@ -542,7 +541,8 @@ func (r *applyRun) execute(t *testing.T, step applyStep) (any, error) {
 		}
 		return nil, nil
 	case "importFrames":
-		// Импорт опор переносит 45g.3: здесь записывается запись предложения, снятая с оригинала.
+		// Импорт опор проверяет эталон production-frames: здесь записывается готовая запись
+		// предложения из эталона.
 		path := r.recordPath(step.Shot)
 		if err := os.MkdirAll(filepath.Dir(path), 0o777); err != nil {
 			t.Fatal(err)

@@ -23,11 +23,11 @@ import (
 	"songframe-go/internal/projectfile"
 )
 
-// Пределы задания агента; значения совпадают с оригиналом.
+// Пределы задания агента; значения входят в поведение, проверяемое эталонами.
 const (
 	// TextLimit — наибольший размер промпта, контекста и результата в байтах UTF-8.
 	TextLimit = 256 * 1024
-	// logLimit — хвост журнала задания в кодовых единицах UTF-16 (slice(-LOG_LIMIT) JS).
+	// logLimit — хвост журнала задания в кодовых единицах UTF-16.
 	logLimit = 12000
 	// stderrTail — хвост stderr для классификации сбоя, в кодовых единицах UTF-16.
 	stderrTail = 4096
@@ -53,15 +53,15 @@ const (
 	EventFailed       = "failed"
 )
 
-// Префиксы промпта задания. Это часть промпта агента, а не тексты интерфейса: они должны
-// совпадать с оригиналом дословно.
+// Префиксы промпта задания. Это часть промпта агента, а не тексты интерфейса: менять их нельзя
+// без решения пользователя, они фиксированы эталонами дословно.
 const (
 	readPrefix  = "Подготовь предложение для пользователя. Не изменяй файлы проекта, не выполняй commit/push, не удаляй исходники или assets и не отправляй платные запросы сервисам генерации. Правила хранения проекта описаны в его README.md."
 	writePrefix = "Создай только запрошенные изображения в текущей рабочей папке кандидатов. Не изменяй материалы исходного проекта, не выполняй commit/push и не отправляй запросы сервисам генерации. Верни финальный JSON в запрошенном формате."
 )
 
-// StartInput — AgentStartInput контракта. Пустой Context равнозначен отсутствующему: и хеш, и
-// промпт оригинала их не различают.
+// StartInput — AgentStartInput контракта. Пустой Context равнозначен отсутствующему: ни хеш, ни
+// промпт их не различают.
 type StartInput struct {
 	Project string `json:"project"`
 	Task    string `json:"task"`
@@ -96,13 +96,13 @@ type Runner interface {
 	OnEvent(listener func(Event)) (unsubscribe func())
 }
 
-// Options подменяют пределы и запуск CLI в тестах. Нулевые значения — пределы оригинала и
+// Options подменяют пределы и запуск CLI в тестах. Нулевые значения — штатные пределы и
 // окружение приложения.
 type Options struct {
 	Timeout     time.Duration
 	OutputBytes int
 	// Check — окружение, home, системные каталоги и платформа: ими пользуются и диагностика CLI,
-	// и рабочий запуск (agentEnvironment оригинала).
+	// и рабочий запуск.
 	Check CheckOptions
 	// Adapter — адаптер на запуск; nil — NewAdapterOptions(provider, Check).
 	Adapter func(provider string) Adapter
@@ -137,7 +137,7 @@ type Manager struct {
 
 	mu        sync.Mutex
 	jobs      map[string]*Job
-	order     []string // порядок вставки jobs: стабильная сортировка List как у Map оригинала
+	order     []string // порядок вставки jobs: стабильная сортировка List
 	running   map[string]*running
 	listeners []listener
 	nextID    int
@@ -482,7 +482,7 @@ func (m *Manager) launch(run *running, config Settings, prompt string, images []
 		m.finish(run, StatusFailed, agentError(CodeCLIUnavailable, textLaunchFailed(Title(config.Provider))))
 		return
 	}
-	// Завершение сигналом — exitCode null, как у close в Node.
+	// Завершение сигналом — exitCode null: кода выхода нет.
 	var exitErr *process.ExitError
 	if !(errors.As(runErr, &exitErr) && exitErr.Signal != "") && result.Code >= 0 {
 		code := result.Code
@@ -509,7 +509,8 @@ func (m *Manager) launch(run *running, config Settings, prompt string, images []
 }
 
 // prepare (под mu) проверяет итог диагностики и готовит команду: аргументы адаптера, stdin
-// и окружение. Порядок проверок — оригинала: наличие, версия, аргументы, транспорт вложений, вход.
+// и окружение. Порядок проверок задаёт текст первой ошибки: наличие, версия, аргументы,
+// транспорт вложений, вход.
 func (m *Manager) prepare(run *running, adapter Adapter, config Settings, check CheckResult, checkErr error, prompt string, images []Image, workDir string) (process.Command, string, error) {
 	if checkErr != nil || run.ended {
 		return process.Command{}, "", checkErr
@@ -739,7 +740,7 @@ func (m *Manager) finish(run *running, status string, err *Error) {
 	}
 }
 
-// validate — проверка ввода оригинала: обязательные строки без \0, абсолютный проект, задача
+// validate — проверка ввода: обязательные строки без \0, абсолютный проект, задача
 // до 120 кодовых единиц UTF-16, промпт и контекст до TextLimit байт.
 func validate(input StartInput) error {
 	for _, value := range []string{input.Project, input.Task, input.Prompt} {

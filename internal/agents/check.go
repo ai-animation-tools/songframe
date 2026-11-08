@@ -81,7 +81,7 @@ type commandResult struct {
 	failure string // "", "timeout", "output_limit", "launch"
 }
 
-// probe — как распознать версию и вход конкретного CLI (agent-probes.ts оригинала).
+// probe — как распознать версию и вход конкретного CLI.
 type probe struct {
 	version    *regexp.Regexp
 	statusArgs []string
@@ -142,7 +142,7 @@ func parseVersion(provider, output string) string {
 	return match[1]
 }
 
-// commandOutputLimit — предел каждого потока короткой команды (maxBuffer execFile оригинала).
+// commandOutputLimit — предел каждого потока короткой команды.
 const commandOutputLimit = 32 * 1024
 
 // runCommand выполняет команду диагностики: без shell, с пустым stdin, в домашнем каталоге и

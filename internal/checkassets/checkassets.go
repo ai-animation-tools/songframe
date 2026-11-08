@@ -1,8 +1,7 @@
-// Package checkassets — перенос tools/check_assets/check_assets.py замороженного оригинала:
-// проверка всех выбранных комплектов assets/shots/M*/manifest.json проекта (validate_package,
-// internal/assetpackage) и сводка по их числу.
+// Package checkassets проверяет все выбранные комплекты assets/shots/M*/manifest.json проекта
+// (validate_package, internal/assetpackage) и печатает сводку по их числу.
 //
-// У оригинала нет argparse и try: аргументы после --project игнорируются, любой отказ (нет
+// Инструмент check_assets не разбирает аргументы: всё после --project игнорируется, любой отказ (нет
 // реестра, комплект вне реестра, изменённый файл) — необработанное исключение с трассировкой и
 // кодом 1. Пакет только читает файлы проекта.
 package checkassets
@@ -67,7 +66,7 @@ func LoadMotion(root string) (map[string]Motion, error) {
 	return result, nil
 }
 
-// Run — запуск check_assets.py на разрешённом корне проекта; args не разбираются.
+// Run запускает check_assets на разрешённом корне проекта; args не разбираются.
 func Run(root string, _ []string) pytool.Output {
 	printer := &pytool.Printer{}
 	motion, err := LoadMotion(root)

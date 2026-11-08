@@ -1,11 +1,11 @@
-// Package castregistry — перенос чтения кастинга из tools/cast_registry/cast_registry.py
-// замороженного оригинала для Python-инструментов (scene_registry, scene_scaffold и проверок,
-// которые переносятся следом): load_cast, validate_cast, проекция описаний из source/manifest.json,
-// initial_states и references.
+// Package castregistry читает кастинг для инструментов tools.run (scene_registry, scene_scaffold,
+// проверки): load_cast, validate_cast, проекция описаний из source/manifest.json, initial_states и
+// references.
 //
-// Кастинг для страниц приложения читает internal/cast (перенос TS-оригинала). Здесь — семантика
-// Python: значения pycompat, тексты проблем Python-инструмента (они отличаются от TS) и его
-// исключения на данных неожиданной формы. Пакет только читает файлы проекта.
+// Кастинг для страниц приложения читает internal/cast. Здесь — семантика Python: значения
+// pycompat, тексты проблем инструмента (они отличаются от текстов страниц) и его исключения на
+// данных неожиданной формы; от них зависят байты вывода, проверяемые эталонами. Пакет только
+// читает файлы проекта.
 package castregistry
 
 import (
@@ -17,7 +17,7 @@ import (
 	"songframe-go/internal/pycompat"
 )
 
-// Пути внутри проекта, как константы оригинала.
+// Пути внутри проекта.
 const (
 	CastPath       = "plan/cast.json"
 	SourceManifest = "source/manifest.json"
@@ -28,7 +28,7 @@ const (
 // kindPattern — KIND_PATTERN.match: `$` Python совпадает и перед последним переводом строки.
 var kindPattern = regexp.MustCompile(`^[a-z][a-z0-9_]*\n?\z`)
 
-// Тексты проблем validate_cast и отказов чтения (дословно из оригинала).
+// Тексты проблем validate_cast и отказов чтения; зафиксированы эталонами инструментов.
 const (
 	textStructure        = "cast.json: нужны schema_version 1, entities и properties."
 	textEntityNotObject  = "entities: элемент не объект."
@@ -176,7 +176,7 @@ func projectSavedDescriptions(root string, cast *pycompat.Dict) (*pycompat.Dict,
 
 // Load — load_cast(root): кастинг проекта с описаниями из описи или nil, если файла нет (или в нём
 // `null`). Повреждённый файл, проблемы Validate и повреждённая опись — ValueError с текстом
-// оригинала (проблемы через пробел).
+// проблем через пробел.
 func Load(root string) (*pycompat.Dict, error) {
 	value, damaged := pycompat.ReadJSON(filepath.Join(root, filepath.FromSlash(CastPath)))
 	if damaged {

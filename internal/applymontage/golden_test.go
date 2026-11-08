@@ -21,8 +21,8 @@ import (
 	"songframe-go/internal/pycompat"
 )
 
-// goldenFile — testdata/golden/apply-montage/cases.json: случаи CLI оригинала на копии общего
-// образца checks-base с настоящим FFmpeg (скрипт съёмки — capture-apply.py вне репозитория).
+// goldenFile — testdata/golden/apply-montage/cases.json: случаи CLI на копии общего образца
+// checks-base с настоящим FFmpeg.
 type goldenFile struct {
 	FFmpegVersion string       `json:"ffmpegVersion"`
 	Base          string       `json:"base"`
@@ -32,7 +32,7 @@ type goldenFile struct {
 // goldenCase — операции подготовки, шаги CLI и ожидаемое состояние проекта после всех шагов.
 type goldenCase struct {
 	Name string `json:"name"`
-	// Covers — ветки оригинала, которые проходит случай; «prepare available» читает длину видео ffprobe.
+	// Covers — ветки, которые проходит случай; «prepare available» читает длину видео ffprobe.
 	Covers   []string   `json:"covers"`
 	Setup    []setupOp  `json:"setup"`
 	Steps    []stepSpec `json:"steps"`
@@ -64,7 +64,7 @@ type stepSpec struct {
 	Setup []setupOp `json:"setup"`
 }
 
-// treeEntry — запись снимка дерева, как tree() скрипта съёмки.
+// treeEntry — запись снимка дерева в формате эталона.
 type treeEntry struct {
 	Dir    bool
 	Text   *string
@@ -79,7 +79,7 @@ func real(text, project, inputs string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(text, "<project>", project), "<inputs>", inputs)
 }
 
-// applyOps — apply_ops скрипта съёмки.
+// applyOps выполняет операции подготовки случая над копией проекта.
 func applyOps(t *testing.T, project, inputs string, ops []setupOp) {
 	t.Helper()
 	for _, op := range ops {
@@ -126,7 +126,7 @@ func applyOps(t *testing.T, project, inputs string, ops []setupOp) {
 	}
 }
 
-// mediaSummary — media() скрипта съёмки: сводка ffprobe видео и звука.
+// mediaSummary — сводка ffprobe видео и звука в формате эталона.
 func mediaSummary(t *testing.T, path string) any {
 	t.Helper()
 	result, err := mediacmd.Run(context.Background(), mediacmd.FFprobe(), "-v", "error", "-show_streams", "-of", "json", path)
@@ -158,7 +158,7 @@ func mediaSummary(t *testing.T, path string) any {
 	return summary
 }
 
-// snapshot — tree(folder, base) скрипта съёмки: каталоги, текст JSON/Markdown, SHA остального;
+// snapshot — снимок дерева в формате эталона: каталоги, текст JSON/Markdown, SHA остального;
 // MP4, которого нет в образце, — ещё размер и сводка ffprobe.
 func snapshot(t *testing.T, folder, base string, media bool) map[string]treeEntry {
 	t.Helper()
@@ -255,7 +255,7 @@ func describe(entry treeEntry) string {
 	return "sha " + entry.SHA256 + " " + string(data)
 }
 
-// loadGolden читает эталон и сообщает, совпадает ли локальный FFmpeg с версией съёмки.
+// loadGolden читает эталон и сообщает, совпадает ли локальный FFmpeg с версией из эталона.
 func loadGolden(t *testing.T) (goldenFile, bool) {
 	t.Helper()
 	var file goldenFile
@@ -305,7 +305,7 @@ func copyDir(t *testing.T, from, to string) {
 	}
 }
 
-// injectIDs подменяет NewID идентификаторами транзакций оригинала по порядку создания.
+// injectIDs подменяет NewID идентификаторами транзакций эталона по порядку создания.
 func injectIDs(t *testing.T, ids []string) {
 	t.Helper()
 	queue := append([]string{}, ids...)
@@ -326,10 +326,10 @@ func injectIDs(t *testing.T, ids []string) {
 	})
 }
 
-// TestApplyMontageGolden запускает Run на каждом случае эталона оригинала и сверяет коды, потоки
+// TestApplyMontageGolden запускает Run на каждом случае эталона и сверяет коды, потоки
 // и всё изменённое дерево проекта: тексты манифестов, журналов, реестра, статуса и представлений
-// побайтно, новые MP4 — SHA-256, размером и сводкой ffprobe. ID транзакций выдаются те же, что у
-// оригинала. Карточки аниматика (PNG Pillow) сверяются отдельным правилом: см. cardsDiffer.
+// побайтно, новые MP4 — SHA-256, размером и сводкой ffprobe. ID транзакций выдаются те же, что в
+// эталоне. Карточки аниматика (PNG Pillow) сверяются отдельным правилом: см. cardsDiffer.
 // Без FFmpeg пропускаются случаи с медиа и с проверкой длины источника ffprobe; при другой версии
 // FFmpeg пропускаются случаи, публикующие новые MP4.
 func TestApplyMontageGolden(t *testing.T) {

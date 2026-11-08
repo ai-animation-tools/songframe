@@ -17,7 +17,7 @@ import (
 )
 
 // bundleStep — шаг домена export-bundle-job: подготовка, вызов exportBundle или removeBundle,
-// исход оригинала и наличие путей после него. Пути содержат <tmp>.
+// ожидаемый исход и наличие путей после него. Пути содержат <tmp>.
 type bundleStep struct {
 	Label string `json:"label"`
 	Setup struct {
@@ -56,10 +56,20 @@ type gatedRuns struct {
 	mu    sync.Mutex
 	gates map[string]chan int
 	calls map[string][]string
+	// changed закрывается и заменяется при каждой записи в calls: так args ждёт событие запуска,
+	// а не опрашивает по времени (под нагрузкой фиксированный опрос не успевал).
+	changed chan struct{}
 }
 
 func newGatedRuns() *gatedRuns {
-	return &gatedRuns{gates: map[string]chan int{}, calls: map[string][]string{}}
+	return &gatedRuns{gates: map[string]chan int{}, calls: map[string][]string{}, changed: make(chan struct{})}
+}
+
+// record запоминает аргументы вызова и будит ожидающих args. Вызывается под g.mu.
+func (g *gatedRuns) record(key string, args []string) {
+	g.calls[key] = args
+	close(g.changed)
+	g.changed = make(chan struct{})
 }
 
 func (g *gatedRuns) gate(target string) chan int {
@@ -74,13 +84,13 @@ func (g *gatedRuns) gate(target string) chan int {
 func (g *gatedRuns) run(ctx context.Context, project, name string, args []string) (tools.Result, error) {
 	if name != "export_edit_bundle" {
 		g.mu.Lock()
-		g.calls[name] = args
+		g.record(name, args)
 		g.mu.Unlock()
 		code := 0
 		return tools.Result{Code: &code}, nil
 	}
 	g.mu.Lock()
-	g.calls[args[1]] = args
+	g.record(args[1], args)
 	g.mu.Unlock()
 	select {
 	case code := <-g.gate(args[1]):
@@ -93,22 +103,32 @@ func (g *gatedRuns) run(ctx context.Context, project, name string, args []string
 // args — аргументы запуска инструмента для цели, дождавшись начала шага.
 func (g *gatedRuns) args(t *testing.T, target string) []string {
 	t.Helper()
-	for attempt := 0; attempt < 1000; attempt++ {
+	// Запуск инструмента — событие задания в другой горутине. Ждём его без опроса; верхняя граница
+	// нужна только чтобы не зависнуть, если шаг так и не начался.
+	guard := time.After(time.Minute)
+	if deadline, ok := t.Deadline(); ok {
+		guard = time.After(time.Until(deadline) - time.Second)
+	}
+	for {
 		g.mu.Lock()
 		found, ok := g.calls[target]
+		changed := g.changed
 		g.mu.Unlock()
 		if ok {
 			return found
 		}
-		time.Sleep(time.Millisecond)
+		select {
+		case <-changed:
+		case <-guard:
+			t.Fatalf("инструмент не запущен для %s", target)
+			return nil
+		}
 	}
-	t.Fatalf("инструмент не запущен для %s", target)
-	return nil
 }
 
-// TestExportBundleGolden — Production.exportBundle и removeBundle оригинала: отказы, вид и шаги
-// задания, создание папки, занятость пакета до конца задания и проверки удаления. Отличие Go —
-// шаг batches-prefix: соседняя с plan/batches папка отклоняется сервисом, а не инструментом.
+// TestExportBundleGolden — ExportBundle и RemoveBundle: отказы, вид и шаги задания, создание
+// папки, занятость пакета до конца задания и проверки удаления. Шаг batches-prefix: соседняя с
+// plan/batches папка отклоняется сервисом до запуска инструмента.
 func TestExportBundleGolden(t *testing.T) {
 	var document struct {
 		Steps []bundleStep `json:"steps"`

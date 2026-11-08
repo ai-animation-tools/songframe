@@ -16,7 +16,7 @@ const (
 	statePlanned  = "Запланировано"
 )
 
-// stateOrder — порядок ключей counts в progress оригинала.
+// stateOrder — порядок ключей counts в progress.
 var stateOrder = []string{stateReady, stateStale, stateProgress, statePlanned}
 
 // mediaLabels — MEDIA_LABELS: подпись столбца «В полном монтаже» по виду кадра в сборке.
@@ -259,8 +259,8 @@ func readAnimatic(sources *Sources, project *pycompat.Dict, work any) (animaticS
 	return result, nil
 }
 
-// animaticFresh — условие fresh оригинала после проверки наличия манифеста (короткое замыкание
-// `and` в том же порядке).
+// animaticFresh — свежесть аниматика после проверки наличия манифеста. Условия проверяются по
+// порядку с коротким замыканием: от порядка зависит, какое исключение чтения возникнет.
 func animaticFresh(sources *Sources, project *pycompat.Dict, latest string, hashes any) (bool, error) {
 	document, err := sources.JSON(latest)
 	if err != nil {

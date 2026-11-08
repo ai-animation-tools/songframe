@@ -5,8 +5,8 @@ import (
 	"strings"
 )
 
-// Сообщения scenarioTexts.main и commonTexts.proposal оригинала (src/shared/texts/scenario.ts и
-// common.ts на 634fd94). Пользователь видит их дословно на странице «Сценарий» (проблемы
+// Сообщения scenarioTexts.main и commonTexts.proposal (frontend/src/shared/texts/scenario.ts и
+// common.ts). Пользователь видит их дословно на странице «Сценарий» (проблемы
 // входов, отказ действия, сообщение предложения), поэтому меняются только вместе с эталонами
 // testdata/golden/scenario-workflow.
 const (
@@ -104,7 +104,7 @@ func textStateUnknownProperty(shot, entity, property string) string {
 	return shot + ": неизвестное свойство " + entity + "." + property + "."
 }
 
-// textUnfilledShots — unfilledShots: число планов со склонением countLabel и первые шесть кодов.
+// textUnfilledShots — незаполненные планы: число планов со склонением countLabel и первые шесть кодов.
 func textUnfilledShots(ids []string) string {
 	count := len(ids)
 	shown := ids
@@ -119,7 +119,7 @@ func textUnfilledShots(ids []string) string {
 		" (" + strings.Join(shown, ", ") + more + ")."
 }
 
-// plural — plural из src/shared/plural.ts для целого числа: 1 план, 2 плана, 5 планов.
+// plural — склонение по числу, как plural из frontend/src/shared/plural.ts: 1 план, 2 плана, 5 планов.
 func plural(count int, one, few, many string) string {
 	n := count % 100
 	if n < 0 {

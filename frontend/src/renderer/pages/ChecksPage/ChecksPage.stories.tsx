@@ -1,4 +1,4 @@
-/** Настоящая страница проверок Go-версии: проверки проекта и проба стыков на локальной модели сервиса. */
+/** Настоящая страница проверок: проверки проекта и проба стыков на локальной модели сервиса. */
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { checksTexts } from '@shared/texts/checks';
@@ -45,11 +45,11 @@ export const RunAllChecks: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await canvas.findByText(checksTexts.sceneDataLabel);
-    // «Карточки и списки» перенесена: её кнопки доступны, как у остальных проверок.
+    // У «Карточек и списков» кнопки доступны, как у остальных проверок.
     const views = row(canvasElement, checksTexts.viewsLabel);
     await expect(within(views).getByRole('button', { name: commonTexts.run })).toBeEnabled();
     await expect(within(views).getByRole('button', { name: checksTexts.rebuildViews })).toBeEnabled();
-    // Проба стыков перенесена: рядом с проверками доступна форма и список собранных проб.
+    // Рядом с проверками доступна форма пробы стыков и список собранных проб.
     const review = await reviewPanel(canvasElement);
     await within(review).findByText(checksTexts.savedReviews);
     await expect(within(review).getByRole('button', { name: commonTexts.build })).toBeDisabled();

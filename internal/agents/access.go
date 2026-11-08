@@ -34,14 +34,15 @@ type Access struct {
 	Video ExecutorAccess `json:"video"`
 }
 
-// ProviderAuth — вход в платного провайдера, проверенный его программой (ProviderAuth оригинала).
+// ProviderAuth — вход в платного провайдера, проверенный его программой.
 type ProviderAuth struct {
 	Status  string `json:"status"` // authenticated, unauthenticated или unknown
 	Message string `json:"message,omitempty"`
 }
 
-// AccessChecker — ai-access оригинала: выбор исполнителей проверяется до диагностики, доступность
-// программы и вход подтверждаются отдельно. Состояния не хранит: каждый вызов читает настройки заново.
+// AccessChecker — явный выбор исполнителей ИИ: выбор проверяется до диагностики, доступность
+// программы и вход подтверждаются отдельно. Состояния не хранит: каждый вызов читает настройки
+// заново.
 type AccessChecker struct {
 	Settings *SettingsStore
 	// Check — диагностика программы-агента; nil — Check адаптера с окружением приложения.

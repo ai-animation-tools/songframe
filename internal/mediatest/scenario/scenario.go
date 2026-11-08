@@ -1,13 +1,13 @@
 // Package scenario проигрывает сценарии эталонов платной попытки (домены media-request и
-// cost-check в testdata/golden) на Go-переносе и сравнивает каждый шаг с оригиналом.
+// cost-check в testdata/golden) и сравнивает каждый шаг с эталоном.
 //
-// Сценарий снят capture-45a.py с CLI оригинала: шаги — вызовы media_request.py или cost_check.py
-// над каталогом случая <case> с папками project/ (клип), service/ (конфигурация и файлы тестового
-// сервиса internal/mediatest), state/ (каталог состояния) и tmp/ (временная папка ОС). Перед шагом
-// применяются правки конфигурации сервиса и файлов, после — сравниваются код, stdout, stderr, новые
-// строки журнала вызовов сервиса и всё дерево файлов (*.json — нормализованным текстом, прочие —
-// SHA-256). Пути в эталоне заменены маркерами <project>, <service>, <state>, <tmp>; время —
-// <time>, UUID — <uuidN> по порядку первого появления (stdout, stderr, журнал, дерево).
+// Шаги сценария — вызовы инструментов media_request или cost_check над каталогом случая <case> с
+// папками project/ (клип), service/ (конфигурация и файлы тестового сервиса internal/mediatest),
+// state/ (каталог состояния) и tmp/ (временная папка ОС). Перед шагом применяются правки
+// конфигурации сервиса и файлов, после — сравниваются код, stdout, stderr, новые строки журнала
+// вызовов сервиса и всё дерево файлов (*.json — нормализованным текстом, прочие — SHA-256). Пути в
+// эталоне заменены маркерами <project>, <service>, <state>, <tmp>; время — <time>, UUID — <uuidN>
+// по порядку первого появления (stdout, stderr, журнал, дерево).
 //
 // Пакет отдельный от internal/mediatest, чтобы тестовый провайдер не тянул пакет testing.
 // Сам вызов инструмента и внесение сбоев (замок, обрыв процесса) выполняет Runner теста пакета,
@@ -79,7 +79,7 @@ type Step struct {
 	Fault string `json:"fault"`
 }
 
-// Outcome — снятый результат шага.
+// Outcome — ожидаемый результат шага из эталона.
 type Outcome struct {
 	Code        int               `json:"code"`
 	Stdout      string            `json:"stdout"`
@@ -124,7 +124,7 @@ func Load(t testing.TB, domain string) []Scenario {
 
 // Env — каталог случая во время проигрывания.
 type Env struct {
-	// Root — каталог случая (без символических ссылок, как Path.resolve() съёмки).
+	// Root — каталог случая без символических ссылок: пути в выводе сравниваются с эталоном.
 	Root string
 	// Service — тестовый сервис в <case>/service.
 	Service *mediatest.Service
@@ -141,7 +141,7 @@ func (e *Env) Real(text string) string {
 	return text
 }
 
-// Register подключает тестовый сервис под id test так, как его видит процесс съёмки: функции
+// Register подключает тестовый сервис под id test так, как его видит процесс эталона: функции
 // входа есть, только если их ответы заданы в конфигурации. Возвращает отмену регистрации.
 func (e *Env) Register() func() {
 	config := e.Service.Config()
@@ -157,7 +157,7 @@ func registerAuth(service *mediatest.Service) func() {
 }
 
 // Runner выполняет шаг: инструмент step.Tool с аргументами args (маркеры уже заменены).
-// interrupted — шаг прерван внесённым сбоем (как KeyboardInterrupt процесса съёмки).
+// interrupted — шаг прерван внесённым сбоем (обрыв процесса).
 type Runner func(t *testing.T, env *Env, step Step, args []string) (output pytool.Output, interrupted bool)
 
 // Play проигрывает все сценарии домена подтестами.
@@ -305,7 +305,7 @@ func readCalls(t *testing.T, env *Env) []string {
 	return strings.Split(text, "\n")
 }
 
-// normalizer — нормализация текста съёмки: маркеры путей, время и UUID одного сценария.
+// normalizer — нормализация вывода шага: маркеры путей, время и UUID одного сценария.
 type normalizer struct {
 	env   *Env
 	uuids map[string]string
@@ -325,7 +325,7 @@ func (n *normalizer) text(text string) string {
 }
 
 // tree — дерево каталога случая без конфигурации и журнала сервиса: файлы (*.json — текстом,
-// прочие — SHA-256) и каталоги, в порядке путей как sorted(rglob) съёмки по каждому маркеру.
+// прочие — SHA-256) и каталоги, в порядке путей эталона по каждому маркеру.
 func tree(t *testing.T, root string, n *normalizer) (map[string]string, []string) {
 	t.Helper()
 	files := map[string]string{}
@@ -346,7 +346,7 @@ func tree(t *testing.T, root string, n *normalizer) (map[string]string, []string
 		if err != nil {
 			t.Fatal(err)
 		}
-		// sorted(rglob) съёмки сравнивает пути строками: «a.json» раньше «a/b».
+		// Порядок эталона — сравнение путей строками: «a.json» раньше «a/b».
 		sort.Strings(own)
 		paths = append(paths, own...)
 	}

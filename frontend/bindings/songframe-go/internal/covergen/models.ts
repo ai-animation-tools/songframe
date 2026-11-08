@@ -25,7 +25,7 @@ export interface Approval {
 
 /**
  * Crop — CoverCrop контракта: квадрат обложки в пикселях исходного изображения. Значения —
- * числа JSON: целостность проверяет Accept (Number.isSafeInteger оригинала).
+ * числа JSON: целостность (безопасное целое) проверяет Accept.
  */
 export interface Crop {
     "x": number;
@@ -54,8 +54,8 @@ export interface Quote {
 }
 
 /**
- * Session — CoverGenerationSession контракта. Порядок полей — порядок ключей оригинала: он виден
- * в квитанции session.json архива референса.
+ * Session — CoverGenerationSession контракта. Порядок полей зафиксирован: он виден в квитанции
+ * session.json архива референса.
  */
 export interface Session {
     "id": string;

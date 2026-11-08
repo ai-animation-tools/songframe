@@ -1,5 +1,5 @@
 /**
- * Единственная реализация window.api (D-027): каждый метод контракта shared/api.ts вызывает
+ * Единственная реализация window.api: каждый метод контракта shared/api.ts вызывает
  * сгенерированный binding Wails. Ответы Go не перепроверяются вручную — соответствие типов
  * bindings ↔ shared/types проверяет typecheck, а отсутствие null в коллекциях гарантирует
  * wire.Fill на стороне Go. Каркас api-skeleton перечисляет все методы контракта, а тест адаптера
@@ -216,7 +216,7 @@ function toJob({ modelDownload, error, ...info }: jobs.Info): JobInfo {
 
 /**
  * Вид сценарного прохода: проход, статус предложения и задания агента Go хранит строками,
- * документы предложения — JSON { cast, treatment, scenes } оригинала. Необязательное message
+ * документы предложения — JSON { cast, treatment, scenes } в формате файлов проекта. Необязательное message
  * Go опускает (omitempty), поэтому оно копируется только при наличии.
  */
 function toWorkflowView({ proposal, job, ...view }: scenarioworkflow.View): ScenarioWorkflowView {
@@ -275,8 +275,8 @@ const toVocals = (view: songtiming.VocalPreparationView): VocalPreparationView =
 const toStatus = (value: status.ProjectStatus): ProjectStatus => ({ ...value, state: value.state as ProjectStatus['state'] });
 
 /**
- * Пути ключей generation со значением undefined. Electron IPC передавал такие ключи, и запись
- * удаляла поле (сброс модели или разрешения); JSON-мост их теряет, поэтому Go получает их списком.
+ * Пути ключей generation со значением undefined. Такой ключ означает удаление поля
+ * при записи (сброс модели или разрешения); JSON-мост Wails его теряет, поэтому Go получает пути списком.
  */
 export function undefinedPaths(value: unknown, prefix: string[] = []): string[][] {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return [];
@@ -410,7 +410,7 @@ export function createApi(b: Bindings): Api {
   };
   /**
    * Сообщения окна плеера уходят в Go строго по очереди: вызовы binding Wails выполняются
-   * параллельно, а ipcRenderer.send оригинала сохранял порядок (state после state, frame после frame).
+   * параллельно, а окно должно получать их в порядке отправки (state после state, frame после frame).
    */
   let montageQueue: Promise<void> = Promise.resolve();
 
@@ -536,8 +536,8 @@ export function createApi(b: Bindings): Api {
       return { ...brief, phase: brief.phase as BriefResult['phase'] };
     });
 
-  // Инструменты Go выполняет в процессе приложения; ToolResult повторяет код, stdout и stderr
-  // процесса Python оригинала. Неизвестное имя — ошибка Go-сервиса своим текстом.
+  // Инструменты Go выполняет в процессе приложения; ToolResult несёт код выхода, stdout и stderr
+  // инструмента. Неизвестное имя — ошибка Go-сервиса своим текстом.
   api.tools.run = (project, name, args) => call('tools.run', async () => (await b.tools()).Run(project, name, args), false);
 
   // Проверки — задания общего менеджера. CheckId Go генерирует TS enum с теми же строками, поэтому
@@ -557,8 +557,8 @@ export function createApi(b: Bindings): Api {
   api.animatic.setStatus = (project, status) =>
     call('animatic.setStatus', async () => (await (await b.animatic()).SetStatus(project, status)) as AnimaticView, false);
 
-  // Ручной монтаж. Черновик Go принимает и отдаёт сырым JSON (проверяет его сам, как
-  // normalizeMontageDraft оригинала), поэтому адаптер только сужает типы. Экспорт и применение
+  // Ручной монтаж. Черновик Go принимает и отдаёт сырым JSON (проверяет и нормализует
+  // его сам), поэтому адаптер только сужает типы. Экспорт и применение
   // лишь ставят задание; выбор файла пробы ждёт пользователя и идёт без срока оболочки.
   api.montage = {
     view: (project) => call('montage.view', async () => (await (await b.montage()).View(project)) as unknown as MontageView),
@@ -574,7 +574,7 @@ export function createApi(b: Bindings): Api {
     saveVideo: (project, video) => call('montage.saveVideo', async () => (await b.montage()).SaveVideo(project, video), false)
   };
 
-  // Производные планы. Рецепт и вид проверяет Go (как checkedDerivedRecipe оригинала), адаптер только
+  // Производные планы. Рецепт и вид проверяет Go, адаптер только
   // сужает типы и приводит задание к JobInfo контракта. Сборка и приёмка лишь ставят задание, но
   // сначала сверяют байты пробы, поэтому идут без срока оболочки.
   const derivedView = async (view: Promise<unknown>): Promise<DerivedShotView> => {
@@ -601,7 +601,7 @@ export function createApi(b: Bindings): Api {
   };
 
   // Сценарный проход агента. Go отдаёт статусы, проход и документы предложения строками и JSON
-  // оригинала; адаптер только сужает типы. Записывающие действия ждут Go без срока оболочки:
+  // файлов проекта; адаптер только сужает типы. Записывающие действия ждут Go без срока оболочки:
   // start проверяет вход CLI, а apply гоняет проверки staging-копии и на клипе в 40 планов идёт
   // около минуты — 10 с срока показывали ошибку, хотя Go успешно публиковал сценарий.
   const workflow = async (view: Promise<scenarioworkflow.View>): Promise<ScenarioWorkflowView> => toWorkflowView(await view);
@@ -624,7 +624,7 @@ export function createApi(b: Bindings): Api {
 
   // Диагностика, аккаунт, модели и запуск вызывают CLI (до 10 с на команду): срок ожидания оболочки
   // не ставится, чтобы медленный CLI не показал ложную ошибку связи. Отказ Go приходит текстом
-  // «[КОД] причина», как у agents:start в Electron.
+  // «[КОД] причина».
   api.ai.access = (project) =>
     call(
       'ai.access',
@@ -727,7 +727,7 @@ export function createApi(b: Bindings): Api {
 
   // Производство. Документы пакета (workflow.json, timing, решения, предложения) Go передаёт как
   // есть сырыми JSON-значениями (json.RawMessage → any в bindings), поэтому ответ сужается до
-  // типов контракта без проверки — их форму задаёт файл проекта, как в оригинале. Отправка,
+  // типов контракта без проверки — их форму задаёт файл проекта. Отправка,
   // получение, приёмка и повтор ждут оценку и сервис провайдера: без срока ожидания оболочки.
   const production = async () => b.production();
   api.production.view = (project) => call('production.view', async () => (await (await production()).View(project)) as unknown as ProductionView);

@@ -8,7 +8,8 @@ import (
 	"songframe-go/internal/jscompat"
 )
 
-// Сообщения castTexts.main оригинала: показываются пользователю и входят в ошибки сохранения.
+// Сообщения castTexts.main (frontend/src/shared/texts/cast.ts): показываются пользователю и
+// входят в ошибки сохранения.
 const (
 	textStructureRequired       = "cast.json: нужны schema_version 1, entities и properties."
 	textUnnamedEntity           = "(без имени)"
@@ -57,7 +58,7 @@ var (
 	// slug — код сущности, типа и свойства: строчная латиница, цифры и подчёркивание с буквы.
 	slug = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 	// imagePath — путь изображения внутри source: одна папка вида и файл PNG/JPEG/WebP.
-	// Флаг i оригинала записан явными классами: (?i) Go сопоставил бы «K» (знак кельвина) и «ſ»
+	// Регистронезависимость записана явными классами: (?i) Go сопоставил бы «K» (знак кельвина) и «ſ»
 	// латинице, а регулярное выражение JS без флага u этого не делает.
 	imagePath = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_-]*/[^/]+\.([pP][nN][gG]|[jJ][pP][eE]?[gG]|[wW][eE][bB][pP])$`)
 )
@@ -83,7 +84,7 @@ func (s *valueSet) add(value any) {
 	}
 }
 
-// trimmed — `value.trim()`: вызов на нестроке даёт TypeError оригинала.
+// trimmed — `value.trim()`: вызов на нестроке даёт TypeError.
 func trimmed(value any, name string) (string, error) {
 	text, ok := value.(string)
 	if !ok {
@@ -92,9 +93,9 @@ func trimmed(value any, name string) (string, error) {
 	return jscompat.Trim(text), nil
 }
 
-// Validate — validateCast: проблемы кастинга для показа на странице и отказа сохранения. Порядок
-// сообщений совпадает с оригиналом. Ошибка — исключение JS на документе другой формы (сущность
-// null, название не строка и т. п.): оригинал при этом отклонял весь вызов.
+// Validate — проблемы кастинга для показа на странице и отказа сохранения. Порядок
+// сообщений зафиксирован эталонами testdata/golden. Ошибка — исключение JS на документе другой формы
+// (сущность null, название не строка и т. п.): такой документ отклоняется целиком.
 func Validate(cast any) ([]string, error) {
 	problems := []string{}
 	properties := jscompat.Get(cast, "properties")
@@ -168,8 +169,8 @@ func Validate(cast any) ([]string, error) {
 	return problems, nil
 }
 
-// EnsureProperties — ensureProperties: каждому типу сущности без словаря добавляется копия словаря
-// по умолчанию (известному типу — свой набор, прочим — общий). Возвращает новый объект кастинга
+// EnsureProperties дополняет словари свойств: каждому типу сущности без словаря добавляется
+// копия словаря по умолчанию (известному типу — свой набор, прочим — общий). Возвращает новый объект кастинга
 // `{ ...cast, properties }`: ключ properties остаётся на своём месте, а при отсутствии встаёт в конец.
 func EnsureProperties(cast any, defaults Defaults) (*jscompat.Object, error) {
 	properties := jscompat.Spread(jscompat.Get(cast, "properties"))
@@ -228,10 +229,10 @@ func validProperty(value any) bool {
 	return optionalString("hint") && (values == jscompat.Undefined || isStrings(values)) && optionalString("checklist")
 }
 
-// Normalize — normalizeCast: строгая проверка типов документа (ответ агента и ручной JSON),
+// Normalize — строгая проверка типов документа (ответ агента и ручной JSON),
 // затем нормализация полей и проверка Validate. Записываемый документ содержит только
-// schema_version, entities (с восемью полями сущности) и properties — лишние поля отбрасываются,
-// как в оригинале. Ошибка — сообщение отказа сохранения (проблемы через пробел).
+// schema_version, entities (с восемью полями сущности) и properties — лишние поля отбрасываются.
+// Ошибка — сообщение отказа сохранения (проблемы через пробел).
 func Normalize(value any, defaults Defaults) (*jscompat.Object, error) {
 	document, ok := jscompat.AsObject(value)
 	if !ok || !jscompat.StrictEqual(document.Value("schema_version"), 1.0) {
@@ -338,7 +339,7 @@ func keysOf(object *jscompat.Object) []string {
 	return object.Keys()
 }
 
-// References — castReferences: карта references реестра сцен из сущностей с изображениями —
+// References — карта references реестра сцен из сущностей с изображениями —
 // название, путь первого изображения в source и короткое имя, если оно отличается от названия.
 // Порядок ключей — порядок сущностей; он входит в байты plan/scenes.json.
 func References(cast any) (*jscompat.Object, error) {

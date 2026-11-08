@@ -1,16 +1,16 @@
-// Package verifyassetreplay — перенос tools/verify_asset_replay/verify_asset_replay.py: проверка
-// воспроизведения всех принятых комплектов планов из индекса assets/shots/manifest.json.
+// Package verifyassetreplay проверяет воспроизведение всех принятых комплектов планов из индекса
+// assets/shots/manifest.json (инструмент verify_asset_replay).
 //
 // Для каждого плана комплект проверяется ValidatePackage, принятый монтаж копируется
 // (assetpackage.Replay) и заново собирается из оригинала генерации; у пересобранного файла
 // ffprobe сверяет число кадров, 30 к/с и 1920×1080, а три кадра (первый, средний, последний)
-// сравниваются с оригиналом по RMS яркости и цветности (YUV 320×180) — порог 12. Отчёт JSON
+// сравниваются с принятым монтажом по RMS яркости и цветности (YUV 320×180) — порог 12. Отчёт JSON
 // пишется вне папки проекта. Проект инструмент не меняет: копии и пересборки лежат во временной
 // папке «accepted-replay-*», удаляемой по завершении.
 //
-// Коды выхода, stdout и последняя строка трассировки совпадают с оригиналом. Отличие — порядок
-// строк о планах: оригинал печатал их по мере завершения двух потоков (недетерминированно),
-// здесь планы тоже проверяются двумя параллельными работниками, но печатаются в порядке индекса.
+// Коды выхода, stdout и последняя строка трассировки зафиксированы эталоном
+// testdata/golden/verify-asset-replay. Планы проверяются двумя параллельными работниками, но
+// строки о них печатаются в порядке индекса, чтобы вывод был детерминированным.
 package verifyassetreplay
 
 import (
@@ -28,15 +28,14 @@ import (
 	"songframe-go/internal/pytool"
 )
 
-// FFmpeg и FFprobe — программы проверки. Оригинал звал «ffmpeg» и «ffprobe» из PATH; голое имя
-// здесь так же ищется в PATH общим запуском процессов. Приложение может подставить пути
-// установленных компонентов до вызова.
+// FFmpeg и FFprobe — программы проверки. По умолчанию голое имя, которое общий запуск процессов
+// ищет в PATH; приложение может подставить пути установленных компонентов до вызова.
 var (
 	FFmpeg  = "ffmpeg"
 	FFprobe = "ffprobe"
 )
 
-// Тексты оригинала.
+// Тексты справки, отказов и отчёта; зафиксированы эталоном.
 const (
 	textDescription  = "Проверяет воспроизведение принятых комплектов; @link README.md"
 	textReportInside = "Отчёт проверки нужно сохранить вне папки проекта."
@@ -49,14 +48,14 @@ const (
 	// rmsLimit — допустимая разница повторного H.264: проверяются кадровые границы и
 	// преобразования, а не новая художественная приёмка.
 	rmsLimit = 12
-	// workers — max_workers ThreadPoolExecutor оригинала: каждый ffmpeg и так берёт 2 потока.
+	// workers — число параллельных проверок планов: каждый ffmpeg и так берёт 2 потока.
 	workers = 2
 	// outputLimit — сколько stdout программы хранить: rawvideo трёх кадров 320×180 yuv420p —
 	// около 260 КБ, JSON ffprobe — меньше килобайта.
 	outputLimit = 64 << 20
 )
 
-// Parser — argparse оригинала: обязательный --report и необязательный --preserved.
+// Parser — аргументы инструмента в стиле argparse: обязательный --report и необязательный --preserved.
 func Parser() *pycompat.Command {
 	return &pycompat.Command{
 		Name:        "verify_asset_replay.py",
@@ -70,14 +69,14 @@ func Parser() *pycompat.Command {
 }
 
 // outcome — результат проверки одного плана: запись отчёта (result), отказ проверки
-// (AssertionError или ValueError оригинала — failure) либо необработанное исключение (err).
+// (AssertionError или ValueError — failure) либо необработанное исключение (err).
 type outcome struct {
 	result  *pycompat.Dict
 	failure error
 	err     error
 }
 
-// Run — `__main__` оригинала на корне проекта root (уже выбранном tools.Run).
+// Run — инструмент verify_asset_replay на корне проекта root (уже выбранном tools.Run).
 func Run(root string, argv []string) pytool.Output {
 	args, exit := Parser().ParseArgs(argv)
 	if exit != nil {
@@ -90,7 +89,7 @@ func Run(root string, argv []string) pytool.Output {
 	return out.Exit(0)
 }
 
-// run — тело main: любая возвращённая ошибка — необработанное исключение (трассировка, код 1).
+// run — работа Run: любая возвращённая ошибка — необработанное исключение (трассировка, код 1).
 func run(ctx context.Context, root string, args pycompat.Namespace, out *pytool.Printer) error {
 	report := pycompat.ResolvePath(args["report"].(string))
 	if pycompat.IsRelativeTo(report, root) {
@@ -166,7 +165,7 @@ func run(ctx context.Context, root string, args pycompat.Namespace, out *pytool.
 	if err != nil {
 		return err
 	}
-	// Отчёт лежит вне проекта и не является проектным JSON: оригинал писал его write_text.
+	// Отчёт лежит вне проекта и не является проектным JSON: обычная запись без атомарной замены.
 	if err := os.WriteFile(report, data, 0o666); err != nil {
 		return pycompat.OSErrorFrom(err, report)
 	}
@@ -207,8 +206,8 @@ func verifyAll(ctx context.Context, root string, shots []any, temporary string) 
 	return outcomes
 }
 
-// verify — verify(sid, temporary) оригинала: копия и пересборка принятого монтажа, сверка
-// параметров потока и трёх кадров. Отказы — AssertionError/ValueError с текстами оригинала.
+// verify — копия и пересборка принятого монтажа плана sid, сверка параметров потока и трёх
+// кадров. Отказы — AssertionError/ValueError с фиксированными текстами.
 func verify(ctx context.Context, root string, shot any, temporary string) (*pycompat.Dict, error) {
 	sid, ok := shot.(string)
 	if !ok {
@@ -349,7 +348,7 @@ func sampleIndices(frames int64) []int64 {
 
 // difference — корень среднего квадрата разницы байтов a и b (длины равны). Сумма целая и
 // точная, деление на длину — одно округление, как у int / int в Python; math.Sqrt совпадает с
-// pow(x, 0.5) оригинала (оба корректно округлены).
+// pow(x, 0.5) Python (оба корректно округлены).
 func difference(a, b []byte) float64 {
 	var sum int64
 	for index := range a {
@@ -359,7 +358,7 @@ func difference(a, b []byte) float64 {
 	return math.Sqrt(float64(sum) / float64(len(a)))
 }
 
-// execute — run(arguments) оригинала: stdout программы; ненулевой код — ValueError,
+// execute запускает программу и возвращает её stdout; ненулевой код — ValueError,
 // незапустившаяся программа — FileNotFoundError subprocess.run.
 func execute(ctx context.Context, program string, args []string) ([]byte, error) {
 	result, err := process.Run(ctx, process.Command{Path: program, Args: args, StdoutLimit: outputLimit})
@@ -406,7 +405,7 @@ func sample(ctx context.Context, path string, indices []int64) ([]byte, error) {
 }
 
 // checkPreserved — проверка снимка --preserved: все файлы snapshot["media"] (пути от корня
-// проекта) сохранили SHA-256. Несовпадение — голый assert оригинала, ошибки чтения — исключения.
+// проекта) сохранили SHA-256. Несовпадение — AssertionError без текста, ошибки чтения — исключения.
 func checkPreserved(root, path string) (int, error) {
 	snapshot, err := pycompat.LoadJSONFile(pycompat.ResolvePath(path))
 	if err != nil {

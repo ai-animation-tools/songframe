@@ -310,7 +310,7 @@ func (s *Session) Upload(ctx context.Context, path string, traceID any) (string,
 	return url, nil
 }
 
-// SSEMessages — sse_messages(text): JSON-сообщения потока text/event-stream; строки data:
+// SSEMessages — JSON-сообщения потока text/event-stream; строки data:
 // одного события склеиваются через «\n», неразборчивые события пропускаются.
 func SSEMessages(text string) []any {
 	messages := []any{}
@@ -328,7 +328,7 @@ func SSEMessages(text string) []any {
 	return messages
 }
 
-// ToolBody — tool_body(result): structuredContent, иначе JSON из content[0].text, иначе сам
+// ToolBody — structuredContent, иначе JSON из content[0].text, иначе сам
 // текст. isError: true — ToolError с первыми 500 символами текста.
 func ToolBody(result any) (any, error) {
 	values, ok := result.(*pycompat.Dict)
@@ -366,7 +366,7 @@ func ToolBody(result any) (any, error) {
 	return body, nil
 }
 
-// FindUploadURL — find_upload_url(value): первый http(s)-адрес по ключам uploadURLKeys при
+// FindUploadURL — первый http(s)-адрес по ключам uploadURLKeys при
 // обходе в глубину (сначала ключи словаря, затем его значения по порядку). Пусто — не найден.
 func FindUploadURL(value any) (string, error) {
 	var values []any
@@ -424,9 +424,9 @@ func Multipart(fields []Field, fileField, filename, contentType string, data []b
 	return body, "multipart/form-data; boundary=" + boundary
 }
 
-// Debug — debug(event, error, status, body): отладка неизвестного исхода только в явно заданный
+// Debug — отладка неизвестного исхода только в явно заданный
 // файл (DebugFile или SONGFRAME_KLING_DEBUG_FILE), без заголовков авторизации и токенов.
-// status и body — nil, если оригинал передавал None.
+// status и body — nil, если они неизвестны.
 func (c *Client) Debug(event string, err error, status *int, body *string) {
 	target := c.DebugFile
 	if target == "" {

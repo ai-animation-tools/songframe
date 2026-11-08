@@ -1,4 +1,4 @@
-/** Управляемые ответы проверяют границы контекста и остановку опроса без Electron и настоящего агента. */
+/** Управляемые ответы проверяют границы контекста и остановку опроса без Wails и настоящего агента. */
 import type * as React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Api } from '@shared/api';

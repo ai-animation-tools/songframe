@@ -1,5 +1,5 @@
 /**
- * Адаптер групп cover и referenceImages: методы перенесены в Go (этап 45f), ответ Go проходит без
+ * Адаптер групп cover и referenceImages: методы вызывают Go, ответ Go проходит без
  * ручной проверки, а необязательный SHA опоры не превращается в пустой ключ.
  */
 import { describe, expect, it, vi } from 'vitest';

@@ -2,7 +2,7 @@ import { commonTexts } from './common';
 
 import { countLabel } from '../plural';
 
-/** Тексты обзора сцен и принятого монтажа; дословный перенос описан в @link ../../../docs/ui/texts.md. */
+/** Тексты обзора сцен и принятого монтажа; правила текстов описаны в @link ../../../docs/ui/texts.md. */
 export const scenesTexts = {
   montageSelected: ({ count }: { count: number }) => `Монтаж выбранных (${count})`,
   selectForMontage: 'Отметьте сцены флажком «В монтажную пробу».',

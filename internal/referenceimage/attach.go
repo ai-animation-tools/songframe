@@ -20,7 +20,8 @@ import (
 	"songframe-go/internal/sources"
 )
 
-// Тексты публикации принятого референса (referenceImageTexts оригинала).
+// Тексты публикации принятого референса (referenceImageTexts,
+// frontend/src/shared/texts/reference-images.ts).
 const (
 	textManifestMissing = "Сначала сохраните исходники проекта на странице «Исходники»."
 	textEntityMissing   = "Сущность больше не существует. Обновите кастинг и выберите её заново."
@@ -49,7 +50,7 @@ var saveAttachedCast = func(project string, document any) error {
 
 var kindDirPattern = regexp.MustCompile(`^[a-z][a-z0-9_-]*$`)
 
-// Attach — attachReferenceImage оригинала (referenceImages.attach): добавляет принятый полный
+// Attach — referenceImages.attach: добавляет принятый полный
 // оригинал к сохранённой сущности кастинга и в исходники, не заменяя прежние изображения.
 //
 // Файл копируется в source/<папка типа>/<сущность>-generated-<ID сессии><расширение>, рядом —
@@ -234,7 +235,7 @@ func defaultKinds() *jscompat.Array {
 	return &jscompat.Array{Items: items}
 }
 
-// kindObject — тип исходника {id, label, dir} в порядке ключей оригинала.
+// kindObject — тип исходника {id, label, dir}; порядок ключей входит в байты описи.
 func kindObject(id, label, dir string) *jscompat.Object {
 	object := jscompat.NewObject()
 	object.Set("id", id)
@@ -285,8 +286,8 @@ func addKind(kinds *jscompat.Array, id string) {
 	kinds.Items = append(kinds.Items, kindObject(id, id, dir))
 }
 
-// typedKinds — типы описи для sourceedit.ValidateKinds. Код и папка приводятся к строке, как
-// проверка регулярным выражением в оригинале; нестроковая подпись — TypeError (kind.label.trim).
+// typedKinds — типы описи для sourceedit.ValidateKinds. Код и папка приводятся к строке перед
+// проверкой регулярным выражением; нестроковая подпись — TypeError (kind.label.trim).
 func typedKinds(kinds *jscompat.Array) ([]sourceedit.Kind, error) {
 	result := make([]sourceedit.Kind, 0, len(kinds.Items))
 	for _, item := range kinds.Items {
@@ -309,7 +310,7 @@ func hasPath(files *jscompat.Array, path string) bool {
 	return false
 }
 
-// copyOriginal — copyFileSync: новый файл с байтами и правами источника.
+// copyOriginal создаёт новый файл с байтами и правами источника.
 func copyOriginal(from, to string) error {
 	source, err := os.Open(from)
 	if err != nil {

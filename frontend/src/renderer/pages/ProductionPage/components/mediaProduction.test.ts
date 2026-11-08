@@ -30,7 +30,7 @@ const context = vi.hoisted(() => ({ agentProvider: 'codex' as string | null, aiA
 vi.mock('../useRequestQuote', () => ({
   useRequestQuote: () => ({ quote: context.quote, error: null, loading: false, refreshQuote: () => {}, consumeQuote: () => {} })
 }));
-// SSR проверяет содержимое и доступность подтверждения без портала Electron-диалога.
+// SSR проверяет содержимое и доступность подтверждения без портала MUI-диалога.
 vi.mock('../../../components/ConfirmationDialog', () => ({
   ConfirmationDialog: ({
     title,

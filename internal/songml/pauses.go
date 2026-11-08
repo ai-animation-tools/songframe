@@ -46,7 +46,7 @@ func intraWordStates(target []int, separator int) []bool {
 }
 
 // Устойчивый масштаб получается из самого пути, а не из ручных интервалов или номера строки.
-// Это экспериментальный геометрический prior: за p95 обычной паузы вес продолжения падает вдвое.
+// Это эвристический геометрический prior: за p95 обычной паузы вес продолжения падает вдвое.
 func calibratePauses(trace *pathTrace) PauseRegularization {
 	policy := PauseRegularization{Method: "intraword-blank-p95-half-life-v1", MinimumSamples: 32, PeakThreshold: .5, Quantile: .95, Changes: []BoundaryChange{}}
 	var gaps []int

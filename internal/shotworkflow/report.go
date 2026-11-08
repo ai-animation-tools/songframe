@@ -31,9 +31,9 @@ var hints = map[string]string{
 	"accepted":             "перенесите комплект в assets и очистите пакет",
 }
 
-// problems — problems(directory, data): изменённая постановка, отсутствующие или изменённые
+// problems — проблемы пакета: изменённая постановка, отсутствующие или изменённые
 // принятые опоры и промпт, папка запроса без request.json, ошибка запроса изображения.
-// Ошибки чтения реестра (OSError) не перехватываются, как в оригинале.
+// Ошибки чтения реестра (OSError) не перехватываются: это сбой проекта, а не проблема пакета.
 func (t *workflowTool) problems(directory string, data *pycompat.Dict) ([]string, error) {
 	issues := []string{}
 	shot, err := item(data, "shot")
@@ -138,13 +138,13 @@ func expected(err error) bool {
 	return pycompat.IsAny(err, pycompat.ValueError, pycompat.OSError, pycompat.KeyError, pycompat.TypeError)
 }
 
-// reportInfo — результат report(): словарь для --json и проблемы для check.
+// reportInfo — результат report: словарь для --json и проблемы для check.
 type reportInfo struct {
 	dict     *pycompat.Dict
 	problems []string
 }
 
-// report — report(directory): сводка пакета для show/check (JSON и таблица).
+// report — сводка пакета для show/check (JSON и таблица).
 func (t *workflowTool) report(dirArg string) (reportInfo, error) {
 	directory, err := t.packageDir(dirArg, true)
 	if err != nil {
@@ -226,7 +226,7 @@ func stringsToValues(items []string) []any {
 	return result
 }
 
-// park — park(directory, wait_reason): самодостаточный пакет без проблем переносится в
+// park — самодостаточный пакет без проблем переносится в
 // plan/awaiting/<план>; видео-пакет — с подготовленным запросом (этап ready), image-пакет —
 // с prepared-попыткой изображения (этап сохраняется).
 func (t *workflowTool) park(dirArg, waitReason string) (string, error) {
@@ -352,7 +352,7 @@ func formatG(value any) (string, error) {
 	return strconv.FormatFloat(number, 'g', 6, 64), nil
 }
 
-// table — table(info): таблица пакета для человека.
+// table — таблица пакета для человека.
 func table(info reportInfo) (string, error) {
 	data := info.dict
 	header := "План " + pycompat.Str(data.Value("shot")) + " · режим " + pycompat.Str(data.Value("mode")) + " · этап: " + pycompat.Str(data.Value("stage_label")) + " (`" + pycompat.Str(data.Value("stage")) + "`)"

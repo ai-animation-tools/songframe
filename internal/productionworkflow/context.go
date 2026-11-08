@@ -31,7 +31,7 @@ type Speech struct {
 	SourceSeconds [2]float64 `json:"sourceSeconds"`
 }
 
-// tree — speech контекста агента в порядке ключей оригинала.
+// tree — speech контекста агента; порядок ключей зафиксирован эталонами контекста.
 func (s *Speech) tree() any {
 	if s == nil {
 		return nil
@@ -45,7 +45,7 @@ func (s *Speech) tree() any {
 // length — длина среза в секундах.
 func (s *Speech) length() float64 { return s.SourceSeconds[1] - s.SourceSeconds[0] }
 
-// Context — context() оригинала: всё, что проход знает о плане и выбранном пакете на момент
+// Context — всё, что проход знает о плане и выбранном пакете на момент
 // вызова. Документы проекта хранятся деревьями jscompat как есть: они уходят агенту в контекст и
 // в снимок без схемы. Значение не кэшируется между вызовами Workflow и не делится между потоками.
 type Context struct {
@@ -86,9 +86,9 @@ type Context struct {
 	framesApproved, promptApproved *bool
 }
 
-// ReadContext — context(path, shot, requested) оригинала. requested — пакет как его передал
+// ReadContext читает контекст плана shot проекта path. requested — пакет как его передал
 // renderer (абсолютный или от проекта); "" — без пакета. Ошибки чтения документов и недопустимые
-// пути пакета возвращаются в порядке проверок оригинала.
+// пути пакета возвращаются в фиксированном порядке проверок: от него зависит текст первой ошибки.
 func ReadContext(path, shot, requested string) (*Context, error) {
 	if !shotID.MatchString(shot) {
 		return nil, errors.New(textShotIDRequired)
@@ -351,7 +351,7 @@ func matchesDigest(path string, expected any) bool {
 	return jscompat.Exists(path) && ok && expected == hash
 }
 
-// FramesApproved — approvedFrames оригинала: в пакете не меньше двух опор, все утверждены, файлы
+// FramesApproved сообщает, что в пакете не меньше двух опор, все утверждены, файлы
 // на месте и совпадают с утверждёнными SHA-256. Результат вычисляется один раз на Context.
 func (c *Context) FramesApproved() (bool, error) {
 	if c.framesApproved != nil {
@@ -377,7 +377,7 @@ func (c *Context) FramesApproved() (bool, error) {
 	return result, nil
 }
 
-// PromptApproved — promptApproved оригинала: видеопромпт пакета утверждён и файл не изменился
+// PromptApproved сообщает, что видеопромпт пакета утверждён и файл не изменился
 // после утверждения.
 func (c *Context) PromptApproved() (bool, error) {
 	if c.promptApproved != nil {
@@ -397,7 +397,7 @@ func (c *Context) PromptApproved() (bool, error) {
 	return result, nil
 }
 
-// StageFor — stageFor оригинала: этап, который продолжает пакет (description, prompt, request);
+// StageFor возвращает этап, который продолжает пакет (description, prompt, request);
 // "" — продолжать нечего (null). Без пакета — описание; вопрос пакета блокирует продолжение;
 // доработка возвращает к доступному шагу: повтор сохранённого запроса не содержит утверждений
 // предыдущих этапов, а замечания к опорам сначала меняют их постановку.
@@ -451,7 +451,7 @@ func (c *Context) StageFor() (string, error) {
 	return "", nil
 }
 
-// UndecidedFrame — undecidedFrame оригинала: ID кандидата опоры, который ждёт решения (есть файл,
+// UndecidedFrame возвращает ID кандидата опоры, который ждёт решения (есть файл,
 // нет утверждения); nil — такого нет. Пока он есть, следующая опора не создаётся.
 func (c *Context) UndecidedFrame() any {
 	for _, frame := range keyframes(c.Workflow) {
@@ -462,7 +462,7 @@ func (c *Context) UndecidedFrame() any {
 	return nil
 }
 
-// NextFrame — nextFrame оригинала: ID следующей опоры плана без утверждённого кадра; опоры
+// NextFrame возвращает ID следующей опоры плана без утверждённого кадра; опоры
 // создаются по одной в порядке плана. nil — создавать нечего или ждёт решения кандидат.
 func (c *Context) NextFrame() any {
 	if c.UndecidedFrame() != nil {
@@ -484,7 +484,7 @@ func (c *Context) NextFrame() any {
 	return nil
 }
 
-// FrameNotes — frameNotes оригинала: действующие замечания к создаваемой опоре frame — её
+// FrameNotes возвращает действующие замечания к создаваемой опоре frame — её
 // собственные и сквозные (scope following), кроме снятых пользователем.
 func (c *Context) FrameNotes(frame any) []string {
 	notes := []string{}
@@ -529,7 +529,7 @@ func orNull(value any) any {
 	return value
 }
 
-// RulesFor — rulesFor оригинала: правила проверки ответа агента для этапа stage.
+// RulesFor возвращает правила проверки ответа агента для этапа stage.
 func (c *Context) RulesFor(stage string) Rules {
 	rules := Rules{
 		Project: c.Project, Stage: stage, WindowSeconds: c.Window, DurationRule: c.DurationRule,

@@ -42,7 +42,7 @@ func writeText(path, text string) error {
 }
 
 // csvCell — значение ячейки до записи: список соединяется через «; », float округляется, остальное
-// не меняется (comprehension write_csv оригинала).
+// не меняется.
 func csvCell(value any) (any, error) {
 	switch item := value.(type) {
 	case []any:
@@ -158,8 +158,8 @@ func repeatList(cycle, count any) ([]any, error) {
 
 // repeatEvents — события полного цикла и хвоста: EDL не умеет задавать цикл одной строкой, поэтому
 // каждый повтор получает своё событие с непрерывными таймкодами песни. Возвращает строки и номер
-// последнего события. Вычисления идут через float, как в оригинале: длина делится на 30, а секунды
-// снова становятся таймкодом через str(float).
+// последнего события. Вычисления идут через float (формат зафиксирован эталоном): длина делится
+// на 30, а секунды снова становятся таймкодом через str(float).
 func repeatEvents(row *pycompat.Dict, number int) ([]string, int, error) {
 	shot := row.Value("shot").(string)
 	cycle, count, tail := row.Value("repeat_cycle_frames"), row.Value("repeat_full_cycles"), row.Value("repeat_tail_frames")
@@ -327,14 +327,14 @@ func pathJoin(base string, part any) (string, error) {
 // поэтому файл внутри portable записывается относительно папки пакета: portable — сам пакет с
 // копиями либо проект, в котором лежит пакет без копий (тогда переносится весь проект). Пустой
 // portable и файл вне его — пакет вне проекта без копий и песня снаружи: опоры для относительного
-// пути нет, остаётся абсолютный URI оригинала.
+// пути нет, остаётся абсолютный URI файла.
 type mediaPlace struct {
 	root     string
 	bundle   string
 	portable string
 }
 
-// mediaURI — src(path) оригинала: URI файла с разрешёнными ссылками, относительный внутри portable.
+// mediaURI — src медиа в FCPXML: URI файла с разрешёнными ссылками, относительный внутри portable.
 func (place mediaPlace) mediaURI(path any) (string, error) {
 	joined, err := pathJoin(place.root, path)
 	if err != nil {

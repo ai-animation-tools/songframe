@@ -9,7 +9,7 @@ import (
 	"songframe-go/internal/wire"
 )
 
-// DerivedShotService реализует window.api.derivedShots (маршруты derivedShots:* ipc.ts оригинала):
+// DerivedShotService реализует window.api.derivedShots (маршруты derivedShots:*):
 // контекст страницы производного плана, настройки рецепта и запуск заданий сборки и приёмки. Логика
 // — в internal/derivedworkflow, работу с файлами выполняет задание derive_shot. Рецепт приходит
 // сырым JSON (json.RawMessage, в bindings — any): проверяется по форме, а не по типу Go.

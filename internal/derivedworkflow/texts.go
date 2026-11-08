@@ -1,7 +1,7 @@
 package derivedworkflow
 
-// Тексты derivedMainTexts оригинала (src/shared/texts/derived-shot-main.ts). Отличается только
-// textToolsUnavailable: сборка на Go не требует Python.
+// Тексты ошибок страницы производного плана: Go возвращает готовые фразы, renderer показывает их
+// как есть. textToolsUnavailable требует только FFmpeg: инструменты сборки встроены в приложение.
 const (
 	textRecipeInvalid       = "Неверный рецепт производного плана. Выберите режим и задайте его параметры заново."
 	textFrameInvalid        = "Кадры задаются целыми неотрицательными числами."

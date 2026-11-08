@@ -44,7 +44,7 @@ func hasCollection(t reflect.Type, seen map[reflect.Type]bool) bool {
 	return false
 }
 
-// TestBoundMethodsFillCollections — тест сериализации DTO (D-027): каждый экспортируемый
+// TestBoundMethodsFillCollections — тест сериализации DTO: каждый экспортируемый
 // метод сервиса Wails, результат которого содержит срезы или словари, проводит ответ
 // через wire.Fill/wire.Done. Тогда bindings без `| null` у коллекций честны, а UI не
 // получает null там, где контракт обещает массив.

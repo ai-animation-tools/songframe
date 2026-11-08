@@ -44,10 +44,10 @@ docker run --rm --user "$(id -u):$(id -g)" --entrypoint /usr/local/go/bin/go \
   -ldflags "-s -w -H windowsgui -extldflags=-Wl,--subsystem,windows -X songframe-go/internal/appversion.Version=$version" -o /out/songframe.exe .
 wails3 generate webview2bootstrapper -dir "$work/prerequisites"
 printf '%s  %s\n' 7ebc4ce80143ef89cea86a61ea151502868db6caaa678b8b43660a66ace11c3a "$work/prerequisites/MicrosoftEdgeWebview2Setup.exe" | sha256sum --check
-# Visual C++ runtime для ORT кладётся рядом с songframe.exe (app-local, как в Electron-поставке
-# через msvc-runtime): LoadLibrary ищет зависимости onnxruntime.dll в папке программы, поэтому
-# отдельная системная установка vc_redist и права администратора не нужны. Колесо и версия
-# те же, что в Electron runtime-lock; DLL копируются без изменения по REDIST list Microsoft.
+# Visual C++ runtime для ORT кладётся рядом с songframe.exe (app-local, из колеса msvc-runtime):
+# LoadLibrary ищет зависимости onnxruntime.dll в папке программы, поэтому отдельная системная
+# установка vc_redist и права администратора не нужны. Версия колеса и его SHA-256 закреплены
+# ниже; DLL копируются без изменения по REDIST list Microsoft.
 wheel="$work/prerequisites/msvc_runtime-14.51.36231-cp312-cp312-win_amd64.whl"
 if [[ ! -f $wheel ]]; then
   curl --fail --location --retry 2 https://files.pythonhosted.org/packages/98/33/be9ef68901200813fc174a06758b4ae48ca4eb58fa783280dd879d5fd048/msvc_runtime-14.51.36231-cp312-cp312-win_amd64.whl -o "$wheel.part"

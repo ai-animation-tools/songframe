@@ -3,9 +3,9 @@
 
 /**
  * SourcesService реализует группу window.api.sources: просмотр, проверку и сохранение
- * исходников проекта (src/main/sources.ts оригинала, логика — internal/sourceedit). Сохранение
- * идёт через internal/referenceimage: при существующем plan/cast.json оно синхронизирует кастинг
- * (новые виды референсов и проекция описаний, saveSourcesWithCastImages оригинала).
+ * исходников проекта (логика — internal/sourceedit). Сохранение идёт через
+ * internal/referenceimage: при существующем plan/cast.json оно синхронизирует кастинг
+ * (новые виды референсов и проекция описаний).
  * @module
  */
 

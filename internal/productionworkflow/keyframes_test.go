@@ -21,7 +21,7 @@ var tinyPNG = []byte{
 }
 
 // keyframesFixture — проект с одним референсом и KeyframeImages, у которого каталог состояния
-// задан через символическую ссылку (исправление относительно оригинала).
+// задан через символическую ссылку.
 func keyframesFixture(t *testing.T) (*KeyframeImages, *imageAgents, mediaapi.ImagesInput) {
 	t.Helper()
 	t.Cleanup(mediaproviders.Register("test-agent", mediaproviders.Info{Title: "Тестовый агент изображений", Kinds: []string{mediaproviders.Image}, Executor: "codex"}))
@@ -88,7 +88,7 @@ func TestKeyframeImagesSymlinkedStateDir(t *testing.T) {
 
 func TestKeyframeImagesCollectRefusals(t *testing.T) {
 	for _, test := range []struct{ name, file, answer, want string }{
-		// Исправления относительно оригинала: SyntaxError V8 и ENOENT от lstat заменены отказами.
+		// Ответ не JSON и отсутствующий файл кандидата дают понятные отказы.
 		{"не JSON", "", "Не могу нарисовать", "Тестовый агент изображений не вернул список файлов опор."},
 		{"нет файла", "", `{"schemaVersion":1,"stage":"frames","images":[{"id":"K01","path":"K01.png"}]}`, "Опора K01: нужен настоящий файл изображения в папке кандидатов."},
 	} {

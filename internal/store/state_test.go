@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func TestLocalStateMatchesElectronFiles(t *testing.T) {
+func TestLocalStateFileNames(t *testing.T) {
 	dir := t.TempDir()
 	project := t.TempDir()
 	state := NewLocalState(dir)

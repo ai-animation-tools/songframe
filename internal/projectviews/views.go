@@ -114,9 +114,9 @@ type Document struct {
 	Text string
 }
 
-// Documents — documents(sources): ожидаемые тексты производных документов в порядке оригинала
-// (монтажный список, раскадровка, индекс комплектов, ROADMAP, справочник, README комплектов,
-// разметка трека) после обрезки пробелов в конце строк. Порядок задаёт порядок сообщений
+// Documents — ожидаемые тексты производных документов в постоянном порядке (монтажный список,
+// раскадровка, индекс комплектов, ROADMAP, справочник, README комплектов, разметка трека) после
+// обрезки пробелов в конце строк. Порядок задаёт порядок сообщений
 // «Устарели представления».
 func Documents(sources *Sources, prepared *Prepared) ([]Document, error) {
 	project, err := projectFile(sources)
@@ -632,7 +632,7 @@ func sumFrames(items []*pycompat.Dict, include func(*pycompat.Dict) bool) *big.I
 	return total
 }
 
-// sortedKeys — ключи словаря по алфавиту (для детерминированного обхода множеств оригинала).
+// sortedKeys — ключи словаря по алфавиту (для детерминированного обхода множеств).
 func sortedKeys(dict *pycompat.Dict) []string {
 	keys := dict.Keys()
 	sort.Strings(keys)

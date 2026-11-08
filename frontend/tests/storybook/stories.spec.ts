@@ -1,6 +1,6 @@
 /**
- * Обход витрины: все истории открываются в собранном storybook-static (в Go-версии по умолчанию
- * весь набор, STORYBOOK_TEST_CI=1 — только истории с меткой `ci`, как обязательный набор оригинала).
+ * Обход витрины: все истории открываются в собранном storybook-static (по умолчанию весь
+ * набор, STORYBOOK_TEST_CI=1 — только обязательные истории с меткой `ci`).
  * Набор падает при ошибке play, ошибке выполнения или загрузки ресурса, выходе за ширину рабочей области
  * и любом нарушении доступности из отчёта addon-a11y.
  */
@@ -60,7 +60,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const indexPath = resolve(here, '../../storybook-static/index.json');
 if (!existsSync(indexPath)) throw new Error('Нет storybook-static/index.json. Сначала выполните yarn build-storybook.');
 const entries = Object.values((JSON.parse(readFileSync(indexPath, 'utf8')) as { entries: Record<string, IndexEntry> }).entries);
-/** Отличие от 634fd94: полный обход — режим по умолчанию (приёмка переноса D-028); STORYBOOK_TEST_CI=1 сужает его. */
+/** Полный обход — режим по умолчанию; STORYBOOK_TEST_CI=1 сужает его до обязательных историй. */
 const all = process.env.STORYBOOK_TEST_CI !== '1';
 const stories = entries.filter((entry) => entry.type === 'story' && (all || entry.tags?.includes(CI_TAG)));
 if (!stories.length) throw new Error(all ? 'В витрине нет историй.' : `В витрине нет историй с меткой «${CI_TAG}».`);

@@ -12,7 +12,7 @@ import (
 	"songframe-go/internal/wire"
 )
 
-// Имена событий Wails группы window.api.environment (каналы Electron оригинала).
+// Имена событий Wails группы window.api.environment.
 const (
 	// EnvironmentProgressEvent — строка проверки среды {requestId, check} для environment.check.
 	EnvironmentProgressEvent = "environment:progress"

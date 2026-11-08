@@ -6,7 +6,7 @@ import (
 	"songframe-go/internal/mediaproviders"
 )
 
-// texts — сообщения генерации по назначению. Обложка берёт sourcesTexts.main оригинала, референс —
+// texts — сообщения генерации по назначению. Обложка берёт sourcesTexts.main, референс —
 // те же тексты, где часть заменена referenceGenerationMessages: назначение меняет только сообщения,
 // проверки, цены и токены согласования общие. TestTextsMatchFrontend сверяет строки со словарями.
 type texts struct {
@@ -22,7 +22,7 @@ type texts struct {
 	providerRequired, priceFailed, singleImageRequired                        func(string) string
 }
 
-// coverTexts — sourcesTexts.main оригинала.
+// coverTexts — sourcesTexts.main.
 var coverTexts = texts{
 	generationStopped:          "Генерация обложки остановлена.",
 	taskTitle:                  "Обложка проекта",
@@ -80,7 +80,7 @@ var coverTexts = texts{
 	},
 }
 
-// referenceTexts — sourcesTexts.main, дополненные referenceGenerationMessages оригинала.
+// referenceTexts — sourcesTexts.main, дополненные referenceGenerationMessages.
 var referenceTexts = func() texts {
 	result := coverTexts
 	result.generationStopped = "Генерация референса остановлена."
@@ -125,7 +125,7 @@ func textsFor(reference bool) texts {
 	return coverTexts
 }
 
-// Тексты сохранения архива и приёмки референса (referenceImageTexts оригинала).
+// Тексты сохранения архива и приёмки референса (referenceImageTexts).
 const (
 	textArchiveFailed     = "Не удалось сохранить сведения о попытке. Оригиналы остаются в архиве проекта; проверьте доступность папки и свободное место."
 	textReferenceNotReady = "Сначала получите готовое изображение референса."

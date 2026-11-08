@@ -1,12 +1,11 @@
 // Package codex — адаптер провайдера изображений Codex: опоры и обложки рисует программа-агент из
-// реестра (internal/agents), отдельной программы провайдера нет. Перенос src/main/providers/codex
-// оригинала.
+// реестра (internal/agents), отдельной программы провайдера нет.
 //
-//   - ImageExecutor — исполнитель опор (CodexImageProvider): возможности (диагностика агента и
+//   - ImageExecutor — исполнитель опор: возможности (диагностика агента и
 //     каталог моделей), подготовка с SHA запроса, одноразовая отправка по согласованному SHA и
 //     сбор кандидатов задания. Запуск и регистрацию кандидатов выполняет производство через
-//     интерфейс Images (KeyframeImages оригинала).
-//   - CoverRunner — исполнитель обложки и референса проекта (createCodexCoverRunner).
+//     интерфейс Images.
+//   - CoverRunner — исполнитель обложки и референса проекта.
 //
 // Пакет не зависит от слоя internal/providers: слой подключает его своей таблицей
 // агентов-исполнителей, а общий код знает о Codex только из реестра провайдеров медиа.
@@ -38,7 +37,7 @@ const (
 	Kind = "image"
 )
 
-// Тексты оригинала: mediaTexts (общие сообщения медиа) и диагностика каталога Codex адаптера.
+// Тексты: общие сообщения медиа и диагностика каталога Codex адаптера.
 const (
 	textFramesRequired    = "Сначала подготовьте описания опор."
 	textReferenceInvalid  = "Референс не является изображением."
@@ -123,7 +122,7 @@ func (e *ImageExecutor) Capabilities(ctx context.Context, _ string) mediaapi.Cap
 }
 
 // ModelsFromCatalog — модели каталога Codex как объявления медиа: команда codex_exec без
-// параметров, слотов и лимитов (readCodexModels оригинала).
+// параметров, слотов и лимитов.
 func ModelsFromCatalog(rows []agents.CodexModel) []mediaapi.Model {
 	models := make([]mediaapi.Model, len(rows))
 	for index, row := range rows {
@@ -145,7 +144,7 @@ func fileHash(path string) (string, error) {
 }
 
 // inputValue — ImagesInput как значение JS для JSON.stringify: порядок ключей — порядок полей
-// контракта, числа — запись Number оригинала.
+// контракта, числа — запись Number JS (от неё зависит SHA).
 func inputValue(input mediaapi.ImagesInput) *jscompat.Object {
 	object := jscompat.NewObject()
 	object.Set("project", input.Project)
@@ -208,7 +207,7 @@ func clone(input mediaapi.ImagesInput) mediaapi.ImagesInput {
 
 // Prepare замораживает запрос: проект по настоящему пути, опоры K01…K99 с непустым описанием,
 // референсы — изображения внутри проекта (каждый один раз, в порядке первого упоминания).
-// SHA — sha256(JSON.stringify({input, references})) оригинала.
+// SHA — sha256(JSON.stringify({input, references})).
 func (e *ImageExecutor) Prepare(input mediaapi.ImagesInput) (*Prepared, error) {
 	frozen := clone(input)
 	project, err := jscompat.Realpath(input.Project)
@@ -365,7 +364,7 @@ func (e *ImageExecutor) CollectJob(job agents.Job) ([]mediaapi.Artifact, error) 
 }
 
 // NewImages — исполнитель опор с настоящей программой-агентом: диагностика — проверка программы
-// провайдера без модели, каталог — model/list этой программы (adapter.images оригинала).
+// провайдера без модели, каталог — model/list этой программы.
 func NewImages(deps agentexec.Deps) *ImageExecutor {
 	agent := func() (agents.Settings, error) { return deps.Agent("") }
 	return NewImageExecutor(ImageOptions{

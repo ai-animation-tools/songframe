@@ -9,7 +9,7 @@ import (
 	"songframe-go/internal/production"
 )
 
-// TestGolden — домен production-view: viewProduction и viewDashboard оригинала на образце с
+// TestGolden — домен production-view: просмотр производства и дашборд на образце с
 // правками случаев. Наличие Python и платных клиентов (tools) относится к машине и не сравнивается.
 func TestGolden(t *testing.T) {
 	for _, c := range golden.Load(t, "production-view") {

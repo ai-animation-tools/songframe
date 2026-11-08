@@ -1,7 +1,7 @@
 // Package cast читает кастинг plan/cast.json для вычислений, которым нужны сущности проекта:
 // начальное состояние сущностей входит в отпечаток постановки каждого плана.
 //
-// Чтение повторяет readCast и initialStates оригинала на дереве jscompat: документ не проверяется
+// Чтение идёт по дереву jscompat: документ не проверяется
 // по схеме, а описание (appearance) сущности, связанной со ссылкой исходников, заменяется
 // каноническим описанием из source/manifest.json. Пакет ничего не записывает.
 package cast
@@ -17,9 +17,9 @@ import (
 type Result struct {
 	// Value — документ после проекции описаний; nil при Missing или Damaged, а также для JSON null.
 	Value any
-	// Missing — plan/cast.json отсутствует (null оригинала).
+	// Missing — plan/cast.json отсутствует.
 	Missing bool
-	// Damaged — файл есть, но не разбирается или опись исходников непригодна (false оригинала).
+	// Damaged — файл есть, но не разбирается или опись исходников непригодна.
 	Damaged bool
 }
 
@@ -50,7 +50,7 @@ func Read(project string) Result {
 	return Result{Value: value}
 }
 
-// ProjectDescriptions — projectCastDescriptions: appearance сущности со ссылкой в описи заменяется
+// ProjectDescriptions проецирует описания: appearance сущности со ссылкой в описи заменяется
 // её description (отсутствующее — пустой строкой). Без описи или без массива entities документ
 // возвращается как есть. Сущность null/undefined даёт TypeError, как обращение entity.id.
 func ProjectDescriptions(cast, manifest any) (any, error) {
@@ -91,10 +91,10 @@ func ProjectDescriptions(cast, manifest any) (any, error) {
 	return result, nil
 }
 
-// InitialStates — initialStates: для каждой сущности с непустым initial_state — его копия под
-// ключом String(entity.id). Нестандартные значения обрабатываются по правилам JS: строка или массив
+// InitialStates собирает начальные состояния: для каждой сущности с непустым initial_state —
+// его копия под ключом String(entity.id). Нестандартные значения обрабатываются по правилам JS: строка или массив
 // в initial_state дают индексные ключи, отсутствующий initial_state — TypeError Object.keys.
-// Ошибка поднимается вызывающему: при вычислении отпечатков оригинал выводит её текст в проблеме.
+// Ошибка поднимается вызывающему: при вычислении отпечатков её текст выводится в проблеме.
 func InitialStates(cast any) (*jscompat.Object, error) {
 	result := jscompat.NewObject()
 	entities, err := jscompat.Iterate(jscompat.Coalesce(jscompat.Get(cast, "entities"), &jscompat.Array{}))

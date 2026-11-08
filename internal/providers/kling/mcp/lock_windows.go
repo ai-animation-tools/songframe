@@ -9,8 +9,8 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-// lockFile — msvcrt.locking(LK_NBLCK) оригинала: исключительная блокировка первого байта с
-// повтором каждые 0,1 с до срока wait. Пустой файл получает один нулевой байт, как в оригинале.
+// lockFile — неблокирующий замок первого байта (LK_NBLCK) с повтором каждые 0,1 с до срока
+// wait. Пустой файл получает один нулевой байт: Windows блокирует только существующие байты.
 func lockFile(file *os.File, wait time.Duration) error {
 	if info, err := file.Stat(); err == nil && info.Size() == 0 {
 		_, _ = file.Write([]byte{0})

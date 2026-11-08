@@ -73,7 +73,7 @@ export interface Api {
   updates: UpdatesApi;
   videoReview: VideoReviewApi;
   notifications: {
-    /** Подписка на переход из уведомления; возвращает отключение без объекта события Electron. */
+    /** Подписка на переход из уведомления; возвращает отключение; объект события в renderer не попадает. */
     onOpen(listener: (target: NotificationTarget) => void): () => void;
   };
   media: {
@@ -111,7 +111,7 @@ export interface Api {
     cancel(id: string): Promise<AgentJob>;
     get(id: string): Promise<AgentJob | null>;
     list(project?: string): Promise<AgentJob[]>;
-    /** Возвращает отключение подписки; объект события Electron в renderer не попадает. */
+    /** Возвращает отключение подписки; объект события Wails в renderer не попадает. */
     onEvent(listener: (event: AgentEvent) => void): () => void;
   };
   app: {
@@ -160,7 +160,7 @@ export interface Api {
     view(project: string): Promise<ScenarioView>;
     /** Записывает трактовку черновиком: отклоняется только неверная структура, проблемы показывает validateTreatment. */
     saveTreatment(project: string, treatment: TreatmentFile): Promise<TreatmentFile>;
-    /** Проблемы трактовки без записи: стык частей, длительность трека, коды и названия. Отличие от 634fd94: в оригинале их давал только отказ сохранения. */
+    /** Проблемы трактовки без записи: стык частей, длительность трека, коды и названия. Черновик с проблемами сохраняется, поэтому они нужны до записи. */
     validateTreatment(project: string, treatment: TreatmentFile): Promise<string[]>;
     /** mode=keep оставляет принятые комплекты и пакеты затронутых планов в силе: правка не относится к сюжету. */
     saveScenes(project: string, scenes: ScenesFile, mode: ScenesSaveMode): Promise<ScenesFile>;

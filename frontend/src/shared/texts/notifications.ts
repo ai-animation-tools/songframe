@@ -6,7 +6,7 @@ export const notificationsTexts = {
   animaticCheckTitle: 'Проверка входов аниматика',
   animaticInputsChecked: 'Входы аниматика проверены',
   reviewChecked: 'Проба проверена',
-  // Согласование дословно повторяет прежний результат; редактура формулировок выполняется отдельно от переноса.
+  // Род слова операции определяет форму «готов»/«готова».
   operationReady: (operation: string): string => (operation === notificationsTexts.reviewOperation ? `${operation} готова` : `${operation} готов`),
   jobFailed: (title: string): string => `Ошибка: ${title}`,
   agentCompleted: (provider: string): string => `Ответ ${provider} готов`,

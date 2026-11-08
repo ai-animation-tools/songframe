@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-// TestFonts проверяет, что встроенные шрифты и лицензия совпадают байт в байт с файлами
-// tools/render_animatic_cards/fonts оригинала на 634fd94: от них зависят ширины строк карточек.
+// TestFonts закрепляет SHA-256 встроенных шрифтов и лицензии: от метрик шрифтов зависят ширины
+// строк карточек аниматика.
 func TestFonts(t *testing.T) {
 	want := map[string]string{
 		FontDejaVuSans:     "ae7b7855e115a5966d8b1b3f80f254ccc117ec86f9965e202ee2940453837280",
@@ -29,8 +29,8 @@ func TestFonts(t *testing.T) {
 	}
 }
 
-// TestSkills проверяет, что встроенные промпты агента совпадают байт в байт с skills/ оригинала
-// на 634fd94: от них зависит промпт задания сценарного прохода.
+// TestSkills закрепляет SHA-256 встроенного промпта сценарного прохода: от него зависит промпт
+// задания, поэтому любая правка должна быть осознанной.
 func TestSkills(t *testing.T) {
 	text, err := Skill(SkillScenario)
 	if err != nil {
@@ -45,13 +45,14 @@ func TestSkills(t *testing.T) {
 	}
 }
 
-// TestProviderDocs проверяет, что документы провайдеров совпадают байт в байт с docs/providers
-// оригинала на 634fd94: их раздел «Указания агенту» входит в промпт задания.
+// TestProviderDocs закрепляет SHA-256 встроенных документов провайдеров: их раздел «Указания
+// агенту» входит в промпт задания, поэтому любая правка документа должна быть осознанной. Байты
+// самого раздела дополнительно сверяют эталоны промптов (internal/providers, TestGuidesGolden).
 func TestProviderDocs(t *testing.T) {
 	want := map[[2]string]string{
-		{"image", "kling"}: "b9c9a9f12b4427b4e7efa0a8dc636c7559362e58fc5da3c392c11cbc73c99011",
-		{"image", "codex"}: "e89d8bbab06d298d29442acbbf53539514d479d532e72701d4142c2d3c819fdb",
-		{"video", "kling"}: "609a918e609622e2176c7dbe9a9f516f0409ee9bd53aca33ee8bc252cdf577cc",
+		{"image", "kling"}: "3c85eafc2594fa04e6cf16690af45df0515d81ee39d8c47fb1bfd84d5dbb54b2",
+		{"image", "codex"}: "109a423e5eb1b66d2fccb1635a770bbb0c3d91ad8766274f6a263cd22153610b",
+		{"video", "kling"}: "729b248ce491f7865e2454baa62d00ce97497916cdc649174f14c72209d77f99",
 	}
 	for key, digest := range want {
 		data, err := ProviderDoc(key[0], key[1])

@@ -10,10 +10,9 @@ import (
 	"songframe-go/internal/pycompat"
 )
 
-// Файловые операции транзакции монтажа повторяют tools/apply_montage оригинала: замена файла
-// одним rename (replace_bytes), SHA-256 или None для отсутствующего файла (digest_or_none) и
-// копия проекта в staging (stage_project/copy_input). Ошибки Go превращаются в OSError Python,
-// чтобы CLI показывал тот же скрытый текст, что и оригинал.
+// Файловые операции транзакции монтажа: замена файла одним rename, SHA-256 или None для
+// отсутствующего файла и копия проекта в staging. Ошибки Go превращаются в OSError pycompat,
+// чтобы CLI показывал общий скрытый текст.
 
 // JSONBytes — json_bytes(value): json.dumps(ensure_ascii=False, indent=2) + "\n" в UTF-8.
 func JSONBytes(value any) ([]byte, error) {
@@ -53,7 +52,7 @@ func ReplaceBytes(path string, data []byte) error {
 	return nil
 }
 
-// sha — sha(path) tools/common.py: SHA-256 содержимого файла.
+// sha — SHA-256 содержимого файла.
 func sha(path string) (string, error) { return assetpackage.FileSHA256(path) }
 
 // DigestOrNone — digest_or_none(path): SHA-256 обычного файла или nil, если файла нет.
@@ -122,7 +121,7 @@ func CopyInput(source, target string) error {
 // ignoredNames — shutil.ignore_patterns("montage-history", ".cache"): на любом уровне дерева.
 var ignoredNames = map[string]bool{"montage-history": true, ".cache": true}
 
-// copyTree — shutil.copytree(source, target, copy_function=copy_input, ignore=…) без symlinks:
+// copyTree — копия дерева, как shutil.copytree без symlinks:
 // ссылки разыменовываются (файл — содержимым, каталог — рекурсивно), target не должен
 // существовать. Права каталогов переносятся, как copystat.
 func copyTree(source, target string) error {

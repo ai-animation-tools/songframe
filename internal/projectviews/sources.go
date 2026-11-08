@@ -1,18 +1,18 @@
-// Package projectviews — перенос tools/project_views/project_views.py замороженного оригинала
-// (634fd94): производные Markdown/JSON-представления реестра сцен и технических комплектов —
-// монтажный список, раскадровка, индекс комплектов assets, ROADMAP с готовностью, справочник
-// визуальных правил с речевыми планами, README комплектов и таблица разметки трека.
+// Package projectviews строит производные Markdown/JSON-представления реестра сцен и
+// технических комплектов — монтажный список, раскадровка, индекс комплектов assets, ROADMAP с
+// готовностью, справочник визуальных правил с речевыми планами, README комплектов и таблица
+// разметки трека.
 //
 // Документы строятся только из файлов рабочего дерева проекта (Sources): реестр plan/scenes.json,
 // plan/project.json, plan/production-status.json, разметка, манифесты комплектов и пакеты
-// производства. Тексты совпадают с оригиналом побайтно (Decimal с ROUND_HALF_UP, проценты с
-// запятой, диаграмма Mermaid, часы clock, обрезка пробелов в конце строк). Ошибки данных —
-// исключения pycompat с типом и текстом Python: вызывающий инструмент (internal/sceneviews)
+// производства. Байты текстов зафиксированы эталонами scene-views (Decimal с ROUND_HALF_UP,
+// проценты с запятой, диаграмма Mermaid, часы clock, обрезка пробелов в конце строк). Ошибки
+// данных — исключения pycompat с типом и текстом Python: вызывающий инструмент (internal/sceneviews)
 // печатает их последней строкой трассировки. Пакет только читает проект; записью владеет
 // вызывающий.
 //
-// Чтение снимков Git (Sources(ref) оригинала, LFS-указатели) не перенесено: это инструмент
-// разработчика `update_scene_views --staged/--ref`, приложению он не нужен.
+// Снимки Git (--staged/--ref, LFS-указатели) не читаются: проверка снимка — инструмент
+// разработчика, приложению она не нужна.
 package projectviews
 
 import (
@@ -29,7 +29,7 @@ import (
 // skipped — каталоги, которые обход рабочего дерева не посещает на любой глубине.
 var skipped = map[string]bool{".git": true, ".local": true, "__pycache__": true, "node_modules": true}
 
-// Sources — Sources() оригинала для рабочего дерева: множество файлов проекта (пути от корня через
+// Sources — источник данных рабочего дерева: множество файлов проекта (пути от корня через
 // «/»), собранное один раз при создании, и чтение их текста, JSON и SHA-256 с диска. Обход и все
 // чтения относятся к корню Root; снимок множества файлов не обновляется при последующей записи.
 type Sources struct {
@@ -83,8 +83,8 @@ func (s *Sources) Contains(value any) (bool, error) {
 	return ok && s.files[text], nil
 }
 
-// Files — пути множества в порядке сортировки (у оригинала порядок set не определён; он влияет
-// только на то, какое из нескольких исключений чтения возникнет первым).
+// Files — пути множества в порядке сортировки: порядок детерминирован и влияет только на то,
+// какое из нескольких исключений чтения возникнет первым.
 func (s *Sources) Files() []string {
 	result := make([]string, 0, len(s.files))
 	for path := range s.files {
@@ -116,7 +116,7 @@ func (s *Sources) JSON(path string) (any, error) {
 }
 
 // TextSHA — hashlib.sha256(sources.text(path).encode()).hexdigest(): отпечаток текста после
-// декодирования и перевода строк (не байтов файла), как записывают квитанции оригинала.
+// декодирования и перевода строк (не байтов файла), как его записывают квитанции.
 func (s *Sources) TextSHA(path string) (string, error) {
 	text, err := s.Text(path)
 	if err != nil {
@@ -144,7 +144,7 @@ func (s *Sources) Digest(path string) (string, error) {
 	return FileSHA(s.path(path))
 }
 
-// FileSHA — tools/common.py sha(path): SHA-256 файла потоком; ошибка — OSError Python.
+// FileSHA — SHA-256 файла потоком; ошибка — OSError Python.
 func FileSHA(path string) (string, error) {
 	file, err := os.Open(path)
 	if err != nil {

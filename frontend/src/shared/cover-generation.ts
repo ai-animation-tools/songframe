@@ -49,7 +49,7 @@ export interface CoverGenerationApproval {
 }
 
 export interface CoverGenerationApi {
-  /** Чтение выбранных опор также подтверждает поддержку их передачи текущим preload. */
+  /** Чтение выбранных опор также подтверждает, что Go может их передать. */
   inspect(input: ReferenceImageGenerationInput): Promise<GenerationReferenceImage[]>;
   create(project: string, prompt: string, input?: ReferenceImageGenerationInput): Promise<CoverGenerationSession>;
   /** Подготовка следующей попытки и цены не отправляет запрос генерации. */

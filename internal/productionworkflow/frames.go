@@ -23,7 +23,7 @@ type framesPlan struct {
 	hashes  *jscompat.Object
 }
 
-// ensureFramesAvailable — общие проверки generateFrames и importFrames оригинала: план не
+// ensureFramesAvailable — общие проверки GenerateFrames и ImportFrames: план не
 // производный, вид плана разрешает создание опор (пакет с принятым описанием или возвратом опор
 // на доработку, есть неутверждённая опора, нет занятости, вопроса и оплаты) и нет непринятого
 // предложения этого плана. Вид плана при этом обновляет запись завершённого задания.
@@ -39,7 +39,7 @@ func (w *Workflow) ensureFramesAvailable(project, shot, packageDir string) (*Con
 	if err != nil {
 		return nil, err
 	}
-	// Готовое предложение называем прямо: CanGenerateFrames учитывает его сам (этап 51), и общий
+	// Готовое предложение называем прямо: CanGenerateFrames учитывает его сам, и общий
 	// отказ скрыл бы настоящую причину.
 	if !view.Busy && w.store.Read(c.Project, shot).active() {
 		return nil, errors.New(textResolveProposalFirstError)
@@ -63,12 +63,10 @@ func (w *Workflow) framesForImport(project, shot, packageDir string, images []Fr
 	return w.ensureFramesAvailable(project, shot, packageDir)
 }
 
-// planFrames — синхронная часть generateFrames оригинала до запуска генерации: проверки, снимок
-// входов, следующая опора по плану и провайдер изображений проекта.
-//
-// Отличие от оригинала: снимок обходит выбранный пакет контекста (реальный путь), а не строку
-// packageDir как её передал renderer: при пути проекта через ссылку оригинал обходил один пакет
-// дважды под разными ключами.
+// planFrames — синхронная часть GenerateFrames до запуска генерации: проверки, снимок
+// входов, следующая опора по плану и провайдер изображений проекта. Снимок обходит выбранный
+// пакет контекста (реальный путь), а не строку packageDir от renderer: иначе при пути проекта
+// через ссылку один пакет попал бы в снимок дважды под разными ключами.
 func (w *Workflow) planFrames(project, shot, packageDir string) (*framesPlan, error) {
 	c, err := w.ensureFramesAvailable(project, shot, packageDir)
 	if err != nil {
@@ -121,10 +119,10 @@ func framePrompt(value any) mediaapi.FramePrompt {
 	return frame
 }
 
-// GenerateFrames — generateFrames оригинала: следующая по плану неутверждённая опора пакета.
+// GenerateFrames создаёт следующую по плану неутверждённую опору пакета.
 // Провайдер-агент создаёт её заданием программы-агента (утверждённые опоры пакета — референсы
 // согласованности, действующие замечания — исправления), запись предложения frames ждёт его
-// завершения. Платный провайдер готовит замороженный запрос одной опоры и вопрос согласования в
+// завершения. Платный провайдер готовит неизменяемый запрос одной опоры и вопрос согласования в
 // пакете; замечания входят в текст промпта, а значит в SHA и подтверждение цены. Пока готовится
 // платный запрос, план занят. Доступ к провайдеру проверяет сервис до вызова.
 func (w *Workflow) GenerateFrames(ctx context.Context, project, shot, packageDir string) (View, error) {
@@ -204,7 +202,7 @@ func keyframesBefore(c *Context) string {
 	return jscompat.Stringify(value)
 }
 
-// CheckImportImages — проверка маршрута productionWorkflow:importFrames оригинала: каждый
+// CheckImportImages — проверка входа импорта опор: каждый
 // выбранный файл — настоящее изображение (обычный файл PNG, JPEG или WebP по заголовку, который
 // декодирует validate). nil — список не передан.
 func CheckImportImages(images []FrameCandidate, validate func(string) bool) error {
@@ -216,7 +214,7 @@ func CheckImportImages(images []FrameCandidate, validate func(string) bool) erro
 	return nil
 }
 
-// ImportFrames — importFrames оригинала вместе с проверкой его маршрута: свои изображения для
+// ImportFrames вместе с проверкой входа: свои изображения для
 // любых неутверждённых опор пакета (утверждённую сначала возвращают на доработку) становятся
 // готовым предложением опор без задания агента. Кандидаты — в порядке плана, без повторов, по
 // абсолютным путям; запоминаются SHA-256 их байтов, изменение файла делает предложение устаревшим.

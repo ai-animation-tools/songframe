@@ -16,9 +16,9 @@ import (
 	"songframe-go/internal/pycompat"
 )
 
-// Эталоны kling-request сняты с kling_request.py оригинала (capture-kling.py этапа 45b):
-// cases.json — чистые функции адаптера, adapter.json — submit/poll/account/auth_status/login/
-// capabilities на подменённом сеансе MCP (исход и журнал вызовов сеанса).
+// Эталоны kling-request: cases.json — чистые функции адаптера, adapter.json —
+// submit/poll/account/auth_status/login/capabilities на подменённом сеансе MCP (исход и журнал
+// вызовов сеанса).
 
 const domain = "kling-request"
 
@@ -160,13 +160,13 @@ func TestPureGolden(t *testing.T) {
 }
 
 // fakeSession — сеанс MCP сценария adapter.json: отвечает по script и пишет журнал вызовов в
-// формате FakeSession съёмки.
+// формате эталона.
 type fakeSession struct {
 	script *pycompat.Dict
 	log    *[]any
 }
 
-// seconds — таймаут в секундах как его передавал Python (целое или None для 0).
+// seconds — таймаут в секундах в форме эталона (целое или None для 0).
 func seconds(timeout time.Duration) any {
 	if timeout == 0 {
 		return nil
@@ -245,7 +245,7 @@ func (f *fakeSession) Upload(_ context.Context, path string, _ any) (string, err
 	return value.(string), nil
 }
 
-// loginErrors — исключения, которыми съёмка подменяла mcp.login.
+// loginErrors — исключения, которыми сценарии эталона подменяют mcp.login.
 var loginErrors = map[string]error{
 	"auth":      &mcp.AuthRequiredError{Message: "отменён"},
 	"transport": &mcp.TransportError{Status: 400, Text: "Kling не обменял код авторизации на токен."},

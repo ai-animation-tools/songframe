@@ -11,13 +11,12 @@ import (
 	"songframe-go/internal/tools"
 )
 
-// tracebackHeader — первая строка трассировки Python; кадры стека Go-перенос не воспроизводит,
+// tracebackHeader — первая строка трассировки Python; кадры стека Go-инструменты не воспроизводят,
 // поэтому у таких случаев сверяются заголовок и последняя строка (тип и текст исключения).
 const tracebackHeader = "Traceback (most recent call last):"
 
 // TestSceneScaffoldGolden запускает tools.run("scene_scaffold") на копиях входов эталона
-// scene-scaffold и сверяет код завершения, stdout, stderr и байты plan/scenes.json с процессом
-// `python3 -B tools/scene_scaffold/scene_scaffold.py --project <копия> …` оригинала.
+// scene-scaffold и сверяет код завершения, stdout, stderr и байты plan/scenes.json с ожидаемыми.
 func TestSceneScaffoldGolden(t *testing.T) {
 	for _, c := range golden.Load(t, "scene-scaffold") {
 		t.Run(c.Name, func(t *testing.T) {

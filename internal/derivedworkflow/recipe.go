@@ -8,7 +8,7 @@ import (
 	"songframe-go/internal/jscompat"
 )
 
-// checkedKeys — ключи рецепта выбранного режима, отсортированные как `keys.sort()` оригинала.
+// checkedKeys — ключи рецепта выбранного режима в порядке сортировки строк JS (`keys.sort()`).
 func checkedKeys(mode any) []string {
 	switch {
 	case jscompat.StrictEqual(mode, "trim"):

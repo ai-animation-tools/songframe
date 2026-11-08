@@ -68,7 +68,7 @@ export interface Shot {
 /**
  * View — AnimaticView контракта (frontend/src/shared/types.ts): сборка latest, её планы для
  * плеера, принятие, свежесть карточек и проблемы. BlockedReason заполняет сервис приложения,
- * когда сценарий нужно утвердить заново (reviewProblem оригинала).
+ * когда сценарий нужно утвердить заново.
  */
 export interface View {
     "built": Built | null;

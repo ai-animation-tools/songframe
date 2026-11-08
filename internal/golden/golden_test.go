@@ -178,25 +178,3 @@ func TestTreeDigest(t *testing.T) {
 		t.Fatal("изменение файла не изменило дайджест")
 	}
 }
-
-// TestRealProjects проверяет подключённые эталоны настоящих клипов: клип не менялся после съёмки,
-// значит эталон актуален. Без SONGFRAME_GOLDEN_REAL тест пропускается.
-func TestRealProjects(t *testing.T) {
-	for _, project := range RealProjects(t) {
-		t.Run(project.Name, func(t *testing.T) {
-			digest, err := TreeDigest(project.Project)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if digest != project.Manifest.TreeSHA256 {
-				t.Fatalf("клип изменился после съёмки эталона: %s, в manifest %s", digest, project.Manifest.TreeSHA256)
-			}
-			for _, name := range []string{"expected-status.json", "expected-open.json", "expected-timing-view.json", "expected-timing-save.json"} {
-				var value any
-				if err := json.Unmarshal(project.Read(t, name), &value); err != nil {
-					t.Fatalf("%s: %v", name, err)
-				}
-			}
-		})
-	}
-}

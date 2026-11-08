@@ -28,7 +28,7 @@ import (
 )
 
 // Эталон production-frames/cases.json снят скриптом capture-production-frames.ts (вне репозитория,
-// ../test-projects/golden/capture/45g3/) с временной копии оригинала с двумя исправлениями
+// не сохранён) с временной копии оригинала с двумя исправлениями
 // keyframe-images.ts (README эталонов). Зависимости — как в ipc.ts: исполнитель провайдера-агента
 // test-agent (адаптер codex) поверх KeyframeImages, платный test через общий PaidMedia, настоящие
 // media_request и shot_workflow (здесь — их Go-порты) и тестовый сервис mediatest. Менеджер

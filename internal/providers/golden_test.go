@@ -17,7 +17,7 @@ import (
 )
 
 // goldenCases — testdata/golden/media-providers/cases.json, снятый с оригинала
-// (test-projects/golden/capture/45d/capture-media-providers.ts).
+// (скрипт capture-media-providers.ts не сохранён).
 type goldenCases struct {
 	Select []struct {
 		Name      string                     `json:"name"`

@@ -37,8 +37,8 @@ import (
 )
 
 // Эталон cover-generation/cases.json снят с CoverGeneration, prepareProjectCover и
-// preparePaidCover оригинала (скрипт test-projects/golden/capture/45f/capture-cover.ts рабочей
-// области). Тест повторяет те же шаги на Go-генераторе: провайдер-агент test-agent исполняет
+// preparePaidCover оригинала (скрипт capture-cover.ts вне репозитория,
+// не сохранён). Тест повторяет те же шаги на Go-генераторе: провайдер-агент test-agent исполняет
 // подставной runner с очередью поведений, платный провайдер test — Go-перенос тестового сервиса
 // (internal/mediatest) через настоящие media_request и cost_check. Сверяются результат или текст
 // ошибки шага, сессия после шага, деревья временной папки обложки и проекта, вызовы сервиса и

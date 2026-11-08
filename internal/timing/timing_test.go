@@ -90,23 +90,6 @@ func TestValidateSaveInputs(t *testing.T) {
 	}
 }
 
-// TestRealProjects сверяет просмотр разметки настоящих клипов (SONGFRAME_GOLDEN_REAL).
-func TestRealProjects(t *testing.T) {
-	for _, project := range golden.RealProjects(t) {
-		t.Run(project.Name, func(t *testing.T) {
-			before := digestIfExists(t, project.Project)
-			view, err := ViewProject(project.Project)
-			if err != nil {
-				t.Fatal(err)
-			}
-			golden.AssertValue(t, project.Read(t, "expected-timing-view.json"), view, project.Project)
-			if digestIfExists(t, project.Project) != before {
-				t.Fatal("просмотр разметки изменил клип")
-			}
-		})
-	}
-}
-
 // TestAnalyzeLyricsEdges — пустой текст и JS-правила пробелов и регистра.
 func TestAnalyzeLyricsEdges(t *testing.T) {
 	if rows := ParseLyricsLines(""); len(rows) != 1 || rows[0].Text != "" {
@@ -176,44 +159,6 @@ func TestPrepareMatchesOriginal(t *testing.T) {
 			}
 			if digestIfExists(t, path) != before {
 				t.Fatal("Prepare изменил файлы проекта")
-			}
-		})
-	}
-}
-
-// TestPrepareRealProjects — пересохранение разметки настоящего клипа без правок (вход — timing из
-// его просмотра): документ и байты совпадают с оригиналом. Клип не меняется: Prepare не пишет.
-func TestPrepareRealProjects(t *testing.T) {
-	for _, project := range golden.RealProjects(t) {
-		t.Run(project.Name, func(t *testing.T) {
-			var want struct {
-				Error  *string         `json:"error"`
-				Result json.RawMessage `json:"result"`
-			}
-			if err := json.Unmarshal(project.Read(t, "expected-timing-save.json"), &want); err != nil {
-				t.Fatal(err)
-			}
-			view, err := ViewProject(project.Project)
-			if err != nil {
-				t.Fatal(err)
-			}
-			input, err := jscompat.Parse(view.Timing)
-			if err != nil {
-				t.Fatal(err)
-			}
-			result, err := Prepare(project.Project, input)
-			if want.Error != nil {
-				if err == nil || err.Error() != *want.Error {
-					t.Fatalf("ожидался отказ %q, получено %v", *want.Error, err)
-				}
-				return
-			}
-			if err != nil {
-				t.Fatal(err)
-			}
-			golden.AssertValue(t, want.Result, result, project.Project)
-			if string(Encode(result)) != string(project.Read(t, "expected-timing-save-file.json")) {
-				t.Fatal("байты файла отличаются от оригинала")
 			}
 		})
 	}

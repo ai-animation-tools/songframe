@@ -149,33 +149,6 @@ func TestReviewInputsFailures(t *testing.T) {
 	}
 }
 
-// TestRealProjects сверяет статус настоящих клипов (SONGFRAME_GOLDEN_REAL) и неизменность их дерева.
-func TestRealProjects(t *testing.T) {
-	for _, project := range golden.RealProjects(t) {
-		t.Run(project.Name, func(t *testing.T) {
-			before, err := golden.TreeDigest(project.Project)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if before != project.Manifest.TreeSHA256 {
-				t.Logf("дерево клипа %s отличается от снятого эталона", project.Name)
-			}
-			result, err := Compute(project.Project)
-			if err != nil {
-				t.Fatal(err)
-			}
-			golden.AssertValue(t, project.Read(t, "expected-status.json"), result, project.Project)
-			after, err := golden.TreeDigest(project.Project)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if after != before {
-				t.Fatal("вычисление статуса изменило клип")
-			}
-		})
-	}
-}
-
 // digestIfExists — дайджест дерева входа или пустая строка для несуществующего пути.
 func digestIfExists(t *testing.T, path string) string {
 	t.Helper()

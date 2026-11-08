@@ -4,8 +4,7 @@
 // Эталон состоит из случаев testdata/golden/<домен>/<случай>/: case.json с описанием и именем функции
 // оригинала, входной мини-проект project/ и ожидаемые JSON. Пакет только загружает случаи, нормализует
 // абсолютные пути в маркер <project> и сравнивает деревья JSON; сами функции домена вызывает тест
-// соответствующего пакета. Необязательные эталоны настоящих клипов лежат вне репозитория и
-// подключаются переменной окружения SONGFRAME_GOLDEN_REAL.
+// соответствующего пакета. Все эталоны лежат в Git; тесты не зависят от файлов вне репозитория.
 package golden
 
 import (
@@ -25,10 +24,6 @@ import (
 	"strings"
 	"testing"
 )
-
-// RealEnv — переменная окружения с каталогом эталонов настоящих клипов (обычно ../test-projects/golden).
-// Без неё тесты настоящих клипов пропускаются: клипы и их эталоны не входят в Git.
-const RealEnv = "SONGFRAME_GOLDEN_REAL"
 
 // ProjectMarker заменяет корень проекта в путях ожидаемых JSON, чтобы эталон не зависел от временной папки.
 const ProjectMarker = "<project>"
@@ -291,93 +286,10 @@ func AssertValue(t testing.TB, want []byte, got any, root string) {
 	AssertJSON(t, want, data)
 }
 
-// RealProject — эталон настоящего клипа вне Git: каталог с manifest.json и expected-*.json.
-type RealProject struct {
-	// Name — имя каталога эталона (ogorod, strateg-oleg).
-	Name string
-	// Dir — абсолютный путь каталога эталона.
-	Dir string
-	// Project — абсолютный путь клипа из manifest.json, вычисленный относительно Dir.
-	Project string
-	// Manifest — сведения съёмки: коммит оригинала, HEAD клипа и дайджест его дерева.
-	Manifest RealManifest
-}
-
-// RealManifest — manifest.json эталона настоящего клипа.
-type RealManifest struct {
-	// ProjectRef — путь клипа относительно каталога эталона либо абсолютный.
-	ProjectRef string `json:"project"`
-	Original   string `json:"original"`
-	// ProjectHead — HEAD Git клипа на момент съёмки.
-	ProjectHead string `json:"projectHead"`
-	// TreeSHA256 — TreeDigest клипа на момент съёмки: несовпадение значит, что эталон устарел.
-	TreeSHA256 string `json:"treeSha256"`
-	Files      int    `json:"files"`
-}
-
-// RealProjects возвращает эталоны настоящих клипов из каталога SONGFRAME_GOLDEN_REAL (абсолютного или
-// относительно корня модуля songframe-go) или пропускает
-// тест, если переменная не задана. Клип, которого нет на машине, тоже пропускается с причиной.
-// Настоящие клипы доступны только для чтения: запись выполнять лишь на копии.
-func RealProjects(t testing.TB) []RealProject {
-	t.Helper()
-	base := os.Getenv(RealEnv)
-	if base == "" {
-		t.Skipf("эталоны настоящих клипов не подключены: задайте %s", RealEnv)
-	}
-	// Относительный путь отсчитывается от корня модуля, а не от каталога пакета теста:
-	// SONGFRAME_GOLDEN_REAL=../test-projects/golden одинаково работает для любого пакета.
-	if !filepath.IsAbs(base) {
-		base = filepath.Join(filepath.Dir(filepath.Dir(mustRoot(t))), base)
-	}
-	entries, err := os.ReadDir(base)
-	if err != nil {
-		t.Fatalf("%s: %v", RealEnv, err)
-	}
-	var projects []RealProject
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-		dir := filepath.Join(base, entry.Name())
-		// Служебные каталоги без manifest.json (например, capture/ со скриптом съёмки) не являются эталонами.
-		if _, err := os.Stat(filepath.Join(dir, "manifest.json")); errors.Is(err, fs.ErrNotExist) {
-			continue
-		}
-		var manifest RealManifest
-		if err := readJSON(filepath.Join(dir, "manifest.json"), &manifest); err != nil {
-			t.Fatalf("эталон клипа %s: %v", entry.Name(), err)
-		}
-		path := filepath.FromSlash(manifest.ProjectRef)
-		if !filepath.IsAbs(path) {
-			path = filepath.Join(dir, path)
-		}
-		if _, err := os.Stat(filepath.Join(path, "plan", "project.json")); err != nil {
-			t.Logf("клип %s недоступен (%s): эталон пропущен", entry.Name(), path)
-			continue
-		}
-		projects = append(projects, RealProject{Name: entry.Name(), Dir: dir, Project: path, Manifest: manifest})
-	}
-	if len(projects) == 0 {
-		t.Skipf("в %s нет доступных клипов", base)
-	}
-	return projects
-}
-
-// Read возвращает файл эталона клипа, например expected-status.json.
-func (p RealProject) Read(t testing.TB, name string) []byte {
-	t.Helper()
-	data, err := os.ReadFile(filepath.Join(p.Dir, name))
-	if err != nil {
-		t.Fatalf("эталон клипа %s: %v", p.Name, err)
-	}
-	return data
-}
-
 // TreeDigest считает дайджест дерева без каталогов .git: SHA-256 от строк «<sha256>  <путь>\n» по
-// всем обычным файлам в байтовом порядке путей с «/». Формат совпадает со скриптом съёмки и с
+// всем обычным файлам в байтовом порядке путей с «/». Формат совпадает с
 // `find . -path ./.git -prune -o -type f -print | sed 's|^\./||' | LC_ALL=C sort` + sha256sum, поэтому
-// проверяет и неизменность готового клипа до/после чтения, и актуальность его эталона.
+// проверяет неизменность проекта до и после чтения.
 func TreeDigest(root string) (string, error) {
 	type entry struct{ path, digest string }
 	var files []entry

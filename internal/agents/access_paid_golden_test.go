@@ -13,7 +13,7 @@ import (
 
 // TestPaidAccessGolden сверяет платную часть ai.access (выбор provider_selected, вход платного
 // провайдера, тексты подтверждения и запрета) с createAiAccess оригинала
-// (testdata/golden/ai-access-paid, test-projects/golden/capture/45d/capture-ai-access-paid.ts).
+// (testdata/golden/ai-access-paid; скрипт съёмки capture-ai-access-paid.ts не сохранён).
 func TestPaidAccessGolden(t *testing.T) {
 	var cases []struct {
 		Name         string                     `json:"name"`

@@ -1,0 +1,6 @@
+{
+  "code": 1,
+  "stdout": "ОШИБКА  assets/shots/M02/manifest.json · $: ожидается тип object, найдено list\nпредупреждение  source/description.md · mira: персонаж «Мира» из реестра не упомянут в сценарии\nпредупреждение  source/description.md · lev: персонаж «Лев» из реестра не упомянут в сценарии\nОшибок: 1, предупреждений: 2.\n",
+  "stderr": "",
+  "traceback": false
+}

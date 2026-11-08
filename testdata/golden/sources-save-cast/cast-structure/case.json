@@ -1,0 +1,9 @@
+{
+  "description": "Кастинг другой схемы: отказ normalizeCast до записи.",
+  "call": "saveSourcesWithCastImages",
+  "project": "project",
+  "covers": [
+    "normalizeCast structureRequired"
+  ],
+  "stubbedMedia": []
+}

@@ -1,0 +1,9 @@
+{
+  "code": 1,
+  "stdout": "",
+  "stderr": "Нет разметки plan/audio/timing.json: сначала этап таймингов.\n",
+  "traceback": false,
+  "files": {
+    "plan/scenes.json": "unchanged"
+  }
+}

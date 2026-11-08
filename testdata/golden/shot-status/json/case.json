@@ -1,0 +1,15 @@
+{
+  "description": "--json: полный результат.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "--json"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ],
+  "remove": [],
+  "mkdir": []
+}

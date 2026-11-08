@@ -1,0 +1,10 @@
+{
+  "description": "Битый plan/cast.json: отказ раньше проверки формы (форма тоже неверна).",
+  "call": "saveSourcesWithCastImages",
+  "project": "project",
+  "covers": [
+    "castInvalid",
+    "порядок: кастинг до validateSources"
+  ],
+  "stubbedMedia": []
+}

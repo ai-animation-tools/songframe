@@ -1,0 +1,11 @@
+{
+  "description": "Промпт изображения меняется, очищается и остаётся прежним; общий промпт убирается.",
+  "call": "saveSourcesWithCastImages",
+  "project": "project",
+  "covers": [
+    "changedPromptPaths",
+    "prompt \"\" удаляет файл",
+    "общий промпт пустой"
+  ],
+  "stubbedMedia": []
+}

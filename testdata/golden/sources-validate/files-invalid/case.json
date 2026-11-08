@@ -1,0 +1,15 @@
+{
+  "description": "Отсутствующие файлы и неверные форматы.",
+  "call": "validateSources",
+  "project": "project",
+  "covers": [
+    "trackFileMissing",
+    "trackFormatInvalid",
+    "textFileMissing",
+    "textEmpty",
+    "coverFileMissing",
+    "coverFormatInvalid",
+    "parseLyrics файла"
+  ],
+  "stubbedMedia": []
+}

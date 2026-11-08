@@ -1,0 +1,9 @@
+{
+  "code": 0,
+  "stdout": "usage: scene_scaffold.py [-h] [--force] [--dry-run] [--json]\n\nКаркас plan/scenes.json из трактовки, разметки и кастинга.\n\noptions:\n  -h, --help  show this help message and exit\n  --force     Перезаписать существующий реестр сцен\n  --dry-run   Показать планы, файл не писать\n  --json\n",
+  "stderr": "",
+  "traceback": false,
+  "files": {
+    "plan/scenes.json": "unchanged"
+  }
+}

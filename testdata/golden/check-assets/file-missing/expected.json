@@ -1,0 +1,6 @@
+{
+  "code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/check_assets/check_assets.py\", line 37, in <module>\n    motion = load_motion()\n             ^^^^^^^^^^^^^\n  File \"<songframe>/tools/check_assets/check_assets.py\", line 26, in load_motion\n    package = validate_package(path, sid)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/asset_package/asset_package.py\", line 130, in validate_package\n    raise ValueError(f\"{package['shot']}: изменился файл комплекта {item['path']}\")\nValueError: M01: изменился файл комплекта original.mp4\n",
+  "traceback": true
+}

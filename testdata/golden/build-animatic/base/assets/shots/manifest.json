@@ -1,0 +1,12 @@
+{
+  "schema_version": 2,
+  "description": "Автоматический индекс локальных технических комплектов; постановка и тайминг принадлежат plan/scenes.json.",
+  "shots": {
+    "M01": {
+      "asset_manifest": {
+        "path": "assets/shots/M01/manifest.json",
+        "sha256": "4421fd9d0da964d6c9fcc1a19f5022b370e171551b6dd3670577f6fa3339677b"
+      }
+    }
+  }
+}

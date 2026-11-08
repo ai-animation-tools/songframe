@@ -1,0 +1,15 @@
+{
+  "description": "Битый plan/scenes.json: трассировка JSONDecodeError.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "traceback"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--check"
+  ],
+  "remove": [],
+  "mkdir": []
+}

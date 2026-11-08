@@ -1,0 +1,10 @@
+{
+  "description": "Папка уже существует и имя MP4 неверно: проблемы через пробел, ничего не создаётся.",
+  "call": "Projects.create",
+  "project": null,
+  "covers": [
+    "create: validateNewProject",
+    "problems.join"
+  ],
+  "stubbedMedia": []
+}

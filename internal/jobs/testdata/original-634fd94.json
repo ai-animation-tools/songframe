@@ -1,0 +1,110 @@
+{
+  "text": "Задание abc-1: Сборка\nВид: tool; проект: ~/Клипы/Огород; статус: failed; код: 2\nНачато: 2026-11-04T10:00:00.000Z; завершено: 2026-11-04T10:01:00.000Z; прошлый сеанс\nШаги:\n  Первый (one): done, код 0\n  Второй (two): failed, код 2\n  Третий (three): pending\nОшибка: сбой [скрыто] и api_key=\"[скрыто]\"\n\nЖурнал:\nстрока ~/x [скрыто]\nAuthorization: [скрыто]\n",
+  "empty": "Задание abc-1: Сборка\nВид: tool; проект: общее задание приложения; статус: failed; код: —\nНачато: 2026-11-04T10:00:00.000Z; завершено: —\n\nЖурнал:\nЖурнал пуст.\n",
+  "tail": [
+    "",
+    "в",
+    "в",
+    "бв",
+    "aбв",
+    "aбв",
+    "аaбв",
+    "аaбв",
+    "ааaбв",
+    "ааaбв",
+    "аааaбв"
+  ],
+  "loaded": [
+    {
+      "id": "c-3",
+      "project": null,
+      "kind": "tool",
+      "title": "Задание c-3",
+      "status": "interrupted",
+      "startedAt": "2026-11-03T00:00:00.000Z",
+      "finishedAt": "2026-11-04T12:00:00.000Z",
+      "code": null,
+      "steps": [
+        {
+          "label": "Шаг",
+          "tool": "tool",
+          "status": "failed",
+          "code": null
+        },
+        {
+          "label": "Ещё",
+          "tool": "tool2",
+          "status": "pending",
+          "code": null
+        }
+      ],
+      "error": "Прервано закрытием или сбоем программы",
+      "log": "",
+      "previousSession": true
+    },
+    {
+      "id": "b-2",
+      "project": null,
+      "kind": "tool",
+      "title": "Задание b-2",
+      "status": "interrupted",
+      "startedAt": "2026-11-02T00:00:00.000Z",
+      "finishedAt": "2026-11-04T12:00:00.000Z",
+      "code": null,
+      "steps": [
+        {
+          "label": "Шаг",
+          "tool": "tool",
+          "status": "failed",
+          "code": null
+        },
+        {
+          "label": "Ещё",
+          "tool": "tool2",
+          "status": "pending",
+          "code": null
+        }
+      ],
+      "modelDownload": {
+        "model": "song-timing-v1",
+        "directory": "/m"
+      },
+      "log": "",
+      "previousSession": true,
+      "error": "Прервано закрытием или сбоем программы"
+    },
+    {
+      "id": "a-1",
+      "project": null,
+      "kind": "tool",
+      "title": "Задание a-1",
+      "status": "done",
+      "startedAt": "2026-11-01T00:00:00.000Z",
+      "finishedAt": "2026-11-01T00:00:01.000Z",
+      "code": 0,
+      "steps": [
+        {
+          "label": "Шаг",
+          "tool": "tool",
+          "status": "done",
+          "code": null
+        },
+        {
+          "label": "Ещё",
+          "tool": "tool2",
+          "status": "pending",
+          "code": null
+        }
+      ],
+      "log": "",
+      "previousSession": true
+    }
+  ],
+  "files": {
+    "a-1.json": "{\n  \"id\": \"a-1\",\n  \"project\": null,\n  \"kind\": \"tool\",\n  \"title\": \"Задание a-1\",\n  \"status\": \"done\",\n  \"startedAt\": \"2026-11-01T00:00:00.000Z\",\n  \"finishedAt\": \"2026-11-01T00:00:01.000Z\",\n  \"code\": 0,\n  \"steps\": [\n    {\n      \"label\": \"Шаг\",\n      \"tool\": \"tool\",\n      \"status\": \"done\",\n      \"code\": null\n    },\n    {\n      \"label\": \"Ещё\",\n      \"tool\": \"tool2\",\n      \"status\": \"pending\",\n      \"code\": null\n    }\n  ]\n}\n",
+    "agent-x.json": "{}",
+    "b-2.json": "{\n  \"id\": \"b-2\",\n  \"project\": null,\n  \"kind\": \"tool\",\n  \"title\": \"Задание b-2\",\n  \"status\": \"interrupted\",\n  \"startedAt\": \"2026-11-02T00:00:00.000Z\",\n  \"finishedAt\": \"2026-11-04T12:00:00.000Z\",\n  \"code\": null,\n  \"steps\": [\n    {\n      \"label\": \"Шаг\",\n      \"tool\": \"tool\",\n      \"status\": \"failed\",\n      \"code\": null\n    },\n    {\n      \"label\": \"Ещё\",\n      \"tool\": \"tool2\",\n      \"status\": \"pending\",\n      \"code\": null\n    }\n  ],\n  \"modelDownload\": {\n    \"model\": \"song-timing-v1\",\n    \"directory\": \"/m\"\n  },\n  \"error\": \"Прервано закрытием или сбоем программы\"\n}\n",
+    "c-3.json": "{\n  \"id\": \"c-3\",\n  \"project\": null,\n  \"kind\": \"tool\",\n  \"title\": \"Задание c-3\",\n  \"status\": \"interrupted\",\n  \"startedAt\": \"2026-11-03T00:00:00.000Z\",\n  \"finishedAt\": \"2026-11-04T12:00:00.000Z\",\n  \"code\": null,\n  \"steps\": [\n    {\n      \"label\": \"Шаг\",\n      \"tool\": \"tool\",\n      \"status\": \"failed\",\n      \"code\": null\n    },\n    {\n      \"label\": \"Ещё\",\n      \"tool\": \"tool2\",\n      \"status\": \"pending\",\n      \"code\": null\n    }\n  ],\n  \"error\": \"Прервано закрытием или сбоем программы\"\n}\n",
+    "e-5.json": "{broken"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "description": "--ref без --check: parser.error.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "Снимок Git доступен только для проверки."
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--ref",
+    "HEAD"
+  ],
+  "remove": [],
+  "mkdir": []
+}

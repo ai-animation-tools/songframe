@@ -1,0 +1,15 @@
+{
+  "description": "-h: справка, код 0.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "help"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "-h"
+  ],
+  "remove": [],
+  "mkdir": []
+}

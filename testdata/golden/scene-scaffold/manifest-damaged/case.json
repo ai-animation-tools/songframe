@@ -1,0 +1,13 @@
+{
+  "description": "Повреждённая опись исходников.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "source/manifest.json повреждён"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--force"
+  ]
+}

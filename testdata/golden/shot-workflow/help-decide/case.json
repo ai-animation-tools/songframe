@@ -1,0 +1,16 @@
+{
+  "description": "decide -h.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "sub help"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "decide",
+    "-h"
+  ],
+  "remove": [],
+  "mkdir": []
+}

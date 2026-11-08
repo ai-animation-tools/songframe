@@ -1,0 +1,15 @@
+{
+  "description": "Повреждённый черновик удерживает все папки.",
+  "call": "check_workspace",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "montage except"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": [
+    "plan/batches/empty"
+  ]
+}

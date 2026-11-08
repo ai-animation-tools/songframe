@@ -1,0 +1,13 @@
+{
+  "description": "Оригинал и монтаж — один файл.",
+  "call": "check_assets",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "разными файлами"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

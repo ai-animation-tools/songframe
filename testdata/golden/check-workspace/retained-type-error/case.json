@@ -1,0 +1,13 @@
+{
+  "description": "Черновик с clips-строкой: TypeError перехватывается.",
+  "call": "check_workspace",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "montage TypeError"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

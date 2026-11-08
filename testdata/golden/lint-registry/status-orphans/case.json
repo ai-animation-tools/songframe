@@ -1,0 +1,14 @@
+{
+  "description": "Отпечатки плана вне реестра и без комплекта.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "нет в реестре",
+    "без комплекта"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

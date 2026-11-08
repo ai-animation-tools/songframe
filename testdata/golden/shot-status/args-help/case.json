@@ -1,0 +1,15 @@
+{
+  "description": "-h.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "help"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "-h"
+  ],
+  "remove": [],
+  "mkdir": []
+}

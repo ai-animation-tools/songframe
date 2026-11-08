@@ -1,0 +1,13 @@
+{
+  "description": "Сущность кастинга строкой: AttributeError validate_cast — трассировка.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "AttributeError"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

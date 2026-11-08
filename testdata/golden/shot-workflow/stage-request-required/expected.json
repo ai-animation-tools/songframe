@@ -1,0 +1,9 @@
+{
+  "code": 1,
+  "stdout": "",
+  "stderr": "Для этого этапа нужен подготовленный запрос: укажите --request-dir.\n",
+  "traceback": false,
+  "files": {},
+  "dirs": {},
+  "modes": {}
+}

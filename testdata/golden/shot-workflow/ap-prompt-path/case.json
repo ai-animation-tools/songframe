@@ -1,0 +1,17 @@
+{
+  "description": "Путь промпта из prompt.path.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "prompt.path"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "approve-prompt",
+    "--dir",
+    "plan/batches/M03-attempt-01"
+  ],
+  "remove": [],
+  "mkdir": []
+}

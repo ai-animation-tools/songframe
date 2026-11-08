@@ -1,0 +1,11 @@
+{
+  "description": "Кириллическое название с пробелами по краям в папке с пробелами и кириллицей.",
+  "call": "Projects.create",
+  "project": null,
+  "covers": [
+    "trim name",
+    "defaultAnimaticName → animatic.mp4",
+    "Unicode-путь"
+  ],
+  "stubbedMedia": []
+}

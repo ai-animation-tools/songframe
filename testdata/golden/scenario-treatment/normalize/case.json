@@ -1,0 +1,16 @@
+{
+  "description": "Сортировка частей, округление, trim, пустые сущности отбрасываются, неизвестные поля сохраняются.",
+  "call": "saveTreatment",
+  "project": "project",
+  "covers": [
+    "sort by start",
+    "round 3",
+    "trim",
+    "entities.filter(Boolean)",
+    "лишние поля части сохраняются",
+    "лишние поля документа отбрасываются"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

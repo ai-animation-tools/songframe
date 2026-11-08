@@ -1,0 +1,13 @@
+{
+  "description": "Изменение итога M01 меняет наследников M02 и M03; keep переписывает отпечатки и пакет M02, но не пакет M03 в awaiting по старому отпечатку не своего.",
+  "call": "scenesSaveImpact + validateScenes + saveScenesWithMode",
+  "project": "project",
+  "mode": "keep",
+  "covers": [
+    "impactInheritedState",
+    "restampPackage",
+    "state=progress",
+    "keep наследников"
+  ],
+  "stubbedMedia": []
+}

@@ -1,0 +1,11 @@
+{
+  "description": "Без generation и agent_instructions, нестроковый animatic_video.",
+  "call": "readProjectSettings",
+  "project": "project",
+  "covers": [
+    "read: generation null",
+    "agentInstructions пусто",
+    "animaticVideo не строка"
+  ],
+  "stubbedMedia": []
+}

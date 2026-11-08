@@ -1,0 +1,18 @@
+{
+  "description": "Нет документов: создаются.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "path.exists"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [
+    "ROADMAP.md",
+    "assets/shots/M01/README.md",
+    "plan/audio/timing.md",
+    "plan/edit-list.md"
+  ],
+  "mkdir": []
+}

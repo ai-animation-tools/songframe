@@ -1,0 +1,153 @@
+{
+  "shots": [
+    {
+      "id": "M01",
+      "title": "Вечер у воды",
+      "original": "Вступление",
+      "start": 0,
+      "end": 8,
+      "lipsync": false,
+      "state": "completed",
+      "stageLabel": "принят, монтажное видео сохранено",
+      "staleReason": null,
+      "regenerateProblem": "M01: сначала выберите провайдера видео в настройках проекта.",
+      "derivedFrom": null,
+      "attention": null,
+      "asset": {
+        "dir": "<project>/assets/shots/M01",
+        "video": "<project>/assets/shots/M01/video.mp4",
+        "original": "<project>/assets/shots/M01/original.mp4"
+      },
+      "packages": []
+    },
+    {
+      "id": "M02",
+      "title": "Фонарики",
+      "original": "Вечер зажёг фонари у воды",
+      "start": 8,
+      "end": 12,
+      "lipsync": false,
+      "state": "completed",
+      "stageLabel": "принят, монтажное видео сохранено",
+      "staleReason": null,
+      "regenerateProblem": "M02: сначала выберите провайдера видео в настройках проекта.",
+      "derivedFrom": null,
+      "attention": null,
+      "asset": {
+        "dir": "<project>/assets/shots/M02",
+        "video": "<project>/assets/shots/M02/video.mp4",
+        "original": "<project>/assets/shots/M02/original.mp4"
+      },
+      "packages": []
+    },
+    {
+      "id": "M03",
+      "title": "Фонарики",
+      "original": "Ветер качает бумажные огни",
+      "start": 12,
+      "end": 16,
+      "lipsync": false,
+      "state": "progress",
+      "stageLabel": "ждёт вашего решения: Утвердить опоры?",
+      "staleReason": null,
+      "regenerateProblem": "M03: сначала выберите провайдера видео в настройках проекта.",
+      "derivedFrom": null,
+      "attention": "M03-attempt-01: Утвердить опоры?",
+      "asset": null,
+      "packages": [
+        {
+          "dir": "<project>/plan/batches/M03-attempt-01",
+          "decisionToken": "49a0effdc21739a7a8ec52263a02ca5a90b61a39a213725683143e3100e85424",
+          "relative": "plan/batches/M03-attempt-01",
+          "shot": "M03",
+          "stage": "keyframes_review",
+          "stageLabel": "опоры на согласовании",
+          "waitReason": null,
+          "mode": "shot",
+          "retryOf": null,
+          "batch": null,
+          "timing": {
+            "fps": 30,
+            "frames": 120,
+            "window_seconds": 4,
+            "request_seconds": 5
+          },
+          "keyframes": [
+            {
+              "id": "K01",
+              "role": "first",
+              "time_seconds": 0,
+              "note": "первый кадр",
+              "imagePath": "<project>/plan/batches/M03-attempt-01/frames/K01.png",
+              "approved": false
+            },
+            {
+              "id": "K02",
+              "role": "last",
+              "time_seconds": 5,
+              "note": "конечный кадр",
+              "imagePath": null,
+              "approved": false
+            }
+          ],
+          "description": "Бумажные фонарики качаются на ветру у воды; камера сбоку.\n",
+          "prompt": {
+            "path": "<project>/plan/batches/M03-attempt-01/video-prompt.txt",
+            "approved": false,
+            "text": "Бумажные фонарики качаются на ветру у воды, общий план сбоку.\n"
+          },
+          "request": null,
+          "speech": null,
+          "pendingDecision": {
+            "stage": "keyframes_review",
+            "question": "Утвердить опоры?",
+            "options": [
+              "approve",
+              "revise"
+            ],
+            "asked_at": "2026-10-28T19:03:38+00:00"
+          },
+          "decision": null,
+          "keyframeNotes": [],
+          "sceneChanged": false,
+          "preview": [],
+          "problems": []
+        }
+      ]
+    },
+    {
+      "id": "M04",
+      "title": "Фонарики",
+      "original": "Мы отпускаем огни в небеса",
+      "start": 16,
+      "end": 20,
+      "lipsync": true,
+      "state": "planned",
+      "stageLabel": "постановка есть, работа не начата",
+      "staleReason": null,
+      "regenerateProblem": "M04: сначала выберите провайдера видео в настройках проекта.",
+      "derivedFrom": null,
+      "attention": null,
+      "asset": null,
+      "packages": []
+    },
+    {
+      "id": "M05",
+      "title": "Финальный повтор",
+      "original": "Проигрыш: повтор общего плана",
+      "start": 20,
+      "end": 30,
+      "lipsync": false,
+      "state": "planned",
+      "stageLabel": "постановка есть, работа не начата",
+      "staleReason": null,
+      "regenerateProblem": "План собирается из материала M02: описание, опоры и генерация для него не нужны.",
+      "derivedFrom": "M02",
+      "attention": null,
+      "asset": null,
+      "packages": []
+    }
+  ],
+  "broken": [],
+  "problems": []
+}

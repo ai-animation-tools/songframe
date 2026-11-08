@@ -1,0 +1,17 @@
+{
+  "description": "shot не строка.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "schema shot"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "show",
+    "--dir",
+    "plan/batches/M03-attempt-01"
+  ],
+  "remove": [],
+  "mkdir": []
+}

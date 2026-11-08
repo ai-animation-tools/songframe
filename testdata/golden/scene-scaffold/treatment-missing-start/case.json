@@ -1,0 +1,13 @@
+{
+  "description": "Часть без start: KeyError.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "KeyError"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--force"
+  ]
+}

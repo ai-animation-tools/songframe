@@ -1,0 +1,19 @@
+{
+  "description": "Пакеты: этап очереди, схема workflow, битый workflow, схема request.json и вложенного request.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "awaiting stage",
+    "workflow schema",
+    "request schema"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ],
+  "remove": [],
+  "mkdir": [
+    "plan/batches/empty"
+  ]
+}

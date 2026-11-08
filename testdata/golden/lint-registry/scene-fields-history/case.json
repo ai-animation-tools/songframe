@@ -1,0 +1,13 @@
+{
+  "description": "action, continuity, notes плана: все шаблоны истории.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "HISTORY_PATTERNS"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

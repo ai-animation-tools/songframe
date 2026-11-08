@@ -1,0 +1,18 @@
+{
+  "description": "Неизвестные планы.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "Неизвестные планы"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--independent",
+    "M01",
+    "M99",
+    "M98"
+  ],
+  "remove": [],
+  "mkdir": []
+}

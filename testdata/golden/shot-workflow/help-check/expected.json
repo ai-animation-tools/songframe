@@ -1,0 +1,9 @@
+{
+  "code": 0,
+  "stdout": "usage: shot_workflow.py check [-h] --dir DIR [--json]\n\noptions:\n  -h, --help  show this help message and exit\n  --dir DIR\n  --json\n",
+  "stderr": "",
+  "traceback": false,
+  "files": {},
+  "dirs": {},
+  "modes": {}
+}

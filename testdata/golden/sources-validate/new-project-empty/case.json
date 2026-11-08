@@ -1,0 +1,11 @@
+{
+  "description": "Новый проект без ввода: обязательные части.",
+  "call": "validateSources",
+  "project": "project",
+  "covers": [
+    "trackRequired",
+    "lyricsRequired",
+    "ideaRequired"
+  ],
+  "stubbedMedia": []
+}

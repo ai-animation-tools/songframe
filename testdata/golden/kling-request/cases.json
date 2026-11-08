@@ -1,0 +1,2920 @@
+[
+  {
+    "name": "validate_spec base",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "result": "null"
+    }
+  },
+  {
+    "name": "validate_spec poll-reserved",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false, \"poll\": 60}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Недопустимый параметр команды; файлы передаются через inputs."
+      }
+    }
+  },
+  {
+    "name": "validate_spec trace-reserved",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false, \"taskTraceId\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Недопустимый параметр команды; файлы передаются через inputs."
+      }
+    }
+  },
+  {
+    "name": "validate_spec token-word",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false, \"myToken\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Недопустимый параметр команды; файлы передаются через inputs."
+      }
+    }
+  },
+  {
+    "name": "validate_spec base-url-word",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false, \"api_base_url_x\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Недопустимый параметр команды; файлы передаются через inputs."
+      }
+    }
+  },
+  {
+    "name": "validate_spec password-word",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false, \"PassWord1\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Недопустимый параметр команды; файлы передаются через inputs."
+      }
+    }
+  },
+  {
+    "name": "validate_spec bad-parameter-name",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false, \"-x\": 1}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Недопустимый параметр команды; файлы передаются через inputs."
+      }
+    }
+  },
+  {
+    "name": "validate_spec unknown-command",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"generate\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Неизвестная команда генерации."
+      }
+    }
+  },
+  {
+    "name": "validate_spec command-int",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": 5, \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Неизвестная команда генерации."
+      }
+    }
+  },
+  {
+    "name": "validate_spec command-list",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": [\"image_to_video\"], \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "TypeError",
+        "message": "unhashable type: 'list'"
+      }
+    }
+  },
+  {
+    "name": "validate_spec command-missing",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Неизвестная команда генерации."
+      }
+    }
+  },
+  {
+    "name": "validate_spec kind-mismatch",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"image\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Вид результата не соответствует команде."
+      }
+    }
+  },
+  {
+    "name": "validate_spec kind-missing",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "KeyError",
+        "message": "'kind'"
+      }
+    }
+  },
+  {
+    "name": "validate_spec model-invalid",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"invalid model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Не указан точный идентификатор модели."
+      }
+    }
+  },
+  {
+    "name": "validate_spec model-int",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": 5, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "TypeError",
+        "message": "expected string or bytes-like object, got 'int'"
+      }
+    }
+  },
+  {
+    "name": "validate_spec model-none",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": null, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "TypeError",
+        "message": "expected string or bytes-like object, got 'NoneType'"
+      }
+    }
+  },
+  {
+    "name": "validate_spec model-missing",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Не указан точный идентификатор модели."
+      }
+    }
+  },
+  {
+    "name": "validate_spec model-newline",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"abc\\n\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Не указан точный идентификатор модели."
+      }
+    }
+  },
+  {
+    "name": "validate_spec outputs-10",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 10}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Неверное число результатов."
+      }
+    }
+  },
+  {
+    "name": "validate_spec outputs-0",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 0}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Неверное число результатов."
+      }
+    }
+  },
+  {
+    "name": "validate_spec outputs-9-mismatch",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 9}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "outputs и imageCount должны совпадать."
+      }
+    }
+  },
+  {
+    "name": "validate_spec outputs-str",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": \"2\"}"
+    },
+    "expected": {
+      "error": {
+        "type": "TypeError",
+        "message": "'<=' not supported between instances of 'int' and 'str'"
+      }
+    }
+  },
+  {
+    "name": "validate_spec outputs-float",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": \"1.0\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1.0}"
+    },
+    "expected": {
+      "result": "null"
+    }
+  },
+  {
+    "name": "validate_spec image-count-mismatch",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 2, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "outputs и imageCount должны совпадать."
+      }
+    }
+  },
+  {
+    "name": "validate_spec image-count-string",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": \"1\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "result": "null"
+    }
+  },
+  {
+    "name": "validate_spec image-count-float",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 2.0, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 2}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "outputs и imageCount должны совпадать."
+      }
+    }
+  },
+  {
+    "name": "validate_spec no-inputs",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Для этой команды нет входов."
+      }
+    }
+  },
+  {
+    "name": "validate_spec text-no-inputs",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"text_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "result": "null"
+    }
+  },
+  {
+    "name": "validate_spec text-image",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"image\", \"provider\": \"kling\", \"command\": \"text_to_image\", \"model\": \"test-model\", \"parameters\": {\"imgResolution\": \"2k\"}, \"inputs\": [], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "result": "null"
+    }
+  },
+  {
+    "name": "validate_spec flag-image",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"image\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Вход должен быть именованным слотом: flag=input и slot из объявления модели."
+      }
+    }
+  },
+  {
+    "name": "validate_spec slot-missing",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Вход должен быть именованным слотом: flag=input и slot из объявления модели."
+      }
+    }
+  },
+  {
+    "name": "validate_spec slot-int",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": 3, \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "TypeError",
+        "message": "expected string or bytes-like object, got 'int'"
+      }
+    }
+  },
+  {
+    "name": "validate_spec slot-invalid",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"1abc\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Вход должен быть именованным слотом: flag=input и slot из объявления модели."
+      }
+    }
+  },
+  {
+    "name": "validate_spec slot-dash",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image-1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Вход должен быть именованным слотом: flag=input и slot из объявления модели."
+      }
+    }
+  },
+  {
+    "name": "validate_spec slot-duplicate",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}, {\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"b.png\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Один входной слот указан дважды."
+      }
+    }
+  },
+  {
+    "name": "validate_spec input-not-dict",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}, \"x\"], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "AttributeError",
+        "message": "'str' object has no attribute 'get'"
+      }
+    }
+  },
+  {
+    "name": "validate_spec inputs-dict",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": {\"flag\": \"input\"}, \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "AttributeError",
+        "message": "'str' object has no attribute 'get'"
+      }
+    }
+  },
+  {
+    "name": "validate_spec preferred-invalid",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1, \"model_selection\": {\"preferredModel\": \"invalid model\", \"selectedModel\": \"test-model\", \"reason\": \"r\"}}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "preferredModel должен быть точным идентификатором модели или null."
+      }
+    }
+  },
+  {
+    "name": "validate_spec preferred-null",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1, \"model_selection\": {\"preferredModel\": null, \"selectedModel\": \"test-model\", \"reason\": \"r\"}}"
+    },
+    "expected": {
+      "result": "null"
+    }
+  },
+  {
+    "name": "validate_spec preferred-ok",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1, \"model_selection\": {\"preferredModel\": \"kling-video-v3_0\", \"selectedModel\": \"test-model\", \"reason\": \"r\"}}"
+    },
+    "expected": {
+      "result": "null"
+    }
+  },
+  {
+    "name": "validate_spec preferred-missing",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1, \"model_selection\": {\"selectedModel\": \"test-model\"}}"
+    },
+    "expected": {
+      "error": {
+        "type": "KeyError",
+        "message": "'preferredModel'"
+      }
+    }
+  },
+  {
+    "name": "validate_spec preferred-int",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1, \"model_selection\": {\"preferredModel\": 7}}"
+    },
+    "expected": {
+      "error": {
+        "type": "TypeError",
+        "message": "expected string or bytes-like object, got 'int'"
+      }
+    }
+  },
+  {
+    "name": "validate_spec multi-shot-missing",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Для этой модели укажите prefer_multi_shots явно: для единого плана — false."
+      }
+    }
+  },
+  {
+    "name": "validate_spec multi-shot-omni-missing",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"kling-video-v3_0_omni\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Для этой модели укажите prefer_multi_shots явно: для единого плана — false."
+      }
+    }
+  },
+  {
+    "name": "validate_spec multi-shot-false",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false, \"prefer_multi_shots\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "result": "null"
+    }
+  },
+  {
+    "name": "validate_spec multi-shot-turbo",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"kling-video-v3_0_turbo\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "result": "null"
+    }
+  },
+  {
+    "name": "validate_spec v4-resolution-missing",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"kling-video-v4_0\", \"parameters\": {\"duration\": 6, \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Для этой модели укажите resolution явно: по умолчанию сервис даёт 720p."
+      }
+    }
+  },
+  {
+    "name": "validate_spec v4-resolution",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"kling-video-v4_0\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "result": "null"
+    }
+  },
+  {
+    "name": "validate_spec image-v3-no-flag",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"image\", \"provider\": \"kling\", \"command\": \"image_to_image\", \"model\": \"kling-video-v3_0\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "result": "null"
+    }
+  },
+  {
+    "name": "validate_spec parameters-list",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\", \"parameters\": [\"duration\", \"prefer_multi_shots\"], \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "result": "null"
+    }
+  },
+  {
+    "name": "validate_spec parameters-list-bad",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": [5], \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "TypeError",
+        "message": "expected string or bytes-like object, got 'int'"
+      }
+    }
+  },
+  {
+    "name": "validate_spec parameters-missing",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "result": "null"
+    }
+  },
+  {
+    "name": "validate_spec parameters-int",
+    "call": "validate_spec",
+    "description": "",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"parameters\": 5, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "TypeError",
+        "message": "'int' object is not iterable"
+      }
+    }
+  },
+  {
+    "name": "validate_prompt empty",
+    "call": "validate_prompt",
+    "description": "",
+    "args": {
+      "prompt": "\"\""
+    },
+    "expected": {
+      "result": "[]"
+    }
+  },
+  {
+    "name": "validate_prompt 2500",
+    "call": "validate_prompt",
+    "description": "",
+    "args": {
+      "prompt": "\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\""
+    },
+    "expected": {
+      "result": "[]"
+    }
+  },
+  {
+    "name": "validate_prompt 2501",
+    "call": "validate_prompt",
+    "description": "",
+    "args": {
+      "prompt": "\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\""
+    },
+    "expected": {
+      "result": "[\"Промпт длиннее 2500 символов (2501): сервис может обрезать или ослабить хвост текста.\"]"
+    }
+  },
+  {
+    "name": "validate_prompt emoji",
+    "call": "validate_prompt",
+    "description": "",
+    "args": {
+      "prompt": "\"😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\""
+    },
+    "expected": {
+      "result": "[\"Промпт длиннее 2500 символов (2501): сервис может обрезать или ослабить хвост текста.\"]"
+    }
+  },
+  {
+    "name": "validate_prompt crlf",
+    "call": "validate_prompt",
+    "description": "",
+    "args": {
+      "prompt": "\"\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\\r\\n\""
+    },
+    "expected": {
+      "result": "[\"Промпт длиннее 2500 символов (2600): сервис может обрезать или ослабить хвост текста.\"]"
+    }
+  },
+  {
+    "name": "validate_prompt cyrillic",
+    "call": "validate_prompt",
+    "description": "",
+    "args": {
+      "prompt": "\"слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово слово \""
+    },
+    "expected": {
+      "result": "[\"Промпт длиннее 2500 символов (3600): сервис может обрезать или ослабить хвост текста.\"]"
+    }
+  },
+  {
+    "name": "capability_fields empty",
+    "call": "capability_fields",
+    "description": "",
+    "args": {
+      "values": "[]"
+    },
+    "expected": {
+      "result": "{}"
+    }
+  },
+  {
+    "name": "capability_fields not-list",
+    "call": "capability_fields",
+    "description": "",
+    "args": {
+      "values": "{\"name\": \"a\"}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "who_am_i вернул неверное объявление параметров или слотов."
+      }
+    }
+  },
+  {
+    "name": "capability_fields full",
+    "call": "capability_fields",
+    "description": "",
+    "args": {
+      "values": "[{\"name\": \"duration\", \"required\": false, \"default\": \"5\", \"description\": \"d\", \"allowedValues\": [\"5\", \"10\"], \"maxItems\": 3, \"extra\": 1}]"
+    },
+    "expected": {
+      "result": "{\"duration\": {\"required\": false, \"default\": \"5\", \"description\": \"d\", \"allowed\": [\"5\", \"10\"], \"max_items\": 3}}"
+    }
+  },
+  {
+    "name": "capability_fields snake",
+    "call": "capability_fields",
+    "description": "",
+    "args": {
+      "values": "[{\"name\": \"a\", \"allowed_values\": [\"x\"]}]"
+    },
+    "expected": {
+      "result": "{\"a\": {\"allowed\": [\"x\"]}}"
+    }
+  },
+  {
+    "name": "capability_fields both-allowed",
+    "call": "capability_fields",
+    "description": "",
+    "args": {
+      "values": "[{\"name\": \"a\", \"allowedValues\": [\"x\"], \"allowed_values\": [\"y\"]}]"
+    },
+    "expected": {
+      "result": "{\"a\": {\"allowed\": [\"x\"]}}"
+    }
+  },
+  {
+    "name": "capability_fields allowed-null",
+    "call": "capability_fields",
+    "description": "",
+    "args": {
+      "values": "[{\"name\": \"a\", \"allowedValues\": null, \"allowed_values\": [\"y\"]}]"
+    },
+    "expected": {
+      "result": "{\"a\": {}}"
+    }
+  },
+  {
+    "name": "capability_fields allowed-not-str",
+    "call": "capability_fields",
+    "description": "",
+    "args": {
+      "values": "[{\"name\": \"a\", \"allowedValues\": [1]}]"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "who_am_i вернул неверные допустимые значения параметра."
+      }
+    }
+  },
+  {
+    "name": "capability_fields allowed-not-list",
+    "call": "capability_fields",
+    "description": "",
+    "args": {
+      "values": "[{\"name\": \"a\", \"allowedValues\": \"x\"}]"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "who_am_i вернул неверные допустимые значения параметра."
+      }
+    }
+  },
+  {
+    "name": "capability_fields required-str",
+    "call": "capability_fields",
+    "description": "",
+    "args": {
+      "values": "[{\"name\": \"a\", \"required\": \"true\"}]"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "who_am_i вернул неверное объявление параметров или слотов."
+      }
+    }
+  },
+  {
+    "name": "capability_fields duplicate",
+    "call": "capability_fields",
+    "description": "",
+    "args": {
+      "values": "[{\"name\": \"a\"}, {\"name\": \"a\"}]"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "who_am_i вернул неверное объявление параметров или слотов."
+      }
+    }
+  },
+  {
+    "name": "capability_fields no-name",
+    "call": "capability_fields",
+    "description": "",
+    "args": {
+      "values": "[{\"required\": true}]"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "who_am_i вернул неверное объявление параметров или слотов."
+      }
+    }
+  },
+  {
+    "name": "capability_fields empty-name",
+    "call": "capability_fields",
+    "description": "",
+    "args": {
+      "values": "[{\"name\": \"\"}]"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "who_am_i вернул неверное объявление параметров или слотов."
+      }
+    }
+  },
+  {
+    "name": "capability_fields not-dict",
+    "call": "capability_fields",
+    "description": "",
+    "args": {
+      "values": "[\"a\"]"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "who_am_i вернул неверное объявление параметров или слотов."
+      }
+    }
+  },
+  {
+    "name": "capability_fields max-zero",
+    "call": "capability_fields",
+    "description": "",
+    "args": {
+      "values": "[{\"name\": \"a\", \"maxItems\": 0}]"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "who_am_i вернул неверный лимит параметра или слота."
+      }
+    }
+  },
+  {
+    "name": "capability_fields max-float",
+    "call": "capability_fields",
+    "description": "",
+    "args": {
+      "values": "[{\"name\": \"a\", \"maxItems\": 2.0}]"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "who_am_i вернул неверный лимит параметра или слота."
+      }
+    }
+  },
+  {
+    "name": "capability_fields max-bool",
+    "call": "capability_fields",
+    "description": "",
+    "args": {
+      "values": "[{\"name\": \"a\", \"maxItems\": true}]"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "who_am_i вернул неверный лимит параметра или слота."
+      }
+    }
+  },
+  {
+    "name": "capability_fields default-false",
+    "call": "capability_fields",
+    "description": "",
+    "args": {
+      "values": "[{\"name\": \"enabled\", \"required\": true, \"default\": false, \"allowed_values\": [\"true\", \"false\"], \"maxItems\": 2}]"
+    },
+    "expected": {
+      "result": "{\"enabled\": {\"required\": true, \"default\": false, \"allowed\": [\"true\", \"false\"], \"max_items\": 2}}"
+    }
+  },
+  {
+    "name": "command_capabilities all-models",
+    "call": "command_capabilities",
+    "description": "",
+    "args": {
+      "command": "\"image_to_video\"",
+      "model": "null",
+      "tools": "[\"image_to_image\", \"image_to_video\", \"motion_control\", \"omni_ref_video\", \"text_to_image\", \"text_to_video\"]",
+      "body": "{\"user\": {\"userId\": 1}, \"availableModels\": {\"image_to_video\": {\"models\": [{\"model\": \"kling-video-v3_0\", \"arguments\": [{\"name\": \"prompt\", \"required\": true}, {\"name\": \"duration\", \"default\": \"5\", \"allowedValues\": [\"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\"]}, {\"name\": \"resolution\", \"default\": \"1080p\", \"allowedValues\": [\"720p\", \"1080p\", \"4k\"]}, {\"name\": \"prefer_multi_shots\", \"default\": \"true\", \"allowedValues\": [\"true\", \"false\"]}, {\"name\": \"elements\", \"maxItems\": 7}], \"inputs\": [{\"name\": \"first_image\", \"required\": true}, {\"name\": \"tail_image\", \"required\": false}]}, {\"model\": \"kling-video-v4_0\", \"arguments\": [{\"name\": \"duration\", \"default\": \"10\", \"allowedValues\": [\"3\", \"4\", \"5\"]}, {\"name\": \"resolution\", \"default\": \"720p\", \"allowedValues\": [\"720p\", \"1080p\"]}], \"inputs\": [{\"name\": \"first_image\", \"required\": true}, {\"name\": \"tail_image\", \"required\": false}, {\"name\": \"keyframe_1\", \"required\": false}], \"combinedItemCap\": {\"maxItems\": 10, \"arguments\": [], \"inputPrefixes\": [\"first_image\", \"tail_image\", \"keyframe_\"]}}]}}}"
+    },
+    "expected": {
+      "result": "{\"command\": \"image_to_video\", \"models\": {\"kling-video-v3_0\": {\"arguments\": {\"prompt\": {\"required\": true}, \"duration\": {\"default\": \"5\", \"allowed\": [\"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\"]}, \"resolution\": {\"default\": \"1080p\", \"allowed\": [\"720p\", \"1080p\", \"4k\"]}, \"prefer_multi_shots\": {\"default\": \"true\", \"allowed\": [\"true\", \"false\"]}, \"elements\": {\"max_items\": 7}}, \"slots\": {\"first_image\": {\"required\": true}, \"tail_image\": {\"required\": false}}, \"limits\": {}}, \"kling-video-v4_0\": {\"arguments\": {\"duration\": {\"default\": \"10\", \"allowed\": [\"3\", \"4\", \"5\"]}, \"resolution\": {\"default\": \"720p\", \"allowed\": [\"720p\", \"1080p\"]}}, \"slots\": {\"first_image\": {\"required\": true}, \"tail_image\": {\"required\": false}, \"keyframe_1\": {\"required\": false}}, \"limits\": {\"combined_item_cap\": {\"maxItems\": 10, \"arguments\": [], \"inputPrefixes\": [\"first_image\", \"tail_image\", \"keyframe_\"]}}}}}"
+    }
+  },
+  {
+    "name": "command_capabilities one-model",
+    "call": "command_capabilities",
+    "description": "",
+    "args": {
+      "command": "\"image_to_video\"",
+      "model": "\"kling-video-v4_0\"",
+      "tools": "[\"image_to_image\", \"image_to_video\", \"motion_control\", \"omni_ref_video\", \"text_to_image\", \"text_to_video\"]",
+      "body": "{\"user\": {\"userId\": 1}, \"availableModels\": {\"image_to_video\": {\"models\": [{\"model\": \"kling-video-v3_0\", \"arguments\": [{\"name\": \"prompt\", \"required\": true}, {\"name\": \"duration\", \"default\": \"5\", \"allowedValues\": [\"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\"]}, {\"name\": \"resolution\", \"default\": \"1080p\", \"allowedValues\": [\"720p\", \"1080p\", \"4k\"]}, {\"name\": \"prefer_multi_shots\", \"default\": \"true\", \"allowedValues\": [\"true\", \"false\"]}, {\"name\": \"elements\", \"maxItems\": 7}], \"inputs\": [{\"name\": \"first_image\", \"required\": true}, {\"name\": \"tail_image\", \"required\": false}]}, {\"model\": \"kling-video-v4_0\", \"arguments\": [{\"name\": \"duration\", \"default\": \"10\", \"allowedValues\": [\"3\", \"4\", \"5\"]}, {\"name\": \"resolution\", \"default\": \"720p\", \"allowedValues\": [\"720p\", \"1080p\"]}], \"inputs\": [{\"name\": \"first_image\", \"required\": true}, {\"name\": \"tail_image\", \"required\": false}, {\"name\": \"keyframe_1\", \"required\": false}], \"combinedItemCap\": {\"maxItems\": 10, \"arguments\": [], \"inputPrefixes\": [\"first_image\", \"tail_image\", \"keyframe_\"]}}]}}}"
+    },
+    "expected": {
+      "result": "{\"command\": \"image_to_video\", \"models\": {\"kling-video-v4_0\": {\"arguments\": {\"duration\": {\"default\": \"10\", \"allowed\": [\"3\", \"4\", \"5\"]}, \"resolution\": {\"default\": \"720p\", \"allowed\": [\"720p\", \"1080p\"]}}, \"slots\": {\"first_image\": {\"required\": true}, \"tail_image\": {\"required\": false}, \"keyframe_1\": {\"required\": false}}, \"limits\": {\"combined_item_cap\": {\"maxItems\": 10, \"arguments\": [], \"inputPrefixes\": [\"first_image\", \"tail_image\", \"keyframe_\"]}}}}}"
+    }
+  },
+  {
+    "name": "command_capabilities missing-model",
+    "call": "command_capabilities",
+    "description": "",
+    "args": {
+      "command": "\"image_to_video\"",
+      "model": "\"kling-video-v9\"",
+      "tools": "[\"image_to_image\", \"image_to_video\", \"motion_control\", \"omni_ref_video\", \"text_to_image\", \"text_to_video\"]",
+      "body": "{\"user\": {\"userId\": 1}, \"availableModels\": {\"image_to_video\": {\"models\": [{\"model\": \"kling-video-v3_0\", \"arguments\": [{\"name\": \"prompt\", \"required\": true}, {\"name\": \"duration\", \"default\": \"5\", \"allowedValues\": [\"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\"]}, {\"name\": \"resolution\", \"default\": \"1080p\", \"allowedValues\": [\"720p\", \"1080p\", \"4k\"]}, {\"name\": \"prefer_multi_shots\", \"default\": \"true\", \"allowedValues\": [\"true\", \"false\"]}, {\"name\": \"elements\", \"maxItems\": 7}], \"inputs\": [{\"name\": \"first_image\", \"required\": true}, {\"name\": \"tail_image\", \"required\": false}]}, {\"model\": \"kling-video-v4_0\", \"arguments\": [{\"name\": \"duration\", \"default\": \"10\", \"allowedValues\": [\"3\", \"4\", \"5\"]}, {\"name\": \"resolution\", \"default\": \"720p\", \"allowedValues\": [\"720p\", \"1080p\"]}], \"inputs\": [{\"name\": \"first_image\", \"required\": true}, {\"name\": \"tail_image\", \"required\": false}, {\"name\": \"keyframe_1\", \"required\": false}], \"combinedItemCap\": {\"maxItems\": 10, \"arguments\": [], \"inputPrefixes\": [\"first_image\", \"tail_image\", \"keyframe_\"]}}]}}}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Модель не объявлена для этой команды: kling-video-v3_0, kling-video-v4_0"
+      }
+    }
+  },
+  {
+    "name": "command_capabilities model-int",
+    "call": "command_capabilities",
+    "description": "",
+    "args": {
+      "command": "\"image_to_video\"",
+      "model": "5",
+      "tools": "[\"image_to_image\", \"image_to_video\", \"motion_control\", \"omni_ref_video\", \"text_to_image\", \"text_to_video\"]",
+      "body": "{\"user\": {\"userId\": 1}, \"availableModels\": {\"image_to_video\": {\"models\": [{\"model\": \"kling-video-v3_0\", \"arguments\": [{\"name\": \"prompt\", \"required\": true}, {\"name\": \"duration\", \"default\": \"5\", \"allowedValues\": [\"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\"]}, {\"name\": \"resolution\", \"default\": \"1080p\", \"allowedValues\": [\"720p\", \"1080p\", \"4k\"]}, {\"name\": \"prefer_multi_shots\", \"default\": \"true\", \"allowedValues\": [\"true\", \"false\"]}, {\"name\": \"elements\", \"maxItems\": 7}], \"inputs\": [{\"name\": \"first_image\", \"required\": true}, {\"name\": \"tail_image\", \"required\": false}]}, {\"model\": \"kling-video-v4_0\", \"arguments\": [{\"name\": \"duration\", \"default\": \"10\", \"allowedValues\": [\"3\", \"4\", \"5\"]}, {\"name\": \"resolution\", \"default\": \"720p\", \"allowedValues\": [\"720p\", \"1080p\"]}], \"inputs\": [{\"name\": \"first_image\", \"required\": true}, {\"name\": \"tail_image\", \"required\": false}, {\"name\": \"keyframe_1\", \"required\": false}], \"combinedItemCap\": {\"maxItems\": 10, \"arguments\": [], \"inputPrefixes\": [\"first_image\", \"tail_image\", \"keyframe_\"]}}]}}}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Модель не объявлена для этой команды: kling-video-v3_0, kling-video-v4_0"
+      }
+    }
+  },
+  {
+    "name": "command_capabilities not-in-tools",
+    "call": "command_capabilities",
+    "description": "",
+    "args": {
+      "command": "\"image_to_video\"",
+      "model": "null",
+      "tools": "[\"text_to_video\"]",
+      "body": "{\"user\": {\"userId\": 1}, \"availableModels\": {\"image_to_video\": {\"models\": [{\"model\": \"kling-video-v3_0\", \"arguments\": [{\"name\": \"prompt\", \"required\": true}, {\"name\": \"duration\", \"default\": \"5\", \"allowedValues\": [\"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\"]}, {\"name\": \"resolution\", \"default\": \"1080p\", \"allowedValues\": [\"720p\", \"1080p\", \"4k\"]}, {\"name\": \"prefer_multi_shots\", \"default\": \"true\", \"allowedValues\": [\"true\", \"false\"]}, {\"name\": \"elements\", \"maxItems\": 7}], \"inputs\": [{\"name\": \"first_image\", \"required\": true}, {\"name\": \"tail_image\", \"required\": false}]}, {\"model\": \"kling-video-v4_0\", \"arguments\": [{\"name\": \"duration\", \"default\": \"10\", \"allowedValues\": [\"3\", \"4\", \"5\"]}, {\"name\": \"resolution\", \"default\": \"720p\", \"allowedValues\": [\"720p\", \"1080p\"]}], \"inputs\": [{\"name\": \"first_image\", \"required\": true}, {\"name\": \"tail_image\", \"required\": false}, {\"name\": \"keyframe_1\", \"required\": false}], \"combinedItemCap\": {\"maxItems\": 10, \"arguments\": [], \"inputPrefixes\": [\"first_image\", \"tail_image\", \"keyframe_\"]}}]}}}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Команда не объявлена в tool_list текущего аккаунта."
+      }
+    }
+  },
+  {
+    "name": "command_capabilities no-models-for-command",
+    "call": "command_capabilities",
+    "description": "",
+    "args": {
+      "command": "\"text_to_video\"",
+      "model": "null",
+      "tools": "[\"image_to_image\", \"image_to_video\", \"motion_control\", \"omni_ref_video\", \"text_to_image\", \"text_to_video\"]",
+      "body": "{\"user\": {\"userId\": 1}, \"availableModels\": {\"image_to_video\": {\"models\": [{\"model\": \"kling-video-v3_0\", \"arguments\": [{\"name\": \"prompt\", \"required\": true}, {\"name\": \"duration\", \"default\": \"5\", \"allowedValues\": [\"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\"]}, {\"name\": \"resolution\", \"default\": \"1080p\", \"allowedValues\": [\"720p\", \"1080p\", \"4k\"]}, {\"name\": \"prefer_multi_shots\", \"default\": \"true\", \"allowedValues\": [\"true\", \"false\"]}, {\"name\": \"elements\", \"maxItems\": 7}], \"inputs\": [{\"name\": \"first_image\", \"required\": true}, {\"name\": \"tail_image\", \"required\": false}]}, {\"model\": \"kling-video-v4_0\", \"arguments\": [{\"name\": \"duration\", \"default\": \"10\", \"allowedValues\": [\"3\", \"4\", \"5\"]}, {\"name\": \"resolution\", \"default\": \"720p\", \"allowedValues\": [\"720p\", \"1080p\"]}], \"inputs\": [{\"name\": \"first_image\", \"required\": true}, {\"name\": \"tail_image\", \"required\": false}, {\"name\": \"keyframe_1\", \"required\": false}], \"combinedItemCap\": {\"maxItems\": 10, \"arguments\": [], \"inputPrefixes\": [\"first_image\", \"tail_image\", \"keyframe_\"]}}]}}}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "who_am_i не объявил модели для этой команды; обновите возможности и проверьте доступность команды."
+      }
+    }
+  },
+  {
+    "name": "command_capabilities no-available",
+    "call": "command_capabilities",
+    "description": "",
+    "args": {
+      "command": "\"image_to_video\"",
+      "model": "null",
+      "tools": "[\"image_to_image\", \"image_to_video\", \"motion_control\", \"omni_ref_video\", \"text_to_image\", \"text_to_video\"]",
+      "body": "{\"user\": 1}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "who_am_i не вернул объявления моделей."
+      }
+    }
+  },
+  {
+    "name": "command_capabilities available-list",
+    "call": "command_capabilities",
+    "description": "",
+    "args": {
+      "command": "\"image_to_video\"",
+      "model": "null",
+      "tools": "[\"image_to_image\", \"image_to_video\", \"motion_control\", \"omni_ref_video\", \"text_to_image\", \"text_to_video\"]",
+      "body": "{\"availableModels\": []}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "who_am_i не вернул объявления моделей."
+      }
+    }
+  },
+  {
+    "name": "command_capabilities snake-list",
+    "call": "command_capabilities",
+    "description": "",
+    "args": {
+      "command": "\"image_to_video\"",
+      "model": "null",
+      "tools": "[\"image_to_image\", \"image_to_video\", \"motion_control\", \"omni_ref_video\", \"text_to_image\", \"text_to_video\"]",
+      "body": "{\"available_models\": {\"image_to_video\": [{\"model\": \"kling-video-v3_0\", \"arguments\": [{\"name\": \"prompt\", \"required\": true}, {\"name\": \"duration\", \"default\": \"5\", \"allowedValues\": [\"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\"]}, {\"name\": \"resolution\", \"default\": \"1080p\", \"allowedValues\": [\"720p\", \"1080p\", \"4k\"]}, {\"name\": \"prefer_multi_shots\", \"default\": \"true\", \"allowedValues\": [\"true\", \"false\"]}, {\"name\": \"elements\", \"maxItems\": 7}], \"inputs\": [{\"name\": \"first_image\", \"required\": true}, {\"name\": \"tail_image\", \"required\": false}], \"combinedItemCaps\": [{\"maxItems\": 2, \"arguments\": [], \"inputPrefixes\": [\"image_\"], \"whenAnyInputPrefixes\": [\"video_\"]}], \"elementSupport\": {\"max\": 3}}]}}"
+    },
+    "expected": {
+      "result": "{\"command\": \"image_to_video\", \"models\": {\"kling-video-v3_0\": {\"arguments\": {\"prompt\": {\"required\": true}, \"duration\": {\"default\": \"5\", \"allowed\": [\"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\"]}, \"resolution\": {\"default\": \"1080p\", \"allowed\": [\"720p\", \"1080p\", \"4k\"]}, \"prefer_multi_shots\": {\"default\": \"true\", \"allowed\": [\"true\", \"false\"]}, \"elements\": {\"max_items\": 7}}, \"slots\": {\"first_image\": {\"required\": true}, \"tail_image\": {\"required\": false}}, \"limits\": {\"combined_item_caps\": [{\"maxItems\": 2, \"arguments\": [], \"inputPrefixes\": [\"image_\"], \"whenAnyInputPrefixes\": [\"video_\"]}], \"element_support\": {\"max\": 3}}}}}"
+    }
+  },
+  {
+    "name": "command_capabilities both-keys",
+    "call": "command_capabilities",
+    "description": "",
+    "args": {
+      "command": "\"image_to_video\"",
+      "model": "null",
+      "tools": "[\"image_to_image\", \"image_to_video\", \"motion_control\", \"omni_ref_video\", \"text_to_image\", \"text_to_video\"]",
+      "body": "{\"availableModels\": null, \"available_models\": {\"image_to_video\": [{\"model\": \"kling-video-v3_0\", \"arguments\": [{\"name\": \"prompt\", \"required\": true}, {\"name\": \"duration\", \"default\": \"5\", \"allowedValues\": [\"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\"]}, {\"name\": \"resolution\", \"default\": \"1080p\", \"allowedValues\": [\"720p\", \"1080p\", \"4k\"]}, {\"name\": \"prefer_multi_shots\", \"default\": \"true\", \"allowedValues\": [\"true\", \"false\"]}, {\"name\": \"elements\", \"maxItems\": 7}], \"inputs\": [{\"name\": \"first_image\", \"required\": true}, {\"name\": \"tail_image\", \"required\": false}], \"combinedItemCaps\": [{\"maxItems\": 2, \"arguments\": [], \"inputPrefixes\": [\"image_\"], \"whenAnyInputPrefixes\": [\"video_\"]}], \"elementSupport\": {\"max\": 3}}]}}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "who_am_i не вернул объявления моделей."
+      }
+    }
+  },
+  {
+    "name": "command_capabilities models-invalid",
+    "call": "command_capabilities",
+    "description": "",
+    "args": {
+      "command": "\"image_to_video\"",
+      "model": "null",
+      "tools": "[\"image_to_image\", \"image_to_video\", \"motion_control\", \"omni_ref_video\", \"text_to_image\", \"text_to_video\"]",
+      "body": "{\"availableModels\": {\"image_to_video\": {\"models\": \"invalid\"}}}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "who_am_i вернул неверное объявление моделей команды."
+      }
+    }
+  },
+  {
+    "name": "command_capabilities group-without-models",
+    "call": "command_capabilities",
+    "description": "",
+    "args": {
+      "command": "\"image_to_video\"",
+      "model": "null",
+      "tools": "[\"image_to_image\", \"image_to_video\", \"motion_control\", \"omni_ref_video\", \"text_to_image\", \"text_to_video\"]",
+      "body": "{\"availableModels\": {\"image_to_video\": {\"other\": 1}}}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "who_am_i не объявил модели для этой команды; обновите возможности и проверьте доступность команды."
+      }
+    }
+  },
+  {
+    "name": "command_capabilities model-duplicate",
+    "call": "command_capabilities",
+    "description": "",
+    "args": {
+      "command": "\"image_to_video\"",
+      "model": "null",
+      "tools": "[\"image_to_image\", \"image_to_video\", \"motion_control\", \"omni_ref_video\", \"text_to_image\", \"text_to_video\"]",
+      "body": "{\"availableModels\": {\"image_to_video\": [{\"model\": \"a\"}, {\"model\": \"a\"}]}}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "who_am_i вернул неверное объявление модели."
+      }
+    }
+  },
+  {
+    "name": "command_capabilities model-empty",
+    "call": "command_capabilities",
+    "description": "",
+    "args": {
+      "command": "\"image_to_video\"",
+      "model": "null",
+      "tools": "[\"image_to_image\", \"image_to_video\", \"motion_control\", \"omni_ref_video\", \"text_to_image\", \"text_to_video\"]",
+      "body": "{\"availableModels\": {\"image_to_video\": [{\"model\": \"\"}]}}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "who_am_i вернул неверное объявление модели."
+      }
+    }
+  },
+  {
+    "name": "command_capabilities bad-arguments",
+    "call": "command_capabilities",
+    "description": "",
+    "args": {
+      "command": "\"image_to_video\"",
+      "model": "null",
+      "tools": "[\"image_to_image\", \"image_to_video\", \"motion_control\", \"omni_ref_video\", \"text_to_image\", \"text_to_video\"]",
+      "body": "{\"availableModels\": {\"image_to_video\": [{\"model\": \"a\", \"arguments\": [{\"name\": \"x\", \"required\": 1}], \"inputs\": \"bad\"}]}}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "who_am_i вернул неверное объявление параметров или слотов."
+      }
+    }
+  },
+  {
+    "name": "command_capabilities bad-inputs",
+    "call": "command_capabilities",
+    "description": "",
+    "args": {
+      "command": "\"image_to_video\"",
+      "model": "null",
+      "tools": "[\"image_to_image\", \"image_to_video\", \"motion_control\", \"omni_ref_video\", \"text_to_image\", \"text_to_video\"]",
+      "body": "{\"availableModels\": {\"image_to_video\": [{\"model\": \"a\", \"inputs\": [{\"name\": \"x\", \"allowedValues\": [1]}]}]}}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "who_am_i вернул неверные допустимые значения параметра."
+      }
+    }
+  },
+  {
+    "name": "command_capabilities sorted-names",
+    "call": "command_capabilities",
+    "description": "",
+    "args": {
+      "command": "\"image_to_video\"",
+      "model": "\"zzz\"",
+      "tools": "[\"image_to_image\", \"image_to_video\", \"motion_control\", \"omni_ref_video\", \"text_to_image\", \"text_to_video\"]",
+      "body": "{\"availableModels\": {\"image_to_video\": [{\"model\": \"б\"}, {\"model\": \"B\"}, {\"model\": \"a\"}, {\"model\": \"Я\"}]}}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Модель не объявлена для этой команды: B, a, Я, б"
+      }
+    }
+  },
+  {
+    "name": "capabilities video",
+    "call": "capabilities",
+    "description": "",
+    "args": {
+      "kind": "\"video\"",
+      "tools": "[\"image_to_image\", \"image_to_video\", \"motion_control\", \"omni_ref_video\", \"text_to_image\", \"text_to_video\"]",
+      "body": "{\"user\": {\"userId\": 1}, \"availableModels\": {\"image_to_video\": {\"models\": [{\"model\": \"kling-video-v3_0\", \"arguments\": [{\"name\": \"prompt\", \"required\": true}, {\"name\": \"duration\", \"default\": \"5\", \"allowedValues\": [\"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\"]}, {\"name\": \"resolution\", \"default\": \"1080p\", \"allowedValues\": [\"720p\", \"1080p\", \"4k\"]}, {\"name\": \"prefer_multi_shots\", \"default\": \"true\", \"allowedValues\": [\"true\", \"false\"]}, {\"name\": \"elements\", \"maxItems\": 7}], \"inputs\": [{\"name\": \"first_image\", \"required\": true}, {\"name\": \"tail_image\", \"required\": false}]}, {\"model\": \"kling-video-v4_0\", \"arguments\": [{\"name\": \"duration\", \"default\": \"10\", \"allowedValues\": [\"3\", \"4\", \"5\"]}, {\"name\": \"resolution\", \"default\": \"720p\", \"allowedValues\": [\"720p\", \"1080p\"]}], \"inputs\": [{\"name\": \"first_image\", \"required\": true}, {\"name\": \"tail_image\", \"required\": false}, {\"name\": \"keyframe_1\", \"required\": false}], \"combinedItemCap\": {\"maxItems\": 10, \"arguments\": [], \"inputPrefixes\": [\"first_image\", \"tail_image\", \"keyframe_\"]}}]}}}"
+    },
+    "expected": {
+      "result": "{\"reports\": [{\"command\": \"image_to_video\", \"models\": {\"kling-video-v3_0\": {\"arguments\": {\"prompt\": {\"required\": true}, \"duration\": {\"default\": \"5\", \"allowed\": [\"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\"]}, \"resolution\": {\"default\": \"1080p\", \"allowed\": [\"720p\", \"1080p\", \"4k\"]}, \"prefer_multi_shots\": {\"default\": \"true\", \"allowed\": [\"true\", \"false\"]}, \"elements\": {\"max_items\": 7}}, \"slots\": {\"first_image\": {\"required\": true}, \"tail_image\": {\"required\": false}}, \"limits\": {}}, \"kling-video-v4_0\": {\"arguments\": {\"duration\": {\"default\": \"10\", \"allowed\": [\"3\", \"4\", \"5\"]}, \"resolution\": {\"default\": \"720p\", \"allowed\": [\"720p\", \"1080p\"]}}, \"slots\": {\"first_image\": {\"required\": true}, \"tail_image\": {\"required\": false}, \"keyframe_1\": {\"required\": false}}, \"limits\": {\"combined_item_cap\": {\"maxItems\": 10, \"arguments\": [], \"inputPrefixes\": [\"first_image\", \"tail_image\", \"keyframe_\"]}}}}}], \"problems\": [{\"command\": \"text_to_video\", \"message\": \"who_am_i не объявил модели для этой команды; обновите возможности и проверьте доступность команды.\"}, {\"command\": \"omni_ref_video\", \"message\": \"who_am_i не объявил модели для этой команды; обновите возможности и проверьте доступность команды.\"}, {\"command\": \"motion_control\", \"message\": \"who_am_i не объявил модели для этой команды; обновите возможности и проверьте доступность команды.\"}]}"
+    }
+  },
+  {
+    "name": "capabilities image",
+    "call": "capabilities",
+    "description": "",
+    "args": {
+      "kind": "\"image\"",
+      "tools": "[\"image_to_image\", \"image_to_video\", \"motion_control\", \"omni_ref_video\", \"text_to_image\", \"text_to_video\"]",
+      "body": "{\"user\": {\"userId\": 1}, \"availableModels\": {\"image_to_video\": {\"models\": [{\"model\": \"kling-video-v3_0\", \"arguments\": [{\"name\": \"prompt\", \"required\": true}, {\"name\": \"duration\", \"default\": \"5\", \"allowedValues\": [\"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\"]}, {\"name\": \"resolution\", \"default\": \"1080p\", \"allowedValues\": [\"720p\", \"1080p\", \"4k\"]}, {\"name\": \"prefer_multi_shots\", \"default\": \"true\", \"allowedValues\": [\"true\", \"false\"]}, {\"name\": \"elements\", \"maxItems\": 7}], \"inputs\": [{\"name\": \"first_image\", \"required\": true}, {\"name\": \"tail_image\", \"required\": false}]}, {\"model\": \"kling-video-v4_0\", \"arguments\": [{\"name\": \"duration\", \"default\": \"10\", \"allowedValues\": [\"3\", \"4\", \"5\"]}, {\"name\": \"resolution\", \"default\": \"720p\", \"allowedValues\": [\"720p\", \"1080p\"]}], \"inputs\": [{\"name\": \"first_image\", \"required\": true}, {\"name\": \"tail_image\", \"required\": false}, {\"name\": \"keyframe_1\", \"required\": false}], \"combinedItemCap\": {\"maxItems\": 10, \"arguments\": [], \"inputPrefixes\": [\"first_image\", \"tail_image\", \"keyframe_\"]}}]}, \"text_to_image\": {\"models\": [{\"model\": \"kling-video-v3_0\", \"arguments\": [{\"name\": \"prompt\", \"required\": true}, {\"name\": \"duration\", \"default\": \"5\", \"allowedValues\": [\"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\"]}, {\"name\": \"resolution\", \"default\": \"1080p\", \"allowedValues\": [\"720p\", \"1080p\", \"4k\"]}, {\"name\": \"prefer_multi_shots\", \"default\": \"true\", \"allowedValues\": [\"true\", \"false\"]}, {\"name\": \"elements\", \"maxItems\": 7}], \"inputs\": [{\"name\": \"first_image\", \"required\": true}, {\"name\": \"tail_image\", \"required\": false}]}, {\"model\": \"kling-video-v4_0\", \"arguments\": [{\"name\": \"duration\", \"default\": \"10\", \"allowedValues\": [\"3\", \"4\", \"5\"]}, {\"name\": \"resolution\", \"default\": \"720p\", \"allowedValues\": [\"720p\", \"1080p\"]}], \"inputs\": [{\"name\": \"first_image\", \"required\": true}, {\"name\": \"tail_image\", \"required\": false}, {\"name\": \"keyframe_1\", \"required\": false}], \"combinedItemCap\": {\"maxItems\": 10, \"arguments\": [], \"inputPrefixes\": [\"first_image\", \"tail_image\", \"keyframe_\"]}}]}}}"
+    },
+    "expected": {
+      "result": "{\"reports\": [{\"command\": \"text_to_image\", \"models\": {\"kling-video-v3_0\": {\"arguments\": {\"prompt\": {\"required\": true}, \"duration\": {\"default\": \"5\", \"allowed\": [\"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\"]}, \"resolution\": {\"default\": \"1080p\", \"allowed\": [\"720p\", \"1080p\", \"4k\"]}, \"prefer_multi_shots\": {\"default\": \"true\", \"allowed\": [\"true\", \"false\"]}, \"elements\": {\"max_items\": 7}}, \"slots\": {\"first_image\": {\"required\": true}, \"tail_image\": {\"required\": false}}, \"limits\": {}}, \"kling-video-v4_0\": {\"arguments\": {\"duration\": {\"default\": \"10\", \"allowed\": [\"3\", \"4\", \"5\"]}, \"resolution\": {\"default\": \"720p\", \"allowed\": [\"720p\", \"1080p\"]}}, \"slots\": {\"first_image\": {\"required\": true}, \"tail_image\": {\"required\": false}, \"keyframe_1\": {\"required\": false}}, \"limits\": {\"combined_item_cap\": {\"maxItems\": 10, \"arguments\": [], \"inputPrefixes\": [\"first_image\", \"tail_image\", \"keyframe_\"]}}}}}], \"problems\": [{\"command\": \"image_to_image\", \"message\": \"who_am_i не объявил модели для этой команды; обновите возможности и проверьте доступность команды.\"}]}"
+    }
+  },
+  {
+    "name": "capabilities invalid-command",
+    "call": "capabilities",
+    "description": "",
+    "args": {
+      "kind": "\"video\"",
+      "tools": "[\"image_to_image\", \"image_to_video\", \"motion_control\", \"omni_ref_video\", \"text_to_image\", \"text_to_video\"]",
+      "body": "{\"user\": {\"userId\": 1}, \"availableModels\": {\"image_to_video\": {\"models\": [{\"model\": \"kling-video-v3_0\", \"arguments\": [{\"name\": \"prompt\", \"required\": true}, {\"name\": \"duration\", \"default\": \"5\", \"allowedValues\": [\"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\"]}, {\"name\": \"resolution\", \"default\": \"1080p\", \"allowedValues\": [\"720p\", \"1080p\", \"4k\"]}, {\"name\": \"prefer_multi_shots\", \"default\": \"true\", \"allowedValues\": [\"true\", \"false\"]}, {\"name\": \"elements\", \"maxItems\": 7}], \"inputs\": [{\"name\": \"first_image\", \"required\": true}, {\"name\": \"tail_image\", \"required\": false}]}, {\"model\": \"kling-video-v4_0\", \"arguments\": [{\"name\": \"duration\", \"default\": \"10\", \"allowedValues\": [\"3\", \"4\", \"5\"]}, {\"name\": \"resolution\", \"default\": \"720p\", \"allowedValues\": [\"720p\", \"1080p\"]}], \"inputs\": [{\"name\": \"first_image\", \"required\": true}, {\"name\": \"tail_image\", \"required\": false}, {\"name\": \"keyframe_1\", \"required\": false}], \"combinedItemCap\": {\"maxItems\": 10, \"arguments\": [], \"inputPrefixes\": [\"first_image\", \"tail_image\", \"keyframe_\"]}}]}, \"text_to_video\": {\"models\": \"invalid\"}}}"
+    },
+    "expected": {
+      "result": "{\"reports\": [{\"command\": \"image_to_video\", \"models\": {\"kling-video-v3_0\": {\"arguments\": {\"prompt\": {\"required\": true}, \"duration\": {\"default\": \"5\", \"allowed\": [\"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\"]}, \"resolution\": {\"default\": \"1080p\", \"allowed\": [\"720p\", \"1080p\", \"4k\"]}, \"prefer_multi_shots\": {\"default\": \"true\", \"allowed\": [\"true\", \"false\"]}, \"elements\": {\"max_items\": 7}}, \"slots\": {\"first_image\": {\"required\": true}, \"tail_image\": {\"required\": false}}, \"limits\": {}}, \"kling-video-v4_0\": {\"arguments\": {\"duration\": {\"default\": \"10\", \"allowed\": [\"3\", \"4\", \"5\"]}, \"resolution\": {\"default\": \"720p\", \"allowed\": [\"720p\", \"1080p\"]}}, \"slots\": {\"first_image\": {\"required\": true}, \"tail_image\": {\"required\": false}, \"keyframe_1\": {\"required\": false}}, \"limits\": {\"combined_item_cap\": {\"maxItems\": 10, \"arguments\": [], \"inputPrefixes\": [\"first_image\", \"tail_image\", \"keyframe_\"]}}}}}], \"problems\": [{\"command\": \"text_to_video\", \"message\": \"who_am_i вернул неверное объявление моделей команды.\"}, {\"command\": \"omni_ref_video\", \"message\": \"who_am_i не объявил модели для этой команды; обновите возможности и проверьте доступность команды.\"}, {\"command\": \"motion_control\", \"message\": \"who_am_i не объявил модели для этой команды; обновите возможности и проверьте доступность команды.\"}]}"
+    }
+  },
+  {
+    "name": "capabilities tool-missing",
+    "call": "capabilities",
+    "description": "",
+    "args": {
+      "kind": "\"video\"",
+      "tools": "[\"text_to_video\"]",
+      "body": "{\"user\": {\"userId\": 1}, \"availableModels\": {\"image_to_video\": {\"models\": [{\"model\": \"kling-video-v3_0\", \"arguments\": [{\"name\": \"prompt\", \"required\": true}, {\"name\": \"duration\", \"default\": \"5\", \"allowedValues\": [\"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\"]}, {\"name\": \"resolution\", \"default\": \"1080p\", \"allowedValues\": [\"720p\", \"1080p\", \"4k\"]}, {\"name\": \"prefer_multi_shots\", \"default\": \"true\", \"allowedValues\": [\"true\", \"false\"]}, {\"name\": \"elements\", \"maxItems\": 7}], \"inputs\": [{\"name\": \"first_image\", \"required\": true}, {\"name\": \"tail_image\", \"required\": false}]}, {\"model\": \"kling-video-v4_0\", \"arguments\": [{\"name\": \"duration\", \"default\": \"10\", \"allowedValues\": [\"3\", \"4\", \"5\"]}, {\"name\": \"resolution\", \"default\": \"720p\", \"allowedValues\": [\"720p\", \"1080p\"]}], \"inputs\": [{\"name\": \"first_image\", \"required\": true}, {\"name\": \"tail_image\", \"required\": false}, {\"name\": \"keyframe_1\", \"required\": false}], \"combinedItemCap\": {\"maxItems\": 10, \"arguments\": [], \"inputPrefixes\": [\"first_image\", \"tail_image\", \"keyframe_\"]}}]}}}"
+    },
+    "expected": {
+      "result": "{\"reports\": [], \"problems\": [{\"command\": \"text_to_video\", \"message\": \"who_am_i не объявил модели для этой команды; обновите возможности и проверьте доступность команды.\"}, {\"command\": \"image_to_video\", \"message\": \"Команда не объявлена в tool_list текущего аккаунта.\"}, {\"command\": \"omni_ref_video\", \"message\": \"Команда не объявлена в tool_list текущего аккаунта.\"}, {\"command\": \"motion_control\", \"message\": \"Команда не объявлена в tool_list текущего аккаунта.\"}]}"
+    }
+  },
+  {
+    "name": "normalize_inputs image-tail",
+    "call": "normalize_inputs",
+    "description": "",
+    "args": {
+      "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\", \"inputs\": [{\"flag\": \"image\", \"path\": \"a.png\"}, {\"flag\": \"tailImage\", \"path\": \"b.png\"}]}"
+    },
+    "expected": {
+      "result": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\", \"inputs\": [{\"flag\": \"input\", \"path\": \"a.png\", \"slot\": \"first_image\"}, {\"flag\": \"input\", \"path\": \"b.png\", \"slot\": \"tail_image\"}]}",
+      "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\", \"inputs\": [{\"flag\": \"input\", \"path\": \"a.png\", \"slot\": \"first_image\"}, {\"flag\": \"input\", \"path\": \"b.png\", \"slot\": \"tail_image\"}]}",
+      "catalog": "[[\"image_to_video\"]]"
+    }
+  },
+  {
+    "name": "normalize_inputs all-named",
+    "call": "normalize_inputs",
+    "description": "",
+    "args": {
+      "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\", \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"a.png\"}]}"
+    },
+    "expected": {
+      "result": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\", \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"a.png\"}]}",
+      "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\", \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"a.png\"}]}",
+      "catalog": "[]"
+    }
+  },
+  {
+    "name": "normalize_inputs empty",
+    "call": "normalize_inputs",
+    "description": "",
+    "args": {
+      "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\", \"inputs\": []}"
+    },
+    "expected": {
+      "result": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\", \"inputs\": []}",
+      "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\", \"inputs\": []}",
+      "catalog": "[]"
+    }
+  },
+  {
+    "name": "normalize_inputs video-no-slot",
+    "call": "normalize_inputs",
+    "description": "",
+    "args": {
+      "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\", \"inputs\": [{\"flag\": \"video\", \"path\": \"c\"}]}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Для входа video модель kling-video-v3_0 не объявляет подходящего слота; повторите запрос вручную в новой подготовке."
+      },
+      "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\", \"inputs\": [{\"flag\": \"video\", \"path\": \"c\"}]}",
+      "catalog": "[[\"image_to_video\"]]"
+    }
+  },
+  {
+    "name": "normalize_inputs unknown-flag",
+    "call": "normalize_inputs",
+    "description": "",
+    "args": {
+      "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\", \"inputs\": [{\"flag\": \"mask\", \"path\": \"c\"}]}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Для входа mask модель kling-video-v3_0 не объявляет подходящего слота; повторите запрос вручную в новой подготовке."
+      },
+      "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\", \"inputs\": [{\"flag\": \"mask\", \"path\": \"c\"}]}",
+      "catalog": "[[\"image_to_video\"]]"
+    }
+  },
+  {
+    "name": "normalize_inputs flag-missing",
+    "call": "normalize_inputs",
+    "description": "",
+    "args": {
+      "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\", \"inputs\": [{\"path\": \"c\"}]}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Для входа None модель kling-video-v3_0 не объявляет подходящего слота; повторите запрос вручную в новой подготовке."
+      },
+      "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\", \"inputs\": [{\"path\": \"c\"}]}",
+      "catalog": "[[\"image_to_video\"]]"
+    }
+  },
+  {
+    "name": "normalize_inputs flag-list",
+    "call": "normalize_inputs",
+    "description": "",
+    "args": {
+      "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\", \"inputs\": [{\"flag\": [\"image\"], \"path\": \"c\"}]}"
+    },
+    "expected": {
+      "error": {
+        "type": "TypeError",
+        "message": "unhashable type: 'list'"
+      },
+      "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\", \"inputs\": [{\"flag\": [\"image\"], \"path\": \"c\"}]}",
+      "catalog": "[[\"image_to_video\"]]"
+    }
+  },
+  {
+    "name": "normalize_inputs keyframe-after-used",
+    "call": "normalize_inputs",
+    "description": "",
+    "args": {
+      "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v4_0\", \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"a\"}, {\"flag\": \"image\", \"path\": \"b\"}]}"
+    },
+    "expected": {
+      "result": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v4_0\", \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"a\"}, {\"flag\": \"input\", \"path\": \"b\", \"slot\": \"keyframe_1\"}]}",
+      "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v4_0\", \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"a\"}, {\"flag\": \"input\", \"path\": \"b\", \"slot\": \"keyframe_1\"}]}",
+      "catalog": "[[\"image_to_video\"]]"
+    }
+  },
+  {
+    "name": "normalize_inputs two-images",
+    "call": "normalize_inputs",
+    "description": "",
+    "args": {
+      "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v4_0\", \"inputs\": [{\"flag\": \"image\", \"path\": \"a\"}, {\"flag\": \"image\", \"path\": \"b\"}, {\"flag\": \"image\", \"path\": \"c\"}]}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Для входа image модель kling-video-v4_0 не объявляет подходящего слота; повторите запрос вручную в новой подготовке."
+      },
+      "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v4_0\", \"inputs\": [{\"flag\": \"input\", \"path\": \"a\", \"slot\": \"first_image\"}, {\"flag\": \"input\", \"path\": \"b\", \"slot\": \"keyframe_1\"}, {\"flag\": \"image\", \"path\": \"c\"}]}",
+      "catalog": "[[\"image_to_video\"]]"
+    }
+  },
+  {
+    "name": "normalize_inputs model-undeclared",
+    "call": "normalize_inputs",
+    "description": "",
+    "args": {
+      "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v9\", \"inputs\": [{\"flag\": \"image\", \"path\": \"a\"}]}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Модель не объявлена для этой команды: kling-video-v3_0, kling-video-v4_0"
+      },
+      "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v9\", \"inputs\": [{\"flag\": \"image\", \"path\": \"a\"}]}",
+      "catalog": "[[\"image_to_video\"]]"
+    }
+  },
+  {
+    "name": "normalize_inputs command-not-in-tools",
+    "call": "normalize_inputs",
+    "description": "",
+    "args": {
+      "spec": "{\"command\": \"omni_ref_video\", \"model\": \"kling-video-v3_0\", \"inputs\": [{\"flag\": \"image\", \"path\": \"a\"}]}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Команда не объявлена в tool_list текущего аккаунта."
+      },
+      "spec": "{\"command\": \"omni_ref_video\", \"model\": \"kling-video-v3_0\", \"inputs\": [{\"flag\": \"image\", \"path\": \"a\"}]}",
+      "catalog": "[[\"omni_ref_video\"]]"
+    }
+  },
+  {
+    "name": "normalize_inputs item-not-dict",
+    "call": "normalize_inputs",
+    "description": "",
+    "args": {
+      "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\", \"inputs\": [{\"flag\": \"image\", \"path\": \"a\"}, 5]}"
+    },
+    "expected": {
+      "error": {
+        "type": "AttributeError",
+        "message": "'int' object has no attribute 'get'"
+      },
+      "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\", \"inputs\": [{\"flag\": \"image\", \"path\": \"a\"}, 5]}",
+      "catalog": "[[\"image_to_video\"]]"
+    }
+  },
+  {
+    "name": "normalize_inputs inputs-missing",
+    "call": "normalize_inputs",
+    "description": "",
+    "args": {
+      "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\"}"
+    },
+    "expected": {
+      "error": {
+        "type": "KeyError",
+        "message": "'inputs'"
+      },
+      "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\"}",
+      "catalog": "[]"
+    }
+  },
+  {
+    "name": "argument str",
+    "call": "argument",
+    "description": "",
+    "args": {
+      "value": "\"1080p\""
+    },
+    "expected": {
+      "result": "\"1080p\""
+    }
+  },
+  {
+    "name": "argument int",
+    "call": "argument",
+    "description": "",
+    "args": {
+      "value": "6"
+    },
+    "expected": {
+      "result": "\"6\""
+    }
+  },
+  {
+    "name": "argument float",
+    "call": "argument",
+    "description": "",
+    "args": {
+      "value": "6.0"
+    },
+    "expected": {
+      "result": "\"6.0\""
+    }
+  },
+  {
+    "name": "argument bool",
+    "call": "argument",
+    "description": "",
+    "args": {
+      "value": "true"
+    },
+    "expected": {
+      "result": "\"true\""
+    }
+  },
+  {
+    "name": "argument none",
+    "call": "argument",
+    "description": "",
+    "args": {
+      "value": "null"
+    },
+    "expected": {
+      "result": "\"null\""
+    }
+  },
+  {
+    "name": "argument list",
+    "call": "argument",
+    "description": "",
+    "args": {
+      "value": "[1, \"ю\", 2.5]"
+    },
+    "expected": {
+      "result": "\"[1,\\\"ю\\\",2.5]\""
+    }
+  },
+  {
+    "name": "argument dict",
+    "call": "argument",
+    "description": "",
+    "args": {
+      "value": "{\"b\": 1, \"a\": [true, null]}"
+    },
+    "expected": {
+      "result": "\"{\\\"b\\\":1,\\\"a\\\":[true,null]}\""
+    }
+  },
+  {
+    "name": "argument nan",
+    "call": "argument",
+    "description": "",
+    "args": {
+      "value": "NaN"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Out of range float values are not JSON compliant: nan"
+      }
+    }
+  },
+  {
+    "name": "argument inf",
+    "call": "argument",
+    "description": "",
+    "args": {
+      "value": "Infinity"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Out of range float values are not JSON compliant: inf"
+      }
+    }
+  },
+  {
+    "name": "argument big",
+    "call": "argument",
+    "description": "",
+    "args": {
+      "value": "1000000000000000000000000000000"
+    },
+    "expected": {
+      "result": "\"1000000000000000000000000000000\""
+    }
+  },
+  {
+    "name": "argument small-float",
+    "call": "argument",
+    "description": "",
+    "args": {
+      "value": "1e-07"
+    },
+    "expected": {
+      "result": "\"1e-07\""
+    }
+  },
+  {
+    "name": "envelope inputs",
+    "call": "envelope",
+    "description": "",
+    "args": {
+      "request": "{\"model\": \"m\", \"parameters\": {\"resolution\": \"1080p\", \"duration\": 6, \"Aspect\": \"16:9\", \"enable_audio\": false, \"_x\": [1, 2], \"élan\": \"é\"}}",
+      "prompt": "\"  Промпт\\r\\n\"",
+      "inputs": "[[\"first_image\", \"https://cdn.test/a.png\"], [\"tail_image\", \"https://cdn.test/b.png\"]]"
+    },
+    "expected": {
+      "result": "{\"model\": \"m\", \"arguments\": [{\"name\": \"prompt\", \"value\": \"  Промпт\\r\\n\"}, {\"name\": \"Aspect\", \"value\": \"16:9\"}, {\"name\": \"_x\", \"value\": \"[1,2]\"}, {\"name\": \"duration\", \"value\": \"6\"}, {\"name\": \"enable_audio\", \"value\": \"false\"}, {\"name\": \"resolution\", \"value\": \"1080p\"}, {\"name\": \"élan\", \"value\": \"é\"}], \"rationale\": \"\", \"inputs\": [{\"name\": \"first_image\", \"inputType\": \"URL\", \"url\": \"https://cdn.test/a.png\"}, {\"name\": \"tail_image\", \"inputType\": \"URL\", \"url\": \"https://cdn.test/b.png\"}]}"
+    }
+  },
+  {
+    "name": "envelope no-inputs",
+    "call": "envelope",
+    "description": "",
+    "args": {
+      "request": "{\"model\": \"m\", \"parameters\": {}}",
+      "prompt": "\"p\"",
+      "inputs": "[]"
+    },
+    "expected": {
+      "result": "{\"model\": \"m\", \"arguments\": [{\"name\": \"prompt\", \"value\": \"p\"}], \"rationale\": \"\"}"
+    }
+  },
+  {
+    "name": "envelope nan",
+    "call": "envelope",
+    "description": "x — NaN (во входе строкой)",
+    "args": {
+      "request": "{\"model\": \"m\", \"parameters\": {\"x\": \"nan\"}}",
+      "prompt": "\"p\"",
+      "inputs": "[]"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Out of range float values are not JSON compliant: nan"
+      }
+    }
+  },
+  {
+    "name": "find_balance nested",
+    "call": "find_balance",
+    "description": "",
+    "args": {
+      "value": "{\"membership\": \"pro\", \"credits\": {\"total\": 2000, \"remaining\": 1824}}"
+    },
+    "expected": {
+      "result": "[[\"credits.remaining\", 1824.0]]"
+    }
+  },
+  {
+    "name": "find_balance list",
+    "call": "find_balance",
+    "description": "",
+    "args": {
+      "value": "{\"items\": [{\"point\": 3}, {\"Balance\": 2.5}]}"
+    },
+    "expected": {
+      "result": "[[\"items[0].point\", 3.0], [\"items[1].Balance\", 2.5]]"
+    }
+  },
+  {
+    "name": "find_balance bool",
+    "call": "find_balance",
+    "description": "",
+    "args": {
+      "value": "{\"credit\": true, \"x\": {\"credits\": false}}"
+    },
+    "expected": {
+      "result": "[]"
+    }
+  },
+  {
+    "name": "find_balance none",
+    "call": "find_balance",
+    "description": "",
+    "args": {
+      "value": "{\"membership\": \"pro\"}"
+    },
+    "expected": {
+      "result": "[]"
+    }
+  },
+  {
+    "name": "find_balance top-list",
+    "call": "find_balance",
+    "description": "",
+    "args": {
+      "value": "[{\"credit\": 1}]"
+    },
+    "expected": {
+      "result": "[[\"[0].credit\", 1.0]]"
+    }
+  },
+  {
+    "name": "find_balance string",
+    "call": "find_balance",
+    "description": "",
+    "args": {
+      "value": "\"credit\""
+    },
+    "expected": {
+      "result": "[]"
+    }
+  },
+  {
+    "name": "find_balance key-in-path",
+    "call": "find_balance",
+    "description": "",
+    "args": {
+      "value": "{\"credits\": {\"left\": 5, \"total\": 7}}"
+    },
+    "expected": {
+      "result": "[]"
+    }
+  },
+  {
+    "name": "find_balance big",
+    "call": "find_balance",
+    "description": "",
+    "args": {
+      "value": "{\"credit\": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}"
+    },
+    "expected": {
+      "error": {
+        "type": "OverflowError",
+        "message": "int too large to convert to float"
+      }
+    }
+  },
+  {
+    "name": "tool_body json-text",
+    "call": "tool_body",
+    "description": "",
+    "args": {
+      "result": "{\"content\": [{\"type\": \"text\", \"text\": \"{\\\"a\\\": 1}\"}], \"isError\": false}"
+    },
+    "expected": {
+      "result": "{\"a\": 1}"
+    }
+  },
+  {
+    "name": "tool_body plain-text",
+    "call": "tool_body",
+    "description": "",
+    "args": {
+      "result": "{\"content\": [{\"type\": \"text\", \"text\": \"plain text\"}]}"
+    },
+    "expected": {
+      "result": "\"plain text\""
+    }
+  },
+  {
+    "name": "tool_body null-text",
+    "call": "tool_body",
+    "description": "",
+    "args": {
+      "result": "{\"content\": [{\"type\": \"text\", \"text\": \"null\"}]}"
+    },
+    "expected": {
+      "result": "\"null\""
+    }
+  },
+  {
+    "name": "tool_body structured",
+    "call": "tool_body",
+    "description": "",
+    "args": {
+      "result": "{\"content\": [{\"text\": \"x\"}], \"structuredContent\": {\"b\": 2}}"
+    },
+    "expected": {
+      "result": "{\"b\": 2}"
+    }
+  },
+  {
+    "name": "tool_body structured-null",
+    "call": "tool_body",
+    "description": "",
+    "args": {
+      "result": "{\"structuredContent\": null}"
+    },
+    "expected": {
+      "result": "null"
+    }
+  },
+  {
+    "name": "tool_body is-error",
+    "call": "tool_body",
+    "description": "",
+    "args": {
+      "result": "{\"content\": [{\"type\": \"text\", \"text\": \"  Invalid parameters  \"}], \"isError\": true}"
+    },
+    "expected": {
+      "error": {
+        "type": "ToolError",
+        "message": "Invalid parameters"
+      }
+    }
+  },
+  {
+    "name": "tool_body is-error-long",
+    "call": "tool_body",
+    "description": "",
+    "args": {
+      "result": "{\"content\": [{\"type\": \"text\", \"text\": \"яяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяя\"}], \"isError\": true}"
+    },
+    "expected": {
+      "error": {
+        "type": "ToolError",
+        "message": "яяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяя"
+      }
+    }
+  },
+  {
+    "name": "tool_body is-error-empty",
+    "call": "tool_body",
+    "description": "",
+    "args": {
+      "result": "{\"isError\": true}"
+    },
+    "expected": {
+      "error": {
+        "type": "ToolError",
+        "message": "отказ без пояснения"
+      }
+    }
+  },
+  {
+    "name": "tool_body is-error-number",
+    "call": "tool_body",
+    "description": "",
+    "args": {
+      "result": "{\"content\": [{\"text\": 42}], \"isError\": true}"
+    },
+    "expected": {
+      "error": {
+        "type": "ToolError",
+        "message": "42"
+      }
+    }
+  },
+  {
+    "name": "tool_body is-error-truthy",
+    "call": "tool_body",
+    "description": "",
+    "args": {
+      "result": "{\"content\": [{\"text\": \"x\"}], \"isError\": 1}"
+    },
+    "expected": {
+      "result": "\"x\""
+    }
+  },
+  {
+    "name": "tool_body no-text",
+    "call": "tool_body",
+    "description": "",
+    "args": {
+      "result": "{\"content\": []}"
+    },
+    "expected": {
+      "error": {
+        "type": "ProtocolError",
+        "message": "Kling вернул результат инструмента без текста."
+      }
+    }
+  },
+  {
+    "name": "tool_body text-int",
+    "call": "tool_body",
+    "description": "",
+    "args": {
+      "result": "{\"content\": [{\"text\": 5}]}"
+    },
+    "expected": {
+      "error": {
+        "type": "ProtocolError",
+        "message": "Kling вернул результат инструмента без текста."
+      }
+    }
+  },
+  {
+    "name": "tool_body content-not-list",
+    "call": "tool_body",
+    "description": "",
+    "args": {
+      "result": "{\"content\": {\"text\": \"x\"}}"
+    },
+    "expected": {
+      "error": {
+        "type": "ProtocolError",
+        "message": "Kling вернул результат инструмента без текста."
+      }
+    }
+  },
+  {
+    "name": "tool_body not-dict",
+    "call": "tool_body",
+    "description": "",
+    "args": {
+      "result": "[\"x\"]"
+    },
+    "expected": {
+      "error": {
+        "type": "ProtocolError",
+        "message": "Kling вернул неверный результат инструмента."
+      }
+    }
+  },
+  {
+    "name": "sse_messages one",
+    "call": "sse_messages",
+    "description": "",
+    "args": {
+      "text": "\"event: message\\ndata: {\\\"id\\\": 0}\\n\\n\""
+    },
+    "expected": {
+      "result": "[{\"id\": 0}]"
+    }
+  },
+  {
+    "name": "sse_messages multi-line",
+    "call": "sse_messages",
+    "description": "",
+    "args": {
+      "text": "\"data: {\\\"a\\\":\\ndata: 1}\\n\\n\""
+    },
+    "expected": {
+      "result": "[{\"a\": 1}]"
+    }
+  },
+  {
+    "name": "sse_messages no-trailing",
+    "call": "sse_messages",
+    "description": "",
+    "args": {
+      "text": "\"data: {\\\"id\\\": 1}\""
+    },
+    "expected": {
+      "result": "[{\"id\": 1}]"
+    }
+  },
+  {
+    "name": "sse_messages two",
+    "call": "sse_messages",
+    "description": "",
+    "args": {
+      "text": "\"data: [1]\\n\\nid: 5\\ndata:{\\\"b\\\":2}\\r\\n\\r\\n\""
+    },
+    "expected": {
+      "result": "[[1], {\"b\": 2}]"
+    }
+  },
+  {
+    "name": "sse_messages broken",
+    "call": "sse_messages",
+    "description": "",
+    "args": {
+      "text": "\"data: {x\\n\\ndata: 2\\n\\n\""
+    },
+    "expected": {
+      "result": "[2]"
+    }
+  },
+  {
+    "name": "sse_messages empty",
+    "call": "sse_messages",
+    "description": "",
+    "args": {
+      "text": "\"\""
+    },
+    "expected": {
+      "result": "[]"
+    }
+  },
+  {
+    "name": "sse_messages unicode-sep",
+    "call": "sse_messages",
+    "description": "",
+    "args": {
+      "text": "\"data: 1 data: 2\\n\\n\""
+    },
+    "expected": {
+      "result": "[]"
+    }
+  },
+  {
+    "name": "find_upload_url top",
+    "call": "find_upload_url",
+    "description": "",
+    "args": {
+      "value": "{\"url\": \"https://cdn.test/a.png\"}"
+    },
+    "expected": {
+      "result": "\"https://cdn.test/a.png\""
+    }
+  },
+  {
+    "name": "find_upload_url order",
+    "call": "find_upload_url",
+    "description": "",
+    "args": {
+      "value": "{\"resourceUrl\": \"https://r\", \"file_url\": \"http://f\"}"
+    },
+    "expected": {
+      "result": "\"http://f\""
+    }
+  },
+  {
+    "name": "find_upload_url nested",
+    "call": "find_upload_url",
+    "description": "",
+    "args": {
+      "value": "{\"result\": 1, \"data\": {\"fileType\": \"image\", \"nested\": [{\"fileUrl\": \"https://cdn.test/a.png\"}]}}"
+    },
+    "expected": {
+      "result": "\"https://cdn.test/a.png\""
+    }
+  },
+  {
+    "name": "find_upload_url bad-scheme",
+    "call": "find_upload_url",
+    "description": "",
+    "args": {
+      "value": "{\"url\": \"ftp://x\", \"data\": {\"url\": \"HTTPS://up\"}}"
+    },
+    "expected": {
+      "result": "\"HTTPS://up\""
+    }
+  },
+  {
+    "name": "find_upload_url not-string",
+    "call": "find_upload_url",
+    "description": "",
+    "args": {
+      "value": "{\"url\": 5}"
+    },
+    "expected": {
+      "result": "null"
+    }
+  },
+  {
+    "name": "find_upload_url none",
+    "call": "find_upload_url",
+    "description": "",
+    "args": {
+      "value": "null"
+    },
+    "expected": {
+      "result": "null"
+    }
+  },
+  {
+    "name": "find_upload_url list",
+    "call": "find_upload_url",
+    "description": "",
+    "args": {
+      "value": "[{\"x\": 1}, {\"resource_url\": \"http://r\"}]"
+    },
+    "expected": {
+      "result": "\"http://r\""
+    }
+  },
+  {
+    "name": "find_upload_url ipv6-bad",
+    "call": "find_upload_url",
+    "description": "",
+    "args": {
+      "value": "{\"url\": \"http://[::1/a\"}"
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Invalid IPv6 URL"
+      }
+    }
+  },
+  {
+    "name": "upload_type a.png",
+    "call": "upload_type",
+    "description": "",
+    "args": {
+      "path": "\"a.png\""
+    },
+    "expected": {
+      "result": "\"image/png\""
+    }
+  },
+  {
+    "name": "upload_type B.JPG",
+    "call": "upload_type",
+    "description": "",
+    "args": {
+      "path": "\"B.JPG\""
+    },
+    "expected": {
+      "result": "\"image/jpeg\""
+    }
+  },
+  {
+    "name": "upload_type c.jpeg",
+    "call": "upload_type",
+    "description": "",
+    "args": {
+      "path": "\"c.jpeg\""
+    },
+    "expected": {
+      "result": "\"image/jpeg\""
+    }
+  },
+  {
+    "name": "upload_type d.mp4",
+    "call": "upload_type",
+    "description": "",
+    "args": {
+      "path": "\"d.mp4\""
+    },
+    "expected": {
+      "result": "\"video/mp4\""
+    }
+  },
+  {
+    "name": "upload_type e.wav",
+    "call": "upload_type",
+    "description": "",
+    "args": {
+      "path": "\"e.wav\""
+    },
+    "expected": {
+      "result": "\"audio/wav\""
+    }
+  },
+  {
+    "name": "upload_type f.mp3",
+    "call": "upload_type",
+    "description": "",
+    "args": {
+      "path": "\"f.mp3\""
+    },
+    "expected": {
+      "result": "\"audio/mpeg\""
+    }
+  },
+  {
+    "name": "upload_type g.mov",
+    "call": "upload_type",
+    "description": "",
+    "args": {
+      "path": "\"g.mov\""
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Kling принимает загрузку только PNG, JPEG, MP4, WAV и MP3: g.mov."
+      }
+    }
+  },
+  {
+    "name": "upload_type noext",
+    "call": "upload_type",
+    "description": "",
+    "args": {
+      "path": "\"noext\""
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Kling принимает загрузку только PNG, JPEG, MP4, WAV и MP3: noext."
+      }
+    }
+  },
+  {
+    "name": "upload_type .png",
+    "call": "upload_type",
+    "description": "",
+    "args": {
+      "path": "\".png\""
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Kling принимает загрузку только PNG, JPEG, MP4, WAV и MP3: .png."
+      }
+    }
+  },
+  {
+    "name": "upload_type dir/кадр 01.PNG",
+    "call": "upload_type",
+    "description": "",
+    "args": {
+      "path": "\"dir/кадр 01.PNG\""
+    },
+    "expected": {
+      "result": "\"image/png\""
+    }
+  },
+  {
+    "name": "upload_type x.png.txt",
+    "call": "upload_type",
+    "description": "",
+    "args": {
+      "path": "\"x.png.txt\""
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Kling принимает загрузку только PNG, JPEG, MP4, WAV и MP3: x.png.txt."
+      }
+    }
+  },
+  {
+    "name": "token_record rotate",
+    "call": "token_record",
+    "description": "",
+    "args": {
+      "previous": "{\"client_id\": \"c\", \"access_token\": \"old\", \"refresh_token\": \"r-old\", \"expires_at\": 1, \"token_endpoint\": \"t\", \"revocation_endpoint\": \"v\", \"resource\": \"res\", \"scope\": \"s\"}",
+      "answer": "{\"access_token\": \"a2\", \"refresh_token\": \"r2\", \"expires_in\": 3600, \"scope\": \"x y\"}",
+      "now": "1800000000.25"
+    },
+    "expected": {
+      "result": "{\"client_id\": \"c\", \"access_token\": \"a2\", \"refresh_token\": \"r2\", \"expires_at\": 1800003600, \"token_endpoint\": \"t\", \"revocation_endpoint\": \"v\", \"resource\": \"res\", \"scope\": \"x y\"}"
+    }
+  },
+  {
+    "name": "token_record no-refresh",
+    "call": "token_record",
+    "description": "",
+    "args": {
+      "previous": "{\"client_id\": \"c\", \"access_token\": \"old\", \"refresh_token\": \"r-old\", \"expires_at\": 1, \"token_endpoint\": \"t\", \"revocation_endpoint\": \"v\", \"resource\": \"res\", \"scope\": \"s\"}",
+      "answer": "{\"access_token\": \"a2\", \"expires_in\": 3600}",
+      "now": "1800000000.25"
+    },
+    "expected": {
+      "result": "{\"client_id\": \"c\", \"access_token\": \"a2\", \"refresh_token\": \"r-old\", \"expires_at\": 1800003600, \"token_endpoint\": \"t\", \"revocation_endpoint\": \"v\", \"resource\": \"res\", \"scope\": \"s\"}"
+    }
+  },
+  {
+    "name": "token_record empty-refresh",
+    "call": "token_record",
+    "description": "",
+    "args": {
+      "previous": "{\"client_id\": \"c\", \"access_token\": \"old\", \"refresh_token\": \"r-old\", \"expires_at\": 1, \"token_endpoint\": \"t\", \"revocation_endpoint\": \"v\", \"resource\": \"res\", \"scope\": \"s\"}",
+      "answer": "{\"access_token\": \"a2\", \"refresh_token\": \"\"}",
+      "now": "1800000000.25"
+    },
+    "expected": {
+      "result": "{\"client_id\": \"c\", \"access_token\": \"a2\", \"refresh_token\": \"r-old\", \"expires_at\": 0, \"token_endpoint\": \"t\", \"revocation_endpoint\": \"v\", \"resource\": \"res\", \"scope\": \"s\"}"
+    }
+  },
+  {
+    "name": "token_record float-expires",
+    "call": "token_record",
+    "description": "",
+    "args": {
+      "previous": "{\"client_id\": \"c\"}",
+      "answer": "{\"access_token\": \"a\", \"expires_in\": 10.9}",
+      "now": "1800000000.25"
+    },
+    "expected": {
+      "result": "{\"client_id\": \"c\", \"access_token\": \"a\", \"expires_at\": 1800000011}"
+    }
+  },
+  {
+    "name": "token_record zero-expires",
+    "call": "token_record",
+    "description": "",
+    "args": {
+      "previous": "{}",
+      "answer": "{\"access_token\": \"a\", \"expires_in\": 0}",
+      "now": "1800000000.25"
+    },
+    "expected": {
+      "result": "{\"access_token\": \"a\", \"expires_at\": 0}"
+    }
+  },
+  {
+    "name": "token_record bool-expires",
+    "call": "token_record",
+    "description": "",
+    "args": {
+      "previous": "{}",
+      "answer": "{\"access_token\": \"a\", \"expires_in\": true}",
+      "now": "1800000000.25"
+    },
+    "expected": {
+      "result": "{\"access_token\": \"a\", \"expires_at\": 0}"
+    }
+  },
+  {
+    "name": "token_record string-expires",
+    "call": "token_record",
+    "description": "",
+    "args": {
+      "previous": "{}",
+      "answer": "{\"access_token\": \"a\", \"expires_in\": \"3600\"}",
+      "now": "1800000000.25"
+    },
+    "expected": {
+      "result": "{\"access_token\": \"a\", \"expires_at\": 0}"
+    }
+  },
+  {
+    "name": "token_record negative",
+    "call": "token_record",
+    "description": "",
+    "args": {
+      "previous": "{}",
+      "answer": "{\"access_token\": \"a\", \"expires_in\": -5}",
+      "now": "1800000000.25"
+    },
+    "expected": {
+      "result": "{\"access_token\": \"a\", \"expires_at\": 0}"
+    }
+  },
+  {
+    "name": "token_record no-access",
+    "call": "token_record",
+    "description": "",
+    "args": {
+      "previous": "{\"client_id\": \"c\", \"access_token\": \"old\", \"refresh_token\": \"r-old\", \"expires_at\": 1, \"token_endpoint\": \"t\", \"revocation_endpoint\": \"v\", \"resource\": \"res\", \"scope\": \"s\"}",
+      "answer": "{\"refresh_token\": \"r\"}",
+      "now": "1800000000.25"
+    },
+    "expected": {
+      "error": {
+        "type": "ProtocolError",
+        "message": "Kling не выдал токен доступа."
+      }
+    }
+  },
+  {
+    "name": "token_record empty-access",
+    "call": "token_record",
+    "description": "",
+    "args": {
+      "previous": "{\"client_id\": \"c\", \"access_token\": \"old\", \"refresh_token\": \"r-old\", \"expires_at\": 1, \"token_endpoint\": \"t\", \"revocation_endpoint\": \"v\", \"resource\": \"res\", \"scope\": \"s\"}",
+      "answer": "{\"access_token\": \"\"}",
+      "now": "1800000000.25"
+    },
+    "expected": {
+      "error": {
+        "type": "ProtocolError",
+        "message": "Kling не выдал токен доступа."
+      }
+    }
+  },
+  {
+    "name": "token_record scope-int",
+    "call": "token_record",
+    "description": "",
+    "args": {
+      "previous": "{}",
+      "answer": "{\"access_token\": \"a\", \"scope\": 1}",
+      "now": "1800000000.25"
+    },
+    "expected": {
+      "result": "{\"access_token\": \"a\", \"expires_at\": 0}"
+    }
+  },
+  {
+    "name": "token_record login-client",
+    "call": "token_record",
+    "description": "",
+    "args": {
+      "previous": "{\"client_id\": \"client-1\", \"token_endpoint\": \"t\", \"revocation_endpoint\": \"v\", \"resource\": \"r\", \"scope\": \"s\"}",
+      "answer": "{\"access_token\": \"access-1\", \"token_type\": \"Bearer\", \"expires_in\": 3600, \"scope\": \"a b\", \"refresh_token\": \"refresh-1\"}",
+      "now": "1800000000.25"
+    },
+    "expected": {
+      "result": "{\"client_id\": \"client-1\", \"token_endpoint\": \"t\", \"revocation_endpoint\": \"v\", \"resource\": \"r\", \"scope\": \"a b\", \"access_token\": \"access-1\", \"refresh_token\": \"refresh-1\", \"expires_at\": 1800003600}"
+    }
+  },
+  {
+    "name": "multipart png",
+    "call": "multipart",
+    "description": "",
+    "args": {
+      "filename": "\"кадр 01.png\"",
+      "data": "\"iVBORyBleGFjdCBieXRlcw==\"",
+      "boundary": "\"songframe-00000000000000000000000000000000\""
+    },
+    "expected": {
+      "result": "{\"body\": \"LS1zb25nZnJhbWUtMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDANCkNvbnRlbnQtRGlzcG9zaXRpb246IGZvcm0tZGF0YTsgbmFtZT0idGlja2V0Ig0KDQp0aWNrZXQtOQ0KLS1zb25nZnJhbWUtMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDANCkNvbnRlbnQtRGlzcG9zaXRpb246IGZvcm0tZGF0YTsgbmFtZT0iZmlsZSI7IGZpbGVuYW1lPSLQutCw0LTRgCAwMS5wbmciDQpDb250ZW50LVR5cGU6IGltYWdlL3BuZw0KDQqJUE5HIGV4YWN0IGJ5dGVzDQotLXNvbmdmcmFtZS0wMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMC0tDQo=\", \"content_type\": \"multipart/form-data; boundary=songframe-00000000000000000000000000000000\"}"
+    }
+  },
+  {
+    "name": "multipart quotes",
+    "call": "multipart",
+    "description": "",
+    "args": {
+      "filename": "\"a\\\"b\\\\c.wav\"",
+      "data": "\"UklGRgD/\"",
+      "boundary": "\"songframe-00000000000000000000000000000000\""
+    },
+    "expected": {
+      "result": "{\"body\": \"LS1zb25nZnJhbWUtMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDANCkNvbnRlbnQtRGlzcG9zaXRpb246IGZvcm0tZGF0YTsgbmFtZT0idGlja2V0Ig0KDQp0aWNrZXQtOQ0KLS1zb25nZnJhbWUtMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDANCkNvbnRlbnQtRGlzcG9zaXRpb246IGZvcm0tZGF0YTsgbmFtZT0iZmlsZSI7IGZpbGVuYW1lPSJhX2JfYy53YXYiDQpDb250ZW50LVR5cGU6IGF1ZGlvL3dhdg0KDQpSSUZGAP8NCi0tc29uZ2ZyYW1lLTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwLS0NCg==\", \"content_type\": \"multipart/form-data; boundary=songframe-00000000000000000000000000000000\"}"
+    }
+  },
+  {
+    "name": "urlencode refresh",
+    "call": "urlencode",
+    "description": "",
+    "args": {
+      "fields": "[[\"grant_type\", \"refresh_token\"], [\"client_id\", \"client-1\"], [\"refresh_token\", \"r/+= x\"], [\"resource\", \"http://kling.test/mcp\"]]"
+    },
+    "expected": {
+      "result": "\"grant_type=refresh_token&client_id=client-1&refresh_token=r%2F%2B%3D+x&resource=http%3A%2F%2Fkling.test%2Fmcp\""
+    }
+  },
+  {
+    "name": "urlencode unicode",
+    "call": "urlencode",
+    "description": "",
+    "args": {
+      "fields": "[[\"scope\", \"a b~c\"], [\"state\", \"Ж_-.!*'()\"], [\"redirect_uri\", \"http://127.0.0.1:8787/callback?x=1&y\"]]"
+    },
+    "expected": {
+      "result": "\"scope=a+b~c&state=%D0%96_-.%21%2A%27%28%29&redirect_uri=http%3A%2F%2F127.0.0.1%3A8787%2Fcallback%3Fx%3D1%26y\""
+    }
+  },
+  {
+    "name": "parse_qs code=x&state=s",
+    "call": "parse_qs",
+    "description": "",
+    "args": {
+      "query": "\"code=x&state=s\""
+    },
+    "expected": {
+      "result": "{\"code\": \"x\", \"state\": \"s\"}"
+    }
+  },
+  {
+    "name": "parse_qs code=&state=s",
+    "call": "parse_qs",
+    "description": "",
+    "args": {
+      "query": "\"code=&state=s\""
+    },
+    "expected": {
+      "result": "{\"state\": \"s\"}"
+    }
+  },
+  {
+    "name": "parse_qs state=a&state=b",
+    "call": "parse_qs",
+    "description": "",
+    "args": {
+      "query": "\"state=a&state=b\""
+    },
+    "expected": {
+      "result": "{\"state\": \"a\"}"
+    }
+  },
+  {
+    "name": "parse_qs a+b=c%20d&e",
+    "call": "parse_qs",
+    "description": "",
+    "args": {
+      "query": "\"a+b=c%20d&e\""
+    },
+    "expected": {
+      "result": "{\"a b\": \"c d\"}"
+    }
+  },
+  {
+    "name": "parse_qs x=%zz&y=%E2%82",
+    "call": "parse_qs",
+    "description": "",
+    "args": {
+      "query": "\"x=%zz&y=%E2%82\""
+    },
+    "expected": {
+      "result": "{\"x\": \"%zz\", \"y\": \"�\"}"
+    }
+  },
+  {
+    "name": "parse_qs error=access_denied&error_description=No+way&state=s",
+    "call": "parse_qs",
+    "description": "",
+    "args": {
+      "query": "\"error=access_denied&error_description=No+way&state=s\""
+    },
+    "expected": {
+      "result": "{\"error\": \"access_denied\", \"error_description\": \"No way\", \"state\": \"s\"}"
+    }
+  },
+  {
+    "name": "parse_qs ",
+    "call": "parse_qs",
+    "description": "",
+    "args": {
+      "query": "\"\""
+    },
+    "expected": {
+      "result": "{}"
+    }
+  },
+  {
+    "name": "parse_qs code=1;state=2",
+    "call": "parse_qs",
+    "description": "",
+    "args": {
+      "query": "\"code=1;state=2\""
+    },
+    "expected": {
+      "result": "{\"code\": \"1;state=2\"}"
+    }
+  },
+  {
+    "name": "parse_qs =v&k=",
+    "call": "parse_qs",
+    "description": "",
+    "args": {
+      "query": "\"=v&k=\""
+    },
+    "expected": {
+      "result": "{\"\": \"v\"}"
+    }
+  },
+  {
+    "name": "urlparse 'https://kling.ai/auth'",
+    "call": "urlparse",
+    "description": "",
+    "args": {
+      "url": "\"https://kling.ai/auth\""
+    },
+    "expected": {
+      "result": "{\"scheme\": \"https\", \"netloc\": \"kling.ai\", \"path\": \"/auth\", \"query\": \"\", \"fragment\": \"\", \"hostname\": \"kling.ai\", \"port\": null, \"port_error\": null}"
+    }
+  },
+  {
+    "name": "urlparse 'HTTPS://Example.TEST:8443/p;x?q=1#f'",
+    "call": "urlparse",
+    "description": "",
+    "args": {
+      "url": "\"HTTPS://Example.TEST:8443/p;x?q=1#f\""
+    },
+    "expected": {
+      "result": "{\"scheme\": \"https\", \"netloc\": \"Example.TEST:8443\", \"path\": \"/p\", \"query\": \"q=1\", \"fragment\": \"f\", \"hostname\": \"example.test\", \"port\": 8443, \"port_error\": null}"
+    }
+  },
+  {
+    "name": "urlparse 'http://user:pw@[::1]:80/a'",
+    "call": "urlparse",
+    "description": "",
+    "args": {
+      "url": "\"http://user:pw@[::1]:80/a\""
+    },
+    "expected": {
+      "result": "{\"scheme\": \"http\", \"netloc\": \"user:pw@[::1]:80\", \"path\": \"/a\", \"query\": \"\", \"fragment\": \"\", \"hostname\": \"::1\", \"port\": 80, \"port_error\": null}"
+    }
+  },
+  {
+    "name": "urlparse '  https://x/y'",
+    "call": "urlparse",
+    "description": "",
+    "args": {
+      "url": "\"  https://x/y\""
+    },
+    "expected": {
+      "result": "{\"scheme\": \"https\", \"netloc\": \"x\", \"path\": \"/y\", \"query\": \"\", \"fragment\": \"\", \"hostname\": \"x\", \"port\": null, \"port_error\": null}"
+    }
+  },
+  {
+    "name": "urlparse 'ht\\ttps://x/\\ny'",
+    "call": "urlparse",
+    "description": "",
+    "args": {
+      "url": "\"ht\\ttps://x/\\ny\""
+    },
+    "expected": {
+      "result": "{\"scheme\": \"https\", \"netloc\": \"x\", \"path\": \"/y\", \"query\": \"\", \"fragment\": \"\", \"hostname\": \"x\", \"port\": null, \"port_error\": null}"
+    }
+  },
+  {
+    "name": "urlparse '1http://x'",
+    "call": "urlparse",
+    "description": "",
+    "args": {
+      "url": "\"1http://x\""
+    },
+    "expected": {
+      "result": "{\"scheme\": \"\", \"netloc\": \"\", \"path\": \"1http://x\", \"query\": \"\", \"fragment\": \"\", \"hostname\": null, \"port\": null, \"port_error\": null}"
+    }
+  },
+  {
+    "name": "urlparse 'cdn.test/a.png'",
+    "call": "urlparse",
+    "description": "",
+    "args": {
+      "url": "\"cdn.test/a.png\""
+    },
+    "expected": {
+      "result": "{\"scheme\": \"\", \"netloc\": \"\", \"path\": \"cdn.test/a.png\", \"query\": \"\", \"fragment\": \"\", \"hostname\": null, \"port\": null, \"port_error\": null}"
+    }
+  },
+  {
+    "name": "urlparse 'mailto:a@b'",
+    "call": "urlparse",
+    "description": "",
+    "args": {
+      "url": "\"mailto:a@b\""
+    },
+    "expected": {
+      "result": "{\"scheme\": \"mailto\", \"netloc\": \"\", \"path\": \"a@b\", \"query\": \"\", \"fragment\": \"\", \"hostname\": null, \"port\": null, \"port_error\": null}"
+    }
+  },
+  {
+    "name": "urlparse 'http://[::1/a'",
+    "call": "urlparse",
+    "description": "",
+    "args": {
+      "url": "\"http://[::1/a\""
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Invalid IPv6 URL"
+      }
+    }
+  },
+  {
+    "name": "urlparse 'http://h:abc/'",
+    "call": "urlparse",
+    "description": "",
+    "args": {
+      "url": "\"http://h:abc/\""
+    },
+    "expected": {
+      "result": "{\"scheme\": \"http\", \"netloc\": \"h:abc\", \"path\": \"/\", \"query\": \"\", \"fragment\": \"\", \"hostname\": \"h\", \"port\": null, \"port_error\": {\"type\": \"ValueError\", \"message\": \"Port could not be cast to integer value as 'abc'\"}}"
+    }
+  },
+  {
+    "name": "urlparse 'http://h:70000/'",
+    "call": "urlparse",
+    "description": "",
+    "args": {
+      "url": "\"http://h:70000/\""
+    },
+    "expected": {
+      "result": "{\"scheme\": \"http\", \"netloc\": \"h:70000\", \"path\": \"/\", \"query\": \"\", \"fragment\": \"\", \"hostname\": \"h\", \"port\": null, \"port_error\": {\"type\": \"ValueError\", \"message\": \"Port out of range 0-65535\"}}"
+    }
+  },
+  {
+    "name": "urlparse 'https://x/a;b/c;d'",
+    "call": "urlparse",
+    "description": "",
+    "args": {
+      "url": "\"https://x/a;b/c;d\""
+    },
+    "expected": {
+      "result": "{\"scheme\": \"https\", \"netloc\": \"x\", \"path\": \"/a;b/c\", \"query\": \"\", \"fragment\": \"\", \"hostname\": \"x\", \"port\": null, \"port_error\": null}"
+    }
+  },
+  {
+    "name": "urlparse ''",
+    "call": "urlparse",
+    "description": "",
+    "args": {
+      "url": "\"\""
+    },
+    "expected": {
+      "result": "{\"scheme\": \"\", \"netloc\": \"\", \"path\": \"\", \"query\": \"\", \"fragment\": \"\", \"hostname\": null, \"port\": null, \"port_error\": null}"
+    }
+  },
+  {
+    "name": "urlparse 'https:'",
+    "call": "urlparse",
+    "description": "",
+    "args": {
+      "url": "\"https:\""
+    },
+    "expected": {
+      "result": "{\"scheme\": \"https\", \"netloc\": \"\", \"path\": \"\", \"query\": \"\", \"fragment\": \"\", \"hostname\": null, \"port\": null, \"port_error\": null}"
+    }
+  },
+  {
+    "name": "urlparse '//host/p'",
+    "call": "urlparse",
+    "description": "",
+    "args": {
+      "url": "\"//host/p\""
+    },
+    "expected": {
+      "result": "{\"scheme\": \"\", \"netloc\": \"host\", \"path\": \"/p\", \"query\": \"\", \"fragment\": \"\", \"hostname\": \"host\", \"port\": null, \"port_error\": null}"
+    }
+  },
+  {
+    "name": "urlparse 'file:///tmp/x'",
+    "call": "urlparse",
+    "description": "",
+    "args": {
+      "url": "\"file:///tmp/x\""
+    },
+    "expected": {
+      "result": "{\"scheme\": \"file\", \"netloc\": \"\", \"path\": \"/tmp/x\", \"query\": \"\", \"fragment\": \"\", \"hostname\": null, \"port\": null, \"port_error\": null}"
+    }
+  },
+  {
+    "name": "answer json",
+    "call": "answer",
+    "description": "",
+    "args": {
+      "method": "\"tools/call\"",
+      "content_type": "\"application/json\"",
+      "data": "\"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDAsICJyZXN1bHQiOiB7Im9rIjogMX19\""
+    },
+    "expected": {
+      "result": "{\"ok\": 1}"
+    }
+  },
+  {
+    "name": "answer json-list",
+    "call": "answer",
+    "description": "",
+    "args": {
+      "method": "\"tools/call\"",
+      "content_type": "\"application/json; charset=utf-8\"",
+      "data": "\"W3siaWQiOiA1fSwgeyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDAsICJyZXN1bHQiOiBbMV19XQ==\""
+    },
+    "expected": {
+      "result": "[1]"
+    }
+  },
+  {
+    "name": "answer sse",
+    "call": "answer",
+    "description": "",
+    "args": {
+      "method": "\"tools/call\"",
+      "content_type": "\" Text/Event-Stream ; x\"",
+      "data": "\"ZXZlbnQ6IG1lc3NhZ2UKZGF0YTogeyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDAsICJyZXN1bHQiOiA3fQoK\""
+    },
+    "expected": {
+      "result": "7"
+    }
+  },
+  {
+    "name": "answer float-id",
+    "call": "answer",
+    "description": "",
+    "args": {
+      "method": "\"tools/call\"",
+      "content_type": "\"application/json\"",
+      "data": "\"eyJpZCI6IDAuMCwgInJlc3VsdCI6ICJmbG9hdCJ9\""
+    },
+    "expected": {
+      "result": "\"float\""
+    }
+  },
+  {
+    "name": "answer bool-id",
+    "call": "answer",
+    "description": "",
+    "args": {
+      "method": "\"tools/call\"",
+      "content_type": "\"application/json\"",
+      "data": "\"eyJpZCI6IGZhbHNlLCAicmVzdWx0IjogImJvb2wifQ==\""
+    },
+    "expected": {
+      "result": "\"bool\""
+    }
+  },
+  {
+    "name": "answer other-id",
+    "call": "answer",
+    "description": "",
+    "args": {
+      "method": "\"tools/call\"",
+      "content_type": "\"application/json\"",
+      "data": "\"eyJpZCI6IDEsICJyZXN1bHQiOiAxfQ==\""
+    },
+    "expected": {
+      "error": {
+        "type": "ProtocolError",
+        "message": "Kling не вернул ответ JSON-RPC на запрос tools/call."
+      }
+    }
+  },
+  {
+    "name": "answer error",
+    "call": "answer",
+    "description": "",
+    "args": {
+      "method": "\"tools/call\"",
+      "content_type": "\"application/json\"",
+      "data": "\"eyJpZCI6IDAsICJlcnJvciI6IHsiY29kZSI6IC0zMjYwMiwgIm1lc3NhZ2UiOiAiYmFkIHBhcmFtcyJ9fQ==\""
+    },
+    "expected": {
+      "error": {
+        "type": "ProtocolError",
+        "message": "Kling: tools/call: bad params (-32602)."
+      }
+    }
+  },
+  {
+    "name": "answer error-not-dict",
+    "call": "answer",
+    "description": "",
+    "args": {
+      "method": "\"tools/call\"",
+      "content_type": "\"application/json\"",
+      "data": "\"eyJpZCI6IDAsICJlcnJvciI6ICJ4In0=\""
+    },
+    "expected": {
+      "error": {
+        "type": "ProtocolError",
+        "message": "Kling: tools/call: ошибка JSON-RPC (None)."
+      }
+    }
+  },
+  {
+    "name": "answer error-no-message",
+    "call": "answer",
+    "description": "",
+    "args": {
+      "method": "\"tools/call\"",
+      "content_type": "\"application/json\"",
+      "data": "\"eyJpZCI6IDAsICJlcnJvciI6IHsiZGF0YSI6IDF9fQ==\""
+    },
+    "expected": {
+      "error": {
+        "type": "ProtocolError",
+        "message": "Kling: tools/call: ошибка JSON-RPC (None)."
+      }
+    }
+  },
+  {
+    "name": "answer no-result",
+    "call": "answer",
+    "description": "",
+    "args": {
+      "method": "\"tools/call\"",
+      "content_type": "\"application/json\"",
+      "data": "\"eyJpZCI6IDB9\""
+    },
+    "expected": {
+      "result": "null"
+    }
+  },
+  {
+    "name": "answer garbage",
+    "call": "answer",
+    "description": "",
+    "args": {
+      "method": "\"tools/call\"",
+      "content_type": "\"application/json\"",
+      "data": "\"bm90IGpzb24=\""
+    },
+    "expected": {
+      "error": {
+        "type": "ProtocolError",
+        "message": "Kling не вернул ответ JSON-RPC на запрос tools/call."
+      }
+    }
+  },
+  {
+    "name": "answer empty",
+    "call": "answer",
+    "description": "",
+    "args": {
+      "method": "\"tools/call\"",
+      "content_type": "\"\"",
+      "data": "\"\""
+    },
+    "expected": {
+      "error": {
+        "type": "ProtocolError",
+        "message": "Kling не вернул ответ JSON-RPC на запрос tools/call."
+      }
+    }
+  }
+]

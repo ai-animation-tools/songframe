@@ -1,0 +1,12 @@
+{
+  "dirs": [
+    "heroes"
+  ],
+  "files": {
+    "description.md": "bef7dbae8f09072623f8f94d72e1829e19426d4c807ddc34a7b47d6f41b8ee5a",
+    "heroes/mira-2.webp": "9c467d735b791248d627194fd0dbf995e76580b838dcc2f507ed98c344878d58",
+    "heroes/mira.jpg": "d221c60c1b6bcd52f98f95ec6a7c89bc4e66202479530a69aeb3490015abfca9",
+    "text.md": "50197925065424d662e73a6bdecfff200e8957fcdb752c6fc895d54573a9e22b",
+    "track.mp3": "ed834a6ad1b63649a9aaeb78c18e95bc49a266d0d14c953230bc924876e51bdf"
+  }
+}

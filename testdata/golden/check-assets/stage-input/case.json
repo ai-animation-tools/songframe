@@ -1,0 +1,13 @@
+{
+  "description": "Вход этапа не зарегистрирован.",
+  "call": "check_assets",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "вход или фильтр этапа"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

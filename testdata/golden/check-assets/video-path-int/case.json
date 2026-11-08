@@ -1,0 +1,13 @@
+{
+  "description": "accepted_edit.video.path числом: TypeError.",
+  "call": "check_assets",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "TypeError"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

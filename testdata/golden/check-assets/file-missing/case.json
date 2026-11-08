@@ -1,0 +1,15 @@
+{
+  "description": "Нет файла комплекта.",
+  "call": "check_assets",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "изменился файл комплекта"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [
+    "assets/shots/M01/original.mp4"
+  ],
+  "mkdir": []
+}

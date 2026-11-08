@@ -1,0 +1,9 @@
+{
+  "code": 2,
+  "stdout": "",
+  "stderr": "usage: shot_workflow.py set-note [-h] --dir DIR --id ID --active {true,false}\nshot_workflow.py set-note: error: argument --id: invalid int value: 'q'\n",
+  "traceback": false,
+  "files": {},
+  "dirs": {},
+  "modes": {}
+}

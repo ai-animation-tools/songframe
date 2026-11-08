@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "shot": "M01",
+  "kind": "video",
+  "accepted_edit": {
+    "video": {
+      "path": "../M03/video.mp4",
+      "sha256": "41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d"
+    }
+  }
+}

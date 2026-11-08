@@ -1,0 +1,17 @@
+{
+  "description": "Ошибки сущностей: код, повтор, тип, название, путь изображения, свойства, два world.",
+  "call": "viewCast",
+  "project": "project",
+  "covers": [
+    "entityCodeInvalid",
+    "entityCodeDuplicate",
+    "entityKindInvalid",
+    "entityNameMissing",
+    "imagePathInvalid",
+    "propertyCodeInvalid",
+    "propertyEmpty",
+    "worldMustBeUnique",
+    "label = name || id"
+  ],
+  "stubbedMedia": []
+}

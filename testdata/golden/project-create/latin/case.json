@@ -1,0 +1,12 @@
+{
+  "description": "Латинское название с пробелом: имя MP4 аниматика выводится из названия, проект открывается.",
+  "call": "Projects.create",
+  "project": null,
+  "covers": [
+    "copyTemplate",
+    "defaultAnimaticName slug",
+    "git init",
+    "open: history/current"
+  ],
+  "stubbedMedia": []
+}

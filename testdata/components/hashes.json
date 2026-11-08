@@ -1,0 +1,14 @@
+{
+  "tiny.flac": {
+    "sha256": "ebd55f3030888cb02fa6ecfa2195c13d77ff2885b778e2f82933bdd54a91e648",
+    "bytes": 1454
+  },
+  "vp8-vorbis.webm": {
+    "sha256": "3964ac6b7ef3da5495b6a3e3ad3c9d59f385836ebde526d82bfeb1b6b8f4f085",
+    "bytes": 4434
+  },
+  "vp9-opus.webm": {
+    "sha256": "2c84080e83ef25da286f674ab54c5211e39dc36316d2258d9aa0e525da64cab8",
+    "bytes": 1379
+  }
+}

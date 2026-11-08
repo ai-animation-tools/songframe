@@ -1,0 +1,13 @@
+{
+  "description": "Повтор кода части.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "уникальный id"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--force"
+  ]
+}

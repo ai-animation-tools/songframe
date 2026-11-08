@@ -1,0 +1,6 @@
+{
+  "code": 0,
+  "stdout": "usage: shot_status.py [-h]\n                      [--filter {all,planned,progress,completed,stale,unknown}]\n                      [--json] [--next] [--independent Mxx [Mxx ...]]\n\nСтатусы планов по реестру, assets, очереди и рабочим попыткам; @link README.md\n\noptions:\n  -h, --help            show this help message and exit\n  --filter {all,planned,progress,completed,stale,unknown}\n  --json                Машиночитаемый вывод для приложения.\n  --next                Только кандидат next и очередь.\n  --independent Mxx [Mxx ...]\n                        Проверить независимость партии планов.\n",
+  "stderr": "",
+  "traceback": false
+}

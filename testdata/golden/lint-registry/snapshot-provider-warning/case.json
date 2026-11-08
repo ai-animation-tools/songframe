@@ -1,0 +1,16 @@
+{
+  "description": "Адаптер провайдера: модель с авто-раскадровкой без prefer_multi_shots.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "snapshot_warnings"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ],
+  "remove": [],
+  "mkdir": [],
+  "provider": "kling"
+}

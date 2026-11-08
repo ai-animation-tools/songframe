@@ -1,0 +1,11 @@
+{
+  "description": "line_order с дробным числом.",
+  "call": "viewTiming",
+  "project": "project",
+  "covers": [
+    "unreadableTiming (line_order)"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "fps": 30,
+  "audio": {
+    "path": "source/track.mp3",
+    "end_seconds": "30"
+  },
+  "references": {
+    "mira": {
+      "name": "Мира",
+      "path": "source/heroes/mira.png"
+    },
+    "lev": {
+      "name": "Лев",
+      "path": "source/heroes/lev.png"
+    },
+    "boat": {
+      "name": "Лодка",
+      "path": "source/vehicles/boat.png"
+    },
+    "pier": {
+      "name": "Причал",
+      "path": "source/locations/pier.png"
+    }
+  },
+  "visual_direction": "Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.",
+  "sequences": [
+    {
+      "id": "intro",
+      "title": "Вечер у воды",
+      "direction": "Общий план причала, спокойный темп."
+    },
+    {
+      "id": "verse",
+      "title": "Фонарики",
+      "direction": "Друзья развешивают фонарики."
+    }
+  ],
+  "scenes": [
+    {
+      "id": "M01",
+      "original": "Вступление",
+      "sequence": "intro",
+      "title": "Вечер у воды",
+      "start_frame": 0,
+      "end_frame_exclusive": 240,
+      "camera": "Общий план с воздуха, медленный наезд",
+      "action": "Лодка покачивается у причала.",
+      "continuity": "Начало клипа; лодка у причала.",
+      "references": [
+        "boat",
+        "pier"
+      ],
+      "lipsync": false,
+      "card": {
+        "primary_reference": "boat"
+      },
+      "state_from": null,
+      "state_changes": {
+        "after": {
+          "boat": {
+            "dirt": "с каплями воды"
+          }
+        }
+      }
+    },
+    {
+      "id": "M02",
+      "original": "Вечер зажёг фонари у воды",
+      "sequence": "verse",
+      "start_frame": 240,
+      "end_frame_exclusive": 900,
+      "camera": "Средний план на причале",
+      "action": "Мира держит фонарик, Лев смотрит на воду.",
+      "continuity": "Продолжение вечера из M01.",
+      "references": [
+        "mira",
+        "lev",
+        "boat"
+      ],
+      "lipsync": false,
+      "card": {
+        "primary_reference": "boat"
+      },
+      "state_from": "M01",
+      "state_changes": {
+        "after": {
+          "boat": {
+            "sink": "у края причала"
+          }
+        }
+      }
+    }
+  ]
+}

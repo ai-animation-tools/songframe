@@ -1,0 +1,9 @@
+{
+  "description": "Полный корректный ввод.",
+  "call": "validateSources",
+  "project": "project",
+  "covers": [
+    "valid"
+  ],
+  "stubbedMedia": []
+}

@@ -1,0 +1,13 @@
+{
+  "description": "Последний этап другой длины.",
+  "call": "check_assets",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "Повтор фильтров"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

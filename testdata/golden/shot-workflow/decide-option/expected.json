@@ -1,0 +1,9 @@
+{
+  "code": 1,
+  "stdout": "",
+  "stderr": "Для вопроса «Утвердить опоры?» допустимы ответы: approve, revise.\n",
+  "traceback": false,
+  "files": {},
+  "dirs": {},
+  "modes": {}
+}

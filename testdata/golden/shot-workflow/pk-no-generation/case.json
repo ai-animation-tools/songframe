@@ -1,0 +1,19 @@
+{
+  "description": "Нет generation в проекте.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "generation_settings"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "plan-keyframes",
+    "--dir",
+    "plan/batches/M04-attempt-01",
+    "--request-seconds",
+    "5"
+  ],
+  "remove": [],
+  "mkdir": []
+}

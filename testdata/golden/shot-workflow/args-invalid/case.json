@@ -1,0 +1,15 @@
+{
+  "description": "Неизвестная команда.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "invalid choice"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "bad"
+  ],
+  "remove": [],
+  "mkdir": []
+}

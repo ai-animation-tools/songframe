@@ -1,0 +1,20 @@
+{
+  "description": "Нарушения схемы реестра: fps, лишнее поле, код плана, тип, enum, minItems.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "const",
+    "additionalProperties",
+    "pattern",
+    "type",
+    "minItems",
+    "minLength"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ],
+  "remove": [],
+  "mkdir": []
+}

@@ -1,0 +1,17 @@
+{
+  "description": "Код, повтор, название, стык, конец раньше начала, длительность. Отличие от 634fd94: оригинал отказывал (originalError), Go сохраняет черновик, а validateTreatment возвращает те же проблемы.",
+  "call": "saveTreatment",
+  "project": "project",
+  "covers": [
+    "partCodeLatin",
+    "duplicatePartCode",
+    "partTitleMissing",
+    "partStartMismatch",
+    "partEndsBeforeStart",
+    "treatmentDurationMismatch",
+    "черновик записывается"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

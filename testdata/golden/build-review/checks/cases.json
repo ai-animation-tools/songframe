@@ -1,0 +1,934 @@
+{
+  "source": "songframe 634fd94 src/main/checks.ts",
+  "steps": [
+    {
+      "op": "list",
+      "result": []
+    },
+    {
+      "op": "write",
+      "path": "plan/batches/review-a/review.mp4",
+      "text": "video a"
+    },
+    {
+      "op": "write",
+      "path": "plan/batches/review-a/review.json",
+      "text": "{\"shots\":[{\"id\":\"M01\"},{\"id\":\"M02\"}],\"total_frames\":24,\"video_sha256\":\"a\"}"
+    },
+    {
+      "op": "write",
+      "path": "plan/batches/review-a/notes.txt",
+      "text": "заметки"
+    },
+    {
+      "op": "write",
+      "path": "plan/batches/review-b/test.mp4",
+      "text": "video b"
+    },
+    {
+      "op": "write",
+      "path": "plan/batches/review-b/test.json",
+      "text": "{\"shots\":[{\"id\":5},{},\"M09\",{\"id\":null},{\"id\":[1,2]}],\"total_frames\":\"12\",\"video_sha256\":\"\"}"
+    },
+    {
+      "op": "write",
+      "path": "plan/batches/review-b/other.json",
+      "text": "{\"shots\":[],\"total_frames\":3,\"video_sha256\":\"b\"}"
+    },
+    {
+      "op": "write",
+      "path": "plan/batches/review-c/x.json",
+      "text": "{\"shots\":[],\"video_sha256\":\"c\"}"
+    },
+    {
+      "op": "write",
+      "path": "plan/batches/review-d/y.mp4",
+      "text": "video d"
+    },
+    {
+      "op": "write",
+      "path": "plan/batches/review-d/y.json",
+      "text": "{\"shots\":[],\"video_sha256\":5}"
+    },
+    {
+      "op": "write",
+      "path": "plan/batches/review-e/z.mp4",
+      "text": "video e"
+    },
+    {
+      "op": "write",
+      "path": "plan/batches/review-e/z.json",
+      "text": "{"
+    },
+    {
+      "op": "write",
+      "path": "plan/batches/review-h/w.mp4",
+      "text": "video h"
+    },
+    {
+      "op": "write",
+      "path": "plan/batches/review-h/w.json",
+      "text": "{\"shots\":\"x\",\"video_sha256\":\"s\"}"
+    },
+    {
+      "op": "write",
+      "path": "plan/batches/review-n/n.mp4",
+      "text": "video n"
+    },
+    {
+      "op": "write",
+      "path": "plan/batches/review-n/n.json",
+      "text": "{\"shots\":[],\"video_sha256\":\"n\",\"total_frames\":\"много\"}"
+    },
+    {
+      "op": "write",
+      "path": "plan/batches/top.json",
+      "text": "{\"shots\":[],\"video_sha256\":\"t\"}"
+    },
+    {
+      "op": "write",
+      "path": "plan/batches/top.mp4",
+      "text": "top"
+    },
+    {
+      "op": "write",
+      "path": "plan/batches/M01-attempt-01/workflow.json",
+      "text": "{}"
+    },
+    {
+      "op": "symlink",
+      "path": "plan/batches/review-link",
+      "target": "review-a"
+    },
+    {
+      "op": "mtime",
+      "path": "plan/batches/review-a/review.mp4",
+      "seconds": 1800000000
+    },
+    {
+      "op": "mtime",
+      "path": "plan/batches/review-b/test.mp4",
+      "seconds": 1800000100.25
+    },
+    {
+      "op": "mtime",
+      "path": "plan/batches/review-b/other.mp4",
+      "seconds": 1800000050
+    },
+    {
+      "op": "mtime",
+      "path": "plan/batches/review-n/n.mp4",
+      "seconds": 1800000000
+    },
+    {
+      "op": "list",
+      "result": [
+        {
+          "dir": "<project>/plan/batches/review-b",
+          "video": "<project>/plan/batches/review-b/test.mp4",
+          "manifest": "<project>/plan/batches/review-b/test.json",
+          "shots": [
+            "5",
+            "",
+            "",
+            "",
+            "1,2"
+          ],
+          "totalFrames": 12,
+          "createdAt": "2027-01-15T08:01:40.250Z"
+        },
+        {
+          "dir": "<project>/plan/batches/review-b",
+          "video": "<project>/plan/batches/review-b/other.mp4",
+          "manifest": "<project>/plan/batches/review-b/other.json",
+          "shots": [],
+          "totalFrames": 3,
+          "createdAt": "2027-01-15T08:00:50.000Z"
+        },
+        {
+          "dir": "<project>/plan/batches/review-n",
+          "video": "<project>/plan/batches/review-n/n.mp4",
+          "manifest": "<project>/plan/batches/review-n/n.json",
+          "shots": [],
+          "totalFrames": null,
+          "createdAt": "2027-01-15T08:00:00.000Z"
+        },
+        {
+          "dir": "<project>/plan/batches/review-a",
+          "video": "<project>/plan/batches/review-a/review.mp4",
+          "manifest": "<project>/plan/batches/review-a/review.json",
+          "shots": [
+            "M01",
+            "M02"
+          ],
+          "totalFrames": 24,
+          "createdAt": "2027-01-15T08:00:00.000Z"
+        }
+      ]
+    },
+    {
+      "op": "build",
+      "options": {
+        "shots": [
+          " M01 ",
+          "",
+          "M02"
+        ],
+        "planOnly": false
+      },
+      "result": {
+        "id": "job-1",
+        "status": "running"
+      },
+      "started": {
+        "kind": "review",
+        "title": "Проба M01 M02",
+        "project": "<project>",
+        "steps": [
+          {
+            "tool": "build_review",
+            "args": [
+              "--shots",
+              "M01",
+              "M02",
+              "--output",
+              "<project>/plan/batches/review-M01-M02-<stamp>/review.mp4"
+            ],
+            "label": "Сборка пробы стыков"
+          }
+        ]
+      },
+      "tree": {
+        "M01-attempt-01": "dir",
+        "M01-attempt-01/workflow.json": "{}",
+        "review-a": "dir",
+        "review-a/notes.txt": "заметки",
+        "review-a/review.json": "{\"shots\":[{\"id\":\"M01\"},{\"id\":\"M02\"}],\"total_frames\":24,\"video_sha256\":\"a\"}",
+        "review-a/review.mp4": "video a",
+        "review-b": "dir",
+        "review-b/other.json": "{\"shots\":[],\"total_frames\":3,\"video_sha256\":\"b\"}",
+        "review-b/other.mp4": "video",
+        "review-b/test.json": "{\"shots\":[{\"id\":5},{},\"M09\",{\"id\":null},{\"id\":[1,2]}],\"total_frames\":\"12\",\"video_sha256\":\"\"}",
+        "review-b/test.mp4": "video b",
+        "review-c": "dir",
+        "review-c/x.json": "{\"shots\":[],\"video_sha256\":\"c\"}",
+        "review-d": "dir",
+        "review-d/y.json": "{\"shots\":[],\"video_sha256\":5}",
+        "review-d/y.mp4": "video d",
+        "review-e": "dir",
+        "review-e/z.json": "{",
+        "review-e/z.mp4": "video e",
+        "review-h": "dir",
+        "review-h/w.json": "{\"shots\":\"x\",\"video_sha256\":\"s\"}",
+        "review-h/w.mp4": "video h",
+        "review-link": "symlink",
+        "review-n": "dir",
+        "review-n/n.json": "{\"shots\":[],\"video_sha256\":\"n\",\"total_frames\":\"много\"}",
+        "review-n/n.mp4": "video n",
+        "top.json": "{\"shots\":[],\"video_sha256\":\"t\"}",
+        "top.mp4": "top"
+      }
+    },
+    {
+      "op": "build",
+      "options": {
+        "shots": [
+          "M01",
+          "M02",
+          "M03",
+          "M04.1"
+        ],
+        "planOnly": true
+      },
+      "result": {
+        "id": "job-2",
+        "status": "running"
+      },
+      "started": {
+        "kind": "review",
+        "title": "Проба M01 M02 M03 M04.1 (проверка без видео)",
+        "project": "<project>",
+        "steps": [
+          {
+            "tool": "build_review",
+            "args": [
+              "--shots",
+              "M01",
+              "M02",
+              "M03",
+              "M04.1",
+              "--output",
+              "<project>/plan/batches/review-M01-M04.1-<stamp>/review.mp4",
+              "--plan-only"
+            ],
+            "label": "Проверка пробы без видео"
+          }
+        ]
+      },
+      "tree": {
+        "M01-attempt-01": "dir",
+        "M01-attempt-01/workflow.json": "{}",
+        "review-a": "dir",
+        "review-a/notes.txt": "заметки",
+        "review-a/review.json": "{\"shots\":[{\"id\":\"M01\"},{\"id\":\"M02\"}],\"total_frames\":24,\"video_sha256\":\"a\"}",
+        "review-a/review.mp4": "video a",
+        "review-b": "dir",
+        "review-b/other.json": "{\"shots\":[],\"total_frames\":3,\"video_sha256\":\"b\"}",
+        "review-b/other.mp4": "video",
+        "review-b/test.json": "{\"shots\":[{\"id\":5},{},\"M09\",{\"id\":null},{\"id\":[1,2]}],\"total_frames\":\"12\",\"video_sha256\":\"\"}",
+        "review-b/test.mp4": "video b",
+        "review-c": "dir",
+        "review-c/x.json": "{\"shots\":[],\"video_sha256\":\"c\"}",
+        "review-d": "dir",
+        "review-d/y.json": "{\"shots\":[],\"video_sha256\":5}",
+        "review-d/y.mp4": "video d",
+        "review-e": "dir",
+        "review-e/z.json": "{",
+        "review-e/z.mp4": "video e",
+        "review-h": "dir",
+        "review-h/w.json": "{\"shots\":\"x\",\"video_sha256\":\"s\"}",
+        "review-h/w.mp4": "video h",
+        "review-link": "symlink",
+        "review-n": "dir",
+        "review-n/n.json": "{\"shots\":[],\"video_sha256\":\"n\",\"total_frames\":\"много\"}",
+        "review-n/n.mp4": "video n",
+        "top.json": "{\"shots\":[],\"video_sha256\":\"t\"}",
+        "top.mp4": "top"
+      }
+    },
+    {
+      "op": "build",
+      "options": {
+        "shots": [
+          "M07"
+        ],
+        "planOnly": false
+      },
+      "result": {
+        "id": "job-3",
+        "status": "running"
+      },
+      "started": {
+        "kind": "review",
+        "title": "Проба M07",
+        "project": "<project>",
+        "steps": [
+          {
+            "tool": "build_review",
+            "args": [
+              "--shots",
+              "M07",
+              "--output",
+              "<project>/plan/batches/review-M07-<stamp>/review.mp4"
+            ],
+            "label": "Сборка пробы стыков"
+          }
+        ]
+      },
+      "tree": {
+        "M01-attempt-01": "dir",
+        "M01-attempt-01/workflow.json": "{}",
+        "review-a": "dir",
+        "review-a/notes.txt": "заметки",
+        "review-a/review.json": "{\"shots\":[{\"id\":\"M01\"},{\"id\":\"M02\"}],\"total_frames\":24,\"video_sha256\":\"a\"}",
+        "review-a/review.mp4": "video a",
+        "review-b": "dir",
+        "review-b/other.json": "{\"shots\":[],\"total_frames\":3,\"video_sha256\":\"b\"}",
+        "review-b/other.mp4": "video",
+        "review-b/test.json": "{\"shots\":[{\"id\":5},{},\"M09\",{\"id\":null},{\"id\":[1,2]}],\"total_frames\":\"12\",\"video_sha256\":\"\"}",
+        "review-b/test.mp4": "video b",
+        "review-c": "dir",
+        "review-c/x.json": "{\"shots\":[],\"video_sha256\":\"c\"}",
+        "review-d": "dir",
+        "review-d/y.json": "{\"shots\":[],\"video_sha256\":5}",
+        "review-d/y.mp4": "video d",
+        "review-e": "dir",
+        "review-e/z.json": "{",
+        "review-e/z.mp4": "video e",
+        "review-h": "dir",
+        "review-h/w.json": "{\"shots\":\"x\",\"video_sha256\":\"s\"}",
+        "review-h/w.mp4": "video h",
+        "review-link": "symlink",
+        "review-n": "dir",
+        "review-n/n.json": "{\"shots\":[],\"video_sha256\":\"n\",\"total_frames\":\"много\"}",
+        "review-n/n.mp4": "video n",
+        "top.json": "{\"shots\":[],\"video_sha256\":\"t\"}",
+        "top.mp4": "top"
+      }
+    },
+    {
+      "op": "build",
+      "options": {
+        "shots": [],
+        "planOnly": false
+      },
+      "error": "Выберите хотя бы один план для пробы.",
+      "tree": {
+        "M01-attempt-01": "dir",
+        "M01-attempt-01/workflow.json": "{}",
+        "review-a": "dir",
+        "review-a/notes.txt": "заметки",
+        "review-a/review.json": "{\"shots\":[{\"id\":\"M01\"},{\"id\":\"M02\"}],\"total_frames\":24,\"video_sha256\":\"a\"}",
+        "review-a/review.mp4": "video a",
+        "review-b": "dir",
+        "review-b/other.json": "{\"shots\":[],\"total_frames\":3,\"video_sha256\":\"b\"}",
+        "review-b/other.mp4": "video",
+        "review-b/test.json": "{\"shots\":[{\"id\":5},{},\"M09\",{\"id\":null},{\"id\":[1,2]}],\"total_frames\":\"12\",\"video_sha256\":\"\"}",
+        "review-b/test.mp4": "video b",
+        "review-c": "dir",
+        "review-c/x.json": "{\"shots\":[],\"video_sha256\":\"c\"}",
+        "review-d": "dir",
+        "review-d/y.json": "{\"shots\":[],\"video_sha256\":5}",
+        "review-d/y.mp4": "video d",
+        "review-e": "dir",
+        "review-e/z.json": "{",
+        "review-e/z.mp4": "video e",
+        "review-h": "dir",
+        "review-h/w.json": "{\"shots\":\"x\",\"video_sha256\":\"s\"}",
+        "review-h/w.mp4": "video h",
+        "review-link": "symlink",
+        "review-n": "dir",
+        "review-n/n.json": "{\"shots\":[],\"video_sha256\":\"n\",\"total_frames\":\"много\"}",
+        "review-n/n.mp4": "video n",
+        "top.json": "{\"shots\":[],\"video_sha256\":\"t\"}",
+        "top.mp4": "top"
+      }
+    },
+    {
+      "op": "build",
+      "options": {
+        "shots": [
+          "  ",
+          ""
+        ],
+        "planOnly": true
+      },
+      "error": "Выберите хотя бы один план для пробы.",
+      "tree": {
+        "M01-attempt-01": "dir",
+        "M01-attempt-01/workflow.json": "{}",
+        "review-a": "dir",
+        "review-a/notes.txt": "заметки",
+        "review-a/review.json": "{\"shots\":[{\"id\":\"M01\"},{\"id\":\"M02\"}],\"total_frames\":24,\"video_sha256\":\"a\"}",
+        "review-a/review.mp4": "video a",
+        "review-b": "dir",
+        "review-b/other.json": "{\"shots\":[],\"total_frames\":3,\"video_sha256\":\"b\"}",
+        "review-b/other.mp4": "video",
+        "review-b/test.json": "{\"shots\":[{\"id\":5},{},\"M09\",{\"id\":null},{\"id\":[1,2]}],\"total_frames\":\"12\",\"video_sha256\":\"\"}",
+        "review-b/test.mp4": "video b",
+        "review-c": "dir",
+        "review-c/x.json": "{\"shots\":[],\"video_sha256\":\"c\"}",
+        "review-d": "dir",
+        "review-d/y.json": "{\"shots\":[],\"video_sha256\":5}",
+        "review-d/y.mp4": "video d",
+        "review-e": "dir",
+        "review-e/z.json": "{",
+        "review-e/z.mp4": "video e",
+        "review-h": "dir",
+        "review-h/w.json": "{\"shots\":\"x\",\"video_sha256\":\"s\"}",
+        "review-h/w.mp4": "video h",
+        "review-link": "symlink",
+        "review-n": "dir",
+        "review-n/n.json": "{\"shots\":[],\"video_sha256\":\"n\",\"total_frames\":\"много\"}",
+        "review-n/n.mp4": "video n",
+        "top.json": "{\"shots\":[],\"video_sha256\":\"t\"}",
+        "top.mp4": "top"
+      }
+    },
+    {
+      "op": "build",
+      "options": {
+        "shots": [
+          "M1",
+          "M02",
+          "m03",
+          "M04."
+        ],
+        "planOnly": false
+      },
+      "error": "Коды планов вида M05 или M05.1: M1, m03, M04.",
+      "tree": {
+        "M01-attempt-01": "dir",
+        "M01-attempt-01/workflow.json": "{}",
+        "review-a": "dir",
+        "review-a/notes.txt": "заметки",
+        "review-a/review.json": "{\"shots\":[{\"id\":\"M01\"},{\"id\":\"M02\"}],\"total_frames\":24,\"video_sha256\":\"a\"}",
+        "review-a/review.mp4": "video a",
+        "review-b": "dir",
+        "review-b/other.json": "{\"shots\":[],\"total_frames\":3,\"video_sha256\":\"b\"}",
+        "review-b/other.mp4": "video",
+        "review-b/test.json": "{\"shots\":[{\"id\":5},{},\"M09\",{\"id\":null},{\"id\":[1,2]}],\"total_frames\":\"12\",\"video_sha256\":\"\"}",
+        "review-b/test.mp4": "video b",
+        "review-c": "dir",
+        "review-c/x.json": "{\"shots\":[],\"video_sha256\":\"c\"}",
+        "review-d": "dir",
+        "review-d/y.json": "{\"shots\":[],\"video_sha256\":5}",
+        "review-d/y.mp4": "video d",
+        "review-e": "dir",
+        "review-e/z.json": "{",
+        "review-e/z.mp4": "video e",
+        "review-h": "dir",
+        "review-h/w.json": "{\"shots\":\"x\",\"video_sha256\":\"s\"}",
+        "review-h/w.mp4": "video h",
+        "review-link": "symlink",
+        "review-n": "dir",
+        "review-n/n.json": "{\"shots\":[],\"video_sha256\":\"n\",\"total_frames\":\"много\"}",
+        "review-n/n.mp4": "video n",
+        "top.json": "{\"shots\":[],\"video_sha256\":\"t\"}",
+        "top.mp4": "top"
+      }
+    },
+    {
+      "op": "remove",
+      "path": "plan/batches/review-a/review.mp4",
+      "error": "Укажите абсолютный путь собранного результата.",
+      "tree": {
+        "M01-attempt-01": "dir",
+        "M01-attempt-01/workflow.json": "{}",
+        "review-a": "dir",
+        "review-a/notes.txt": "заметки",
+        "review-a/review.json": "{\"shots\":[{\"id\":\"M01\"},{\"id\":\"M02\"}],\"total_frames\":24,\"video_sha256\":\"a\"}",
+        "review-a/review.mp4": "video a",
+        "review-b": "dir",
+        "review-b/other.json": "{\"shots\":[],\"total_frames\":3,\"video_sha256\":\"b\"}",
+        "review-b/other.mp4": "video",
+        "review-b/test.json": "{\"shots\":[{\"id\":5},{},\"M09\",{\"id\":null},{\"id\":[1,2]}],\"total_frames\":\"12\",\"video_sha256\":\"\"}",
+        "review-b/test.mp4": "video b",
+        "review-c": "dir",
+        "review-c/x.json": "{\"shots\":[],\"video_sha256\":\"c\"}",
+        "review-d": "dir",
+        "review-d/y.json": "{\"shots\":[],\"video_sha256\":5}",
+        "review-d/y.mp4": "video d",
+        "review-e": "dir",
+        "review-e/z.json": "{",
+        "review-e/z.mp4": "video e",
+        "review-h": "dir",
+        "review-h/w.json": "{\"shots\":\"x\",\"video_sha256\":\"s\"}",
+        "review-h/w.mp4": "video h",
+        "review-link": "symlink",
+        "review-n": "dir",
+        "review-n/n.json": "{\"shots\":[],\"video_sha256\":\"n\",\"total_frames\":\"много\"}",
+        "review-n/n.mp4": "video n",
+        "top.json": "{\"shots\":[],\"video_sha256\":\"t\"}",
+        "top.mp4": "top"
+      }
+    },
+    {
+      "op": "remove",
+      "path": "<project>/plan/review.mp4",
+      "error": "Удалять можно только собранные результаты внутри plan/batches выбранного проекта.",
+      "tree": {
+        "M01-attempt-01": "dir",
+        "M01-attempt-01/workflow.json": "{}",
+        "review-a": "dir",
+        "review-a/notes.txt": "заметки",
+        "review-a/review.json": "{\"shots\":[{\"id\":\"M01\"},{\"id\":\"M02\"}],\"total_frames\":24,\"video_sha256\":\"a\"}",
+        "review-a/review.mp4": "video a",
+        "review-b": "dir",
+        "review-b/other.json": "{\"shots\":[],\"total_frames\":3,\"video_sha256\":\"b\"}",
+        "review-b/other.mp4": "video",
+        "review-b/test.json": "{\"shots\":[{\"id\":5},{},\"M09\",{\"id\":null},{\"id\":[1,2]}],\"total_frames\":\"12\",\"video_sha256\":\"\"}",
+        "review-b/test.mp4": "video b",
+        "review-c": "dir",
+        "review-c/x.json": "{\"shots\":[],\"video_sha256\":\"c\"}",
+        "review-d": "dir",
+        "review-d/y.json": "{\"shots\":[],\"video_sha256\":5}",
+        "review-d/y.mp4": "video d",
+        "review-e": "dir",
+        "review-e/z.json": "{",
+        "review-e/z.mp4": "video e",
+        "review-h": "dir",
+        "review-h/w.json": "{\"shots\":\"x\",\"video_sha256\":\"s\"}",
+        "review-h/w.mp4": "video h",
+        "review-link": "symlink",
+        "review-n": "dir",
+        "review-n/n.json": "{\"shots\":[],\"video_sha256\":\"n\",\"total_frames\":\"много\"}",
+        "review-n/n.mp4": "video n",
+        "top.json": "{\"shots\":[],\"video_sha256\":\"t\"}",
+        "top.mp4": "top"
+      }
+    },
+    {
+      "op": "remove",
+      "path": "<project>/plan/batches/review-a",
+      "error": "Удалять можно только собранные результаты внутри plan/batches выбранного проекта.",
+      "tree": {
+        "M01-attempt-01": "dir",
+        "M01-attempt-01/workflow.json": "{}",
+        "review-a": "dir",
+        "review-a/notes.txt": "заметки",
+        "review-a/review.json": "{\"shots\":[{\"id\":\"M01\"},{\"id\":\"M02\"}],\"total_frames\":24,\"video_sha256\":\"a\"}",
+        "review-a/review.mp4": "video a",
+        "review-b": "dir",
+        "review-b/other.json": "{\"shots\":[],\"total_frames\":3,\"video_sha256\":\"b\"}",
+        "review-b/other.mp4": "video",
+        "review-b/test.json": "{\"shots\":[{\"id\":5},{},\"M09\",{\"id\":null},{\"id\":[1,2]}],\"total_frames\":\"12\",\"video_sha256\":\"\"}",
+        "review-b/test.mp4": "video b",
+        "review-c": "dir",
+        "review-c/x.json": "{\"shots\":[],\"video_sha256\":\"c\"}",
+        "review-d": "dir",
+        "review-d/y.json": "{\"shots\":[],\"video_sha256\":5}",
+        "review-d/y.mp4": "video d",
+        "review-e": "dir",
+        "review-e/z.json": "{",
+        "review-e/z.mp4": "video e",
+        "review-h": "dir",
+        "review-h/w.json": "{\"shots\":\"x\",\"video_sha256\":\"s\"}",
+        "review-h/w.mp4": "video h",
+        "review-link": "symlink",
+        "review-n": "dir",
+        "review-n/n.json": "{\"shots\":[],\"video_sha256\":\"n\",\"total_frames\":\"много\"}",
+        "review-n/n.mp4": "video n",
+        "top.json": "{\"shots\":[],\"video_sha256\":\"t\"}",
+        "top.mp4": "top"
+      }
+    },
+    {
+      "op": "remove",
+      "path": "<project>/plan/batches/review-z/missing.mp4",
+      "error": "Результат отсутствует или путь содержит символическую ссылку. Обновите список.",
+      "tree": {
+        "M01-attempt-01": "dir",
+        "M01-attempt-01/workflow.json": "{}",
+        "review-a": "dir",
+        "review-a/notes.txt": "заметки",
+        "review-a/review.json": "{\"shots\":[{\"id\":\"M01\"},{\"id\":\"M02\"}],\"total_frames\":24,\"video_sha256\":\"a\"}",
+        "review-a/review.mp4": "video a",
+        "review-b": "dir",
+        "review-b/other.json": "{\"shots\":[],\"total_frames\":3,\"video_sha256\":\"b\"}",
+        "review-b/other.mp4": "video",
+        "review-b/test.json": "{\"shots\":[{\"id\":5},{},\"M09\",{\"id\":null},{\"id\":[1,2]}],\"total_frames\":\"12\",\"video_sha256\":\"\"}",
+        "review-b/test.mp4": "video b",
+        "review-c": "dir",
+        "review-c/x.json": "{\"shots\":[],\"video_sha256\":\"c\"}",
+        "review-d": "dir",
+        "review-d/y.json": "{\"shots\":[],\"video_sha256\":5}",
+        "review-d/y.mp4": "video d",
+        "review-e": "dir",
+        "review-e/z.json": "{",
+        "review-e/z.mp4": "video e",
+        "review-h": "dir",
+        "review-h/w.json": "{\"shots\":\"x\",\"video_sha256\":\"s\"}",
+        "review-h/w.mp4": "video h",
+        "review-link": "symlink",
+        "review-n": "dir",
+        "review-n/n.json": "{\"shots\":[],\"video_sha256\":\"n\",\"total_frames\":\"много\"}",
+        "review-n/n.mp4": "video n",
+        "top.json": "{\"shots\":[],\"video_sha256\":\"t\"}",
+        "top.mp4": "top"
+      }
+    },
+    {
+      "op": "remove",
+      "path": "<project>/plan/batches/review-link/review.mp4",
+      "error": "Результат отсутствует или путь содержит символическую ссылку. Обновите список.",
+      "tree": {
+        "M01-attempt-01": "dir",
+        "M01-attempt-01/workflow.json": "{}",
+        "review-a": "dir",
+        "review-a/notes.txt": "заметки",
+        "review-a/review.json": "{\"shots\":[{\"id\":\"M01\"},{\"id\":\"M02\"}],\"total_frames\":24,\"video_sha256\":\"a\"}",
+        "review-a/review.mp4": "video a",
+        "review-b": "dir",
+        "review-b/other.json": "{\"shots\":[],\"total_frames\":3,\"video_sha256\":\"b\"}",
+        "review-b/other.mp4": "video",
+        "review-b/test.json": "{\"shots\":[{\"id\":5},{},\"M09\",{\"id\":null},{\"id\":[1,2]}],\"total_frames\":\"12\",\"video_sha256\":\"\"}",
+        "review-b/test.mp4": "video b",
+        "review-c": "dir",
+        "review-c/x.json": "{\"shots\":[],\"video_sha256\":\"c\"}",
+        "review-d": "dir",
+        "review-d/y.json": "{\"shots\":[],\"video_sha256\":5}",
+        "review-d/y.mp4": "video d",
+        "review-e": "dir",
+        "review-e/z.json": "{",
+        "review-e/z.mp4": "video e",
+        "review-h": "dir",
+        "review-h/w.json": "{\"shots\":\"x\",\"video_sha256\":\"s\"}",
+        "review-h/w.mp4": "video h",
+        "review-link": "symlink",
+        "review-n": "dir",
+        "review-n/n.json": "{\"shots\":[],\"video_sha256\":\"n\",\"total_frames\":\"много\"}",
+        "review-n/n.mp4": "video n",
+        "top.json": "{\"shots\":[],\"video_sha256\":\"t\"}",
+        "top.mp4": "top"
+      }
+    },
+    {
+      "op": "remove",
+      "path": "<project>/plan/batches/review-c/x.json",
+      "error": "Собранная проба не найдена. Обновите список.",
+      "tree": {
+        "M01-attempt-01": "dir",
+        "M01-attempt-01/workflow.json": "{}",
+        "review-a": "dir",
+        "review-a/notes.txt": "заметки",
+        "review-a/review.json": "{\"shots\":[{\"id\":\"M01\"},{\"id\":\"M02\"}],\"total_frames\":24,\"video_sha256\":\"a\"}",
+        "review-a/review.mp4": "video a",
+        "review-b": "dir",
+        "review-b/other.json": "{\"shots\":[],\"total_frames\":3,\"video_sha256\":\"b\"}",
+        "review-b/other.mp4": "video",
+        "review-b/test.json": "{\"shots\":[{\"id\":5},{},\"M09\",{\"id\":null},{\"id\":[1,2]}],\"total_frames\":\"12\",\"video_sha256\":\"\"}",
+        "review-b/test.mp4": "video b",
+        "review-c": "dir",
+        "review-c/x.json": "{\"shots\":[],\"video_sha256\":\"c\"}",
+        "review-d": "dir",
+        "review-d/y.json": "{\"shots\":[],\"video_sha256\":5}",
+        "review-d/y.mp4": "video d",
+        "review-e": "dir",
+        "review-e/z.json": "{",
+        "review-e/z.mp4": "video e",
+        "review-h": "dir",
+        "review-h/w.json": "{\"shots\":\"x\",\"video_sha256\":\"s\"}",
+        "review-h/w.mp4": "video h",
+        "review-link": "symlink",
+        "review-n": "dir",
+        "review-n/n.json": "{\"shots\":[],\"video_sha256\":\"n\",\"total_frames\":\"много\"}",
+        "review-n/n.mp4": "video n",
+        "top.json": "{\"shots\":[],\"video_sha256\":\"t\"}",
+        "top.mp4": "top"
+      }
+    },
+    {
+      "op": "remove",
+      "path": "<project>/plan/batches/review-d/y.mp4",
+      "error": "Собранная проба не найдена. Обновите список.",
+      "tree": {
+        "M01-attempt-01": "dir",
+        "M01-attempt-01/workflow.json": "{}",
+        "review-a": "dir",
+        "review-a/notes.txt": "заметки",
+        "review-a/review.json": "{\"shots\":[{\"id\":\"M01\"},{\"id\":\"M02\"}],\"total_frames\":24,\"video_sha256\":\"a\"}",
+        "review-a/review.mp4": "video a",
+        "review-b": "dir",
+        "review-b/other.json": "{\"shots\":[],\"total_frames\":3,\"video_sha256\":\"b\"}",
+        "review-b/other.mp4": "video",
+        "review-b/test.json": "{\"shots\":[{\"id\":5},{},\"M09\",{\"id\":null},{\"id\":[1,2]}],\"total_frames\":\"12\",\"video_sha256\":\"\"}",
+        "review-b/test.mp4": "video b",
+        "review-c": "dir",
+        "review-c/x.json": "{\"shots\":[],\"video_sha256\":\"c\"}",
+        "review-d": "dir",
+        "review-d/y.json": "{\"shots\":[],\"video_sha256\":5}",
+        "review-d/y.mp4": "video d",
+        "review-e": "dir",
+        "review-e/z.json": "{",
+        "review-e/z.mp4": "video e",
+        "review-h": "dir",
+        "review-h/w.json": "{\"shots\":\"x\",\"video_sha256\":\"s\"}",
+        "review-h/w.mp4": "video h",
+        "review-link": "symlink",
+        "review-n": "dir",
+        "review-n/n.json": "{\"shots\":[],\"video_sha256\":\"n\",\"total_frames\":\"много\"}",
+        "review-n/n.mp4": "video n",
+        "top.json": "{\"shots\":[],\"video_sha256\":\"t\"}",
+        "top.mp4": "top"
+      }
+    },
+    {
+      "op": "remove",
+      "path": "<project>/plan/batches/review-a/../review-a/review.mp4",
+      "result": null,
+      "tree": {
+        "M01-attempt-01": "dir",
+        "M01-attempt-01/workflow.json": "{}",
+        "review-a": "dir",
+        "review-a/notes.txt": "заметки",
+        "review-b": "dir",
+        "review-b/other.json": "{\"shots\":[],\"total_frames\":3,\"video_sha256\":\"b\"}",
+        "review-b/other.mp4": "video",
+        "review-b/test.json": "{\"shots\":[{\"id\":5},{},\"M09\",{\"id\":null},{\"id\":[1,2]}],\"total_frames\":\"12\",\"video_sha256\":\"\"}",
+        "review-b/test.mp4": "video b",
+        "review-c": "dir",
+        "review-c/x.json": "{\"shots\":[],\"video_sha256\":\"c\"}",
+        "review-d": "dir",
+        "review-d/y.json": "{\"shots\":[],\"video_sha256\":5}",
+        "review-d/y.mp4": "video d",
+        "review-e": "dir",
+        "review-e/z.json": "{",
+        "review-e/z.mp4": "video e",
+        "review-h": "dir",
+        "review-h/w.json": "{\"shots\":\"x\",\"video_sha256\":\"s\"}",
+        "review-h/w.mp4": "video h",
+        "review-link": "symlink",
+        "review-n": "dir",
+        "review-n/n.json": "{\"shots\":[],\"video_sha256\":\"n\",\"total_frames\":\"много\"}",
+        "review-n/n.mp4": "video n",
+        "top.json": "{\"shots\":[],\"video_sha256\":\"t\"}",
+        "top.mp4": "top"
+      }
+    },
+    {
+      "op": "remove",
+      "path": "<project>/plan/batches/review-b/test.mp4",
+      "result": null,
+      "tree": {
+        "M01-attempt-01": "dir",
+        "M01-attempt-01/workflow.json": "{}",
+        "review-a": "dir",
+        "review-a/notes.txt": "заметки",
+        "review-b": "dir",
+        "review-b/other.json": "{\"shots\":[],\"total_frames\":3,\"video_sha256\":\"b\"}",
+        "review-b/other.mp4": "video",
+        "review-c": "dir",
+        "review-c/x.json": "{\"shots\":[],\"video_sha256\":\"c\"}",
+        "review-d": "dir",
+        "review-d/y.json": "{\"shots\":[],\"video_sha256\":5}",
+        "review-d/y.mp4": "video d",
+        "review-e": "dir",
+        "review-e/z.json": "{",
+        "review-e/z.mp4": "video e",
+        "review-h": "dir",
+        "review-h/w.json": "{\"shots\":\"x\",\"video_sha256\":\"s\"}",
+        "review-h/w.mp4": "video h",
+        "review-link": "symlink",
+        "review-n": "dir",
+        "review-n/n.json": "{\"shots\":[],\"video_sha256\":\"n\",\"total_frames\":\"много\"}",
+        "review-n/n.mp4": "video n",
+        "top.json": "{\"shots\":[],\"video_sha256\":\"t\"}",
+        "top.mp4": "top"
+      }
+    },
+    {
+      "op": "list",
+      "result": [
+        {
+          "dir": "<project>/plan/batches/review-b",
+          "video": "<project>/plan/batches/review-b/other.mp4",
+          "manifest": "<project>/plan/batches/review-b/other.json",
+          "shots": [],
+          "totalFrames": 3,
+          "createdAt": "2027-01-15T08:00:50.000Z"
+        },
+        {
+          "dir": "<project>/plan/batches/review-n",
+          "video": "<project>/plan/batches/review-n/n.mp4",
+          "manifest": "<project>/plan/batches/review-n/n.json",
+          "shots": [],
+          "totalFrames": null,
+          "createdAt": "2027-01-15T08:00:00.000Z"
+        }
+      ]
+    },
+    {
+      "op": "writeOutput",
+      "job": 2,
+      "text": "video built"
+    },
+    {
+      "op": "writeOutput",
+      "job": 2,
+      "suffix": ".json",
+      "text": "{\"shots\":[{\"id\":\"M07\"}],\"total_frames\":12,\"video_sha256\":\"z\"}"
+    },
+    {
+      "op": "removeOutput",
+      "job": 2,
+      "error": "Проба ещё собирается. Дождитесь завершения задания.",
+      "tree": {
+        "M01-attempt-01": "dir",
+        "M01-attempt-01/workflow.json": "{}",
+        "review-M07-<stamp>": "dir",
+        "review-M07-<stamp>/review.json": "{\"shots\":[{\"id\":\"M07\"}],\"total_frames\":12,\"video_sha256\":\"z\"}",
+        "review-M07-<stamp>/review.mp4": "video built",
+        "review-a": "dir",
+        "review-a/notes.txt": "заметки",
+        "review-b": "dir",
+        "review-b/other.json": "{\"shots\":[],\"total_frames\":3,\"video_sha256\":\"b\"}",
+        "review-b/other.mp4": "video",
+        "review-c": "dir",
+        "review-c/x.json": "{\"shots\":[],\"video_sha256\":\"c\"}",
+        "review-d": "dir",
+        "review-d/y.json": "{\"shots\":[],\"video_sha256\":5}",
+        "review-d/y.mp4": "video d",
+        "review-e": "dir",
+        "review-e/z.json": "{",
+        "review-e/z.mp4": "video e",
+        "review-h": "dir",
+        "review-h/w.json": "{\"shots\":\"x\",\"video_sha256\":\"s\"}",
+        "review-h/w.mp4": "video h",
+        "review-link": "symlink",
+        "review-n": "dir",
+        "review-n/n.json": "{\"shots\":[],\"video_sha256\":\"n\",\"total_frames\":\"много\"}",
+        "review-n/n.mp4": "video n",
+        "top.json": "{\"shots\":[],\"video_sha256\":\"t\"}",
+        "top.mp4": "top"
+      }
+    },
+    {
+      "op": "status",
+      "job": 2,
+      "status": "done"
+    },
+    {
+      "op": "removeOutput",
+      "job": 2,
+      "result": null,
+      "tree": {
+        "M01-attempt-01": "dir",
+        "M01-attempt-01/workflow.json": "{}",
+        "review-a": "dir",
+        "review-a/notes.txt": "заметки",
+        "review-b": "dir",
+        "review-b/other.json": "{\"shots\":[],\"total_frames\":3,\"video_sha256\":\"b\"}",
+        "review-b/other.mp4": "video",
+        "review-c": "dir",
+        "review-c/x.json": "{\"shots\":[],\"video_sha256\":\"c\"}",
+        "review-d": "dir",
+        "review-d/y.json": "{\"shots\":[],\"video_sha256\":5}",
+        "review-d/y.mp4": "video d",
+        "review-e": "dir",
+        "review-e/z.json": "{",
+        "review-e/z.mp4": "video e",
+        "review-h": "dir",
+        "review-h/w.json": "{\"shots\":\"x\",\"video_sha256\":\"s\"}",
+        "review-h/w.mp4": "video h",
+        "review-link": "symlink",
+        "review-n": "dir",
+        "review-n/n.json": "{\"shots\":[],\"video_sha256\":\"n\",\"total_frames\":\"много\"}",
+        "review-n/n.mp4": "video n",
+        "top.json": "{\"shots\":[],\"video_sha256\":\"t\"}",
+        "top.mp4": "top"
+      }
+    },
+    {
+      "op": "remove",
+      "path": "<project>/plan/batches/review-b/other.mp4",
+      "result": null,
+      "tree": {
+        "M01-attempt-01": "dir",
+        "M01-attempt-01/workflow.json": "{}",
+        "review-a": "dir",
+        "review-a/notes.txt": "заметки",
+        "review-c": "dir",
+        "review-c/x.json": "{\"shots\":[],\"video_sha256\":\"c\"}",
+        "review-d": "dir",
+        "review-d/y.json": "{\"shots\":[],\"video_sha256\":5}",
+        "review-d/y.mp4": "video d",
+        "review-e": "dir",
+        "review-e/z.json": "{",
+        "review-e/z.mp4": "video e",
+        "review-h": "dir",
+        "review-h/w.json": "{\"shots\":\"x\",\"video_sha256\":\"s\"}",
+        "review-h/w.mp4": "video h",
+        "review-link": "symlink",
+        "review-n": "dir",
+        "review-n/n.json": "{\"shots\":[],\"video_sha256\":\"n\",\"total_frames\":\"много\"}",
+        "review-n/n.mp4": "video n",
+        "top.json": "{\"shots\":[],\"video_sha256\":\"t\"}",
+        "top.mp4": "top"
+      }
+    },
+    {
+      "op": "list",
+      "result": [
+        {
+          "dir": "<project>/plan/batches/review-n",
+          "video": "<project>/plan/batches/review-n/n.mp4",
+          "manifest": "<project>/plan/batches/review-n/n.json",
+          "shots": [],
+          "totalFrames": null,
+          "createdAt": "2027-01-15T08:00:00.000Z"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "description": "Путь не существует.",
+  "call": "computeStatus",
+  "project": null,
+  "covers": [
+    "state=invalid",
+    "name=basename(path)",
+    "open: ошибка"
+  ],
+  "stubbedMedia": []
+}

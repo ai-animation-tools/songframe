@@ -1,0 +1,35 @@
+{
+  "appStates": [
+    {
+      "id": "empty-nullable",
+      "expected": {
+        "packaged": false,
+        "problems": [],
+        "localDir": "Профиль теста 🌿",
+        "current": null,
+        "history": [],
+        "platform": "linux"
+      }
+    },
+    {
+      "id": "populated-unicode",
+      "expected": {
+        "packaged": true,
+        "problems": [
+          "Проверка профиля"
+        ],
+        "localDir": "Профиль теста 🌿",
+        "current": "Проекты/Ёж",
+        "history": [
+          {
+            "path": "Проекты/Ёж",
+            "name": "Ёж 🌿",
+            "lastOpened": "2026-11-03T12:34:56Z",
+            "exists": true
+          }
+        ],
+        "platform": "win32"
+      }
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "description": "PNG с расширением .jpg.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "format mismatch"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "select-image",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "--file",
+    "image-01/original.jpg"
+  ],
+  "remove": [],
+  "mkdir": []
+}

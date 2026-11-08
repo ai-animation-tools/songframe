@@ -1,0 +1,10 @@
+{
+  "description": "Удалён невыбранный вид heroes/mira-2.png, новый вид получает то же имя и добавляется в выбор.",
+  "call": "saveSourcesWithCastImages",
+  "project": "project",
+  "covers": [
+    "новый вид определяет ввод, а не путь",
+    "удаление неиспользуемого изображения"
+  ],
+  "stubbedMedia": []
+}

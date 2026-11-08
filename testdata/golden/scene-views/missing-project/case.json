@@ -1,0 +1,17 @@
+{
+  "description": "Нет plan/project.json: MissingInputError — код 1.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "MissingInputError"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--check"
+  ],
+  "remove": [
+    "plan/project.json"
+  ],
+  "mkdir": []
+}

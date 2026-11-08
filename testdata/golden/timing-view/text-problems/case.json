@@ -1,0 +1,15 @@
+{
+  "description": "Текст с markdown, ошибочным заголовком, неразмеченной частью и CRLF.",
+  "call": "viewTiming",
+  "project": "project",
+  "covers": [
+    "invalidHeader",
+    "markdown",
+    "unmarkedSections",
+    "разделители CRLF/CR",
+    "lyricsChanged"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

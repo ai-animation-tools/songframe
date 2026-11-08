@@ -1,0 +1,17 @@
+{
+  "description": "-- перед кодом плана.",
+  "call": "continuity_brief",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "--"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--",
+    "M01"
+  ],
+  "remove": [],
+  "mkdir": []
+}

@@ -1,0 +1,2769 @@
+[
+  {
+    "name": "check-table",
+    "description": "Оценка по таблице, остаток адаптера: таблица и JSON, outputs=2, ручной остаток.",
+    "covers": [
+      "таблица цен",
+      "account",
+      "--balance"
+    ],
+    "files": {
+      "project/plan/project.json": {
+        "text": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n"
+      },
+      "project/pricing.json": {
+        "text": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+      },
+      "project/plan/batches/M32-attempt-01/request/request.json": {
+        "text": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}"
+      },
+      "project/plan/batches/M32-attempt-01/request/attempt.json": {
+        "text": "{\"status\": \"submitted\", \"credits_consumed\": 49}"
+      },
+      "service/service.json": {
+        "text": "{\"balance\": 1824}"
+      }
+    },
+    "steps": [
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json",
+          "--json"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json"
+        ],
+        "project": true,
+        "configure": {
+          "balance": 10
+        }
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json",
+          "--balance",
+          "51",
+          "--no-account",
+          "--json"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json",
+          "--balance",
+          "51"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json",
+          "--no-account"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json",
+          "--json"
+        ],
+        "project": true,
+        "configure": {
+          "balance": null
+        }
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json"
+        ],
+        "project": true,
+        "configure": {
+          "balance": "много"
+        }
+      }
+    ],
+    "expected": [
+      {
+        "code": 0,
+        "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-video (video) |\n| Параметры | duration=7, resolution=1080p, результатов 1 |\n| Оценка | 51 кредитов (таблица цен) |\n| Остаток | 1824 кредитов (тестовый сервис) |\n| Вердикт | средств достаточно (`ok`) |\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [
+          "{\"action\": \"account\"}"
+        ],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 0,
+        "stdout": "{\n  \"model\": \"test-video\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": 51.0,\n  \"estimate_source\": \"таблица цен\",\n  \"balance_credits\": 1824.0,\n  \"balance_source\": \"тестовый сервис\",\n  \"verdict\": \"ok\",\n  \"verdict_label\": \"средств достаточно\",\n  \"reasons\": []\n}\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [
+          "{\"action\": \"account\"}"
+        ],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 2,
+        "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-video (video) |\n| Параметры | duration=7, resolution=1080p, результатов 1 |\n| Оценка | 51 кредитов (таблица цен) |\n| Остаток | 10 кредитов (тестовый сервис) |\n| Вердикт | средств не хватает (`insufficient_balance`) |\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [
+          "{\"action\": \"account\"}"
+        ],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 0,
+        "stdout": "{\n  \"model\": \"test-video\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": 51.0,\n  \"estimate_source\": \"таблица цен\",\n  \"balance_credits\": 51.0,\n  \"balance_source\": \"указан вручную\",\n  \"verdict\": \"ok\",\n  \"verdict_label\": \"средств достаточно\",\n  \"reasons\": []\n}\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 0,
+        "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-video (video) |\n| Параметры | duration=7, resolution=1080p, результатов 1 |\n| Оценка | 51 кредитов (таблица цен) |\n| Остаток | 51 кредитов (указан вручную) |\n| Вердикт | средств достаточно (`ok`) |\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 2,
+        "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-video (video) |\n| Параметры | duration=7, resolution=1080p, результатов 1 |\n| Оценка | 51 кредитов (таблица цен) |\n| Остаток | неизвестно (запрос к аккаунту отключён) |\n| Вердикт | стоимость или баланс неизвестны (`cost_or_balance_unknown`) |\n| Причина | остаток неизвестен: запрос к аккаунту отключён |\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 2,
+        "stdout": "{\n  \"model\": \"test-video\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": 51.0,\n  \"estimate_source\": \"таблица цен\",\n  \"balance_credits\": null,\n  \"balance_source\": \"тестовый сервис не сообщил остаток\",\n  \"verdict\": \"cost_or_balance_unknown\",\n  \"verdict_label\": \"стоимость или баланс неизвестны\",\n  \"reasons\": [\n    \"остаток неизвестен: тестовый сервис не сообщил остаток\"\n  ]\n}\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [
+          "{\"action\": \"account\"}"
+        ],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 1,
+        "stdout": "",
+        "stderr": "could not convert string to float: 'много'\n",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [
+          "{\"action\": \"account\"}"
+        ],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "check-outputs",
+    "description": "outputs=2 удваивает таблицу.",
+    "covers": [
+      "outputs"
+    ],
+    "files": {
+      "project/plan/project.json": {
+        "text": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n"
+      },
+      "project/pricing.json": {
+        "text": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+      },
+      "project/plan/batches/M32-attempt-01/request/request.json": {
+        "text": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 2}"
+      },
+      "project/plan/batches/M32-attempt-01/request/attempt.json": {
+        "text": "{\"status\": \"submitted\", \"credits_consumed\": 49}"
+      },
+      "service/service.json": {
+        "text": "{\"balance\": 1824}"
+      }
+    },
+    "steps": [
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json",
+          "--json"
+        ],
+        "project": true
+      }
+    ],
+    "expected": [
+      {
+        "code": 0,
+        "stdout": "{\n  \"model\": \"test-video\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 2,\n  \"estimate_credits\": 102.0,\n  \"estimate_source\": \"таблица цен\",\n  \"balance_credits\": 1824.0,\n  \"balance_source\": \"тестовый сервис\",\n  \"verdict\": \"ok\",\n  \"verdict_label\": \"средств достаточно\",\n  \"reasons\": []\n}\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [
+          "{\"action\": \"account\"}"
+        ],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 2}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "estimate-fast-unknown",
+    "description": "Оценка: fast-unknown.",
+    "covers": [
+      "estimate"
+    ],
+    "files": {
+      "project/plan/project.json": {
+        "text": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n"
+      },
+      "project/pricing.json": {
+        "text": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+      },
+      "project/plan/batches/M32-attempt-01/request/request.json": {
+        "text": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video-fast\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}"
+      },
+      "project/plan/batches/M32-attempt-01/request/attempt.json": {
+        "text": "{\"status\": \"submitted\", \"credits_consumed\": 49}"
+      },
+      "service/service.json": {
+        "text": "{\"balance\": 1824}"
+      }
+    },
+    "steps": [
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json",
+          "--json",
+          "--no-account"
+        ],
+        "project": true
+      }
+    ],
+    "expected": [
+      {
+        "code": 2,
+        "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-video-fast (video) |\n| Параметры | duration=7, resolution=1080p, результатов 1 |\n| Оценка | неизвестно (нет данных) |\n| Остаток | 1824 кредитов (тестовый сервис) |\n| Вердикт | стоимость или баланс неизвестны (`cost_or_balance_unknown`) |\n| Причина | цена test-video-fast при 1080p не задана и не наблюдалась |\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [
+          "{\"action\": \"account\"}"
+        ],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video-fast\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 2,
+        "stdout": "{\n  \"model\": \"test-video-fast\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": null,\n  \"estimate_source\": null,\n  \"balance_credits\": null,\n  \"balance_source\": \"запрос к аккаунту отключён\",\n  \"verdict\": \"cost_or_balance_unknown\",\n  \"verdict_label\": \"стоимость или баланс неизвестны\",\n  \"reasons\": [\n    \"цена test-video-fast при 1080p не задана и не наблюдалась\",\n    \"остаток неизвестен: запрос к аккаунту отключён\"\n  ]\n}\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video-fast\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "estimate-no-model",
+    "description": "Оценка: no-model.",
+    "covers": [
+      "estimate"
+    ],
+    "files": {
+      "project/plan/project.json": {
+        "text": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n"
+      },
+      "project/pricing.json": {
+        "text": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+      },
+      "project/plan/batches/M32-attempt-01/request/request.json": {
+        "text": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video-unknown\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}"
+      },
+      "project/plan/batches/M32-attempt-01/request/attempt.json": {
+        "text": "{\"status\": \"submitted\", \"credits_consumed\": 49}"
+      },
+      "service/service.json": {
+        "text": "{\"balance\": 1824}"
+      }
+    },
+    "steps": [
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json",
+          "--json",
+          "--no-account"
+        ],
+        "project": true
+      }
+    ],
+    "expected": [
+      {
+        "code": 2,
+        "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-video-unknown (video) |\n| Параметры | duration=7, resolution=1080p, результатов 1 |\n| Оценка | неизвестно (нет данных) |\n| Остаток | 1824 кредитов (тестовый сервис) |\n| Вердикт | стоимость или баланс неизвестны (`cost_or_balance_unknown`) |\n| Причина | модель test-video-unknown отсутствует в таблице цен |\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [
+          "{\"action\": \"account\"}"
+        ],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video-unknown\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 2,
+        "stdout": "{\n  \"model\": \"test-video-unknown\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": null,\n  \"estimate_source\": null,\n  \"balance_credits\": null,\n  \"balance_source\": \"запрос к аккаунту отключён\",\n  \"verdict\": \"cost_or_balance_unknown\",\n  \"verdict_label\": \"стоимость или баланс неизвестны\",\n  \"reasons\": [\n    \"модель test-video-unknown отсутствует в таблице цен\",\n    \"остаток неизвестен: запрос к аккаунту отключён\"\n  ]\n}\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video-unknown\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "estimate-720p-null",
+    "description": "Оценка: 720p-null.",
+    "covers": [
+      "estimate"
+    ],
+    "files": {
+      "project/plan/project.json": {
+        "text": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n"
+      },
+      "project/pricing.json": {
+        "text": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+      },
+      "project/plan/batches/M32-attempt-01/request/request.json": {
+        "text": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"720p\"}, \"outputs\": 1}"
+      },
+      "project/plan/batches/M32-attempt-01/request/attempt.json": {
+        "text": "{\"status\": \"submitted\", \"credits_consumed\": 49}"
+      },
+      "service/service.json": {
+        "text": "{\"balance\": 1824}"
+      }
+    },
+    "steps": [
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json",
+          "--json",
+          "--no-account"
+        ],
+        "project": true
+      }
+    ],
+    "expected": [
+      {
+        "code": 2,
+        "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-video (video) |\n| Параметры | duration=7, resolution=720p, результатов 1 |\n| Оценка | неизвестно (нет данных) |\n| Остаток | 1824 кредитов (тестовый сервис) |\n| Вердикт | стоимость или баланс неизвестны (`cost_or_balance_unknown`) |\n| Причина | цена test-video при 720p не задана и не наблюдалась |\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [
+          "{\"action\": \"account\"}"
+        ],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"720p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 2,
+        "stdout": "{\n  \"model\": \"test-video\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": \"720p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": null,\n  \"estimate_source\": null,\n  \"balance_credits\": null,\n  \"balance_source\": \"запрос к аккаунту отключён\",\n  \"verdict\": \"cost_or_balance_unknown\",\n  \"verdict_label\": \"стоимость или баланс неизвестны\",\n  \"reasons\": [\n    \"цена test-video при 720p не задана и не наблюдалась\",\n    \"остаток неизвестен: запрос к аккаунту отключён\"\n  ]\n}\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"720p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "estimate-no-resolution",
+    "description": "Оценка: no-resolution.",
+    "covers": [
+      "estimate"
+    ],
+    "files": {
+      "project/plan/project.json": {
+        "text": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n"
+      },
+      "project/pricing.json": {
+        "text": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+      },
+      "project/plan/batches/M32-attempt-01/request/request.json": {
+        "text": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7}, \"outputs\": 1}"
+      },
+      "project/plan/batches/M32-attempt-01/request/attempt.json": {
+        "text": "{\"status\": \"submitted\", \"credits_consumed\": 49}"
+      },
+      "service/service.json": {
+        "text": "{\"balance\": 1824}"
+      }
+    },
+    "steps": [
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json",
+          "--json",
+          "--no-account"
+        ],
+        "project": true
+      }
+    ],
+    "expected": [
+      {
+        "code": 2,
+        "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-video (video) |\n| Параметры | duration=7, resolution=—, результатов 1 |\n| Оценка | неизвестно (нет данных) |\n| Остаток | 1824 кредитов (тестовый сервис) |\n| Вердикт | стоимость или баланс неизвестны (`cost_or_balance_unknown`) |\n| Причина | в запросе нет resolution |\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [
+          "{\"action\": \"account\"}"
+        ],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 2,
+        "stdout": "{\n  \"model\": \"test-video\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": null,\n  \"estimate_source\": null,\n  \"balance_credits\": null,\n  \"balance_source\": \"запрос к аккаунту отключён\",\n  \"verdict\": \"cost_or_balance_unknown\",\n  \"verdict_label\": \"стоимость или баланс неизвестны\",\n  \"reasons\": [\n    \"в запросе нет resolution\",\n    \"остаток неизвестен: запрос к аккаунту отключён\"\n  ]\n}\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "estimate-no-duration",
+    "description": "Оценка: no-duration.",
+    "covers": [
+      "estimate"
+    ],
+    "files": {
+      "project/plan/project.json": {
+        "text": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n"
+      },
+      "project/pricing.json": {
+        "text": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+      },
+      "project/plan/batches/M32-attempt-01/request/request.json": {
+        "text": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"resolution\": \"1080p\"}, \"outputs\": 1}"
+      },
+      "project/plan/batches/M32-attempt-01/request/attempt.json": {
+        "text": "{\"status\": \"submitted\", \"credits_consumed\": 49}"
+      },
+      "service/service.json": {
+        "text": "{\"balance\": 1824}"
+      }
+    },
+    "steps": [
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json",
+          "--json",
+          "--no-account"
+        ],
+        "project": true
+      }
+    ],
+    "expected": [
+      {
+        "code": 2,
+        "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-video (video) |\n| Параметры | duration=—, resolution=1080p, результатов 1 |\n| Оценка | неизвестно (нет данных) |\n| Остаток | 1824 кредитов (тестовый сервис) |\n| Вердикт | стоимость или баланс неизвестны (`cost_or_balance_unknown`) |\n| Причина | в запросе нет duration |\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [
+          "{\"action\": \"account\"}"
+        ],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 2,
+        "stdout": "{\n  \"model\": \"test-video\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": null,\n  \"estimate_source\": null,\n  \"balance_credits\": null,\n  \"balance_source\": \"запрос к аккаунту отключён\",\n  \"verdict\": \"cost_or_balance_unknown\",\n  \"verdict_label\": \"стоимость или баланс неизвестны\",\n  \"reasons\": [\n    \"в запросе нет duration\",\n    \"остаток неизвестен: запрос к аккаунту отключён\"\n  ]\n}\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "estimate-string-duration",
+    "description": "Оценка: string-duration.",
+    "covers": [
+      "estimate"
+    ],
+    "files": {
+      "project/plan/project.json": {
+        "text": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n"
+      },
+      "project/pricing.json": {
+        "text": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+      },
+      "project/plan/batches/M32-attempt-01/request/request.json": {
+        "text": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": \"7\", \"resolution\": \"1080p\"}, \"outputs\": 1}"
+      },
+      "project/plan/batches/M32-attempt-01/request/attempt.json": {
+        "text": "{\"status\": \"submitted\", \"credits_consumed\": 49}"
+      },
+      "service/service.json": {
+        "text": "{\"balance\": 1824}"
+      }
+    },
+    "steps": [
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json",
+          "--json",
+          "--no-account"
+        ],
+        "project": true
+      }
+    ],
+    "expected": [
+      {
+        "code": 0,
+        "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-video (video) |\n| Параметры | duration=7, resolution=1080p, результатов 1 |\n| Оценка | 51 кредитов (таблица цен) |\n| Остаток | 1824 кредитов (тестовый сервис) |\n| Вердикт | средств достаточно (`ok`) |\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [
+          "{\"action\": \"account\"}"
+        ],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": \"7\", \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 2,
+        "stdout": "{\n  \"model\": \"test-video\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": \"7\",\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": 51.0,\n  \"estimate_source\": \"таблица цен\",\n  \"balance_credits\": null,\n  \"balance_source\": \"запрос к аккаунту отключён\",\n  \"verdict\": \"cost_or_balance_unknown\",\n  \"verdict_label\": \"стоимость или баланс неизвестны\",\n  \"reasons\": [\n    \"остаток неизвестен: запрос к аккаунту отключён\"\n  ]\n}\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": \"7\", \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "estimate-numeric-resolution",
+    "description": "Оценка: numeric-resolution.",
+    "covers": [
+      "estimate"
+    ],
+    "files": {
+      "project/plan/project.json": {
+        "text": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n"
+      },
+      "project/pricing.json": {
+        "text": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+      },
+      "project/plan/batches/M32-attempt-01/request/request.json": {
+        "text": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": 1080}, \"outputs\": 1}"
+      },
+      "project/plan/batches/M32-attempt-01/request/attempt.json": {
+        "text": "{\"status\": \"submitted\", \"credits_consumed\": 49}"
+      },
+      "service/service.json": {
+        "text": "{\"balance\": 1824}"
+      }
+    },
+    "steps": [
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json",
+          "--json",
+          "--no-account"
+        ],
+        "project": true
+      }
+    ],
+    "expected": [
+      {
+        "code": 2,
+        "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-video (video) |\n| Параметры | duration=7, resolution=1080, результатов 1 |\n| Оценка | неизвестно (нет данных) |\n| Остаток | 1824 кредитов (тестовый сервис) |\n| Вердикт | стоимость или баланс неизвестны (`cost_or_balance_unknown`) |\n| Причина | цена test-video при 1080 не задана и не наблюдалась |\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [
+          "{\"action\": \"account\"}"
+        ],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": 1080}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 2,
+        "stdout": "{\n  \"model\": \"test-video\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": 1080\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": null,\n  \"estimate_source\": null,\n  \"balance_credits\": null,\n  \"balance_source\": \"запрос к аккаунту отключён\",\n  \"verdict\": \"cost_or_balance_unknown\",\n  \"verdict_label\": \"стоимость или баланс неизвестны\",\n  \"reasons\": [\n    \"цена test-video при 1080 не задана и не наблюдалась\",\n    \"остаток неизвестен: запрос к аккаунту отключён\"\n  ]\n}\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": 1080}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "estimate-unknown-kind",
+    "description": "Оценка: unknown-kind.",
+    "covers": [
+      "estimate"
+    ],
+    "files": {
+      "project/plan/project.json": {
+        "text": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n"
+      },
+      "project/pricing.json": {
+        "text": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+      },
+      "project/plan/batches/M32-attempt-01/request/request.json": {
+        "text": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"audio\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}"
+      },
+      "project/plan/batches/M32-attempt-01/request/attempt.json": {
+        "text": "{\"status\": \"submitted\", \"credits_consumed\": 49}"
+      },
+      "service/service.json": {
+        "text": "{\"balance\": 1824}"
+      }
+    },
+    "steps": [
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json",
+          "--json",
+          "--no-account"
+        ],
+        "project": true
+      }
+    ],
+    "expected": [
+      {
+        "code": 2,
+        "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-video (audio) |\n| Параметры | duration=7, resolution=1080p, результатов 1 |\n| Оценка | неизвестно (нет данных) |\n| Остаток | 1824 кредитов (тестовый сервис) |\n| Вердикт | стоимость или баланс неизвестны (`cost_or_balance_unknown`) |\n| Причина | неизвестный вид результата |\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [
+          "{\"action\": \"account\"}"
+        ],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"audio\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 2,
+        "stdout": "{\n  \"model\": \"test-video\",\n  \"kind\": \"audio\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": null,\n  \"estimate_source\": null,\n  \"balance_credits\": null,\n  \"balance_source\": \"запрос к аккаунту отключён\",\n  \"verdict\": \"cost_or_balance_unknown\",\n  \"verdict_label\": \"стоимость или баланс неизвестны\",\n  \"reasons\": [\n    \"неизвестный вид результата\",\n    \"остаток неизвестен: запрос к аккаунту отключён\"\n  ]\n}\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"audio\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "observed-scaled",
+    "description": "Пересчёт наблюдения по секундам, затем точное наблюдение.",
+    "covers": [
+      "наблюдение, пересчёт"
+    ],
+    "files": {
+      "project/plan/project.json": {
+        "text": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n"
+      },
+      "project/pricing.json": {
+        "text": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": [{\"model\": \"test-video-fast\", \"kind\": \"video\", \"resolution\": \"1080p\", \"duration\": 5, \"outputs\": 1, \"credits\": 50}]}"
+      },
+      "project/plan/batches/M32-attempt-01/request/request.json": {
+        "text": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video-fast\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}"
+      },
+      "project/plan/batches/M32-attempt-01/request/attempt.json": {
+        "text": "{\"status\": \"submitted\", \"credits_consumed\": 49}"
+      },
+      "service/service.json": {
+        "text": "{\"balance\": 1824}"
+      }
+    },
+    "steps": [
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json",
+          "--json"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json",
+          "--json"
+        ],
+        "project": true,
+        "write": {
+          "project/pricing.json": {
+            "text": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": [{\"model\": \"test-video-fast\", \"kind\": \"video\", \"resolution\": \"1080p\", \"duration\": 5, \"outputs\": 1, \"credits\": 50}, {\"model\": \"test-video-fast\", \"kind\": \"video\", \"resolution\": \"1080p\", \"duration\": 7, \"outputs\": 1, \"credits\": 66}, {\"model\": \"test-video-fast\", \"resolution\": \"1080p\", \"duration\": 3, \"outputs\": 2, \"credits\": 90}]}"
+          }
+        }
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json",
+          "--json"
+        ],
+        "project": true,
+        "write": {
+          "project/pricing.json": {
+            "text": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": [{\"model\": \"test-video-fast\", \"kind\": \"video\", \"resolution\": \"1080p\", \"duration\": 5, \"outputs\": 1, \"credits\": 50}, {\"model\": \"test-video-fast\", \"resolution\": \"1080p\", \"duration\": 3, \"outputs\": 2, \"credits\": 90}]}"
+          }
+        }
+      }
+    ],
+    "expected": [
+      {
+        "code": 0,
+        "stdout": "{\n  \"model\": \"test-video-fast\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": 70.0,\n  \"estimate_source\": \"наблюдение, пересчёт по секундам\",\n  \"balance_credits\": 1824.0,\n  \"balance_source\": \"тестовый сервис\",\n  \"verdict\": \"ok\",\n  \"verdict_label\": \"средств достаточно\",\n  \"reasons\": []\n}\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [
+          "{\"action\": \"account\"}"
+        ],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video-fast\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": [{\"model\": \"test-video-fast\", \"kind\": \"video\", \"resolution\": \"1080p\", \"duration\": 5, \"outputs\": 1, \"credits\": 50}]}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 0,
+        "stdout": "{\n  \"model\": \"test-video-fast\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": 66.0,\n  \"estimate_source\": \"наблюдение за прежним запросом\",\n  \"balance_credits\": 1824.0,\n  \"balance_source\": \"тестовый сервис\",\n  \"verdict\": \"ok\",\n  \"verdict_label\": \"средств достаточно\",\n  \"reasons\": []\n}\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [
+          "{\"action\": \"account\"}"
+        ],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video-fast\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": [{\"model\": \"test-video-fast\", \"kind\": \"video\", \"resolution\": \"1080p\", \"duration\": 5, \"outputs\": 1, \"credits\": 50}, {\"model\": \"test-video-fast\", \"kind\": \"video\", \"resolution\": \"1080p\", \"duration\": 7, \"outputs\": 1, \"credits\": 66}, {\"model\": \"test-video-fast\", \"resolution\": \"1080p\", \"duration\": 3, \"outputs\": 2, \"credits\": 90}]}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 0,
+        "stdout": "{\n  \"model\": \"test-video-fast\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": 105.0,\n  \"estimate_source\": \"наблюдение, пересчёт по секундам\",\n  \"balance_credits\": 1824.0,\n  \"balance_source\": \"тестовый сервис\",\n  \"verdict\": \"ok\",\n  \"verdict_label\": \"средств достаточно\",\n  \"reasons\": []\n}\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [
+          "{\"action\": \"account\"}"
+        ],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video-fast\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": [{\"model\": \"test-video-fast\", \"kind\": \"video\", \"resolution\": \"1080p\", \"duration\": 5, \"outputs\": 1, \"credits\": 50}, {\"model\": \"test-video-fast\", \"resolution\": \"1080p\", \"duration\": 3, \"outputs\": 2, \"credits\": 90}]}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "learn",
+    "description": "learn записывает наблюдение в каталог состояния один раз; базовая таблица не меняется; без расхода — отказ.",
+    "covers": [
+      "learn",
+      "pricing-observations.json"
+    ],
+    "files": {
+      "project/plan/project.json": {
+        "text": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n"
+      },
+      "project/pricing.json": {
+        "text": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+      },
+      "project/plan/batches/M32-attempt-01/request/request.json": {
+        "text": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}"
+      },
+      "project/plan/batches/M32-attempt-01/request/attempt.json": {
+        "text": "{\"status\": \"submitted\", \"credits_consumed\": 49}"
+      },
+      "service/service.json": {
+        "text": "{\"balance\": 1824}"
+      }
+    },
+    "steps": [
+      {
+        "tool": "cost_check",
+        "args": [
+          "learn",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "learn",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json",
+          "--json"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "learn",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json"
+        ],
+        "project": true,
+        "write": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": {
+            "text": "{\"status\": \"prepared\"}"
+          }
+        }
+      }
+    ],
+    "expected": [
+      {
+        "code": 0,
+        "stdout": "Наблюдение записано: {\"model\": \"test-video\", \"kind\": \"video\", \"resolution\": \"1080p\", \"duration\": 7, \"outputs\": 1, \"credits\": 49.0}\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}",
+          "state/providers/test/pricing-observations.json": "{\n  \"schema_version\": 1,\n  \"observed\": [\n    {\n      \"model\": \"test-video\",\n      \"kind\": \"video\",\n      \"resolution\": \"1080p\",\n      \"duration\": 7,\n      \"outputs\": 1,\n      \"credits\": 49.0\n    }\n  ]\n}\n"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request",
+          "state/providers",
+          "state/providers/test"
+        ]
+      },
+      {
+        "code": 0,
+        "stdout": "Наблюдение записано: {\"model\": \"test-video\", \"kind\": \"video\", \"resolution\": \"1080p\", \"duration\": 7, \"outputs\": 1, \"credits\": 49.0}\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}",
+          "state/providers/test/pricing-observations.json": "{\n  \"schema_version\": 1,\n  \"observed\": [\n    {\n      \"model\": \"test-video\",\n      \"kind\": \"video\",\n      \"resolution\": \"1080p\",\n      \"duration\": 7,\n      \"outputs\": 1,\n      \"credits\": 49.0\n    }\n  ]\n}\n"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request",
+          "state/providers",
+          "state/providers/test"
+        ]
+      },
+      {
+        "code": 0,
+        "stdout": "{\n  \"model\": \"test-video\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": 51.0,\n  \"estimate_source\": \"таблица цен\",\n  \"balance_credits\": 1824.0,\n  \"balance_source\": \"тестовый сервис\",\n  \"verdict\": \"ok\",\n  \"verdict_label\": \"средств достаточно\",\n  \"reasons\": []\n}\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [
+          "{\"action\": \"account\"}"
+        ],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}",
+          "state/providers/test/pricing-observations.json": "{\n  \"schema_version\": 1,\n  \"observed\": [\n    {\n      \"model\": \"test-video\",\n      \"kind\": \"video\",\n      \"resolution\": \"1080p\",\n      \"duration\": 7,\n      \"outputs\": 1,\n      \"credits\": 49.0\n    }\n  ]\n}\n"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request",
+          "state/providers",
+          "state/providers/test"
+        ]
+      },
+      {
+        "code": 1,
+        "stdout": "",
+        "stderr": "В attempt.json нет credits_consumed; наблюдение не записано.\n",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"prepared\"}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}",
+          "state/providers/test/pricing-observations.json": "{\n  \"schema_version\": 1,\n  \"observed\": [\n    {\n      \"model\": \"test-video\",\n      \"kind\": \"video\",\n      \"resolution\": \"1080p\",\n      \"duration\": 7,\n      \"outputs\": 1,\n      \"credits\": 49.0\n    }\n  ]\n}\n"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request",
+          "state/providers",
+          "state/providers/test"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "learn-default-table",
+    "description": "Таблица цен по умолчанию — от адаптера; наблюдения в state, базовая не меняется; приоритет наблюдений состояния.",
+    "covers": [
+      "pricing_file",
+      "приоритет наблюдений"
+    ],
+    "files": {
+      "project/plan/project.json": {
+        "text": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n"
+      },
+      "project/pricing.json": {
+        "text": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+      },
+      "project/plan/batches/M32-attempt-01/request/request.json": {
+        "text": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video-fast\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}"
+      },
+      "project/plan/batches/M32-attempt-01/request/attempt.json": {
+        "text": "{\"status\": \"submitted\", \"credits_consumed\": 49}"
+      },
+      "service/service.json": {
+        "text": "{\"balance\": 1824}"
+      },
+      "service/pricing.json": {
+        "text": "{\"schema_version\": 1, \"models\": {\"test-video-fast\": {\"per_second\": {\"1080p\": null}}}, \"observed\": [{\"model\": \"test-video-fast\", \"kind\": \"video\", \"resolution\": \"1080p\", \"duration\": 7, \"outputs\": 1, \"credits\": 30}]}"
+      }
+    },
+    "steps": [
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--json"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "learn",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--json"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json",
+          "--json"
+        ],
+        "project": true
+      }
+    ],
+    "expected": [
+      {
+        "code": 0,
+        "stdout": "{\n  \"model\": \"test-video-fast\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": 30.0,\n  \"estimate_source\": \"наблюдение за прежним запросом\",\n  \"balance_credits\": 1824.0,\n  \"balance_source\": \"тестовый сервис\",\n  \"verdict\": \"ok\",\n  \"verdict_label\": \"средств достаточно\",\n  \"reasons\": []\n}\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [
+          "{\"action\": \"account\"}"
+        ],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video-fast\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}",
+          "service/pricing.json": "{\"schema_version\": 1, \"models\": {\"test-video-fast\": {\"per_second\": {\"1080p\": null}}}, \"observed\": [{\"model\": \"test-video-fast\", \"kind\": \"video\", \"resolution\": \"1080p\", \"duration\": 7, \"outputs\": 1, \"credits\": 30}]}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 0,
+        "stdout": "Наблюдение записано: {\"model\": \"test-video-fast\", \"kind\": \"video\", \"resolution\": \"1080p\", \"duration\": 7, \"outputs\": 1, \"credits\": 49.0}\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video-fast\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}",
+          "service/pricing.json": "{\"schema_version\": 1, \"models\": {\"test-video-fast\": {\"per_second\": {\"1080p\": null}}}, \"observed\": [{\"model\": \"test-video-fast\", \"kind\": \"video\", \"resolution\": \"1080p\", \"duration\": 7, \"outputs\": 1, \"credits\": 30}]}",
+          "state/providers/test/pricing-observations.json": "{\n  \"schema_version\": 1,\n  \"observed\": [\n    {\n      \"model\": \"test-video-fast\",\n      \"kind\": \"video\",\n      \"resolution\": \"1080p\",\n      \"duration\": 7,\n      \"outputs\": 1,\n      \"credits\": 49.0\n    }\n  ]\n}\n"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request",
+          "state/providers",
+          "state/providers/test"
+        ]
+      },
+      {
+        "code": 0,
+        "stdout": "{\n  \"model\": \"test-video-fast\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": 49.0,\n  \"estimate_source\": \"наблюдение за прежним запросом\",\n  \"balance_credits\": 1824.0,\n  \"balance_source\": \"тестовый сервис\",\n  \"verdict\": \"ok\",\n  \"verdict_label\": \"средств достаточно\",\n  \"reasons\": []\n}\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [
+          "{\"action\": \"account\"}"
+        ],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video-fast\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}",
+          "service/pricing.json": "{\"schema_version\": 1, \"models\": {\"test-video-fast\": {\"per_second\": {\"1080p\": null}}}, \"observed\": [{\"model\": \"test-video-fast\", \"kind\": \"video\", \"resolution\": \"1080p\", \"duration\": 7, \"outputs\": 1, \"credits\": 30}]}",
+          "state/providers/test/pricing-observations.json": "{\n  \"schema_version\": 1,\n  \"observed\": [\n    {\n      \"model\": \"test-video-fast\",\n      \"kind\": \"video\",\n      \"resolution\": \"1080p\",\n      \"duration\": 7,\n      \"outputs\": 1,\n      \"credits\": 49.0\n    }\n  ]\n}\n"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request",
+          "state/providers",
+          "state/providers/test"
+        ]
+      },
+      {
+        "code": 0,
+        "stdout": "{\n  \"model\": \"test-video-fast\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": 49.0,\n  \"estimate_source\": \"наблюдение за прежним запросом\",\n  \"balance_credits\": 1824.0,\n  \"balance_source\": \"тестовый сервис\",\n  \"verdict\": \"ok\",\n  \"verdict_label\": \"средств достаточно\",\n  \"reasons\": []\n}\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [
+          "{\"action\": \"account\"}"
+        ],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video-fast\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}",
+          "service/pricing.json": "{\"schema_version\": 1, \"models\": {\"test-video-fast\": {\"per_second\": {\"1080p\": null}}}, \"observed\": [{\"model\": \"test-video-fast\", \"kind\": \"video\", \"resolution\": \"1080p\", \"duration\": 7, \"outputs\": 1, \"credits\": 30}]}",
+          "state/providers/test/pricing-observations.json": "{\n  \"schema_version\": 1,\n  \"observed\": [\n    {\n      \"model\": \"test-video-fast\",\n      \"kind\": \"video\",\n      \"resolution\": \"1080p\",\n      \"duration\": 7,\n      \"outputs\": 1,\n      \"credits\": 49.0\n    }\n  ]\n}\n"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request",
+          "state/providers",
+          "state/providers/test"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "pricing-created",
+    "description": "Без таблицы адаптер создаёт пустую; цена неизвестна.",
+    "covers": [
+      "pricing_file по умолчанию"
+    ],
+    "files": {
+      "project/plan/project.json": {
+        "text": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n"
+      },
+      "project/pricing.json": {
+        "text": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+      },
+      "project/plan/batches/M32-attempt-01/request/request.json": {
+        "text": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}"
+      },
+      "project/plan/batches/M32-attempt-01/request/attempt.json": {
+        "text": "{\"status\": \"submitted\", \"credits_consumed\": 49}"
+      },
+      "service/service.json": {
+        "text": "{\"balance\": 1824}"
+      }
+    },
+    "steps": [
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request"
+        ],
+        "project": true
+      }
+    ],
+    "expected": [
+      {
+        "code": 2,
+        "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-video (video) |\n| Параметры | duration=7, resolution=1080p, результатов 1 |\n| Оценка | неизвестно (нет данных) |\n| Остаток | 1824 кредитов (тестовый сервис) |\n| Вердикт | стоимость или баланс неизвестны (`cost_or_balance_unknown`) |\n| Причина | модель test-video отсутствует в таблице цен |\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [
+          "{\"action\": \"account\"}"
+        ],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}",
+          "service/pricing.json": "{\"schema_version\": 1, \"models\": {}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "damaged-observations",
+    "description": "Повреждённый файл наблюдений — код 1 и путь, файл не перезаписывается.",
+    "covers": [
+      "повреждён"
+    ],
+    "files": {
+      "project/plan/project.json": {
+        "text": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n"
+      },
+      "project/pricing.json": {
+        "text": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+      },
+      "project/plan/batches/M32-attempt-01/request/request.json": {
+        "text": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}"
+      },
+      "project/plan/batches/M32-attempt-01/request/attempt.json": {
+        "text": "{\"status\": \"submitted\", \"credits_consumed\": 49}"
+      },
+      "service/service.json": {
+        "text": "{\"balance\": 1824}"
+      },
+      "state/providers/test/pricing-observations.json": {
+        "text": "{"
+      }
+    },
+    "steps": [
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "learn",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json"
+        ],
+        "project": true,
+        "write": {
+          "state/providers/test/pricing-observations.json": {
+            "text": "{\"schema_version\": 1, \"observed\": {}}"
+          }
+        }
+      }
+    ],
+    "expected": [
+      {
+        "code": 1,
+        "stdout": "",
+        "stderr": "Файл наблюдений цен повреждён: <state>/providers/test/pricing-observations.json. Исправьте или удалите его.\n",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}",
+          "state/providers/test/pricing-observations.json": "{"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request",
+          "state/providers",
+          "state/providers/test"
+        ]
+      },
+      {
+        "code": 1,
+        "stdout": "",
+        "stderr": "Файл наблюдений цен повреждён: <state>/providers/test/pricing-observations.json. Исправьте или удалите его.\n",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}",
+          "state/providers/test/pricing-observations.json": "{"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request",
+          "state/providers",
+          "state/providers/test"
+        ]
+      },
+      {
+        "code": 1,
+        "stdout": "",
+        "stderr": "Файл наблюдений цен повреждён: <state>/providers/test/pricing-observations.json. Исправьте или удалите его.\n",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}",
+          "state/providers/test/pricing-observations.json": "{\"schema_version\": 1, \"observed\": {}}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request",
+          "state/providers",
+          "state/providers/test"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "image-signature",
+    "description": "Изображение: learn с подписью без промпта и секретов, точное совпадение, иной quality — неизвестно.",
+    "covers": [
+      "image_signature"
+    ],
+    "files": {
+      "project/plan/project.json": {
+        "text": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n"
+      },
+      "project/pricing.json": {
+        "text": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+      },
+      "project/plan/batches/M32-attempt-01/request/request.json": {
+        "text": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"image\", \"provider\": \"test\", \"command\": \"image_to_image\", \"model\": \"test-image\", \"parameters\": {\"img_resolution\": \"1k\", \"quality\": \"low\", \"prompt\": \"секрет\", \"Api-Key\": \"k\", \"nested\": [{\"token\": 1, \"x\": 2}]}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"role\": \"first\", \"path\": \"inputs/01.png\", \"sha256\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"bytes\": 3}], \"outputs\": 1}"
+      },
+      "project/plan/batches/M32-attempt-01/request/attempt.json": {
+        "text": "{\"status\": \"downloaded\", \"credits_consumed\": 8}"
+      },
+      "service/service.json": {
+        "text": "{\"balance\": 1824}"
+      }
+    },
+    "steps": [
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "learn",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json",
+          "--json"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json"
+        ],
+        "project": true,
+        "write": {
+          "project/plan/batches/M32-attempt-01/request/request.json": {
+            "text": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"image\", \"provider\": \"test\", \"command\": \"image_to_image\", \"model\": \"test-image\", \"parameters\": {\"img_resolution\": \"1k\", \"quality\": \"high\", \"prompt\": \"\\u0441\\u0435\\u043a\\u0440\\u0435\\u0442\", \"Api-Key\": \"k\", \"nested\": [{\"token\": 1, \"x\": 2}]}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"role\": \"first\", \"path\": \"inputs/01.png\", \"sha256\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"bytes\": 3}], \"outputs\": 1}"
+          }
+        }
+      }
+    ],
+    "expected": [
+      {
+        "code": 2,
+        "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-image (image) |\n| Параметры | command=image_to_image, img_resolution=1k, quality=low, результатов 1 |\n| Оценка | неизвестно (нет данных) |\n| Остаток | 1824 кредитов (тестовый сервис) |\n| Вердикт | стоимость или баланс неизвестны (`cost_or_balance_unknown`) |\n| Причина | цена изображения test-image не задана и точная конфигурация запроса не наблюдалась |\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [
+          "{\"action\": \"account\"}"
+        ],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"downloaded\", \"credits_consumed\": 8}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"image\", \"provider\": \"test\", \"command\": \"image_to_image\", \"model\": \"test-image\", \"parameters\": {\"img_resolution\": \"1k\", \"quality\": \"low\", \"prompt\": \"секрет\", \"Api-Key\": \"k\", \"nested\": [{\"token\": 1, \"x\": 2}]}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"role\": \"first\", \"path\": \"inputs/01.png\", \"sha256\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"bytes\": 3}], \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 0,
+        "stdout": "Наблюдение записано: {\"model\": \"test-image\", \"kind\": \"image\", \"command\": \"image_to_image\", \"img_resolution\": \"1k\", \"quality\": \"low\", \"image_signature\": \"{\\\"command\\\":\\\"image_to_image\\\",\\\"inputs\\\":[{\\\"flag\\\":\\\"input\\\",\\\"slot\\\":\\\"image_1\\\"}],\\\"outputs\\\":1,\\\"parameters\\\":{\\\"img_resolution\\\":\\\"1k\\\",\\\"nested\\\":[{\\\"x\\\":2}],\\\"quality\\\":\\\"low\\\"}}\", \"outputs\": 1, \"credits\": 8.0}\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"downloaded\", \"credits_consumed\": 8}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"image\", \"provider\": \"test\", \"command\": \"image_to_image\", \"model\": \"test-image\", \"parameters\": {\"img_resolution\": \"1k\", \"quality\": \"low\", \"prompt\": \"секрет\", \"Api-Key\": \"k\", \"nested\": [{\"token\": 1, \"x\": 2}]}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"role\": \"first\", \"path\": \"inputs/01.png\", \"sha256\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"bytes\": 3}], \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}",
+          "state/providers/test/pricing-observations.json": "{\n  \"schema_version\": 1,\n  \"observed\": [\n    {\n      \"model\": \"test-image\",\n      \"kind\": \"image\",\n      \"command\": \"image_to_image\",\n      \"img_resolution\": \"1k\",\n      \"quality\": \"low\",\n      \"image_signature\": \"{\\\"command\\\":\\\"image_to_image\\\",\\\"inputs\\\":[{\\\"flag\\\":\\\"input\\\",\\\"slot\\\":\\\"image_1\\\"}],\\\"outputs\\\":1,\\\"parameters\\\":{\\\"img_resolution\\\":\\\"1k\\\",\\\"nested\\\":[{\\\"x\\\":2}],\\\"quality\\\":\\\"low\\\"}}\",\n      \"outputs\": 1,\n      \"credits\": 8.0\n    }\n  ]\n}\n"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request",
+          "state/providers",
+          "state/providers/test"
+        ]
+      },
+      {
+        "code": 0,
+        "stdout": "{\n  \"model\": \"test-image\",\n  \"kind\": \"image\",\n  \"command\": \"image_to_image\",\n  \"parameters\": {\n    \"img_resolution\": \"1k\",\n    \"quality\": \"low\",\n    \"prompt\": \"секрет\",\n    \"Api-Key\": \"k\",\n    \"nested\": [\n      {\n        \"token\": 1,\n        \"x\": 2\n      }\n    ]\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": 8.0,\n  \"estimate_source\": \"наблюдение за точно таким же запросом изображения\",\n  \"balance_credits\": 1824.0,\n  \"balance_source\": \"тестовый сервис\",\n  \"verdict\": \"ok\",\n  \"verdict_label\": \"средств достаточно\",\n  \"reasons\": []\n}\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [
+          "{\"action\": \"account\"}"
+        ],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"downloaded\", \"credits_consumed\": 8}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"image\", \"provider\": \"test\", \"command\": \"image_to_image\", \"model\": \"test-image\", \"parameters\": {\"img_resolution\": \"1k\", \"quality\": \"low\", \"prompt\": \"секрет\", \"Api-Key\": \"k\", \"nested\": [{\"token\": 1, \"x\": 2}]}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"role\": \"first\", \"path\": \"inputs/01.png\", \"sha256\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"bytes\": 3}], \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}",
+          "state/providers/test/pricing-observations.json": "{\n  \"schema_version\": 1,\n  \"observed\": [\n    {\n      \"model\": \"test-image\",\n      \"kind\": \"image\",\n      \"command\": \"image_to_image\",\n      \"img_resolution\": \"1k\",\n      \"quality\": \"low\",\n      \"image_signature\": \"{\\\"command\\\":\\\"image_to_image\\\",\\\"inputs\\\":[{\\\"flag\\\":\\\"input\\\",\\\"slot\\\":\\\"image_1\\\"}],\\\"outputs\\\":1,\\\"parameters\\\":{\\\"img_resolution\\\":\\\"1k\\\",\\\"nested\\\":[{\\\"x\\\":2}],\\\"quality\\\":\\\"low\\\"}}\",\n      \"outputs\": 1,\n      \"credits\": 8.0\n    }\n  ]\n}\n"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request",
+          "state/providers",
+          "state/providers/test"
+        ]
+      },
+      {
+        "code": 2,
+        "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-image (image) |\n| Параметры | command=image_to_image, img_resolution=1k, quality=high, результатов 1 |\n| Оценка | неизвестно (нет данных) |\n| Остаток | 1824 кредитов (тестовый сервис) |\n| Вердикт | стоимость или баланс неизвестны (`cost_or_balance_unknown`) |\n| Причина | цена изображения test-image не задана и точная конфигурация запроса не наблюдалась |\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [
+          "{\"action\": \"account\"}"
+        ],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"downloaded\", \"credits_consumed\": 8}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"image\", \"provider\": \"test\", \"command\": \"image_to_image\", \"model\": \"test-image\", \"parameters\": {\"img_resolution\": \"1k\", \"quality\": \"high\", \"prompt\": \"\\u0441\\u0435\\u043a\\u0440\\u0435\\u0442\", \"Api-Key\": \"k\", \"nested\": [{\"token\": 1, \"x\": 2}]}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"role\": \"first\", \"path\": \"inputs/01.png\", \"sha256\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"bytes\": 3}], \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}",
+          "state/providers/test/pricing-observations.json": "{\n  \"schema_version\": 1,\n  \"observed\": [\n    {\n      \"model\": \"test-image\",\n      \"kind\": \"image\",\n      \"command\": \"image_to_image\",\n      \"img_resolution\": \"1k\",\n      \"quality\": \"low\",\n      \"image_signature\": \"{\\\"command\\\":\\\"image_to_image\\\",\\\"inputs\\\":[{\\\"flag\\\":\\\"input\\\",\\\"slot\\\":\\\"image_1\\\"}],\\\"outputs\\\":1,\\\"parameters\\\":{\\\"img_resolution\\\":\\\"1k\\\",\\\"nested\\\":[{\\\"x\\\":2}],\\\"quality\\\":\\\"low\\\"}}\",\n      \"outputs\": 1,\n      \"credits\": 8.0\n    }\n  ]\n}\n"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request",
+          "state/providers",
+          "state/providers/test"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "image-per-image",
+    "description": "Ручной per_image × outputs; таблица image-запроса.",
+    "covers": [
+      "per_image"
+    ],
+    "files": {
+      "project/plan/project.json": {
+        "text": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n"
+      },
+      "project/pricing.json": {
+        "text": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+      },
+      "project/plan/batches/M32-attempt-01/request/request.json": {
+        "text": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"image\", \"provider\": \"test\", \"command\": \"image_to_image\", \"model\": \"test-image-fixed\", \"parameters\": {\"img_resolution\": \"1k\", \"quality\": \"low\", \"prompt\": \"секрет\", \"Api-Key\": \"k\", \"nested\": [{\"token\": 1, \"x\": 2}]}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"role\": \"first\", \"path\": \"inputs/01.png\", \"sha256\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"bytes\": 3}], \"outputs\": 3}"
+      },
+      "project/plan/batches/M32-attempt-01/request/attempt.json": {
+        "text": "{\"status\": \"submitted\", \"credits_consumed\": 49}"
+      },
+      "service/service.json": {
+        "text": "{\"balance\": 1824}"
+      }
+    },
+    "steps": [
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/pricing.json"
+        ],
+        "project": true
+      }
+    ],
+    "expected": [
+      {
+        "code": 0,
+        "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-image-fixed (image) |\n| Параметры | command=image_to_image, img_resolution=1k, quality=low, результатов 3 |\n| Оценка | 9 кредитов (таблица цен) |\n| Остаток | 1824 кредитов (тестовый сервис) |\n| Вердикт | средств достаточно (`ok`) |\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [
+          "{\"action\": \"account\"}"
+        ],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"image\", \"provider\": \"test\", \"command\": \"image_to_image\", \"model\": \"test-image-fixed\", \"parameters\": {\"img_resolution\": \"1k\", \"quality\": \"low\", \"prompt\": \"секрет\", \"Api-Key\": \"k\", \"nested\": [{\"token\": 1, \"x\": 2}]}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"role\": \"first\", \"path\": \"inputs/01.png\", \"sha256\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"bytes\": 3}], \"outputs\": 3}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "check-request",
+    "description": "check --request: спецификация до подготовки проверяется; ошибки схемы и провайдера.",
+    "covers": [
+      "--request"
+    ],
+    "files": {
+      "project/plan/project.json": {
+        "text": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n"
+      },
+      "project/pricing.json": {
+        "text": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+      },
+      "project/plan/batches/M32-attempt-01/request/request.json": {
+        "text": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}"
+      },
+      "project/plan/batches/M32-attempt-01/request/attempt.json": {
+        "text": "{\"status\": \"submitted\", \"credits_consumed\": 49}"
+      },
+      "service/service.json": {
+        "text": "{\"balance\": 1824}"
+      },
+      "project/spec.json": {
+        "text": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+      },
+      "project/bad-spec.json": {
+        "text": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"audio\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+      },
+      "project/foreign-spec.json": {
+        "text": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"nope\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+      }
+    },
+    "steps": [
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--request",
+          "<project>/spec.json",
+          "--pricing",
+          "<project>/pricing.json",
+          "--balance",
+          "1824",
+          "--no-account"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--request",
+          "<project>/bad-spec.json",
+          "--pricing",
+          "<project>/pricing.json"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--request",
+          "<project>/foreign-spec.json",
+          "--pricing",
+          "<project>/pricing.json"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--request",
+          "<project>/missing.json",
+          "--pricing",
+          "<project>/pricing.json"
+        ],
+        "project": true
+      }
+    ],
+    "expected": [
+      {
+        "code": 0,
+        "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-video (video) |\n| Параметры | duration=7, resolution=1080p, результатов 1 |\n| Оценка | 51 кредитов (таблица цен) |\n| Остаток | 1824 кредитов (указан вручную) |\n| Вердикт | средств достаточно (`ok`) |\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/bad-spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"audio\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+          "project/foreign-spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"nope\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}",
+          "project/spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 1,
+        "stdout": "",
+        "stderr": "Не указан вид результата.\n",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/bad-spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"audio\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+          "project/foreign-spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"nope\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}",
+          "project/spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 1,
+        "stdout": "",
+        "stderr": "Для провайдера генерации 'nope' нет адаптера: укажите provider подключённого сервиса.\n",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/bad-spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"audio\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+          "project/foreign-spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"nope\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}",
+          "project/spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 1,
+        "stdout": "",
+        "stderr": "Ошибка локальных данных; сырой вывод скрыт.\n",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/bad-spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"audio\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+          "project/foreign-spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"nope\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}",
+          "project/spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "errors",
+    "description": "Ошибки: рабочая папка вне проекта, неверная схема таблицы, не JSON, нет request.json, неизвестный провайдер запроса.",
+    "covers": [
+      "ошибки"
+    ],
+    "files": {
+      "project/plan/project.json": {
+        "text": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n"
+      },
+      "project/pricing.json": {
+        "text": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+      },
+      "project/plan/batches/M32-attempt-01/request/request.json": {
+        "text": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}"
+      },
+      "project/plan/batches/M32-attempt-01/request/attempt.json": {
+        "text": "{\"status\": \"submitted\", \"credits_consumed\": 49}"
+      },
+      "service/service.json": {
+        "text": "{\"balance\": 1824}"
+      },
+      "project/schema.json": {
+        "text": "{\"schema_version\": 2, \"models\": {}}"
+      },
+      "project/broken.json": {
+        "text": "{"
+      }
+    },
+    "steps": [
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/elsewhere",
+          "--pricing",
+          "<project>/pricing.json"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/schema.json"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/broken.json"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pricing",
+          "<project>/missing.json"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/none/request",
+          "--pricing",
+          "<project>/pricing.json"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request"
+        ],
+        "project": true,
+        "write": {
+          "project/plan/batches/M32-attempt-01/request/request.json": {
+            "text": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"nope\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}"
+          }
+        }
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "learn",
+          "--work-dir",
+          "<project>/plan/batches/M32-attempt-01/request"
+        ],
+        "project": true
+      }
+    ],
+    "expected": [
+      {
+        "code": 1,
+        "stdout": "",
+        "stderr": "Рабочая папка должна находиться внутри plan/batches, plan/awaiting, plan/reference-images или временной папки ОС.\n",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/broken.json": "{",
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}",
+          "project/schema.json": "{\"schema_version\": 2, \"models\": {}}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 1,
+        "stdout": "",
+        "stderr": "Неизвестная схема таблицы цен.\n",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/broken.json": "{",
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}",
+          "project/schema.json": "{\"schema_version\": 2, \"models\": {}}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 1,
+        "stdout": "",
+        "stderr": "Ошибка локальных данных; сырой вывод скрыт.\n",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/broken.json": "{",
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}",
+          "project/schema.json": "{\"schema_version\": 2, \"models\": {}}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 1,
+        "stdout": "",
+        "stderr": "Ошибка локальных данных; сырой вывод скрыт.\n",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/broken.json": "{",
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}",
+          "project/schema.json": "{\"schema_version\": 2, \"models\": {}}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 1,
+        "stdout": "",
+        "stderr": "Ошибка локальных данных; сырой вывод скрыт.\n",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/broken.json": "{",
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}",
+          "project/schema.json": "{\"schema_version\": 2, \"models\": {}}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 1,
+        "stdout": "",
+        "stderr": "Для провайдера генерации 'nope' нет адаптера: укажите provider подключённого сервиса.\n",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/broken.json": "{",
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"nope\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}",
+          "project/schema.json": "{\"schema_version\": 2, \"models\": {}}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 1,
+        "stdout": "",
+        "stderr": "Для провайдера генерации 'nope' нет адаптера: укажите provider подключённого сервиса.\n",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/broken.json": "{",
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"nope\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}",
+          "project/schema.json": "{\"schema_version\": 2, \"models\": {}}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "argparse",
+    "description": "argparse cost_check: группа, обязательные опции, тип float, справка.",
+    "covers": [
+      "argparse"
+    ],
+    "files": {
+      "project/plan/project.json": {
+        "text": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n"
+      },
+      "project/pricing.json": {
+        "text": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+      },
+      "project/plan/batches/M32-attempt-01/request/request.json": {
+        "text": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}"
+      },
+      "project/plan/batches/M32-attempt-01/request/attempt.json": {
+        "text": "{\"status\": \"submitted\", \"credits_consumed\": 49}"
+      },
+      "service/service.json": {
+        "text": "{\"balance\": 1824}"
+      }
+    },
+    "steps": [
+      {
+        "tool": "cost_check",
+        "args": [],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work-dir",
+          "a",
+          "--request",
+          "b"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "learn"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "-h"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "-h"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--request",
+          "x",
+          "--balance",
+          "zz"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "learn",
+          "--work-dir",
+          "a",
+          "--json"
+        ],
+        "project": true
+      },
+      {
+        "tool": "cost_check",
+        "args": [
+          "check",
+          "--work",
+          "<project>/plan/batches/M32-attempt-01/request",
+          "--pri",
+          "<project>/pricing.json",
+          "--bal",
+          "1e3",
+          "--no"
+        ],
+        "project": true
+      }
+    ],
+    "expected": [
+      {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: cost_check.py [-h] {check,learn} ...\ncost_check.py: error: the following arguments are required: action\n",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: cost_check.py check [-h] (--work-dir WORK_DIR | --request REQUEST)\n                           [--balance BALANCE] [--no-account]\n                           [--pricing PRICING] [--timeout TIMEOUT] [--json]\ncost_check.py check: error: one of the arguments --work-dir --request is required\n",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: cost_check.py check [-h] (--work-dir WORK_DIR | --request REQUEST)\n                           [--balance BALANCE] [--no-account]\n                           [--pricing PRICING] [--timeout TIMEOUT] [--json]\ncost_check.py check: error: argument --request: not allowed with argument --work-dir\n",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: cost_check.py learn [-h] --work-dir WORK_DIR [--pricing PRICING]\ncost_check.py learn: error: the following arguments are required: --work-dir\n",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 0,
+        "stdout": "usage: cost_check.py check [-h] (--work-dir WORK_DIR | --request REQUEST)\n                           [--balance BALANCE] [--no-account]\n                           [--pricing PRICING] [--timeout TIMEOUT] [--json]\n\noptions:\n  -h, --help           show this help message and exit\n  --work-dir WORK_DIR\n  --request REQUEST\n  --balance BALANCE    Остаток из кабинета, если account недоступен.\n  --no-account         Не обращаться к аккаунту.\n  --pricing PRICING    Файл тарифов вместо базовой таблицы адаптера\n                       провайдера.\n  --timeout TIMEOUT\n  --json\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 0,
+        "stdout": "usage: cost_check.py [-h] {check,learn} ...\n\nОценка стоимости запроса и остатка кредитов перед таблицей; @link README.md\n\npositional arguments:\n  {check,learn}\n\noptions:\n  -h, --help     show this help message and exit\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: cost_check.py check [-h] (--work-dir WORK_DIR | --request REQUEST)\n                           [--balance BALANCE] [--no-account]\n                           [--pricing PRICING] [--timeout TIMEOUT] [--json]\ncost_check.py check: error: argument --balance: invalid float value: 'zz'\n",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: cost_check.py [-h] {check,learn} ...\ncost_check.py: error: unrecognized arguments: --json\n",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      },
+      {
+        "code": 0,
+        "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-video (video) |\n| Параметры | duration=7, resolution=1080p, результатов 1 |\n| Оценка | 51 кредитов (таблица цен) |\n| Остаток | 1000 кредитов (указан вручную) |\n| Вердикт | средств достаточно (`ok`) |\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/batches/M32-attempt-01/request/attempt.json": "{\"status\": \"submitted\", \"credits_consumed\": 49}",
+          "project/plan/batches/M32-attempt-01/request/request.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 7, \"resolution\": \"1080p\"}, \"outputs\": 1}",
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/pricing.json": "{\"schema_version\": 1, \"currency\": \"credits\", \"models\": {\"test-video\": {\"base_credits\": 2, \"per_second\": {\"1080p\": 7, \"720p\": null}}, \"test-video-fast\": {\"base_credits\": 0, \"per_second\": {\"1080p\": null}}, \"test-image-fixed\": {\"per_image\": 3}}, \"observed\": []}"
+        },
+        "dirs": [
+          "project/plan",
+          "project/plan/batches",
+          "project/plan/batches/M32-attempt-01",
+          "project/plan/batches/M32-attempt-01/request"
+        ]
+      }
+    ]
+  }
+]

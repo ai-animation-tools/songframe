@@ -1,0 +1,9 @@
+{
+  "description": "Свойство без подписи.",
+  "call": "writeCast",
+  "project": "project",
+  "covers": [
+    "propertiesInvalid"
+  ],
+  "stubbedMedia": []
+}

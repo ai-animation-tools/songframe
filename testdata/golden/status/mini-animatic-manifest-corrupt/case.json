@@ -1,0 +1,9 @@
+{
+  "description": "Манифест аниматика — битый JSON.",
+  "call": "computeStatus",
+  "project": "project",
+  "covers": [
+    "animaticNotBuilt при битом манифесте"
+  ],
+  "stubbedMedia": []
+}

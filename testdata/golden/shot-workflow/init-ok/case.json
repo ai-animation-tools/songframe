@@ -1,0 +1,18 @@
+{
+  "description": "Новый пакет M04.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "init"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "init",
+    "M04",
+    "--dir",
+    "plan/batches/M04-attempt-01"
+  ],
+  "remove": [],
+  "mkdir": []
+}

@@ -1,0 +1,10 @@
+{
+  "description": "Кавычка в названии подставляется в JSON без экранирования: маркер не читается, создание завершается ошибкой открытия, папка остаётся.",
+  "call": "Projects.create",
+  "project": null,
+  "covers": [
+    "подстановка без экранирования JSON",
+    "open: markerMissingAtPath"
+  ],
+  "stubbedMedia": []
+}

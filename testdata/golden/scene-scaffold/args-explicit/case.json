@@ -1,0 +1,12 @@
+{
+  "description": "--force=1: ignored explicit argument.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "explicit argument"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--force=1"
+  ]
+}

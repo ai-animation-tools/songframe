@@ -1,0 +1,21 @@
+{
+  "description": "Ошибки плана: код, повтор, границы, часть, камера, действие, главный референс, derived_from, конец песни.",
+  "call": "viewScenario + readScenarioRegistry + validateScenes",
+  "project": "project",
+  "covers": [
+    "shotCodeInvalid",
+    "duplicateShotCode",
+    "shotStartMismatch",
+    "shotUnknownPart",
+    "shotCameraMissing",
+    "shotActionMissing",
+    "shotPrimaryReferenceMissing",
+    "derivedSelfReference",
+    "derivedInvalidShape",
+    "registryDurationMismatch",
+    "ошибка состояния после проверок"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

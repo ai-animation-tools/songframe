@@ -1,0 +1,18 @@
+{
+  "description": "JSON образца.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "--json"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "show",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "--json"
+  ],
+  "remove": [],
+  "mkdir": []
+}

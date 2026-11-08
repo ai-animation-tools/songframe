@@ -1,0 +1,15 @@
+{
+  "description": "Пакет принятого плана на этапе accepted.",
+  "call": "check_workspace",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "package_of_accepted"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ],
+  "remove": [],
+  "mkdir": []
+}

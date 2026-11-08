@@ -1,0 +1,16 @@
+{
+  "description": "derived_from на неизвестный план и неверной формы.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "derived_from_problems",
+    "DERIVED_FORMAT"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ],
+  "remove": [],
+  "mkdir": []
+}

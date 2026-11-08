@@ -1,0 +1,9 @@
+{
+  "code": 0,
+  "stdout": "{\n  \"directory\": \"<project>/plan/batches/M03-attempt-01\",\n  \"shot\": \"M03\",\n  \"mode\": \"shot\",\n  \"stage\": \"image_downloaded\",\n  \"stage_label\": \"изображение получено, ожидает выбора\",\n  \"wait_reason\": null,\n  \"batch\": null,\n  \"current_keyframe\": \"K01\",\n  \"timing\": {\n    \"fps\": 30,\n    \"frames\": 120,\n    \"window_seconds\": 4.0,\n    \"request_seconds\": 5\n  },\n  \"keyframes\": [\n    {\n      \"id\": \"K01\",\n      \"role\": \"first\",\n      \"time_seconds\": 0.0,\n      \"note\": \"первый кадр\",\n      \"path\": \"frames/K01.png\",\n      \"sha256\": \"865ff178ce8407825ea5201ce98d16e82bf806feaccd36d5acb0dccd7d5ac2b3\",\n      \"approved\": false\n    },\n    {\n      \"id\": \"K02\",\n      \"role\": \"last\",\n      \"time_seconds\": 5.0,\n      \"note\": \"конечный кадр\",\n      \"path\": null,\n      \"sha256\": null,\n      \"approved\": false\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"video-prompt.txt\",\n    \"approved\": false\n  },\n  \"request_dir\": null,\n  \"attempt_status\": null,\n  \"image_request_dir\": \"image-01\",\n  \"image_frame_id\": \"K02\",\n  \"image_requests\": [\n    {\n      \"frame_id\": \"K02\",\n      \"request_dir\": \"image-01\",\n      \"request_sha256\": \"6c18af7b4afb3328cbeae32d51a8811b526cf8672dbb6b11604e76174fafb257\",\n      \"provider\": \"test\"\n    }\n  ],\n  \"image_attempt_status\": \"downloaded\",\n  \"description_approved\": true,\n  \"keyframe_notes\": [],\n  \"pending_decision\": null,\n  \"decision\": {\n    \"stage\": \"image_request_choice\",\n    \"verdict\": \"send\",\n    \"note\": \"\",\n    \"at\": \"2026-11-04T12:00:00+00:00\"\n  },\n  \"problems\": [],\n  \"next_action\": \"пользователь выбирает оригинал: select-image --file ПУТЬ\"\n}\n",
+  "stderr": "",
+  "traceback": false,
+  "files": {},
+  "dirs": {},
+  "modes": {}
+}

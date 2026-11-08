@@ -1,0 +1,15 @@
+{
+  "description": "timing.json без sections: KeyError — трассировка.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "KeyError"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--check"
+  ],
+  "remove": [],
+  "mkdir": []
+}

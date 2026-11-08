@@ -1,0 +1,9 @@
+{
+  "description": "project.json — null.",
+  "call": "readProjectSettings",
+  "project": "project",
+  "covers": [
+    "projectObjectRequired (null)"
+  ],
+  "stubbedMedia": []
+}

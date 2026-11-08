@@ -1,0 +1,16 @@
+{
+  "description": "--filter completed.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "--filter"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--filter",
+    "completed"
+  ],
+  "remove": [],
+  "mkdir": []
+}

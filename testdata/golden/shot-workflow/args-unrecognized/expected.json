@@ -1,0 +1,9 @@
+{
+  "code": 2,
+  "stdout": "",
+  "stderr": "usage: shot_workflow.py [-h]\n                        {init,plan-keyframes,approve,approve-prompt,set-stage,set-image-request,select-image,park,propose,ask,decide,reopen,set-note,show,check}\n                        ...\nshot_workflow.py: error: unrecognized arguments: extra\n",
+  "traceback": false,
+  "files": {},
+  "dirs": {},
+  "modes": {}
+}

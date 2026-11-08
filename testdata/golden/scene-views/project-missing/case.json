@@ -1,0 +1,15 @@
+{
+  "description": "Папки проекта нет: код 2.",
+  "call": "update_scene_views",
+  "project": null,
+  "base": "checks-base",
+  "covers": [
+    "Папка проекта не найдена"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--check"
+  ],
+  "remove": [],
+  "mkdir": []
+}

@@ -1,0 +1,18 @@
+{
+  "description": "Пакет в plan/awaiting.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "plan/awaiting"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "init",
+    "M04",
+    "--dir",
+    "plan/awaiting/M04"
+  ],
+  "remove": [],
+  "mkdir": []
+}

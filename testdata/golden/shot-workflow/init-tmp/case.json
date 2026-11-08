@@ -1,0 +1,19 @@
+{
+  "description": "Пакет во временной папке ОС.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "tempdir"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "init",
+    "M04",
+    "--dir",
+    "<tmp>/M04-pkg"
+  ],
+  "remove": [],
+  "mkdir": [],
+  "tmp": true
+}

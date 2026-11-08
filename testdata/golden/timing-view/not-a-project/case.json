@@ -1,0 +1,10 @@
+{
+  "description": "Пустая папка.",
+  "call": "viewTiming",
+  "project": "project",
+  "covers": [
+    "lyricsRequired",
+    "все поля null"
+  ],
+  "stubbedMedia": []
+}

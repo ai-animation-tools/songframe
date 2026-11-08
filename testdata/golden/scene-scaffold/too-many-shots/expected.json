@@ -1,0 +1,9 @@
+{
+  "code": 1,
+  "stdout": "",
+  "stderr": "Больше 99 планов: укрупните части или увеличьте max_shot_seconds.\n",
+  "traceback": false,
+  "files": {
+    "plan/scenes.json": "unchanged"
+  }
+}

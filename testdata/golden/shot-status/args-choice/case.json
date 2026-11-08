@@ -1,0 +1,16 @@
+{
+  "description": "Неверный --filter.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "invalid choice"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--filter",
+    "bad"
+  ],
+  "remove": [],
+  "mkdir": []
+}

@@ -1,0 +1,15 @@
+{
+  "description": "Нет plan/scenes.json.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "файл отсутствует"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [
+    "plan/scenes.json"
+  ],
+  "mkdir": []
+}

@@ -1,0 +1,9 @@
+{
+  "description": "Изменено имя проекта после сборки: project_inputs не совпадает.",
+  "call": "computeStatus",
+  "project": "project",
+  "covers": [
+    "staleAnimatic (project_inputs)"
+  ],
+  "stubbedMedia": []
+}

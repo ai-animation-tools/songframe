@@ -1,0 +1,9 @@
+{
+  "description": "images — не массив.",
+  "call": "writeCast",
+  "project": "project",
+  "covers": [
+    "entityStructureInvalid"
+  ],
+  "stubbedMedia": []
+}

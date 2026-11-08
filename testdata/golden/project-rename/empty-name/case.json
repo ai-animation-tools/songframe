@@ -1,0 +1,9 @@
+{
+  "description": "Пробельное название.",
+  "call": "Projects.rename",
+  "project": "project",
+  "covers": [
+    "emptyName"
+  ],
+  "stubbedMedia": []
+}

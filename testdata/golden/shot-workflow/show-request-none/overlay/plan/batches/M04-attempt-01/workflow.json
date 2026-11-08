@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "shot": "M04",
+  "mode": "shot",
+  "stage": "description_review",
+  "wait_reason": null,
+  "request_dir": null,
+  "description_approved": false,
+  "scene_sha256": "f6867ec62bb2c998237371eb1ee3e72d1c74b37a219b54c50a67d4271167e155",
+  "timing": {
+    "fps": 30,
+    "frames": 120,
+    "window_seconds": 4.0,
+    "request_seconds": null
+  },
+  "keyframes": [
+    {
+      "id": "K01",
+      "role": "first",
+      "time_seconds": 0,
+      "note": "",
+      "path": null,
+      "sha256": null,
+      "approved": false
+    },
+    {
+      "id": "K02",
+      "role": "last",
+      "time_seconds": 1234567.0,
+      "note": "",
+      "path": null,
+      "sha256": null,
+      "approved": false
+    },
+    {
+      "id": "K03",
+      "role": "last",
+      "time_seconds": 1.2e-05,
+      "note": "",
+      "path": null,
+      "sha256": null,
+      "approved": false
+    }
+  ],
+  "approved_frames": {},
+  "keyframe_notes": [],
+  "prompt": {
+    "path": "video-prompt.txt",
+    "approved": false
+  },
+  "approved_prompt_sha256": null,
+  "retry_of": null,
+  "frame_source": null,
+  "model": null,
+  "batch": null,
+  "current_keyframe": null
+}

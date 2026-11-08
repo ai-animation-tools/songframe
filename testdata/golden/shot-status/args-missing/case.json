@@ -1,0 +1,15 @@
+{
+  "description": "--filter без значения.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "expected one argument"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--filter"
+  ],
+  "remove": [],
+  "mkdir": []
+}

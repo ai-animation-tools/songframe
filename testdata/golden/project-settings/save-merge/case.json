@@ -1,0 +1,11 @@
+{
+  "description": "Слияние с расширениями провайдера: вложенные options/backend сохраняются, новые ключи добавляются в конец.",
+  "call": "writeProjectSettings",
+  "project": "project",
+  "covers": [
+    "mergeSettings вложенный",
+    "неизвестные поля файла",
+    "agentInstructions undefined не трогает поле"
+  ],
+  "stubbedMedia": []
+}

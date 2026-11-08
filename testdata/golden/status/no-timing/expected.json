@@ -1,0 +1,20 @@
+{
+  "path": "<project>",
+  "state": "sourced",
+  "name": "Пробный клип",
+  "animaticVideo": "sample-animatic.mp4",
+  "checks": {
+    "marker": true,
+    "sources": true,
+    "timing": false,
+    "cast": true,
+    "treatment": true,
+    "scenes": true,
+    "shotsTotal": 5,
+    "shotsDone": 2,
+    "animaticBuilt": true,
+    "animaticFresh": false,
+    "animaticApproved": false
+  },
+  "problems": []
+}

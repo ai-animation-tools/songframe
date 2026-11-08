@@ -1,0 +1,18 @@
+{
+  "description": "Запрос не задан и время целым.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "не задан",
+    ":g"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "show",
+    "--dir",
+    "plan/batches/M04-attempt-01"
+  ],
+  "remove": [],
+  "mkdir": []
+}

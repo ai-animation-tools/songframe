@@ -1,0 +1,18 @@
+{
+  "description": "Сам корень plan/batches.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "allowed root"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "init",
+    "M04",
+    "--dir",
+    "plan/batches"
+  ],
+  "remove": [],
+  "mkdir": []
+}

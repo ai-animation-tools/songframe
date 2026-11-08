@@ -1,0 +1,21 @@
+{
+  "description": "Опора уже утверждена.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "approved"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "ask",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "--stage",
+    "keyframes_review",
+    "--frame",
+    "K01"
+  ],
+  "remove": [],
+  "mkdir": []
+}

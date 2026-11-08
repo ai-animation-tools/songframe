@@ -1,0 +1,10 @@
+{
+  "description": "Пересохранение кастинга образца.",
+  "call": "writeCast",
+  "project": "project",
+  "covers": [
+    "writeCast без изменений",
+    "стабильность"
+  ],
+  "stubbedMedia": []
+}

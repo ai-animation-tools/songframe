@@ -1,0 +1,13 @@
+{
+  "description": "Изменён файл комплекта.",
+  "call": "check_assets",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "изменился файл комплекта"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "kinds": [
+    {
+      "id": "character",
+      "label": "Персонаж",
+      "dir": "heroes"
+    },
+    {
+      "id": "vehicle",
+      "label": "Транспорт",
+      "dir": "vehicles"
+    },
+    {
+      "id": "location",
+      "label": "Локация",
+      "dir": "locations"
+    },
+    {
+      "id": "prop",
+      "label": "Предмет",
+      "dir": "props"
+    },
+    {
+      "id": "style",
+      "label": "Стиль",
+      "dir": "style"
+    }
+  ],
+  "track": {
+    "path": "track.mp3",
+    "sha256": "ed834a6ad1b63649a9aaeb78c18e95bc49a266d0d14c953230bc924876e51bdf",
+    "bytes": 9,
+    "original_name": "Моя песня.mp3",
+    "duration_seconds": null
+  },
+  "lyrics": {
+    "path": "text.md",
+    "sha256": "9a71bdf1621dcad82414ac7a9412732bcc911f7585aae9a84e32fcc597affee7",
+    "bytes": 112,
+    "lines": 3,
+    "sections": [
+      "Куплет",
+      "Припев"
+    ]
+  },
+  "idea": {
+    "path": "description.md",
+    "sha256": "ecbffa656a2f035015f18a05055081147d9df06af86b731f7e0be75feca1bd26",
+    "bytes": 20
+  },
+  "cover": null,
+  "references": [
+    {
+      "id": "mira",
+      "kind": "character",
+      "name": "Мира",
+      "short_name": "Мира",
+      "description": "Музыкант",
+      "files": [
+        {
+          "path": "heroes/mira-2.webp",
+          "sha256": "9c467d735b791248d627194fd0dbf995e76580b838dcc2f507ed98c344878d58",
+          "bytes": 19,
+          "view": "side",
+          "note": "профиль",
+          "prompt": null
+        },
+        {
+          "path": "heroes/mira-2.jpg",
+          "sha256": "d221c60c1b6bcd52f98f95ec6a7c89bc4e66202479530a69aeb3490015abfca9",
+          "bytes": 20,
+          "view": "front",
+          "note": "",
+          "prompt": "heroes/mira-2.jpg.prompt.txt"
+        }
+      ],
+      "prompt": "heroes/mira.prompt.txt"
+    }
+  ],
+  "updated_at": "<updated_at>"
+}

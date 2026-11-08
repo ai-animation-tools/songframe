@@ -1,0 +1,13 @@
+{
+  "description": "Попытка с запросом принятого комплекта — остаток.",
+  "call": "check_workspace",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "new_attempt request_sha256"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

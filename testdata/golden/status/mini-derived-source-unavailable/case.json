@@ -1,0 +1,10 @@
+{
+  "description": "Комплект источника M01 удалён.",
+  "call": "computeStatus",
+  "project": "project",
+  "covers": [
+    "source_unavailable",
+    "kits<total"
+  ],
+  "stubbedMedia": []
+}

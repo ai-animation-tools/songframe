@@ -1,0 +1,20 @@
+{
+  "path": "<project>",
+  "state": "empty",
+  "name": "Пустой",
+  "animaticVideo": null,
+  "checks": {
+    "marker": true,
+    "sources": false,
+    "timing": false,
+    "cast": false,
+    "treatment": false,
+    "scenes": false,
+    "shotsTotal": 0,
+    "shotsDone": 0,
+    "animaticBuilt": false,
+    "animaticFresh": false,
+    "animaticApproved": false
+  },
+  "problems": []
+}

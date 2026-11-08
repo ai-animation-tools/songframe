@@ -1,0 +1,411 @@
+{
+  "base": "checks-base",
+  "steps": [
+    {
+      "label": "relative-target",
+      "export": {
+        "target": "plan/batches/rel"
+      },
+      "error": "Укажите абсолютный путь папки пакета.",
+      "exists": {
+        "<tmp>/project/plan/batches/rel": false
+      }
+    },
+    {
+      "label": "inside-project",
+      "export": {
+        "target": "<tmp>/project/plan/edit"
+      },
+      "error": "Внутри проекта пакет можно собирать только в plan/batches; иначе выберите папку вне проекта.",
+      "exists": {
+        "<tmp>/project/plan/edit": false
+      }
+    },
+    {
+      "label": "project-root",
+      "export": {
+        "target": "<tmp>/project"
+      },
+      "error": "Папка не пуста: <tmp>/project",
+      "exists": {}
+    },
+    {
+      "label": "batches-prefix",
+      "export": {
+        "target": "<tmp>/project/plan/batches-x"
+      },
+      "job": {
+        "kind": "tool",
+        "title": "Пакет для монтажёра",
+        "steps": [
+          {
+            "tool": "export_edit_bundle",
+            "args": [
+              "--out",
+              "<tmp>/project/plan/batches-x"
+            ],
+            "label": "Сборка пакета для монтажёра"
+          }
+        ]
+      },
+      "exists": {
+        "<tmp>/project/plan/batches-x": true
+      },
+      "goDiffers": "Проверка префикса без разделителя: оригинал создавал пустую папку и отказ давал только инструмент."
+    },
+    {
+      "label": "not-empty",
+      "setup": {
+        "write": {
+          "<tmp>/full/файл": "x"
+        }
+      },
+      "export": {
+        "target": "<tmp>/full"
+      },
+      "error": "Папка не пуста: <tmp>/full",
+      "exists": {}
+    },
+    {
+      "label": "target-file",
+      "setup": {
+        "write": {
+          "<tmp>/plain": "x"
+        }
+      },
+      "export": {
+        "target": "<tmp>/plain"
+      },
+      "error": "ENOTDIR: not a directory, scandir '<tmp>/plain'",
+      "exists": {}
+    },
+    {
+      "label": "parent-file",
+      "export": {
+        "target": "<tmp>/plain/bundle"
+      },
+      "error": "ENOTDIR: not a directory, mkdir '<tmp>/plain/bundle'",
+      "exists": {}
+    },
+    {
+      "label": "outside-no-copy",
+      "export": {
+        "target": "<tmp>/пакет",
+        "copy": false
+      },
+      "job": {
+        "kind": "tool",
+        "title": "Пакет для монтажёра",
+        "steps": [
+          {
+            "tool": "export_edit_bundle",
+            "args": [
+              "--out",
+              "<tmp>/пакет"
+            ],
+            "label": "Сборка пакета для монтажёра"
+          }
+        ]
+      },
+      "exists": {
+        "<tmp>/пакет": true
+      }
+    },
+    {
+      "label": "batches-copy",
+      "export": {
+        "target": "<tmp>/project/plan/batches/edit-bundle-a",
+        "copy": true
+      },
+      "job": {
+        "kind": "tool",
+        "title": "Пакет для монтажёра с медиа",
+        "steps": [
+          {
+            "tool": "update_scene_views",
+            "args": [],
+            "required": false,
+            "label": "карточки и представления"
+          },
+          {
+            "tool": "export_edit_bundle",
+            "args": [
+              "--out",
+              "<tmp>/project/plan/batches/edit-bundle-a",
+              "--copy"
+            ],
+            "label": "Сборка пакета для монтажёра"
+          }
+        ]
+      },
+      "exists": {
+        "<tmp>/project/plan/batches/edit-bundle-a": true
+      }
+    },
+    {
+      "label": "normalized-target",
+      "export": {
+        "target": "<tmp>/project/plan/batches/x/../edit-bundle-b/",
+        "copy": true
+      },
+      "job": {
+        "kind": "tool",
+        "title": "Пакет для монтажёра с медиа",
+        "steps": [
+          {
+            "tool": "update_scene_views",
+            "args": [],
+            "required": false,
+            "label": "карточки и представления"
+          },
+          {
+            "tool": "export_edit_bundle",
+            "args": [
+              "--out",
+              "<tmp>/project/plan/batches/edit-bundle-b",
+              "--copy"
+            ],
+            "label": "Сборка пакета для монтажёра"
+          }
+        ]
+      },
+      "exists": {
+        "<tmp>/project/plan/batches/edit-bundle-b": true
+      }
+    },
+    {
+      "label": "existing-empty",
+      "setup": {
+        "mkdir": [
+          "<tmp>/empty"
+        ]
+      },
+      "export": {
+        "target": "<tmp>/empty"
+      },
+      "job": {
+        "kind": "tool",
+        "title": "Пакет для монтажёра",
+        "steps": [
+          {
+            "tool": "export_edit_bundle",
+            "args": [
+              "--out",
+              "<tmp>/empty"
+            ],
+            "label": "Сборка пакета для монтажёра"
+          }
+        ]
+      },
+      "exists": {}
+    },
+    {
+      "label": "batches-exact",
+      "setup": {
+        "removeFile": [
+          "<tmp>/project/plan/batches/.gitkeep",
+          "plan/batches/M03-attempt-01"
+        ]
+      },
+      "export": {
+        "target": "<tmp>/project/plan/batches"
+      },
+      "error": "Папка не пуста: <tmp>/project/plan/batches",
+      "exists": {}
+    },
+    {
+      "label": "copy-undefined",
+      "setup": {
+        "restoreBatches": true
+      },
+      "export": {
+        "target": "<tmp>/project/plan/batches/edit-bundle-c"
+      },
+      "job": {
+        "kind": "tool",
+        "title": "Пакет для монтажёра",
+        "steps": [
+          {
+            "tool": "export_edit_bundle",
+            "args": [
+              "--out",
+              "<tmp>/project/plan/batches/edit-bundle-c"
+            ],
+            "label": "Сборка пакета для монтажёра"
+          }
+        ]
+      },
+      "exists": {}
+    },
+    {
+      "label": "remove-busy",
+      "setup": {
+        "bundle": "<tmp>/project/plan/batches/edit-bundle-b"
+      },
+      "remove": "<tmp>/project/plan/batches/edit-bundle-b",
+      "error": "Пакет ещё собирается. Дождитесь завершения задания.",
+      "exists": {
+        "<tmp>/project/plan/batches/edit-bundle-b": true
+      }
+    },
+    {
+      "label": "remove-failed-job",
+      "status": [
+        "<tmp>/project/plan/batches/edit-bundle-b",
+        "failed"
+      ],
+      "remove": "<tmp>/project/plan/batches/edit-bundle-b",
+      "removed": true,
+      "exists": {
+        "<tmp>/project/plan/batches/edit-bundle-b": false
+      }
+    },
+    {
+      "label": "remove-done-job",
+      "setup": {
+        "bundle": "<tmp>/project/plan/batches/edit-bundle-a"
+      },
+      "status": [
+        "<tmp>/project/plan/batches/edit-bundle-a",
+        "done"
+      ],
+      "remove": "<tmp>/project/plan/batches/edit-bundle-a",
+      "removed": true,
+      "exists": {
+        "<tmp>/project/plan/batches/edit-bundle-a": false
+      }
+    },
+    {
+      "label": "remove-no-job",
+      "setup": {
+        "bundle": "<tmp>/project/plan/batches/edit-bundle-d"
+      },
+      "remove": "<tmp>/project/plan/batches/edit-bundle-d",
+      "removed": true,
+      "exists": {
+        "<tmp>/project/plan/batches/edit-bundle-d": false
+      }
+    },
+    {
+      "label": "remove-busy-unbuilt",
+      "setup": {
+        "mkdir": [
+          "<tmp>/project/plan/batches/edit-bundle-e"
+        ]
+      },
+      "export": {
+        "target": "<tmp>/project/plan/batches/edit-bundle-e"
+      },
+      "job": {
+        "kind": "tool",
+        "title": "Пакет для монтажёра",
+        "steps": [
+          {
+            "tool": "export_edit_bundle",
+            "args": [
+              "--out",
+              "<tmp>/project/plan/batches/edit-bundle-e"
+            ],
+            "label": "Сборка пакета для монтажёра"
+          }
+        ]
+      },
+      "exists": {}
+    },
+    {
+      "label": "remove-busy-unbuilt-call",
+      "remove": "<tmp>/project/plan/batches/edit-bundle-e",
+      "error": "Пакет ещё собирается. Дождитесь завершения задания.",
+      "exists": {
+        "<tmp>/project/plan/batches/edit-bundle-e": true
+      }
+    },
+    {
+      "label": "remove-without-bundle-json",
+      "status": [
+        "<tmp>/project/plan/batches/edit-bundle-e",
+        "done"
+      ],
+      "remove": "<tmp>/project/plan/batches/edit-bundle-e",
+      "error": "Результат отсутствует или путь содержит символическую ссылку. Обновите список.",
+      "exists": {
+        "<tmp>/project/plan/batches/edit-bundle-e": true
+      }
+    },
+    {
+      "label": "remove-relative",
+      "remove": "plan/batches/edit-bundle-e",
+      "error": "Укажите абсолютный путь собранного результата.",
+      "exists": {}
+    },
+    {
+      "label": "remove-outside",
+      "remove": "<tmp>/пакет",
+      "error": "Удалять можно только собранные результаты внутри plan/batches выбранного проекта.",
+      "exists": {}
+    },
+    {
+      "label": "remove-missing",
+      "remove": "<tmp>/project/plan/batches/нет",
+      "error": "Результат отсутствует или путь содержит символическую ссылку. Обновите список.",
+      "exists": {}
+    },
+    {
+      "label": "remove-not-listed",
+      "setup": {
+        "write": {
+          "<tmp>/project/plan/batches/bad/bundle.json": "{}\n"
+        }
+      },
+      "remove": "<tmp>/project/plan/batches/bad",
+      "error": "Собранный пакет не найден. Обновите список.",
+      "exists": {
+        "<tmp>/project/plan/batches/bad": true
+      }
+    },
+    {
+      "label": "remove-work-package",
+      "setup": {
+        "write": {
+          "<tmp>/project/plan/batches/pack/bundle.json": "{\"shots\": []}\n",
+          "<tmp>/project/plan/batches/pack/workflow.json": "{}\n"
+        }
+      },
+      "remove": "<tmp>/project/plan/batches/pack",
+      "error": "Нельзя удалить рабочий пакет сцены как пакет для монтажёра.",
+      "exists": {
+        "<tmp>/project/plan/batches/pack": true
+      }
+    },
+    {
+      "label": "remove-request-marker",
+      "setup": {
+        "write": {
+          "<tmp>/project/plan/batches/pack2/bundle.json": "{\"shots\": []}\n",
+          "<tmp>/project/plan/batches/pack2/request/request.json": "{}\n"
+        }
+      },
+      "remove": "<tmp>/project/plan/batches/pack2",
+      "error": "Нельзя удалить рабочий пакет сцены как пакет для монтажёра.",
+      "exists": {
+        "<tmp>/project/plan/batches/pack2": true
+      }
+    },
+    {
+      "label": "remove-symlink",
+      "setup": {
+        "write": {
+          "<tmp>/real/bundle.json": "{\"shots\": []}\n"
+        },
+        "link": {
+          "<tmp>/project/plan/batches/link": "<tmp>/real"
+        }
+      },
+      "remove": "<tmp>/project/plan/batches/link",
+      "error": "Результат отсутствует или путь содержит символическую ссылку. Обновите список.",
+      "exists": {
+        "<tmp>/real": true
+      }
+    }
+  ]
+}

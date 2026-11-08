@@ -1,0 +1,10 @@
+{
+  "description": "Без начального состояния и изменений; длинное действие обрезается.",
+  "call": "buildBrief",
+  "project": "project",
+  "covers": [
+    "BRIEF_STATE_UNSET_PREFIX",
+    "action > 80 → …"
+  ],
+  "stubbedMedia": []
+}

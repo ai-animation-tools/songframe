@@ -1,0 +1,15 @@
+{
+  "description": "Нет папки карточек: создаются все.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "mkdir parents"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [
+    "plan/animatic/cards"
+  ],
+  "mkdir": []
+}

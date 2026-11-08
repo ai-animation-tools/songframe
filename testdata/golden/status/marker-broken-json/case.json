@@ -1,0 +1,9 @@
+{
+  "description": "plan/project.json — битый JSON.",
+  "call": "computeStatus",
+  "project": "project",
+  "covers": [
+    "state=invalid (битый маркер)"
+  ],
+  "stubbedMedia": []
+}

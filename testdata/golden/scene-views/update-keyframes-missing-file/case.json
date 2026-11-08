@@ -1,0 +1,13 @@
+{
+  "description": "Опора без файла: текстовая карточка.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "is_file"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

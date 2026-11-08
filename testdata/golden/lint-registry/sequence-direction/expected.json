@@ -1,0 +1,6 @@
+{
+  "code": 1,
+  "stdout": "ОШИБКА  plan/scenes.json · $.sequences[1]: нет обязательного поля id\nОШИБКА  plan/scenes.json · sequences[intro].direction: упоминание пробы: «…Как в пробе [тут](assets/shots/M02/video.…»\nОШИБКА  plan/scenes.json · sequences[intro].direction: путь в assets: «…Как в пробе [тут](assets/shots/M02/video.mp4) и [списке](plan…»\nОШИБКА  plan/scenes.json · sequences[intro].direction: технический рецепт монтажа: «…[списке](plan/edit-list.md); участок 3 на 1×.…»\nОШИБКА  plan/scenes.json · sequences[intro].direction: ссылка в assets: assets/shots/M02/video.mp4\nпредупреждение  plan/scenes.json · sequences[intro].direction: ссылка на производное представление вместо первичного источника: plan/edit-list.md\nпредупреждение  source/description.md · mira: персонаж «Мира» из реестра не упомянут в сценарии\nпредупреждение  source/description.md · lev: персонаж «Лев» из реестра не упомянут в сценарии\nОшибок: 5, предупреждений: 3.\n",
+  "stderr": "",
+  "traceback": false
+}

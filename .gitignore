@@ -1,27 +1,24 @@
-__pycache__/
-*.pyc
-# Локальные переменные и ключи не относятся к исходному коду.
+# Сборки, зависимости и локальные результаты не входят в исходники.
+/bin/
+/dist/
+/output/
+/reports/
+/models/
+/runtime/
+/tmp/
+node_modules/
+frontend/dist/
+frontend/storybook-static/
 .env
 .env.*
-!.env.example
-*.pem
-*.key
-# Зависимости и сборки приложения.
-node_modules/
-build/
-dist/
-out/
 *.log
-# Yarn Berry: состояние установки и кэш остаются локальными.
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks
-!.yarn/versions
-.pnp.*
-*.tsbuildinfo
-# Общая версия Node.js для разработчика и CI должна попадать в Git даже при глобальном исключении.
-!/.nvmrc
-# Проект-образец для тестов: MP4 аниматика пересоздаёт tools/testdata/build_sample.py.
-tools/testdata/sample-project/plan/animatic/latest/*.mp4
+
+# Поставка новой оболочки и локальная проверка UI не относятся к исходникам.
+/build/
+/frontend/node_modules/
+/frontend/.yarn/install-state.gz
+/frontend/test-results/
+/frontend/playwright-report/
+
+# Временный PE-ресурс создаётся только на время Windows CGO-сборки.
+/songframe_windows_amd64.syso

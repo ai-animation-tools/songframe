@@ -1,0 +1,9 @@
+{
+  "code": 0,
+  "stdout": "usage: shot_workflow.py set-image-request [-h] --dir DIR --frame FRAME\n                                          --request-dir REQUEST_DIR\n\noptions:\n  -h, --help            show this help message and exit\n  --dir DIR\n  --frame FRAME\n  --request-dir REQUEST_DIR\n",
+  "stderr": "",
+  "traceback": false,
+  "files": {},
+  "dirs": {},
+  "modes": {}
+}

@@ -1,0 +1,11 @@
+{
+  "description": "Без кастинга references берутся из черновика.",
+  "call": "scenesSaveImpact + validateScenes + saveScenesWithMode",
+  "project": "project",
+  "mode": "production",
+  "covers": [
+    "references из черновика",
+    "отпечатки без начального состояния"
+  ],
+  "stubbedMedia": []
+}

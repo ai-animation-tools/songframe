@@ -1,0 +1,41 @@
+{
+  "exists": true,
+  "git": true,
+  "dirs": [
+    "assets",
+    "assets/shots",
+    "plan",
+    "plan/animatic",
+    "plan/animatic/cards",
+    "plan/animatic/latest",
+    "plan/audio",
+    "plan/awaiting",
+    "plan/batches",
+    "plan/context",
+    "source",
+    "source/heroes",
+    "source/locations",
+    "source/vehicles"
+  ],
+  "files": {
+    ".gitignore": "a2ea3a218565954a700f285a9428fee885d705afdd73fadb1eeb908b3f424a1a",
+    "README.md": "318c3f14bd340b3537ae3a9d53642fce0637c42d14be378f8388e39857f57721",
+    "assets/README.md": "c05141cfe0d502e555d82fd9610147d0a35e991d61a9e155ef2c997458039b86",
+    "assets/shots/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "plan/README.md": "5d606ebe3ee9a32a20544b137ac1c0975fca5d6c4bef694dd59579a85d8f6d25",
+    "plan/animatic/README.md": "28d993ea96b7806565a35f24f640a0e20f80de11e871cb0e2b71df25540deb1e",
+    "plan/animatic/cards/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "plan/animatic/latest/README.md": "27a7126041d46c97bbba93dd61f51c89a0fc7e1e12b035627deaa32b57fd9a1a",
+    "plan/audio/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "plan/awaiting/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "plan/awaiting/README.md": "67033281b058b4adbb46692e45d8d5d9d88051fe1564a757fd6ed0924fd02e8b",
+    "plan/batches/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "plan/context/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "plan/production-status.json": "49b08582891d98949467417ea61075f173ec82b5d1df4d0a4c99ced168eeb2e7",
+    "plan/project.json": "869c7768230245aa2a1fa58aa859219d1fd290565013a7edecfceed4d6f1ff68",
+    "source/README.md": "cbf166a8b87f5da9ded9584a24f4db50766793114cef766c2c3e86e505d1ad05",
+    "source/heroes/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "source/locations/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "source/vehicles/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

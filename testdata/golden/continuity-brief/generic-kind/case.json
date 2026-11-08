@@ -1,0 +1,15 @@
+{
+  "description": "Тип без словаря: общий набор свойств и подписи.",
+  "call": "continuity_brief",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "GENERIC_PROPERTIES"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "M02"
+  ],
+  "remove": [],
+  "mkdir": []
+}

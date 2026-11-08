@@ -1,0 +1,15 @@
+{
+  "description": "plan/cast.json — список: схема и validate_cast.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "cast not dict"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ],
+  "remove": [],
+  "mkdir": []
+}

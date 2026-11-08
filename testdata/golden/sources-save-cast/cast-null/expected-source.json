@@ -1,0 +1,16 @@
+{
+  "dirs": [
+    "heroes",
+    "vehicles"
+  ],
+  "files": {
+    "description.md": "c54f98b97377abc668b0fe5c48ebe504a0aac530b912cb8e0f38ab75579355e8",
+    "heroes/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "heroes/mira.png": "f8708eda75833c8227070aafb2fc9388f149e11e1c2f578a10cbd97361e55c4e",
+    "heroes/mira.png.prompt.txt": "a5a74841751d4893891b2b0113aa274c2316f7e43b53cde20fc7dc8c5423602b",
+    "text.md": "b1e26eac3b2d06b950bace0052d5a4439a6c7ad76ad929ec4f73495a31575799",
+    "track.mp3": "fb0797e290b774181fa7fdbeadc0bd9849889152fca5dc3555a766bb33dfae2b",
+    "vehicles/boat.png": "98d81eaebc29ec302673f7f49d836e620654e82ed6c811787b95d1381be9771b",
+    "vehicles/boat.prompt.txt": "0e129992dacc7ddcac21c55f1cf7ce47080bc16bdf2435f228e0f8807396f869"
+  }
+}

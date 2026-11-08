@@ -1,0 +1,544 @@
+{
+  "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5+esm15 Copyright (c) 2000-2023 the FFmpeg developers",
+  "base": "checks-base",
+  "inputs": {
+    "plan/batches/M04-empty/workflow.json": "{}\n",
+    "plan/batches/M03-attempt-02/request/request.json": "{\n  \"provider\": \"test\",\n  \"prompt\": \"prompt.txt\",\n  \"inputs\": []\n}\n",
+    "plan/batches/M03-attempt-02/request/prompt.txt": "Один дубль.\n",
+    "plan/batches/M03-attempt-02/request/attempt.json": "{\n  \"status\": \"submitted\",\n  \"request_sha256\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n}\n",
+    "plan/batches/M03-attempt-02/workflow.json": "{\n  \"schema_version\": 1,\n  \"shot\": \"M03\",\n  \"mode\": \"shot\",\n  \"stage\": \"keyframes_review\",\n  \"wait_reason\": null,\n  \"request_dir\": \"request\",\n  \"description_approved\": false,\n  \"scene_sha256\": \"69af153f5fa701a285a4e6a8c9253b5ead4f6031390f7c7cc105b28dfa6cd235\",\n  \"timing\": {\n    \"fps\": 30,\n    \"frames\": 120,\n    \"window_seconds\": 4,\n    \"request_seconds\": 5\n  },\n  \"keyframes\": [\n    {\n      \"id\": \"K01\",\n      \"role\": \"first\",\n      \"time_seconds\": 0,\n      \"note\": \"первый кадр\",\n      \"path\": \"frames/K01.png\",\n      \"sha256\": \"865ff178ce8407825ea5201ce98d16e82bf806feaccd36d5acb0dccd7d5ac2b3\",\n      \"approved\": false\n    },\n    {\n      \"id\": \"K02\",\n      \"role\": \"last\",\n      \"time_seconds\": 5,\n      \"note\": \"конечный кадр\",\n      \"path\": null,\n      \"sha256\": null,\n      \"approved\": false\n    }\n  ],\n  \"approved_frames\": {},\n  \"keyframe_notes\": [],\n  \"prompt\": {\n    \"path\": \"video-prompt.txt\",\n    \"approved\": false\n  },\n  \"approved_prompt_sha256\": null,\n  \"retry_of\": null,\n  \"frame_source\": null,\n  \"model\": null,\n  \"batch\": null,\n  \"current_keyframe\": \"K01\",\n  \"pending_decision\": {\n    \"stage\": \"keyframes_review\",\n    \"question\": \"Утвердить опоры?\",\n    \"options\": [\n      \"approve\",\n      \"revise\"\n    ],\n    \"asked_at\": \"2026-10-28T19:03:38+00:00\"\n  },\n  \"decision\": null\n}\n"
+  },
+  "steps": [
+    {
+      "label": "proposed",
+      "packageDir": "plan/batches/M03-attempt-01",
+      "result": {
+        "dir": "<project>/plan/batches/M03-attempt-01",
+        "decisionToken": "49a0effdc21739a7a8ec52263a02ca5a90b61a39a213725683143e3100e85424",
+        "relative": "plan/batches/M03-attempt-01",
+        "shot": "M03",
+        "stage": "keyframes_review",
+        "stageLabel": "опоры на согласовании",
+        "waitReason": null,
+        "mode": "shot",
+        "retryOf": null,
+        "batch": null,
+        "timing": {
+          "fps": 30,
+          "frames": 120,
+          "window_seconds": 4,
+          "request_seconds": 5
+        },
+        "keyframes": [
+          {
+            "id": "K01",
+            "role": "first",
+            "time_seconds": 0,
+            "note": "первый кадр",
+            "imagePath": "<project>/plan/batches/M03-attempt-01/frames/K01.png",
+            "approved": false
+          },
+          {
+            "id": "K02",
+            "role": "last",
+            "time_seconds": 5,
+            "note": "конечный кадр",
+            "imagePath": null,
+            "approved": false
+          }
+        ],
+        "description": "Бумажные фонарики качаются на ветру у воды; камера сбоку.\n",
+        "prompt": {
+          "path": "<project>/plan/batches/M03-attempt-01/video-prompt.txt",
+          "approved": false,
+          "text": "Бумажные фонарики качаются на ветру у воды, общий план сбоку.\n"
+        },
+        "request": null,
+        "speech": {
+          "path": "<project>/plan/batches/M03-attempt-01/audio/speech.wav",
+          "recipe": "<project>/plan/batches/M03-attempt-01/audio/audio-recipe.json",
+          "start": 11.5,
+          "end": 16.5,
+          "lines": [
+            {
+              "text": "Ветер качает бумажные огни",
+              "start": 12,
+              "end": 16
+            }
+          ]
+        },
+        "pendingDecision": {
+          "stage": "keyframes_review",
+          "question": "Утвердить опоры?",
+          "options": [
+            "approve",
+            "revise"
+          ],
+          "asked_at": "2026-10-28T19:03:38+00:00"
+        },
+        "decision": null,
+        "keyframeNotes": [],
+        "sceneChanged": false,
+        "preview": [],
+        "problems": []
+      },
+      "audio": {
+        "audio-recipe.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.mp3\",\n    \"sha256\": \"d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640\",\n    \"bytes\": 120416\n  },\n  \"source_interval_seconds\": [\n    11.5,\n    16.5\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 507150,\n  \"end_sample_exclusive\": 727650,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"728d8a027848aa5be1c3cbd20a1de4de177472efab72174d0f34bccfd3ec46e2\",\n    \"bytes\": 882044\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M03\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 3,\n      \"text\": \"Ветер качает бумажные огни\",\n      \"start\": 12.0,\n      \"end\": 16.0,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "speech.wav": {
+          "sha256": "728d8a027848aa5be1c3cbd20a1de4de177472efab72174d0f34bccfd3ec46e2",
+          "bytes": 882044
+        }
+      }
+    },
+    {
+      "label": "bounds",
+      "packageDir": "<project>/plan/batches/M03-attempt-01",
+      "bounds": {
+        "start": 12,
+        "end": 16.25
+      },
+      "result": {
+        "dir": "<project>/plan/batches/M03-attempt-01",
+        "decisionToken": "49a0effdc21739a7a8ec52263a02ca5a90b61a39a213725683143e3100e85424",
+        "relative": "plan/batches/M03-attempt-01",
+        "shot": "M03",
+        "stage": "keyframes_review",
+        "stageLabel": "опоры на согласовании",
+        "waitReason": null,
+        "mode": "shot",
+        "retryOf": null,
+        "batch": null,
+        "timing": {
+          "fps": 30,
+          "frames": 120,
+          "window_seconds": 4,
+          "request_seconds": 5
+        },
+        "keyframes": [
+          {
+            "id": "K01",
+            "role": "first",
+            "time_seconds": 0,
+            "note": "первый кадр",
+            "imagePath": "<project>/plan/batches/M03-attempt-01/frames/K01.png",
+            "approved": false
+          },
+          {
+            "id": "K02",
+            "role": "last",
+            "time_seconds": 5,
+            "note": "конечный кадр",
+            "imagePath": null,
+            "approved": false
+          }
+        ],
+        "description": "Бумажные фонарики качаются на ветру у воды; камера сбоку.\n",
+        "prompt": {
+          "path": "<project>/plan/batches/M03-attempt-01/video-prompt.txt",
+          "approved": false,
+          "text": "Бумажные фонарики качаются на ветру у воды, общий план сбоку.\n"
+        },
+        "request": null,
+        "speech": {
+          "path": "<project>/plan/batches/M03-attempt-01/audio/speech.wav",
+          "recipe": "<project>/plan/batches/M03-attempt-01/audio/audio-recipe.json",
+          "start": 12,
+          "end": 16.25,
+          "lines": [
+            {
+              "text": "Ветер качает бумажные огни",
+              "start": 12,
+              "end": 16
+            }
+          ]
+        },
+        "pendingDecision": {
+          "stage": "keyframes_review",
+          "question": "Утвердить опоры?",
+          "options": [
+            "approve",
+            "revise"
+          ],
+          "asked_at": "2026-10-28T19:03:38+00:00"
+        },
+        "decision": null,
+        "keyframeNotes": [],
+        "sceneChanged": false,
+        "preview": [],
+        "problems": []
+      },
+      "audio": {
+        "audio-recipe.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.mp3\",\n    \"sha256\": \"d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640\",\n    \"bytes\": 120416\n  },\n  \"source_interval_seconds\": [\n    12.0,\n    16.25\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 529200,\n  \"end_sample_exclusive\": 716625,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"d25d883b0eb15f0a446b0444d26e92de9ad1210800f1b130832fe6e684694bdc\",\n    \"bytes\": 749744\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M03\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 3,\n      \"text\": \"Ветер качает бумажные огни\",\n      \"start\": 12.0,\n      \"end\": 16.0,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "speech.wav": {
+          "sha256": "d25d883b0eb15f0a446b0444d26e92de9ad1210800f1b130832fe6e684694bdc",
+          "bytes": 749744
+        }
+      }
+    },
+    {
+      "label": "bounds-fraction",
+      "packageDir": "plan/batches/M03-attempt-01",
+      "bounds": {
+        "start": 12.1,
+        "end": 12.3
+      },
+      "result": {
+        "dir": "<project>/plan/batches/M03-attempt-01",
+        "decisionToken": "49a0effdc21739a7a8ec52263a02ca5a90b61a39a213725683143e3100e85424",
+        "relative": "plan/batches/M03-attempt-01",
+        "shot": "M03",
+        "stage": "keyframes_review",
+        "stageLabel": "опоры на согласовании",
+        "waitReason": null,
+        "mode": "shot",
+        "retryOf": null,
+        "batch": null,
+        "timing": {
+          "fps": 30,
+          "frames": 120,
+          "window_seconds": 4,
+          "request_seconds": 5
+        },
+        "keyframes": [
+          {
+            "id": "K01",
+            "role": "first",
+            "time_seconds": 0,
+            "note": "первый кадр",
+            "imagePath": "<project>/plan/batches/M03-attempt-01/frames/K01.png",
+            "approved": false
+          },
+          {
+            "id": "K02",
+            "role": "last",
+            "time_seconds": 5,
+            "note": "конечный кадр",
+            "imagePath": null,
+            "approved": false
+          }
+        ],
+        "description": "Бумажные фонарики качаются на ветру у воды; камера сбоку.\n",
+        "prompt": {
+          "path": "<project>/plan/batches/M03-attempt-01/video-prompt.txt",
+          "approved": false,
+          "text": "Бумажные фонарики качаются на ветру у воды, общий план сбоку.\n"
+        },
+        "request": null,
+        "speech": {
+          "path": "<project>/plan/batches/M03-attempt-01/audio/speech.wav",
+          "recipe": "<project>/plan/batches/M03-attempt-01/audio/audio-recipe.json",
+          "start": 12.1,
+          "end": 12.3,
+          "lines": [
+            {
+              "text": "Ветер качает бумажные огни",
+              "start": 12,
+              "end": 16
+            }
+          ]
+        },
+        "pendingDecision": {
+          "stage": "keyframes_review",
+          "question": "Утвердить опоры?",
+          "options": [
+            "approve",
+            "revise"
+          ],
+          "asked_at": "2026-10-28T19:03:38+00:00"
+        },
+        "decision": null,
+        "keyframeNotes": [],
+        "sceneChanged": false,
+        "preview": [],
+        "problems": []
+      },
+      "audio": {
+        "audio-recipe.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.mp3\",\n    \"sha256\": \"d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640\",\n    \"bytes\": 120416\n  },\n  \"source_interval_seconds\": [\n    12.1,\n    12.3\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 533610,\n  \"end_sample_exclusive\": 542430,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"84b240e3f1ec8afbe489522c49bfa9ae0860ea7adf896badd50baa96e8f41535\",\n    \"bytes\": 35324\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M03\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 3,\n      \"text\": \"Ветер качает бумажные огни\",\n      \"start\": 12.0,\n      \"end\": 16.0,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "speech.wav": {
+          "sha256": "84b240e3f1ec8afbe489522c49bfa9ae0860ea7adf896badd50baa96e8f41535",
+          "bytes": 35324
+        }
+      }
+    },
+    {
+      "label": "bounds-invalid",
+      "packageDir": "plan/batches/M03-attempt-01",
+      "bounds": {
+        "start": 3,
+        "end": 3
+      },
+      "error": "Конец среза должен быть позже начала, границы — неотрицательные секунды.",
+      "audio": {
+        "audio-recipe.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.mp3\",\n    \"sha256\": \"d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640\",\n    \"bytes\": 120416\n  },\n  \"source_interval_seconds\": [\n    12.1,\n    12.3\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 533610,\n  \"end_sample_exclusive\": 542430,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"84b240e3f1ec8afbe489522c49bfa9ae0860ea7adf896badd50baa96e8f41535\",\n    \"bytes\": 35324\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M03\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 3,\n      \"text\": \"Ветер качает бумажные огни\",\n      \"start\": 12.0,\n      \"end\": 16.0,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "speech.wav": {
+          "sha256": "84b240e3f1ec8afbe489522c49bfa9ae0860ea7adf896badd50baa96e8f41535",
+          "bytes": 35324
+        }
+      }
+    },
+    {
+      "label": "bounds-negative",
+      "packageDir": "plan/batches/M03-attempt-01",
+      "bounds": {
+        "start": -1,
+        "end": 2
+      },
+      "error": "Конец среза должен быть позже начала, границы — неотрицательные секунды.",
+      "audio": {
+        "audio-recipe.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.mp3\",\n    \"sha256\": \"d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640\",\n    \"bytes\": 120416\n  },\n  \"source_interval_seconds\": [\n    12.1,\n    12.3\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 533610,\n  \"end_sample_exclusive\": 542430,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"84b240e3f1ec8afbe489522c49bfa9ae0860ea7adf896badd50baa96e8f41535\",\n    \"bytes\": 35324\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M03\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 3,\n      \"text\": \"Ветер качает бумажные огни\",\n      \"start\": 12.0,\n      \"end\": 16.0,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "speech.wav": {
+          "sha256": "84b240e3f1ec8afbe489522c49bfa9ae0860ea7adf896badd50baa96e8f41535",
+          "bytes": 35324
+        }
+      }
+    },
+    {
+      "label": "past-end",
+      "packageDir": "plan/batches/M03-attempt-01",
+      "bounds": {
+        "start": 29,
+        "end": 31
+      },
+      "error": "Предупреждение: у M03 в реестре lipsync=false.\nСрез выходит за конец песни: 30.000 с.",
+      "audio": {}
+    },
+    {
+      "label": "exponent",
+      "packageDir": "plan/batches/M03-attempt-01",
+      "bounds": {
+        "start": 1e-7,
+        "end": 0.5
+      },
+      "result": {
+        "dir": "<project>/plan/batches/M03-attempt-01",
+        "decisionToken": "49a0effdc21739a7a8ec52263a02ca5a90b61a39a213725683143e3100e85424",
+        "relative": "plan/batches/M03-attempt-01",
+        "shot": "M03",
+        "stage": "keyframes_review",
+        "stageLabel": "опоры на согласовании",
+        "waitReason": null,
+        "mode": "shot",
+        "retryOf": null,
+        "batch": null,
+        "timing": {
+          "fps": 30,
+          "frames": 120,
+          "window_seconds": 4,
+          "request_seconds": 5
+        },
+        "keyframes": [
+          {
+            "id": "K01",
+            "role": "first",
+            "time_seconds": 0,
+            "note": "первый кадр",
+            "imagePath": "<project>/plan/batches/M03-attempt-01/frames/K01.png",
+            "approved": false
+          },
+          {
+            "id": "K02",
+            "role": "last",
+            "time_seconds": 5,
+            "note": "конечный кадр",
+            "imagePath": null,
+            "approved": false
+          }
+        ],
+        "description": "Бумажные фонарики качаются на ветру у воды; камера сбоку.\n",
+        "prompt": {
+          "path": "<project>/plan/batches/M03-attempt-01/video-prompt.txt",
+          "approved": false,
+          "text": "Бумажные фонарики качаются на ветру у воды, общий план сбоку.\n"
+        },
+        "request": null,
+        "speech": {
+          "path": "<project>/plan/batches/M03-attempt-01/audio/speech.wav",
+          "recipe": "<project>/plan/batches/M03-attempt-01/audio/audio-recipe.json",
+          "start": 0,
+          "end": 0.5,
+          "lines": [
+            {
+              "text": "Ветер качает бумажные огни",
+              "start": 12,
+              "end": 16
+            }
+          ]
+        },
+        "pendingDecision": {
+          "stage": "keyframes_review",
+          "question": "Утвердить опоры?",
+          "options": [
+            "approve",
+            "revise"
+          ],
+          "asked_at": "2026-10-28T19:03:38+00:00"
+        },
+        "decision": null,
+        "keyframeNotes": [],
+        "sceneChanged": false,
+        "preview": [],
+        "problems": []
+      },
+      "audio": {
+        "audio-recipe.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.mp3\",\n    \"sha256\": \"d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640\",\n    \"bytes\": 120416\n  },\n  \"source_interval_seconds\": [\n    0.0,\n    0.5\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 0,\n  \"end_sample_exclusive\": 22050,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"ce6005cbf75b27ea897b1ec8ced1387b8f50c7ee2edc5ffe55104f01f209ba96\",\n    \"bytes\": 88244\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M03\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 3,\n      \"text\": \"Ветер качает бумажные огни\",\n      \"start\": 12.0,\n      \"end\": 16.0,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "speech.wav": {
+          "sha256": "ce6005cbf75b27ea897b1ec8ced1387b8f50c7ee2edc5ffe55104f01f209ba96",
+          "bytes": 88244
+        }
+      }
+    },
+    {
+      "label": "no-lines",
+      "packageDir": "plan/batches/M03-attempt-01",
+      "write": {
+        "plan/audio/timing.json": "{\n  \"version\": 2,\n  \"status\": \"Разметка образца: границы заданы вручную и подтверждены\",\n  \"source\": \"source/track.mp3\",\n  \"sha256\": \"d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640\",\n  \"duration_decoded\": 30,\n  \"duration_container\": 30.040816,\n  \"clock\": \"Секунды от начала декодированного звука, не SMPTE\",\n  \"lines\": [],\n  \"sections\": [\n    {\n      \"name\": \"Вступление\",\n      \"start\": 0,\n      \"end\": 8\n    },\n    {\n      \"name\": \"Куплет\",\n      \"start\": 8,\n      \"end\": 20\n    },\n    {\n      \"name\": \"Проигрыш\",\n      \"start\": 20,\n      \"end\": 30\n    }\n  ]\n}\n"
+      },
+      "error": "Предупреждение: у M03 в реестре lipsync=false.\nВ окне плана нет строк разметки; задайте границы явно через --start и --end.",
+      "audio": {}
+    },
+    {
+      "label": "restore-timing",
+      "packageDir": "plan/batches/M03-attempt-01",
+      "bounds": {
+        "start": 0,
+        "end": 0.001
+      },
+      "write": {
+        "plan/audio/timing.json": "{\n  \"version\": 2,\n  \"status\": \"Разметка образца: границы заданы вручную и подтверждены\",\n  \"source\": \"source/track.mp3\",\n  \"sha256\": \"d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640\",\n  \"duration_decoded\": 30.0,\n  \"duration_container\": 30.040816,\n  \"clock\": \"Секунды от начала декодированного звука, не SMPTE\",\n  \"lines\": [\n    {\n      \"id\": 1,\n      \"source_line\": 2,\n      \"start\": 8.0,\n      \"end\": 12.0,\n      \"verified\": true\n    },\n    {\n      \"id\": 2,\n      \"source_line\": 3,\n      \"start\": 12.0,\n      \"end\": 16.0,\n      \"verified\": true\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 4,\n      \"start\": 16.0,\n      \"end\": 20.0,\n      \"verified\": true\n    }\n  ],\n  \"sections\": [\n    {\n      \"name\": \"Вступление\",\n      \"start\": 0.0,\n      \"end\": 8.0\n    },\n    {\n      \"name\": \"Куплет\",\n      \"start\": 8.0,\n      \"end\": 20.0\n    },\n    {\n      \"name\": \"Проигрыш\",\n      \"start\": 20.0,\n      \"end\": 30.0\n    }\n  ]\n}\n"
+      },
+      "result": {
+        "dir": "<project>/plan/batches/M03-attempt-01",
+        "decisionToken": "49a0effdc21739a7a8ec52263a02ca5a90b61a39a213725683143e3100e85424",
+        "relative": "plan/batches/M03-attempt-01",
+        "shot": "M03",
+        "stage": "keyframes_review",
+        "stageLabel": "опоры на согласовании",
+        "waitReason": null,
+        "mode": "shot",
+        "retryOf": null,
+        "batch": null,
+        "timing": {
+          "fps": 30,
+          "frames": 120,
+          "window_seconds": 4,
+          "request_seconds": 5
+        },
+        "keyframes": [
+          {
+            "id": "K01",
+            "role": "first",
+            "time_seconds": 0,
+            "note": "первый кадр",
+            "imagePath": "<project>/plan/batches/M03-attempt-01/frames/K01.png",
+            "approved": false
+          },
+          {
+            "id": "K02",
+            "role": "last",
+            "time_seconds": 5,
+            "note": "конечный кадр",
+            "imagePath": null,
+            "approved": false
+          }
+        ],
+        "description": "Бумажные фонарики качаются на ветру у воды; камера сбоку.\n",
+        "prompt": {
+          "path": "<project>/plan/batches/M03-attempt-01/video-prompt.txt",
+          "approved": false,
+          "text": "Бумажные фонарики качаются на ветру у воды, общий план сбоку.\n"
+        },
+        "request": null,
+        "speech": {
+          "path": "<project>/plan/batches/M03-attempt-01/audio/speech.wav",
+          "recipe": "<project>/plan/batches/M03-attempt-01/audio/audio-recipe.json",
+          "start": 0,
+          "end": 0.000997732426303855,
+          "lines": [
+            {
+              "text": "Ветер качает бумажные огни",
+              "start": 12,
+              "end": 16
+            }
+          ]
+        },
+        "pendingDecision": {
+          "stage": "keyframes_review",
+          "question": "Утвердить опоры?",
+          "options": [
+            "approve",
+            "revise"
+          ],
+          "asked_at": "2026-10-28T19:03:38+00:00"
+        },
+        "decision": null,
+        "keyframeNotes": [],
+        "sceneChanged": false,
+        "preview": [],
+        "problems": []
+      },
+      "audio": {
+        "audio-recipe.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.mp3\",\n    \"sha256\": \"d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640\",\n    \"bytes\": 120416\n  },\n  \"source_interval_seconds\": [\n    0.0,\n    0.000997732426303855\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 0,\n  \"end_sample_exclusive\": 44,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"76f28f887f29702880fbaacc28322298767dffabf5908cfcd7fd0db5a2e18658\",\n    \"bytes\": 220\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M03\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 3,\n      \"text\": \"Ветер качает бумажные огни\",\n      \"start\": 12.0,\n      \"end\": 16.0,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "speech.wav": {
+          "sha256": "76f28f887f29702880fbaacc28322298767dffabf5908cfcd7fd0db5a2e18658",
+          "bytes": 220
+        }
+      }
+    },
+    {
+      "label": "submitted",
+      "packageDir": "plan/batches/M03-attempt-02",
+      "error": "Запрос этой попытки уже отправлен: её WAV менять нельзя. Подготовьте новую попытку.",
+      "audio": {
+        "audio-recipe.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.mp3\",\n    \"sha256\": \"d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640\",\n    \"bytes\": 120416\n  },\n  \"source_interval_seconds\": [\n    0.0,\n    0.000997732426303855\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 0,\n  \"end_sample_exclusive\": 44,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"76f28f887f29702880fbaacc28322298767dffabf5908cfcd7fd0db5a2e18658\",\n    \"bytes\": 220\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M03\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 3,\n      \"text\": \"Ветер качает бумажные огни\",\n      \"start\": 12.0,\n      \"end\": 16.0,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "speech.wav": {
+          "sha256": "76f28f887f29702880fbaacc28322298767dffabf5908cfcd7fd0db5a2e18658",
+          "bytes": 220
+        }
+      }
+    },
+    {
+      "label": "empty-workflow",
+      "packageDir": "plan/batches/M04-empty",
+      "error": "Пакет не найден.",
+      "audio": {
+        "audio-recipe.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.mp3\",\n    \"sha256\": \"d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640\",\n    \"bytes\": 120416\n  },\n  \"source_interval_seconds\": [\n    0.0,\n    0.000997732426303855\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 0,\n  \"end_sample_exclusive\": 44,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"76f28f887f29702880fbaacc28322298767dffabf5908cfcd7fd0db5a2e18658\",\n    \"bytes\": 220\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M03\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 3,\n      \"text\": \"Ветер качает бумажные огни\",\n      \"start\": 12.0,\n      \"end\": 16.0,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "speech.wav": {
+          "sha256": "76f28f887f29702880fbaacc28322298767dffabf5908cfcd7fd0db5a2e18658",
+          "bytes": 220
+        }
+      }
+    },
+    {
+      "label": "not-a-package",
+      "packageDir": "plan/audio",
+      "error": "Выберите обычную папку рабочего пакета в plan/batches или plan/awaiting.",
+      "audio": {
+        "audio-recipe.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.mp3\",\n    \"sha256\": \"d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640\",\n    \"bytes\": 120416\n  },\n  \"source_interval_seconds\": [\n    0.0,\n    0.000997732426303855\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 0,\n  \"end_sample_exclusive\": 44,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"76f28f887f29702880fbaacc28322298767dffabf5908cfcd7fd0db5a2e18658\",\n    \"bytes\": 220\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M03\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 3,\n      \"text\": \"Ветер качает бумажные огни\",\n      \"start\": 12.0,\n      \"end\": 16.0,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "speech.wav": {
+          "sha256": "76f28f887f29702880fbaacc28322298767dffabf5908cfcd7fd0db5a2e18658",
+          "bytes": 220
+        }
+      }
+    }
+  ]
+}

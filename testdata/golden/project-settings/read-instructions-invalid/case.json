@@ -1,0 +1,9 @@
+{
+  "description": "agent_instructions не строка.",
+  "call": "readProjectSettings",
+  "project": "project",
+  "covers": [
+    "agentInstructions.invalid"
+  ],
+  "stubbedMedia": []
+}

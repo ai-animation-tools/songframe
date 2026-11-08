@@ -1,0 +1,17 @@
+{
+  "description": "--json и --paragraph: печатается JSON.",
+  "call": "continuity_brief",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "--json приоритетнее"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "M05",
+    "--paragraph",
+    "--json"
+  ],
+  "remove": [],
+  "mkdir": []
+}

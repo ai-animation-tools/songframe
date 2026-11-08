@@ -1,0 +1,10 @@
+{
+  "description": "Без кастинга: только изменения планов, подписи из кодов.",
+  "call": "buildBrief",
+  "project": "project",
+  "covers": [
+    "cast=null",
+    "key.replace(_)"
+  ],
+  "stubbedMedia": []
+}

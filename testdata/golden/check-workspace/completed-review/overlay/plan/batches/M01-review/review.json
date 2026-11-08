@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "fps": 30,
+  "status": "review_pending",
+  "video_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "total_frames": 10,
+  "audio": {
+    "path": "a.wav"
+  },
+  "shots": [
+    {
+      "id": "M01",
+      "kind": "video",
+      "path": "v.mp4",
+      "sha256": "b",
+      "frames": 10
+    }
+  ],
+  "output": "C:\\old\\review.MP4"
+}

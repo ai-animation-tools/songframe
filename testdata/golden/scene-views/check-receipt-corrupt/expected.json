@@ -1,0 +1,11 @@
+{
+  "code": 1,
+  "stdout": "",
+  "stderr": "Устарели представления: plan/animatic/cards/manifest.json\n",
+  "traceback": false,
+  "cards": [
+    "plan/animatic/cards/M03.png",
+    "plan/animatic/cards/M04.png",
+    "plan/animatic/cards/M05.png"
+  ]
+}

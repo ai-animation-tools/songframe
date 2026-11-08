@@ -1,0 +1,16 @@
+{
+  "shots": [
+    {
+      "id": "M02",
+      "reason": "сдвинуты границы плана",
+      "state": "completed",
+      "produced": true
+    },
+    {
+      "id": "M02.5",
+      "reason": "новый план в реестре",
+      "state": "planned",
+      "produced": false
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "description": "Пустая папка в plan/batches.",
+  "call": "check_workspace",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "empty_folder"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": [
+    "plan/batches/M04-attempt-01"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "description": "Неизвестный корень файла.",
+  "call": "check_assets",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "Неизвестный корень"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

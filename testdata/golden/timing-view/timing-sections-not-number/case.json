@@ -1,0 +1,11 @@
+{
+  "description": "Секция со строковой границей.",
+  "call": "viewTiming",
+  "project": "project",
+  "covers": [
+    "unreadableTiming (Number.isFinite строки)"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

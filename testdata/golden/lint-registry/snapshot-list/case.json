@@ -1,0 +1,13 @@
+{
+  "description": "Снимок — список: множество ключей из элементов.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "set(snapshot)"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

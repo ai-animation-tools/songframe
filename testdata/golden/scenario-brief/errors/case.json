@@ -1,0 +1,19 @@
+{
+  "description": "Неизвестный план и ошибка состояния.",
+  "call": "buildBrief",
+  "project": "project",
+  "briefs": [
+    [
+      "M09",
+      "before"
+    ],
+    [
+      "M01",
+      "after"
+    ]
+  ],
+  "covers": [
+    "briefShotMissing"
+  ],
+  "stubbedMedia": []
+}

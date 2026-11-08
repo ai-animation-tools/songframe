@@ -1,0 +1,33 @@
+{
+  "track": null,
+  "lyrics": null,
+  "idea": {
+    "text": "Новая идея"
+  },
+  "cover": {
+    "remove": true
+  },
+  "references": [
+    {
+      "id": "mira",
+      "kind": "character",
+      "name": "Мира",
+      "short_name": "Мира",
+      "description": "Музыкант",
+      "prompt": "Общий промпт Миры",
+      "files": [
+        {
+          "existingPath": "heroes/mira-2.webp",
+          "view": "side",
+          "note": "профиль"
+        },
+        {
+          "sourcePath": "<inputs>/mira front.jpeg",
+          "view": "front",
+          "note": "",
+          "prompt": "Новый промпт"
+        }
+      ]
+    }
+  ]
+}

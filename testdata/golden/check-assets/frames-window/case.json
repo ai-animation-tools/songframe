@@ -1,0 +1,13 @@
+{
+  "description": "Длина клипа расходится с окном.",
+  "call": "check_assets",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "монтажным окном"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

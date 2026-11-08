@@ -1,0 +1,16 @@
+{
+  "description": "Два плана, пакет M03 вне реестра, M02 устарел по окну.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "unassigned_packages",
+    "stale"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ],
+  "remove": [],
+  "mkdir": []
+}

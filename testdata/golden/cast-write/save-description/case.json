@@ -1,0 +1,12 @@
+{
+  "description": "Правка описания связанной сущности переносится в опись (updated_at = фиксированное время).",
+  "call": "writeCast",
+  "project": "project",
+  "covers": [
+    "manifest description ← appearance",
+    "updated_at",
+    "appearance без trim",
+    "публикация двух файлов"
+  ],
+  "stubbedMedia": []
+}

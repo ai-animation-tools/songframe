@@ -1,0 +1,23 @@
+{
+  "track": null,
+  "lyrics": null,
+  "idea": null,
+  "cover": null,
+  "references": [
+    {
+      "id": "mira",
+      "kind": "character",
+      "name": "Мира",
+      "short_name": "Мира",
+      "description": "",
+      "prompt": "",
+      "files": [
+        {
+          "existingPath": "heroes/mira.png",
+          "view": "full",
+          "note": ""
+        }
+      ]
+    }
+  ]
+}

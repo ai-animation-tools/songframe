@@ -1,0 +1,15 @@
+{
+  "description": "plan/project.json без названия: трассировка ValueError.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "validate_project"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--check"
+  ],
+  "remove": [],
+  "mkdir": []
+}

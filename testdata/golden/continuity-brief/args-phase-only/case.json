@@ -1,0 +1,16 @@
+{
+  "description": "Фаза без плана: required.",
+  "call": "continuity_brief",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "required"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--phase",
+    "after"
+  ],
+  "remove": [],
+  "mkdir": []
+}

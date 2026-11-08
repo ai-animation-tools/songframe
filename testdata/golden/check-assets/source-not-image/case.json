@@ -1,0 +1,13 @@
+{
+  "description": "Общий референс не изображение.",
+  "call": "check_assets",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "должен быть изображением"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

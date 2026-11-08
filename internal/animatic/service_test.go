@@ -1,0 +1,49 @@
+package animatic
+
+import (
+	"context"
+	"os"
+	"path/filepath"
+	"reflect"
+	"testing"
+
+	"songframe-go/internal/jobs"
+	"songframe-go/internal/tools"
+)
+
+// TestBuildJobSteps — задание через настоящий менеджер: шаги запускают инструменты по порядку с
+// аргументами оригинала, сбой build_animatic даёт причину из stderr и код шага.
+func TestBuildJobSteps(t *testing.T) {
+	project := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(project, "plan"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(project, "plan", "scenes.json"), []byte("{}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var calls [][]string
+	run := func(ctx context.Context, root, name string, args []string) (tools.Result, error) {
+		calls = append(calls, append([]string{name}, args...))
+		code := 0
+		if name == "build_animatic" {
+			code = 1
+			return tools.Result{Code: &code, Stdout: "M01 подготовлена\n", Stderr: "Карточки устарели\n"}, nil
+		}
+		return tools.Result{Code: &code, Stdout: "готово\n"}, nil
+	}
+	manager := jobs.New(t.TempDir(), jobs.Options{SkipRestore: true})
+	info, err := NewService(manager, run).Build(project, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	final, err := manager.Wait(context.Background(), info.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := [][]string{{"update_scene_views"}, {"build_animatic", "--plan-only"}}; !reflect.DeepEqual(calls, want) {
+		t.Fatalf("вызовы %v", calls)
+	}
+	if final.Status != jobs.StatusFailed || final.Error == nil || *final.Error != "Карточки устарели" || final.Kind != jobs.KindAnimatic || final.Title != textCheckTitle {
+		t.Fatalf("итог %+v", final)
+	}
+}

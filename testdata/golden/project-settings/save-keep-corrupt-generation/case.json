@@ -1,0 +1,10 @@
+{
+  "description": "generation не объект сохраняется при generation: null из формы; schema_version добавляется.",
+  "call": "writeProjectSettings",
+  "project": "project",
+  "covers": [
+    "сохранение повреждённого generation",
+    "schema_version по умолчанию"
+  ],
+  "stubbedMedia": []
+}

@@ -1,0 +1,21 @@
+{
+  "description": "Временная папка внутри assets: защищённая папка.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "assets"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "init",
+    "M04",
+    "--dir",
+    "<tmp>/M04"
+  ],
+  "remove": [],
+  "mkdir": [
+    "assets/tmp"
+  ],
+  "tmpdir": "<project>/assets/tmp"
+}

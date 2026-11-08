@@ -1,0 +1,214 @@
+[
+  {
+    "label": "init",
+    "tool": "shot_workflow",
+    "args": [
+      "init",
+      "M03",
+      "--dir",
+      "<project>/plan/batches/M03-attempt-01"
+    ],
+    "files": []
+  },
+  {
+    "label": "prepare",
+    "tool": "media_request",
+    "args": [
+      "prepare",
+      "--request",
+      "<spec>/spec.json",
+      "--work-dir",
+      "<project>/plan/batches/M03-attempt-01/request"
+    ],
+    "files": []
+  },
+  {
+    "label": "keyframes",
+    "tool": "shot_workflow",
+    "args": [
+      "set-stage",
+      "--dir",
+      "<project>/plan/batches/M03-attempt-01",
+      "keyframes_review"
+    ],
+    "files": []
+  },
+  {
+    "label": "prompt",
+    "tool": "shot_workflow",
+    "args": [
+      "set-stage",
+      "--dir",
+      "<project>/plan/batches/M03-attempt-01",
+      "prompt_review"
+    ],
+    "files": []
+  },
+  {
+    "label": "choice",
+    "tool": "shot_workflow",
+    "args": [
+      "set-stage",
+      "--dir",
+      "<project>/plan/batches/M03-attempt-01",
+      "request_choice",
+      "--request-dir",
+      "request"
+    ],
+    "files": []
+  },
+  {
+    "label": "ask",
+    "tool": "shot_workflow",
+    "args": [
+      "ask",
+      "--dir",
+      "<project>/plan/batches/M03-attempt-01",
+      "--stage",
+      "request_choice"
+    ],
+    "files": []
+  },
+  {
+    "label": "regenerate-package",
+    "tool": "regenerate_shot",
+    "args": [
+      "M03",
+      "--json",
+      "--pricing",
+      "<spec>/pricing.json"
+    ],
+    "files": [
+      "plan/batches/M03-attempt-02/workflow.json",
+      "plan/batches/M03-attempt-02/request/request.json",
+      "plan/batches/M03-attempt-02/request/attempt.json"
+    ]
+  },
+  {
+    "label": "regenerate-text",
+    "tool": "regenerate_shot",
+    "args": [
+      "M03",
+      "--pricing",
+      "<spec>/pricing.json",
+      "--no-account",
+      "--source",
+      "package"
+    ],
+    "files": []
+  },
+  {
+    "label": "regenerate-missing",
+    "tool": "regenerate_shot",
+    "args": [
+      "M05",
+      "--json",
+      "--pricing",
+      "<spec>/pricing.json"
+    ],
+    "files": []
+  },
+  {
+    "label": "submit",
+    "tool": "media_request",
+    "args": [
+      "submit",
+      "--work-dir",
+      "<project>/plan/batches/M03-attempt-01/request",
+      "--confirm",
+      "<sha>"
+    ],
+    "files": []
+  },
+  {
+    "label": "watch",
+    "tool": "media_request",
+    "args": [
+      "watch",
+      "--work-dir",
+      "<project>/plan/batches/M03-attempt-01/request",
+      "--max-minutes",
+      "1"
+    ],
+    "files": []
+  },
+  {
+    "label": "submitted",
+    "tool": "shot_workflow",
+    "args": [
+      "set-stage",
+      "--dir",
+      "<project>/plan/batches/M03-attempt-01",
+      "submitted"
+    ],
+    "files": []
+  },
+  {
+    "label": "downloaded",
+    "tool": "shot_workflow",
+    "args": [
+      "set-stage",
+      "--dir",
+      "<project>/plan/batches/M03-attempt-01",
+      "downloaded"
+    ],
+    "files": []
+  },
+  {
+    "label": "accept-cut",
+    "tool": "accept_shot",
+    "args": [
+      "M03",
+      "--package",
+      "<project>/plan/batches/M03-attempt-01",
+      "--cut",
+      "0:120",
+      "--no-views"
+    ],
+    "files": []
+  },
+  {
+    "label": "accept-exists",
+    "tool": "accept_shot",
+    "args": [
+      "M01",
+      "--package",
+      "<project>/plan/batches/M03-attempt-01",
+      "--full",
+      "--no-views"
+    ],
+    "files": []
+  },
+  {
+    "label": "accept",
+    "tool": "accept_shot",
+    "args": [
+      "M03",
+      "--package",
+      "<project>/plan/batches/M03-attempt-01",
+      "--full",
+      "--no-views",
+      "--clean"
+    ],
+    "files": [
+      "assets/shots/M03/manifest.json",
+      "assets/shots/M03/generation-request.json",
+      "assets/shots/M03/preparation.json",
+      "plan/production-status.json"
+    ]
+  },
+  {
+    "label": "regenerate-asset",
+    "tool": "regenerate_shot",
+    "args": [
+      "M03",
+      "--json",
+      "--pricing",
+      "<spec>/pricing.json"
+    ],
+    "files": [
+      "plan/batches/M03-attempt-01/workflow.json",
+      "plan/batches/M03-attempt-01/request/request.json"
+    ]
+  }
+]

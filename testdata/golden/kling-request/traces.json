@@ -1,0 +1,428 @@
+[
+  {
+    "name": "discover-metadata",
+    "description": "Метаданные ресурса и сервера: адреса и scope из ответов.",
+    "stored": "null",
+    "responses": "[{\"status\": 200, \"body\": {\"resource\": \"http://kling.test/mcp\", \"authorization_servers\": [\"http://kling.test/auth/\"], \"scopes_supported\": [\"generation.create\", \"account.credit.read\"]}}, {\"status\": 200, \"body\": {\"issuer\": \"http://kling.test/auth\", \"authorization_endpoint\": \"http://kling.test/oauth/authorize\", \"token_endpoint\": \"http://kling.test/oauth/token\", \"registration_endpoint\": \"http://kling.test/oauth/register\", \"revocation_endpoint\": \"http://kling.test/oauth/revoke\"}}]",
+    "expected": {
+      "result": "{\"authorize\": \"http://kling.test/oauth/authorize\", \"token\": \"http://kling.test/oauth/token\", \"register\": \"http://kling.test/oauth/register\", \"revoke\": \"http://kling.test/oauth/revoke\", \"resource\": \"http://kling.test/mcp\", \"scope\": \"generation.create account.credit.read\"}",
+      "requests": "[{\"method\": \"GET\", \"url\": \"http://kling.test/.well-known/oauth-protected-resource\", \"headers\": [[\"Accept\", \"application/json\"]], \"body\": \"\", \"timeout\": 10}, {\"method\": \"GET\", \"url\": \"http://kling.test/.well-known/oauth-authorization-server/auth\", \"headers\": [[\"Accept\", \"application/json\"]], \"body\": \"\", \"timeout\": 10}]",
+      "unused": 0,
+      "credentials": null
+    }
+  },
+  {
+    "name": "discover-fallback",
+    "description": "Метаданные недоступны: умолчания, повтор по пути issuer.",
+    "stored": "null",
+    "responses": "[{\"status\": 404, \"body\": \"x\", \"type\": \"text/plain\"}, {\"status\": 500, \"body\": {}}, {\"status\": 200, \"body\": \"[1]\"}]",
+    "expected": {
+      "result": "{\"authorize\": \"http://kling.test/auth/authorize\", \"token\": \"http://kling.test/auth/token\", \"register\": \"http://kling.test/auth/register\", \"revoke\": \"http://kling.test/auth/revoke\", \"resource\": \"http://kling.test/mcp\", \"scope\": \"generation.create generation.read account.credit.read\"}",
+      "requests": "[{\"method\": \"GET\", \"url\": \"http://kling.test/.well-known/oauth-protected-resource\", \"headers\": [[\"Accept\", \"application/json\"]], \"body\": \"\", \"timeout\": 10}, {\"method\": \"GET\", \"url\": \"http://kling.test/.well-known/oauth-authorization-server/auth\", \"headers\": [[\"Accept\", \"application/json\"]], \"body\": \"\", \"timeout\": 10}, {\"method\": \"GET\", \"url\": \"http://kling.test/auth/.well-known/oauth-authorization-server\", \"headers\": [[\"Accept\", \"application/json\"]], \"body\": \"\", \"timeout\": 10}]",
+      "unused": 0,
+      "credentials": null
+    }
+  },
+  {
+    "name": "discover-offline",
+    "description": "Нет соединения: умолчания.",
+    "stored": "null",
+    "responses": "[{\"raise\": \"NotSent\", \"message\": \"x\"}, {\"raise\": \"NotSent\", \"message\": \"x\"}, {\"raise\": \"NotSent\", \"message\": \"x\"}]",
+    "expected": {
+      "result": "{\"authorize\": \"http://kling.test/auth/authorize\", \"token\": \"http://kling.test/auth/token\", \"register\": \"http://kling.test/auth/register\", \"revoke\": \"http://kling.test/auth/revoke\", \"resource\": \"http://kling.test/mcp\", \"scope\": \"generation.create generation.read account.credit.read\"}",
+      "requests": "[{\"method\": \"GET\", \"url\": \"http://kling.test/.well-known/oauth-protected-resource\", \"headers\": [[\"Accept\", \"application/json\"]], \"body\": \"\", \"timeout\": 10}, {\"method\": \"GET\", \"url\": \"http://kling.test/.well-known/oauth-authorization-server/auth\", \"headers\": [[\"Accept\", \"application/json\"]], \"body\": \"\", \"timeout\": 10}, {\"method\": \"GET\", \"url\": \"http://kling.test/auth/.well-known/oauth-authorization-server\", \"headers\": [[\"Accept\", \"application/json\"]], \"body\": \"\", \"timeout\": 10}]",
+      "unused": 0,
+      "credentials": null
+    }
+  },
+  {
+    "name": "discover-empty-scopes",
+    "description": "Пустой scopes_supported сервера: берётся scope ресурса.",
+    "stored": "null",
+    "responses": "[{\"status\": 200, \"body\": {\"resource\": \"http://kling.test/mcp\", \"authorization_servers\": [\"http://kling.test/auth/\"], \"scopes_supported\": [\"generation.create\", \"account.credit.read\"]}}, {\"status\": 200, \"body\": {\"issuer\": \"http://kling.test/auth\", \"authorization_endpoint\": \"http://kling.test/oauth/authorize\", \"token_endpoint\": \"http://kling.test/oauth/token\", \"registration_endpoint\": \"http://kling.test/oauth/register\", \"revocation_endpoint\": \"http://kling.test/oauth/revoke\", \"scopes_supported\": []}}]",
+    "expected": {
+      "result": "{\"authorize\": \"http://kling.test/oauth/authorize\", \"token\": \"http://kling.test/oauth/token\", \"register\": \"http://kling.test/oauth/register\", \"revoke\": \"http://kling.test/oauth/revoke\", \"resource\": \"http://kling.test/mcp\", \"scope\": \"generation.create account.credit.read\"}",
+      "requests": "[{\"method\": \"GET\", \"url\": \"http://kling.test/.well-known/oauth-protected-resource\", \"headers\": [[\"Accept\", \"application/json\"]], \"body\": \"\", \"timeout\": 10}, {\"method\": \"GET\", \"url\": \"http://kling.test/.well-known/oauth-authorization-server/auth\", \"headers\": [[\"Accept\", \"application/json\"]], \"body\": \"\", \"timeout\": 10}]",
+      "unused": 0,
+      "credentials": null
+    }
+  },
+  {
+    "name": "register",
+    "description": "Регистрация публичного клиента.",
+    "stored": "null",
+    "responses": "[{\"status\": 201, \"body\": {\"client_id\": \"client-1\", \"registration_access_token\": \"PRIVATE\"}}]",
+    "expected": {
+      "result": "\"client-1\"",
+      "requests": "[{\"method\": \"POST\", \"url\": \"http://kling.test/auth/register\", \"headers\": [[\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json\"]], \"body\": \"eyJjbGllbnRfbmFtZSI6ICJzb25nZnJhbWUiLCAiYXBwbGljYXRpb25fdHlwZSI6ICJuYXRpdmUiLCAicmVkaXJlY3RfdXJpcyI6IFsiaHR0cDovLzEyNy4wLjAuMTo4Nzg3L2NhbGxiYWNrIiwgImh0dHA6Ly9sb2NhbGhvc3Q6ODc4Ny9jYWxsYmFjayIsICJodHRwOi8vMTI3LjAuMC4xOjg3ODgvY2FsbGJhY2siLCAiaHR0cDovL2xvY2FsaG9zdDo4Nzg4L2NhbGxiYWNrIiwgImh0dHA6Ly8xMjcuMC4wLjE6ODc4OS9jYWxsYmFjayIsICJodHRwOi8vbG9jYWxob3N0Ojg3ODkvY2FsbGJhY2siLCAiaHR0cDovLzEyNy4wLjAuMTo4NzkwL2NhbGxiYWNrIiwgImh0dHA6Ly9sb2NhbGhvc3Q6ODc5MC9jYWxsYmFjayJdLCAiZ3JhbnRfdHlwZXMiOiBbImF1dGhvcml6YXRpb25fY29kZSIsICJyZWZyZXNoX3Rva2VuIl0sICJyZXNwb25zZV90eXBlcyI6IFsiY29kZSJdLCAidG9rZW5fZW5kcG9pbnRfYXV0aF9tZXRob2QiOiAibm9uZSJ9\", \"timeout\": 30}]",
+      "unused": 0,
+      "credentials": null
+    }
+  },
+  {
+    "name": "register-failed",
+    "description": "Регистрация без client_id.",
+    "stored": "null",
+    "responses": "[{\"status\": 200, \"body\": {\"client_id\": 5}}]",
+    "expected": {
+      "error": {
+        "type": "TransportError",
+        "message": "HTTP 200: Регистрация клиента в Kling не удалась."
+      },
+      "requests": "[{\"method\": \"POST\", \"url\": \"http://kling.test/auth/register\", \"headers\": [[\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json\"]], \"body\": \"eyJjbGllbnRfbmFtZSI6ICJzb25nZnJhbWUiLCAiYXBwbGljYXRpb25fdHlwZSI6ICJuYXRpdmUiLCAicmVkaXJlY3RfdXJpcyI6IFsiaHR0cDovLzEyNy4wLjAuMTo4Nzg3L2NhbGxiYWNrIiwgImh0dHA6Ly9sb2NhbGhvc3Q6ODc4Ny9jYWxsYmFjayIsICJodHRwOi8vMTI3LjAuMC4xOjg3ODgvY2FsbGJhY2siLCAiaHR0cDovL2xvY2FsaG9zdDo4Nzg4L2NhbGxiYWNrIiwgImh0dHA6Ly8xMjcuMC4wLjE6ODc4OS9jYWxsYmFjayIsICJodHRwOi8vbG9jYWxob3N0Ojg3ODkvY2FsbGJhY2siLCAiaHR0cDovLzEyNy4wLjAuMTo4NzkwL2NhbGxiYWNrIiwgImh0dHA6Ly9sb2NhbGhvc3Q6ODc5MC9jYWxsYmFjayJdLCAiZ3JhbnRfdHlwZXMiOiBbImF1dGhvcml6YXRpb25fY29kZSIsICJyZWZyZXNoX3Rva2VuIl0sICJyZXNwb25zZV90eXBlcyI6IFsiY29kZSJdLCAidG9rZW5fZW5kcG9pbnRfYXV0aF9tZXRob2QiOiAibm9uZSJ9\", \"timeout\": 30}]",
+      "unused": 0,
+      "credentials": null
+    }
+  },
+  {
+    "name": "session",
+    "description": "initialize, notifications/initialized, tools/list и два tools/call с taskTraceId.",
+    "stored": "{\"client_id\": \"client-1\", \"access_token\": \"access-1\", \"refresh_token\": \"refresh-1\", \"expires_at\": 1800003600, \"token_endpoint\": \"http://kling.test/auth/token\", \"revocation_endpoint\": \"http://kling.test/auth/revoke\", \"resource\": \"http://kling.test/mcp\", \"scope\": \"generation.create generation.read account.credit.read\"}",
+    "responses": "[{\"status\": 200, \"body\": {\"jsonrpc\": \"2.0\", \"id\": 0, \"result\": {\"protocolVersion\": \"2025-06-18\", \"capabilities\": {\"tools\": {}}}}}, {\"status\": 202, \"body\": \"\", \"type\": \"text/plain\"}, {\"status\": 200, \"body\": {\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"tools\": [{\"name\": \"who_am_i\"}]}}}, {\"status\": 200, \"body\": {\"jsonrpc\": \"2.0\", \"id\": 2, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"user\\\": \\\"\\\\u041e\\\\u043b\\\\u0435\\\\u0433\\\"}\"}], \"isError\": false}}}, {\"status\": 200, \"body\": {\"jsonrpc\": \"2.0\", \"id\": 3, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"plain\"}]}}}]",
+    "expected": {
+      "result": "[[{\"name\": \"who_am_i\"}], {\"user\": \"Олег\"}, \"plain\"]",
+      "requests": "[{\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDAsICJtZXRob2QiOiAiaW5pdGlhbGl6ZSIsICJwYXJhbXMiOiB7InByb3RvY29sVmVyc2lvbiI6ICIyMDI1LTExLTI1IiwgImNhcGFiaWxpdGllcyI6IHt9LCAiY2xpZW50SW5mbyI6IHsibmFtZSI6ICJzb25nZnJhbWUiLCAidmVyc2lvbiI6ICJzb25nZnJhbWUifX19\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"], [\"mcp-protocol-version\", \"2025-06-18\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJtZXRob2QiOiAibm90aWZpY2F0aW9ucy9pbml0aWFsaXplZCJ9\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"], [\"mcp-protocol-version\", \"2025-06-18\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDEsICJtZXRob2QiOiAidG9vbHMvbGlzdCIsICJwYXJhbXMiOiB7fX0=\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"], [\"mcp-protocol-version\", \"2025-06-18\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDIsICJtZXRob2QiOiAidG9vbHMvY2FsbCIsICJwYXJhbXMiOiB7Im5hbWUiOiAid2hvX2FtX2kiLCAiYXJndW1lbnRzIjogeyJ0b29scyI6IFsieCJdLCAidGFza1RyYWNlSWQiOiAidHJhY2UtMSJ9fX0=\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"], [\"mcp-protocol-version\", \"2025-06-18\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDMsICJtZXRob2QiOiAidG9vbHMvY2FsbCIsICJwYXJhbXMiOiB7Im5hbWUiOiAicXVlcnlfdGFza3MiLCAiYXJndW1lbnRzIjogeyJ0YXNrVHJhY2VJZCI6ICJvdGhlciJ9fX0=\", \"timeout\": 60}]",
+      "unused": 0,
+      "credentials": "{\n  \"client_id\": \"client-1\",\n  \"access_token\": \"access-1\",\n  \"refresh_token\": \"refresh-1\",\n  \"expires_at\": 1800003600,\n  \"token_endpoint\": \"http://kling.test/auth/token\",\n  \"revocation_endpoint\": \"http://kling.test/auth/revoke\",\n  \"resource\": \"http://kling.test/mcp\",\n  \"scope\": \"generation.create generation.read account.credit.read\"\n}\n"
+    }
+  },
+  {
+    "name": "session-sse",
+    "description": "Ответ потоком text/event-stream.",
+    "stored": "{\"client_id\": \"client-1\", \"access_token\": \"access-1\", \"refresh_token\": \"refresh-1\", \"expires_at\": 1800003600, \"token_endpoint\": \"http://kling.test/auth/token\", \"revocation_endpoint\": \"http://kling.test/auth/revoke\", \"resource\": \"http://kling.test/mcp\", \"scope\": \"generation.create generation.read account.credit.read\"}",
+    "responses": "[{\"status\": 200, \"body\": {\"jsonrpc\": \"2.0\", \"id\": 0, \"result\": {\"protocolVersion\": \"2025-06-18\", \"capabilities\": {\"tools\": {}}}}}, {\"status\": 202, \"body\": \"\", \"type\": \"text/plain\"}, {\"status\": 200, \"type\": \"text/event-stream\", \"body\": \"event: message\\ndata: {\\\"jsonrpc\\\": \\\"2.0\\\", \\\"id\\\": 1, \\\"result\\\": {\\\"content\\\": [{\\\"text\\\": \\\"{\\\\\\\"a\\\\\\\":1}\\\"}]}}\\n\\n\"}]",
+    "expected": {
+      "result": "{\"a\": 1}",
+      "requests": "[{\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDAsICJtZXRob2QiOiAiaW5pdGlhbGl6ZSIsICJwYXJhbXMiOiB7InByb3RvY29sVmVyc2lvbiI6ICIyMDI1LTExLTI1IiwgImNhcGFiaWxpdGllcyI6IHt9LCAiY2xpZW50SW5mbyI6IHsibmFtZSI6ICJzb25nZnJhbWUiLCAidmVyc2lvbiI6ICJzb25nZnJhbWUifX19\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"], [\"mcp-protocol-version\", \"2025-06-18\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJtZXRob2QiOiAibm90aWZpY2F0aW9ucy9pbml0aWFsaXplZCJ9\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"], [\"mcp-protocol-version\", \"2025-06-18\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDEsICJtZXRob2QiOiAidG9vbHMvY2FsbCIsICJwYXJhbXMiOiB7Im5hbWUiOiAid2hvX2FtX2kiLCAiYXJndW1lbnRzIjogeyJ0YXNrVHJhY2VJZCI6ICJ0In19fQ==\", \"timeout\": 60}]",
+      "unused": 0,
+      "credentials": "{\n  \"client_id\": \"client-1\",\n  \"access_token\": \"access-1\",\n  \"refresh_token\": \"refresh-1\",\n  \"expires_at\": 1800003600,\n  \"token_endpoint\": \"http://kling.test/auth/token\",\n  \"revocation_endpoint\": \"http://kling.test/auth/revoke\",\n  \"resource\": \"http://kling.test/mcp\",\n  \"scope\": \"generation.create generation.read account.credit.read\"\n}\n"
+    }
+  },
+  {
+    "name": "no-credentials",
+    "description": "Без записи входа запросов нет.",
+    "stored": "null",
+    "responses": "[]",
+    "expected": {
+      "error": {
+        "type": "AuthRequired",
+        "message": "Войдите в Kling на странице «Среда»."
+      },
+      "requests": "[]",
+      "unused": 0,
+      "credentials": null
+    }
+  },
+  {
+    "name": "refresh-expiring",
+    "description": "Токен истекает: обновление с ротацией до первого запроса.",
+    "stored": "{\"client_id\": \"client-1\", \"access_token\": \"access-1\", \"refresh_token\": \"refresh-1\", \"expires_at\": 1800000010, \"token_endpoint\": \"http://kling.test/auth/token\", \"revocation_endpoint\": \"http://kling.test/auth/revoke\", \"resource\": \"http://kling.test/mcp\", \"scope\": \"generation.create generation.read account.credit.read\"}",
+    "responses": "[{\"status\": 200, \"body\": {\"access_token\": \"access-2\", \"refresh_token\": \"refresh-2\", \"expires_in\": 3600, \"scope\": \"a b\", \"token_type\": \"Bearer\"}}, {\"status\": 200, \"body\": {\"jsonrpc\": \"2.0\", \"id\": 0, \"result\": {\"protocolVersion\": \"2025-06-18\", \"capabilities\": {\"tools\": {}}}}}, {\"status\": 202, \"body\": \"\", \"type\": \"text/plain\"}, {\"status\": 200, \"body\": {\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"ok\\\": 1}\"}], \"isError\": false}}}]",
+    "expected": {
+      "result": "{\"ok\": 1}",
+      "requests": "[{\"method\": \"POST\", \"url\": \"http://kling.test/auth/token\", \"headers\": [[\"Content-Type\", \"application/x-www-form-urlencoded\"], [\"Accept\", \"application/json\"]], \"body\": \"Z3JhbnRfdHlwZT1yZWZyZXNoX3Rva2VuJmNsaWVudF9pZD1jbGllbnQtMSZyZWZyZXNoX3Rva2VuPXJlZnJlc2gtMSZyZXNvdXJjZT1odHRwJTNBJTJGJTJGa2xpbmcudGVzdCUyRm1jcA==\", \"timeout\": 30}, {\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-2\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDAsICJtZXRob2QiOiAiaW5pdGlhbGl6ZSIsICJwYXJhbXMiOiB7InByb3RvY29sVmVyc2lvbiI6ICIyMDI1LTExLTI1IiwgImNhcGFiaWxpdGllcyI6IHt9LCAiY2xpZW50SW5mbyI6IHsibmFtZSI6ICJzb25nZnJhbWUiLCAidmVyc2lvbiI6ICJzb25nZnJhbWUifX19\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-2\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"], [\"mcp-protocol-version\", \"2025-06-18\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJtZXRob2QiOiAibm90aWZpY2F0aW9ucy9pbml0aWFsaXplZCJ9\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-2\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"], [\"mcp-protocol-version\", \"2025-06-18\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDEsICJtZXRob2QiOiAidG9vbHMvY2FsbCIsICJwYXJhbXMiOiB7Im5hbWUiOiAid2hvX2FtX2kiLCAiYXJndW1lbnRzIjogeyJ0YXNrVHJhY2VJZCI6ICJ0In19fQ==\", \"timeout\": 60}]",
+      "unused": 0,
+      "credentials": "{\n  \"client_id\": \"client-1\",\n  \"access_token\": \"access-2\",\n  \"refresh_token\": \"refresh-2\",\n  \"expires_at\": 1800003600,\n  \"token_endpoint\": \"http://kling.test/auth/token\",\n  \"revocation_endpoint\": \"http://kling.test/auth/revoke\",\n  \"resource\": \"http://kling.test/mcp\",\n  \"scope\": \"a b\"\n}\n"
+    }
+  },
+  {
+    "name": "refresh-no-rotation",
+    "description": "Обновление без нового refresh token.",
+    "stored": "{\"client_id\": \"client-1\", \"access_token\": \"access-1\", \"refresh_token\": \"refresh-1\", \"expires_at\": 1800000010, \"token_endpoint\": \"http://kling.test/auth/token\", \"revocation_endpoint\": \"http://kling.test/auth/revoke\", \"resource\": \"http://kling.test/mcp\", \"scope\": \"generation.create generation.read account.credit.read\"}",
+    "responses": "[{\"status\": 200, \"body\": {\"access_token\": \"access-2\", \"expires_in\": 60.5}}]",
+    "expected": {
+      "result": "{\"client_id\": \"client-1\", \"access_token\": \"access-2\", \"refresh_token\": \"refresh-1\", \"expires_at\": 1800000060, \"token_endpoint\": \"http://kling.test/auth/token\", \"revocation_endpoint\": \"http://kling.test/auth/revoke\", \"resource\": \"http://kling.test/mcp\", \"scope\": \"generation.create generation.read account.credit.read\"}",
+      "requests": "[{\"method\": \"POST\", \"url\": \"http://kling.test/auth/token\", \"headers\": [[\"Content-Type\", \"application/x-www-form-urlencoded\"], [\"Accept\", \"application/json\"]], \"body\": \"Z3JhbnRfdHlwZT1yZWZyZXNoX3Rva2VuJmNsaWVudF9pZD1jbGllbnQtMSZyZWZyZXNoX3Rva2VuPXJlZnJlc2gtMSZyZXNvdXJjZT1odHRwJTNBJTJGJTJGa2xpbmcudGVzdCUyRm1jcA==\", \"timeout\": 30}]",
+      "unused": 0,
+      "credentials": "{\n  \"client_id\": \"client-1\",\n  \"access_token\": \"access-2\",\n  \"refresh_token\": \"refresh-1\",\n  \"expires_at\": 1800000060,\n  \"token_endpoint\": \"http://kling.test/auth/token\",\n  \"revocation_endpoint\": \"http://kling.test/auth/revoke\",\n  \"resource\": \"http://kling.test/mcp\",\n  \"scope\": \"generation.create generation.read account.credit.read\"\n}\n"
+    }
+  },
+  {
+    "name": "refresh-fresh",
+    "description": "Токен уже обновлён другим процессом: запроса нет.",
+    "stored": "{\"client_id\": \"client-1\", \"access_token\": \"access-1\", \"refresh_token\": \"refresh-1\", \"expires_at\": 1800003600, \"token_endpoint\": \"http://kling.test/auth/token\", \"revocation_endpoint\": \"http://kling.test/auth/revoke\", \"resource\": \"http://kling.test/mcp\", \"scope\": \"generation.create generation.read account.credit.read\"}",
+    "responses": "[]",
+    "expected": {
+      "result": "{\"client_id\": \"client-1\", \"access_token\": \"access-1\", \"refresh_token\": \"refresh-1\", \"expires_at\": 1800003600, \"token_endpoint\": \"http://kling.test/auth/token\", \"revocation_endpoint\": \"http://kling.test/auth/revoke\", \"resource\": \"http://kling.test/mcp\", \"scope\": \"generation.create generation.read account.credit.read\"}",
+      "requests": "[]",
+      "unused": 0,
+      "credentials": "{\n  \"client_id\": \"client-1\",\n  \"access_token\": \"access-1\",\n  \"refresh_token\": \"refresh-1\",\n  \"expires_at\": 1800003600,\n  \"token_endpoint\": \"http://kling.test/auth/token\",\n  \"revocation_endpoint\": \"http://kling.test/auth/revoke\",\n  \"resource\": \"http://kling.test/mcp\",\n  \"scope\": \"generation.create generation.read account.credit.read\"\n}\n"
+    }
+  },
+  {
+    "name": "refresh-rejected",
+    "description": "invalid_grant — нужен вход.",
+    "stored": "{\"client_id\": \"client-1\", \"access_token\": \"access-1\", \"refresh_token\": \"refresh-1\", \"expires_at\": 1800000010, \"token_endpoint\": \"http://kling.test/auth/token\", \"revocation_endpoint\": \"http://kling.test/auth/revoke\", \"resource\": \"http://kling.test/mcp\", \"scope\": \"generation.create generation.read account.credit.read\"}",
+    "responses": "[{\"status\": 400, \"body\": {\"error\": \"invalid_grant\"}}]",
+    "expected": {
+      "error": {
+        "type": "AuthRequired",
+        "message": "Войдите в Kling на странице «Среда»."
+      },
+      "requests": "[{\"method\": \"POST\", \"url\": \"http://kling.test/auth/token\", \"headers\": [[\"Content-Type\", \"application/x-www-form-urlencoded\"], [\"Accept\", \"application/json\"]], \"body\": \"Z3JhbnRfdHlwZT1yZWZyZXNoX3Rva2VuJmNsaWVudF9pZD1jbGllbnQtMSZyZWZyZXNoX3Rva2VuPXJlZnJlc2gtMSZyZXNvdXJjZT1odHRwJTNBJTJGJTJGa2xpbmcudGVzdCUyRm1jcA==\", \"timeout\": 30}]",
+      "unused": 0,
+      "credentials": "{\n  \"client_id\": \"client-1\",\n  \"access_token\": \"access-1\",\n  \"refresh_token\": \"refresh-1\",\n  \"expires_at\": 1800000010,\n  \"token_endpoint\": \"http://kling.test/auth/token\",\n  \"revocation_endpoint\": \"http://kling.test/auth/revoke\",\n  \"resource\": \"http://kling.test/mcp\",\n  \"scope\": \"generation.create generation.read account.credit.read\"\n}\n"
+    }
+  },
+  {
+    "name": "refresh-500",
+    "description": "Ошибка сервера обновления — не отправлено.",
+    "stored": "{\"client_id\": \"client-1\", \"access_token\": \"access-1\", \"refresh_token\": \"refresh-1\", \"expires_at\": 1800000010, \"token_endpoint\": \"http://kling.test/auth/token\", \"revocation_endpoint\": \"http://kling.test/auth/revoke\", \"resource\": \"http://kling.test/mcp\", \"scope\": \"generation.create generation.read account.credit.read\"}",
+    "responses": "[{\"status\": 503, \"body\": \"busy\", \"type\": \"text/plain\"}]",
+    "expected": {
+      "error": {
+        "type": "NotSent",
+        "message": "Не удалось обновить вход в Kling: HTTP 503."
+      },
+      "requests": "[{\"method\": \"POST\", \"url\": \"http://kling.test/auth/token\", \"headers\": [[\"Content-Type\", \"application/x-www-form-urlencoded\"], [\"Accept\", \"application/json\"]], \"body\": \"Z3JhbnRfdHlwZT1yZWZyZXNoX3Rva2VuJmNsaWVudF9pZD1jbGllbnQtMSZyZWZyZXNoX3Rva2VuPXJlZnJlc2gtMSZyZXNvdXJjZT1odHRwJTNBJTJGJTJGa2xpbmcudGVzdCUyRm1jcA==\", \"timeout\": 30}]",
+      "unused": 0,
+      "credentials": "{\n  \"client_id\": \"client-1\",\n  \"access_token\": \"access-1\",\n  \"refresh_token\": \"refresh-1\",\n  \"expires_at\": 1800000010,\n  \"token_endpoint\": \"http://kling.test/auth/token\",\n  \"revocation_endpoint\": \"http://kling.test/auth/revoke\",\n  \"resource\": \"http://kling.test/mcp\",\n  \"scope\": \"generation.create generation.read account.credit.read\"\n}\n"
+    }
+  },
+  {
+    "name": "refresh-transport",
+    "description": "Обрыв обновления — не отправлено.",
+    "stored": "{\"client_id\": \"client-1\", \"access_token\": \"access-1\", \"refresh_token\": \"refresh-1\", \"expires_at\": 1800000010, \"token_endpoint\": \"http://kling.test/auth/token\", \"revocation_endpoint\": \"http://kling.test/auth/revoke\", \"resource\": \"http://kling.test/mcp\", \"scope\": \"generation.create generation.read account.credit.read\"}",
+    "responses": "[{\"raise\": \"TransportError\", \"message\": \"Соединение с Kling прервано после отправки: TimeoutError.\"}]",
+    "expected": {
+      "error": {
+        "type": "NotSent",
+        "message": "Не удалось обновить вход в Kling: Соединение с Kling прервано после отправки: TimeoutError."
+      },
+      "requests": "[{\"method\": \"POST\", \"url\": \"http://kling.test/auth/token\", \"headers\": [[\"Content-Type\", \"application/x-www-form-urlencoded\"], [\"Accept\", \"application/json\"]], \"body\": \"Z3JhbnRfdHlwZT1yZWZyZXNoX3Rva2VuJmNsaWVudF9pZD1jbGllbnQtMSZyZWZyZXNoX3Rva2VuPXJlZnJlc2gtMSZyZXNvdXJjZT1odHRwJTNBJTJGJTJGa2xpbmcudGVzdCUyRm1jcA==\", \"timeout\": 30}]",
+      "unused": 0,
+      "credentials": "{\n  \"client_id\": \"client-1\",\n  \"access_token\": \"access-1\",\n  \"refresh_token\": \"refresh-1\",\n  \"expires_at\": 1800000010,\n  \"token_endpoint\": \"http://kling.test/auth/token\",\n  \"revocation_endpoint\": \"http://kling.test/auth/revoke\",\n  \"resource\": \"http://kling.test/mcp\",\n  \"scope\": \"generation.create generation.read account.credit.read\"\n}\n"
+    }
+  },
+  {
+    "name": "refresh-no-refresh-token",
+    "description": "Нет refresh token — нужен вход.",
+    "stored": "{\"client_id\": \"client-1\", \"access_token\": \"access-1\", \"expires_at\": 1800000010, \"token_endpoint\": \"http://kling.test/auth/token\", \"revocation_endpoint\": \"http://kling.test/auth/revoke\", \"resource\": \"http://kling.test/mcp\", \"scope\": \"generation.create generation.read account.credit.read\"}",
+    "responses": "[]",
+    "expected": {
+      "error": {
+        "type": "AuthRequired",
+        "message": "Войдите в Kling на странице «Среда»."
+      },
+      "requests": "[]",
+      "unused": 0,
+      "credentials": "{\n  \"client_id\": \"client-1\",\n  \"access_token\": \"access-1\",\n  \"expires_at\": 1800000010,\n  \"token_endpoint\": \"http://kling.test/auth/token\",\n  \"revocation_endpoint\": \"http://kling.test/auth/revoke\",\n  \"resource\": \"http://kling.test/mcp\",\n  \"scope\": \"generation.create generation.read account.credit.read\"\n}\n"
+    }
+  },
+  {
+    "name": "refresh-discover",
+    "description": "Нет token_endpoint: адрес из discovery.",
+    "stored": "{\"client_id\": \"client-1\", \"access_token\": \"access-1\", \"refresh_token\": \"refresh-1\", \"expires_at\": 1800000010, \"revocation_endpoint\": \"http://kling.test/auth/revoke\", \"scope\": \"generation.create generation.read account.credit.read\"}",
+    "responses": "[{\"status\": 404, \"body\": {}}, {\"status\": 404, \"body\": {}}, {\"status\": 404, \"body\": {}}, {\"status\": 200, \"body\": {\"access_token\": \"access-3\"}}]",
+    "expected": {
+      "result": "{\"client_id\": \"client-1\", \"access_token\": \"access-3\", \"refresh_token\": \"refresh-1\", \"expires_at\": 0, \"revocation_endpoint\": \"http://kling.test/auth/revoke\", \"scope\": \"generation.create generation.read account.credit.read\"}",
+      "requests": "[{\"method\": \"GET\", \"url\": \"http://kling.test/.well-known/oauth-protected-resource\", \"headers\": [[\"Accept\", \"application/json\"]], \"body\": \"\", \"timeout\": 10}, {\"method\": \"GET\", \"url\": \"http://kling.test/.well-known/oauth-authorization-server/auth\", \"headers\": [[\"Accept\", \"application/json\"]], \"body\": \"\", \"timeout\": 10}, {\"method\": \"GET\", \"url\": \"http://kling.test/auth/.well-known/oauth-authorization-server\", \"headers\": [[\"Accept\", \"application/json\"]], \"body\": \"\", \"timeout\": 10}, {\"method\": \"POST\", \"url\": \"http://kling.test/auth/token\", \"headers\": [[\"Content-Type\", \"application/x-www-form-urlencoded\"], [\"Accept\", \"application/json\"]], \"body\": \"Z3JhbnRfdHlwZT1yZWZyZXNoX3Rva2VuJmNsaWVudF9pZD1jbGllbnQtMSZyZWZyZXNoX3Rva2VuPXJlZnJlc2gtMQ==\", \"timeout\": 30}]",
+      "unused": 0,
+      "credentials": "{\n  \"client_id\": \"client-1\",\n  \"access_token\": \"access-3\",\n  \"refresh_token\": \"refresh-1\",\n  \"expires_at\": 0,\n  \"revocation_endpoint\": \"http://kling.test/auth/revoke\",\n  \"scope\": \"generation.create generation.read account.credit.read\"\n}\n"
+    }
+  },
+  {
+    "name": "unauthorized-retry",
+    "description": "401 → обновление → повтор initialize.",
+    "stored": "{\"client_id\": \"client-1\", \"access_token\": \"access-1\", \"refresh_token\": \"refresh-1\", \"expires_at\": 1800003600, \"token_endpoint\": \"http://kling.test/auth/token\", \"revocation_endpoint\": \"http://kling.test/auth/revoke\", \"resource\": \"http://kling.test/mcp\", \"scope\": \"generation.create generation.read account.credit.read\"}",
+    "responses": "[{\"status\": 401, \"body\": \"\", \"type\": \"text/plain\"}, {\"status\": 200, \"body\": {\"access_token\": \"access-2\", \"refresh_token\": \"refresh-2\", \"expires_in\": 3600}}, {\"status\": 200, \"body\": {\"jsonrpc\": \"2.0\", \"id\": 0, \"result\": {\"protocolVersion\": \"2025-06-18\", \"capabilities\": {\"tools\": {}}}}}, {\"status\": 202, \"body\": \"\", \"type\": \"text/plain\"}, {\"status\": 200, \"body\": {\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"ok\\\": 1}\"}], \"isError\": false}}}]",
+    "expected": {
+      "result": "{\"ok\": 1}",
+      "requests": "[{\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDAsICJtZXRob2QiOiAiaW5pdGlhbGl6ZSIsICJwYXJhbXMiOiB7InByb3RvY29sVmVyc2lvbiI6ICIyMDI1LTExLTI1IiwgImNhcGFiaWxpdGllcyI6IHt9LCAiY2xpZW50SW5mbyI6IHsibmFtZSI6ICJzb25nZnJhbWUiLCAidmVyc2lvbiI6ICJzb25nZnJhbWUifX19\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/auth/token\", \"headers\": [[\"Content-Type\", \"application/x-www-form-urlencoded\"], [\"Accept\", \"application/json\"]], \"body\": \"Z3JhbnRfdHlwZT1yZWZyZXNoX3Rva2VuJmNsaWVudF9pZD1jbGllbnQtMSZyZWZyZXNoX3Rva2VuPXJlZnJlc2gtMSZyZXNvdXJjZT1odHRwJTNBJTJGJTJGa2xpbmcudGVzdCUyRm1jcA==\", \"timeout\": 30}, {\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-2\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDAsICJtZXRob2QiOiAiaW5pdGlhbGl6ZSIsICJwYXJhbXMiOiB7InByb3RvY29sVmVyc2lvbiI6ICIyMDI1LTExLTI1IiwgImNhcGFiaWxpdGllcyI6IHt9LCAiY2xpZW50SW5mbyI6IHsibmFtZSI6ICJzb25nZnJhbWUiLCAidmVyc2lvbiI6ICJzb25nZnJhbWUifX19\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-2\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"], [\"mcp-protocol-version\", \"2025-06-18\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJtZXRob2QiOiAibm90aWZpY2F0aW9ucy9pbml0aWFsaXplZCJ9\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-2\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"], [\"mcp-protocol-version\", \"2025-06-18\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDEsICJtZXRob2QiOiAidG9vbHMvY2FsbCIsICJwYXJhbXMiOiB7Im5hbWUiOiAid2hvX2FtX2kiLCAiYXJndW1lbnRzIjogeyJ0YXNrVHJhY2VJZCI6ICJ0In19fQ==\", \"timeout\": 60}]",
+      "unused": 0,
+      "credentials": "{\n  \"client_id\": \"client-1\",\n  \"access_token\": \"access-2\",\n  \"refresh_token\": \"refresh-2\",\n  \"expires_at\": 1800003600,\n  \"token_endpoint\": \"http://kling.test/auth/token\",\n  \"revocation_endpoint\": \"http://kling.test/auth/revoke\",\n  \"resource\": \"http://kling.test/mcp\",\n  \"scope\": \"generation.create generation.read account.credit.read\"\n}\n"
+    }
+  },
+  {
+    "name": "unauthorized-twice",
+    "description": "Повторный 401 — нужен вход.",
+    "stored": "{\"client_id\": \"client-1\", \"access_token\": \"access-1\", \"refresh_token\": \"refresh-1\", \"expires_at\": 1800003600, \"token_endpoint\": \"http://kling.test/auth/token\", \"revocation_endpoint\": \"http://kling.test/auth/revoke\", \"resource\": \"http://kling.test/mcp\", \"scope\": \"generation.create generation.read account.credit.read\"}",
+    "responses": "[{\"status\": 401, \"body\": \"\"}, {\"status\": 200, \"body\": {\"access_token\": \"access-2\"}}, {\"status\": 401, \"body\": \"\"}]",
+    "expected": {
+      "error": {
+        "type": "AuthRequired",
+        "message": "Войдите в Kling на странице «Среда»."
+      },
+      "requests": "[{\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDAsICJtZXRob2QiOiAiaW5pdGlhbGl6ZSIsICJwYXJhbXMiOiB7InByb3RvY29sVmVyc2lvbiI6ICIyMDI1LTExLTI1IiwgImNhcGFiaWxpdGllcyI6IHt9LCAiY2xpZW50SW5mbyI6IHsibmFtZSI6ICJzb25nZnJhbWUiLCAidmVyc2lvbiI6ICJzb25nZnJhbWUifX19\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/auth/token\", \"headers\": [[\"Content-Type\", \"application/x-www-form-urlencoded\"], [\"Accept\", \"application/json\"]], \"body\": \"Z3JhbnRfdHlwZT1yZWZyZXNoX3Rva2VuJmNsaWVudF9pZD1jbGllbnQtMSZyZWZyZXNoX3Rva2VuPXJlZnJlc2gtMSZyZXNvdXJjZT1odHRwJTNBJTJGJTJGa2xpbmcudGVzdCUyRm1jcA==\", \"timeout\": 30}, {\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-2\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDAsICJtZXRob2QiOiAiaW5pdGlhbGl6ZSIsICJwYXJhbXMiOiB7InByb3RvY29sVmVyc2lvbiI6ICIyMDI1LTExLTI1IiwgImNhcGFiaWxpdGllcyI6IHt9LCAiY2xpZW50SW5mbyI6IHsibmFtZSI6ICJzb25nZnJhbWUiLCAidmVyc2lvbiI6ICJzb25nZnJhbWUifX19\", \"timeout\": 60}]",
+      "unused": 0,
+      "credentials": "{\n  \"client_id\": \"client-1\",\n  \"access_token\": \"access-2\",\n  \"refresh_token\": \"refresh-1\",\n  \"expires_at\": 0,\n  \"token_endpoint\": \"http://kling.test/auth/token\",\n  \"revocation_endpoint\": \"http://kling.test/auth/revoke\",\n  \"resource\": \"http://kling.test/mcp\",\n  \"scope\": \"generation.create generation.read account.credit.read\"\n}\n"
+    }
+  },
+  {
+    "name": "http-error",
+    "description": "HTTP 502 tools/call: TransportError со статусом и первыми 500 символами тела.",
+    "stored": "{\"client_id\": \"client-1\", \"access_token\": \"access-1\", \"refresh_token\": \"refresh-1\", \"expires_at\": 1800003600, \"token_endpoint\": \"http://kling.test/auth/token\", \"revocation_endpoint\": \"http://kling.test/auth/revoke\", \"resource\": \"http://kling.test/mcp\", \"scope\": \"generation.create generation.read account.credit.read\"}",
+    "responses": "[{\"status\": 200, \"body\": {\"jsonrpc\": \"2.0\", \"id\": 0, \"result\": {\"protocolVersion\": \"2025-06-18\", \"capabilities\": {\"tools\": {}}}}}, {\"status\": 202, \"body\": \"\", \"type\": \"text/plain\"}, {\"status\": 502, \"type\": \"text/plain\", \"body\": \"  Bad gateway яяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяя\\n\"}]",
+    "expected": {
+      "error": {
+        "type": "TransportError",
+        "message": "HTTP 502: Bad gateway яяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяя"
+      },
+      "requests": "[{\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDAsICJtZXRob2QiOiAiaW5pdGlhbGl6ZSIsICJwYXJhbXMiOiB7InByb3RvY29sVmVyc2lvbiI6ICIyMDI1LTExLTI1IiwgImNhcGFiaWxpdGllcyI6IHt9LCAiY2xpZW50SW5mbyI6IHsibmFtZSI6ICJzb25nZnJhbWUiLCAidmVyc2lvbiI6ICJzb25nZnJhbWUifX19\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"], [\"mcp-protocol-version\", \"2025-06-18\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJtZXRob2QiOiAibm90aWZpY2F0aW9ucy9pbml0aWFsaXplZCJ9\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"], [\"mcp-protocol-version\", \"2025-06-18\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDEsICJtZXRob2QiOiAidG9vbHMvY2FsbCIsICJwYXJhbXMiOiB7Im5hbWUiOiAicXVlcnlfdGFza3MiLCAiYXJndW1lbnRzIjogeyJ0YXNrVHJhY2VJZCI6ICJ0In19fQ==\", \"timeout\": 60}]",
+      "unused": 0,
+      "credentials": "{\n  \"client_id\": \"client-1\",\n  \"access_token\": \"access-1\",\n  \"refresh_token\": \"refresh-1\",\n  \"expires_at\": 1800003600,\n  \"token_endpoint\": \"http://kling.test/auth/token\",\n  \"revocation_endpoint\": \"http://kling.test/auth/revoke\",\n  \"resource\": \"http://kling.test/mcp\",\n  \"scope\": \"generation.create generation.read account.credit.read\"\n}\n"
+    }
+  },
+  {
+    "name": "http-error-bytes",
+    "description": "Неверный UTF-8 в теле ошибки заменяется U+FFFD.",
+    "stored": "{\"client_id\": \"client-1\", \"access_token\": \"access-1\", \"refresh_token\": \"refresh-1\", \"expires_at\": 1800003600, \"token_endpoint\": \"http://kling.test/auth/token\", \"revocation_endpoint\": \"http://kling.test/auth/revoke\", \"resource\": \"http://kling.test/mcp\", \"scope\": \"generation.create generation.read account.credit.read\"}",
+    "responses": "[{\"status\": 200, \"body\": {\"jsonrpc\": \"2.0\", \"id\": 0, \"result\": {\"protocolVersion\": \"2025-06-18\", \"capabilities\": {\"tools\": {}}}}}, {\"status\": 202, \"body\": \"\", \"type\": \"text/plain\"}, {\"status\": 500, \"type\": \"text/plain\", \"body_b64\": \"YmFkIOKCIP/+IGVuZA==\"}]",
+    "expected": {
+      "error": {
+        "type": "TransportError",
+        "message": "HTTP 500: bad � �� end"
+      },
+      "requests": "[{\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDAsICJtZXRob2QiOiAiaW5pdGlhbGl6ZSIsICJwYXJhbXMiOiB7InByb3RvY29sVmVyc2lvbiI6ICIyMDI1LTExLTI1IiwgImNhcGFiaWxpdGllcyI6IHt9LCAiY2xpZW50SW5mbyI6IHsibmFtZSI6ICJzb25nZnJhbWUiLCAidmVyc2lvbiI6ICJzb25nZnJhbWUifX19\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"], [\"mcp-protocol-version\", \"2025-06-18\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJtZXRob2QiOiAibm90aWZpY2F0aW9ucy9pbml0aWFsaXplZCJ9\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"], [\"mcp-protocol-version\", \"2025-06-18\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDEsICJtZXRob2QiOiAidG9vbHMvY2FsbCIsICJwYXJhbXMiOiB7Im5hbWUiOiAicXVlcnlfdGFza3MiLCAiYXJndW1lbnRzIjogeyJ0YXNrVHJhY2VJZCI6ICJ0In19fQ==\", \"timeout\": 60}]",
+      "unused": 0,
+      "credentials": "{\n  \"client_id\": \"client-1\",\n  \"access_token\": \"access-1\",\n  \"refresh_token\": \"refresh-1\",\n  \"expires_at\": 1800003600,\n  \"token_endpoint\": \"http://kling.test/auth/token\",\n  \"revocation_endpoint\": \"http://kling.test/auth/revoke\",\n  \"resource\": \"http://kling.test/mcp\",\n  \"scope\": \"generation.create generation.read account.credit.read\"\n}\n"
+    }
+  },
+  {
+    "name": "rpc-error",
+    "description": "Ошибка JSON-RPC initialize.",
+    "stored": "{\"client_id\": \"client-1\", \"access_token\": \"access-1\", \"refresh_token\": \"refresh-1\", \"expires_at\": 1800003600, \"token_endpoint\": \"http://kling.test/auth/token\", \"revocation_endpoint\": \"http://kling.test/auth/revoke\", \"resource\": \"http://kling.test/mcp\", \"scope\": \"generation.create generation.read account.credit.read\"}",
+    "responses": "[{\"status\": 200, \"body\": {\"jsonrpc\": \"2.0\", \"id\": 0, \"error\": {\"code\": -32602, \"message\": \"bad params\"}}}]",
+    "expected": {
+      "error": {
+        "type": "ProtocolError",
+        "message": "Kling: initialize: bad params (-32602)."
+      },
+      "requests": "[{\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDAsICJtZXRob2QiOiAiaW5pdGlhbGl6ZSIsICJwYXJhbXMiOiB7InByb3RvY29sVmVyc2lvbiI6ICIyMDI1LTExLTI1IiwgImNhcGFiaWxpdGllcyI6IHt9LCAiY2xpZW50SW5mbyI6IHsibmFtZSI6ICJzb25nZnJhbWUiLCAidmVyc2lvbiI6ICJzb25nZnJhbWUifX19\", \"timeout\": 60}]",
+      "unused": 0,
+      "credentials": "{\n  \"client_id\": \"client-1\",\n  \"access_token\": \"access-1\",\n  \"refresh_token\": \"refresh-1\",\n  \"expires_at\": 1800003600,\n  \"token_endpoint\": \"http://kling.test/auth/token\",\n  \"revocation_endpoint\": \"http://kling.test/auth/revoke\",\n  \"resource\": \"http://kling.test/mcp\",\n  \"scope\": \"generation.create generation.read account.credit.read\"\n}\n"
+    }
+  },
+  {
+    "name": "protocol-default",
+    "description": "initialize без protocolVersion: заголовок — версия клиента.",
+    "stored": "{\"client_id\": \"client-1\", \"access_token\": \"access-1\", \"refresh_token\": \"refresh-1\", \"expires_at\": 1800003600, \"token_endpoint\": \"http://kling.test/auth/token\", \"revocation_endpoint\": \"http://kling.test/auth/revoke\", \"resource\": \"http://kling.test/mcp\", \"scope\": \"generation.create generation.read account.credit.read\"}",
+    "responses": "[{\"status\": 200, \"body\": {\"jsonrpc\": \"2.0\", \"id\": 0, \"result\": {}}}, {\"status\": 202, \"body\": \"\", \"type\": \"text/plain\"}, {\"status\": 200, \"body\": {\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"[1]\"}], \"isError\": false}}}]",
+    "expected": {
+      "result": "[1]",
+      "requests": "[{\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDAsICJtZXRob2QiOiAiaW5pdGlhbGl6ZSIsICJwYXJhbXMiOiB7InByb3RvY29sVmVyc2lvbiI6ICIyMDI1LTExLTI1IiwgImNhcGFiaWxpdGllcyI6IHt9LCAiY2xpZW50SW5mbyI6IHsibmFtZSI6ICJzb25nZnJhbWUiLCAidmVyc2lvbiI6ICJzb25nZnJhbWUifX19\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"], [\"mcp-protocol-version\", \"2025-11-25\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJtZXRob2QiOiAibm90aWZpY2F0aW9ucy9pbml0aWFsaXplZCJ9\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"], [\"mcp-protocol-version\", \"2025-11-25\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDEsICJtZXRob2QiOiAidG9vbHMvY2FsbCIsICJwYXJhbXMiOiB7Im5hbWUiOiAieCIsICJhcmd1bWVudHMiOiB7InRhc2tUcmFjZUlkIjogInQifX19\", \"timeout\": 60}]",
+      "unused": 0,
+      "credentials": "{\n  \"client_id\": \"client-1\",\n  \"access_token\": \"access-1\",\n  \"refresh_token\": \"refresh-1\",\n  \"expires_at\": 1800003600,\n  \"token_endpoint\": \"http://kling.test/auth/token\",\n  \"revocation_endpoint\": \"http://kling.test/auth/revoke\",\n  \"resource\": \"http://kling.test/mcp\",\n  \"scope\": \"generation.create generation.read account.credit.read\"\n}\n"
+    }
+  },
+  {
+    "name": "upload",
+    "description": "file_upload и multipart без токена; адрес — вложенный fileUrl.",
+    "stored": "{\"client_id\": \"client-1\", \"access_token\": \"access-1\", \"refresh_token\": \"refresh-1\", \"expires_at\": 1800003600, \"token_endpoint\": \"http://kling.test/auth/token\", \"revocation_endpoint\": \"http://kling.test/auth/revoke\", \"resource\": \"http://kling.test/mcp\", \"scope\": \"generation.create generation.read account.credit.read\"}",
+    "responses": "[{\"status\": 200, \"body\": {\"jsonrpc\": \"2.0\", \"id\": 0, \"result\": {\"protocolVersion\": \"2025-06-18\", \"capabilities\": {\"tools\": {}}}}}, {\"status\": 202, \"body\": \"\", \"type\": \"text/plain\"}, {\"status\": 200, \"body\": {\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"ticket\\\": \\\"ticket-9\\\", \\\"uploadUrl\\\": \\\"http://kling.test/upload\\\", \\\"expire_at\\\": 1}\"}], \"isError\": false}}}, {\"status\": 200, \"body\": {\"result\": 1, \"data\": {\"fileType\": \"image\", \"nested\": [{\"fileUrl\": \"https://cdn.test/a.png\"}]}}}]",
+    "expected": {
+      "result": "\"https://cdn.test/a.png\"",
+      "requests": "[{\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDAsICJtZXRob2QiOiAiaW5pdGlhbGl6ZSIsICJwYXJhbXMiOiB7InByb3RvY29sVmVyc2lvbiI6ICIyMDI1LTExLTI1IiwgImNhcGFiaWxpdGllcyI6IHt9LCAiY2xpZW50SW5mbyI6IHsibmFtZSI6ICJzb25nZnJhbWUiLCAidmVyc2lvbiI6ICJzb25nZnJhbWUifX19\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"], [\"mcp-protocol-version\", \"2025-06-18\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJtZXRob2QiOiAibm90aWZpY2F0aW9ucy9pbml0aWFsaXplZCJ9\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"], [\"mcp-protocol-version\", \"2025-06-18\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDEsICJtZXRob2QiOiAidG9vbHMvY2FsbCIsICJwYXJhbXMiOiB7Im5hbWUiOiAiZmlsZV91cGxvYWQiLCAiYXJndW1lbnRzIjogeyJmaWxlbmFtZSI6ICLQutCw0LTRgCAwMS5wbmciLCAiY29udGVudFR5cGUiOiAiaW1hZ2UvcG5nIiwgInNpemUiOiAxNiwgInRhc2tUcmFjZUlkIjogInRyYWNlLXUifX19\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/upload\", \"headers\": [[\"Content-Type\", \"multipart/form-data; boundary=songframe-00000000000000000000000000000000\"]], \"body\": \"LS1zb25nZnJhbWUtMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDANCkNvbnRlbnQtRGlzcG9zaXRpb246IGZvcm0tZGF0YTsgbmFtZT0idGlja2V0Ig0KDQp0aWNrZXQtOQ0KLS1zb25nZnJhbWUtMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDANCkNvbnRlbnQtRGlzcG9zaXRpb246IGZvcm0tZGF0YTsgbmFtZT0iZmlsZSI7IGZpbGVuYW1lPSLQutCw0LTRgCAwMS5wbmciDQpDb250ZW50LVR5cGU6IGltYWdlL3BuZw0KDQqJUE5HIGV4YWN0IGJ5dGVzDQotLXNvbmdmcmFtZS0wMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMC0tDQo=\", \"timeout\": 121}]",
+      "unused": 0,
+      "credentials": "{\n  \"client_id\": \"client-1\",\n  \"access_token\": \"access-1\",\n  \"refresh_token\": \"refresh-1\",\n  \"expires_at\": 1800003600,\n  \"token_endpoint\": \"http://kling.test/auth/token\",\n  \"revocation_endpoint\": \"http://kling.test/auth/revoke\",\n  \"resource\": \"http://kling.test/mcp\",\n  \"scope\": \"generation.create generation.read account.credit.read\"\n}\n"
+    }
+  },
+  {
+    "name": "upload-snake",
+    "description": "Тикет с upload_url.",
+    "stored": "{\"client_id\": \"client-1\", \"access_token\": \"access-1\", \"refresh_token\": \"refresh-1\", \"expires_at\": 1800003600, \"token_endpoint\": \"http://kling.test/auth/token\", \"revocation_endpoint\": \"http://kling.test/auth/revoke\", \"resource\": \"http://kling.test/mcp\", \"scope\": \"generation.create generation.read account.credit.read\"}",
+    "responses": "[{\"status\": 200, \"body\": {\"jsonrpc\": \"2.0\", \"id\": 0, \"result\": {\"protocolVersion\": \"2025-06-18\", \"capabilities\": {\"tools\": {}}}}}, {\"status\": 202, \"body\": \"\", \"type\": \"text/plain\"}, {\"status\": 200, \"body\": {\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"ticket\\\": \\\"t\\\", \\\"upload_url\\\": \\\"http://kling.test/up?x=1\\\"}\"}], \"isError\": false}}}, {\"status\": 200, \"body\": {\"url\": \"https://cdn.test/u\"}}]",
+    "expected": {
+      "result": "\"https://cdn.test/u\"",
+      "requests": "[{\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDAsICJtZXRob2QiOiAiaW5pdGlhbGl6ZSIsICJwYXJhbXMiOiB7InByb3RvY29sVmVyc2lvbiI6ICIyMDI1LTExLTI1IiwgImNhcGFiaWxpdGllcyI6IHt9LCAiY2xpZW50SW5mbyI6IHsibmFtZSI6ICJzb25nZnJhbWUiLCAidmVyc2lvbiI6ICJzb25nZnJhbWUifX19\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"], [\"mcp-protocol-version\", \"2025-06-18\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJtZXRob2QiOiAibm90aWZpY2F0aW9ucy9pbml0aWFsaXplZCJ9\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"], [\"mcp-protocol-version\", \"2025-06-18\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDEsICJtZXRob2QiOiAidG9vbHMvY2FsbCIsICJwYXJhbXMiOiB7Im5hbWUiOiAiZmlsZV91cGxvYWQiLCAiYXJndW1lbnRzIjogeyJmaWxlbmFtZSI6ICLQutCw0LTRgCAwMS5wbmciLCAiY29udGVudFR5cGUiOiAiaW1hZ2UvcG5nIiwgInNpemUiOiAxNiwgInRhc2tUcmFjZUlkIjogImV4cGxpY2l0In19fQ==\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/up?x=1\", \"headers\": [[\"Content-Type\", \"multipart/form-data; boundary=songframe-00000000000000000000000000000000\"]], \"body\": \"LS1zb25nZnJhbWUtMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDANCkNvbnRlbnQtRGlzcG9zaXRpb246IGZvcm0tZGF0YTsgbmFtZT0idGlja2V0Ig0KDQp0DQotLXNvbmdmcmFtZS0wMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMA0KQ29udGVudC1EaXNwb3NpdGlvbjogZm9ybS1kYXRhOyBuYW1lPSJmaWxlIjsgZmlsZW5hbWU9ItC60LDQtNGAIDAxLnBuZyINCkNvbnRlbnQtVHlwZTogaW1hZ2UvcG5nDQoNColQTkcgZXhhY3QgYnl0ZXMNCi0tc29uZ2ZyYW1lLTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwLS0NCg==\", \"timeout\": 121}]",
+      "unused": 0,
+      "credentials": "{\n  \"client_id\": \"client-1\",\n  \"access_token\": \"access-1\",\n  \"refresh_token\": \"refresh-1\",\n  \"expires_at\": 1800003600,\n  \"token_endpoint\": \"http://kling.test/auth/token\",\n  \"revocation_endpoint\": \"http://kling.test/auth/revoke\",\n  \"resource\": \"http://kling.test/mcp\",\n  \"scope\": \"generation.create generation.read account.credit.read\"\n}\n"
+    }
+  },
+  {
+    "name": "upload-rejected",
+    "description": "Приём ответил 429.",
+    "stored": "{\"client_id\": \"client-1\", \"access_token\": \"access-1\", \"refresh_token\": \"refresh-1\", \"expires_at\": 1800003600, \"token_endpoint\": \"http://kling.test/auth/token\", \"revocation_endpoint\": \"http://kling.test/auth/revoke\", \"resource\": \"http://kling.test/mcp\", \"scope\": \"generation.create generation.read account.credit.read\"}",
+    "responses": "[{\"status\": 200, \"body\": {\"jsonrpc\": \"2.0\", \"id\": 0, \"result\": {\"protocolVersion\": \"2025-06-18\", \"capabilities\": {\"tools\": {}}}}}, {\"status\": 202, \"body\": \"\", \"type\": \"text/plain\"}, {\"status\": 200, \"body\": {\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"ticket\\\": \\\"t\\\", \\\"uploadUrl\\\": \\\"http://kling.test/upload\\\"}\"}], \"isError\": false}}}, {\"status\": 429, \"body\": {\"message\": \"too many\"}}]",
+    "expected": {
+      "error": {
+        "type": "TransportError",
+        "message": "HTTP 429: загрузка файла кадр 01.png не принята"
+      },
+      "requests": "[{\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDAsICJtZXRob2QiOiAiaW5pdGlhbGl6ZSIsICJwYXJhbXMiOiB7InByb3RvY29sVmVyc2lvbiI6ICIyMDI1LTExLTI1IiwgImNhcGFiaWxpdGllcyI6IHt9LCAiY2xpZW50SW5mbyI6IHsibmFtZSI6ICJzb25nZnJhbWUiLCAidmVyc2lvbiI6ICJzb25nZnJhbWUifX19\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"], [\"mcp-protocol-version\", \"2025-06-18\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJtZXRob2QiOiAibm90aWZpY2F0aW9ucy9pbml0aWFsaXplZCJ9\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"], [\"mcp-protocol-version\", \"2025-06-18\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDEsICJtZXRob2QiOiAidG9vbHMvY2FsbCIsICJwYXJhbXMiOiB7Im5hbWUiOiAiZmlsZV91cGxvYWQiLCAiYXJndW1lbnRzIjogeyJmaWxlbmFtZSI6ICLQutCw0LTRgCAwMS5wbmciLCAiY29udGVudFR5cGUiOiAiaW1hZ2UvcG5nIiwgInNpemUiOiAxNiwgInRhc2tUcmFjZUlkIjogInQifX19\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/upload\", \"headers\": [[\"Content-Type\", \"multipart/form-data; boundary=songframe-00000000000000000000000000000000\"]], \"body\": \"LS1zb25nZnJhbWUtMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDANCkNvbnRlbnQtRGlzcG9zaXRpb246IGZvcm0tZGF0YTsgbmFtZT0idGlja2V0Ig0KDQp0DQotLXNvbmdmcmFtZS0wMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMA0KQ29udGVudC1EaXNwb3NpdGlvbjogZm9ybS1kYXRhOyBuYW1lPSJmaWxlIjsgZmlsZW5hbWU9ItC60LDQtNGAIDAxLnBuZyINCkNvbnRlbnQtVHlwZTogaW1hZ2UvcG5nDQoNColQTkcgZXhhY3QgYnl0ZXMNCi0tc29uZ2ZyYW1lLTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwLS0NCg==\", \"timeout\": 121}]",
+      "unused": 0,
+      "credentials": "{\n  \"client_id\": \"client-1\",\n  \"access_token\": \"access-1\",\n  \"refresh_token\": \"refresh-1\",\n  \"expires_at\": 1800003600,\n  \"token_endpoint\": \"http://kling.test/auth/token\",\n  \"revocation_endpoint\": \"http://kling.test/auth/revoke\",\n  \"resource\": \"http://kling.test/mcp\",\n  \"scope\": \"generation.create generation.read account.credit.read\"\n}\n"
+    }
+  },
+  {
+    "name": "upload-no-url",
+    "description": "Ответ приёма без адреса.",
+    "stored": "{\"client_id\": \"client-1\", \"access_token\": \"access-1\", \"refresh_token\": \"refresh-1\", \"expires_at\": 1800003600, \"token_endpoint\": \"http://kling.test/auth/token\", \"revocation_endpoint\": \"http://kling.test/auth/revoke\", \"resource\": \"http://kling.test/mcp\", \"scope\": \"generation.create generation.read account.credit.read\"}",
+    "responses": "[{\"status\": 200, \"body\": {\"jsonrpc\": \"2.0\", \"id\": 0, \"result\": {\"protocolVersion\": \"2025-06-18\", \"capabilities\": {\"tools\": {}}}}}, {\"status\": 202, \"body\": \"\", \"type\": \"text/plain\"}, {\"status\": 200, \"body\": {\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"ticket\\\": \\\"t\\\", \\\"uploadUrl\\\": \\\"http://kling.test/upload\\\"}\"}], \"isError\": false}}}, {\"status\": 200, \"body\": {\"data\": {\"url\": \"ftp://x\"}}}]",
+    "expected": {
+      "error": {
+        "type": "TransportError",
+        "message": "HTTP 200: загрузка файла кадр 01.png не принята"
+      },
+      "requests": "[{\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDAsICJtZXRob2QiOiAiaW5pdGlhbGl6ZSIsICJwYXJhbXMiOiB7InByb3RvY29sVmVyc2lvbiI6ICIyMDI1LTExLTI1IiwgImNhcGFiaWxpdGllcyI6IHt9LCAiY2xpZW50SW5mbyI6IHsibmFtZSI6ICJzb25nZnJhbWUiLCAidmVyc2lvbiI6ICJzb25nZnJhbWUifX19\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"], [\"mcp-protocol-version\", \"2025-06-18\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJtZXRob2QiOiAibm90aWZpY2F0aW9ucy9pbml0aWFsaXplZCJ9\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"], [\"mcp-protocol-version\", \"2025-06-18\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDEsICJtZXRob2QiOiAidG9vbHMvY2FsbCIsICJwYXJhbXMiOiB7Im5hbWUiOiAiZmlsZV91cGxvYWQiLCAiYXJndW1lbnRzIjogeyJmaWxlbmFtZSI6ICLQutCw0LTRgCAwMS5wbmciLCAiY29udGVudFR5cGUiOiAiaW1hZ2UvcG5nIiwgInNpemUiOiAxNiwgInRhc2tUcmFjZUlkIjogInQifX19\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/upload\", \"headers\": [[\"Content-Type\", \"multipart/form-data; boundary=songframe-00000000000000000000000000000000\"]], \"body\": \"LS1zb25nZnJhbWUtMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDANCkNvbnRlbnQtRGlzcG9zaXRpb246IGZvcm0tZGF0YTsgbmFtZT0idGlja2V0Ig0KDQp0DQotLXNvbmdmcmFtZS0wMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMA0KQ29udGVudC1EaXNwb3NpdGlvbjogZm9ybS1kYXRhOyBuYW1lPSJmaWxlIjsgZmlsZW5hbWU9ItC60LDQtNGAIDAxLnBuZyINCkNvbnRlbnQtVHlwZTogaW1hZ2UvcG5nDQoNColQTkcgZXhhY3QgYnl0ZXMNCi0tc29uZ2ZyYW1lLTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwLS0NCg==\", \"timeout\": 121}]",
+      "unused": 0,
+      "credentials": "{\n  \"client_id\": \"client-1\",\n  \"access_token\": \"access-1\",\n  \"refresh_token\": \"refresh-1\",\n  \"expires_at\": 1800003600,\n  \"token_endpoint\": \"http://kling.test/auth/token\",\n  \"revocation_endpoint\": \"http://kling.test/auth/revoke\",\n  \"resource\": \"http://kling.test/mcp\",\n  \"scope\": \"generation.create generation.read account.credit.read\"\n}\n"
+    }
+  },
+  {
+    "name": "upload-no-ticket",
+    "description": "Тикет без ticket.",
+    "stored": "{\"client_id\": \"client-1\", \"access_token\": \"access-1\", \"refresh_token\": \"refresh-1\", \"expires_at\": 1800003600, \"token_endpoint\": \"http://kling.test/auth/token\", \"revocation_endpoint\": \"http://kling.test/auth/revoke\", \"resource\": \"http://kling.test/mcp\", \"scope\": \"generation.create generation.read account.credit.read\"}",
+    "responses": "[{\"status\": 200, \"body\": {\"jsonrpc\": \"2.0\", \"id\": 0, \"result\": {\"protocolVersion\": \"2025-06-18\", \"capabilities\": {\"tools\": {}}}}}, {\"status\": 202, \"body\": \"\", \"type\": \"text/plain\"}, {\"status\": 200, \"body\": {\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"uploadUrl\\\": \\\"http://kling.test/upload\\\"}\"}], \"isError\": false}}}]",
+    "expected": {
+      "error": {
+        "type": "ProtocolError",
+        "message": "Kling не выдал тикет загрузки."
+      },
+      "requests": "[{\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDAsICJtZXRob2QiOiAiaW5pdGlhbGl6ZSIsICJwYXJhbXMiOiB7InByb3RvY29sVmVyc2lvbiI6ICIyMDI1LTExLTI1IiwgImNhcGFiaWxpdGllcyI6IHt9LCAiY2xpZW50SW5mbyI6IHsibmFtZSI6ICJzb25nZnJhbWUiLCAidmVyc2lvbiI6ICJzb25nZnJhbWUifX19\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"], [\"mcp-protocol-version\", \"2025-06-18\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJtZXRob2QiOiAibm90aWZpY2F0aW9ucy9pbml0aWFsaXplZCJ9\", \"timeout\": 60}, {\"method\": \"POST\", \"url\": \"http://kling.test/mcp\", \"headers\": [[\"Authorization\", \"Bearer access-1\"], [\"Content-Type\", \"application/json\"], [\"Accept\", \"application/json, text/event-stream\"], [\"mcp-protocol-version\", \"2025-06-18\"]], \"body\": \"eyJqc29ucnBjIjogIjIuMCIsICJpZCI6IDEsICJtZXRob2QiOiAidG9vbHMvY2FsbCIsICJwYXJhbXMiOiB7Im5hbWUiOiAiZmlsZV91cGxvYWQiLCAiYXJndW1lbnRzIjogeyJmaWxlbmFtZSI6ICLQutCw0LTRgCAwMS5wbmciLCAiY29udGVudFR5cGUiOiAiaW1hZ2UvcG5nIiwgInNpemUiOiAxNiwgInRhc2tUcmFjZUlkIjogInQifX19\", \"timeout\": 60}]",
+      "unused": 0,
+      "credentials": "{\n  \"client_id\": \"client-1\",\n  \"access_token\": \"access-1\",\n  \"refresh_token\": \"refresh-1\",\n  \"expires_at\": 1800003600,\n  \"token_endpoint\": \"http://kling.test/auth/token\",\n  \"revocation_endpoint\": \"http://kling.test/auth/revoke\",\n  \"resource\": \"http://kling.test/mcp\",\n  \"scope\": \"generation.create generation.read account.credit.read\"\n}\n"
+    }
+  },
+  {
+    "name": "revoke",
+    "description": "Отзыв refresh token.",
+    "stored": "null",
+    "responses": "[{\"status\": 200, \"body\": \"\", \"type\": \"text/plain\"}]",
+    "expected": {
+      "result": "null",
+      "requests": "[{\"method\": \"POST\", \"url\": \"http://kling.test/auth/revoke\", \"headers\": [[\"Content-Type\", \"application/x-www-form-urlencoded\"], [\"Accept\", \"application/json\"]], \"body\": \"dG9rZW49cmVmcmVzaC0xJnRva2VuX3R5cGVfaGludD1yZWZyZXNoX3Rva2VuJmNsaWVudF9pZD1jbGllbnQtMQ==\", \"timeout\": 30}]",
+      "unused": 0,
+      "credentials": null
+    }
+  },
+  {
+    "name": "revoke-fails",
+    "description": "Сбой отзыва не мешает.",
+    "stored": "null",
+    "responses": "[{\"raise\": \"NotSent\", \"message\": \"x\"}]",
+    "expected": {
+      "result": "null",
+      "requests": "[{\"method\": \"POST\", \"url\": \"http://kling.test/auth/revoke\", \"headers\": [[\"Content-Type\", \"application/x-www-form-urlencoded\"], [\"Accept\", \"application/json\"]], \"body\": \"dG9rZW49cmVmcmVzaC0xJnRva2VuX3R5cGVfaGludD1yZWZyZXNoX3Rva2VuJmNsaWVudF9pZD1jbGllbnQtMQ==\", \"timeout\": 30}]",
+      "unused": 0,
+      "credentials": null
+    }
+  },
+  {
+    "name": "revoke-skip",
+    "description": "Без client_id отзыва нет.",
+    "stored": "null",
+    "responses": "[]",
+    "expected": {
+      "result": "null",
+      "requests": "[]",
+      "unused": 0,
+      "credentials": null
+    }
+  },
+  {
+    "name": "invalid-base",
+    "description": "Неверный адрес сервера.",
+    "stored": "null",
+    "responses": "[]",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Недопустимый адрес сервера."
+      },
+      "requests": "[]",
+      "unused": 0,
+      "credentials": null
+    }
+  }
+]

@@ -1,0 +1,12 @@
+{
+  "description": "trim полей, short_name по name, пустые значения состояния отбрасываются, новый тип получает словарь.",
+  "call": "writeCast",
+  "project": "project",
+  "covers": [
+    "normalizeCast trim",
+    "initial_state filter",
+    "ensureProperties generic/default",
+    "собственное описание"
+  ],
+  "stubbedMedia": []
+}

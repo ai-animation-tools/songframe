@@ -1,0 +1,9 @@
+{
+  "description": "Реестр содержит не-объект среди планов: оригинал бросает исключение.",
+  "call": "computeStatus",
+  "project": "project",
+  "covers": [
+    "computeStatus бросает TypeError на не-объекте в scenes (projects.open тоже)"
+  ],
+  "stubbedMedia": []
+}

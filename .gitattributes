@@ -1,2 +1,3 @@
-# Проверочные CMD должны сохранять Windows-переносы и при checkout на Linux.
-*.cmd text eol=crlf
+# Эталоны хранят входы оригинала байт в байт: намеренные пробелы и CRLF в повреждённых случаях
+# не проверяются и не преобразуются (core.autocrlf=input иначе заменил бы CRLF на LF).
+testdata/golden/** -whitespace -text

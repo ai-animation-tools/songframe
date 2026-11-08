@@ -1,0 +1,20 @@
+{
+  "description": "Пустая существующая папка.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "exist_ok"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "init",
+    "M04",
+    "--dir",
+    "plan/batches/M04-attempt-01"
+  ],
+  "remove": [],
+  "mkdir": [
+    "plan/batches/M04-attempt-01"
+  ]
+}

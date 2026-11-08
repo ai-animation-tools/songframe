@@ -1,0 +1,21 @@
+{
+  "description": "Промежуточная не число.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "float error"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "plan-keyframes",
+    "--dir",
+    "plan/batches/M04-attempt-01",
+    "--request-seconds",
+    "5",
+    "--middle",
+    "abc:x"
+  ],
+  "remove": [],
+  "mkdir": []
+}

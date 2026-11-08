@@ -1,0 +1,16 @@
+{
+  "description": "Правка действия M04: устарели карточка M04, списки и ROADMAP.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "документы",
+    "карточки"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--check"
+  ],
+  "remove": [],
+  "mkdir": []
+}

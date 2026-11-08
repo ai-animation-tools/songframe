@@ -1,0 +1,282 @@
+{
+  "scenes": {
+    "schema_version": 1,
+    "fps": 30,
+    "audio": {
+      "path": "source/track.mp3",
+      "end_seconds": "9"
+    },
+    "references": {
+      "mira": {
+        "name": "Мира",
+        "path": "source/heroes/mira.png"
+      },
+      "boat": {
+        "name": "Лодка «Чайка»",
+        "path": "source/vehicles/boat.png",
+        "short_name": "Лодка"
+      }
+    },
+    "visual_direction": "Мягкий вечерний свет.",
+    "sequences": [
+      {
+        "id": "verse",
+        "title": "Куплет",
+        "direction": "Спокойно."
+      },
+      {
+        "id": "chorus",
+        "title": "Припев",
+        "direction": "Огни."
+      }
+    ],
+    "scenes": [
+      {
+        "id": "M01",
+        "original": "Строка M01",
+        "sequence": "verse",
+        "title": "План M01",
+        "start_frame": 0,
+        "end_frame_exclusive": 90,
+        "camera": "Статика",
+        "action": "Действие M01.",
+        "continuity": "",
+        "references": [
+          "mira"
+        ],
+        "lipsync": false,
+        "card": {
+          "primary_reference": "mira"
+        },
+        "state_changes": {
+          "after": {
+            "mira": {
+              "position": "в лодке"
+            },
+            "boat": {
+              "wet": "мокрая"
+            }
+          }
+        },
+        "state_from": null
+      },
+      {
+        "id": "M02",
+        "original": "Строка M02",
+        "sequence": "verse",
+        "title": "План M02",
+        "start_frame": 90,
+        "end_frame_exclusive": 180,
+        "camera": "Статика",
+        "action": "Действие M02.",
+        "continuity": "",
+        "references": [
+          "mira",
+          "boat"
+        ],
+        "lipsync": false,
+        "card": {
+          "primary_reference": "mira"
+        },
+        "state_changes": {
+          "before": {
+            "world": {
+              "time_of_day": "сумерки"
+            }
+          },
+          "after": {
+            "mira": {
+              "clothes_condition": null
+            }
+          }
+        }
+      },
+      {
+        "id": "M03",
+        "original": "Строка M03",
+        "sequence": "chorus",
+        "title": "План M03",
+        "start_frame": 180,
+        "end_frame_exclusive": 270,
+        "camera": "Статика",
+        "action": "Действие M03.",
+        "continuity": "",
+        "references": [
+          "mira"
+        ],
+        "lipsync": false,
+        "card": {
+          "primary_reference": "mira"
+        },
+        "state_changes": {},
+        "state_from": {
+          "scene": "M01",
+          "phase": "same"
+        },
+        "derived_from": {
+          "shot": "M01"
+        }
+      }
+    ]
+  },
+  "treatment": {
+    "schema_version": 1,
+    "logline": "Мира провожает лодку.",
+    "sequences": [
+      {
+        "id": "verse",
+        "title": "Куплет",
+        "direction": "Спокойно.",
+        "start": 0,
+        "end": 6,
+        "entities": [
+          "mira"
+        ],
+        "lipsync": false
+      },
+      {
+        "id": "chorus",
+        "title": "Припев",
+        "direction": "Огни.",
+        "start": 6,
+        "end": 9,
+        "entities": [
+          "mira",
+          "boat"
+        ]
+      }
+    ]
+  },
+  "cast": {
+    "schema_version": 1,
+    "entities": [
+      {
+        "id": "world",
+        "kind": "world",
+        "name": "Мир сцены",
+        "short_name": "Мир",
+        "role": "",
+        "appearance": "",
+        "images": [],
+        "initial_state": {
+          "time_of_day": "вечер"
+        }
+      },
+      {
+        "id": "mira",
+        "kind": "character",
+        "name": "Мира",
+        "short_name": "Мира",
+        "role": "Музыкант",
+        "appearance": "Музыкант с фонариком",
+        "images": [
+          "heroes/mira.png"
+        ],
+        "initial_state": {
+          "position": "у причала",
+          "clothes_condition": "сухая куртка"
+        }
+      },
+      {
+        "id": "boat",
+        "kind": "vehicle",
+        "name": "Лодка «Чайка»",
+        "short_name": "Лодка",
+        "role": "",
+        "appearance": "Деревянная лодка",
+        "images": [
+          "vehicles/boat.png"
+        ],
+        "initial_state": {}
+      }
+    ],
+    "properties": {
+      "character": [
+        {
+          "key": "position",
+          "label": "Положение",
+          "hint": "Где находится",
+          "checklist": "Стоит там, где записано: {value}?"
+        },
+        {
+          "key": "clothes_condition",
+          "label": "Одежда",
+          "checklist": "Одежда: {value}?"
+        },
+        {
+          "key": "mood",
+          "label": "Настроение"
+        }
+      ]
+    }
+  },
+  "timing": {
+    "version": 2,
+    "status": "Разметка подтверждена на слух.",
+    "source": "source/track.mp3",
+    "sha256": "fb0797e290b774181fa7fdbeadc0bd9849889152fca5dc3555a766bb33dfae2b",
+    "duration_decoded": 9,
+    "duration_container": 9,
+    "clock": "Секунды от начала декодированного звука, не SMPTE",
+    "lines": [
+      {
+        "id": 1,
+        "source_line": 2,
+        "start": 0.5,
+        "end": 3,
+        "verified": true
+      },
+      {
+        "id": 2,
+        "source_line": 3,
+        "start": 3,
+        "end": 6,
+        "verified": true
+      },
+      {
+        "id": 3,
+        "source_line": 5,
+        "start": 6,
+        "end": 8.5,
+        "verified": true
+      }
+    ],
+    "sections": []
+  },
+  "lyrics": [
+    {
+      "number": 1,
+      "text": "[Куплет]",
+      "header": true
+    },
+    {
+      "number": 2,
+      "text": "Первая строка",
+      "header": false
+    },
+    {
+      "number": 3,
+      "text": "Вторая строка",
+      "header": false
+    },
+    {
+      "number": 4,
+      "text": "[Припев]",
+      "header": true
+    },
+    {
+      "number": 5,
+      "text": "Огни над водой",
+      "header": false
+    },
+    {
+      "number": 6,
+      "text": "",
+      "header": false
+    }
+  ],
+  "duration": 9,
+  "trackPath": "<project>/source/track.mp3",
+  "problems": [],
+  "referencesStale": false
+}

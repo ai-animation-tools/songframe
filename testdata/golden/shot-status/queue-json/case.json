@@ -1,0 +1,17 @@
+{
+  "description": "Очередь в JSON.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "queue JSON"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ],
+  "remove": [],
+  "mkdir": [
+    "plan/awaiting/M05"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "description": "Битый manifest.json: JSONDecodeError.",
+  "call": "check_assets",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "JSONDecodeError"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

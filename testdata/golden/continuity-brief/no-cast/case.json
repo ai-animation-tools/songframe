@@ -1,0 +1,20 @@
+{
+  "description": "Нет plan/cast.json: словарь по умолчанию, имена — коды сущностей.",
+  "call": "continuity_brief",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "DEFAULT_PROPERTIES",
+    "load_cast None"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "M04",
+    "--phase",
+    "after"
+  ],
+  "remove": [
+    "plan/cast.json"
+  ],
+  "mkdir": []
+}

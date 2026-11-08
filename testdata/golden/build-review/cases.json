@@ -1,0 +1,2360 @@
+{
+  "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5+esm15 Copyright (c) 2000-2023 the FFmpeg developers",
+  "python": "3.12.3",
+  "cases": [
+    {
+      "name": "help",
+      "description": "Справка argparse.",
+      "covers": [
+        "--help"
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--help"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 0,
+            "stdout": "usage: build_review.py [-h] (--shots SHOTS [SHOTS ...] | --spec SPEC) --output\n                       OUTPUT [--plan-only]\n\nСборка временной пробы по параметрам; @link README.md\n\noptions:\n  -h, --help            show this help message and exit\n  --shots SHOTS [SHOTS ...]\n  --spec SPEC\n  --output OUTPUT\n  --plan-only\n",
+            "stderr": ""
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "args-missing",
+      "description": "Без аргументов: нет --output.",
+      "covers": [
+        "required"
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": []
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 2,
+            "stdout": "",
+            "stderr": "usage: build_review.py [-h] (--shots SHOTS [SHOTS ...] | --spec SPEC) --output\n                       OUTPUT [--plan-only]\nbuild_review.py: error: the following arguments are required: --output\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "args-group",
+      "description": "Без --shots и --spec.",
+      "covers": [
+        "required group"
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 2,
+            "stdout": "",
+            "stderr": "usage: build_review.py [-h] (--shots SHOTS [SHOTS ...] | --spec SPEC) --output\n                       OUTPUT [--plan-only]\nbuild_review.py: error: one of the arguments --shots --spec is required\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "args-conflict",
+      "description": "--shots вместе с --spec.",
+      "covers": [
+        "not allowed"
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--shots",
+            "M01",
+            "--spec",
+            "x.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 2,
+            "stdout": "",
+            "stderr": "usage: build_review.py [-h] (--shots SHOTS [SHOTS ...] | --spec SPEC) --output\n                       OUTPUT [--plan-only]\nbuild_review.py: error: argument --spec: not allowed with argument --shots\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "plan-only",
+      "description": "--plan-only по --shots: рецепт без записи.",
+      "covers": [
+        "--plan-only",
+        "accepted_edit",
+        "registry_card"
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--shots",
+            "M01",
+            "M02",
+            "M03",
+            "--output",
+            "<project>/plan/batches/review/test.mp4",
+            "--plan-only"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 0,
+            "stdout": "{\n  \"schema_version\": 1,\n  \"scene_registry_sha256\": \"cb02452b24a437a1745291e2270ba9aec62f6a213728ae388c883d34403a137e\",\n  \"fps\": 30,\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"shots\": [\n    {\n      \"id\": \"M01\",\n      \"kind\": \"video\",\n      \"origin\": \"accepted_edit\",\n      \"path\": \"<project>/assets/shots/M01/accepted-edit.mp4\",\n      \"sha256\": \"a638c65bea31709aa5423b4cecda27a1aea71bc4a976d6b5b51c53660ebff098\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"fps=30,trim=start_frame=0:end_frame=12,setpts=(PTS-STARTPTS)/1,fps=30,tpad=stop_mode=clone:stop=1,trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    },\n    {\n      \"id\": \"M02\",\n      \"kind\": \"card\",\n      \"origin\": \"registry_card\",\n      \"path\": \"<project>/plan/animatic/cards/M02.png\",\n      \"sha256\": \"3f3e2b6f87743920b733ca8fcc100b33618ca4b261ee03e50a14234c99408a87\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    },\n    {\n      \"id\": \"M03\",\n      \"kind\": \"video\",\n      \"origin\": \"accepted_edit\",\n      \"path\": \"<project>/assets/shots/M03/accepted-edit.mp4\",\n      \"sha256\": \"77a7d656615bb89901253a8319fa08adbba993d2b6eb5f5c63d8f44db031fe1e\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"fps=30,trim=start_frame=0:end_frame=12,setpts=(PTS-STARTPTS)/1,fps=30,tpad=stop_mode=clone:stop=1,trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    }\n  ],\n  \"transitions\": {},\n  \"total_frames\": 36,\n  \"duration_seconds\": 1.2,\n  \"audio\": {\n    \"path\": \"<project>/source/track.mp3\",\n    \"sha256\": \"bd46a10bbddc1cdf411699d943afe421bdfc62dd2f9f9348158d77fdbc8f34e5\",\n    \"start_frame\": 0,\n    \"end_frame_exclusive\": 36,\n    \"filter\": \"aresample=44100,atrim=start_sample=0:end_sample=52920,asetpts=PTS-STARTPTS,apad=whole_len=52920,atrim=end_sample=52920\"\n  },\n  \"transform\": \"Масштаб с сохранением пропорций и полями; все временные преобразования записаны по кадрам при 30 FPS.\"\n}\n",
+            "stderr": ""
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "build-shots",
+      "description": "Сборка трёх планов прямыми склейками.",
+      "covers": [
+        "build",
+        "cuts",
+        "recipe"
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--shots",
+            "M01",
+            "M02",
+            "M03",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 0,
+            "stdout": "{\n  \"schema_version\": 1,\n  \"scene_registry_sha256\": \"cb02452b24a437a1745291e2270ba9aec62f6a213728ae388c883d34403a137e\",\n  \"fps\": 30,\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"shots\": [\n    {\n      \"id\": \"M01\",\n      \"kind\": \"video\",\n      \"origin\": \"accepted_edit\",\n      \"path\": \"<project>/assets/shots/M01/accepted-edit.mp4\",\n      \"sha256\": \"a638c65bea31709aa5423b4cecda27a1aea71bc4a976d6b5b51c53660ebff098\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"fps=30,trim=start_frame=0:end_frame=12,setpts=(PTS-STARTPTS)/1,fps=30,tpad=stop_mode=clone:stop=1,trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    },\n    {\n      \"id\": \"M02\",\n      \"kind\": \"card\",\n      \"origin\": \"registry_card\",\n      \"path\": \"<project>/plan/animatic/cards/M02.png\",\n      \"sha256\": \"3f3e2b6f87743920b733ca8fcc100b33618ca4b261ee03e50a14234c99408a87\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    },\n    {\n      \"id\": \"M03\",\n      \"kind\": \"video\",\n      \"origin\": \"accepted_edit\",\n      \"path\": \"<project>/assets/shots/M03/accepted-edit.mp4\",\n      \"sha256\": \"77a7d656615bb89901253a8319fa08adbba993d2b6eb5f5c63d8f44db031fe1e\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"fps=30,trim=start_frame=0:end_frame=12,setpts=(PTS-STARTPTS)/1,fps=30,tpad=stop_mode=clone:stop=1,trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    }\n  ],\n  \"transitions\": {},\n  \"total_frames\": 36,\n  \"duration_seconds\": 1.2,\n  \"audio\": {\n    \"path\": \"<project>/source/track.mp3\",\n    \"sha256\": \"bd46a10bbddc1cdf411699d943afe421bdfc62dd2f9f9348158d77fdbc8f34e5\",\n    \"start_frame\": 0,\n    \"end_frame_exclusive\": 36,\n    \"filter\": \"aresample=44100,atrim=start_sample=0:end_sample=52920,asetpts=PTS-STARTPTS,apad=whole_len=52920,atrim=end_sample=52920\"\n  },\n  \"transform\": \"Масштаб с сохранением пропорций и полями; все временные преобразования записаны по кадрам при 30 FPS.\",\n  \"cuts\": [\n    {\n      \"after\": \"M01\",\n      \"start_frame\": 12,\n      \"end_frame_exclusive\": 12,\n      \"song_frame\": 12,\n      \"type\": \"cut\"\n    },\n    {\n      \"after\": \"M02\",\n      \"start_frame\": 24,\n      \"end_frame_exclusive\": 24,\n      \"song_frame\": 24,\n      \"type\": \"cut\"\n    }\n  ],\n  \"video_sha256\": \"82eedb80841ddc21f28d8d2065028206aaf6c8ad842def3535ea2d1fd8237193\",\n  \"output\": \"<project>/plan/batches/review/test.mp4\",\n  \"status\": \"review_pending\",\n  \"ffmpeg_version\": \"ffmpeg version 6.1.1-3ubuntu5+esm15 Copyright (c) 2000-2023 the FFmpeg developers\",\n  \"encoding\": {\n    \"video_codec\": \"libx264\",\n    \"preset\": \"fast\",\n    \"crf\": 18,\n    \"threads\": 2,\n    \"filter_complex_threads\": 1,\n    \"pixel_format\": \"yuv420p\",\n    \"video_track_timescale\": 15360,\n    \"audio_codec\": \"aac\",\n    \"audio_bitrate\": \"192k\",\n    \"sample_rate\": 44100,\n    \"channels\": 2\n  }\n}\n",
+            "stderr": ""
+          }
+        ],
+        "changed": {
+          "plan/batches": "dir",
+          "plan/batches/review": "dir",
+          "plan/batches/review/test.json": {
+            "text": "{\n  \"schema_version\": 1,\n  \"scene_registry_sha256\": \"cb02452b24a437a1745291e2270ba9aec62f6a213728ae388c883d34403a137e\",\n  \"fps\": 30,\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"shots\": [\n    {\n      \"id\": \"M01\",\n      \"kind\": \"video\",\n      \"origin\": \"accepted_edit\",\n      \"path\": \"<project>/assets/shots/M01/accepted-edit.mp4\",\n      \"sha256\": \"a638c65bea31709aa5423b4cecda27a1aea71bc4a976d6b5b51c53660ebff098\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"fps=30,trim=start_frame=0:end_frame=12,setpts=(PTS-STARTPTS)/1,fps=30,tpad=stop_mode=clone:stop=1,trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    },\n    {\n      \"id\": \"M02\",\n      \"kind\": \"card\",\n      \"origin\": \"registry_card\",\n      \"path\": \"<project>/plan/animatic/cards/M02.png\",\n      \"sha256\": \"3f3e2b6f87743920b733ca8fcc100b33618ca4b261ee03e50a14234c99408a87\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    },\n    {\n      \"id\": \"M03\",\n      \"kind\": \"video\",\n      \"origin\": \"accepted_edit\",\n      \"path\": \"<project>/assets/shots/M03/accepted-edit.mp4\",\n      \"sha256\": \"77a7d656615bb89901253a8319fa08adbba993d2b6eb5f5c63d8f44db031fe1e\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"fps=30,trim=start_frame=0:end_frame=12,setpts=(PTS-STARTPTS)/1,fps=30,tpad=stop_mode=clone:stop=1,trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    }\n  ],\n  \"transitions\": {},\n  \"total_frames\": 36,\n  \"duration_seconds\": 1.2,\n  \"audio\": {\n    \"path\": \"<project>/source/track.mp3\",\n    \"sha256\": \"bd46a10bbddc1cdf411699d943afe421bdfc62dd2f9f9348158d77fdbc8f34e5\",\n    \"start_frame\": 0,\n    \"end_frame_exclusive\": 36,\n    \"filter\": \"aresample=44100,atrim=start_sample=0:end_sample=52920,asetpts=PTS-STARTPTS,apad=whole_len=52920,atrim=end_sample=52920\"\n  },\n  \"transform\": \"Масштаб с сохранением пропорций и полями; все временные преобразования записаны по кадрам при 30 FPS.\",\n  \"cuts\": [\n    {\n      \"after\": \"M01\",\n      \"start_frame\": 12,\n      \"end_frame_exclusive\": 12,\n      \"song_frame\": 12,\n      \"type\": \"cut\"\n    },\n    {\n      \"after\": \"M02\",\n      \"start_frame\": 24,\n      \"end_frame_exclusive\": 24,\n      \"song_frame\": 24,\n      \"type\": \"cut\"\n    }\n  ],\n  \"video_sha256\": \"82eedb80841ddc21f28d8d2065028206aaf6c8ad842def3535ea2d1fd8237193\",\n  \"output\": \"<project>/plan/batches/review/test.mp4\",\n  \"status\": \"review_pending\",\n  \"ffmpeg_version\": \"ffmpeg version 6.1.1-3ubuntu5+esm15 Copyright (c) 2000-2023 the FFmpeg developers\",\n  \"encoding\": {\n    \"video_codec\": \"libx264\",\n    \"preset\": \"fast\",\n    \"crf\": 18,\n    \"threads\": 2,\n    \"filter_complex_threads\": 1,\n    \"pixel_format\": \"yuv420p\",\n    \"video_track_timescale\": 15360,\n    \"audio_codec\": \"aac\",\n    \"audio_bitrate\": \"192k\",\n    \"sample_rate\": 44100,\n    \"channels\": 2\n  }\n}\n"
+          },
+          "plan/batches/review/test.mp4": {
+            "sha256": "82eedb80841ddc21f28d8d2065028206aaf6c8ad842def3535ea2d1fd8237193",
+            "bytes": 34395,
+            "media": {
+              "video": {
+                "codec_name": "h264",
+                "width": 1920,
+                "height": 1080,
+                "r_frame_rate": "30/1",
+                "nb_frames": "36",
+                "pix_fmt": "yuv420p"
+              },
+              "audio": {
+                "codec_name": "aac",
+                "sample_rate": "44100",
+                "channels": 2,
+                "duration": "1.200000"
+              }
+            }
+          }
+        },
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "build-tmp",
+      "description": "Выход во временной папке ОС.",
+      "covers": [
+        "tempdir"
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--shots",
+            "M02",
+            "--output",
+            "<tmp>/out/review.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 0,
+            "stdout": "{\n  \"schema_version\": 1,\n  \"scene_registry_sha256\": \"cb02452b24a437a1745291e2270ba9aec62f6a213728ae388c883d34403a137e\",\n  \"fps\": 30,\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"shots\": [\n    {\n      \"id\": \"M02\",\n      \"kind\": \"card\",\n      \"origin\": \"registry_card\",\n      \"path\": \"<project>/plan/animatic/cards/M02.png\",\n      \"sha256\": \"3f3e2b6f87743920b733ca8fcc100b33618ca4b261ee03e50a14234c99408a87\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    }\n  ],\n  \"transitions\": {},\n  \"total_frames\": 12,\n  \"duration_seconds\": 0.4,\n  \"audio\": {\n    \"path\": \"<project>/source/track.mp3\",\n    \"sha256\": \"bd46a10bbddc1cdf411699d943afe421bdfc62dd2f9f9348158d77fdbc8f34e5\",\n    \"start_frame\": 12,\n    \"end_frame_exclusive\": 24,\n    \"filter\": \"aresample=44100,atrim=start_sample=17640:end_sample=35280,asetpts=PTS-STARTPTS,apad=whole_len=17640,atrim=end_sample=17640\"\n  },\n  \"transform\": \"Масштаб с сохранением пропорций и полями; все временные преобразования записаны по кадрам при 30 FPS.\",\n  \"cuts\": [],\n  \"video_sha256\": \"4da966d102e23e0e026be62e49c66cd82310ac41aae12c6d8fe4b545d7a71438\",\n  \"output\": \"<tmp>/out/review.mp4\",\n  \"status\": \"review_pending\",\n  \"ffmpeg_version\": \"ffmpeg version 6.1.1-3ubuntu5+esm15 Copyright (c) 2000-2023 the FFmpeg developers\",\n  \"encoding\": {\n    \"video_codec\": \"libx264\",\n    \"preset\": \"fast\",\n    \"crf\": 18,\n    \"threads\": 2,\n    \"filter_complex_threads\": 1,\n    \"pixel_format\": \"yuv420p\",\n    \"video_track_timescale\": 15360,\n    \"audio_codec\": \"aac\",\n    \"audio_bitrate\": \"192k\",\n    \"sample_rate\": 44100,\n    \"channels\": 2\n  }\n}\n",
+            "stderr": ""
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {
+          "out": "dir",
+          "out/review.json": {
+            "text": "{\n  \"schema_version\": 1,\n  \"scene_registry_sha256\": \"cb02452b24a437a1745291e2270ba9aec62f6a213728ae388c883d34403a137e\",\n  \"fps\": 30,\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"shots\": [\n    {\n      \"id\": \"M02\",\n      \"kind\": \"card\",\n      \"origin\": \"registry_card\",\n      \"path\": \"<project>/plan/animatic/cards/M02.png\",\n      \"sha256\": \"3f3e2b6f87743920b733ca8fcc100b33618ca4b261ee03e50a14234c99408a87\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    }\n  ],\n  \"transitions\": {},\n  \"total_frames\": 12,\n  \"duration_seconds\": 0.4,\n  \"audio\": {\n    \"path\": \"<project>/source/track.mp3\",\n    \"sha256\": \"bd46a10bbddc1cdf411699d943afe421bdfc62dd2f9f9348158d77fdbc8f34e5\",\n    \"start_frame\": 12,\n    \"end_frame_exclusive\": 24,\n    \"filter\": \"aresample=44100,atrim=start_sample=17640:end_sample=35280,asetpts=PTS-STARTPTS,apad=whole_len=17640,atrim=end_sample=17640\"\n  },\n  \"transform\": \"Масштаб с сохранением пропорций и полями; все временные преобразования записаны по кадрам при 30 FPS.\",\n  \"cuts\": [],\n  \"video_sha256\": \"4da966d102e23e0e026be62e49c66cd82310ac41aae12c6d8fe4b545d7a71438\",\n  \"output\": \"<tmp>/out/review.mp4\",\n  \"status\": \"review_pending\",\n  \"ffmpeg_version\": \"ffmpeg version 6.1.1-3ubuntu5+esm15 Copyright (c) 2000-2023 the FFmpeg developers\",\n  \"encoding\": {\n    \"video_codec\": \"libx264\",\n    \"preset\": \"fast\",\n    \"crf\": 18,\n    \"threads\": 2,\n    \"filter_complex_threads\": 1,\n    \"pixel_format\": \"yuv420p\",\n    \"video_track_timescale\": 15360,\n    \"audio_codec\": \"aac\",\n    \"audio_bitrate\": \"192k\",\n    \"sample_rate\": 44100,\n    \"channels\": 2\n  }\n}\n"
+          },
+          "out/review.mp4": {
+            "sha256": "4da966d102e23e0e026be62e49c66cd82310ac41aae12c6d8fe4b545d7a71438",
+            "bytes": 13170,
+            "media": {
+              "video": {
+                "codec_name": "h264",
+                "width": 1920,
+                "height": 1080,
+                "r_frame_rate": "30/1",
+                "nb_frames": "12",
+                "pix_fmt": "yuv420p"
+              },
+              "audio": {
+                "codec_name": "aac",
+                "sample_rate": "44100",
+                "channels": 2,
+                "duration": "0.400000"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "trim-speed-holds",
+      "description": "Обрезка, замедление и удержания явного ролика.",
+      "covers": [
+        "trim",
+        "speed",
+        "holds"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\", \"path\": \"source/varying.mp4\", \"kind\": \"video\", \"source_start_frame\": 3, \"source_end_frame_exclusive\": 9, \"speed\": \"0.5\", \"hold_first_frames\": 3, \"hold_last_frames\": 3}, {\"scene\": \"M02\"}, {\"scene\": \"M03\"}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 0,
+            "stdout": "{\n  \"schema_version\": 1,\n  \"scene_registry_sha256\": \"cb02452b24a437a1745291e2270ba9aec62f6a213728ae388c883d34403a137e\",\n  \"fps\": 30,\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"shots\": [\n    {\n      \"id\": \"M01\",\n      \"kind\": \"video\",\n      \"origin\": \"explicit\",\n      \"path\": \"<project>/source/varying.mp4\",\n      \"sha256\": \"41e172b8ca8a316aa1210d80d9a1ec92fd19412fb81986c060c7d74c760896b0\",\n      \"source_start_frame\": 3,\n      \"source_end_frame_exclusive\": 9,\n      \"source_interval_seconds\": [\n        0.1,\n        0.3\n      ],\n      \"speed\": \"0.5\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 3,\n      \"hold_last_frames\": 3,\n      \"duration_change_seconds\": 0.2,\n      \"frames\": 18,\n      \"filter\": \"fps=30,trim=start_frame=3:end_frame=9,setpts=(PTS-STARTPTS)/0.5,fps=30,tpad=stop_mode=clone:stop=1,trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=3:stop_mode=clone:stop=3,settb=1/30\"\n    },\n    {\n      \"id\": \"M02\",\n      \"kind\": \"card\",\n      \"origin\": \"registry_card\",\n      \"path\": \"<project>/plan/animatic/cards/M02.png\",\n      \"sha256\": \"3f3e2b6f87743920b733ca8fcc100b33618ca4b261ee03e50a14234c99408a87\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    },\n    {\n      \"id\": \"M03\",\n      \"kind\": \"video\",\n      \"origin\": \"accepted_edit\",\n      \"path\": \"<project>/assets/shots/M03/accepted-edit.mp4\",\n      \"sha256\": \"77a7d656615bb89901253a8319fa08adbba993d2b6eb5f5c63d8f44db031fe1e\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"fps=30,trim=start_frame=0:end_frame=12,setpts=(PTS-STARTPTS)/1,fps=30,tpad=stop_mode=clone:stop=1,trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    }\n  ],\n  \"transitions\": {},\n  \"total_frames\": 42,\n  \"duration_seconds\": 1.4,\n  \"audio\": {\n    \"path\": \"<project>/source/track.mp3\",\n    \"sha256\": \"bd46a10bbddc1cdf411699d943afe421bdfc62dd2f9f9348158d77fdbc8f34e5\",\n    \"start_frame\": 0,\n    \"end_frame_exclusive\": 42,\n    \"filter\": \"aresample=44100,atrim=start_sample=0:end_sample=61740,asetpts=PTS-STARTPTS,apad=whole_len=61740,atrim=end_sample=61740\"\n  },\n  \"transform\": \"Масштаб с сохранением пропорций и полями; все временные преобразования записаны по кадрам при 30 FPS.\",\n  \"cuts\": [\n    {\n      \"after\": \"M01\",\n      \"start_frame\": 18,\n      \"end_frame_exclusive\": 18,\n      \"song_frame\": 18,\n      \"type\": \"cut\"\n    },\n    {\n      \"after\": \"M02\",\n      \"start_frame\": 30,\n      \"end_frame_exclusive\": 30,\n      \"song_frame\": 30,\n      \"type\": \"cut\"\n    }\n  ],\n  \"video_sha256\": \"ccc5bb66d6fbbe852c40960cbc984c65f17e644e031d288647e06617196ae07d\",\n  \"output\": \"<project>/plan/batches/review/test.mp4\",\n  \"status\": \"review_pending\",\n  \"ffmpeg_version\": \"ffmpeg version 6.1.1-3ubuntu5+esm15 Copyright (c) 2000-2023 the FFmpeg developers\",\n  \"encoding\": {\n    \"video_codec\": \"libx264\",\n    \"preset\": \"fast\",\n    \"crf\": 18,\n    \"threads\": 2,\n    \"filter_complex_threads\": 1,\n    \"pixel_format\": \"yuv420p\",\n    \"video_track_timescale\": 15360,\n    \"audio_codec\": \"aac\",\n    \"audio_bitrate\": \"192k\",\n    \"sample_rate\": 44100,\n    \"channels\": 2\n  }\n}\n",
+            "stderr": ""
+          }
+        ],
+        "changed": {
+          "plan/batches": "dir",
+          "plan/batches/review": "dir",
+          "plan/batches/review/test.json": {
+            "text": "{\n  \"schema_version\": 1,\n  \"scene_registry_sha256\": \"cb02452b24a437a1745291e2270ba9aec62f6a213728ae388c883d34403a137e\",\n  \"fps\": 30,\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"shots\": [\n    {\n      \"id\": \"M01\",\n      \"kind\": \"video\",\n      \"origin\": \"explicit\",\n      \"path\": \"<project>/source/varying.mp4\",\n      \"sha256\": \"41e172b8ca8a316aa1210d80d9a1ec92fd19412fb81986c060c7d74c760896b0\",\n      \"source_start_frame\": 3,\n      \"source_end_frame_exclusive\": 9,\n      \"source_interval_seconds\": [\n        0.1,\n        0.3\n      ],\n      \"speed\": \"0.5\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 3,\n      \"hold_last_frames\": 3,\n      \"duration_change_seconds\": 0.2,\n      \"frames\": 18,\n      \"filter\": \"fps=30,trim=start_frame=3:end_frame=9,setpts=(PTS-STARTPTS)/0.5,fps=30,tpad=stop_mode=clone:stop=1,trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=3:stop_mode=clone:stop=3,settb=1/30\"\n    },\n    {\n      \"id\": \"M02\",\n      \"kind\": \"card\",\n      \"origin\": \"registry_card\",\n      \"path\": \"<project>/plan/animatic/cards/M02.png\",\n      \"sha256\": \"3f3e2b6f87743920b733ca8fcc100b33618ca4b261ee03e50a14234c99408a87\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    },\n    {\n      \"id\": \"M03\",\n      \"kind\": \"video\",\n      \"origin\": \"accepted_edit\",\n      \"path\": \"<project>/assets/shots/M03/accepted-edit.mp4\",\n      \"sha256\": \"77a7d656615bb89901253a8319fa08adbba993d2b6eb5f5c63d8f44db031fe1e\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"fps=30,trim=start_frame=0:end_frame=12,setpts=(PTS-STARTPTS)/1,fps=30,tpad=stop_mode=clone:stop=1,trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    }\n  ],\n  \"transitions\": {},\n  \"total_frames\": 42,\n  \"duration_seconds\": 1.4,\n  \"audio\": {\n    \"path\": \"<project>/source/track.mp3\",\n    \"sha256\": \"bd46a10bbddc1cdf411699d943afe421bdfc62dd2f9f9348158d77fdbc8f34e5\",\n    \"start_frame\": 0,\n    \"end_frame_exclusive\": 42,\n    \"filter\": \"aresample=44100,atrim=start_sample=0:end_sample=61740,asetpts=PTS-STARTPTS,apad=whole_len=61740,atrim=end_sample=61740\"\n  },\n  \"transform\": \"Масштаб с сохранением пропорций и полями; все временные преобразования записаны по кадрам при 30 FPS.\",\n  \"cuts\": [\n    {\n      \"after\": \"M01\",\n      \"start_frame\": 18,\n      \"end_frame_exclusive\": 18,\n      \"song_frame\": 18,\n      \"type\": \"cut\"\n    },\n    {\n      \"after\": \"M02\",\n      \"start_frame\": 30,\n      \"end_frame_exclusive\": 30,\n      \"song_frame\": 30,\n      \"type\": \"cut\"\n    }\n  ],\n  \"video_sha256\": \"ccc5bb66d6fbbe852c40960cbc984c65f17e644e031d288647e06617196ae07d\",\n  \"output\": \"<project>/plan/batches/review/test.mp4\",\n  \"status\": \"review_pending\",\n  \"ffmpeg_version\": \"ffmpeg version 6.1.1-3ubuntu5+esm15 Copyright (c) 2000-2023 the FFmpeg developers\",\n  \"encoding\": {\n    \"video_codec\": \"libx264\",\n    \"preset\": \"fast\",\n    \"crf\": 18,\n    \"threads\": 2,\n    \"filter_complex_threads\": 1,\n    \"pixel_format\": \"yuv420p\",\n    \"video_track_timescale\": 15360,\n    \"audio_codec\": \"aac\",\n    \"audio_bitrate\": \"192k\",\n    \"sample_rate\": 44100,\n    \"channels\": 2\n  }\n}\n"
+          },
+          "plan/batches/review/test.mp4": {
+            "sha256": "ccc5bb66d6fbbe852c40960cbc984c65f17e644e031d288647e06617196ae07d",
+            "bytes": 39248,
+            "media": {
+              "video": {
+                "codec_name": "h264",
+                "width": 1920,
+                "height": 1080,
+                "r_frame_rate": "30/1",
+                "nb_frames": "42",
+                "pix_fmt": "yuv420p"
+              },
+              "audio": {
+                "codec_name": "aac",
+                "sample_rate": "44100",
+                "channels": 2,
+                "duration": "1.400000"
+              }
+            }
+          }
+        },
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "speedup",
+      "description": "Ускорение с удержаниями.",
+      "covers": [
+        "speed > 1"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\", \"speed\": 2, \"hold_first_frames\": 1, \"hold_last_frames\": 2}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 0,
+            "stdout": "{\n  \"schema_version\": 1,\n  \"scene_registry_sha256\": \"cb02452b24a437a1745291e2270ba9aec62f6a213728ae388c883d34403a137e\",\n  \"fps\": 30,\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"shots\": [\n    {\n      \"id\": \"M01\",\n      \"kind\": \"video\",\n      \"origin\": \"accepted_edit\",\n      \"path\": \"<project>/assets/shots/M01/accepted-edit.mp4\",\n      \"sha256\": \"a638c65bea31709aa5423b4cecda27a1aea71bc4a976d6b5b51c53660ebff098\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"2\",\n      \"motion_frames\": 6,\n      \"hold_first_frames\": 1,\n      \"hold_last_frames\": 2,\n      \"duration_change_seconds\": -0.2,\n      \"frames\": 9,\n      \"filter\": \"fps=30,trim=start_frame=0:end_frame=12,setpts=(PTS-STARTPTS)/2,fps=30,tpad=stop_mode=clone:stop=1,trim=end_frame=6,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=1:stop_mode=clone:stop=2,settb=1/30\"\n    }\n  ],\n  \"transitions\": {},\n  \"total_frames\": 9,\n  \"duration_seconds\": 0.3,\n  \"audio\": {\n    \"path\": \"<project>/source/track.mp3\",\n    \"sha256\": \"bd46a10bbddc1cdf411699d943afe421bdfc62dd2f9f9348158d77fdbc8f34e5\",\n    \"start_frame\": 0,\n    \"end_frame_exclusive\": 9,\n    \"filter\": \"aresample=44100,atrim=start_sample=0:end_sample=13230,asetpts=PTS-STARTPTS,apad=whole_len=13230,atrim=end_sample=13230\"\n  },\n  \"transform\": \"Масштаб с сохранением пропорций и полями; все временные преобразования записаны по кадрам при 30 FPS.\",\n  \"cuts\": [],\n  \"video_sha256\": \"55a51bd2cb737deb5f6e0195c37ec26be7b88eaa3f4895b808ee1278c9195326\",\n  \"output\": \"<project>/plan/batches/review/test.mp4\",\n  \"status\": \"review_pending\",\n  \"ffmpeg_version\": \"ffmpeg version 6.1.1-3ubuntu5+esm15 Copyright (c) 2000-2023 the FFmpeg developers\",\n  \"encoding\": {\n    \"video_codec\": \"libx264\",\n    \"preset\": \"fast\",\n    \"crf\": 18,\n    \"threads\": 2,\n    \"filter_complex_threads\": 1,\n    \"pixel_format\": \"yuv420p\",\n    \"video_track_timescale\": 15360,\n    \"audio_codec\": \"aac\",\n    \"audio_bitrate\": \"192k\",\n    \"sample_rate\": 44100,\n    \"channels\": 2\n  }\n}\n",
+            "stderr": ""
+          }
+        ],
+        "changed": {
+          "plan/batches": "dir",
+          "plan/batches/review": "dir",
+          "plan/batches/review/test.json": {
+            "text": "{\n  \"schema_version\": 1,\n  \"scene_registry_sha256\": \"cb02452b24a437a1745291e2270ba9aec62f6a213728ae388c883d34403a137e\",\n  \"fps\": 30,\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"shots\": [\n    {\n      \"id\": \"M01\",\n      \"kind\": \"video\",\n      \"origin\": \"accepted_edit\",\n      \"path\": \"<project>/assets/shots/M01/accepted-edit.mp4\",\n      \"sha256\": \"a638c65bea31709aa5423b4cecda27a1aea71bc4a976d6b5b51c53660ebff098\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"2\",\n      \"motion_frames\": 6,\n      \"hold_first_frames\": 1,\n      \"hold_last_frames\": 2,\n      \"duration_change_seconds\": -0.2,\n      \"frames\": 9,\n      \"filter\": \"fps=30,trim=start_frame=0:end_frame=12,setpts=(PTS-STARTPTS)/2,fps=30,tpad=stop_mode=clone:stop=1,trim=end_frame=6,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=1:stop_mode=clone:stop=2,settb=1/30\"\n    }\n  ],\n  \"transitions\": {},\n  \"total_frames\": 9,\n  \"duration_seconds\": 0.3,\n  \"audio\": {\n    \"path\": \"<project>/source/track.mp3\",\n    \"sha256\": \"bd46a10bbddc1cdf411699d943afe421bdfc62dd2f9f9348158d77fdbc8f34e5\",\n    \"start_frame\": 0,\n    \"end_frame_exclusive\": 9,\n    \"filter\": \"aresample=44100,atrim=start_sample=0:end_sample=13230,asetpts=PTS-STARTPTS,apad=whole_len=13230,atrim=end_sample=13230\"\n  },\n  \"transform\": \"Масштаб с сохранением пропорций и полями; все временные преобразования записаны по кадрам при 30 FPS.\",\n  \"cuts\": [],\n  \"video_sha256\": \"55a51bd2cb737deb5f6e0195c37ec26be7b88eaa3f4895b808ee1278c9195326\",\n  \"output\": \"<project>/plan/batches/review/test.mp4\",\n  \"status\": \"review_pending\",\n  \"ffmpeg_version\": \"ffmpeg version 6.1.1-3ubuntu5+esm15 Copyright (c) 2000-2023 the FFmpeg developers\",\n  \"encoding\": {\n    \"video_codec\": \"libx264\",\n    \"preset\": \"fast\",\n    \"crf\": 18,\n    \"threads\": 2,\n    \"filter_complex_threads\": 1,\n    \"pixel_format\": \"yuv420p\",\n    \"video_track_timescale\": 15360,\n    \"audio_codec\": \"aac\",\n    \"audio_bitrate\": \"192k\",\n    \"sample_rate\": 44100,\n    \"channels\": 2\n  }\n}\n"
+          },
+          "plan/batches/review/test.mp4": {
+            "sha256": "55a51bd2cb737deb5f6e0195c37ec26be7b88eaa3f4895b808ee1278c9195326",
+            "bytes": 10598,
+            "media": {
+              "video": {
+                "codec_name": "h264",
+                "width": 1920,
+                "height": 1080,
+                "r_frame_rate": "30/1",
+                "nb_frames": "9",
+                "pix_fmt": "yuv420p"
+              },
+              "audio": {
+                "codec_name": "aac",
+                "sample_rate": "44100",
+                "channels": 2,
+                "duration": "0.300000"
+              }
+            }
+          }
+        },
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "transition-fade",
+      "description": "Переход fade после M02.",
+      "covers": [
+        "xfade"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\"}, {\"scene\": \"M02\"}, {\"scene\": \"M03\"}], \"transitions\": [{\"after\": \"M02\", \"type\": \"fade\", \"frames\": 3}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 0,
+            "stdout": "{\n  \"schema_version\": 1,\n  \"scene_registry_sha256\": \"cb02452b24a437a1745291e2270ba9aec62f6a213728ae388c883d34403a137e\",\n  \"fps\": 30,\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"shots\": [\n    {\n      \"id\": \"M01\",\n      \"kind\": \"video\",\n      \"origin\": \"accepted_edit\",\n      \"path\": \"<project>/assets/shots/M01/accepted-edit.mp4\",\n      \"sha256\": \"a638c65bea31709aa5423b4cecda27a1aea71bc4a976d6b5b51c53660ebff098\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"fps=30,trim=start_frame=0:end_frame=12,setpts=(PTS-STARTPTS)/1,fps=30,tpad=stop_mode=clone:stop=1,trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    },\n    {\n      \"id\": \"M02\",\n      \"kind\": \"card\",\n      \"origin\": \"registry_card\",\n      \"path\": \"<project>/plan/animatic/cards/M02.png\",\n      \"sha256\": \"3f3e2b6f87743920b733ca8fcc100b33618ca4b261ee03e50a14234c99408a87\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    },\n    {\n      \"id\": \"M03\",\n      \"kind\": \"video\",\n      \"origin\": \"accepted_edit\",\n      \"path\": \"<project>/assets/shots/M03/accepted-edit.mp4\",\n      \"sha256\": \"77a7d656615bb89901253a8319fa08adbba993d2b6eb5f5c63d8f44db031fe1e\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"fps=30,trim=start_frame=0:end_frame=12,setpts=(PTS-STARTPTS)/1,fps=30,tpad=stop_mode=clone:stop=1,trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    }\n  ],\n  \"transitions\": {\n    \"M02\": {\n      \"type\": \"fade\",\n      \"frames\": 3\n    }\n  },\n  \"total_frames\": 33,\n  \"duration_seconds\": 1.1,\n  \"audio\": {\n    \"path\": \"<project>/source/track.mp3\",\n    \"sha256\": \"bd46a10bbddc1cdf411699d943afe421bdfc62dd2f9f9348158d77fdbc8f34e5\",\n    \"start_frame\": 0,\n    \"end_frame_exclusive\": 33,\n    \"filter\": \"aresample=44100,atrim=start_sample=0:end_sample=48510,asetpts=PTS-STARTPTS,apad=whole_len=48510,atrim=end_sample=48510\"\n  },\n  \"transform\": \"Масштаб с сохранением пропорций и полями; все временные преобразования записаны по кадрам при 30 FPS.\",\n  \"cuts\": [\n    {\n      \"after\": \"M01\",\n      \"start_frame\": 12,\n      \"end_frame_exclusive\": 12,\n      \"song_frame\": 12,\n      \"type\": \"cut\"\n    },\n    {\n      \"after\": \"M02\",\n      \"start_frame\": 21,\n      \"end_frame_exclusive\": 24,\n      \"song_frame\": 21,\n      \"type\": \"fade\"\n    }\n  ],\n  \"video_sha256\": \"2d9f94a4d2025ed0909678666afa9c60ebbc5b2ee74fcbdd3bf8dc22f2586bd3\",\n  \"output\": \"<project>/plan/batches/review/test.mp4\",\n  \"status\": \"review_pending\",\n  \"ffmpeg_version\": \"ffmpeg version 6.1.1-3ubuntu5+esm15 Copyright (c) 2000-2023 the FFmpeg developers\",\n  \"encoding\": {\n    \"video_codec\": \"libx264\",\n    \"preset\": \"fast\",\n    \"crf\": 18,\n    \"threads\": 2,\n    \"filter_complex_threads\": 1,\n    \"pixel_format\": \"yuv420p\",\n    \"video_track_timescale\": 15360,\n    \"audio_codec\": \"aac\",\n    \"audio_bitrate\": \"192k\",\n    \"sample_rate\": 44100,\n    \"channels\": 2\n  }\n}\n",
+            "stderr": ""
+          }
+        ],
+        "changed": {
+          "plan/batches": "dir",
+          "plan/batches/review": "dir",
+          "plan/batches/review/test.json": {
+            "text": "{\n  \"schema_version\": 1,\n  \"scene_registry_sha256\": \"cb02452b24a437a1745291e2270ba9aec62f6a213728ae388c883d34403a137e\",\n  \"fps\": 30,\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"shots\": [\n    {\n      \"id\": \"M01\",\n      \"kind\": \"video\",\n      \"origin\": \"accepted_edit\",\n      \"path\": \"<project>/assets/shots/M01/accepted-edit.mp4\",\n      \"sha256\": \"a638c65bea31709aa5423b4cecda27a1aea71bc4a976d6b5b51c53660ebff098\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"fps=30,trim=start_frame=0:end_frame=12,setpts=(PTS-STARTPTS)/1,fps=30,tpad=stop_mode=clone:stop=1,trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    },\n    {\n      \"id\": \"M02\",\n      \"kind\": \"card\",\n      \"origin\": \"registry_card\",\n      \"path\": \"<project>/plan/animatic/cards/M02.png\",\n      \"sha256\": \"3f3e2b6f87743920b733ca8fcc100b33618ca4b261ee03e50a14234c99408a87\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    },\n    {\n      \"id\": \"M03\",\n      \"kind\": \"video\",\n      \"origin\": \"accepted_edit\",\n      \"path\": \"<project>/assets/shots/M03/accepted-edit.mp4\",\n      \"sha256\": \"77a7d656615bb89901253a8319fa08adbba993d2b6eb5f5c63d8f44db031fe1e\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"fps=30,trim=start_frame=0:end_frame=12,setpts=(PTS-STARTPTS)/1,fps=30,tpad=stop_mode=clone:stop=1,trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    }\n  ],\n  \"transitions\": {\n    \"M02\": {\n      \"type\": \"fade\",\n      \"frames\": 3\n    }\n  },\n  \"total_frames\": 33,\n  \"duration_seconds\": 1.1,\n  \"audio\": {\n    \"path\": \"<project>/source/track.mp3\",\n    \"sha256\": \"bd46a10bbddc1cdf411699d943afe421bdfc62dd2f9f9348158d77fdbc8f34e5\",\n    \"start_frame\": 0,\n    \"end_frame_exclusive\": 33,\n    \"filter\": \"aresample=44100,atrim=start_sample=0:end_sample=48510,asetpts=PTS-STARTPTS,apad=whole_len=48510,atrim=end_sample=48510\"\n  },\n  \"transform\": \"Масштаб с сохранением пропорций и полями; все временные преобразования записаны по кадрам при 30 FPS.\",\n  \"cuts\": [\n    {\n      \"after\": \"M01\",\n      \"start_frame\": 12,\n      \"end_frame_exclusive\": 12,\n      \"song_frame\": 12,\n      \"type\": \"cut\"\n    },\n    {\n      \"after\": \"M02\",\n      \"start_frame\": 21,\n      \"end_frame_exclusive\": 24,\n      \"song_frame\": 21,\n      \"type\": \"fade\"\n    }\n  ],\n  \"video_sha256\": \"2d9f94a4d2025ed0909678666afa9c60ebbc5b2ee74fcbdd3bf8dc22f2586bd3\",\n  \"output\": \"<project>/plan/batches/review/test.mp4\",\n  \"status\": \"review_pending\",\n  \"ffmpeg_version\": \"ffmpeg version 6.1.1-3ubuntu5+esm15 Copyright (c) 2000-2023 the FFmpeg developers\",\n  \"encoding\": {\n    \"video_codec\": \"libx264\",\n    \"preset\": \"fast\",\n    \"crf\": 18,\n    \"threads\": 2,\n    \"filter_complex_threads\": 1,\n    \"pixel_format\": \"yuv420p\",\n    \"video_track_timescale\": 15360,\n    \"audio_codec\": \"aac\",\n    \"audio_bitrate\": \"192k\",\n    \"sample_rate\": 44100,\n    \"channels\": 2\n  }\n}\n"
+          },
+          "plan/batches/review/test.mp4": {
+            "sha256": "2d9f94a4d2025ed0909678666afa9c60ebbc5b2ee74fcbdd3bf8dc22f2586bd3",
+            "bytes": 33228,
+            "media": {
+              "video": {
+                "codec_name": "h264",
+                "width": 1920,
+                "height": 1080,
+                "r_frame_rate": "30/1",
+                "nb_frames": "33",
+                "pix_fmt": "yuv420p"
+              },
+              "audio": {
+                "codec_name": "aac",
+                "sample_rate": "44100",
+                "channels": 2,
+                "duration": "1.100000"
+              }
+            }
+          }
+        },
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "transitions-two",
+      "description": "Два перехода подряд.",
+      "covers": [
+        "xfade dissolve fadeblack"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\"}, {\"scene\": \"M02\"}, {\"scene\": \"M03\"}], \"transitions\": [{\"after\": \"M01\", \"type\": \"dissolve\", \"frames\": 3}, {\"after\": \"M02\", \"type\": \"fadeblack\", \"frames\": 3}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 0,
+            "stdout": "{\n  \"schema_version\": 1,\n  \"scene_registry_sha256\": \"cb02452b24a437a1745291e2270ba9aec62f6a213728ae388c883d34403a137e\",\n  \"fps\": 30,\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"shots\": [\n    {\n      \"id\": \"M01\",\n      \"kind\": \"video\",\n      \"origin\": \"accepted_edit\",\n      \"path\": \"<project>/assets/shots/M01/accepted-edit.mp4\",\n      \"sha256\": \"a638c65bea31709aa5423b4cecda27a1aea71bc4a976d6b5b51c53660ebff098\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"fps=30,trim=start_frame=0:end_frame=12,setpts=(PTS-STARTPTS)/1,fps=30,tpad=stop_mode=clone:stop=1,trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    },\n    {\n      \"id\": \"M02\",\n      \"kind\": \"card\",\n      \"origin\": \"registry_card\",\n      \"path\": \"<project>/plan/animatic/cards/M02.png\",\n      \"sha256\": \"3f3e2b6f87743920b733ca8fcc100b33618ca4b261ee03e50a14234c99408a87\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    },\n    {\n      \"id\": \"M03\",\n      \"kind\": \"video\",\n      \"origin\": \"accepted_edit\",\n      \"path\": \"<project>/assets/shots/M03/accepted-edit.mp4\",\n      \"sha256\": \"77a7d656615bb89901253a8319fa08adbba993d2b6eb5f5c63d8f44db031fe1e\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"fps=30,trim=start_frame=0:end_frame=12,setpts=(PTS-STARTPTS)/1,fps=30,tpad=stop_mode=clone:stop=1,trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    }\n  ],\n  \"transitions\": {\n    \"M01\": {\n      \"type\": \"dissolve\",\n      \"frames\": 3\n    },\n    \"M02\": {\n      \"type\": \"fadeblack\",\n      \"frames\": 3\n    }\n  },\n  \"total_frames\": 30,\n  \"duration_seconds\": 1.0,\n  \"audio\": {\n    \"path\": \"<project>/source/track.mp3\",\n    \"sha256\": \"bd46a10bbddc1cdf411699d943afe421bdfc62dd2f9f9348158d77fdbc8f34e5\",\n    \"start_frame\": 0,\n    \"end_frame_exclusive\": 30,\n    \"filter\": \"aresample=44100,atrim=start_sample=0:end_sample=44100,asetpts=PTS-STARTPTS,apad=whole_len=44100,atrim=end_sample=44100\"\n  },\n  \"transform\": \"Масштаб с сохранением пропорций и полями; все временные преобразования записаны по кадрам при 30 FPS.\",\n  \"cuts\": [\n    {\n      \"after\": \"M01\",\n      \"start_frame\": 9,\n      \"end_frame_exclusive\": 12,\n      \"song_frame\": 9,\n      \"type\": \"dissolve\"\n    },\n    {\n      \"after\": \"M02\",\n      \"start_frame\": 18,\n      \"end_frame_exclusive\": 21,\n      \"song_frame\": 18,\n      \"type\": \"fadeblack\"\n    }\n  ],\n  \"video_sha256\": \"0a5dd315b81a8210bee84f085a45e40e0fc6b6c28ba6cfee1022b0ebd91e74d0\",\n  \"output\": \"<project>/plan/batches/review/test.mp4\",\n  \"status\": \"review_pending\",\n  \"ffmpeg_version\": \"ffmpeg version 6.1.1-3ubuntu5+esm15 Copyright (c) 2000-2023 the FFmpeg developers\",\n  \"encoding\": {\n    \"video_codec\": \"libx264\",\n    \"preset\": \"fast\",\n    \"crf\": 18,\n    \"threads\": 2,\n    \"filter_complex_threads\": 1,\n    \"pixel_format\": \"yuv420p\",\n    \"video_track_timescale\": 15360,\n    \"audio_codec\": \"aac\",\n    \"audio_bitrate\": \"192k\",\n    \"sample_rate\": 44100,\n    \"channels\": 2\n  }\n}\n",
+            "stderr": ""
+          }
+        ],
+        "changed": {
+          "plan/batches": "dir",
+          "plan/batches/review": "dir",
+          "plan/batches/review/test.json": {
+            "text": "{\n  \"schema_version\": 1,\n  \"scene_registry_sha256\": \"cb02452b24a437a1745291e2270ba9aec62f6a213728ae388c883d34403a137e\",\n  \"fps\": 30,\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"shots\": [\n    {\n      \"id\": \"M01\",\n      \"kind\": \"video\",\n      \"origin\": \"accepted_edit\",\n      \"path\": \"<project>/assets/shots/M01/accepted-edit.mp4\",\n      \"sha256\": \"a638c65bea31709aa5423b4cecda27a1aea71bc4a976d6b5b51c53660ebff098\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"fps=30,trim=start_frame=0:end_frame=12,setpts=(PTS-STARTPTS)/1,fps=30,tpad=stop_mode=clone:stop=1,trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    },\n    {\n      \"id\": \"M02\",\n      \"kind\": \"card\",\n      \"origin\": \"registry_card\",\n      \"path\": \"<project>/plan/animatic/cards/M02.png\",\n      \"sha256\": \"3f3e2b6f87743920b733ca8fcc100b33618ca4b261ee03e50a14234c99408a87\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    },\n    {\n      \"id\": \"M03\",\n      \"kind\": \"video\",\n      \"origin\": \"accepted_edit\",\n      \"path\": \"<project>/assets/shots/M03/accepted-edit.mp4\",\n      \"sha256\": \"77a7d656615bb89901253a8319fa08adbba993d2b6eb5f5c63d8f44db031fe1e\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"fps=30,trim=start_frame=0:end_frame=12,setpts=(PTS-STARTPTS)/1,fps=30,tpad=stop_mode=clone:stop=1,trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    }\n  ],\n  \"transitions\": {\n    \"M01\": {\n      \"type\": \"dissolve\",\n      \"frames\": 3\n    },\n    \"M02\": {\n      \"type\": \"fadeblack\",\n      \"frames\": 3\n    }\n  },\n  \"total_frames\": 30,\n  \"duration_seconds\": 1.0,\n  \"audio\": {\n    \"path\": \"<project>/source/track.mp3\",\n    \"sha256\": \"bd46a10bbddc1cdf411699d943afe421bdfc62dd2f9f9348158d77fdbc8f34e5\",\n    \"start_frame\": 0,\n    \"end_frame_exclusive\": 30,\n    \"filter\": \"aresample=44100,atrim=start_sample=0:end_sample=44100,asetpts=PTS-STARTPTS,apad=whole_len=44100,atrim=end_sample=44100\"\n  },\n  \"transform\": \"Масштаб с сохранением пропорций и полями; все временные преобразования записаны по кадрам при 30 FPS.\",\n  \"cuts\": [\n    {\n      \"after\": \"M01\",\n      \"start_frame\": 9,\n      \"end_frame_exclusive\": 12,\n      \"song_frame\": 9,\n      \"type\": \"dissolve\"\n    },\n    {\n      \"after\": \"M02\",\n      \"start_frame\": 18,\n      \"end_frame_exclusive\": 21,\n      \"song_frame\": 18,\n      \"type\": \"fadeblack\"\n    }\n  ],\n  \"video_sha256\": \"0a5dd315b81a8210bee84f085a45e40e0fc6b6c28ba6cfee1022b0ebd91e74d0\",\n  \"output\": \"<project>/plan/batches/review/test.mp4\",\n  \"status\": \"review_pending\",\n  \"ffmpeg_version\": \"ffmpeg version 6.1.1-3ubuntu5+esm15 Copyright (c) 2000-2023 the FFmpeg developers\",\n  \"encoding\": {\n    \"video_codec\": \"libx264\",\n    \"preset\": \"fast\",\n    \"crf\": 18,\n    \"threads\": 2,\n    \"filter_complex_threads\": 1,\n    \"pixel_format\": \"yuv420p\",\n    \"video_track_timescale\": 15360,\n    \"audio_codec\": \"aac\",\n    \"audio_bitrate\": \"192k\",\n    \"sample_rate\": 44100,\n    \"channels\": 2\n  }\n}\n"
+          },
+          "plan/batches/review/test.mp4": {
+            "sha256": "0a5dd315b81a8210bee84f085a45e40e0fc6b6c28ba6cfee1022b0ebd91e74d0",
+            "bytes": 2372474,
+            "media": {
+              "video": {
+                "codec_name": "h264",
+                "width": 1920,
+                "height": 1080,
+                "r_frame_rate": "30/1",
+                "nb_frames": "30",
+                "pix_fmt": "yuv420p"
+              },
+              "audio": {
+                "codec_name": "aac",
+                "sample_rate": "44100",
+                "channels": 2,
+                "duration": "1.000000"
+              }
+            }
+          }
+        },
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "explicit-card",
+      "description": "Явная карточка с длительностью и песней с явного кадра.",
+      "covers": [
+        "kind card",
+        "audio.start_frame"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M03\", \"path\": \"plan/animatic/cards/M02.png\", \"kind\": \"card\", \"source_end_frame_exclusive\": 6}], \"audio\": {\"start_frame\": 5}}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 0,
+            "stdout": "{\n  \"schema_version\": 1,\n  \"scene_registry_sha256\": \"cb02452b24a437a1745291e2270ba9aec62f6a213728ae388c883d34403a137e\",\n  \"fps\": 30,\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"shots\": [\n    {\n      \"id\": \"M03\",\n      \"kind\": \"card\",\n      \"origin\": \"explicit\",\n      \"path\": \"<project>/plan/animatic/cards/M02.png\",\n      \"sha256\": \"3f3e2b6f87743920b733ca8fcc100b33618ca4b261ee03e50a14234c99408a87\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 6,\n      \"source_interval_seconds\": [\n        0.0,\n        0.2\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 6,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 6,\n      \"filter\": \"trim=end_frame=6,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    }\n  ],\n  \"transitions\": {},\n  \"total_frames\": 6,\n  \"duration_seconds\": 0.2,\n  \"audio\": {\n    \"path\": \"<project>/source/track.mp3\",\n    \"sha256\": \"bd46a10bbddc1cdf411699d943afe421bdfc62dd2f9f9348158d77fdbc8f34e5\",\n    \"start_frame\": 5,\n    \"end_frame_exclusive\": 11,\n    \"filter\": \"aresample=44100,atrim=start_sample=7350:end_sample=16170,asetpts=PTS-STARTPTS,apad=whole_len=8820,atrim=end_sample=8820\"\n  },\n  \"transform\": \"Масштаб с сохранением пропорций и полями; все временные преобразования записаны по кадрам при 30 FPS.\",\n  \"cuts\": [],\n  \"video_sha256\": \"060406d88febcd97c0ddaaf51a1322001b99d8d24e0e683e19efeabb99ec7891\",\n  \"output\": \"<project>/plan/batches/review/test.mp4\",\n  \"status\": \"review_pending\",\n  \"ffmpeg_version\": \"ffmpeg version 6.1.1-3ubuntu5+esm15 Copyright (c) 2000-2023 the FFmpeg developers\",\n  \"encoding\": {\n    \"video_codec\": \"libx264\",\n    \"preset\": \"fast\",\n    \"crf\": 18,\n    \"threads\": 2,\n    \"filter_complex_threads\": 1,\n    \"pixel_format\": \"yuv420p\",\n    \"video_track_timescale\": 15360,\n    \"audio_codec\": \"aac\",\n    \"audio_bitrate\": \"192k\",\n    \"sample_rate\": 44100,\n    \"channels\": 2\n  }\n}\n",
+            "stderr": ""
+          }
+        ],
+        "changed": {
+          "plan/batches": "dir",
+          "plan/batches/review": "dir",
+          "plan/batches/review/test.json": {
+            "text": "{\n  \"schema_version\": 1,\n  \"scene_registry_sha256\": \"cb02452b24a437a1745291e2270ba9aec62f6a213728ae388c883d34403a137e\",\n  \"fps\": 30,\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"shots\": [\n    {\n      \"id\": \"M03\",\n      \"kind\": \"card\",\n      \"origin\": \"explicit\",\n      \"path\": \"<project>/plan/animatic/cards/M02.png\",\n      \"sha256\": \"3f3e2b6f87743920b733ca8fcc100b33618ca4b261ee03e50a14234c99408a87\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 6,\n      \"source_interval_seconds\": [\n        0.0,\n        0.2\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 6,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 6,\n      \"filter\": \"trim=end_frame=6,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    }\n  ],\n  \"transitions\": {},\n  \"total_frames\": 6,\n  \"duration_seconds\": 0.2,\n  \"audio\": {\n    \"path\": \"<project>/source/track.mp3\",\n    \"sha256\": \"bd46a10bbddc1cdf411699d943afe421bdfc62dd2f9f9348158d77fdbc8f34e5\",\n    \"start_frame\": 5,\n    \"end_frame_exclusive\": 11,\n    \"filter\": \"aresample=44100,atrim=start_sample=7350:end_sample=16170,asetpts=PTS-STARTPTS,apad=whole_len=8820,atrim=end_sample=8820\"\n  },\n  \"transform\": \"Масштаб с сохранением пропорций и полями; все временные преобразования записаны по кадрам при 30 FPS.\",\n  \"cuts\": [],\n  \"video_sha256\": \"060406d88febcd97c0ddaaf51a1322001b99d8d24e0e683e19efeabb99ec7891\",\n  \"output\": \"<project>/plan/batches/review/test.mp4\",\n  \"status\": \"review_pending\",\n  \"ffmpeg_version\": \"ffmpeg version 6.1.1-3ubuntu5+esm15 Copyright (c) 2000-2023 the FFmpeg developers\",\n  \"encoding\": {\n    \"video_codec\": \"libx264\",\n    \"preset\": \"fast\",\n    \"crf\": 18,\n    \"threads\": 2,\n    \"filter_complex_threads\": 1,\n    \"pixel_format\": \"yuv420p\",\n    \"video_track_timescale\": 15360,\n    \"audio_codec\": \"aac\",\n    \"audio_bitrate\": \"192k\",\n    \"sample_rate\": 44100,\n    \"channels\": 2\n  }\n}\n"
+          },
+          "plan/batches/review/test.mp4": {
+            "sha256": "060406d88febcd97c0ddaaf51a1322001b99d8d24e0e683e19efeabb99ec7891",
+            "bytes": 8637,
+            "media": {
+              "video": {
+                "codec_name": "h264",
+                "width": 1920,
+                "height": 1080,
+                "r_frame_rate": "30/1",
+                "nb_frames": "6",
+                "pix_fmt": "yuv420p"
+              },
+              "audio": {
+                "codec_name": "aac",
+                "sample_rate": "44100",
+                "channels": 2,
+                "duration": "0.200000"
+              }
+            }
+          }
+        },
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "native-24fps",
+      "description": "Ролик 24 к/с: обрезка на сетке 30 к/с.",
+      "covers": [
+        "r_frame_rate != 30/1"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M02\", \"path\": \"source/gen24.mp4\", \"kind\": \"video\", \"source_start_frame\": 3, \"source_end_frame_exclusive\": 15}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 0,
+            "stdout": "{\n  \"schema_version\": 1,\n  \"scene_registry_sha256\": \"cb02452b24a437a1745291e2270ba9aec62f6a213728ae388c883d34403a137e\",\n  \"fps\": 30,\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"shots\": [\n    {\n      \"id\": \"M02\",\n      \"kind\": \"video\",\n      \"origin\": \"explicit\",\n      \"path\": \"<project>/source/gen24.mp4\",\n      \"sha256\": \"ec01cbbc9391eb5f00831725f5994b0deac8a53723559520f4e7282e6158693e\",\n      \"source_start_frame\": 3,\n      \"source_end_frame_exclusive\": 15,\n      \"source_interval_seconds\": [\n        0.1,\n        0.5\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"fps=30,trim=start_frame=3:end_frame=15,setpts=(PTS-STARTPTS)/1,fps=30,tpad=stop_mode=clone:stop=1,trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    }\n  ],\n  \"transitions\": {},\n  \"total_frames\": 12,\n  \"duration_seconds\": 0.4,\n  \"audio\": {\n    \"path\": \"<project>/source/track.mp3\",\n    \"sha256\": \"bd46a10bbddc1cdf411699d943afe421bdfc62dd2f9f9348158d77fdbc8f34e5\",\n    \"start_frame\": 12,\n    \"end_frame_exclusive\": 24,\n    \"filter\": \"aresample=44100,atrim=start_sample=17640:end_sample=35280,asetpts=PTS-STARTPTS,apad=whole_len=17640,atrim=end_sample=17640\"\n  },\n  \"transform\": \"Масштаб с сохранением пропорций и полями; все временные преобразования записаны по кадрам при 30 FPS.\",\n  \"cuts\": [],\n  \"video_sha256\": \"126c9d1bf7f84102b2182b64cb342f757254e629001435d329c79009509eb099\",\n  \"output\": \"<project>/plan/batches/review/test.mp4\",\n  \"status\": \"review_pending\",\n  \"ffmpeg_version\": \"ffmpeg version 6.1.1-3ubuntu5+esm15 Copyright (c) 2000-2023 the FFmpeg developers\",\n  \"encoding\": {\n    \"video_codec\": \"libx264\",\n    \"preset\": \"fast\",\n    \"crf\": 18,\n    \"threads\": 2,\n    \"filter_complex_threads\": 1,\n    \"pixel_format\": \"yuv420p\",\n    \"video_track_timescale\": 15360,\n    \"audio_codec\": \"aac\",\n    \"audio_bitrate\": \"192k\",\n    \"sample_rate\": 44100,\n    \"channels\": 2\n  }\n}\n",
+            "stderr": ""
+          }
+        ],
+        "changed": {
+          "plan/batches": "dir",
+          "plan/batches/review": "dir",
+          "plan/batches/review/test.json": {
+            "text": "{\n  \"schema_version\": 1,\n  \"scene_registry_sha256\": \"cb02452b24a437a1745291e2270ba9aec62f6a213728ae388c883d34403a137e\",\n  \"fps\": 30,\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"shots\": [\n    {\n      \"id\": \"M02\",\n      \"kind\": \"video\",\n      \"origin\": \"explicit\",\n      \"path\": \"<project>/source/gen24.mp4\",\n      \"sha256\": \"ec01cbbc9391eb5f00831725f5994b0deac8a53723559520f4e7282e6158693e\",\n      \"source_start_frame\": 3,\n      \"source_end_frame_exclusive\": 15,\n      \"source_interval_seconds\": [\n        0.1,\n        0.5\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"fps=30,trim=start_frame=3:end_frame=15,setpts=(PTS-STARTPTS)/1,fps=30,tpad=stop_mode=clone:stop=1,trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    }\n  ],\n  \"transitions\": {},\n  \"total_frames\": 12,\n  \"duration_seconds\": 0.4,\n  \"audio\": {\n    \"path\": \"<project>/source/track.mp3\",\n    \"sha256\": \"bd46a10bbddc1cdf411699d943afe421bdfc62dd2f9f9348158d77fdbc8f34e5\",\n    \"start_frame\": 12,\n    \"end_frame_exclusive\": 24,\n    \"filter\": \"aresample=44100,atrim=start_sample=17640:end_sample=35280,asetpts=PTS-STARTPTS,apad=whole_len=17640,atrim=end_sample=17640\"\n  },\n  \"transform\": \"Масштаб с сохранением пропорций и полями; все временные преобразования записаны по кадрам при 30 FPS.\",\n  \"cuts\": [],\n  \"video_sha256\": \"126c9d1bf7f84102b2182b64cb342f757254e629001435d329c79009509eb099\",\n  \"output\": \"<project>/plan/batches/review/test.mp4\",\n  \"status\": \"review_pending\",\n  \"ffmpeg_version\": \"ffmpeg version 6.1.1-3ubuntu5+esm15 Copyright (c) 2000-2023 the FFmpeg developers\",\n  \"encoding\": {\n    \"video_codec\": \"libx264\",\n    \"preset\": \"fast\",\n    \"crf\": 18,\n    \"threads\": 2,\n    \"filter_complex_threads\": 1,\n    \"pixel_format\": \"yuv420p\",\n    \"video_track_timescale\": 15360,\n    \"audio_codec\": \"aac\",\n    \"audio_bitrate\": \"192k\",\n    \"sample_rate\": 44100,\n    \"channels\": 2\n  }\n}\n"
+          },
+          "plan/batches/review/test.mp4": {
+            "sha256": "126c9d1bf7f84102b2182b64cb342f757254e629001435d329c79009509eb099",
+            "bytes": 84698,
+            "media": {
+              "video": {
+                "codec_name": "h264",
+                "width": 1920,
+                "height": 1080,
+                "r_frame_rate": "30/1",
+                "nb_frames": "12",
+                "pix_fmt": "yuv420p"
+              },
+              "audio": {
+                "codec_name": "aac",
+                "sample_rate": "44100",
+                "channels": 2,
+                "duration": "0.400000"
+              }
+            }
+          }
+        },
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "song-end-pad",
+      "description": "Конец песни раньше кадровой границы: дополнение тишиной.",
+      "covers": [
+        "apad"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M02\"}, {\"scene\": \"M03\"}], \"audio\": {\"path\": \"source/end.wav\", \"start_frame\": 12}}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 0,
+            "stdout": "{\n  \"schema_version\": 1,\n  \"scene_registry_sha256\": \"cb02452b24a437a1745291e2270ba9aec62f6a213728ae388c883d34403a137e\",\n  \"fps\": 30,\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"shots\": [\n    {\n      \"id\": \"M02\",\n      \"kind\": \"card\",\n      \"origin\": \"registry_card\",\n      \"path\": \"<project>/plan/animatic/cards/M02.png\",\n      \"sha256\": \"3f3e2b6f87743920b733ca8fcc100b33618ca4b261ee03e50a14234c99408a87\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    },\n    {\n      \"id\": \"M03\",\n      \"kind\": \"video\",\n      \"origin\": \"accepted_edit\",\n      \"path\": \"<project>/assets/shots/M03/accepted-edit.mp4\",\n      \"sha256\": \"77a7d656615bb89901253a8319fa08adbba993d2b6eb5f5c63d8f44db031fe1e\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"fps=30,trim=start_frame=0:end_frame=12,setpts=(PTS-STARTPTS)/1,fps=30,tpad=stop_mode=clone:stop=1,trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    }\n  ],\n  \"transitions\": {},\n  \"total_frames\": 24,\n  \"duration_seconds\": 0.8,\n  \"audio\": {\n    \"path\": \"<project>/source/end.wav\",\n    \"sha256\": \"752f86ed99089a8665527d9a19faf8dd479d2134403e24d6e7b2c3ff9222ea8b\",\n    \"start_frame\": 12,\n    \"end_frame_exclusive\": 36,\n    \"filter\": \"aresample=44100,atrim=start_sample=17640:end_sample=52920,asetpts=PTS-STARTPTS,apad=whole_len=35280,atrim=end_sample=35280\"\n  },\n  \"transform\": \"Масштаб с сохранением пропорций и полями; все временные преобразования записаны по кадрам при 30 FPS.\",\n  \"cuts\": [\n    {\n      \"after\": \"M02\",\n      \"start_frame\": 12,\n      \"end_frame_exclusive\": 12,\n      \"song_frame\": 24,\n      \"type\": \"cut\"\n    }\n  ],\n  \"video_sha256\": \"fea91761e8239ae4bbab90f305762fa902551c2cb988dea156aff6b561044d05\",\n  \"output\": \"<project>/plan/batches/review/test.mp4\",\n  \"status\": \"review_pending\",\n  \"ffmpeg_version\": \"ffmpeg version 6.1.1-3ubuntu5+esm15 Copyright (c) 2000-2023 the FFmpeg developers\",\n  \"encoding\": {\n    \"video_codec\": \"libx264\",\n    \"preset\": \"fast\",\n    \"crf\": 18,\n    \"threads\": 2,\n    \"filter_complex_threads\": 1,\n    \"pixel_format\": \"yuv420p\",\n    \"video_track_timescale\": 15360,\n    \"audio_codec\": \"aac\",\n    \"audio_bitrate\": \"192k\",\n    \"sample_rate\": 44100,\n    \"channels\": 2\n  }\n}\n",
+            "stderr": ""
+          }
+        ],
+        "changed": {
+          "plan/batches": "dir",
+          "plan/batches/review": "dir",
+          "plan/batches/review/test.json": {
+            "text": "{\n  \"schema_version\": 1,\n  \"scene_registry_sha256\": \"cb02452b24a437a1745291e2270ba9aec62f6a213728ae388c883d34403a137e\",\n  \"fps\": 30,\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"shots\": [\n    {\n      \"id\": \"M02\",\n      \"kind\": \"card\",\n      \"origin\": \"registry_card\",\n      \"path\": \"<project>/plan/animatic/cards/M02.png\",\n      \"sha256\": \"3f3e2b6f87743920b733ca8fcc100b33618ca4b261ee03e50a14234c99408a87\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    },\n    {\n      \"id\": \"M03\",\n      \"kind\": \"video\",\n      \"origin\": \"accepted_edit\",\n      \"path\": \"<project>/assets/shots/M03/accepted-edit.mp4\",\n      \"sha256\": \"77a7d656615bb89901253a8319fa08adbba993d2b6eb5f5c63d8f44db031fe1e\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"fps=30,trim=start_frame=0:end_frame=12,setpts=(PTS-STARTPTS)/1,fps=30,tpad=stop_mode=clone:stop=1,trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    }\n  ],\n  \"transitions\": {},\n  \"total_frames\": 24,\n  \"duration_seconds\": 0.8,\n  \"audio\": {\n    \"path\": \"<project>/source/end.wav\",\n    \"sha256\": \"752f86ed99089a8665527d9a19faf8dd479d2134403e24d6e7b2c3ff9222ea8b\",\n    \"start_frame\": 12,\n    \"end_frame_exclusive\": 36,\n    \"filter\": \"aresample=44100,atrim=start_sample=17640:end_sample=52920,asetpts=PTS-STARTPTS,apad=whole_len=35280,atrim=end_sample=35280\"\n  },\n  \"transform\": \"Масштаб с сохранением пропорций и полями; все временные преобразования записаны по кадрам при 30 FPS.\",\n  \"cuts\": [\n    {\n      \"after\": \"M02\",\n      \"start_frame\": 12,\n      \"end_frame_exclusive\": 12,\n      \"song_frame\": 24,\n      \"type\": \"cut\"\n    }\n  ],\n  \"video_sha256\": \"fea91761e8239ae4bbab90f305762fa902551c2cb988dea156aff6b561044d05\",\n  \"output\": \"<project>/plan/batches/review/test.mp4\",\n  \"status\": \"review_pending\",\n  \"ffmpeg_version\": \"ffmpeg version 6.1.1-3ubuntu5+esm15 Copyright (c) 2000-2023 the FFmpeg developers\",\n  \"encoding\": {\n    \"video_codec\": \"libx264\",\n    \"preset\": \"fast\",\n    \"crf\": 18,\n    \"threads\": 2,\n    \"filter_complex_threads\": 1,\n    \"pixel_format\": \"yuv420p\",\n    \"video_track_timescale\": 15360,\n    \"audio_codec\": \"aac\",\n    \"audio_bitrate\": \"192k\",\n    \"sample_rate\": 44100,\n    \"channels\": 2\n  }\n}\n"
+          },
+          "plan/batches/review/test.mp4": {
+            "sha256": "fea91761e8239ae4bbab90f305762fa902551c2cb988dea156aff6b561044d05",
+            "bytes": 18835,
+            "media": {
+              "video": {
+                "codec_name": "h264",
+                "width": 1920,
+                "height": 1080,
+                "r_frame_rate": "30/1",
+                "nb_frames": "24",
+                "pix_fmt": "yuv420p"
+              },
+              "audio": {
+                "codec_name": "aac",
+                "sample_rate": "44100",
+                "channels": 2,
+                "duration": "0.800000"
+              }
+            }
+          }
+        },
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "speed-sci",
+      "description": "Скорость в экспоненциальной записи.",
+      "covers": [
+        "str(Decimal)"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\", \"speed\": \"1E+1\", \"source_end_frame_exclusive\": 12}, {\"scene\": \"M02\"}, {\"scene\": \"M03\", \"speed\": 1.5, \"source_end_frame_exclusive\": 12}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4",
+            "--plan-only"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 0,
+            "stdout": "{\n  \"schema_version\": 1,\n  \"scene_registry_sha256\": \"cb02452b24a437a1745291e2270ba9aec62f6a213728ae388c883d34403a137e\",\n  \"fps\": 30,\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"shots\": [\n    {\n      \"id\": \"M01\",\n      \"kind\": \"video\",\n      \"origin\": \"accepted_edit\",\n      \"path\": \"<project>/assets/shots/M01/accepted-edit.mp4\",\n      \"sha256\": \"a638c65bea31709aa5423b4cecda27a1aea71bc4a976d6b5b51c53660ebff098\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1E+1\",\n      \"motion_frames\": 1,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": -0.366666667,\n      \"frames\": 1,\n      \"filter\": \"fps=30,trim=start_frame=0:end_frame=12,setpts=(PTS-STARTPTS)/1E+1,fps=30,tpad=stop_mode=clone:stop=1,trim=end_frame=1,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    },\n    {\n      \"id\": \"M02\",\n      \"kind\": \"card\",\n      \"origin\": \"registry_card\",\n      \"path\": \"<project>/plan/animatic/cards/M02.png\",\n      \"sha256\": \"3f3e2b6f87743920b733ca8fcc100b33618ca4b261ee03e50a14234c99408a87\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1\",\n      \"motion_frames\": 12,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": 0.0,\n      \"frames\": 12,\n      \"filter\": \"trim=end_frame=12,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    },\n    {\n      \"id\": \"M03\",\n      \"kind\": \"video\",\n      \"origin\": \"accepted_edit\",\n      \"path\": \"<project>/assets/shots/M03/accepted-edit.mp4\",\n      \"sha256\": \"77a7d656615bb89901253a8319fa08adbba993d2b6eb5f5c63d8f44db031fe1e\",\n      \"source_start_frame\": 0,\n      \"source_end_frame_exclusive\": 12,\n      \"source_interval_seconds\": [\n        0.0,\n        0.4\n      ],\n      \"speed\": \"1.5\",\n      \"motion_frames\": 8,\n      \"hold_first_frames\": 0,\n      \"hold_last_frames\": 0,\n      \"duration_change_seconds\": -0.133333333,\n      \"frames\": 8,\n      \"filter\": \"fps=30,trim=start_frame=0:end_frame=12,setpts=(PTS-STARTPTS)/1.5,fps=30,tpad=stop_mode=clone:stop=1,trim=end_frame=8,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30\"\n    }\n  ],\n  \"transitions\": {},\n  \"total_frames\": 21,\n  \"duration_seconds\": 0.7,\n  \"audio\": {\n    \"path\": \"<project>/source/track.mp3\",\n    \"sha256\": \"bd46a10bbddc1cdf411699d943afe421bdfc62dd2f9f9348158d77fdbc8f34e5\",\n    \"start_frame\": 0,\n    \"end_frame_exclusive\": 21,\n    \"filter\": \"aresample=44100,atrim=start_sample=0:end_sample=30870,asetpts=PTS-STARTPTS,apad=whole_len=30870,atrim=end_sample=30870\"\n  },\n  \"transform\": \"Масштаб с сохранением пропорций и полями; все временные преобразования записаны по кадрам при 30 FPS.\"\n}\n",
+            "stderr": ""
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "song-short",
+      "description": "Песня короче пробы более чем на полкадра.",
+      "covers": [
+        "Участок песни короче"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\"}, {\"scene\": \"M02\"}, {\"scene\": \"M03\"}], \"audio\": {\"path\": \"source/short.wav\"}}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Участок песни короче пробы.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "audio-late",
+      "description": "Начало песни за пределами трека.",
+      "covers": [
+        "Участок песни короче"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\"}, {\"scene\": \"M02\"}, {\"scene\": \"M03\"}], \"audio\": {\"start_frame\": 50}}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4",
+            "--plan-only"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Участок песни короче пробы.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "no-audio",
+      "description": "Трек без звуковой дорожки.",
+      "covers": [
+        "Нет звуковой дорожки"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\"}], \"audio\": {\"path\": \"source/varying.mp4\"}}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4",
+            "--plan-only"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Нет звуковой дорожки.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "nonconsecutive",
+      "description": "Непоследовательные сцены без audio.start_frame.",
+      "covers": [
+        "audio.start_frame"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\"}, {\"scene\": \"M03\"}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4",
+            "--plan-only"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Для непоследовательных сцен явно задайте audio.start_frame.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "schema",
+      "description": "Неизвестная схема.",
+      "covers": [
+        "schema_version"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 2, \"shots\": [{\"scene\": \"M01\"}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Неизвестная схема или пустая проба.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "empty",
+      "description": "Пустой список планов.",
+      "covers": [
+        "empty"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": []}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Неизвестная схема или пустая проба.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "unknown-field",
+      "description": "Лишнее поле спецификации.",
+      "covers": [
+        "fields"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\"}], \"extra\": 1}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Неизвестные поля пробы.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "unknown-audio",
+      "description": "Лишнее поле audio.",
+      "covers": [
+        "audio fields"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\"}], \"audio\": {\"volume\": 1}}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Неизвестные поля audio.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "unknown-shot-field",
+      "description": "Опечатка в параметре участка.",
+      "covers": [
+        "shot fields"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\", \"speeed\": 2}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Неизвестные параметры участка пробы.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "kind-without-path",
+      "description": "kind без path.",
+      "covers": [
+        "kind"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\", \"kind\": \"video\"}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "kind задаётся только вместе с явным path.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "unknown-scene",
+      "description": "Неизвестная сцена.",
+      "covers": [
+        "scene"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M09\"}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Неизвестная или повторяющаяся сцена пробы.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "repeated-scene",
+      "description": "Повтор сцены.",
+      "covers": [
+        "scene"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\"}, {\"scene\": \"M01\"}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Неизвестная или повторяющаяся сцена пробы.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "bad-kind",
+      "description": "kind не video/card.",
+      "covers": [
+        "kind"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\", \"path\": \"source/varying.mp4\", \"kind\": \"gif\"}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "kind должен быть video или card.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "missing-path",
+      "description": "Нет входного файла.",
+      "covers": [
+        "source"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\", \"path\": \"source/missing.mp4\"}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Нет входного файла пробы.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "negative-start",
+      "description": "Отрицательное начало.",
+      "covers": [
+        "integer"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\", \"source_start_frame\": -1}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Неверное целое поле source_start_frame.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "float-hold",
+      "description": "Дробное удержание.",
+      "covers": [
+        "integer"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\", \"hold_last_frames\": 1.5}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Неверное целое поле hold_last_frames.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "bool-hold",
+      "description": "Логическое удержание.",
+      "covers": [
+        "integer bool"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\", \"hold_first_frames\": true}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Неверное целое поле hold_first_frames.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "beyond-video",
+      "description": "Участок за концом видео.",
+      "covers": [
+        "available"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\", \"source_end_frame_exclusive\": 13}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "M01: выбранный участок выходит за пределы видео.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "empty-window",
+      "description": "Конец не больше начала.",
+      "covers": [
+        "end <= start"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\", \"source_start_frame\": 5, \"source_end_frame_exclusive\": 5}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Конец участка должен быть больше начала.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "speed-zero",
+      "description": "Нулевая скорость.",
+      "covers": [
+        "speed"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\", \"speed\": 0}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Скорость должна быть положительной.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "speed-nan",
+      "description": "Скорость NaN.",
+      "covers": [
+        "speed"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\", \"speed\": \"NaN\"}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Скорость должна быть положительной.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "speed-text",
+      "description": "Скорость не число: InvalidOperation.",
+      "covers": [
+        "hidden"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\", \"speed\": \"abc\"}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Ошибка параметров или медиа пробы; сырой вывод скрыт.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "card-speed",
+      "description": "Скорость у карточки.",
+      "covers": [
+        "card"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M02\", \"speed\": 2}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Для карточки задавайте длительность через source_end_frame_exclusive без обрезки и скорости.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "too-fast",
+      "description": "Ускорение короче кадра.",
+      "covers": [
+        "motion < 1"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\", \"speed\": 100}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Участок после изменения скорости короче кадра.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "transition-field",
+      "description": "Лишний параметр перехода.",
+      "covers": [
+        "transition fields"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\"}, {\"scene\": \"M02\"}], \"transitions\": [{\"after\": \"M01\", \"type\": \"fade\", \"frames\": 3, \"x\": 1}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Неизвестные параметры перехода.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "transition-last",
+      "description": "Переход после последнего плана.",
+      "covers": [
+        "transition"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\"}, {\"scene\": \"M02\"}], \"transitions\": [{\"after\": \"M02\", \"type\": \"fade\", \"frames\": 3}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Неизвестный, повторный или последний стык перехода.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "transition-type",
+      "description": "Неизвестный тип перехода.",
+      "covers": [
+        "transition"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\"}, {\"scene\": \"M02\"}], \"transitions\": [{\"after\": \"M01\", \"type\": \"zoom\", \"frames\": 3}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Неизвестный, повторный или последний стык перехода.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "transition-repeat",
+      "description": "Повтор стыка.",
+      "covers": [
+        "transition"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\"}, {\"scene\": \"M02\"}, {\"scene\": \"M03\"}], \"transitions\": [{\"after\": \"M01\", \"type\": \"fade\", \"frames\": 1}, {\"after\": \"M01\", \"type\": \"fade\", \"frames\": 1}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Неизвестный, повторный или последний стык перехода.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "transition-zero",
+      "description": "Переход нулевой длины.",
+      "covers": [
+        "transition.frames"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\"}, {\"scene\": \"M02\"}], \"transitions\": [{\"after\": \"M01\", \"type\": \"fade\", \"frames\": 0}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Неверное целое поле transition.frames.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "transition-swallow",
+      "description": "Переходы поглощают план.",
+      "covers": [
+        "overlap"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\"}, {\"scene\": \"M02\"}, {\"scene\": \"M03\"}], \"transitions\": [{\"after\": \"M01\", \"type\": \"fade\", \"frames\": 6}, {\"after\": \"M02\", \"type\": \"fade\", \"frames\": 6}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Переходы поглощают весь план.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "missing-scene-key",
+      "description": "Участок без scene: KeyError.",
+      "covers": [
+        "hidden"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"path\": \"source/varying.mp4\"}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Ошибка параметров или медиа пробы; сырой вывод скрыт.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "spec-list",
+      "description": "Спецификация — список: AttributeError.",
+      "covers": [
+        "traceback"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "[1]"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Traceback (most recent call last):\n  File \"<archive>/tools/build_review/build_review.py\", line 438, in <module>\n    main()\n  File \"<archive>/tools/build_review/build_review.py\", line 420, in main\n    result = build(spec, args.output, plan_only=args.plan_only)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<archive>/tools/build_review/build_review.py\", line 274, in build\n    plan = prepare(spec, root)\n           ^^^^^^^^^^^^^^^^^^^\n  File \"<archive>/tools/build_review/build_review.py\", line 79, in prepare\n    if spec.get(\"schema_version\") != 1 or not spec.get(\"shots\"):\n       ^^^^^^^^\nAttributeError: 'list' object has no attribute 'get'\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "spec-invalid",
+      "description": "Спецификация — не JSON.",
+      "covers": [
+        "hidden"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Ошибка параметров или медиа пробы; сырой вывод скрыт.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "broken-video",
+      "description": "Битый ролик: ошибка ffprobe.",
+      "covers": [
+        "run"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "<inputs>/spec.json",
+          "text": "{\"schema_version\": 1, \"shots\": [{\"scene\": \"M01\", \"path\": \"source/broken.mp4\"}]}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/spec.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Ошибка обработки медиа; исходники не изменены, сырой вывод скрыт.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "spec-missing",
+      "description": "Нет файла спецификации.",
+      "covers": [
+        "hidden"
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--spec",
+            "<inputs>/missing.json",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Ошибка параметров или медиа пробы; сырой вывод скрыт.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "card-changed",
+      "description": "Карточка изменена после квитанции.",
+      "covers": [
+        "Карточка изменена"
+      ],
+      "setup": [
+        {
+          "op": "copy",
+          "from": "<inputs>/black.png",
+          "to": "plan/animatic/cards/M02.png"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--shots",
+            "M01",
+            "M02",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Карточка изменена.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "cards-stale",
+      "description": "Квитанция карточек для другого реестра.",
+      "covers": [
+        "Карточки устарели"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "plan/animatic/cards/manifest.json",
+          "text": "{\"registry_sha256\": \"0000000000000000000000000000000000000000000000000000000000000000\", \"cards\": {}}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--shots",
+            "M02",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Карточки устарели; обновите представления сцен.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "accepted-mismatch",
+      "description": "Хеш принятого монтажа не совпадает.",
+      "covers": [
+        "accepted_edit"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "assets/shots/M01/manifest.json",
+          "text": "{\"shot\": \"M01\", \"accepted_edit\": {\"video\": {\"path\": \"accepted-edit.mp4\", \"sha256\": \"0000000000000000000000000000000000000000000000000000000000000000\"}, \"fps\": 30, \"frames\": 12}}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--shots",
+            "M01",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "M01: принятый монтаж не совпадает с реестром или хешем.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "output-exists",
+      "description": "Проба уже существует.",
+      "covers": [
+        "no overwrite"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "plan/batches/review/test.mp4",
+          "text": "keep"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--shots",
+            "M01",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Проба или её манифест уже существуют; нужен новый выходной путь.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "manifest-exists",
+      "description": "Манифест пробы уже существует.",
+      "covers": [
+        "no overwrite"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "plan/batches/review/test.json",
+          "text": "{}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--shots",
+            "M01",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Проба или её манифест уже существуют; нужен новый выходной путь.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "output-assets",
+      "description": "Выход в assets.",
+      "covers": [
+        "destination"
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--shots",
+            "M01",
+            "--output",
+            "<project>/assets/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Пробу сохранять только в plan/batches или во временной папке ОС.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "output-mov",
+      "description": "Выход не MP4.",
+      "covers": [
+        "suffix"
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--shots",
+            "M01",
+            "--output",
+            "<project>/plan/batches/review/test.mov"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Выход пробы должен быть MP4.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "registry-invalid",
+      "description": "Неверный реестр сцен.",
+      "covers": [
+        "load"
+      ],
+      "setup": [
+        {
+          "op": "write",
+          "path": "plan/scenes.json",
+          "text": "{\"schema_version\": 2}"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--shots",
+            "M01",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Неизвестная схема или пустой реестр сцен.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    },
+    {
+      "name": "registry-missing",
+      "description": "Нет реестра сцен.",
+      "covers": [
+        "hidden"
+      ],
+      "setup": [
+        {
+          "op": "remove",
+          "path": "plan/scenes.json"
+        }
+      ],
+      "steps": [
+        {
+          "tool": "build_review",
+          "args": [
+            "--shots",
+            "M01",
+            "--output",
+            "<project>/plan/batches/review/test.mp4"
+          ]
+        }
+      ],
+      "expected": {
+        "steps": [
+          {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Ошибка параметров или медиа пробы; сырой вывод скрыт.\n"
+          }
+        ],
+        "changed": {},
+        "removed": [],
+        "tmp": {}
+      }
+    }
+  ]
+}

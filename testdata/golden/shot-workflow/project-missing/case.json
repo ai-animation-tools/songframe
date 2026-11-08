@@ -1,0 +1,17 @@
+{
+  "description": "Папки проекта нет.",
+  "call": "shot_workflow",
+  "project": null,
+  "base": "checks-base",
+  "covers": [
+    "Папка проекта не найдена"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "show",
+    "--dir",
+    "plan/batches/M03-attempt-01"
+  ],
+  "remove": [],
+  "mkdir": []
+}

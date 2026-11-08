@@ -1,0 +1,16 @@
+{
+  "description": "set-image-request -h.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "sub help"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "set-image-request",
+    "-h"
+  ],
+  "remove": [],
+  "mkdir": []
+}

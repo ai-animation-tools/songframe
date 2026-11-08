@@ -1,0 +1,19 @@
+{
+  "description": "Каркас без промежуточных: таблица.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "table"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "plan-keyframes",
+    "--dir",
+    "plan/batches/M04-attempt-01",
+    "--request-seconds",
+    "6"
+  ],
+  "remove": [],
+  "mkdir": []
+}

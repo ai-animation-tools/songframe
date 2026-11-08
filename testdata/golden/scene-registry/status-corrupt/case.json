@@ -1,0 +1,12 @@
+{
+  "description": "Повреждённый plan/production-status.json: текст JSONDecodeError в сообщении.",
+  "call": "project_battery",
+  "project": "project",
+  "covers": [
+    "read_production_status ValueError"
+  ],
+  "stubbedMedia": [
+    "assets/shots/M01/video.mp4",
+    "assets/shots/M03/video.mp4"
+  ]
+}

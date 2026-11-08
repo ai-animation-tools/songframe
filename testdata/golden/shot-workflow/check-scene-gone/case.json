@@ -1,0 +1,17 @@
+{
+  "description": "План исчез из реестра: проблема.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "scene_of"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "check",
+    "--dir",
+    "plan/batches/M03-attempt-01"
+  ],
+  "remove": [],
+  "mkdir": []
+}

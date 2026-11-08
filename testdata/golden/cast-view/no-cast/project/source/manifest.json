@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "kinds": [
+    {
+      "id": "character",
+      "label": "Персонаж",
+      "dir": "heroes"
+    },
+    {
+      "id": "vehicle",
+      "label": "Транспорт",
+      "dir": "vehicles"
+    },
+    {
+      "id": "location",
+      "label": "Локация",
+      "dir": "locations"
+    },
+    {
+      "id": "prop",
+      "label": "Предмет",
+      "dir": "props"
+    },
+    {
+      "id": "style",
+      "label": "Стиль",
+      "dir": "style"
+    }
+  ],
+  "track": {
+    "path": "track.mp3",
+    "sha256": "d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640",
+    "bytes": 120416,
+    "original_name": "track.mp3",
+    "duration_seconds": 30.0
+  },
+  "lyrics": {
+    "path": "text.md",
+    "sha256": "bc8939f30286d2e4b2c4154fa819f4c245e58563ba787f9fa345abb222ece0a0",
+    "bytes": 161,
+    "lines": 3,
+    "sections": [
+      "Куплет"
+    ]
+  },
+  "idea": {
+    "path": "description.md",
+    "sha256": "73740c9758b5cd11ad19bacccc63760d4c63b532bedaff13ed2a2f55bd3d0037",
+    "bytes": 349
+  },
+  "cover": null,
+  "references": [
+    {
+      "id": "mira",
+      "kind": "character",
+      "name": "Мира",
+      "short_name": "Мира",
+      "description": "Музыкант, держит фонарик",
+      "prompt": null,
+      "files": [
+        {
+          "path": "heroes/mira.png",
+          "sha256": "0b0835fb8ff731d9ba611e1c9a46bda1788a0f10d2b02bb5d09358039fc02818",
+          "bytes": 128,
+          "view": "full",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "lev",
+      "kind": "character",
+      "name": "Лев",
+      "short_name": "Лев",
+      "description": "Друг, развешивает фонарики",
+      "prompt": null,
+      "files": [
+        {
+          "path": "heroes/lev.png",
+          "sha256": "04c771634b3f498bfa467560d1e8d22de453226051cf90325b21820399a014d6",
+          "bytes": 128,
+          "view": "full",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "boat",
+      "kind": "vehicle",
+      "name": "Лодка",
+      "short_name": "Лодка",
+      "description": "Небольшая лодка у причала",
+      "prompt": null,
+      "files": [
+        {
+          "path": "vehicles/boat.png",
+          "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
+          "bytes": 126,
+          "view": "full",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "pier",
+      "kind": "location",
+      "name": "Причал",
+      "short_name": "Причал",
+      "description": "Деревянный причал у спокойной воды",
+      "prompt": null,
+      "files": [
+        {
+          "path": "locations/pier.png",
+          "sha256": "d226dce6924121c33e7c79a6a65da395c0d2398e0486033d46484a528c7f900e",
+          "bytes": 129,
+          "view": "full",
+          "note": ""
+        }
+      ]
+    }
+  ],
+  "updated_at": "2026-10-25T00:00:00Z"
+}

@@ -1,0 +1,11 @@
+{
+  "description": "Ошибка состояния: impact пуст, сохранение отклонено.",
+  "call": "scenesSaveImpact + validateScenes + saveScenesWithMode",
+  "project": "project",
+  "mode": "production",
+  "covers": [
+    "statePropertyInvalid",
+    "fingerprintsOf=null → impact пуст"
+  ],
+  "stubbedMedia": []
+}

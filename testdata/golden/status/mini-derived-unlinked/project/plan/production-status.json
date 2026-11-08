@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "current_animatic": "plan/animatic/latest/manifest.json",
+  "current_animatic_status": "approved",
+  "approved_animatic": {
+    "manifest": "plan/animatic/latest/manifest.json",
+    "video": "plan/animatic/latest/mini-animatic.mp4",
+    "video_sha256": "a1addddfbcd6d9f50843931e0fa5d3853c43397d6d80272a62cc55ff318ed38f"
+  },
+  "shots": {
+    "M01": {
+      "scene_sha256": "63a34827981b7b198f1fc1aa2dd1a34f420553b13a05b080a4b925c76a35ac60"
+    },
+    "M02": {
+      "scene_sha256": "30a8f243f244202da8ac2949e1dbde155a75fd41779fa02667eecd1182ab1bd0"
+    },
+    "M03": {
+      "scene_sha256": "5778269d7c03da8a8634c9f7a4dfd2c5d5cb606bca5e1fc54b42db5acd4eaea7"
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "description": "Сохранённое описание сущности расходится с описью; новый референс без сущности.",
+  "call": "viewCast",
+  "project": "project",
+  "covers": [
+    "descriptionFromSources",
+    "referencesMissing",
+    "description отсутствует → пустая строка"
+  ],
+  "stubbedMedia": []
+}

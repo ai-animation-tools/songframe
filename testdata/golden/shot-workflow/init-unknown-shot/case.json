@@ -1,0 +1,18 @@
+{
+  "description": "План вне реестра.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "scene_of"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "init",
+    "M99",
+    "--dir",
+    "plan/batches/M99"
+  ],
+  "remove": [],
+  "mkdir": []
+}

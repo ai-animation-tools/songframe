@@ -1,0 +1,458 @@
+[
+  {
+    "name": "valid",
+    "description": "Полная спецификация видео.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+    "expected": {
+      "result": "null"
+    }
+  },
+  {
+    "name": "minimal",
+    "description": "Без необязательных полей.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"provider\": \"p\", \"kind\": \"image\", \"command\": \"c\", \"model\": \"m\", \"prompt_file\": \"x\"}",
+    "expected": {
+      "result": "null"
+    }
+  },
+  {
+    "name": "not-object",
+    "description": "Не объект.",
+    "call": "validate_spec",
+    "input": "[1]",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Неизвестная схема запроса."
+      }
+    }
+  },
+  {
+    "name": "schema-2",
+    "description": "Другая схема.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 2, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Неизвестная схема запроса."
+      }
+    }
+  },
+  {
+    "name": "schema-true",
+    "description": "True == 1 в Python.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": true, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+    "expected": {
+      "result": "null"
+    }
+  },
+  {
+    "name": "schema-float",
+    "description": "1.0 == 1.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1.0, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+    "expected": {
+      "result": "null"
+    }
+  },
+  {
+    "name": "empty-provider",
+    "description": "Пустое provider.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \" \\n\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Поле provider должно быть непустой строкой."
+      }
+    }
+  },
+  {
+    "name": "empty-command",
+    "description": "Пустое command.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \" \\n\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Поле command должно быть непустой строкой."
+      }
+    }
+  },
+  {
+    "name": "empty-model",
+    "description": "Пустое model.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \" \\n\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Поле model должно быть непустой строкой."
+      }
+    }
+  },
+  {
+    "name": "empty-prompt_file",
+    "description": "Пустое prompt_file.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \" \\n\", \"outputs\": 1}",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Поле prompt_file должно быть непустой строкой."
+      }
+    }
+  },
+  {
+    "name": "provider-number",
+    "description": "provider числом.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": 1, \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Поле provider должно быть непустой строкой."
+      }
+    }
+  },
+  {
+    "name": "missing-provider",
+    "description": "Нет provider.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Поле provider должно быть непустой строкой."
+      }
+    }
+  },
+  {
+    "name": "kind-audio",
+    "description": "Неизвестный вид.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"audio\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Не указан вид результата."
+      }
+    }
+  },
+  {
+    "name": "kind-list",
+    "description": "Вид списком.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": [\"video\"], \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Не указан вид результата."
+      }
+    }
+  },
+  {
+    "name": "unknown-field",
+    "description": "Лишнее поле.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1, \"extra\": 1}",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Неизвестные поля запроса."
+      }
+    }
+  },
+  {
+    "name": "parameters-list",
+    "description": "parameters списком.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": [], \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "parameters должен быть объектом."
+      }
+    }
+  },
+  {
+    "name": "outputs-zero",
+    "description": "outputs 0.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 0}",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Неверное число результатов."
+      }
+    }
+  },
+  {
+    "name": "outputs-float",
+    "description": "outputs 1.0 — не int.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1.0}",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Неверное число результатов."
+      }
+    }
+  },
+  {
+    "name": "outputs-bool",
+    "description": "outputs True — не int.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": true}",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Неверное число результатов."
+      }
+    }
+  },
+  {
+    "name": "inputs-object",
+    "description": "inputs объектом.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": {}, \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "inputs должен быть списком."
+      }
+    }
+  },
+  {
+    "name": "input-string",
+    "description": "Вход строкой.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [\"frame.png\"], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Неизвестные поля входа."
+      }
+    }
+  },
+  {
+    "name": "input-extra",
+    "description": "Лишнее поле входа.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"path\": \"a\", \"url\": \"x\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Неизвестные поля входа."
+      }
+    }
+  },
+  {
+    "name": "input-no-flag",
+    "description": "Вход без flag.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"path\": \"a\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "У входа нет непустого flag."
+      }
+    }
+  },
+  {
+    "name": "input-empty-path",
+    "description": "Пустой path.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"path\": \"\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "У входа нет непустого path."
+      }
+    }
+  },
+  {
+    "name": "input-slot-empty",
+    "description": "Пустой slot.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"path\": \"a\", \"slot\": \" \"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "slot должен быть непустой строкой."
+      }
+    }
+  },
+  {
+    "name": "input-sha-upper",
+    "description": "SHA заглавными.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"path\": \"a\", \"sha256\": \"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "У входа нет корректного SHA-256."
+      }
+    }
+  },
+  {
+    "name": "input-sha-ok",
+    "description": "Корректный SHA.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"path\": \"a\", \"sha256\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+    "expected": {
+      "result": "null"
+    }
+  },
+  {
+    "name": "input-sha-newline",
+    "description": "SHA с переводом строки (fullmatch).",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"path\": \"a\", \"sha256\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\n\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "У входа нет корректного SHA-256."
+      }
+    }
+  },
+  {
+    "name": "selection-ok",
+    "description": "model_selection с null.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1, \"model_selection\": {\"preferredModel\": null, \"selectedModel\": \"test-video\", \"reason\": \"Выбрана совместимая модель.\"}}",
+    "expected": {
+      "result": "null"
+    }
+  },
+  {
+    "name": "selection-extra",
+    "description": "Лишнее поле выбора.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1, \"model_selection\": {\"preferredModel\": null, \"selectedModel\": \"test-video\", \"reason\": \"Выбрана совместимая модель.\", \"x\": 1}}",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "model_selection должен содержать только preferredModel, selectedModel и reason."
+      }
+    }
+  },
+  {
+    "name": "selection-list",
+    "description": "Выбор списком.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1, \"model_selection\": []}",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "model_selection должен содержать только preferredModel, selectedModel и reason."
+      }
+    }
+  },
+  {
+    "name": "selection-preferred-empty",
+    "description": "Пустой preferredModel.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1, \"model_selection\": {\"preferredModel\": \"\", \"selectedModel\": \"test-video\", \"reason\": \"Выбрана совместимая модель.\"}}",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "preferredModel должен быть идентификатором модели или null."
+      }
+    }
+  },
+  {
+    "name": "selection-preferred-number",
+    "description": "preferredModel числом.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1, \"model_selection\": {\"preferredModel\": 1, \"selectedModel\": \"test-video\", \"reason\": \"Выбрана совместимая модель.\"}}",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "preferredModel должен быть идентификатором модели или null."
+      }
+    }
+  },
+  {
+    "name": "selection-other-model",
+    "description": "selectedModel не совпадает.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1, \"model_selection\": {\"preferredModel\": null, \"selectedModel\": \"x\", \"reason\": \"Выбрана совместимая модель.\"}}",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "selectedModel должен совпадать с model запроса."
+      }
+    }
+  },
+  {
+    "name": "selection-reason-blank",
+    "description": "Пустая причина.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1, \"model_selection\": {\"preferredModel\": null, \"selectedModel\": \"test-video\", \"reason\": \" \\t\"}}",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "reason должен быть непустой строкой с причиной выбора модели."
+      }
+    }
+  },
+  {
+    "name": "parameters-nan",
+    "description": "NaN в параметрах (allow_nan=False).",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": NaN, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Out of range float values are not JSON compliant: nan"
+      }
+    }
+  },
+  {
+    "name": "parameters-surrogate",
+    "description": "Одиночный суррогат в параметрах.",
+    "call": "validate_spec",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"\\ud800\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+    "expected": {
+      "error": {
+        "type": "UnicodeEncodeError",
+        "message": "'utf-8' codec can't encode character '\\ud800' in position 61: surrogates not allowed"
+      }
+    }
+  },
+  {
+    "name": "digest-spec",
+    "description": "SHA encoded(): ключи по кодовым точкам, indent=2, UTF-8.",
+    "call": "encoded",
+    "input": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+    "expected": {
+      "result": "\"a3c9a52f4259f705569a195be953bb5ea647189152f3e6272ccabb7a52b564c8\""
+    }
+  },
+  {
+    "name": "digest-unicode",
+    "description": "Не-ASCII, int/float, вложенная сортировка.",
+    "call": "encoded",
+    "input": "{\"я\": \"ё\", \"a\": [1, 1.0, 1e-07, true, null], \"Z\": {\"b\": 2, \"B\": 1}}",
+    "expected": {
+      "result": "\"4f0ecb5d1a8f3bb73be3ea96bae92830018d365ff621697aed01c03cd296f7e8\""
+    }
+  },
+  {
+    "name": "digest-nan",
+    "description": "NaN — ValueError.",
+    "call": "encoded",
+    "input": "{\"a\": NaN}",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Out of range float values are not JSON compliant: nan"
+      }
+    }
+  }
+]

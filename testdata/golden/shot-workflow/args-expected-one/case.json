@@ -1,0 +1,16 @@
+{
+  "description": "--dir без значения.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "expected one argument"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "show",
+    "--dir"
+  ],
+  "remove": [],
+  "mkdir": []
+}

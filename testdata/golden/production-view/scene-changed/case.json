@@ -1,0 +1,12 @@
+{
+  "description": "Постановка M03 изменилась после подготовки пакета.",
+  "call": "viewProduction+viewDashboard",
+  "project": "project",
+  "covers": [
+    "sceneChanged",
+    "staleReason"
+  ],
+  "base": "checks-base",
+  "remove": [],
+  "mkdir": []
+}

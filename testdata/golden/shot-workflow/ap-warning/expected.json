@@ -1,0 +1,13 @@
+{
+  "code": 0,
+  "stdout": "Промпт принят: 39287e9e94daee1a1051ef80aed1e8e596ce0c2ea4c28037df5e5fd7442e56d5\nПромпт длиннее 40 символов (41).\n",
+  "stderr": "",
+  "traceback": false,
+  "files": {
+    "plan/batches/M03-attempt-01/workflow.json": "changed"
+  },
+  "dirs": {},
+  "modes": {
+    "plan/batches/M03-attempt-01/workflow.json": "0600"
+  }
+}

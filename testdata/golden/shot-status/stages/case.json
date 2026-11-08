@@ -1,0 +1,16 @@
+{
+  "description": "Этапы workflow: неизвестный, пустой, кадр опор, ожидание без этапа.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "STAGE_LABELS",
+    "этап:",
+    "этап не определён",
+    "None; …"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

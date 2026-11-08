@@ -1,0 +1,10 @@
+{
+  "description": "Неизвестный режим.",
+  "call": "scenesSaveImpact + validateScenes + saveScenesWithMode",
+  "project": "project",
+  "mode": "fast",
+  "covers": [
+    "invalidSaveMode"
+  ],
+  "stubbedMedia": []
+}

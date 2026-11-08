@@ -1,0 +1,17 @@
+{
+  "description": "Снимок запроса: служебные поля, устаревшие имена, нет модели, ID null без provenance.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "SNAPSHOT_FORBIDDEN",
+    "SNAPSHOT_ALIASES",
+    "generation_id null"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ],
+  "remove": [],
+  "mkdir": []
+}

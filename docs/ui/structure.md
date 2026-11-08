@@ -1,37 +1,27 @@
-# Структура фронтенда
+# Структура Go/Wails-интерфейса
 
-Нормативные правила структуры также находятся в [AGENTS.md](../../AGENTS.md#приложение). Эта страница поясняет их на примерах.
+Рабочие пути относятся к этому репозиторию:
 
 ```text
-src/renderer/src/
-  App.tsx                         маршруты и предусловия страниц
-  theme.tsx                       настройки и переключение темы
-  theme-palette.ts                токены палитры обеих тем
-  components/                     компоненты, используемые разными страницами
-  hooks/                          общие hooks
-  pages/
-    ExamplePage/
-      ExamplePage.tsx             сборка страницы
-      index.ts                    публичный экспорт страницы
-      components/
-        ExampleBlock.tsx          самостоятельный блок
-        index.ts                  экспорты блоков, нужных вне components/
-      useExample.ts               hook только этой страницы
-      types.ts, helpers.ts        локальные типы и функции при необходимости
+frontend/src/renderer/         App, темы, страницы, общие компоненты
+  pages/ExamplePage/           ExamplePage.tsx и index.ts
+    components/               самостоятельные блоки страницы, один компонент — один файл
+    useExample.ts             локальные hooks при необходимости
+  components/                 действительно общие компоненты
+  testing/                    независимые модели историй, не импортируются рабочим кодом
+frontend/src/platform/        тонкий адаптер window.api над bindings: доступность методов и ошибки
+frontend/src/shared/          чистые типы/правила и доменные тексты
+frontend/bindings/            generated Wails bindings, не редактируются вручную
+internal/app/                 Wails-сервисы и граница пользовательских операций
+internal/project/             текущее чтение проектных данных
+internal/components/          обнаружение, установка и probes компонентов
+internal/store/               отдельный профиль приложения
 ```
 
-Страницы размещайте в `pages/{PageName}/{PageName}.tsx`, экспортируйте через `pages/{PageName}/index.ts` и `pages/index.ts`. Страница собирается из самостоятельных компонентов в её `components/`: один компонент — один файл. Публичный `index.ts` страницы экспортирует только страницу; локальный barrel компонентов — только блоки, используемые вне их папки. Пример — [ProjectPage](../../src/renderer/src/pages/ProjectPage/ProjectPage.tsx).
+Страницы экспортируются через `pages/{PageName}/index.ts` и `pages/index.ts`; публичный index страницы экспортирует саму страницу. Локальные типы, hooks, функции и тесты остаются в её папке, пока не появились реальные общие потребители. Не переносите монолит страницы в одну обёртку и не создавайте общую абстракцию ради одного экрана. Доменные UI-тексты в `frontend/src/shared/texts/` — намеренное исключение из локальности.
 
-Локальные hooks, типы, функции и связанные тесты оставляйте в папке страницы. Компоненты и hooks, действительно используемые несколькими страницами, размещайте в общих `components/` и `hooks/`. Не создавайте общую абстракцию только ради одного экрана и не переносите монолит страницы целиком в одну новую обёртку. Существующие исключения из структуры не являются образцом для новых компонентов.
+Используйте существующие [ShellLayout](../../frontend/src/renderer/components/ShellLayout.tsx), [PageActionBar](../../frontend/src/renderer/components/PageActionBar.tsx), [ActionButton](../../frontend/src/renderer/components/ActionButton.tsx), [DisabledHint](../../frontend/src/renderer/components/DisabledHint.tsx), [NativeDropZone](../../frontend/src/renderer/components/NativeDropZone.tsx) и [MediaPlayer](../../frontend/src/renderer/components/MediaPlayer.tsx) по их фактическому контракту. Исходный интерфейс Electron-оригинала переносится сюда целиком; его компоненты считаются существующими, только когда они уже лежат в этом репозитории. Если нужная предметная композиция ещё не перенесена, перенесите её из оригинала, а не пишите аналог заново; новое решайте через MUI и текущие общие компоненты.
 
-Общие русские тексты и подписи отдельных страниц принадлежат доменным модулям `src/shared/texts/`: это исключение из локальности страниц. Формат, владельцы исключений и порядок переноса — в [правилах текстов](texts.md); логика и компоненты страниц остаются на своих местах.
+Renderer не читает файловую систему и не запускает процессы. Операции выполняет Go, frontend обращается к ним через adapters `frontend/src/platform/` и generated bindings. Новое поведение согласованно меняет Go-сервис/DTO, adapter и потребителя. После изменения экспортируемого API выполните `wails3 task bindings`; ручная правка generated файла не заменяет изменение владельца. Не добавляйте Electron preload/IPC или второй обходной мост.
 
-Используйте существующие общие компоненты по назначению: [Layout](../../src/renderer/src/components/Layout.tsx) — оболочка и навигация, [PageActionBar](../../src/renderer/src/components/PageActionBar.tsx) — закреплённая панель действий страницы, [FileDropZone](../../src/renderer/src/components/FileDropZone.tsx) — выбор и перетаскивание файлов, [ConfirmationDialog](../../src/renderer/src/components/ConfirmationDialog.tsx) — общее оформление подтверждения, [ActionButton](../../src/renderer/src/components/ActionButton.tsx) и `ActionIconButton` — обычная кнопка и кнопка-иконка с причиной блокировки в подсказке (`disabledReason`), [AgentButton](../../src/renderer/src/components/AgentButton.tsx) и `AgentIcon` — обозначение агентных действий по правилам AGENTS.md, [DestructiveButton](../../src/renderer/src/components/DestructiveButton.tsx) — деструктивное действие с подтверждением, `StateChip` и компоненты заданий — соответствующие состояния, [LinkedText](../../src/renderer/src/components/LinkedText.tsx) — ссылки на страницы и блоки в текстах сообщений. `PageActionBar`, `FileDropZone`, `ConfirmationDialog` и `DestructiveButton` сейчас импортируются непосредственно из своих файлов. Перед созданием нового общего компонента проверьте существующие; поведение и смысл должны совпадать, а не только внешний вид.
-- `PageLoader` (`usePageLoading`, `PageLoaderArea`) — общий прелоадер страницы в `Layout`.
-
-Renderer отвечает за интерфейс и вызывает возможности приложения через `window.api`. Файловая система и процессы принадлежат `src/main`, мост — `src/preload`, общий контракт — `src/shared`. Не переносите работу с файлами или запуск процессов в компонент ради удобства вёрстки.
-
-
-## Витрина компонентов
-
-Истории `Component.stories.tsx` лежат рядом с компонентом и не экспортируются публичными `index.ts`. Общие чистые фабрики и локальные модели историй принадлежат `src/renderer/src/testing`, специальные wrappers — `.storybook`. Рабочий код не импортирует Storybook и демонстрационные данные. Приложение и витрина собираются независимо; команды, API mock и критерии проверки описаны в [Storybook](storybook.md).
+Истории `*.stories.tsx` лежат рядом с компонентами и не экспортируются публичными index. Общие decorators находятся в `frontend/.storybook/`; рабочее приложение не импортирует Storybook и синтетические модели. [Проверка историй](storybook.md) отдельно проверяет компоненты и их работу на родительской странице.

@@ -1,0 +1,14 @@
+{
+  "code": 0,
+  "stdout": "K02 принята; следующая: K01.\n",
+  "stderr": "",
+  "traceback": false,
+  "files": {
+    "plan/batches/M03-attempt-01/frames/K02.jpeg": "created",
+    "plan/batches/M03-attempt-01/workflow.json": "changed"
+  },
+  "dirs": {},
+  "modes": {
+    "plan/batches/M03-attempt-01/workflow.json": "0600"
+  }
+}

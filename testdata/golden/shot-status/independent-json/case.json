@@ -1,0 +1,19 @@
+{
+  "description": "Партия в JSON с конфликтами и соседями.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "--independent --json"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--independent",
+    "M03",
+    "M01",
+    "M02",
+    "--json"
+  ],
+  "remove": [],
+  "mkdir": []
+}

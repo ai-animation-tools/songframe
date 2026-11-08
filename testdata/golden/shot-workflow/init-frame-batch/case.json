@@ -1,0 +1,23 @@
+{
+  "description": "Режим frame и партия.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "mode",
+    "batch"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "init",
+    "M05",
+    "--dir",
+    "plan/batches/M05-a",
+    "--mode",
+    "frame",
+    "--batch",
+    "party.1"
+  ],
+  "remove": [],
+  "mkdir": []
+}

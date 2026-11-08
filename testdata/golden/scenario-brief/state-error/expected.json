@@ -1,0 +1,7 @@
+[
+  {
+    "shot": "M02",
+    "phase": "before",
+    "error": "Цикл state_from: M01 → M02 → M01"
+  }
+]

@@ -1,0 +1,13 @@
+{
+  "description": "Без source/manifest.json: sha256 и длительность из входа.",
+  "call": "saveTiming",
+  "project": "project",
+  "covers": [
+    "sha256 из timing",
+    "duration=null",
+    "проверка конца без длительности"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

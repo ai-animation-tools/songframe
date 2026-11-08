@@ -1,0 +1,17 @@
+{
+  "description": "--json --strict.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "--json",
+    "--strict"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--strict"
+  ],
+  "remove": [],
+  "mkdir": []
+}

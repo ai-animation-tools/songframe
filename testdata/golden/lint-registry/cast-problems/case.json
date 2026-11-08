@@ -1,0 +1,18 @@
+{
+  "description": "Кастинг: схема, validate_cast, нет файла изображения, нет world, расхождение references.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "validate_cast",
+    "нет файла source",
+    "нет сущности world",
+    "references расходится"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ],
+  "remove": [],
+  "mkdir": []
+}

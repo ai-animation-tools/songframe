@@ -1,0 +1,33 @@
+{
+  "error": null,
+  "result": {
+    "agentInstructions": "",
+    "name": "",
+    "animaticVideo": "",
+    "generation": {
+      "custom": {
+        "a": 1
+      },
+      "video": {
+        "provider": "test",
+        "provider_selected": true,
+        "resolution": "1080p",
+        "aspect_ratio": "16:9",
+        "watermark": false,
+        "duration_rule": "min_supported_strictly_greater_than_window",
+        "model": "model-a",
+        "options": {
+          "backend": {
+            "x": 1
+          }
+        },
+        "ext": [
+          1,
+          2
+        ]
+      },
+      "image": null
+    }
+  },
+  "fileUnchanged": true
+}

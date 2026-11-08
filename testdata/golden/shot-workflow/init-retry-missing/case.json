@@ -1,0 +1,20 @@
+{
+  "description": "Повтор несуществующего пакета.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "retry exist"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "init",
+    "M03",
+    "--dir",
+    "plan/batches/M03-b",
+    "--retry-of",
+    "plan/batches/none"
+  ],
+  "remove": [],
+  "mkdir": []
+}

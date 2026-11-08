@@ -1,0 +1,6 @@
+{
+  "code": 0,
+  "stdout": "{\n  \"errors\": [],\n  \"warnings\": [\n    {\n      \"level\": \"warning\",\n      \"file\": \"source/description.md\",\n      \"where\": \"mira\",\n      \"message\": \"персонаж «Мира» из реестра не упомянут в сценарии\"\n    },\n    {\n      \"level\": \"warning\",\n      \"file\": \"source/description.md\",\n      \"where\": \"lev\",\n      \"message\": \"персонаж «Лев» из реестра не упомянут в сценарии\"\n    },\n    {\n      \"level\": \"warning\",\n      \"file\": \"assets/shots/M01/generation-request.json\",\n      \"where\": \"parameters\",\n      \"message\": \"запрос к модели с авто-раскадровкой отправлен без prefer_multi_shots: у сервиса значение по умолчанию true\"\n    }\n  ]\n}\n",
+  "stderr": "",
+  "traceback": false
+}

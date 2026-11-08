@@ -1,0 +1,396 @@
+// Package projectfile владеет правкой маркера проекта plan/project.json: переименование
+// (Projects.rename оригинала) и редактируемая часть настроек — название, имя MP4 аниматика,
+// постоянные инструкции агенту и блок generation (readProjectSettings/writeProjectSettings из
+// src/main/checks.ts). Чтение маркера для статуса остаётся у internal/status.
+//
+// Документ обрабатывается деревом jscompat: неизвестные поля, порядок ключей по правилам JS и
+// форма чисел после JSON.parse/stringify совпадают с оригиналом байт в байт (эталоны
+// testdata/golden/project-rename и project-settings). Запись атомарна и проходит шлюз записи
+// projectfs: проект с незавершённой многофайловой публикацией не правится.
+package projectfile
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
+	"slices"
+	"strings"
+
+	"songframe-go/internal/jscompat"
+	"songframe-go/internal/projectfs"
+)
+
+// Тексты оригинала (projectsTexts.main, checksTexts, projectTexts.agentInstructions, localFilesTexts).
+const (
+	emptyName            = "Название проекта не может быть пустым."
+	invalidNameCharacter = "Название проекта содержит недопустимый символ."
+	invalidMarker        = "В папке нет корректного plan/project.json с названием проекта."
+	instructionsInvalid  = "plan/project.json: agent_instructions должен быть строкой."
+	animaticInvalid      = "Имя MP4 аниматика: буквы, цифры, точки и дефисы, без пути к папке, с расширением .mp4."
+	objectExpected       = "ожидался JSON-объект"
+)
+
+// relativeFile — путь маркера в сообщениях настроек; join даёт системный разделитель, как в оригинале.
+var relativeFile = filepath.Join("plan", "project.json")
+
+// File — путь маркера внутри проекта.
+func File(project string) string { return filepath.Join(project, "plan", "project.json") }
+
+// encode — JSON.stringify(value, null, 2) + '\n', формат writeLocalJson.
+func encode(value any) []byte { return []byte(jscompat.StringifyIndent(value, "  ") + "\n") }
+
+// write атомарно заменяет маркер после проверки шлюза; права существующего файла сохраняются.
+func write(project string, value any) error {
+	if err := projectfs.CheckWrite(project); err != nil {
+		return err
+	}
+	return projectfs.WriteFile(File(project), encode(value), 0)
+}
+
+// readLocal — readLocalJson оригинала: отсутствие файла даёт (nil, nil), повреждённый или
+// не-объектный JSON — ошибку с путём; файл при этом не трогается.
+func readLocal(path string) (any, error) {
+	data, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, readFailed(path, jscompat.FsError("open", path, err).Error())
+	}
+	value, err := jscompat.Parse([]byte(jscompat.DecodeUTF8(data)))
+	if err != nil {
+		return nil, readFailed(path, err.Error())
+	}
+	if _, isObject := jscompat.AsObject(value); !isObject && !jscompat.IsArray(value) {
+		return nil, readFailed(path, objectExpected)
+	}
+	return value, nil
+}
+
+func readFailed(path, reason string) error {
+	return fmt.Errorf("Не удалось прочитать %s: %s. Файл сохранён; исправьте его или перенесите в резервную папку.", path, reason)
+}
+
+// hasMarker — readProjectMarker на уже прочитанном документе: непустое строковое name.
+func hasMarker(data any) bool {
+	name, ok := jscompat.Get(data, "name").(string)
+	return ok && name != ""
+}
+
+// nameCharacters — символы, которые сломали бы однострочное название в истории и заголовках.
+var nameCharacters = regexp.MustCompile("[\x00\r\n]")
+
+// Rename меняет только name в plan/project.json (без переноса папки и MP4) и возвращает
+// записанное название без пробелов по краям. Историю и статус обновляет вызывающий сервис;
+// beforeWrite (проверка истории) вызывается после проверки названия и маркера, до записи.
+func Rename(project, name string, beforeWrite func() error) (string, error) {
+	if jscompat.Trim(name) == "" {
+		return "", errors.New(emptyName)
+	}
+	if nameCharacters.MatchString(name) {
+		return "", errors.New(invalidNameCharacter)
+	}
+	data, err := readLocal(File(project))
+	if err != nil {
+		return "", err
+	}
+	object, ok := jscompat.AsObject(data)
+	if !ok || !hasMarker(object) {
+		return "", errors.New(invalidMarker)
+	}
+	if beforeWrite != nil {
+		if err := beforeWrite(); err != nil {
+			return "", err
+		}
+	}
+	next := jscompat.Trim(name)
+	// { ...data, name }: ключ name остаётся на своей позиции, остальные поля не меняются.
+	updated := object.Clone()
+	updated.Set("name", next)
+	if err := write(project, updated); err != nil {
+		return "", err
+	}
+	return next, nil
+}
+
+// Settings — ProjectSettings контракта. Generation — блок plan/project.json как есть (JSON
+// с неизвестными полями провайдеров) или null, если блока нет или он не объект.
+type Settings struct {
+	AgentInstructions string          `json:"agentInstructions"`
+	Name              string          `json:"name"`
+	AnimaticVideo     string          `json:"animaticVideo"`
+	Generation        json.RawMessage `json:"generation"`
+}
+
+// SettingsInput — ProjectSettings из формы. AgentInstructions nil не меняет поле в файле.
+//
+// Unset — пути внутри generation, значения которых форма задала как undefined (сброс модели,
+// разрешения и т. п.). Electron IPC передавал такие ключи, и запись удаляла их из файла;
+// JSON-мост Wails ключи с undefined теряет, поэтому адаптер передаёт их отдельным списком.
+type SettingsInput struct {
+	AgentInstructions *string         `json:"agentInstructions,omitempty"`
+	Name              string          `json:"name"`
+	AnimaticVideo     string          `json:"animaticVideo"`
+	Generation        json.RawMessage `json:"generation"`
+	Unset             [][]string      `json:"unset"`
+}
+
+// readProjectFile читает маркер для настроек: ошибка чтения или разбора — projectReadFailed
+// с относительным путём, не-объект — projectObjectRequired.
+func readProjectFile(project string) (*jscompat.Object, error) {
+	path := File(project)
+	bytes, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("Не удалось прочитать %s: %s", relativeFile, jscompat.FsError("open", path, err).Error())
+	}
+	data, err := jscompat.Parse([]byte(jscompat.DecodeUTF8(bytes)))
+	if err != nil {
+		return nil, fmt.Errorf("Не удалось прочитать %s: %s", relativeFile, err.Error())
+	}
+	object, ok := jscompat.AsObject(data)
+	if !ok {
+		return nil, fmt.Errorf("%s должен быть объектом.", relativeFile)
+	}
+	return object, nil
+}
+
+// instructions — agentInstructions: отсутствие поля означает пустые инструкции, другой тип — ошибка.
+func instructions(data *jscompat.Object) (string, error) {
+	value := data.Value("agent_instructions")
+	if value == jscompat.Undefined {
+		return "", nil
+	}
+	text, ok := value.(string)
+	if !ok {
+		return "", errors.New(instructionsInvalid)
+	}
+	return text, nil
+}
+
+// readGeneration — копия блока generation, где video/image не-объекты заменены null: поля другого
+// формата не подтверждают выбор провайдера. nil означает, что блока нет или он не объект.
+func readGeneration(data *jscompat.Object) *jscompat.Object {
+	block, ok := jscompat.AsObject(data.Value("generation"))
+	if !ok {
+		return nil
+	}
+	result := block.Clone()
+	for _, kind := range []string{"video", "image"} {
+		if inner, ok := jscompat.AsObject(block.Value(kind)); ok {
+			result.Set(kind, inner.Clone())
+		} else {
+			result.Set(kind, nil)
+		}
+	}
+	return result
+}
+
+// ReadSettings — projects.settings: только чтение plan/project.json.
+func ReadSettings(project string) (Settings, error) {
+	data, err := readProjectFile(project)
+	if err != nil {
+		return Settings{}, err
+	}
+	text, err := instructions(data)
+	if err != nil {
+		return Settings{}, err
+	}
+	settings := Settings{AgentInstructions: text, Generation: json.RawMessage("null")}
+	settings.Name, _ = data.Value("name").(string)
+	settings.AnimaticVideo, _ = data.Value("animatic_video").(string)
+	if generation := readGeneration(data); generation != nil {
+		settings.Generation = jscompat.Raw(generation)
+	}
+	return settings, nil
+}
+
+// durationRules — DURATION_RULES контракта в порядке сообщения.
+var durationRules = []string{"min_supported_strictly_greater_than_window", "min_supported_not_less_than_window", "exact_window"}
+
+// Шаблоны проверки: \w в JS — [A-Za-z0-9_].
+var (
+	animaticPattern = regexp.MustCompile(`^[A-Za-z0-9_.-]+\.mp4$`)
+	aspectPattern   = regexp.MustCompile(`^\d+:\d+$`)
+)
+
+// Validate — validateProjectSettings: структурные правила блока generation совпадают с
+// scene_registry; готовность провайдера проверяется отдельно. generation — разобранный ввод формы.
+func Validate(name, animaticVideo string, generation any) []string {
+	problems := []string{}
+	if jscompat.Trim(name) == "" {
+		problems = append(problems, emptyName)
+	}
+	if !animaticPattern.MatchString(animaticVideo) || strings.HasPrefix(animaticVideo, ".") {
+		problems = append(problems, animaticInvalid)
+	}
+	if !jscompat.Truthy(generation) {
+		return problems
+	}
+	for _, kind := range []string{"video", "image"} {
+		block := jscompat.Get(generation, kind)
+		if jscompat.IsNullish(block) {
+			continue
+		}
+		record, ok := jscompat.AsObject(block)
+		if !ok {
+			problems = append(problems, "generation."+kind+": ожидается объект настроек.")
+			continue
+		}
+		required := []string{"provider"}
+		if kind == "video" {
+			required = []string{"provider", "resolution", "aspect_ratio", "duration_rule"}
+		}
+		isRequired := map[string]bool{}
+		for _, field := range required {
+			isRequired[field] = true
+			if text, ok := record.Value(field).(string); !ok || jscompat.Trim(text) == "" {
+				problems = append(problems, "generation."+kind+": не заполнено поле "+field+".")
+			}
+		}
+		for _, field := range []string{"resolution", "aspect_ratio", "model"} {
+			value := record.Value(field)
+			text, isString := value.(string)
+			if value != jscompat.Undefined && (!isString || jscompat.Trim(text) == "") && !isRequired[field] {
+				problems = append(problems, "generation."+kind+": "+field+" должен быть непустой строкой.")
+			}
+		}
+		if aspect := record.Value("aspect_ratio"); aspect != jscompat.Undefined {
+			text, isString := aspect.(string)
+			if !isString || (!aspectPattern.MatchString(text) && text != "auto") {
+				problems = append(problems, "generation."+kind+": пропорции записываются как 16:9 или auto.")
+			}
+		}
+		if watermark := record.Value("watermark"); kind == "video" || watermark != jscompat.Undefined {
+			if _, isBool := watermark.(bool); !isBool {
+				problems = append(problems, "generation."+kind+": watermark должен быть логическим значением.")
+			}
+		}
+		if rule, isString := record.Value("duration_rule").(string); kind == "video" && !(isString && slices.Contains(durationRules, rule)) {
+			problems = append(problems, "generation."+kind+": правило длительности должно быть одним из: "+strings.Join(durationRules, ", ")+".")
+		}
+		if selected := record.Value("provider_selected"); selected != jscompat.Undefined {
+			if _, isBool := selected.(bool); !isBool {
+				problems = append(problems, "generation."+kind+": provider_selected должен быть логическим значением.")
+			}
+		}
+		if options := record.Value("options"); options != jscompat.Undefined && !jscompat.IsRecord(options) {
+			problems = append(problems, "generation."+kind+": options должен быть объектом.")
+		}
+		if outputs := record.Value("outputs"); kind == "image" && outputs != jscompat.Undefined && (!jscompat.IsInteger(outputs) || jscompat.ToNumber(outputs) < 1) {
+			problems = append(problems, "generation."+kind+": outputs должен быть положительным целым числом.")
+		}
+	}
+	return problems
+}
+
+// merge — mergeSettings: известные поля формы поверх сохранённых, вложенные объекты (options,
+// backend провайдера) сливаются рекурсивно, новые ключи встают в конец.
+func merge(previous, current *jscompat.Object) *jscompat.Object {
+	result := previous.Clone()
+	for _, key := range current.Keys() {
+		value := current.Value(key)
+		incoming, incomingRecord := jscompat.AsObject(value)
+		existing, existingRecord := jscompat.AsObject(result.Value(key))
+		if incomingRecord && existingRecord {
+			result.Set(key, merge(existing, incoming))
+		} else {
+			result.Set(key, value)
+		}
+	}
+	return result
+}
+
+// unset удаляет из слитого блока ключи, которые форма передала как undefined. В оригинале
+// mergeSettings присваивал undefined, а JSON.stringify пропускал ключ: итог тот же.
+func unset(generation any, paths [][]string) {
+	for _, path := range paths {
+		if len(path) == 0 {
+			continue
+		}
+		node := generation
+		for _, key := range path[:len(path)-1] {
+			node = jscompat.Get(node, key)
+		}
+		if object, ok := jscompat.AsObject(node); ok {
+			object.Delete(path[len(path)-1])
+		}
+	}
+}
+
+// parseGeneration разбирает generation формы; отсутствие и null равнозначны (блока нет).
+func parseGeneration(raw json.RawMessage) (any, error) {
+	if len(raw) == 0 {
+		return nil, nil
+	}
+	return jscompat.Parse(raw)
+}
+
+// WriteSettings — projects.saveSettings: проверка формы, слияние с сохранённым блоком generation
+// и атомарная запись plan/project.json. Возвращает настройки, прочитанные заново из файла.
+//
+// Повреждённый непоказанный блок (video/image или весь generation не объект) не исчезает от
+// сохранения имени или MP4: его заменяет только явное заполнение формы.
+func WriteSettings(project string, input SettingsInput) (Settings, error) {
+	generationInput, err := parseGeneration(input.Generation)
+	if err != nil {
+		return Settings{}, fmt.Errorf("неверный блок generation: %w", err)
+	}
+	// Для проверки undefined и отсутствие равнозначны; удаление учитывается при слиянии.
+	if problems := Validate(input.Name, input.AnimaticVideo, generationInput); len(problems) > 0 {
+		return Settings{}, errors.New(strings.Join(problems, " "))
+	}
+	data, err := readProjectFile(project)
+	if err != nil {
+		return Settings{}, err
+	}
+	// Если поле не меняют, сохранённое значение проверяется до записи остальных настроек.
+	if input.AgentInstructions == nil {
+		if _, err := instructions(data); err != nil {
+			return Settings{}, err
+		}
+	}
+	var generation any
+	if jscompat.Truthy(generationInput) {
+		previous := readGeneration(data)
+		if previous == nil {
+			previous = jscompat.NewObject()
+		}
+		if incoming, ok := jscompat.AsObject(generationInput); ok {
+			merged := merge(previous, incoming)
+			unset(merged, input.Unset)
+			generation = merged
+		} else {
+			// Форма присылает объект или null; другое значение пишется как есть, без слияния.
+			generation = generationInput
+		}
+	}
+	stored := data.Value("generation")
+	if merged, ok := jscompat.AsObject(generation); ok && jscompat.IsRecord(stored) {
+		for _, kind := range []string{"video", "image"} {
+			old := jscompat.Get(stored, kind)
+			if jscompat.Get(generationInput, kind) == nil && !jscompat.IsNullish(old) && !jscompat.IsRecord(old) {
+				merged.Set(kind, old)
+			}
+		}
+	} else if !jscompat.Truthy(generation) && !jscompat.IsNullish(stored) && !jscompat.IsRecord(stored) {
+		generation = stored
+	}
+	next := data.Clone()
+	next.Set("name", jscompat.Trim(input.Name))
+	next.Set("animatic_video", input.AnimaticVideo)
+	if input.AgentInstructions != nil {
+		// Текст инструкций принадлежит пользователю: пробелы и переносы строк сохраняются дословно.
+		next.Set("agent_instructions", *input.AgentInstructions)
+	}
+	next.Set("generation", generation)
+	if _, isNumber := next.Value("schema_version").(float64); !isNumber {
+		next.Set("schema_version", 1.0)
+	}
+	if err := write(project, next); err != nil {
+		return Settings{}, err
+	}
+	return ReadSettings(project)
+}

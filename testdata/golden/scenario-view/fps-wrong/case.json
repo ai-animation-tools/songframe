@@ -1,0 +1,12 @@
+{
+  "description": "fps 25: реестр не принимается.",
+  "call": "viewScenario + readScenarioRegistry + validateScenes",
+  "project": "project",
+  "covers": [
+    "registryRequiresScenes",
+    "status=invalid (fps)"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

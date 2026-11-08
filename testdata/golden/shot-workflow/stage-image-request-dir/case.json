@@ -1,0 +1,20 @@
+{
+  "description": "Image-этап с --request-dir.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "image request_dir"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "set-stage",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "image_request_choice",
+    "--request-dir",
+    "x"
+  ],
+  "remove": [],
+  "mkdir": []
+}

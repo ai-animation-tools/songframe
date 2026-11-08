@@ -1,0 +1,13 @@
+{
+  "description": "--dry-run --json: полный каркас в stdout без записи.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "--dry-run --json"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--dry-run",
+    "--json"
+  ]
+}

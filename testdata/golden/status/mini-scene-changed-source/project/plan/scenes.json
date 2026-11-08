@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "fps": 30,
+  "audio": {
+    "path": "source/track.mp3",
+    "end_seconds": "9"
+  },
+  "references": {
+    "mira": {
+      "name": "Мира",
+      "path": "source/heroes/mira.png"
+    }
+  },
+  "visual_direction": "Мягкий вечерний свет.",
+  "sequences": [
+    {
+      "id": "verse",
+      "title": "Куплет",
+      "direction": "Спокойно."
+    }
+  ],
+  "scenes": [
+    {
+      "id": "M01",
+      "original": "Строка M01",
+      "sequence": "verse",
+      "title": "План M01",
+      "start_frame": 0,
+      "end_frame_exclusive": 90,
+      "camera": "Наезд",
+      "action": "Действие M01.",
+      "continuity": "",
+      "references": [
+        "mira"
+      ],
+      "lipsync": false,
+      "card": {
+        "primary_reference": "mira"
+      },
+      "state_from": null,
+      "state_changes": {
+        "after": {
+          "mira": {
+            "position": "в лодке"
+          }
+        }
+      }
+    },
+    {
+      "id": "M02",
+      "original": "Строка M02",
+      "sequence": "verse",
+      "title": "План M02",
+      "start_frame": 90,
+      "end_frame_exclusive": 180,
+      "camera": "Статика",
+      "action": "Действие M02.",
+      "continuity": "",
+      "references": [
+        "mira"
+      ],
+      "lipsync": false,
+      "card": {
+        "primary_reference": "mira"
+      },
+      "state_from": null,
+      "state_changes": {}
+    },
+    {
+      "id": "M03",
+      "original": "Строка M03",
+      "sequence": "verse",
+      "title": "План M03",
+      "start_frame": 180,
+      "end_frame_exclusive": 270,
+      "camera": "Статика",
+      "action": "Действие M03.",
+      "continuity": "",
+      "references": [
+        "mira"
+      ],
+      "lipsync": false,
+      "card": {
+        "primary_reference": "mira"
+      },
+      "state_from": {
+        "scene": "M01",
+        "phase": "same"
+      },
+      "state_changes": {},
+      "derived_from": {
+        "shot": "M01"
+      }
+    }
+  ]
+}

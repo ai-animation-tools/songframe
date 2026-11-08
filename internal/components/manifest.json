@@ -1,0 +1,983 @@
+{
+  "schema_version": 1,
+  "recorded_on": "2026-11-03",
+  "platforms": [
+    {
+      "os": "linux",
+      "arch": "amd64",
+      "status": "pending_native",
+      "reason": "FFmpeg и standalone ORT CPU probes проверены на Linux; installed smoke ранней поставки ещё не принят."
+    },
+    {
+      "os": "windows",
+      "arch": "amd64",
+      "status": "pending_native",
+      "reason": "Архивы и PE проверены статически; нативный запуск требует отдельного поручения."
+    },
+    {
+      "os": "darwin",
+      "arch": "amd64",
+      "status": "unconfirmed",
+      "reason": "Пакеты не закреплены; состав первого macOS-выпуска остаётся открытым."
+    },
+    {
+      "os": "darwin",
+      "arch": "arm64",
+      "status": "unconfirmed",
+      "reason": "Пакеты не закреплены; состав первого macOS-выпуска остаётся открытым."
+    }
+  ],
+  "probes": [
+    {
+      "id": "ffmpeg-recipes",
+      "command": "sh scripts/check-media-capabilities.sh <папка-bin>",
+      "checks": [
+        "Обе программы и согласованная версия; списки decoder/encoder/filter/demuxer/muxer/protocol.",
+        "Синтетические WAV/MP3/FLAC, PCM16/float32, H.264/AAC/PNG, главы, PTS, склейка, реальные фильтры и полное декодирование результата.",
+        "FLAC, VP8/Vorbis и VP9/Opus WebM читаются из закреплённых синтетических fixtures без требования их encoders; системный WebView этим probe не проверяется."
+      ]
+    },
+    {
+      "id": "ort-cpu-session",
+      "command": "",
+      "checks": [
+        "Явный абсолютный путь к entrypoint, соседние библиотеки, CPU provider и GetApi(27).",
+        "Создание/закрытие сессии каждого закреплённого ONNX; короткий реальный CPU inference с конечным выходом правильной формы.",
+        "Начало без ORT, установка и первый Init в том же сеансе, отмена/повтор; переключение после успешного Init требует перезапуска. Реализация в 41.2–41.4."
+      ]
+    },
+    {
+      "id": "voc-ft-contract",
+      "command": "",
+      "checks": [
+        "SHA/байты, отсутствие external initializers, имена input/output и float32 [1,4,3072,256].",
+        "Короткий синтетический STFT-блок → конечный выход той же формы; параметры MDX строго по recipe. Реализация в 41.4/42."
+      ]
+    },
+    {
+      "id": "ctc-vocab-contract",
+      "command": "",
+      "checks": [
+        "Совпадают SHA модели и vocab; 39 непрерывных ID, blank=0, separator | =4, ё=6.",
+        "input_values float32 [1,N], logits float32 [1,T,39]; attention_mask в этом графе отсутствует.",
+        "16 kHz mono, короткий сигнал → T>0 и конечные logits. Ручные секунды и Whisper не передаются. Реализация в 41.4/42."
+      ]
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "audio-pcm",
+      "purpose": "Чтение трека, длительности и PCM для вокала/CTC/липсинка",
+      "consumers": [
+        "tools/common.py:decoded_audio_duration",
+        "tools/cut_speech/cut_speech.py:decode",
+        "tools/song_timing/mdx.py",
+        "tools/song_timing/vocal_result.py",
+        "src/main/sources.ts"
+      ],
+      "requires": [
+        "ffmpeg"
+      ],
+      "features": {
+        "decoder_families": [
+          "mp3",
+          "aac",
+          "pcm_s16le",
+          "flac",
+          "vorbis",
+          "opus"
+        ],
+        "encoders": [
+          "pcm_s16le",
+          "pcm_f32le"
+        ],
+        "demuxers": [
+          "mp3",
+          "wav",
+          "flac",
+          "mov",
+          "matroska"
+        ],
+        "muxers": [
+          "s16le",
+          "f32le",
+          "wav"
+        ],
+        "filters": [
+          "aresample"
+        ],
+        "protocols": [
+          "file",
+          "pipe"
+        ]
+      },
+      "probes": [
+        "ffmpeg-recipes"
+      ]
+    },
+    {
+      "id": "video-frames",
+      "purpose": "Метаданные, реальные PTS, PNG-кадры и аудит пикселей",
+      "consumers": [
+        "tools/contact_sheet/contact_sheet.py",
+        "tools/video_review/video_review.py",
+        "tools/verify_asset_replay/verify_asset_replay.py"
+      ],
+      "requires": [
+        "ffmpeg"
+      ],
+      "features": {
+        "decoders": [
+          "h264",
+          "png",
+          "vp8",
+          "vp9"
+        ],
+        "encoders": [
+          "png",
+          "rawvideo"
+        ],
+        "demuxers": [
+          "mov",
+          "image2",
+          "matroska"
+        ],
+        "muxers": [
+          "image2",
+          "rawvideo"
+        ],
+        "filters": [
+          "select",
+          "scale",
+          "setpts"
+        ]
+      },
+      "probes": [
+        "ffmpeg-recipes"
+      ]
+    },
+    {
+      "id": "montage-export",
+      "purpose": "Принятие/монтаж/производные планы и экспорт H.264/AAC MP4",
+      "consumers": [
+        "tools/build_review/build_review.py",
+        "tools/accept_shot/accept_shot.py",
+        "tools/apply_montage/apply_montage.py",
+        "tools/derive_shot/derive_shot.py",
+        "tools/asset_package/asset_package.py"
+      ],
+      "requires": [
+        "ffmpeg"
+      ],
+      "features": {
+        "encoders": [
+          "libx264",
+          "aac"
+        ],
+        "muxers": [
+          "mp4"
+        ],
+        "filters": [
+          "fps",
+          "trim",
+          "setpts",
+          "tpad",
+          "scale",
+          "pad",
+          "setsar",
+          "format",
+          "settb",
+          "xfade",
+          "concat",
+          "loop",
+          "aresample",
+          "atrim",
+          "asetpts"
+        ],
+        "xfade_transitions": [
+          "fade",
+          "fadeblack",
+          "fadewhite",
+          "dissolve",
+          "wipeleft",
+          "wiperight"
+        ]
+      },
+      "probes": [
+        "ffmpeg-recipes"
+      ]
+    },
+    {
+      "id": "animatic",
+      "purpose": "Карточки и опоры, склейка, главы и полное декодирование MP4",
+      "consumers": [
+        "tools/build_animatic/build_animatic.py"
+      ],
+      "requires": [
+        "ffmpeg"
+      ],
+      "features": {
+        "encoders": [
+          "libx264",
+          "aac",
+          "wrapped_avframe"
+        ],
+        "demuxers": [
+          "image2",
+          "concat",
+          "ffmetadata"
+        ],
+        "muxers": [
+          "mp4",
+          "null"
+        ],
+        "filters": [
+          "scale",
+          "setsar",
+          "setpts",
+          "format",
+          "xfade",
+          "asetpts"
+        ]
+      },
+      "probes": [
+        "ffmpeg-recipes"
+      ]
+    },
+    {
+      "id": "development-smoke",
+      "purpose": "Отдельные зависимости синтетической проверки, без расширения пользовательского экспорта",
+      "consumers": [
+        "src/main/runtime-smoke.ts",
+        "src/main/linux-smoke.ts",
+        "scripts/check-media-capabilities.sh"
+      ],
+      "requires": [
+        "ffmpeg"
+      ],
+      "features": {
+        "encoders": [
+          "libmp3lame"
+        ],
+        "demuxers": [
+          "lavfi"
+        ],
+        "muxers": [
+          "mp3"
+        ],
+        "filters": [
+          "anullsrc",
+          "apad"
+        ]
+      },
+      "probes": [
+        "ffmpeg-recipes"
+      ]
+    },
+    {
+      "id": "known-text-ctc",
+      "purpose": "Принятый путь известный текст → Voc FT → CTC margin/adaptive",
+      "consumers": [
+        "Принятый эксперимент Go CTC; реализация домена в этапе 42"
+      ],
+      "requires": [
+        "ffmpeg",
+        "ort-cpu",
+        "voc-ft",
+        "ctc-ru",
+        "ctc-vocab"
+      ],
+      "features": {},
+      "probes": [
+        "ort-cpu-session",
+        "voc-ft-contract",
+        "ctc-vocab-contract"
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "ffmpeg-windows-amd64",
+      "component": "ffmpeg",
+      "version": "n8.1.3-9-g29e619e767",
+      "os": "windows",
+      "arch": "amd64",
+      "url": "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-30-13-08/ffmpeg-n8.1.3-9-g29e619e767-win64-gpl-8.1.zip",
+      "sha256": "7b801cdd3a1a0bb54ae6f572187e68b4ed54f52086cfee133fab2180bfb429fa",
+      "bytes": 193109593,
+      "unpacked_bytes": 507656552,
+      "install_bytes": 329326411,
+      "format": "zip",
+      "root": "ffmpeg-n8.1.3-9-g29e619e767-win64-gpl-8.1",
+      "files": [
+        {
+          "path": "LICENSE.txt",
+          "type": "file",
+          "bytes": 35147,
+          "sha256": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903"
+        },
+        {
+          "path": "bin/ffmpeg.exe",
+          "type": "file",
+          "bytes": 164748800,
+          "sha256": "c6caa1894d3276556c84b36acc1d219d69f972c0a7525b23f1cad2bdf05c4231"
+        },
+        {
+          "path": "bin/ffprobe.exe",
+          "type": "file",
+          "bytes": 164542464,
+          "sha256": "b6177ba8d7d65ab993e5770ac154843db1af3db9838ae966ee6729129ddcd59f"
+        }
+      ],
+      "preserve": [
+        "LICENSE.txt",
+        "doc/**"
+      ],
+      "license": {
+        "id": "GPL-3.0-or-later",
+        "status": "notices_pending",
+        "sources": [
+          "https://ffmpeg.org/legal.html",
+          "https://github.com/BtbN/FFmpeg-Builds/tree/autobuild-2026-09-30-13-08",
+          "https://github.com/FFmpeg/FFmpeg/tree/29e619e767"
+        ],
+        "note": "Сохранить LICENSE, doc и configure; полный аудит notices транзитивных библиотек при упаковке. ffplay не устанавливать."
+      },
+      "abi": {
+        "kind": "PE-amd64",
+        "required_api": 0,
+        "header_api": 0,
+        "minimum": "Windows x64 + UCRT; минимум ОС требует нативной приёмки",
+        "dependencies": [
+          "ADVAPI32.dll",
+          "AVICAP32.dll",
+          "AVRT.dll",
+          "CFGMGR32.dll",
+          "CRYPT32.dll",
+          "DNSAPI.dll",
+          "DWrite.dll",
+          "GDI32.dll",
+          "IPHLPAPI.DLL",
+          "KERNEL32.dll",
+          "MSIMG32.dll",
+          "OLEAUT32.dll",
+          "RPCRT4.dll",
+          "SHELL32.dll",
+          "SHLWAPI.dll",
+          "Secur32.dll",
+          "USER32.dll",
+          "USERENV.dll",
+          "USP10.dll",
+          "WINMM.dll",
+          "WS2_32.dll",
+          "api-ms-win-core-synch-l1-2-0.dll",
+          "api-ms-win-crt-conio-l1-1-0.dll",
+          "api-ms-win-crt-convert-l1-1-0.dll",
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-filesystem-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-multibyte-l1-1-0.dll",
+          "api-ms-win-crt-private-l1-1-0.dll",
+          "api-ms-win-crt-process-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "api-ms-win-crt-time-l1-1-0.dll",
+          "api-ms-win-crt-utility-l1-1-0.dll",
+          "bcrypt.dll",
+          "bcryptprimitives.dll",
+          "d2d1.dll",
+          "ncrypt.dll",
+          "ntdll.dll",
+          "ole32.dll",
+          "ws2_32.dll"
+        ],
+        "note": "Самостоятельные процессы; static в имени не отменяет системные зависимости."
+      },
+      "requires": [],
+      "probes": [
+        "ffmpeg-recipes"
+      ],
+      "evidence": [
+        "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-30-13-08/checksums.sha256",
+        "https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/autobuild-2026-09-30-13-08"
+      ],
+      "verified": "archive_sha256_and_required_files",
+      "native_status": "pending_windows",
+      "entrypoints": {
+        "ffmpeg": "bin/ffmpeg.exe",
+        "ffprobe": "bin/ffprobe.exe"
+      }
+    },
+    {
+      "id": "ffmpeg-linux-amd64",
+      "component": "ffmpeg",
+      "version": "n8.1.3-9-g29e619e767",
+      "os": "linux",
+      "arch": "amd64",
+      "url": "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-30-13-08/ffmpeg-n8.1.3-9-g29e619e767-linux64-gpl-8.1.tar.xz",
+      "sha256": "97ce978979194b5cf7e06a5e68020dbdaa7a4f3294c5452b6a1bc347100dbb79",
+      "bytes": 150360944,
+      "unpacked_bytes": 537816940,
+      "install_bytes": 344311323,
+      "format": "tar.xz",
+      "root": "ffmpeg-n8.1.3-9-g29e619e767-linux64-gpl-8.1",
+      "files": [
+        {
+          "path": "LICENSE.txt",
+          "type": "file",
+          "bytes": 35147,
+          "sha256": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903"
+        },
+        {
+          "path": "bin/ffmpeg",
+          "type": "file",
+          "bytes": 172254856,
+          "sha256": "7d491597274260780d3c7a28e2399f9447472f15acd24cf5266ce90c9d13f35a"
+        },
+        {
+          "path": "bin/ffprobe",
+          "type": "file",
+          "bytes": 172021320,
+          "sha256": "d46f687ce00c2c6c37faa9e945c0d4d8930d250e544bde57ea6477b73389a422"
+        }
+      ],
+      "preserve": [
+        "LICENSE.txt",
+        "doc/**"
+      ],
+      "license": {
+        "id": "GPL-3.0-or-later",
+        "status": "notices_pending",
+        "sources": [
+          "https://ffmpeg.org/legal.html",
+          "https://github.com/BtbN/FFmpeg-Builds/tree/autobuild-2026-09-30-13-08",
+          "https://github.com/FFmpeg/FFmpeg/tree/29e619e767"
+        ],
+        "note": "Сохранить LICENSE, doc и configure; полный аудит notices транзитивных библиотек при упаковке. ffplay не устанавливать."
+      },
+      "abi": {
+        "kind": "ELF-amd64",
+        "required_api": 0,
+        "header_api": 0,
+        "minimum": "glibc 2.28",
+        "dependencies": [
+          "ld-linux-x86-64.so.2",
+          "libc.so.6",
+          "libdl.so.2",
+          "libgcc_s.so.1",
+          "libm.so.6",
+          "libmvec.so.1",
+          "libpthread.so.0",
+          "librt.so.1"
+        ],
+        "note": "Самостоятельные процессы; static в имени не отменяет системные зависимости."
+      },
+      "requires": [],
+      "probes": [
+        "ffmpeg-recipes"
+      ],
+      "evidence": [
+        "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-30-13-08/checksums.sha256",
+        "https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/autobuild-2026-09-30-13-08"
+      ],
+      "verified": "archive_sha256_and_required_files",
+      "native_status": "recipe_probe_passed",
+      "entrypoints": {
+        "ffmpeg": "bin/ffmpeg",
+        "ffprobe": "bin/ffprobe"
+      }
+    },
+    {
+      "id": "ort-cpu-linux-amd64",
+      "component": "ort-cpu",
+      "version": "1.31.0",
+      "os": "linux",
+      "arch": "amd64",
+      "url": "https://github.com/microsoft/onnxruntime/releases/download/v1.31.0/onnxruntime-linux-x64-1.31.0.tgz",
+      "sha256": "cc5c72baf5ae5c8238a6841f0897227be2d02826b9cf98eaf02fdefaeeb03a57",
+      "bytes": 11408003,
+      "unpacked_bytes": 30811493,
+      "install_bytes": 29699177,
+      "format": "tar.gz",
+      "root": "onnxruntime-linux-x64-1.31.0",
+      "files": [
+        {
+          "path": "lib/libonnxruntime.so.1.31.0",
+          "type": "file",
+          "bytes": 29345384,
+          "sha256": "469849977cb60744ea160927e1a3a0643fd4c55c0aff743251c6d293402e334e"
+        },
+        {
+          "path": "lib/libonnxruntime_providers_shared.so",
+          "type": "file",
+          "bytes": 14632,
+          "sha256": "086ec1d5388f64153d9c63470d126693db9a182c8ce236d3a1119068471b8a0d"
+        },
+        {
+          "path": "lib/libonnxruntime.so.1",
+          "type": "symlink",
+          "target": "libonnxruntime.so.1.31.0",
+          "bytes": 0
+        },
+        {
+          "path": "lib/libonnxruntime.so",
+          "type": "symlink",
+          "target": "libonnxruntime.so.1",
+          "bytes": 0
+        },
+        {
+          "path": "LICENSE",
+          "type": "file",
+          "bytes": 1073,
+          "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c"
+        },
+        {
+          "path": "ThirdPartyNotices.txt",
+          "type": "file",
+          "bytes": 338088,
+          "sha256": "143764b952fdb1a7c69ce653bfba74a7744d6a8a573bfb73e235fba356c83de3"
+        }
+      ],
+      "preserve": [
+        "LICENSE",
+        "ThirdPartyNotices.txt"
+      ],
+      "license": {
+        "id": "MIT",
+        "status": "declared",
+        "sources": [
+          "https://github.com/microsoft/onnxruntime/blob/v1.31.0/LICENSE"
+        ],
+        "note": "Сохранить LICENSE и ThirdPartyNotices.txt из архива."
+      },
+      "abi": {
+        "kind": "C-API-CPU",
+        "required_api": 27,
+        "header_api": 31,
+        "minimum": "glibc 2.28; GLIBCXX 3.4.22; CXXABI 1.3.11",
+        "dependencies": [
+          "ld-linux-x86-64.so.2",
+          "libc.so.6",
+          "libdl.so.2",
+          "libgcc_s.so.1",
+          "libm.so.6",
+          "libpthread.so.0",
+          "librt.so.1",
+          "libstdc++.so.6"
+        ],
+        "note": "OrtGetApiBase экспортирован. SONAME libonnxruntime.so.1, RUNPATH $ORIGIN. Загружать entrypoint по явному пути; symlinks сохранять."
+      },
+      "requires": [],
+      "probes": [
+        "ort-cpu-session"
+      ],
+      "evidence": [
+        "https://api.github.com/repos/microsoft/onnxruntime/releases/tags/v1.31.0"
+      ],
+      "verified": "archive_sha256_ELF_PE_and_required_files",
+      "native_status": "linux_cpu_probe_passed_package_pending",
+      "entrypoints": {
+        "ort-library": "lib/libonnxruntime.so.1.31.0"
+      }
+    },
+    {
+      "id": "ort-cpu-windows-amd64",
+      "component": "ort-cpu",
+      "version": "1.31.0",
+      "os": "windows",
+      "arch": "amd64",
+      "url": "https://github.com/microsoft/onnxruntime/releases/download/v1.31.0/onnxruntime-win-x64-1.31.0.zip",
+      "sha256": "3958d8a44984160692c1b4ffd0de3cb48f8c39f9d34bb31e433db06e30b82195",
+      "bytes": 82887349,
+      "unpacked_bytes": 448196785,
+      "install_bytes": 17620543,
+      "format": "zip",
+      "root": "onnxruntime-win-x64-1.31.0",
+      "files": [
+        {
+          "path": "lib/onnxruntime.dll",
+          "type": "file",
+          "bytes": 17253176,
+          "sha256": "0c42dc4e278f0968fdf9ebf1b1e54a74c657a9942e70803e453c91993451cf4c"
+        },
+        {
+          "path": "lib/onnxruntime_providers_shared.dll",
+          "type": "file",
+          "bytes": 21816,
+          "sha256": "e45d471ea2a842b268c51291b96d53568b0dae10807f43d1fb7dc0eb84e83723"
+        },
+        {
+          "path": "LICENSE",
+          "type": "file",
+          "bytes": 1094,
+          "sha256": "c250d6278f0b47a6439fb7592b08b58a55eb9f535aa49a1db63211c3f982b674"
+        },
+        {
+          "path": "ThirdPartyNotices.txt",
+          "type": "file",
+          "bytes": 344457,
+          "sha256": "c53a76501ef60db6f865f20599f220761201ac4057683acefdab37d861b86622"
+        }
+      ],
+      "preserve": [
+        "LICENSE",
+        "ThirdPartyNotices.txt"
+      ],
+      "license": {
+        "id": "MIT",
+        "status": "declared",
+        "sources": [
+          "https://github.com/microsoft/onnxruntime/blob/v1.31.0/LICENSE"
+        ],
+        "note": "Сохранить LICENSE и ThirdPartyNotices.txt из архива."
+      },
+      "abi": {
+        "kind": "C-API-CPU",
+        "required_api": 27,
+        "header_api": 31,
+        "minimum": "VC++ 14 runtime + UCRT; минимум ОС требует нативной приёмки",
+        "dependencies": [
+          "ADVAPI32.dll",
+          "KERNEL32.dll",
+          "MSVCP140.dll",
+          "MSVCP140_1.dll",
+          "SETUPAPI.dll",
+          "VCRUNTIME140.dll",
+          "VCRUNTIME140_1.dll",
+          "api-ms-win-core-path-l1-1-0.dll",
+          "api-ms-win-crt-convert-l1-1-0.dll",
+          "api-ms-win-crt-filesystem-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-locale-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll",
+          "api-ms-win-crt-time-l1-1-0.dll",
+          "dbghelp.dll",
+          "dxgi.dll"
+        ],
+        "note": "OrtGetApiBase экспортирован. VC runtime отсутствует в ZIP; зависимости проверяются до загрузки DLL."
+      },
+      "requires": [],
+      "probes": [
+        "ort-cpu-session"
+      ],
+      "evidence": [
+        "https://api.github.com/repos/microsoft/onnxruntime/releases/tags/v1.31.0"
+      ],
+      "verified": "archive_sha256_ELF_PE_and_required_files",
+      "native_status": "pending_session_and_inference",
+      "entrypoints": {
+        "ort-library": "lib/onnxruntime.dll"
+      }
+    },
+    {
+      "id": "voc-ft",
+      "component": "voc-ft",
+      "version": "UVR-MDX-NET-Voc_FT",
+      "os": "any",
+      "arch": "any",
+      "url": "https://github.com/TRvlvr/model_repo/releases/download/all_public_uvr_models/UVR-MDX-NET-Voc_FT.onnx",
+      "sha256": "534b2070fcc7df514b13ef660dc8cbb328679c2374d04354a5c42bb14ecce111",
+      "bytes": 66762490,
+      "unpacked_bytes": 66762490,
+      "install_bytes": 66762490,
+      "format": "file",
+      "root": "",
+      "files": [
+        {
+          "path": "vocals.onnx",
+          "type": "file",
+          "bytes": 66762490,
+          "sha256": "534b2070fcc7df514b13ef660dc8cbb328679c2374d04354a5c42bb14ecce111"
+        }
+      ],
+      "preserve": [],
+      "license": {
+        "id": "MIT",
+        "status": "declared_by_model_project",
+        "sources": [
+          "https://github.com/Anjok07/ultimatevocalremovergui/blob/a5f88453bfb2b38b05a965bcf67727243e0cbf19/README.md#license"
+        ],
+        "note": "Заявление проекта UVR в разделе License о моделях; отдельной лицензии внутри ONNX или model_repo не обнаружено. Перед поставкой сохранить текст MIT и атрибуцию с точным источником заявления о моделях; не выдавать MIT кода за отдельную найденную лицензию весов."
+      },
+      "abi": {
+        "kind": "ONNX-CPU-float32",
+        "required_api": 0,
+        "header_api": 0,
+        "minimum": "IR 6; opset 13",
+        "dependencies": [],
+        "note": "Закреплённый комплект; не подменять произвольным файлом с тем же именем."
+      },
+      "requires": [
+        "ort-cpu"
+      ],
+      "probes": [
+        "voc-ft-contract"
+      ],
+      "evidence": [
+        "https://github.com/TRvlvr/model_repo/releases/download/all_public_uvr_models/UVR-MDX-NET-Voc_FT.onnx",
+        "https://github.com/Anjok07/ultimatevocalremovergui/blob/a5f88453bfb2b38b05a965bcf67727243e0cbf19/README.md#license"
+      ],
+      "verified": "accepted_lock_sha256_and_metadata",
+      "native_status": "linux_cpu_probe_passed_windows_pending",
+      "model": {
+        "inputs": [
+          {
+            "name": "input",
+            "dtype": "float32",
+            "shape": [
+              "batch_size",
+              4,
+              3072,
+              256
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "name": "output",
+            "dtype": "float32",
+            "shape": [
+              "batch_size",
+              4,
+              3072,
+              256
+            ]
+          }
+        ],
+        "opsets": [
+          {
+            "domain": "",
+            "version": 13
+          }
+        ],
+        "external_initializers": 0,
+        "ir_version": 6
+      },
+      "entrypoints": {
+        "model": "vocals.onnx"
+      }
+    },
+    {
+      "id": "ctc-ru",
+      "component": "ctc-ru",
+      "version": "df5ba1d9e0f9a34c44eec437b441f4ae43c842eb",
+      "os": "any",
+      "arch": "any",
+      "url": "https://huggingface.co/onnx-community/wav2vec2-large-xlsr-53-russian-ONNX/resolve/df5ba1d9e0f9a34c44eec437b441f4ae43c842eb/onnx/model_quantized.onnx",
+      "sha256": "027f226a26c4ad2bb8cd6e4f56038b9013afc3cf6ccf2cdf9aecb092c3726344",
+      "bytes": 317349970,
+      "unpacked_bytes": 317349970,
+      "install_bytes": 317349970,
+      "format": "file",
+      "root": "",
+      "files": [
+        {
+          "path": "alignment.onnx",
+          "type": "file",
+          "bytes": 317349970,
+          "sha256": "027f226a26c4ad2bb8cd6e4f56038b9013afc3cf6ccf2cdf9aecb092c3726344"
+        }
+      ],
+      "preserve": [],
+      "license": {
+        "id": "Apache-2.0",
+        "status": "declared_by_model_project",
+        "sources": [
+          "https://huggingface.co/onnx-community/wav2vec2-large-xlsr-53-russian-ONNX/blob/df5ba1d9e0f9a34c44eec437b441f4ae43c842eb/README.md"
+        ],
+        "note": "Поле license в закреплённой карточке модели; отдельного LICENSE в дереве revision нет. vocab публикуется в той же revision, отдельная лицензия vocab не указана. Сохранить текст Apache-2.0, карточку/атрибуцию и найденные notices при подготовке комплекта."
+      },
+      "abi": {
+        "kind": "ONNX-CPU-float32",
+        "required_api": 0,
+        "header_api": 0,
+        "minimum": "IR 7; opset 14",
+        "dependencies": [],
+        "note": "Закреплённый комплект; не подменять произвольным файлом с тем же именем."
+      },
+      "requires": [
+        "ort-cpu",
+        "ctc-vocab"
+      ],
+      "probes": [
+        "ctc-vocab-contract"
+      ],
+      "evidence": [
+        "https://huggingface.co/onnx-community/wav2vec2-large-xlsr-53-russian-ONNX/resolve/df5ba1d9e0f9a34c44eec437b441f4ae43c842eb/onnx/model_quantized.onnx",
+        "https://huggingface.co/onnx-community/wav2vec2-large-xlsr-53-russian-ONNX/blob/df5ba1d9e0f9a34c44eec437b441f4ae43c842eb/README.md"
+      ],
+      "verified": "accepted_lock_sha256_and_metadata",
+      "native_status": "linux_cpu_probe_passed_windows_pending",
+      "model": {
+        "inputs": [
+          {
+            "name": "input_values",
+            "dtype": "float32",
+            "shape": [
+              "batch_size",
+              "sequence_length"
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "name": "logits",
+            "dtype": "float32",
+            "shape": [
+              "batch_size",
+              "floor(floor(floor(floor(floor(floor(floor(sequence_length/5)/2)/2)/2)/2)/2 - 3/2)/2 - 1/2) + 1",
+              39
+            ]
+          }
+        ],
+        "opsets": [
+          {
+            "domain": "",
+            "version": 14
+          }
+        ],
+        "external_initializers": 0,
+        "ir_version": 7
+      },
+      "entrypoints": {
+        "model": "alignment.onnx"
+      }
+    },
+    {
+      "id": "ctc-vocab",
+      "component": "ctc-vocab",
+      "version": "df5ba1d9e0f9a34c44eec437b441f4ae43c842eb",
+      "os": "any",
+      "arch": "any",
+      "url": "https://huggingface.co/onnx-community/wav2vec2-large-xlsr-53-russian-ONNX/resolve/df5ba1d9e0f9a34c44eec437b441f4ae43c842eb/vocab.json",
+      "sha256": "94af9bc439fe8a64657b1898505fe2bd1a78e2ef8ad24b7dbdc3c6f921cf0953",
+      "bytes": 468,
+      "unpacked_bytes": 468,
+      "install_bytes": 468,
+      "format": "file",
+      "root": "",
+      "files": [
+        {
+          "path": "vocab.json",
+          "type": "file",
+          "bytes": 468,
+          "sha256": "94af9bc439fe8a64657b1898505fe2bd1a78e2ef8ad24b7dbdc3c6f921cf0953"
+        }
+      ],
+      "preserve": [],
+      "license": {
+        "id": "Apache-2.0",
+        "status": "declared_by_model_project",
+        "sources": [
+          "https://huggingface.co/onnx-community/wav2vec2-large-xlsr-53-russian-ONNX/blob/df5ba1d9e0f9a34c44eec437b441f4ae43c842eb/README.md"
+        ],
+        "note": "Поле license в закреплённой карточке модели; отдельного LICENSE в дереве revision нет. vocab публикуется в той же revision, отдельная лицензия vocab не указана. Сохранить текст Apache-2.0, карточку/атрибуцию и найденные notices при подготовке комплекта."
+      },
+      "abi": {
+        "kind": "JSON-vocab",
+        "required_api": 0,
+        "header_api": 0,
+        "minimum": "39 классов",
+        "dependencies": [],
+        "note": "Закреплённый комплект; не подменять произвольным файлом с тем же именем."
+      },
+      "requires": [],
+      "probes": [
+        "ctc-vocab-contract"
+      ],
+      "evidence": [
+        "https://huggingface.co/onnx-community/wav2vec2-large-xlsr-53-russian-ONNX/resolve/df5ba1d9e0f9a34c44eec437b441f4ae43c842eb/vocab.json",
+        "https://huggingface.co/onnx-community/wav2vec2-large-xlsr-53-russian-ONNX/blob/df5ba1d9e0f9a34c44eec437b441f4ae43c842eb/README.md"
+      ],
+      "verified": "accepted_lock_sha256_and_metadata",
+      "native_status": "linux_cpu_probe_passed_windows_pending",
+      "model": {
+        "vocab": {
+          "classes": 39,
+          "contiguous_ids": true,
+          "blank_id": 0,
+          "separator_id": 4,
+          "yo_id": 6
+        }
+      },
+      "entrypoints": {
+        "vocab": "vocab.json"
+      }
+    }
+  ],
+  "recipe": {
+    "pipeline": [
+      "full_track",
+      "Go MDX Voc FT",
+      "PCM16 stereo44100",
+      "PCM16 mono16000",
+      "float32 mono16000",
+      "Go CTC global margin adaptive",
+      "manual_listening_review"
+    ],
+    "binding": {
+      "module": "github.com/microsoft/onnxruntime/go",
+      "version": "v0.0.0-20261103072813-19bcbb974285",
+      "requested_api_max": 27,
+      "fallback_api_min": 17,
+      "required_api_for_accepted_configuration": 27,
+      "lifecycle": "SetSharedLibraryPath действует до успешного Init; Init повторяем после ошибки; успешный Init глобален; Shutdown запрещает повторный Init и не выгружает библиотеку. Смене runtime после Init нужен новый процесс."
+    },
+    "regression_threads_per_job": 8,
+    "mdx": {
+      "primary_stem": "Vocals",
+      "sample_rate": 44100,
+      "channels": 2,
+      "fft": 7680,
+      "hop": 1024,
+      "bins": 3072,
+      "frames": 256,
+      "compensate": 1.021,
+      "window": "Hann",
+      "padding": "reflect",
+      "zero_low_bins": 3
+    },
+    "ctc": {
+      "engine": "go-ctc-global-v2",
+      "scoring": "margin",
+      "pause_policy": "adaptive",
+      "sample_rate": 16000,
+      "channels": 1,
+      "inference_block_seconds": 18,
+      "context_seconds_each_side": 1,
+      "frame_stride_samples": 320,
+      "frame_center_offset_samples": 200,
+      "frame_step_seconds": 0.02,
+      "boundary_padding_seconds": 0.01,
+      "blank_id": 0,
+      "word_separator": "|",
+      "word_separator_id": 4,
+      "mean_peak_threshold": 0.45,
+      "minimum_token_peak_threshold": 0.1,
+      "greedy_similarity_threshold": 0.8,
+      "manual_times_input": false,
+      "whisper_input": false,
+      "vad_trimming": false,
+      "pause_regularization": {
+        "method": "intraword-blank-p95-half-life-v1",
+        "calibration": "Положительные паузы между соседними буквами одного слова исходного margin-пути.",
+        "minimum_samples": 32,
+        "both_token_peaks_at_least": 0.5,
+        "quantile": 0.95,
+        "cost_per_blank_frame": "ln(2)/max(1,p95_gap_frames)",
+        "reruns": 1,
+        "recalibrate_after_rerun": false,
+        "between_words_penalized": false,
+        "between_lines_penalized": false,
+        "letter_self_loops_penalized": false,
+        "on_insufficient_samples": "Сохранить исходный путь без prior."
+      }
+    }
+  }
+}

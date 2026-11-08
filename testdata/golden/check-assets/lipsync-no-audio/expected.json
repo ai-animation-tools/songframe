@@ -1,0 +1,6 @@
+{
+  "code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/check_assets/check_assets.py\", line 37, in <module>\n    motion = load_motion()\n             ^^^^^^^^^^^^^\n  File \"<songframe>/tools/check_assets/check_assets.py\", line 26, in load_motion\n    package = validate_package(path, sid)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/asset_package/asset_package.py\", line 106, in validate_package\n    raise ValueError(\"В комплекте липсинка отсутствует входное аудио.\")\nValueError: В комплекте липсинка отсутствует входное аудио.\n",
+  "traceback": true
+}

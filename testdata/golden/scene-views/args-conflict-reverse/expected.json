@@ -1,0 +1,11 @@
+{
+  "code": 2,
+  "stdout": "",
+  "stderr": "usage: update_scene_views.py [-h] [--check] [--staged | --ref REF]\nupdate_scene_views.py: error: argument --staged: not allowed with argument --ref\n",
+  "traceback": false,
+  "cards": [
+    "plan/animatic/cards/M03.png",
+    "plan/animatic/cards/M04.png",
+    "plan/animatic/cards/M05.png"
+  ]
+}

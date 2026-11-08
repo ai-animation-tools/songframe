@@ -1,0 +1,15 @@
+{
+  "description": "Цикл state_from в черновике: ошибка вычисления.",
+  "call": "buildBrief",
+  "project": "project",
+  "briefs": [
+    [
+      "M02",
+      "before"
+    ]
+  ],
+  "covers": [
+    "stateCycle"
+  ],
+  "stubbedMedia": []
+}

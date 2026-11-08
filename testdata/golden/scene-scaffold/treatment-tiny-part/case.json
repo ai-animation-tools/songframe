@@ -1,0 +1,13 @@
+{
+  "description": "Две границы в одном кадре: пустое окно и отказ validate.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "validate после каркаса"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--force"
+  ]
+}

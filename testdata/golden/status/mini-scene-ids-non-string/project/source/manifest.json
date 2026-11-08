@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "kinds": [
+    {
+      "id": "character",
+      "label": "Персонаж",
+      "dir": "heroes"
+    }
+  ],
+  "track": {
+    "path": "track.mp3",
+    "sha256": "fb0797e290b774181fa7fdbeadc0bd9849889152fca5dc3555a766bb33dfae2b",
+    "bytes": 11,
+    "original_name": "track.mp3",
+    "duration_seconds": 9
+  },
+  "lyrics": {
+    "path": "text.md",
+    "sha256": "328b0c0b1e914b583f71cccd0bc95785365af4d1f98216f43d6d7f10bc960c4e",
+    "bytes": 109,
+    "lines": 3,
+    "sections": [
+      "Куплет",
+      "Припев"
+    ]
+  },
+  "idea": {
+    "path": "description.md",
+    "sha256": "19136214adbf7f9b8a10f34d34bf2058c33a2c3ac0b9a01b9c7b6786d85cbbb8",
+    "bytes": 47
+  },
+  "cover": null,
+  "references": [
+    {
+      "id": "mira",
+      "kind": "character",
+      "name": "Мира",
+      "short_name": "Мира",
+      "description": "Музыкант с фонариком",
+      "prompt": null,
+      "files": [
+        {
+          "path": "heroes/mira.png",
+          "sha256": "f6d91faaf09c0f23d3371c9ba1c914a159654003faad16a43dfd0ba87031c7c3",
+          "bytes": 10,
+          "view": "full",
+          "note": ""
+        }
+      ]
+    }
+  ],
+  "updated_at": "2026-10-25T00:00:00Z"
+}

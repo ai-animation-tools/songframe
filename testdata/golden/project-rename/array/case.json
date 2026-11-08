@@ -1,0 +1,9 @@
+{
+  "description": "project.json — массив.",
+  "call": "Projects.rename",
+  "project": "project",
+  "covers": [
+    "invalidMarker (массив)"
+  ],
+  "stubbedMedia": []
+}

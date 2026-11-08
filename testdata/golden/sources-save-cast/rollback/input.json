@@ -1,0 +1,85 @@
+{
+  "track": null,
+  "lyrics": {
+    "text": "[Куплет]\nДругая строка\n"
+  },
+  "idea": null,
+  "cover": {
+    "path": "<inputs>/Обложка.PNG"
+  },
+  "references": [
+    {
+      "id": "mira",
+      "kind": "character",
+      "name": "Мира",
+      "short_name": "Мира",
+      "description": "Новое описание",
+      "prompt": "",
+      "files": [
+        {
+          "existingPath": "heroes/mira.png",
+          "view": "full",
+          "note": ""
+        },
+        {
+          "existingPath": "heroes/mira-2.png",
+          "view": "side",
+          "note": ""
+        },
+        {
+          "sourcePath": "<inputs>/new.png",
+          "view": "back",
+          "note": "",
+          "prompt": "Промпт"
+        }
+      ]
+    },
+    {
+      "id": "boat",
+      "kind": "vehicle",
+      "name": "Лодка",
+      "short_name": "Лодка",
+      "description": "Небольшая лодка",
+      "prompt": "Лодка у причала.",
+      "files": [
+        {
+          "existingPath": "vehicles/boat.png",
+          "view": "side",
+          "note": "борт"
+        }
+      ]
+    },
+    {
+      "id": "cat",
+      "kind": "creature",
+      "name": "Кот",
+      "short_name": "Кот",
+      "description": "",
+      "prompt": "",
+      "files": [
+        {
+          "sourcePath": "<inputs>/lamp.png",
+          "view": "full",
+          "note": ""
+        }
+      ]
+    }
+  ],
+  "kinds": [
+    {
+      "id": "character",
+      "label": "Персонаж",
+      "dir": "heroes"
+    },
+    {
+      "id": "vehicle",
+      "label": "Транспорт",
+      "dir": "vehicles"
+    },
+    {
+      "id": "creature",
+      "label": "Существо",
+      "dir": "creatures"
+    }
+  ]
+}

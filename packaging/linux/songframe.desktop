@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=SongFrame
+Comment=Производство музыкальных клипов с помощью ИИ
+Exec=songframe
+Icon=songframe
+Terminal=false
+Categories=AudioVideo;AudioVideoEditing;
+StartupWMClass=tools.songframe.desktop

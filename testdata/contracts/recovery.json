@@ -1,0 +1,104 @@
+{
+  "cases": [
+    {
+      "id": "montage-publishing",
+      "files": {
+        "plan/scenes.json": "Новый документ\n",
+        "plan/montage-history/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/before/plan/scenes.json": "Прежний документ\n",
+        "assets/originals/Неизвестный файл.bin": "Не изменять оплаченный оригинал\u0000\n",
+        "plan/montage-history/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/journal.json": "{\"schema_version\": 1, \"id\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"state\": \"publishing\", \"files\": [{\"path\": \"plan/scenes.json\", \"before\": \"c9dd17a857fbb2fe3fc79b274a07a9d02409a830409e02a05bf6c599b172c483\", \"after\": \"f8aac8f883bce55dcfa6aa6ec16b7186d731736b91ae7a73541a4b68aeddb295\"}]}"
+      },
+      "blocked": true,
+      "problemContains": "Незавершённая публикация"
+    },
+    {
+      "id": "montage-malformed",
+      "files": {
+        "plan/scenes.json": "Новый документ\n",
+        "plan/montage-history/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/before/plan/scenes.json": "Прежний документ\n",
+        "assets/originals/Неизвестный файл.bin": "Не изменять оплаченный оригинал\u0000\n",
+        "plan/montage-history/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/journal.json": "{повреждённый журнал"
+      },
+      "blocked": true,
+      "problemContains": "Не удалось проверить журнал"
+    },
+    {
+      "id": "montage-committed",
+      "files": {
+        "plan/scenes.json": "Новый документ\n",
+        "plan/montage-history/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/before/plan/scenes.json": "Прежний документ\n",
+        "assets/originals/Неизвестный файл.bin": "Не изменять оплаченный оригинал\u0000\n",
+        "plan/montage-history/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/journal.json": "{\"schema_version\": 1, \"id\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"state\": \"committed\", \"files\": [{\"path\": \"plan/scenes.json\", \"before\": \"c9dd17a857fbb2fe3fc79b274a07a9d02409a830409e02a05bf6c599b172c483\", \"after\": \"f8aac8f883bce55dcfa6aa6ec16b7186d731736b91ae7a73541a4b68aeddb295\"}]}"
+      },
+      "blocked": false,
+      "problemContains": ""
+    },
+    {
+      "id": "montage-rolled_back",
+      "files": {
+        "plan/scenes.json": "Новый документ\n",
+        "plan/montage-history/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/before/plan/scenes.json": "Прежний документ\n",
+        "assets/originals/Неизвестный файл.bin": "Не изменять оплаченный оригинал\u0000\n",
+        "plan/montage-history/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/journal.json": "{\"schema_version\": 1, \"id\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"state\": \"rolled_back\", \"files\": [{\"path\": \"plan/scenes.json\", \"before\": \"c9dd17a857fbb2fe3fc79b274a07a9d02409a830409e02a05bf6c599b172c483\", \"after\": \"f8aac8f883bce55dcfa6aa6ec16b7186d731736b91ae7a73541a4b68aeddb295\"}]}"
+      },
+      "blocked": false,
+      "problemContains": ""
+    },
+    {
+      "id": "derived-publishing",
+      "files": {
+        "plan/scenes.json": "Новый документ\n",
+        "plan/derived-history/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/before/plan/scenes.json": "Прежний документ\n",
+        "assets/originals/Неизвестный файл.bin": "Не изменять оплаченный оригинал\u0000\n",
+        "assets/shots/M01/video.mp4": "Новые байты",
+        "plan/derived-history/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/before-kit/video.mp4": "Прежние байты",
+        "assets/replaced/M01/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/video.mp4": "Прежние байты",
+        "plan/derived-history/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/journal.json": "{\"schema_version\": 1, \"id\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"state\": \"publishing\", \"files\": [{\"path\": \"plan/scenes.json\", \"before\": \"c9dd17a857fbb2fe3fc79b274a07a9d02409a830409e02a05bf6c599b172c483\", \"after\": \"f8aac8f883bce55dcfa6aa6ec16b7186d731736b91ae7a73541a4b68aeddb295\"}], \"shot\": \"M01\", \"directory\": {\"path\": \"assets/shots/M01\", \"backup\": \"plan/derived-history/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/before-kit\", \"retired\": \"assets/replaced/M01/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"before_files\": {\"video.mp4\": \"0876bb0d7474ab78f98df55f119c702a7ded7fcdbb8b597b6222129c75a22d15\"}, \"after_files\": {\"video.mp4\": \"20a886672b75e3b22f9b3f46c8386ac0056245d9929b2d14e7ad3973e0509449\"}}}"
+      },
+      "blocked": true,
+      "problemContains": "Незавершённая публикация"
+    },
+    {
+      "id": "derived-malformed",
+      "files": {
+        "plan/scenes.json": "Новый документ\n",
+        "plan/derived-history/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/before/plan/scenes.json": "Прежний документ\n",
+        "assets/originals/Неизвестный файл.bin": "Не изменять оплаченный оригинал\u0000\n",
+        "assets/shots/M01/video.mp4": "Новые байты",
+        "plan/derived-history/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/before-kit/video.mp4": "Прежние байты",
+        "assets/replaced/M01/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/video.mp4": "Прежние байты",
+        "plan/derived-history/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/journal.json": "{повреждённый журнал"
+      },
+      "blocked": true,
+      "problemContains": "Не удалось проверить журнал"
+    },
+    {
+      "id": "derived-committed",
+      "files": {
+        "plan/scenes.json": "Новый документ\n",
+        "plan/derived-history/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/before/plan/scenes.json": "Прежний документ\n",
+        "assets/originals/Неизвестный файл.bin": "Не изменять оплаченный оригинал\u0000\n",
+        "assets/shots/M01/video.mp4": "Новые байты",
+        "plan/derived-history/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/before-kit/video.mp4": "Прежние байты",
+        "assets/replaced/M01/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/video.mp4": "Прежние байты",
+        "plan/derived-history/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/journal.json": "{\"schema_version\": 1, \"id\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"state\": \"committed\", \"files\": [{\"path\": \"plan/scenes.json\", \"before\": \"c9dd17a857fbb2fe3fc79b274a07a9d02409a830409e02a05bf6c599b172c483\", \"after\": \"f8aac8f883bce55dcfa6aa6ec16b7186d731736b91ae7a73541a4b68aeddb295\"}], \"shot\": \"M01\", \"directory\": {\"path\": \"assets/shots/M01\", \"backup\": \"plan/derived-history/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/before-kit\", \"retired\": \"assets/replaced/M01/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"before_files\": {\"video.mp4\": \"0876bb0d7474ab78f98df55f119c702a7ded7fcdbb8b597b6222129c75a22d15\"}, \"after_files\": {\"video.mp4\": \"20a886672b75e3b22f9b3f46c8386ac0056245d9929b2d14e7ad3973e0509449\"}}}"
+      },
+      "blocked": false,
+      "problemContains": ""
+    },
+    {
+      "id": "derived-rolled_back",
+      "files": {
+        "plan/scenes.json": "Новый документ\n",
+        "plan/derived-history/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/before/plan/scenes.json": "Прежний документ\n",
+        "assets/originals/Неизвестный файл.bin": "Не изменять оплаченный оригинал\u0000\n",
+        "assets/shots/M01/video.mp4": "Новые байты",
+        "plan/derived-history/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/before-kit/video.mp4": "Прежние байты",
+        "assets/replaced/M01/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/video.mp4": "Прежние байты",
+        "plan/derived-history/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/journal.json": "{\"schema_version\": 1, \"id\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"state\": \"rolled_back\", \"files\": [{\"path\": \"plan/scenes.json\", \"before\": \"c9dd17a857fbb2fe3fc79b274a07a9d02409a830409e02a05bf6c599b172c483\", \"after\": \"f8aac8f883bce55dcfa6aa6ec16b7186d731736b91ae7a73541a4b68aeddb295\"}], \"shot\": \"M01\", \"directory\": {\"path\": \"assets/shots/M01\", \"backup\": \"plan/derived-history/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/before-kit\", \"retired\": \"assets/replaced/M01/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"before_files\": {\"video.mp4\": \"0876bb0d7474ab78f98df55f119c702a7ded7fcdbb8b597b6222129c75a22d15\"}, \"after_files\": {\"video.mp4\": \"20a886672b75e3b22f9b3f46c8386ac0056245d9929b2d14e7ad3973e0509449\"}}}"
+      },
+      "blocked": false,
+      "problemContains": ""
+    }
+  ]
+}

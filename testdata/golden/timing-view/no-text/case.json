@@ -1,0 +1,13 @@
+{
+  "description": "Нет source/text.md.",
+  "call": "viewTiming",
+  "project": "project",
+  "covers": [
+    "lyricsRequired",
+    "lyrics=[]",
+    "lyricsChanged при пустом тексте"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

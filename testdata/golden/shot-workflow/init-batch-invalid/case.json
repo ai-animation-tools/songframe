@@ -1,0 +1,20 @@
+{
+  "description": "Неверное имя партии.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "batch regex"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "init",
+    "M04",
+    "--dir",
+    "plan/batches/M04-attempt-01",
+    "--batch",
+    "плохо"
+  ],
+  "remove": [],
+  "mkdir": []
+}

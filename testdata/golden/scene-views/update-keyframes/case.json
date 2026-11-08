@@ -1,0 +1,14 @@
+{
+  "description": "Принятые опоры K01, K02 пакета M03: карточка опор и .last.png.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "approved_keyframes",
+    ".last.png"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

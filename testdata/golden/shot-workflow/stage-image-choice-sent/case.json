@@ -1,0 +1,18 @@
+{
+  "description": "Возврат к выбору отправленного запроса.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "resume"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "set-stage",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "image_request_choice"
+  ],
+  "remove": [],
+  "mkdir": []
+}

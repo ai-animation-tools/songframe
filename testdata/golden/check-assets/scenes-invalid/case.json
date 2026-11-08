@@ -1,0 +1,13 @@
+{
+  "description": "Неверный реестр: ValueError validate — трассировка.",
+  "call": "check_assets",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "validate"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

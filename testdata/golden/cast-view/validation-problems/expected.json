@@ -1,0 +1,491 @@
+{
+  "cast": {
+    "schema_version": 1,
+    "entities": [
+      {
+        "id": "world",
+        "kind": "world",
+        "name": "Мир сцены",
+        "short_name": "Мир",
+        "role": "Общие условия: время, погода и окружение",
+        "appearance": "",
+        "images": [],
+        "initial_state": {
+          "time_of_day": "вечер",
+          "weather": "ясно"
+        }
+      },
+      {
+        "id": "mira",
+        "kind": "character",
+        "name": "Мира",
+        "short_name": "Мира",
+        "role": "Музыкант, держит фонарик",
+        "appearance": "Музыкант, держит фонарик",
+        "images": [
+          "heroes/mira.png"
+        ],
+        "initial_state": {
+          "clothes_condition": "светлая куртка",
+          "position": "у края причала"
+        }
+      },
+      {
+        "id": "lev",
+        "kind": "character",
+        "name": "Лев",
+        "short_name": "Лев",
+        "role": "Друг, развешивает фонарики",
+        "appearance": "Друг, развешивает фонарики",
+        "images": [
+          "heroes/lev.png"
+        ],
+        "initial_state": {
+          "position": "рядом с фонарями"
+        }
+      },
+      {
+        "id": "boat",
+        "kind": "vehicle",
+        "name": "Лодка",
+        "short_name": "Лодка",
+        "role": "Небольшая лодка у причала",
+        "appearance": "Небольшая лодка у причала",
+        "images": [
+          "vehicles/boat.png"
+        ],
+        "initial_state": {
+          "dirt": "чистая",
+          "sink": "у причала"
+        }
+      },
+      {
+        "id": "pier",
+        "kind": "location",
+        "name": "Причал",
+        "short_name": "Причал",
+        "role": "Деревянный причал у спокойной воды",
+        "appearance": "Деревянный причал у спокойной воды",
+        "images": [
+          "locations/pier.png"
+        ],
+        "initial_state": {}
+      },
+      {
+        "id": "Bad-Id",
+        "kind": "prop",
+        "name": "Плохой",
+        "short_name": "",
+        "role": "",
+        "appearance": "",
+        "images": [
+          "flat.png"
+        ],
+        "initial_state": {
+          "Bad Key": "x",
+          "empty": " "
+        }
+      },
+      {
+        "id": "mira",
+        "kind": "Char",
+        "name": " ",
+        "short_name": "",
+        "role": "",
+        "appearance": "Музыкант, держит фонарик",
+        "images": [],
+        "initial_state": {}
+      },
+      {
+        "id": "world2",
+        "kind": "world",
+        "name": "",
+        "short_name": "",
+        "role": "",
+        "appearance": "",
+        "images": [],
+        "initial_state": {}
+      }
+    ],
+    "properties": {
+      "character": [
+        {
+          "key": "position",
+          "label": "Положение",
+          "hint": "Где и относительно чего: «перед сценой, лицом к камере»",
+          "checklist": "Персонаж стоит там, где записано: {value}?"
+        },
+        {
+          "key": "contact",
+          "label": "Опора",
+          "hint": "На чём стоит или сидит персонаж",
+          "values": [
+            "стоит на полу",
+            "сидит на стуле",
+            "стоит у стола"
+          ],
+          "checklist": "Опора: {value}?"
+        },
+        {
+          "key": "posture",
+          "label": "Поза",
+          "hint": "Стоит, наклонился, сидит боком, бежит"
+        },
+        {
+          "key": "facing",
+          "label": "Взгляд и разворот",
+          "hint": "Куда повёрнут корпус и куда смотрит"
+        },
+        {
+          "key": "clothes_condition",
+          "label": "Одежда",
+          "hint": "Цвет, состояние и заметные детали одежды",
+          "checklist": "Одежда: {value}?"
+        },
+        {
+          "key": "face_condition",
+          "label": "Лицо",
+          "hint": "Видимые детали лица и выражение",
+          "checklist": "Лицо: {value}?"
+        },
+        {
+          "key": "marks",
+          "label": "Сквозные метки",
+          "hint": "Детали, которые должны повторяться дальше, например узор на рукаве",
+          "checklist": "Сквозные метки на месте: {value}?"
+        },
+        {
+          "key": "holding",
+          "label": "В руках",
+          "hint": "Предмет и в какой руке",
+          "checklist": "В руках: {value}?"
+        },
+        {
+          "key": "emotion",
+          "label": "Состояние и эмоция",
+          "hint": "Эмоция и её развитие в сюжете"
+        },
+        {
+          "key": "fatigue",
+          "label": "Усталость",
+          "hint": "Накапливается по сюжету"
+        }
+      ],
+      "vehicle": [
+        {
+          "key": "position",
+          "label": "Положение",
+          "hint": "Где относительно окружения и других объектов",
+          "checklist": "Положение транспорта: {value}?"
+        },
+        {
+          "key": "orientation",
+          "label": "Ориентация",
+          "hint": "Как стоит относительно оси дороги",
+          "values": [
+            "вдоль дороги носом вперёд",
+            "вдоль дороги носом назад",
+            "под небольшим углом к дороге",
+            "поперёк дороги"
+          ],
+          "checklist": "Ориентация транспорта: {value}?"
+        },
+        {
+          "key": "sink",
+          "label": "Погружение",
+          "hint": "Положение относительно поверхности",
+          "values": [
+            "на поверхности",
+            "частично погружён"
+          ],
+          "checklist": "Погружение: {value}?"
+        },
+        {
+          "key": "dirt",
+          "label": "Загрязнение",
+          "hint": "Загрязнение или другие видимые изменения",
+          "checklist": "Загрязнение кузова: {value}?"
+        },
+        {
+          "key": "mobility",
+          "label": "Движение",
+          "hint": "Движется или неподвижен"
+        },
+        {
+          "key": "doors",
+          "label": "Двери и проёмы",
+          "hint": "Какие двери открыты"
+        },
+        {
+          "key": "cargo",
+          "label": "Груз",
+          "hint": "Что и где закреплено",
+          "checklist": "Груз на месте: {value}?"
+        },
+        {
+          "key": "occupants",
+          "label": "Кто внутри",
+          "hint": "Кто на каком месте",
+          "checklist": "Внутри: {value}?"
+        }
+      ],
+      "location": [
+        {
+          "key": "ground",
+          "label": "Покрытие",
+          "hint": "Материал и состояние поверхности"
+        },
+        {
+          "key": "layout",
+          "label": "Что где",
+          "hint": "Что слева и справа по ходу движения, что впереди",
+          "checklist": "Расположение сторон: {value}?"
+        },
+        {
+          "key": "condition",
+          "label": "Состояние",
+          "hint": "Следы, ямы, разбросанные предметы"
+        }
+      ],
+      "prop": [
+        {
+          "key": "position",
+          "label": "Положение",
+          "hint": "Где лежит или у кого в руках",
+          "checklist": "Предмет: {value}?"
+        },
+        {
+          "key": "owner",
+          "label": "У кого",
+          "hint": "Персонаж, у которого предмет"
+        },
+        {
+          "key": "condition",
+          "label": "Состояние",
+          "hint": "Целый, сломан, грязный"
+        }
+      ],
+      "world": [
+        {
+          "key": "time_of_day",
+          "label": "Время суток",
+          "values": [
+            "утро",
+            "день",
+            "вечер",
+            "ночь"
+          ],
+          "checklist": "Освещение соответствует: {value}?"
+        },
+        {
+          "key": "weather",
+          "label": "Погода",
+          "hint": "Пасмурно, дождь, солнце; осадки сейчас",
+          "checklist": "Погода: {value}?"
+        },
+        {
+          "key": "season",
+          "label": "Сезон",
+          "hint": "Влияет на одежду и листву"
+        },
+        {
+          "key": "road_axis",
+          "label": "Ось дороги",
+          "hint": "Куда идёт дорога в кадре относительно героев: «вперёд от камеры», «слева направо»",
+          "checklist": "Ось дороги и направление движения: {value}?"
+        },
+        {
+          "key": "left_side",
+          "label": "Слева по ходу",
+          "hint": "Что находится слева по направлению движения",
+          "checklist": "Слева по ходу: {value}?"
+        },
+        {
+          "key": "right_side",
+          "label": "Справа по ходу",
+          "hint": "Что находится справа по направлению движения",
+          "checklist": "Справа по ходу: {value}?"
+        },
+        {
+          "key": "ahead",
+          "label": "Впереди",
+          "hint": "Куда ведёт дорога, что её заканчивает"
+        }
+      ],
+      "style": [
+        {
+          "key": "note",
+          "label": "Заметка",
+          "hint": "Стилевые ограничения, действующие с этого момента"
+        }
+      ],
+      "Char": [
+        {
+          "key": "position",
+          "label": "Положение",
+          "hint": "Где находится и относительно чего",
+          "checklist": "Положение: {value}?"
+        },
+        {
+          "key": "condition",
+          "label": "Состояние",
+          "hint": "Внешний вид и изменения по сюжету",
+          "checklist": "Состояние: {value}?"
+        },
+        {
+          "key": "marks",
+          "label": "Сквозные метки",
+          "hint": "Детали, которые должны повторяться дальше, с указанием сцены",
+          "checklist": "Сквозные метки на месте: {value}?"
+        },
+        {
+          "key": "note",
+          "label": "Заметка",
+          "hint": "Прочее"
+        }
+      ]
+    }
+  },
+  "manifest": {
+    "schema_version": 1,
+    "kinds": [
+      {
+        "id": "character",
+        "label": "Персонаж",
+        "dir": "heroes"
+      },
+      {
+        "id": "vehicle",
+        "label": "Транспорт",
+        "dir": "vehicles"
+      },
+      {
+        "id": "location",
+        "label": "Локация",
+        "dir": "locations"
+      },
+      {
+        "id": "prop",
+        "label": "Предмет",
+        "dir": "props"
+      },
+      {
+        "id": "style",
+        "label": "Стиль",
+        "dir": "style"
+      }
+    ],
+    "track": {
+      "path": "track.mp3",
+      "sha256": "d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640",
+      "bytes": 120416,
+      "original_name": "track.mp3",
+      "duration_seconds": 30
+    },
+    "lyrics": {
+      "path": "text.md",
+      "sha256": "bc8939f30286d2e4b2c4154fa819f4c245e58563ba787f9fa345abb222ece0a0",
+      "bytes": 161,
+      "lines": 3,
+      "sections": [
+        "Куплет"
+      ]
+    },
+    "idea": {
+      "path": "description.md",
+      "sha256": "73740c9758b5cd11ad19bacccc63760d4c63b532bedaff13ed2a2f55bd3d0037",
+      "bytes": 349
+    },
+    "cover": null,
+    "references": [
+      {
+        "id": "mira",
+        "kind": "character",
+        "name": "Мира",
+        "short_name": "Мира",
+        "description": "Музыкант, держит фонарик",
+        "prompt": null,
+        "files": [
+          {
+            "path": "heroes/mira.png",
+            "sha256": "0b0835fb8ff731d9ba611e1c9a46bda1788a0f10d2b02bb5d09358039fc02818",
+            "bytes": 128,
+            "view": "full",
+            "note": ""
+          }
+        ]
+      },
+      {
+        "id": "lev",
+        "kind": "character",
+        "name": "Лев",
+        "short_name": "Лев",
+        "description": "Друг, развешивает фонарики",
+        "prompt": null,
+        "files": [
+          {
+            "path": "heroes/lev.png",
+            "sha256": "04c771634b3f498bfa467560d1e8d22de453226051cf90325b21820399a014d6",
+            "bytes": 128,
+            "view": "full",
+            "note": ""
+          }
+        ]
+      },
+      {
+        "id": "boat",
+        "kind": "vehicle",
+        "name": "Лодка",
+        "short_name": "Лодка",
+        "description": "Небольшая лодка у причала",
+        "prompt": null,
+        "files": [
+          {
+            "path": "vehicles/boat.png",
+            "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
+            "bytes": 126,
+            "view": "full",
+            "note": ""
+          }
+        ]
+      },
+      {
+        "id": "pier",
+        "kind": "location",
+        "name": "Причал",
+        "short_name": "Причал",
+        "description": "Деревянный причал у спокойной воды",
+        "prompt": null,
+        "files": [
+          {
+            "path": "locations/pier.png",
+            "sha256": "d226dce6924121c33e7c79a6a65da395c0d2398e0486033d46484a528c7f900e",
+            "bytes": 129,
+            "view": "full",
+            "note": ""
+          }
+        ]
+      }
+    ],
+    "updated_at": "2026-10-25T00:00:00Z"
+  },
+  "imagePaths": {
+    "heroes/mira.png": "<project>/source/heroes/mira.png",
+    "heroes/lev.png": "<project>/source/heroes/lev.png",
+    "vehicles/boat.png": "<project>/source/vehicles/boat.png",
+    "locations/pier.png": "<project>/source/locations/pier.png",
+    "flat.png": "<project>/source/flat.png"
+  },
+  "problems": [
+    "Код сущности «Плохой»: латиница в нижнем регистре, цифры и подчёркивание, начиная с буквы.",
+    "Плохой: путь изображения должен быть вида heroes/<файл>.png: flat.png",
+    "Плохой: свойство Bad Key должно быть кодом латиницей.",
+    "Плохой: свойство empty пустое.",
+    "Код сущности повторяется: mira.",
+    " : тип должен быть кодом латиницей.",
+    "Сущность mira: нет названия.",
+    "Сущность world2: нет названия.",
+    "Сущность типа world должна быть одна.",
+    "Для объектов mira показано общее описание из исходников. Сохранённая копия в кастинге обновится при сохранении."
+  ]
+}

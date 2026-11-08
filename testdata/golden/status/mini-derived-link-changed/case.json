@@ -1,0 +1,9 @@
+{
+  "description": "M03 в реестре производный, а комплект — обычный.",
+  "call": "computeStatus",
+  "project": "project",
+  "covers": [
+    "derivedShotsNeedReview (derived_link_changed)"
+  ],
+  "stubbedMedia": []
+}

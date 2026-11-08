@@ -1,0 +1,19 @@
+{
+  "description": "send только записывается.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "send"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "decide",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "--verdict",
+    "send"
+  ],
+  "remove": [],
+  "mkdir": []
+}

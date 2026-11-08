@@ -1,0 +1,18 @@
+{
+  "description": "Карточки: принятого плана, неизвестного, нет карточки, квитанция устарела.",
+  "call": "check_workspace",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "card_of_accepted",
+    "card_unknown",
+    "card_missing",
+    "receipt_stale"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [
+    "plan/animatic/cards/M04.png"
+  ],
+  "mkdir": []
+}

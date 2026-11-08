@@ -1,0 +1,17 @@
+{
+  "description": "Таблица образца.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "table"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "show",
+    "--dir",
+    "plan/batches/M03-attempt-01"
+  ],
+  "remove": [],
+  "mkdir": []
+}

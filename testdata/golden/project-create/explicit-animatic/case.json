@@ -1,0 +1,10 @@
+{
+  "description": "Явное имя MP4 с пробелами по краям и плейсхолдер в названии.",
+  "call": "Projects.create",
+  "project": null,
+  "covers": [
+    "animaticVideo trim",
+    "подстановка без повторного разбора значения"
+  ],
+  "stubbedMedia": []
+}

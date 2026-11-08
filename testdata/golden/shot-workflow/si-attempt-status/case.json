@@ -1,0 +1,19 @@
+{
+  "description": "attempt не downloaded.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "status"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "select-image",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "--file",
+    "image-01/original.png"
+  ],
+  "remove": [],
+  "mkdir": []
+}

@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "entities": [
+    {
+      "id": "mira",
+      "kind": "character",
+      "name": "Мира",
+      "short_name": "Мира",
+      "role": "",
+      "appearance": "Своё описание",
+      "images": [],
+      "initial_state": {}
+    }
+  ],
+  "properties": {}
+}

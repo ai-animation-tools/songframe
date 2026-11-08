@@ -1,0 +1,15 @@
+{
+  "description": "timing.json ещё нет: файл создаётся.",
+  "call": "saveTiming",
+  "project": "project",
+  "covers": [
+    "создание файла",
+    "пустой status → «Разметка; …»",
+    "граница 0.3 с",
+    "duration_container=null → view.duration",
+    "clock перезаписывается"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "description": "Косметика: название части, audio.path и карта references не входят в отпечатки.",
+  "call": "scenesSaveImpact + validateScenes + saveScenesWithMode",
+  "project": "project",
+  "mode": "production",
+  "covers": [
+    "косметическая правка: impact пуст",
+    "references из кастинга",
+    "production-status не меняется"
+  ],
+  "stubbedMedia": []
+}

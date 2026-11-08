@@ -1,0 +1,10 @@
+{
+  "description": "Нет папки source.",
+  "call": "viewSources",
+  "project": "project",
+  "covers": [
+    "manifest null",
+    "тексты пустые"
+  ],
+  "stubbedMedia": []
+}

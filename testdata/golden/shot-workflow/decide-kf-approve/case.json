@@ -1,0 +1,19 @@
+{
+  "description": "approve принимает всех кандидатов.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "approve all"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "decide",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "--verdict",
+    "approve"
+  ],
+  "remove": [],
+  "mkdir": []
+}

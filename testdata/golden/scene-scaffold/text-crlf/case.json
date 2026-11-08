@@ -1,0 +1,13 @@
+{
+  "description": "Текст с CRLF и пробелами по краям.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "splitlines",
+    "strip"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--dry-run"
+  ]
+}

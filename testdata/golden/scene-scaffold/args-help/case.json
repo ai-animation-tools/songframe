@@ -1,0 +1,14 @@
+{
+  "description": "-h: справка, код 0.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "help"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "-h",
+    "--bogus"
+  ]
+}

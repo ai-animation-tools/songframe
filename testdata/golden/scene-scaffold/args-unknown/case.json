@@ -1,0 +1,14 @@
+{
+  "description": "Неизвестный аргумент: ошибка argparse, код 2.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "argparse unrecognized"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--bogus",
+    "x"
+  ]
+}

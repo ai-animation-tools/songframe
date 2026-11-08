@@ -1,0 +1,11 @@
+{
+  "description": "lines содержит null.",
+  "call": "viewTiming",
+  "project": "project",
+  "covers": [
+    "unreadableTiming (lines)"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "description": "Выключить замечание.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "set_note"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "set-note",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "--id",
+    "2",
+    "--active",
+    "false"
+  ],
+  "remove": [],
+  "mkdir": []
+}

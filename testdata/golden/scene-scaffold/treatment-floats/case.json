@@ -1,0 +1,14 @@
+{
+  "description": "Числа трактовки float и строковые заголовки-числа.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "repr float",
+    "title не строка"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--force"
+  ]
+}

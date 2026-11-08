@@ -1,0 +1,13 @@
+{
+  "description": "Нет речевых планов: «Речевые планы не назначены.».",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "speech none"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

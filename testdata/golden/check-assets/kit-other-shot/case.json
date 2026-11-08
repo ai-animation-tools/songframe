@@ -1,0 +1,13 @@
+{
+  "description": "Комплект другого плана.",
+  "call": "check_assets",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "Комплект относится к другому плану"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

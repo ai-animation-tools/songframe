@@ -1,0 +1,6 @@
+{
+  "code": 2,
+  "stdout": "",
+  "stderr": "usage: continuity_brief.py [-h] [--phase {before,after}] [--json]\n                           [--paragraph]\n                           shot\ncontinuity_brief.py: error: the following arguments are required: shot\n",
+  "traceback": false
+}

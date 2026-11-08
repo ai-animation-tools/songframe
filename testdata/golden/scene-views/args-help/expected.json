@@ -1,0 +1,17 @@
+{
+  "code": 0,
+  "stdout": "usage: update_scene_views.py [-h] [--check] [--staged | --ref REF]\n\nОбновляет производные представления единого реестра; @link README.md\n\noptions:\n  -h, --help  show this help message and exit\n  --check\n  --staged\n  --ref REF\n",
+  "stderr": "",
+  "traceback": false,
+  "files": {},
+  "recheck": {
+    "code": 0,
+    "stdout": "Представления актуальны.\n",
+    "stderr": ""
+  },
+  "cards": [
+    "plan/animatic/cards/M03.png",
+    "plan/animatic/cards/M04.png",
+    "plan/animatic/cards/M05.png"
+  ]
+}

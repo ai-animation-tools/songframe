@@ -1,0 +1,13 @@
+{
+  "description": "Файл комплекта вне папки ассета.",
+  "call": "check_assets",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "вне папки ассета"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

@@ -1,0 +1,15 @@
+{
+  "description": "-h.",
+  "call": "verify_asset_replay",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "help"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "-h"
+  ],
+  "remove": [],
+  "mkdir": []
+}

@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "name": "Тестовый клип",
+  "animatic_video": "test-output.mp4",
+  "generation": {
+    "video": null,
+    "image": null
+  }
+}

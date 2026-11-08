@@ -1,0 +1,9 @@
+{
+  "description": "plan/cast.json содержит null: сохранение без синхронизации, файл кастинга не трогается.",
+  "call": "saveSourcesWithCastImages",
+  "project": "project",
+  "covers": [
+    "readCast null-значение → без кастинга"
+  ],
+  "stubbedMedia": []
+}

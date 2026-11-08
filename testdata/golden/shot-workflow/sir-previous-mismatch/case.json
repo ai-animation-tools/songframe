@@ -1,0 +1,21 @@
+{
+  "description": "Хеш выбора не совпадает.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "selected mismatch"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "set-image-request",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "--frame",
+    "K01",
+    "--request-dir",
+    "image-02"
+  ],
+  "remove": [],
+  "mkdir": []
+}

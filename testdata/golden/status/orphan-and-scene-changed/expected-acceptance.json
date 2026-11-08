@@ -1,0 +1,17 @@
+{
+  "fingerprints": {
+    "M01": "06c2f17821a6e6c7076f08fb1f7bcccc63d0d9a4346ac37af7d2796ae4ba8d0e",
+    "M02": "277499fd8f9387443cb75cc72ad2d0e2fb47afcca1d50ba9911c40c4f67c841d",
+    "M03": "69af153f5fa701a285a4e6a8c9253b5ead4f6031390f7c7cc105b28dfa6cd235",
+    "M04": "f6867ec62bb2c998237371eb1ee3e72d1c74b37a219b54c50a67d4271167e155",
+    "M05": "59486c4d03e7d8bfbeabaff2d73504176627bc386323bf54aa347f2f8ec706dc"
+  },
+  "accepted": {
+    "M01": "stale",
+    "M02": "completed"
+  },
+  "reasons": {
+    "M01": "scene_changed"
+  },
+  "problem": null
+}

@@ -1,0 +1,9 @@
+{
+  "description": "Мини-проект.",
+  "call": "viewScenario + readScenarioRegistry + validateScenes",
+  "project": "project",
+  "covers": [
+    "references совпадают с кастингом"
+  ],
+  "stubbedMedia": []
+}

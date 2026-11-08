@@ -1,0 +1,15 @@
+{
+  "description": "Неизвестный аргумент.",
+  "call": "check_workspace",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "unrecognized"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--x"
+  ],
+  "remove": [],
+  "mkdir": []
+}

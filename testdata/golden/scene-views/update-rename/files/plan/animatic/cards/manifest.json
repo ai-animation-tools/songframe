@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "generated_from": "plan/scenes.json",
+  "registry_sha256": "7a80da73a0f083fc3a9b31862b7b0ea2fe87c6536af966a50c3b1b579417401f",
+  "project_inputs": {
+    "name": "Другой клип"
+  },
+  "reference_hashes": {
+    "source/heroes/mira.png": "0b0835fb8ff731d9ba611e1c9a46bda1788a0f10d2b02bb5d09358039fc02818",
+    "source/heroes/lev.png": "04c771634b3f498bfa467560d1e8d22de453226051cf90325b21820399a014d6",
+    "source/vehicles/boat.png": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
+    "source/locations/pier.png": "d226dce6924121c33e7c79a6a65da395c0d2398e0486033d46484a528c7f900e"
+  },
+  "cards": {
+    "M03": {
+      "path": "plan/animatic/cards/M03.png",
+      "sha256": "ba8a20e97c82af887452061d404b672407b49bddcec91fdabe2ea6d89381d109"
+    },
+    "M04": {
+      "path": "plan/animatic/cards/M04.png",
+      "sha256": "94b340cade5eb68541505b5d70dbacbf2c939e2e1289bd5e9a749aa673d838f1"
+    },
+    "M05": {
+      "path": "plan/animatic/cards/M05.png",
+      "sha256": "e63043e61b880ec1f535248430223f4c7c1c90ce78ef823d4cb03883335a8b7f"
+    }
+  }
+}

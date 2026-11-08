@@ -1,0 +1,13 @@
+{
+  "description": "Черновик без частей.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "непустой список sequences"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--force"
+  ]
+}

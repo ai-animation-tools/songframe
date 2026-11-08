@@ -1,0 +1,15 @@
+{
+  "description": "Папки проекта нет.",
+  "call": "check_workspace",
+  "project": null,
+  "base": "checks-base",
+  "covers": [
+    "Папка проекта не найдена"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ],
+  "remove": [],
+  "mkdir": []
+}

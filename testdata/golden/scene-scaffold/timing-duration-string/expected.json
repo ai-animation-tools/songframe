@@ -1,0 +1,9 @@
+{
+  "code": 0,
+  "stdout": "{\"written\": true, \"scenes\": 6, \"sequences\": 3, \"references\": [\"mira\", \"lev\", \"boat\", \"pier\"]}\n",
+  "stderr": "",
+  "traceback": false,
+  "files": {
+    "plan/scenes.json": "changed"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "description": "Этап image_submitted.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "REOPEN_STAGES"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "reopen",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "K01",
+    "--note",
+    "x"
+  ],
+  "remove": [],
+  "mkdir": []
+}

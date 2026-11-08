@@ -1,0 +1,10 @@
+{
+  "description": "Трек заменён после сборки аниматика.",
+  "call": "computeStatus",
+  "project": "project",
+  "covers": [
+    "staleAnimatic (входной хеш)",
+    "animaticApproved=false у несвежей сборки"
+  ],
+  "stubbedMedia": []
+}

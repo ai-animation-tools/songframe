@@ -1,0 +1,11 @@
+{
+  "description": "Новые референсы: тип world и неверный тип становятся prop, short_name по name.",
+  "call": "initCast",
+  "project": "project",
+  "covers": [
+    "castFromSources: новый референс",
+    "kind world/неверный → prop",
+    "ensureProperties prop"
+  ],
+  "stubbedMedia": []
+}

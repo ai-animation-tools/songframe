@@ -1,0 +1,13 @@
+{
+  "description": "Пакет очереди принятого плана на этапе accepted.",
+  "call": "check_workspace",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "queue_of_accepted"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

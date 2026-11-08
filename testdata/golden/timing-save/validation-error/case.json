@@ -1,0 +1,12 @@
+{
+  "description": "Пересечение и слишком короткая строка: сохранение отклоняется, файл не меняется.",
+  "call": "saveTiming",
+  "project": "project",
+  "covers": [
+    "ошибка: проблемы через пробел",
+    "fileUnchanged"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "shot": "M03",
+  "kind": "derived_video",
+  "generation": {
+    "source_shot": "M01",
+    "source_scene_sha256": "949caf12120f4ced6af255fe5526e3952234020d7645a3fb94bbc84ef6735f2d",
+    "source_accepted_video_sha256": "41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d"
+  },
+  "accepted_edit": {
+    "video": {
+      "path": "video.mp4",
+      "sha256": "5b3975651c3cab92d044c096dc30a1c2d9525497457472de48c51ecb363d1f4a"
+    }
+  }
+}

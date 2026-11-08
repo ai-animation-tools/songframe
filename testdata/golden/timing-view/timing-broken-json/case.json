@@ -1,0 +1,11 @@
+{
+  "description": "timing.json — битый JSON.",
+  "call": "viewTiming",
+  "project": "project",
+  "covers": [
+    "unreadableTiming"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

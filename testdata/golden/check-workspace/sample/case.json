@@ -1,0 +1,13 @@
+{
+  "description": "Образец: два принятых плана, дерево согласовано.",
+  "call": "check_workspace",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "collect"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

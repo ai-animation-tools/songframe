@@ -1,0 +1,6 @@
+{
+  "code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/continuity_brief/continuity_brief.py\", line 108, in <module>\n    main()\n  File \"<songframe>/tools/continuity_brief/continuity_brief.py\", line 96, in main\n    result = brief(data, cast, args.shot, args.phase)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/continuity_brief/continuity_brief.py\", line 63, in brief\n    description = describe(cast, state)\n                  ^^^^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/continuity_brief/continuity_brief.py\", line 40, in describe\n    parts.append(f\"{label.lower()}: {value}\")\n                    ^^^^^^^^^^^\nAttributeError: 'int' object has no attribute 'lower'\n",
+  "traceback": true
+}

@@ -1,0 +1,10 @@
+{
+  "description": "Ошибки проверки сущностей объединяются через пробел.",
+  "call": "writeCast",
+  "project": "project",
+  "covers": [
+    "validateCast в writeCast",
+    "worldMustBeUnique"
+  ],
+  "stubbedMedia": []
+}

@@ -1,0 +1,18 @@
+{
+  "description": "Снимок сохранённых медиа совпадает.",
+  "call": "verify_asset_replay",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "--preserved"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--report",
+    "<out>/report.json",
+    "--preserved",
+    "<project>/before.json"
+  ],
+  "remove": [],
+  "mkdir": []
+}

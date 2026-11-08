@@ -1,0 +1,12 @@
+{
+  "description": "Нет track.mp3 и manifest.json.",
+  "call": "viewTiming",
+  "project": "project",
+  "covers": [
+    "trackPath=null",
+    "trackSha256=null",
+    "duration=null",
+    "trackChanged не проверяется без манифеста"
+  ],
+  "stubbedMedia": []
+}

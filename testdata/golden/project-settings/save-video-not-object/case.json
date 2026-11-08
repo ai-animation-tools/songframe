@@ -1,0 +1,9 @@
+{
+  "description": "Блок video не объект в форме.",
+  "call": "writeProjectSettings",
+  "project": "project",
+  "covers": [
+    "generationObjectRequired"
+  ],
+  "stubbedMedia": []
+}

@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "shot": "M01",
+  "kind": "generated_video",
+  "generation": {
+    "source_shot": "M01",
+    "original": {
+      "path": "original.mp4"
+    },
+    "prompt": {
+      "path": "generation-prompt.txt"
+    },
+    "audio": null
+  },
+  "accepted_edit": {
+    "video": {
+      "path": "accepted-edit.mp4",
+      "sha256": "43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf"
+    },
+    "fps": 30,
+    "frames": 12,
+    "timeline": {
+      "start_frame": 0,
+      "end_frame_exclusive": 12
+    }
+  }
+}

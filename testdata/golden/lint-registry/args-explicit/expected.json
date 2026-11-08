@@ -1,0 +1,6 @@
+{
+  "code": 2,
+  "stdout": "",
+  "stderr": "usage: lint_registry.py [-h] [--json] [--strict]\nlint_registry.py: error: argument --json: ignored explicit argument '1'\n",
+  "traceback": false
+}

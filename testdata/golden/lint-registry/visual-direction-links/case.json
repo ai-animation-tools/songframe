@@ -1,0 +1,15 @@
+{
+  "description": "visual_direction: изображение из assets (ошибка), материал assets (предупреждение), факты истории.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "референс-изображение в assets",
+    "ориентир непрерывности",
+    "history_hits"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

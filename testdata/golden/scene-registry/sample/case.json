@@ -1,0 +1,11 @@
+{
+  "description": "Образец: кастинг с описями, принятые M01 и M02 (ролики отсутствуют).",
+  "call": "project_battery",
+  "project": "project",
+  "covers": [
+    "load",
+    "project_shot_acceptance",
+    "source_video_snapshot=None без ролика"
+  ],
+  "stubbedMedia": []
+}

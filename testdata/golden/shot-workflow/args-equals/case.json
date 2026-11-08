@@ -1,0 +1,16 @@
+{
+  "description": "--dir=ЗНАЧЕНИЕ.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "explicit"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "show",
+    "--dir=plan/batches/M03-attempt-01"
+  ],
+  "remove": [],
+  "mkdir": []
+}

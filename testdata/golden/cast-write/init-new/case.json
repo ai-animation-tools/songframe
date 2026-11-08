@@ -1,0 +1,11 @@
+{
+  "description": "Кастинга нет: создаётся из описи с world первым.",
+  "call": "initCast",
+  "project": "project",
+  "covers": [
+    "новый cast.json",
+    "world из словаря",
+    "properties из default"
+  ],
+  "stubbedMedia": []
+}

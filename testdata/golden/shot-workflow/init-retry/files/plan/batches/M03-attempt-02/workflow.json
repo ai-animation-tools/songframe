@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "shot": "M03",
+  "mode": "shot",
+  "stage": "description_review",
+  "wait_reason": null,
+  "request_dir": null,
+  "description_approved": false,
+  "scene_sha256": "69af153f5fa701a285a4e6a8c9253b5ead4f6031390f7c7cc105b28dfa6cd235",
+  "timing": {
+    "fps": 30,
+    "frames": 120,
+    "window_seconds": 4.0,
+    "request_seconds": null
+  },
+  "keyframes": [],
+  "approved_frames": {},
+  "keyframe_notes": [],
+  "prompt": {
+    "path": "video-prompt.txt",
+    "approved": false
+  },
+  "approved_prompt_sha256": null,
+  "retry_of": "plan/batches/M03-attempt-01",
+  "frame_source": null,
+  "model": null,
+  "batch": null,
+  "current_keyframe": null
+}

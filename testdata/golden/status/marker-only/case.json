@@ -1,0 +1,11 @@
+{
+  "description": "Только маркер с именем и animatic_video числом.",
+  "call": "computeStatus",
+  "project": "project",
+  "covers": [
+    "state=empty",
+    "animaticVideo=null при нестроковом значении",
+    "проблема аниматика без сценария не попадает в status"
+  ],
+  "stubbedMedia": []
+}

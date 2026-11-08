@@ -1,0 +1,19 @@
+{
+  "description": "Кандидат на description_review.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "propose stage"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "propose",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "K02",
+    "<project>/inputs/K02.png"
+  ],
+  "remove": [],
+  "mkdir": []
+}

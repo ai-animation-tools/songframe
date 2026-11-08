@@ -1,0 +1,14 @@
+{
+  "description": "Пробелы и пустые строки на концах visual_direction и строк.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "strip",
+    "rstrip"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

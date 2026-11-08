@@ -1,0 +1,15 @@
+{
+  "description": "Производный план, state_from объектом и изменения с null в раскадровке.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "derived_label",
+    "state_from dict",
+    "не задано"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

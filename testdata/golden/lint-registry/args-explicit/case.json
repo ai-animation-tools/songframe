@@ -1,0 +1,15 @@
+{
+  "description": "--json=1: ignored explicit argument.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "explicit argument"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json=1"
+  ],
+  "remove": [],
+  "mkdir": []
+}

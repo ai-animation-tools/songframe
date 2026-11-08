@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "fps": 30,
+  "audio": {
+    "path": "source/track.mp3",
+    "end_seconds": "30"
+  },
+  "references": {
+    "mira": {
+      "name": "Мира",
+      "path": "source/heroes/mira.png",
+      "short_name": "М."
+    },
+    "pier": {
+      "name": "Причал",
+      "path": "source/locations/pier.png"
+    }
+  },
+  "visual_direction": "Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.",
+  "sequences": [
+    {
+      "id": "intro",
+      "title": "Вечер у воды",
+      "direction": "Общий план причала."
+    },
+    {
+      "id": "verse",
+      "title": "Фонарики",
+      "direction": "Друзья развешивают фонарики."
+    },
+    {
+      "id": "outro",
+      "title": "Проигрыш",
+      "direction": "Финальная точка."
+    }
+  ],
+  "scenes": [
+    {
+      "id": "M01",
+      "original": "Инструментал: Вечер у воды",
+      "sequence": "intro",
+      "start_frame": 0,
+      "end_frame_exclusive": 240,
+      "camera": "ЗАПОЛНИТЬ",
+      "action": "ЗАПОЛНИТЬ: Инструментал: Вечер у воды",
+      "continuity": "",
+      "references": [
+        "pier"
+      ],
+      "lipsync": false,
+      "card": {
+        "primary_reference": "pier"
+      },
+      "state_from": null,
+      "state_changes": {}
+    },
+    {
+      "id": "M02",
+      "original": "Вечер зажёг фонари у воды",
+      "sequence": "verse",
+      "start_frame": 240,
+      "end_frame_exclusive": 360,
+      "camera": "ЗАПОЛНИТЬ",
+      "action": "ЗАПОЛНИТЬ: Вечер зажёг фонари у воды",
+      "continuity": "",
+      "references": [
+        "mira"
+      ],
+      "lipsync": true,
+      "card": {
+        "primary_reference": "mira"
+      },
+      "state_from": "M01",
+      "state_changes": {}
+    },
+    {
+      "id": "M03",
+      "original": "Ветер качает бумажные огни",
+      "sequence": "verse",
+      "start_frame": 360,
+      "end_frame_exclusive": 480,
+      "camera": "ЗАПОЛНИТЬ",
+      "action": "ЗАПОЛНИТЬ: Ветер качает бумажные огни",
+      "continuity": "",
+      "references": [
+        "mira"
+      ],
+      "lipsync": true,
+      "card": {
+        "primary_reference": "mira"
+      },
+      "state_from": "M02",
+      "state_changes": {}
+    },
+    {
+      "id": "M04",
+      "original": "Мы отпускаем огни в небеса",
+      "sequence": "verse",
+      "start_frame": 480,
+      "end_frame_exclusive": 600,
+      "camera": "ЗАПОЛНИТЬ",
+      "action": "ЗАПОЛНИТЬ: Мы отпускаем огни в небеса",
+      "continuity": "",
+      "references": [
+        "mira"
+      ],
+      "lipsync": true,
+      "card": {
+        "primary_reference": "mira"
+      },
+      "state_from": "M03",
+      "state_changes": {}
+    },
+    {
+      "id": "M05",
+      "original": "Инструментал: Проигрыш",
+      "sequence": "outro",
+      "start_frame": 600,
+      "end_frame_exclusive": 750,
+      "camera": "ЗАПОЛНИТЬ",
+      "action": "ЗАПОЛНИТЬ: Инструментал: Проигрыш",
+      "continuity": "",
+      "references": [
+        "mira"
+      ],
+      "lipsync": false,
+      "card": {
+        "primary_reference": "mira"
+      },
+      "state_from": "M04",
+      "state_changes": {}
+    },
+    {
+      "id": "M06",
+      "original": "Инструментал: Проигрыш",
+      "sequence": "outro",
+      "start_frame": 750,
+      "end_frame_exclusive": 900,
+      "camera": "ЗАПОЛНИТЬ",
+      "action": "ЗАПОЛНИТЬ: Инструментал: Проигрыш",
+      "continuity": "",
+      "references": [
+        "mira"
+      ],
+      "lipsync": false,
+      "card": {
+        "primary_reference": "mira"
+      },
+      "state_from": "M05",
+      "state_changes": {}
+    }
+  ]
+}

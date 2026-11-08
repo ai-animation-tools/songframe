@@ -1,0 +1,11 @@
+{
+  "description": "Общее визуальное направление меняет все планы.",
+  "call": "scenesSaveImpact + validateScenes + saveScenesWithMode",
+  "project": "project",
+  "mode": "keep",
+  "covers": [
+    "impactGlobalRules",
+    "keep всех принятых"
+  ],
+  "stubbedMedia": []
+}

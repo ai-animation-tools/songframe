@@ -1,0 +1,19 @@
+{
+  "description": "Обрезанный PNG.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "load"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "select-image",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "--file",
+    "image-01/original.png"
+  ],
+  "remove": [],
+  "mkdir": []
+}

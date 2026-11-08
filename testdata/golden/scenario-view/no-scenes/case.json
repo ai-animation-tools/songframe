@@ -1,0 +1,12 @@
+{
+  "description": "Нет реестра.",
+  "call": "viewScenario + readScenarioRegistry + validateScenes",
+  "project": "project",
+  "covers": [
+    "status=missing",
+    "scenes=null"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

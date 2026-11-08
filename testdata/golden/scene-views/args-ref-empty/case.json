@@ -1,0 +1,17 @@
+{
+  "description": "--ref с пустым значением: обычная проверка рабочего дерева.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "ref falsy"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--check",
+    "--ref",
+    ""
+  ],
+  "remove": [],
+  "mkdir": []
+}

@@ -1,0 +1,10 @@
+{
+  "description": "Проект из шаблона.",
+  "call": "readProjectSettings",
+  "project": "project",
+  "covers": [
+    "read",
+    "generation video/image null"
+  ],
+  "stubbedMedia": []
+}

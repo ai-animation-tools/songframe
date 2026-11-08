@@ -1,0 +1,10 @@
+{
+  "description": "Кастинг исправен, форма неверна: проблемы через пробел, дерево не меняется.",
+  "call": "saveSourcesWithCastImages",
+  "project": "project",
+  "covers": [
+    "validateSources при кастинге",
+    "откат без изменений"
+  ],
+  "stubbedMedia": []
+}

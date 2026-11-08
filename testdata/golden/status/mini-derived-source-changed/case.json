@@ -1,0 +1,9 @@
+{
+  "description": "Квитанция generation производного M03 ссылается на прежний ролик M01.",
+  "call": "computeStatus",
+  "project": "project",
+  "covers": [
+    "derivedShotsNeedReview (source_changed)"
+  ],
+  "stubbedMedia": []
+}

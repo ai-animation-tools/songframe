@@ -1,0 +1,10 @@
+{
+  "description": "scenes.json переписан с иным форматированием: реестр аниматика не совпадает, отпечатки те же.",
+  "call": "computeStatus",
+  "project": "project",
+  "covers": [
+    "staleAnimatic по SHA байтов scenes.json",
+    "отпечаток плана не зависит от форматирования"
+  ],
+  "stubbedMedia": []
+}

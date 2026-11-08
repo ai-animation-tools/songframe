@@ -1,23 +1,12 @@
-# CI выбирает проверки в два этапа:
-# 1. scope читает событие GitHub и вычисляет независимые флаги проверок.
-# 2. Остальные jobs/steps выполняются только при соответствующем флаге true.
-# Сами группы и известные потребители описаны в scripts/ci/README.md;
-# код выбора и его регрессии — scripts/ci/classify-changes*.mjs.
-# При добавлении группы обновить вместе: CI_FLAGS, inputs, outputs, условия jobs и тесты.
-# Поставки здесь не собираются: их собирают и проверяют локально, выпуск — `yarn release`. @link ../../docs/development.md#выпуск-релиза
+# Проверки исходников Go-версии: то же, что `wails3 task check:all`, разбитое на два независимых job.
+# Go-часть требует CGO с GTK4/WebKitGTK 6.0, frontend-часть — только Node/Yarn и Chromium.
+# Поставки (AppImage, NSIS) здесь не собираются: их собирают и проверяют локально (packaging/README.md).
 name: CI
-# Имя ручного запуска — часть контракта scripts/release/release.mjs.
-# Только manual/all может подтвердить исходники перед релизом; manual/auto и
-# manual/selected могут проверить лишь часть проекта. Не переименовывать marker
-# без изменения ciState и его тестов. Пустой run-name для push/PR оставляет
-# стандартное название GitHub, чтобы не выводить весь текст commit message.
-run-name: >-
-  ${{ github.event_name == 'workflow_dispatch' &&
-      format('CI · manual/{0}', inputs.mode == 'Полный набор' && 'all' || inputs.mode == 'По последнему коммиту' && 'changes' || 'selected') ||
-      '' }}
 
-# Раннер запускается только при изменении файлов, которые читают lint, format, typecheck и тесты.
-# `*.md` без папки — только корневые документы; README инструментов, шаблона и промпты скиллов остаются под CI.
+# `*` в фильтре путей не проходит через `/`: `!*.md` исключает только корневые документы.
+# docs/ содержит лишь руководства разработки (на них ссылаются @link-комментарии), в бинарник
+# не встраивается. Встроенные промпты, шаблон и документы провайдеров лежат в resources/
+# и остаются под CI: их байты сверяют resources_test.go и эталоны промптов.
 on:
   pull_request:
     paths: &checked-paths
@@ -25,366 +14,252 @@ on:
       - '!*.md'
       - '!LICENSE'
       - '!docs/**'
-      # Документы провайдеров вкладываются в промпт задания, их проверяет provider-guides.test.ts.
-      - 'docs/providers/**'
       - '!dev-skills/**'
       - '!.claude/**'
       - '!.agents/**'
-      - '!.vscode/**'
       - '!www/**'
+      - '!.github/ISSUE_TEMPLATE/**'
+      - '!.github/pull_request_template.md'
   push:
     branches: [main]
     paths: *checked-paths
-  # Ручной запуск доступен в Actions → CI → Run workflow.
-  # changes: первый родитель → последний коммит выбранной ветки/тега, как указано в подписи.
-  # selected (по умолчанию): ровно отмеченные группы; пустой выбор — ошибка, а не полный набор.
-  # all: все группы; нужен для ручного подтверждения исходников перед выпуском.
-  # Флажки используются только в selected. Changes/all их намеренно игнорируют.
-  # В GitHub нет множественного choice: режим — список, группы — отдельные boolean-флажки.
+  # Ручной запуск всего набора: Actions → CI → Run workflow.
   workflow_dispatch:
-    inputs:
-      mode:
-        description: 'Режим запуска. Для «Выбранные группы» отметьте хотя бы один флажок.'
-        type: choice
-        required: true
-        default: 'Выбранные группы'
-        options:
-          - 'Выбранные группы'
-          - 'По последнему коммиту'
-          - 'Полный набор'
-      # Эти ID должны совпадать с CI_FLAGS в classify-changes.mjs.
-      # Общие routing-тесты scope выполняются всегда; workflow добавляет статическую проверку CI.
-      workflow:
-        description: 'Workflow: actionlint и стиль скриптов CI'
-        type: boolean
-        default: false
-      quality:
-        description: 'ESLint и Prettier проекта'
-        type: boolean
-        default: false
-      types:
-        description: 'Типизация приложения и историй'
-        type: boolean
-        default: false
-      # При ручном выборе Node/Python проверяется весь набор соответствующего языка.
-      # Автоматический режим дополнительно умеет выбирать конкретные тесты по потребителям.
-      node:
-        description: 'Node: все тесты приложения'
-        type: boolean
-        default: false
-      build:
-        description: 'Сборка приложения'
-        type: boolean
-        default: false
-      browser:
-        description: 'Storybook: сборка и браузерные проверки'
-        type: boolean
-        default: false
-      python:
-        description: 'Python: все наборы инструментов'
-        type: boolean
-        default: false
-      runtime:
-        description: 'Runtime: тесты скриптов поставки'
-        type: boolean
-        default: false
-      release:
-        description: 'Тесты инструмента выпуска'
-        type: boolean
-        default: false
 
-# Push/PR одной ветки заменяет устаревший автоматический запуск.
-# Ручной запуск имеет отдельный run_id: не прерывает ни автоматическую проверку
-# исходников, ни другой ручной запуск (в том числе полный перед релизом).
+# Новый push в ветку PR отменяет устаревшую проверку; push в main и ручные запуски не прерываются.
 concurrency:
-  # Частичная ручная проверка не отменяет push/PR и другие ручные запуски.
-  group: ci-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || 'automatic' }}
-  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
+  group: ci-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || 'automatic' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+permissions:
+  contents: read
+
+defaults:
+  run:
+    # Явная оболочка включает pipefail: ошибка в начале конвейера роняет шаг.
+    shell: bash
+
+# Раннер задаётся переменной CI_LINUX_RUNS_ON (JSON: строка или массив меток). Пока репозиторий
+# приватный, переменная организации указывает на домашние self-hosted раннеры; без неё — GitHub-hosted
+# Ubuntu 24.04. Поэтому шаги не полагаются на предустановленное в образе GitHub и ставят всё сами.
 jobs:
-  # Служебный job работает при любом запуске: проверяет алгоритм маршрутизации
-  # и публикует план. Он не запускает тесты приложения, сборку или Python-инструменты.
-  scope:
-    name: 'Выбор проверок'
+  go:
+    name: 'Go: bindings, тесты, vet, race, формат'
     runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
-    # В outputs GitHub хранит строки: ниже сравниваем с 'true', а не с truthiness.
-    # node_tests/python_tests — JSON: [] при выключенной группе, null для всех
-    # тестов языка, массив для адресного списка. node_media — отдельная подготовка
-    # Python/FFmpeg для Node-интеграций; это не запуск Python-наборов.
-    outputs:
-      workflow: ${{ steps.scope.outputs.workflow }}
-      quality: ${{ steps.scope.outputs.quality }}
-      types: ${{ steps.scope.outputs.types }}
-      node: ${{ steps.scope.outputs.node }}
-      build: ${{ steps.scope.outputs.build }}
-      browser: ${{ steps.scope.outputs.browser }}
-      python: ${{ steps.scope.outputs.python }}
-      runtime: ${{ steps.scope.outputs.runtime }}
-      release: ${{ steps.scope.outputs.release }}
-      node_media: ${{ steps.scope.outputs.node_media }}
-      node_tests: ${{ steps.scope.outputs.node_tests }}
-      python_tests: ${{ steps.scope.outputs.python_tests }}
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v7
-        with:
-          # PR требует merge-base, push может содержать несколько коммитов.
-          fetch-depth: 0
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          package-manager-cache: false
-      # Сначала проверяем параметры: пустой ручной выбор сразу даст ошибку без запуска тестов.
-      - name: Изменённые области
-        id: scope
-        run: node scripts/ci/classify-changes.mjs
-      # Короткие тесты CI на временных Git-репозиториях проверяют алгоритм до остальных jobs.
-      # Если они упадут, зависимые задания не стартуют, даже если outputs уже вычислены.
-      - name: Проверки выбора набора
-        run: node --test scripts/ci/classify-changes.test.mjs
-
-  # Изменения .github/workflows/** и scripts/ci/** сами выбирают только этот job.
-  # Если diff также меняет приложение/инструменты, scope объединяет нужные флаги.
-  workflow:
-    name: 'Workflow и маршрутизация: статические проверки'
-    needs: scope
-    if: needs.scope.outputs.workflow == 'true'
-    runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
-    steps:
-      - uses: actions/checkout@v7
-      - name: Проверка GitHub Actions через actionlint
+      # Node 24 (OpenSSL 3.5) предлагает постквантовый X25519MLKEM768; его большое приветствие TLS
+      # сеть домашних раннеров обрывает на пути к Cloudflare. Ограничиваем группы только для Node:
+      # curl, apt и Go не читают раздел nodejs_conf. Файл временный, в репозиторий не входит.
+      - name: TLS для Node
         run: |
-          # Проверяются все workflow, включая Pages; поставки и приложение не собираются.
-          # При обновлении actionlint менять одновременно версию URL и SHA-256
-          # из официального релиза rhysd/actionlint, затем проверить локальный запуск.
-          archive="$RUNNER_TEMP/actionlint_1.7.12_linux_amd64.tar.gz"
-          curl --fail --location --retry 3 --output "$archive" https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
-          printf '%s  %s\n' '8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8' "$archive" | sha256sum --check
-          tar -xzf "$archive" -C "$RUNNER_TEMP" actionlint
-          "$RUNNER_TEMP/actionlint" -color
-      - name: TLS для Node
-        run: echo "OPENSSL_CONF=$GITHUB_WORKSPACE/scripts/ci/node-openssl.cnf" >> "$GITHUB_ENV"
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          package-manager-cache: false
-      - name: Yarn 4 через corepack
-        run: corepack enable
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: yarn
-      # Линтерам нужны только JS-пакеты. skip-build запрещает root postinstall
-      # и загрузку бинарника Electron; это не установка окружения приложения.
-      - name: Зависимости линтеров без postinstall
-        run: yarn install --immutable --mode=skip-build
-      - name: ESLint скриптов CI
-        run: yarn eslint scripts/ci/*.mjs --max-warnings 0
-      - name: Формат workflow и скриптов CI
-        run: yarn prettier --check '.github/workflows/*.{yml,yaml}' scripts/ci/*.mjs
+          conf="$RUNNER_TEMP/node-openssl.cnf"
+          cat > "$conf" <<'EOF'
+          nodejs_conf = nodejs_init
 
-  # Общая Node-среда экономит повторную установку зависимостей.
-  # Наличие job не означает запуск всего приложения: каждый шаг имеет свой if.
-  # Например, quality-only выполнит только ESLint/Prettier, без types/tests/build/browser.
-  app:
-    name: 'Node: выбранные проверки'
-    needs: scope
-    if: >-
-      needs.scope.outputs.quality == 'true' || needs.scope.outputs.types == 'true' ||
-      needs.scope.outputs.node == 'true' || needs.scope.outputs.build == 'true' ||
-      needs.scope.outputs.browser == 'true'
-    runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
-    steps:
+          [nodejs_init]
+          ssl_conf = ssl_init
+
+          [ssl_init]
+          system_default = tls_defaults
+
+          [tls_defaults]
+          Groups = X25519:P-256:P-384
+          EOF
+          echo "OPENSSL_CONF=$conf" >> "$GITHUB_ENV"
       - uses: actions/checkout@v7
+      # Wails 3 на Linux собирается через CGO с `pkg-config: gtk4 webkitgtk-6.0` и x11 (зависимость
+      # libgtk-4-dev). Генератор bindings тоже загружает пакеты с CGO, race detector требует C-компилятор.
+      # Контейнер self-hosted может работать от root без sudo, поэтому sudo используется только при необходимости.
+      - name: GTK4, WebKitGTK 6.0 и C-компилятор
+        run: |
+          if command -v gcc >/dev/null && pkg-config --exists gtk4 webkitgtk-6.0 x11 2>/dev/null; then
+            echo 'Библиотеки разработки уже установлены.'
+            exit 0
+          fi
+          as_root=()
+          [ "$(id -u)" -eq 0 ] || as_root=(sudo)
+          "${as_root[@]}" apt-get update
+          "${as_root[@]}" env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev
+      # go.mod задаёт минимальную версию (go 1.26.0); берём последний выпуск этой ветки с исправлениями.
+      - name: Версия Go из go.mod
+        id: go-version
+        run: echo "minor=$(sed -n 's/^go \([0-9]*\.[0-9]*\).*/\1/p' go.mod)" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@v7
+        with:
+          go-version: ${{ steps.go-version.outputs.minor }}
+          check-latest: true
+          cache-dependency-path: go.sum
+      # Node нужен только скрипту bindings.sh (нормализация generated TypeScript); Yarn здесь не нужен.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      # Версия CLI берётся из go.mod: генератор bindings должен совпадать с библиотекой Wails проекта.
+      - name: Wails CLI
+        run: |
+          version=$(go list -m -f '{{.Version}}' github.com/wailsapp/wails/v3)
+          go install "github.com/wailsapp/wails/v3/cmd/wails3@$version"
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+      - name: Формат Go
+        run: sh scripts/check-format.sh
+      # check:go генерирует bindings (с временным frontend/dist для go:embed), затем go test и go vet.
+      - name: Bindings, Go tests и vet
+        run: wails3 task check:go
+      # Локально check:all проверяет frontend по свежим bindings. Здесь frontend-job читает закоммиченные,
+      # поэтому повторная генерация обязана дать чистый diff: иначе bindings забыли обновить.
+      - name: Закоммиченные bindings актуальны
+        run: |
+          if [ -n "$(git status --porcelain -- frontend/bindings)" ]; then
+            git status --short -- frontend/bindings
+            git --no-pager diff --stat -- frontend/bindings
+            echo '::error::frontend/bindings устарели: выполните «wails3 task bindings» и закоммитьте результат.'
+            exit 1
+          fi
+      - name: Race detector
+        run: wails3 task check:race
+
+  frontend:
+    name: 'Frontend: формат, типы и Vitest'
+    runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      # Тот же обход TLS, что в Go-job: Corepack, Yarn и загрузка Chromium идут через Node.
       - name: TLS для Node
-        run: echo "OPENSSL_CONF=$GITHUB_WORKSPACE/scripts/ci/node-openssl.cnf" >> "$GITHUB_ENV"
+        working-directory: .
+        run: |
+          conf="$RUNNER_TEMP/node-openssl.cnf"
+          cat > "$conf" <<'EOF'
+          nodejs_conf = nodejs_init
+
+          [nodejs_init]
+          ssl_conf = ssl_init
+
+          [ssl_init]
+          system_default = tls_defaults
+
+          [tls_defaults]
+          Groups = X25519:P-256:P-384
+          EOF
+          echo "OPENSSL_CONF=$conf" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v7
+      # Файла версии Node нет; 24 — текущая LTS, совпадает с @types/node ^24 и локальной разработкой.
+      # Первый setup-node даёт Node для corepack, второй после `corepack enable` находит Yarn 4
+      # из packageManager и подключает кэш Yarn по frontend/yarn.lock.
       - name: Node.js для Corepack
         uses: actions/setup-node@v7
         with:
-          node-version-file: .nvmrc
+          node-version: '24'
           package-manager-cache: false
-      - name: Yarn 4 через corepack
+      - name: Yarn 4 через Corepack
         run: corepack enable
       - name: Кэш Yarn
         uses: actions/setup-node@v7
         with:
-          node-version-file: .nvmrc
+          node-version: '24'
           cache: yarn
-      - uses: actions/cache@v6
-        if: needs.scope.outputs.node_media == 'true' || needs.scope.outputs.build == 'true' || needs.scope.outputs.browser == 'true'
-        with:
-          path: ~/.cache/electron
-          key: electron-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
-          restore-keys: electron-${{ runner.os }}-
-      # Бинарные зависимости нужны сборке/витрине и настоящим межъязыковым тестам.
-      # Для чистого линтинга, типов и лёгких Node-тестов install-скрипты выключены.
+          cache-dependency-path: frontend/yarn.lock
       - name: Зависимости
-        env:
-          NEED_BUILD_SCRIPTS: ${{ needs.scope.outputs.node_media == 'true' || needs.scope.outputs.build == 'true' || needs.scope.outputs.browser == 'true' }}
-        run: |
-          if [ "$NEED_BUILD_SCRIPTS" = true ]; then
-            yarn install --immutable
-          else
-            yarn install --immutable --mode=skip-build
-          fi
-      - name: ESLint
-        if: needs.scope.outputs.quality == 'true'
-        run: yarn lint
-      - name: Prettier
-        if: needs.scope.outputs.quality == 'true'
+        run: yarn install --immutable
+      - name: Формат frontend
         run: yarn format:check
+      # Типы проверяются по закоммиченным bindings; их соответствие Go проверяет Go-job.
       - name: Типизация
-        if: needs.scope.outputs.types == 'true'
         run: yarn typecheck
-      - uses: actions/setup-python@v7
-        if: needs.scope.outputs.node_media == 'true'
-        with:
-          python-version: '3.12'
-      - uses: actions/cache@v6
-        if: needs.scope.outputs.node_media == 'true'
-        with:
-          path: ${{ runner.temp }}/songframe-ci-ffmpeg/ffmpeg.tar.xz
-          key: ci-ffmpeg-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/runtime/media-lock.json') }}
-      # Python/FFmpeg нужны только реальным межъязыковым тестам; чистые Node-тесты читают файлы без этой подготовки.
-      - name: FFmpeg и Pillow для интеграционных тестов
-        if: needs.scope.outputs.node_media == 'true'
+      # Vitest считает потоки по числу CPU хоста; в контейнере self-hosted раннера квота cgroup
+      # может быть меньше. Playwright ограничивает workers сам (playwright.config.ts).
+      - name: Vitest
         run: |
-          bash tools/run_tests/prepare_ci_media.sh
-          python -m pip install pillow==13.0.0 numpy==2.5.4
-          python -c "from PIL import features; raise SystemExit(not features.check('raqm'))" || { sudo apt-get update && sudo apt-get install -y --no-install-recommends libfribidi0; }
-          python -c "from PIL import features; assert features.check('raqm'), 'Pillow без Raqm: нет libfribidi'"
-      # Список приходит как JSON, не как shell-команда: имена передаются spawnSync
-      # отдельными аргументами. null означает весь Vitest; пустой включённый набор — ошибка.
-      - name: Выбранные тесты Node
-        if: needs.scope.outputs.node == 'true'
-        env:
-          CI_NODE_TESTS: ${{ needs.scope.outputs.node_tests }}
+          workers=()
+          if read -r quota period < /sys/fs/cgroup/cpu.max 2>/dev/null && [ "$quota" != max ]; then
+            count=$((quota / period))
+            workers=(--minWorkers=1 "--maxWorkers=$((count > 0 ? count : 1))")
+          fi
+          yarn test "${workers[@]}"
+
+  storybook:
+    name: 'Storybook: сборка и обход ${{ matrix.shard }}'
+    runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
+    timeout-minutes: 30
+    strategy:
+      # Одна упавшая часть не отменяет остальные: отчёт нужен по всем историям.
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      # Тот же обход TLS, что в Go-job: Corepack, Yarn и загрузка Chromium идут через Node.
+      - name: TLS для Node
+        working-directory: .
         run: |
-          node --input-type=module <<'JS'
-          import { spawnSync } from 'node:child_process';
-          const selected = JSON.parse(process.env.CI_NODE_TESTS);
-          if (selected !== null && (!Array.isArray(selected) || selected.length === 0)) throw new Error('Пустой набор Node не является проверкой.');
-          const result = spawnSync('yarn', ['test', ...(selected ?? [])], { stdio: 'inherit' });
-          if (result.error) throw result.error;
-          process.exit(result.status ?? 1);
-          JS
-      - name: Сборка приложения
-        if: needs.scope.outputs.build == 'true'
-        run: yarn build
-      # Browser — самостоятельная группа: сборка витрины, Chromium и Playwright.
-      # Она не требует запуска обычного Vitest или Python, если их флаги выключены.
+          conf="$RUNNER_TEMP/node-openssl.cnf"
+          cat > "$conf" <<'EOF'
+          nodejs_conf = nodejs_init
+
+          [nodejs_init]
+          ssl_conf = ssl_init
+
+          [ssl_init]
+          system_default = tls_defaults
+
+          [tls_defaults]
+          Groups = X25519:P-256:P-384
+          EOF
+          echo "OPENSSL_CONF=$conf" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v7
+      # Файла версии Node нет; 24 — текущая LTS, совпадает с @types/node ^24 и локальной разработкой.
+      # Первый setup-node даёт Node для corepack, второй после `corepack enable` находит Yarn 4
+      # из packageManager и подключает кэш Yarn по frontend/yarn.lock.
+      - name: Node.js для Corepack
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Yarn 4 через Corepack
+        run: corepack enable
+      - name: Кэш Yarn
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: yarn
+          cache-dependency-path: frontend/yarn.lock
+      - name: Зависимости
+        run: yarn install --immutable
       - name: Статическая витрина Storybook
-        if: needs.scope.outputs.browser == 'true'
         run: yarn build-storybook
+      # Кэш браузера привязан к установленной версии Playwright: новая версия скачивает свой Chromium.
+      - name: Версия Playwright
+        id: playwright
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
       - uses: actions/cache@v6
-        if: needs.scope.outputs.browser == 'true'
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('yarn.lock') }}
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.playwright.outputs.version }}
+      # Нужен только headless shell Chromium. Системные библиотеки ставятся, лишь если браузер не стартует.
       - name: Chromium для браузерного набора
-        if: needs.scope.outputs.browser == 'true'
         run: |
           yarn playwright install --only-shell chromium
           node -e "require('@playwright/test').chromium.launch().then((browser) => browser.close())" || yarn playwright install-deps chromium
+      # Полный обход витрины, как в check:ui (STORYBOOK_TEST_CI не задаётся), поделённый на части.
+      # Раннер приватного репозитория имеет 2 ядра, и Playwright по умолчанию берёт половину:
+      # один поток проходил 1184 истории дольше 40 минут. Истории ждут браузер, а не CPU,
+      # поэтому потоков столько, сколько ядер.
       - name: Браузерный набор витрины
-        if: needs.scope.outputs.browser == 'true'
         id: storybook-browser
-        run: yarn test:storybook
+        run: yarn test:storybook --shard=${{ matrix.shard }}/${{ strategy.job-total }} --workers="$(nproc)"
       - name: Отчёт браузерного набора
-        if: failure() && needs.scope.outputs.browser == 'true' && steps.storybook-browser.outcome == 'failure'
+        if: failure() && steps.storybook-browser.outcome == 'failure'
         uses: actions/upload-artifact@v7
         with:
-          name: storybook-browser-report
-          path: build/storybook-test/
+          name: storybook-browser-report-${{ matrix.shard }}
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
           if-no-files-found: ignore
           retention-days: 14
-
-  # Python-наборы отделены от Node, runtime и выпуска.
-  # Автоматический план выбирает предметную группу/модули; ручной python — весь набор.
-  tools:
-    name: 'Python: выбранные наборы'
-    needs: scope
-    if: needs.scope.outputs.python == 'true'
-    runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
-        with:
-          python-version: '3.12'
-      - uses: actions/cache@v6
-        with:
-          path: ${{ runner.temp }}/songframe-ci-ffmpeg/ffmpeg.tar.xz
-          key: ci-ffmpeg-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/runtime/media-lock.json') }}
-      - name: FFmpeg и Pillow для медиатестов
-        run: |
-          bash tools/run_tests/prepare_ci_media.sh
-          python -m pip install pillow==13.0.0 numpy==2.5.4
-          python -c "from PIL import features; raise SystemExit(not features.check('raqm'))" || { sudo apt-get update && sudo apt-get install -y --no-install-recommends libfribidi0; }
-          python -c "from PIL import features; assert features.check('raqm'), 'Pillow без Raqm: нет libfribidi'"
-      # --only получает только выбранные имена. null убирает --only и запускает всё.
-      # Число процессов ограничиваем квотой контейнера: CPU хоста может быть больше.
-      # Каждый набор использует временную тестовую копию, а не пользовательский проект.
-      - name: Выбранные тесты Python
-        env:
-          CI_PYTHON_TESTS: ${{ needs.scope.outputs.python_tests }}
-        run: |
-          python3 -B - <<'PY'
-          import json, os, subprocess, sys
-          from pathlib import Path
-          selected = json.loads(os.environ['CI_PYTHON_TESTS'])
-          if selected is not None and (not isinstance(selected, list) or not selected):
-              raise ValueError('Пустой набор Python не является проверкой.')
-          jobs = os.cpu_count() or 1
-          try:
-              quota, period = Path('/sys/fs/cgroup/cpu.max').read_text().split()
-              if quota != 'max':
-                  jobs = max(1, int(quota) // int(period))
-          except (OSError, ValueError):
-              pass
-          args = [] if selected is None else ['--only', *selected]
-          raise SystemExit(subprocess.call([sys.executable, '-B', 'tools/run_tests/run_tests.py', *args, '--jobs', str(jobs)]))
-          PY
-
-  # Только unit-тесты скриптов поставки и синтаксис Python.
-  # Здесь нет dist:linux/dist:win, Docker-smoke или нативного запуска Windows.
-  runtime:
-    name: 'Скрипты поставки: Node и Python'
-    needs: scope
-    if: needs.scope.outputs.runtime == 'true'
-    runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          package-manager-cache: false
-      - uses: actions/setup-python@v7
-        with:
-          python-version: '3.12'
-      - name: Тесты Node-скриптов поставки
-        run: node --test scripts/runtime/*.test.mjs
-      - name: Синтаксис Python-скриптов поставки
-        run: |
-          python3 -B - <<'PY'
-          import ast
-          from pathlib import Path
-          for path in Path('scripts/runtime').glob('*.py'):
-              ast.parse(path.read_text(encoding='utf-8'), filename=str(path))
-          PY
-      - name: Тесты проверки установщика
-        run: python3 -B -m unittest discover -s scripts/runtime -p 'test_*.py'
-
-  # Проверяется инструмент публикации на fake GitHub и маленьких временных Git-репозиториях.
-  # Настоящий release prepare/publish этот job не вызывает; сборки и отправки файлов нет.
-  release:
-    name: 'Инструмент выпуска: тесты'
-    needs: scope
-    if: needs.scope.outputs.release == 'true'
-    runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          package-manager-cache: false
-      - name: Проверки сценария выпуска
-        run: node --test scripts/release/release.test.mjs

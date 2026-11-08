@@ -1,0 +1,18 @@
+{
+  "description": "scenes.json — битый JSON, комплекты есть.",
+  "call": "computeStatus",
+  "project": "project",
+  "covers": [
+    "damagedScenes",
+    "state=timed",
+    "shotsDone=done.size без реестра"
+  ],
+  "stubbedMedia": [
+    "assets/shots/M01/video.mp4",
+    "assets/shots/M02/video.mp4",
+    "plan/animatic/cards/M03.png",
+    "plan/animatic/cards/M04.png",
+    "plan/animatic/cards/M05.png",
+    "source/track.mp3"
+  ]
+}

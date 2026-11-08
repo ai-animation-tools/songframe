@@ -1,0 +1,9 @@
+{
+  "description": "Повреждённый кастинг заменяется собранным из исходников.",
+  "call": "initCast",
+  "project": "project",
+  "covers": [
+    "readCast=false → новый кастинг"
+  ],
+  "stubbedMedia": []
+}

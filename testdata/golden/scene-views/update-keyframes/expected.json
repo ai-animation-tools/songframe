@@ -1,0 +1,22 @@
+{
+  "code": 0,
+  "stdout": "Обновлено представлений: 3.\n",
+  "stderr": "",
+  "traceback": false,
+  "files": {
+    "plan/animatic/cards/M03.last.png": "created",
+    "plan/animatic/cards/M03.png": "changed",
+    "plan/animatic/cards/manifest.json": "changed"
+  },
+  "recheck": {
+    "code": 1,
+    "stdout": "",
+    "stderr": "Устарели представления: ROADMAP.md\n"
+  },
+  "cards": [
+    "plan/animatic/cards/M03.png",
+    "plan/animatic/cards/M03.last.png",
+    "plan/animatic/cards/M04.png",
+    "plan/animatic/cards/M05.png"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "description": "Образец без assets/shots/M01, M02.",
+  "call": "computeStatus",
+  "project": "project",
+  "covers": [
+    "state=scripted (kits=0)"
+  ],
+  "stubbedMedia": [
+    "plan/animatic/cards/M03.png",
+    "plan/animatic/cards/M04.png",
+    "plan/animatic/cards/M05.png",
+    "source/track.mp3"
+  ]
+}

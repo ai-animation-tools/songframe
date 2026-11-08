@@ -1,0 +1,424 @@
+[
+  {
+    "name": "empty",
+    "initial": null,
+    "ops": [
+      [
+        "getAgent"
+      ],
+      [
+        "getProviderAgent",
+        "codex"
+      ],
+      [
+        "saveAgent",
+        {
+          "provider": "codex",
+          "model": " m "
+        }
+      ],
+      [
+        "getAgent"
+      ],
+      [
+        "getProviderAgent",
+        "codex"
+      ],
+      [
+        "getProviderAgent",
+        "claude"
+      ]
+    ],
+    "expected": [
+      null,
+      null,
+      {
+        "provider": "codex",
+        "model": "m"
+      },
+      {
+        "provider": "codex",
+        "model": "m"
+      },
+      {
+        "provider": "codex",
+        "model": "m"
+      },
+      null
+    ],
+    "final": "{\n  \"agent\": {\n    \"provider\": \"codex\",\n    \"model\": \"m\"\n  },\n  \"agentProfiles\": {\n    \"codex\": {\n      \"provider\": \"codex\",\n      \"model\": \"m\"\n    }\n  }\n}\n"
+  },
+  {
+    "name": "keeps-other-fields",
+    "initial": "{\n  \"toolsRootOverride\": \"/tools\",\n  \"zeta\": [1, {\"b\": 2, \"a\": 1}],\n  \"agent\": {\"provider\": \"claude\", \"model\": \"old\"},\n  \"alpha\": 1\n}\n",
+    "ops": [
+      [
+        "saveAgent",
+        {
+          "provider": "codex"
+        }
+      ],
+      [
+        "saveProviderAgent",
+        {
+          "provider": "claude",
+          "model": "new"
+        }
+      ],
+      [
+        "getProviderAgent",
+        "claude"
+      ],
+      [
+        "saveAgent",
+        null
+      ],
+      [
+        "getAgent"
+      ]
+    ],
+    "expected": [
+      {
+        "provider": "codex"
+      },
+      {
+        "provider": "claude",
+        "model": "new"
+      },
+      {
+        "provider": "claude",
+        "model": "new"
+      },
+      null,
+      null
+    ],
+    "final": "{\n  \"toolsRootOverride\": \"/tools\",\n  \"zeta\": [\n    1,\n    {\n      \"b\": 2,\n      \"a\": 1\n    }\n  ],\n  \"alpha\": 1,\n  \"agentProfiles\": {\n    \"codex\": {\n      \"provider\": \"codex\"\n    },\n    \"claude\": {\n      \"provider\": \"claude\",\n      \"model\": \"new\"\n    }\n  }\n}\n"
+  },
+  {
+    "name": "provider-profile-updates-current",
+    "initial": "{\"agent\":{\"provider\":\"codex\",\"model\":\"a\"},\"agentProfiles\":{\"codex\":{\"provider\":\"codex\",\"model\":\"a\"}}}",
+    "ops": [
+      [
+        "saveProviderAgent",
+        {
+          "provider": "codex",
+          "model": "b"
+        }
+      ],
+      [
+        "getAgent"
+      ],
+      [
+        "saveProviderAgent",
+        null
+      ],
+      [
+        "saveProviderAgent",
+        {
+          "provider": "x"
+        }
+      ],
+      [
+        "getProviderAgent",
+        "x"
+      ]
+    ],
+    "expected": [
+      {
+        "provider": "codex",
+        "model": "b"
+      },
+      {
+        "provider": "codex",
+        "model": "b"
+      },
+      {
+        "throws": {
+          "message": "Укажите профиль агента."
+        }
+      },
+      {
+        "throws": {
+          "message": "Выберите агента."
+        }
+      },
+      {
+        "throws": {
+          "message": "Неизвестный агент."
+        }
+      }
+    ],
+    "final": "{\n  \"agent\": {\n    \"provider\": \"codex\",\n    \"model\": \"b\"\n  },\n  \"agentProfiles\": {\n    \"codex\": {\n      \"provider\": \"codex\",\n      \"model\": \"b\"\n    }\n  }\n}\n"
+  },
+  {
+    "name": "legacy-agent-model-trim",
+    "initial": "{\"agent\":{\"provider\":\"claude\",\"model\":\"  \"}}",
+    "ops": [
+      [
+        "getAgent"
+      ],
+      [
+        "saveProviderAgent",
+        {
+          "provider": "codex"
+        }
+      ]
+    ],
+    "expected": [
+      {
+        "provider": "claude"
+      },
+      {
+        "provider": "codex"
+      }
+    ],
+    "final": "{\n  \"agent\": {\n    \"provider\": \"claude\"\n  },\n  \"agentProfiles\": {\n    \"codex\": {\n      \"provider\": \"codex\"\n    }\n  }\n}\n"
+  },
+  {
+    "name": "invalid-agent",
+    "initial": "{\"agent\":{\"provider\":\"gpt\"}}",
+    "ops": [
+      [
+        "getAgent"
+      ],
+      [
+        "saveAgent",
+        {
+          "provider": "codex"
+        }
+      ]
+    ],
+    "expected": [
+      {
+        "throws": {
+          "message": "Неверный формат агента в <local>/settings.json. Настройки сохранены; исправьте файл или перенесите его в резервную папку."
+        }
+      },
+      {
+        "throws": {
+          "message": "Неверный формат агента в <local>/settings.json. Настройки сохранены; исправьте файл или перенесите его в резервную папку."
+        }
+      }
+    ],
+    "final": "{\"agent\":{\"provider\":\"gpt\"}}"
+  },
+  {
+    "name": "invalid-profiles",
+    "initial": "{\"agentProfiles\":{\"claude\":{\"provider\":\"codex\"}}}",
+    "ops": [
+      [
+        "getAgent"
+      ]
+    ],
+    "expected": [
+      {
+        "throws": {
+          "message": "Неверный формат агента в <local>/settings.json. Настройки сохранены; исправьте файл или перенесите его в резервную папку."
+        }
+      }
+    ],
+    "final": "{\"agentProfiles\":{\"claude\":{\"provider\":\"codex\"}}}"
+  },
+  {
+    "name": "unknown-profile",
+    "initial": "{\"agentProfiles\":{\"x\":{\"provider\":\"codex\"}}}",
+    "ops": [
+      [
+        "getAgent"
+      ]
+    ],
+    "expected": [
+      {
+        "throws": {
+          "message": "Неверный формат агента в <local>/settings.json. Настройки сохранены; исправьте файл или перенесите его в резервную папку."
+        }
+      }
+    ],
+    "final": "{\"agentProfiles\":{\"x\":{\"provider\":\"codex\"}}}"
+  },
+  {
+    "name": "profiles-null",
+    "initial": "{\"agentProfiles\":null,\"agent\":null}",
+    "ops": [
+      [
+        "getAgent"
+      ],
+      [
+        "saveAgent",
+        {
+          "provider": "claude"
+        }
+      ]
+    ],
+    "expected": [
+      {
+        "throws": {
+          "message": "Неверный формат агента в <local>/settings.json. Настройки сохранены; исправьте файл или перенесите его в резервную папку."
+        }
+      },
+      {
+        "throws": {
+          "message": "Неверный формат агента в <local>/settings.json. Настройки сохранены; исправьте файл или перенесите его в резервную папку."
+        }
+      }
+    ],
+    "final": "{\"agentProfiles\":null,\"agent\":null}"
+  },
+  {
+    "name": "array-file",
+    "initial": "[]",
+    "ops": [
+      [
+        "getAgent"
+      ]
+    ],
+    "expected": [
+      {
+        "throws": {
+          "message": "Неверный формат <local>/settings.json. Настройки сохранены; исправьте файл или перенесите его в резервную папку."
+        }
+      }
+    ],
+    "final": "[]"
+  },
+  {
+    "name": "bad-tools-root",
+    "initial": "{\"toolsRootOverride\":5}",
+    "ops": [
+      [
+        "getAgent"
+      ]
+    ],
+    "expected": [
+      {
+        "throws": {
+          "message": "Неверный формат <local>/settings.json. Настройки сохранены; исправьте файл или перенесите его в резервную папку."
+        }
+      }
+    ],
+    "final": "{\"toolsRootOverride\":5}"
+  },
+  {
+    "name": "corrupt-json",
+    "initial": "{\"agent\":",
+    "ops": [
+      [
+        "getAgent"
+      ],
+      [
+        "saveAgent",
+        {
+          "provider": "codex"
+        }
+      ]
+    ],
+    "expected": [
+      {
+        "throws": {
+          "message": "Не удалось прочитать <local>/settings.json: Unexpected end of JSON input. Файл сохранён; исправьте его или перенесите в резервную папку."
+        }
+      },
+      {
+        "throws": {
+          "message": "Не удалось прочитать <local>/settings.json: Unexpected end of JSON input. Файл сохранён; исправьте его или перенесите в резервную папку."
+        }
+      }
+    ],
+    "final": "{\"agent\":"
+  },
+  {
+    "name": "json-null",
+    "initial": "null",
+    "ops": [
+      [
+        "getAgent"
+      ],
+      [
+        "saveAgent",
+        {
+          "provider": "codex"
+        }
+      ]
+    ],
+    "expected": [
+      {
+        "throws": {
+          "message": "Не удалось прочитать <local>/settings.json: ожидался JSON-объект. Файл сохранён; исправьте его или перенесите в резервную папку."
+        }
+      },
+      {
+        "throws": {
+          "message": "Не удалось прочитать <local>/settings.json: ожидался JSON-объект. Файл сохранён; исправьте его или перенесите в резервную папку."
+        }
+      }
+    ],
+    "final": "null"
+  },
+  {
+    "name": "json-number",
+    "initial": "5",
+    "ops": [
+      [
+        "getAgent"
+      ]
+    ],
+    "expected": [
+      {
+        "throws": {
+          "message": "Не удалось прочитать <local>/settings.json: ожидался JSON-объект. Файл сохранён; исправьте его или перенесите в резервную папку."
+        }
+      }
+    ],
+    "final": "5"
+  },
+  {
+    "name": "invalid-save",
+    "initial": null,
+    "ops": [
+      [
+        "saveAgent",
+        {
+          "provider": "codex",
+          "model": 1
+        }
+      ],
+      [
+        "saveAgent",
+        "codex"
+      ]
+    ],
+    "expected": [
+      {
+        "throws": {
+          "message": "Модель должна быть текстом без нулевых символов."
+        }
+      },
+      {
+        "throws": {
+          "message": "Неверный формат настроек агента."
+        }
+      }
+    ],
+    "final": null
+  },
+  {
+    "name": "unicode-keys",
+    "initial": "{\"ключ\":\"значение\",\"agent\":{\"model\":\"m\",\"provider\":\"codex\"}}",
+    "ops": [
+      [
+        "saveAgent",
+        {
+          "provider": "codex",
+          "model": "m"
+        }
+      ]
+    ],
+    "expected": [
+      {
+        "provider": "codex",
+        "model": "m"
+      }
+    ],
+    "final": "{\n  \"ключ\": \"значение\",\n  \"agent\": {\n    \"provider\": \"codex\",\n    \"model\": \"m\"\n  },\n  \"agentProfiles\": {\n    \"codex\": {\n      \"provider\": \"codex\",\n      \"model\": \"m\"\n    }\n  }\n}\n"
+  }
+]

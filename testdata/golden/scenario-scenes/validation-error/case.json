@@ -1,0 +1,12 @@
+{
+  "description": "Ошибки проверки: файл не меняется.",
+  "call": "scenesSaveImpact + validateScenes + saveScenesWithMode",
+  "project": "project",
+  "mode": "production",
+  "covers": [
+    "ошибка проверки",
+    "файл не меняется",
+    "impact считается и для черновика с ошибками"
+  ],
+  "stubbedMedia": []
+}

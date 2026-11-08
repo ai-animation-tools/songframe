@@ -1,0 +1,17 @@
+{
+  "error": null,
+  "result": {
+    "schema_version": 1,
+    "logline": "Двое друзей украшают причал фонариками и провожают закат.",
+    "sequences": []
+  },
+  "files": {
+    "plan/treatment.json": "changed"
+  },
+  "resave": {
+    "error": null,
+    "sameResult": true,
+    "files": {}
+  },
+  "originalError": "Трактовка: нужны schema_version 1 и хотя бы одна часть."
+}

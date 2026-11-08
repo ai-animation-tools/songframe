@@ -1,0 +1,6 @@
+{
+  "code": 2,
+  "stdout": "",
+  "stderr": "usage: shot_status.py [-h]\n                      [--filter {all,planned,progress,completed,stale,unknown}]\n                      [--json] [--next] [--independent Mxx [Mxx ...]]\nshot_status.py: error: argument --filter: expected one argument\n",
+  "traceback": false
+}

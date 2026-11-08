@@ -1,0 +1,13 @@
+{
+  "description": "plan/production-status.json — список.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "файл должен быть объектом"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

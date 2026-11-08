@@ -1,0 +1,9 @@
+{
+  "description": "source_review подтверждал другие байты собственного ролика M03.",
+  "call": "computeStatus",
+  "project": "project",
+  "covers": [
+    "source_receipt_missing при смене собственного ролика"
+  ],
+  "stubbedMedia": []
+}

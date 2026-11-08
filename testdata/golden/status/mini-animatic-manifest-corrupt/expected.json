@@ -1,0 +1,22 @@
+{
+  "path": "<project>",
+  "state": "in_production",
+  "name": "Мини-клип",
+  "animaticVideo": "mini-animatic.mp4",
+  "checks": {
+    "marker": true,
+    "sources": true,
+    "timing": true,
+    "cast": true,
+    "treatment": true,
+    "scenes": true,
+    "shotsTotal": 3,
+    "shotsDone": 3,
+    "animaticBuilt": false,
+    "animaticFresh": false,
+    "animaticApproved": false
+  },
+  "problems": [
+    "Все сцены приняты, но полный аниматик ещё не собран."
+  ]
+}

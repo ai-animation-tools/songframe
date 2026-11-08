@@ -1,0 +1,12 @@
+{
+  "description": "Заполнение шаблона: инструкции дословно, видео и изображения выбраны.",
+  "call": "writeProjectSettings",
+  "project": "project",
+  "covers": [
+    "write",
+    "agent_instructions дословно",
+    "name trim",
+    "readProjectSettings после записи"
+  ],
+  "stubbedMedia": []
+}

@@ -1,0 +1,16 @@
+{
+  "description": "scenes.json с пустым scenes.",
+  "call": "computeStatus",
+  "project": "project",
+  "covers": [
+    "damagedScenes для пустого списка"
+  ],
+  "stubbedMedia": [
+    "assets/shots/M01/video.mp4",
+    "assets/shots/M02/video.mp4",
+    "plan/animatic/cards/M03.png",
+    "plan/animatic/cards/M04.png",
+    "plan/animatic/cards/M05.png",
+    "source/track.mp3"
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "code": 0,
+  "stdout": "Пакет перенесён: <project>/plan/awaiting/M03\n",
+  "stderr": "",
+  "traceback": false,
+  "files": {
+    "plan/awaiting/M03/description.md": "created",
+    "plan/awaiting/M03/frames/K01.png": "created",
+    "plan/awaiting/M03/frames/K02.png": "created",
+    "plan/awaiting/M03/request/request.json": "created",
+    "plan/awaiting/M03/video-prompt.txt": "created",
+    "plan/awaiting/M03/workflow.json": "created",
+    "plan/batches/M03-attempt-01/description.md": "removed",
+    "plan/batches/M03-attempt-01/frames/K01.png": "removed",
+    "plan/batches/M03-attempt-01/frames/K02.png": "removed",
+    "plan/batches/M03-attempt-01/request/request.json": "removed",
+    "plan/batches/M03-attempt-01/video-prompt.txt": "removed",
+    "plan/batches/M03-attempt-01/workflow.json": "removed"
+  },
+  "dirs": {
+    "plan/awaiting/M03": "created",
+    "plan/awaiting/M03/frames": "created",
+    "plan/awaiting/M03/request": "created",
+    "plan/batches/M03-attempt-01": "removed",
+    "plan/batches/M03-attempt-01/frames": "removed",
+    "plan/batches/M03-attempt-01/request": "removed"
+  },
+  "modes": {
+    "plan/awaiting/M03/workflow.json": "0600"
+  }
+}

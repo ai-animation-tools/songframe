@@ -1,0 +1,13 @@
+{
+  "description": "Проба review_pending в примечаниях.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "reviews"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

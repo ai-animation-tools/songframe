@@ -1,0 +1,12 @@
+{
+  "description": "Повреждённый прежний реестр не мешает записи и не даёт visual_direction.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "existing False"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ]
+}

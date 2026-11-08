@@ -1,0 +1,16 @@
+{
+  "description": "reopen -h.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "sub help"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "reopen",
+    "-h"
+  ],
+  "remove": [],
+  "mkdir": []
+}

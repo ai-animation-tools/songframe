@@ -1,0 +1,9 @@
+{
+  "code": 1,
+  "stdout": "",
+  "stderr": "Для изображения используйте set-image-request; video request_dir сохраняется.\n",
+  "traceback": false,
+  "files": {},
+  "dirs": {},
+  "modes": {}
+}

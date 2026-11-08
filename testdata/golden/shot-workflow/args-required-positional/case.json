@@ -1,0 +1,17 @@
+{
+  "description": "approve без опоры и пути.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "required positional"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "approve",
+    "--dir",
+    "x"
+  ],
+  "remove": [],
+  "mkdir": []
+}

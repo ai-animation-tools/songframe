@@ -1,0 +1,11 @@
+{
+  "description": "Кастинг есть, исходников ещё нет: все файлы нового референса добавляются в выбор сущности.",
+  "call": "saveSourcesWithCastImages",
+  "project": "project",
+  "covers": [
+    "previous null",
+    "новые изображения без прежней описи",
+    "appearance из описания формы"
+  ],
+  "stubbedMedia": []
+}

@@ -1,0 +1,14 @@
+{
+  "fingerprints": null,
+  "accepted": {
+    "M01": "stale",
+    "M02": "stale",
+    "M03": "stale"
+  },
+  "reasons": {
+    "M01": "scene_changed",
+    "M02": "scene_changed",
+    "M03": "scene_changed"
+  },
+  "problem": "Постановку планов не удалось сверить с принятыми комплектами: M02: изменения состояния должны быть объектом."
+}

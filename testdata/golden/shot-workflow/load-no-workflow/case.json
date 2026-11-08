@@ -1,0 +1,17 @@
+{
+  "description": "Папка без workflow.json.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "exist"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "show",
+    "--dir",
+    "plan/batches/none"
+  ],
+  "remove": [],
+  "mkdir": []
+}

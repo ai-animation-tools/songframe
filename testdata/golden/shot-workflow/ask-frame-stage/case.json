@@ -1,0 +1,21 @@
+{
+  "description": "--frame не на keyframes_review.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "frame stage"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "ask",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "--stage",
+    "prompt_review",
+    "--frame",
+    "K01"
+  ],
+  "remove": [],
+  "mkdir": []
+}

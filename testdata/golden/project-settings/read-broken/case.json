@@ -1,0 +1,9 @@
+{
+  "description": "Битый JSON: текст Node не сравнивается.",
+  "call": "readProjectSettings",
+  "project": "project",
+  "covers": [
+    "projectReadFailed (JSON)"
+  ],
+  "stubbedMedia": []
+}

@@ -1,0 +1,13 @@
+{
+  "description": "Папки проекта нет: код 2.",
+  "call": "check_assets",
+  "project": null,
+  "base": "checks-base",
+  "covers": [
+    "Папка проекта не найдена"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

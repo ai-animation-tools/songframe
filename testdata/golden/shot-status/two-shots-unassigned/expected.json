@@ -1,0 +1,6 @@
+{
+  "code": 0,
+  "stdout": "{\n  \"shots\": [\n    {\n      \"id\": \"M01\",\n      \"interval\": \"00:00.0–00:08.0\",\n      \"duration\": \"8\",\n      \"lipsync\": false,\n      \"status\": \"completed\",\n      \"label\": \"готова\",\n      \"stage\": \"выбранный комплект в assets\",\n      \"notes\": []\n    },\n    {\n      \"id\": \"M02\",\n      \"interval\": \"00:08.0–00:30.0\",\n      \"duration\": \"22\",\n      \"lipsync\": false,\n      \"status\": \"stale\",\n      \"label\": \"постановка изменена\",\n      \"stage\": \"постановка изменена после приёмки: нужно новое производство\",\n      \"notes\": []\n    }\n  ],\n  \"queue\": [],\n  \"next\": \"M02\",\n  \"unassigned_packages\": {\n    \"M03\": [\n      \"plan/batches/M03-attempt-01\"\n    ]\n  }\n}\n",
+  "stderr": "",
+  "traceback": false
+}

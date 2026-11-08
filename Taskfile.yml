@@ -1,0 +1,135 @@
+version: '3'
+
+# Wails включает исполнитель Task; отдельная установка Task для этих команд не нужна.
+tasks:
+  deps:
+    desc: Установить закреплённые зависимости разработки frontend
+    dir: frontend
+    cmds:
+      - yarn install --immutable
+  bindings:
+    desc: Сгенерировать TypeScript из реального Go-сервиса
+    cmds:
+      - sh scripts/bindings.sh
+  frontend:
+    desc: Проверить TypeScript и собрать frontend
+    dir: frontend
+    cmds:
+      - yarn build
+  build:
+    desc: Собрать нативную оболочку со встроенным frontend
+    cmds:
+      - task: bindings
+      - task: frontend
+      - mkdir -p build/bin
+      # Исходный архив не обязан содержать .git; версия раннего пакета задаётся в packaging/VERSION.
+      # Версия из packaging/VERSION попадает в бинарник: по ней обновление сравнивает выпуски.
+      - go build -buildvcs=false -tags production -trimpath -ldflags "-s -w -X songframe-go/internal/appversion.Version=$(cat packaging/VERSION)" -o build/bin/songframe .
+  package:linux:
+    desc: Собрать ранний Linux AppImage с GTK/WebKit, bootstrap и метаданными
+    cmds:
+      - bash scripts/package-linux.sh
+  package:deb:
+    desc: Собрать deb-пакет для Ubuntu 24.04 с зависимостями GTK4/WebKitGTK 6.0
+    cmds:
+      - bash scripts/package-deb.sh
+  package:windows:
+    desc: Собрать Windows amd64 CGO-приложение и установщик NSIS с WebView2
+    cmds:
+      - bash scripts/package-windows.sh
+  smoke:host:
+    desc: Проверить AppImage в настоящем окне на хосте с отдельным чистым профилем
+    requires:
+      vars: [APPIMAGE, OUTPUT]
+    cmds:
+      - bash scripts/smoke-host.sh "{{.APPIMAGE}}" "{{.OUTPUT}}"
+  smoke:deb:
+    desc: Установить deb-пакет в чистую Ubuntu 24.04 и проверить запуск интерфейса
+    requires:
+      vars: [DEB, OUTPUT]
+    cmds:
+      - bash scripts/smoke-deb.sh "{{.DEB}}" "{{.OUTPUT}}"
+  smoke:update:
+    desc: Обновить готовый AppImage подставным выпуском и проверить перезапуск новой версии
+    requires:
+      vars: [APPIMAGE, OUTPUT]
+    cmds:
+      - bash scripts/smoke-update.sh "{{.APPIMAGE}}" "{{.OUTPUT}}"
+  smoke:appimage:
+    desc: Проверить конечный AppImage без компонентов в чистой Ubuntu 24.04
+    requires:
+      vars: [APPIMAGE, OUTPUT]
+    cmds:
+      - bash scripts/smoke-appimage.sh "{{.APPIMAGE}}" "{{.OUTPUT}}"
+  check:
+    desc: Проверить Go, TypeScript и контракты оболочки
+    cmds:
+      - task: check:go
+      - task: check:frontend
+  check:go:
+    desc: Проверить Go-сервисы и сборочную точку входа с актуальными bindings
+    cmds:
+      - task: bindings
+      - go test ./...
+      - go vet ./...
+  check:components:
+    desc: Проверить закреплённый manifest компонентов без загрузки и ML
+    cmds:
+      - go test ./internal/components -count=1
+  check:race:
+    desc: Проверить конкурентный доступ сервисов детектором гонок
+    cmds:
+      - go test -race ./internal/...
+  check:contracts:
+    desc: Сверить общие fixtures на границах Go и TypeScript
+    cmds:
+      - go test ./internal/... -run Contract -count=1
+      - task: check:contracts:frontend
+  check:contracts:frontend:
+    internal: true
+    dir: frontend
+    cmds:
+      - yarn test src/platform/contracts.test.ts
+  check:frontend:
+    desc: Проверить TypeScript и контрактные тесты frontend
+    dir: frontend
+    cmds:
+      - yarn typecheck
+      - yarn test
+  storybook:
+    desc: Собрать автономную статическую витрину
+    dir: frontend
+    cmds:
+      - yarn build-storybook
+  check:storybook:
+    desc: Проверить состояния статической витрины в браузере
+    dir: frontend
+    cmds:
+      - yarn test:storybook
+  check:ui:
+    desc: Собрать актуальную витрину и проверить её в браузере
+    cmds:
+      - task: storybook
+      - task: check:storybook
+  check:format:
+    desc: Проверить форматирование исходников Go и frontend
+    cmds:
+      - sh scripts/check-format.sh
+      - task: check:format:frontend
+  check:format:frontend:
+    internal: true
+    dir: frontend
+    cmds:
+      - yarn format:check
+  check:all:
+    desc: Выполнить контракты, типы, race, форматирование и браузерную приёмку
+    # Последовательность исключает проверку старой витрины или bindings от предыдущей сборки.
+    cmds:
+      - task: check
+      - task: check:race
+      - task: check:format
+      - task: check:ui
+  run:
+    desc: Открыть собранную оболочку
+    cmds:
+      - ./build/bin/songframe

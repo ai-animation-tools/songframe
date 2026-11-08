@@ -1,0 +1,21 @@
+{
+  "description": "С этапа description_review.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "description_review"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "set-image-request",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "--frame",
+    "K02",
+    "--request-dir",
+    "image-01"
+  ],
+  "remove": [],
+  "mkdir": []
+}

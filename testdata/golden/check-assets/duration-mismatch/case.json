@@ -1,0 +1,13 @@
+{
+  "description": "Длительность не равна кадрам.",
+  "call": "check_assets",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "Длительность принятого монтажа"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

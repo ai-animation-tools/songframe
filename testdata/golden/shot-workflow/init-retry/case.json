@@ -1,0 +1,20 @@
+{
+  "description": "Исправленная попытка M03.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "retry_of"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "init",
+    "M03",
+    "--dir",
+    "plan/batches/M03-attempt-02",
+    "--retry-of",
+    "plan/batches/M03-attempt-01"
+  ],
+  "remove": [],
+  "mkdir": []
+}

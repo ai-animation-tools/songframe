@@ -1,0 +1,14 @@
+{
+  "description": "Образец: оба комплекта согласованы.",
+  "call": "check_assets",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "load_motion",
+    "validate_package"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

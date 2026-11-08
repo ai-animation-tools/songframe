@@ -1,0 +1,17 @@
+{
+  "description": "Промпт ровно на пределе.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "limit equal"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "approve-prompt",
+    "--dir",
+    "plan/batches/M03-attempt-01"
+  ],
+  "remove": [],
+  "mkdir": []
+}

@@ -1,0 +1,13 @@
+{
+  "description": "Черновик трактовки с разрывом между частями (сохранён редактором).",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "стык частей"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--force"
+  ]
+}

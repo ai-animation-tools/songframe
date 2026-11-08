@@ -1,0 +1,11 @@
+{
+  "description": "Цикл state_from.",
+  "call": "viewScenario + readScenarioRegistry + validateScenes",
+  "project": "project",
+  "covers": [
+    "stateCycle в проблемах"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

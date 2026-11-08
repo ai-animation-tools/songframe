@@ -1,0 +1,56 @@
+{
+  "error": null,
+  "result": {
+    "version": 2,
+    "status": "Разметка; подтверждено на слух 0 из 3 строк.",
+    "source": "source/track.mp3",
+    "sha256": "d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640",
+    "duration_decoded": 30,
+    "duration_container": 30,
+    "clock": "Секунды от начала декодированного звука, не SMPTE",
+    "lines": [
+      {
+        "id": 1,
+        "source_line": 3,
+        "start": 10,
+        "end": 10.3,
+        "note": "",
+        "verified": false
+      }
+    ],
+    "sections": [
+      {
+        "name": "Не размечено",
+        "start": 0,
+        "end": 10,
+        "note": "границы вокала не подтверждены",
+        "origin": "auto"
+      },
+      {
+        "name": "Куплет",
+        "start": 10,
+        "end": 10.3,
+        "note": "строки 1–1",
+        "origin": "auto"
+      },
+      {
+        "name": "Не размечено",
+        "start": 10.3,
+        "end": 30,
+        "note": "границы вокала не подтверждены",
+        "origin": "auto"
+      }
+    ],
+    "candidates": [],
+    "line_order": [
+      2,
+      3,
+      4
+    ]
+  },
+  "resave": {
+    "error": null,
+    "sameResult": true,
+    "sameBytes": true
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "code": 0,
+  "stdout": "Пакет перенесён: <project>/plan/awaiting/M04\n",
+  "stderr": "",
+  "traceback": false,
+  "files": {
+    "plan/awaiting/M04/r/request.json": "created",
+    "plan/awaiting/M04/workflow.json": "created",
+    "<tmp>/M04/r/request.json": "removed",
+    "<tmp>/M04/workflow.json": "removed"
+  },
+  "dirs": {
+    "plan/awaiting/M04": "created",
+    "plan/awaiting/M04/r": "created",
+    "<tmp>/M04": "removed",
+    "<tmp>/M04/r": "removed"
+  },
+  "modes": {
+    "plan/awaiting/M04/workflow.json": "0600"
+  }
+}

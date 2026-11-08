@@ -1,0 +1,15 @@
+{
+  "description": "references(cast) падает на сущности без id: проверка расхождения пропускается.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "references KeyError"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ],
+  "remove": [],
+  "mkdir": []
+}

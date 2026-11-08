@@ -1,0 +1,10 @@
+{
+  "description": "Повторное сохранение той же формы: кастинг, записанный приложением, не меняется.",
+  "call": "saveSourcesWithCastImages",
+  "project": "project",
+  "covers": [
+    "writeCast без изменений",
+    "невыбранный сохранённый вид не добавляется"
+  ],
+  "stubbedMedia": []
+}

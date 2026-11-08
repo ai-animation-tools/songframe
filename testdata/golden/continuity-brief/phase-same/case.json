@@ -1,0 +1,17 @@
+{
+  "description": "M05 со state_from фазы same, --phase after --json.",
+  "call": "continuity_brief",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "same"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "M05",
+    "--phase=after",
+    "--json"
+  ],
+  "remove": [],
+  "mkdir": []
+}

@@ -1,0 +1,19 @@
+{
+  "error": null,
+  "errorPrefix": "Не удалось прочитать <project>/plan/project.json: ",
+  "status": null,
+  "history": {
+    "current": null,
+    "history": [
+      {
+        "path": "/elsewhere/Другой клип",
+        "name": "Другой клип"
+      },
+      {
+        "path": "<project>",
+        "name": "Старое имя"
+      }
+    ]
+  },
+  "fileUnchanged": true
+}

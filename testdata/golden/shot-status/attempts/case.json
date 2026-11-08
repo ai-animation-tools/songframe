@@ -1,0 +1,17 @@
+{
+  "description": "Попытки: статусы attempt.json, request_dir, подготовленный запрос.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "ATTEMPT_LABELS",
+    "request_dir",
+    "prepared"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ],
+  "remove": [],
+  "mkdir": []
+}

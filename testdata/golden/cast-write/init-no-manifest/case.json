@@ -1,0 +1,9 @@
+{
+  "description": "Без описи — ошибка, файлы не меняются.",
+  "call": "initCast",
+  "project": "project",
+  "covers": [
+    "manifestMissing"
+  ],
+  "stubbedMedia": []
+}

@@ -1,0 +1,15 @@
+{
+  "description": "Манифест комплекта без generation: KeyError — трассировка.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "KeyError generation"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--check"
+  ],
+  "remove": [],
+  "mkdir": []
+}

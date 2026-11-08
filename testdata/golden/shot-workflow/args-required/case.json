@@ -1,0 +1,15 @@
+{
+  "description": "init без shot и --dir.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "required"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "init"
+  ],
+  "remove": [],
+  "mkdir": []
+}

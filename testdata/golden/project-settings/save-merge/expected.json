@@ -1,0 +1,40 @@
+{
+  "error": null,
+  "result": {
+    "agentInstructions": "Старые инструкции",
+    "name": "Клип",
+    "animaticVideo": "klip.mp4",
+    "generation": {
+      "custom": "верх",
+      "video": {
+        "provider": "test",
+        "provider_selected": true,
+        "resolution": "720p",
+        "aspect_ratio": "16:9",
+        "watermark": false,
+        "duration_rule": "min_supported_strictly_greater_than_window",
+        "model": "model-a",
+        "options": {
+          "backend": {
+            "x": 1,
+            "y": 3,
+            "z": 4
+          },
+          "keep": "да",
+          "added": 1
+        },
+        "ext": "поле провайдера"
+      },
+      "image": {
+        "provider": "test",
+        "provider_selected": true,
+        "options": {
+          "quality": "high"
+        },
+        "model": "img-1"
+      },
+      "top": "новый"
+    }
+  },
+  "fileUnchanged": false
+}

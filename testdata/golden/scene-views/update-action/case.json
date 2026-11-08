@@ -1,0 +1,14 @@
+{
+  "description": "Правка действия M04: запись карточек, документов и квитанции.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "write_text",
+    "write_bytes"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

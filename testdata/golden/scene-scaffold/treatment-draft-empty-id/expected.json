@@ -1,0 +1,9 @@
+{
+  "code": 1,
+  "stdout": "",
+  "stderr": "Часть без уникального id: {'id': '', 'title': 'Вечер у воды', 'direction': 'Общий план причала.', 'start': 0, 'end': 8, 'entities': ['boat', 'pier'], 'lipsync': False, 'max_shot_seconds': 8}\n",
+  "traceback": false,
+  "files": {
+    "plan/scenes.json": "unchanged"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "description": "Секции с origin auto полностью пересчитываются; разрыв между строками > 2 с.",
+  "call": "saveTiming",
+  "project": "project",
+  "covers": [
+    "Проигрыш после «…»",
+    "status «…; подтверждено на слух 2 из 3 строк.»",
+    "line_order сохраняет порядок редактора"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

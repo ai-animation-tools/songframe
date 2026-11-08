@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "current_animatic": null,
+  "current_animatic_status": "none",
+  "shots": {
+    "M01": {
+      "scene_sha256": "949caf12120f4ced6af255fe5526e3952234020d7645a3fb94bbc84ef6735f2d"
+    },
+    "M02": {
+      "scene_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    "M03": {
+      "scene_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    }
+  }
+}

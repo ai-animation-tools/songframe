@@ -1,0 +1,6 @@
+{
+  "code": 2,
+  "stdout": "",
+  "stderr": "usage: continuity_brief.py [-h] [--phase {before,after}] [--json]\n                           [--paragraph]\n                           shot\ncontinuity_brief.py: error: unrecognized arguments: --json\n",
+  "traceback": false
+}

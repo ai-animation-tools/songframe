@@ -1,0 +1,13 @@
+{
+  "description": "status попытки списком: unhashable — трассировка.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "TypeError"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

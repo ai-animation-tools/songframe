@@ -1,0 +1,6 @@
+{
+  "code": 1,
+  "stdout": "Принятых планов: 2.\n- plan/batches/M02-attempt-01: рабочий пакет принятых планов M02; приёмка без --clean\nНесоответствий: 1.\n",
+  "stderr": "",
+  "traceback": false
+}

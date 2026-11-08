@@ -1,0 +1,9 @@
+{
+  "code": 2,
+  "stdout": "",
+  "stderr": "usage: scene_scaffold.py [-h] [--force] [--dry-run] [--json]\nscene_scaffold.py: error: unrecognized arguments: --bogus x\n",
+  "traceback": false,
+  "files": {
+    "plan/scenes.json": "unchanged"
+  }
+}

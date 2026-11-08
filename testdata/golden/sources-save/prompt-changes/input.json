@@ -1,0 +1,48 @@
+{
+  "track": null,
+  "lyrics": {
+    "text": "[Куплет]\nПервая строка\n"
+  },
+  "idea": null,
+  "cover": null,
+  "references": [
+    {
+      "id": "mira",
+      "kind": "character",
+      "name": "Мира",
+      "short_name": "Мира",
+      "description": "",
+      "prompt": "",
+      "files": [
+        {
+          "existingPath": "heroes/mira.jpg",
+          "view": "front",
+          "note": "",
+          "prompt": "Мира анфас"
+        },
+        {
+          "existingPath": "heroes/mira-2.webp",
+          "view": "side",
+          "note": "",
+          "prompt": "Новый промпт профиля"
+        }
+      ]
+    },
+    {
+      "id": "lamp",
+      "kind": "prop",
+      "name": "Фонарь",
+      "short_name": "Фонарь",
+      "description": "",
+      "prompt": "",
+      "files": [
+        {
+          "existingPath": "props/lamp.png",
+          "view": "full",
+          "note": "",
+          "prompt": ""
+        }
+      ]
+    }
+  ]
+}

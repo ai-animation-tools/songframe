@@ -1,4 +1,6 @@
 # Лэндинг из www публикуется на GitHub Pages как есть, без сборки.
+# Сайт принадлежит публичному ai-animation-tools/songframe: после переноса истории туда workflow
+# начинает публиковать, а в приватном songframe-go, где Pages не включены, job пропускается.
 name: Pages
 
 on:
@@ -20,6 +22,7 @@ concurrency:
 jobs:
   deploy:
     name: Публикация лэндинга
+    if: github.repository == 'ai-animation-tools/songframe'
     runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
     timeout-minutes: 10
     permissions:

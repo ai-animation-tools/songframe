@@ -1,0 +1,21 @@
+{
+  "description": "Повтор пакета во временной папке: абсолютная ссылка.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "retry absolute"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "init",
+    "M04",
+    "--dir",
+    "plan/batches/M04-attempt-01",
+    "--retry-of",
+    "<tmp>/M04-old"
+  ],
+  "remove": [],
+  "mkdir": [],
+  "tmp": true
+}

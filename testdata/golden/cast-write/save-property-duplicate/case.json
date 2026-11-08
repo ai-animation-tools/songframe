@@ -1,0 +1,9 @@
+{
+  "description": "Повтор кода свойства в словаре типа.",
+  "call": "writeCast",
+  "project": "project",
+  "covers": [
+    "propertyDuplicate"
+  ],
+  "stubbedMedia": []
+}

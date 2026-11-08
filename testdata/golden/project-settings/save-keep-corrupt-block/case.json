@@ -1,0 +1,9 @@
+{
+  "description": "Повреждённый непоказанный блок image сохраняется при image: null из формы.",
+  "call": "writeProjectSettings",
+  "project": "project",
+  "covers": [
+    "сохранение повреждённого блока"
+  ],
+  "stubbedMedia": []
+}

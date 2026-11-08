@@ -1,0 +1,9 @@
+{
+  "code": 2,
+  "stdout": "",
+  "stderr": "usage: shot_workflow.py show [-h] --dir DIR [--json]\nshot_workflow.py show: error: argument --dir: expected one argument\n",
+  "traceback": false,
+  "files": {},
+  "dirs": {},
+  "modes": {}
+}

@@ -1,0 +1,18 @@
+{
+  "description": "Нет индекса комплектов.",
+  "call": "verify_asset_replay",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "FileNotFoundError"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--report",
+    "<out>/report.json"
+  ],
+  "remove": [
+    "assets/shots/manifest.json"
+  ],
+  "mkdir": []
+}

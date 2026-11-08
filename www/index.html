@@ -719,6 +719,13 @@
         color: var(--muted);
         min-height: 1.4em;
       }
+      /* Дополнительная поставка в карточке системы: тише основной кнопки. */
+      .platform .also {
+        align-self: flex-start;
+        margin-top: 6px;
+        font-size: 14px;
+        font-weight: 600;
+      }
       .notes {
         max-width: 880px;
         margin: 26px auto 0;
@@ -848,7 +855,7 @@
             </li>
             <li>
               <strong>Разметка</strong>
-              <span>Песня распознаётся локально, строки ложатся на волну — подправьте и подтвердите на слух.</span>
+              <span>Строки текста выравниваются по вокалу прямо на компьютере и ложатся на волну — подправьте и подтвердите на слух.</span>
             </li>
             <li>
               <strong>Кастинг</strong>
@@ -882,7 +889,7 @@
                 </svg>
               </div>
               <h3>Песня на временной шкале</h3>
-              <p>Локальное распознавание текста без отправки трека в облако, волна, правка границ строк и прослушивание каждой строки.</p>
+              <p>Локальное выравнивание текста по вокалу без отправки трека в облако, волна, правка границ строк и прослушивание каждой строки.</p>
             </div>
             <div class="card">
               <div class="icon">
@@ -956,7 +963,10 @@
               <h3>Клип живёт у вас</h3>
               <ul>
                 <li><strong>Папка проекта.</strong> Все материалы клипа — в обычной папке на диске, её можно перенести или сохранить в Git.</li>
-                <li><strong>Всё включено.</strong> Python, FFmpeg и клиенты провайдеров уже внутри — ничего не нужно доустанавливать.</li>
+                <li>
+                  <strong>Только нужное.</strong> Python и Node не нужны. FFmpeg и модели разметки приложение найдёт в системе или поставит кнопкой, а проект
+                  открывается и редактируется и без них.
+                </li>
                 <li><strong>Исходники неприкосновенны.</strong> Трек, текст и принятые оригиналы не перезаписываются молча.</li>
               </ul>
             </div>
@@ -972,21 +982,23 @@
             <div class="platform" data-target="linux">
               <span class="badge">Ваша система</span>
               <h3>Linux</h3>
-              <div class="what">x64 · AppImage</div>
+              <div class="what">x86_64 · AppImage · Ubuntu 24.04 (glibc 2.39)</div>
               <p>
                 Разрешите запуск файла: в его свойствах отметьте «Разрешить выполнение как программы» или выполните <code>chmod +x</code>. Затем откройте
-                AppImage.
+                AppImage. Если Ubuntu ограничивает песочницу встроенного браузера, при первом запуске приложение попросит разрешить её паролем.
               </p>
               <a class="get" href="https://github.com/ai-animation-tools/songframe/releases/latest">Скачать AppImage</a>
               <small></small>
+              <a class="also" id="deb-download" href="https://github.com/ai-animation-tools/songframe/releases/latest">Пакет .deb для Ubuntu</a>
             </div>
             <div class="platform" data-target="windows">
               <span class="badge">Ваша система</span>
               <h3>Windows</h3>
-              <div class="what">Windows 10 и 11, x64 · установщик</div>
+              <div class="what">Windows 10 и 11, x64 (amd64) · установщик</div>
               <p>
-                Запустите установщик — права администратора не нужны, ярлыки появятся на рабочем столе и в меню «Пуск». Если SmartScreen предупредит о
-                неизвестном издателе, нажмите «Подробнее» → «Выполнить в любом случае».
+                Запустите установщик — права администратора не нужны, ярлыки появятся на рабочем столе и в меню «Пуск». Если в системе нет Microsoft WebView2,
+                установщик скачает его, для этого нужен интернет. Если SmartScreen предупредит о неизвестном издателе, нажмите «Подробнее» → «Выполнить в любом
+                случае».
               </p>
               <a class="get" href="https://github.com/ai-animation-tools/songframe/releases/latest">Скачать установщик</a>
               <small></small>
@@ -994,13 +1006,10 @@
           </div>
           <div class="notes">
             <p>
-              Модель распознавания речи скачивается один раз отдельно — кнопкой в окне разметки. Видеокарта не обязательна: подойдёт и процессор, а NVIDIA CUDA
-              ускорит работу.
+              FFmpeg, ONNX Runtime и модели разметки не входят в пакет: приложение находит их в системе или скачивает один раз кнопкой на странице «Компоненты».
+              Без них проект открывается и редактируется. Разметка работает на процессоре, видеокарта не нужна.
             </p>
-            <p>
-              Для генерации нужен аккаунт выбранного провайдера, для текстовых этапов — установленный Claude Code или Codex. Всё это работает и в Linux, и в
-              Windows.
-            </p>
+            <p>Для генерации нужен аккаунт выбранного провайдера, для текстовых этапов — установленный Claude Code или Codex.</p>
             <p>Код пакетов не подписан сертификатами, поэтому система может предупредить о неизвестном издателе.</p>
           </div>
 
@@ -1038,12 +1047,16 @@
     <script>
       const repo = 'ai-animation-tools/songframe';
       const releases = `https://github.com/${repo}/releases/latest`;
-      // Суффиксы совпадают с вложениями релиза: songframe-<версия>-<платформа>. @link ../scripts/release/release.mjs
+      // Суффиксы совпадают с вложениями выпуска: songframe-<версия>-<платформа>.
+      // @link ../scripts/package-linux.sh @link ../scripts/package-windows.sh
       const targets = {
         linux: { name: 'Linux', suffix: '-linux-x86_64.AppImage', label: 'AppImage' },
         windows: { name: 'Windows', suffix: '-win-x64-setup.exe', label: 'установщик' }
       };
       const links = Object.fromEntries(Object.keys(targets).map((key) => [key, { url: releases }]));
+      // deb — дополнительная поставка Linux. Пока выпуск не ответил, ссылка ведёт на его страницу;
+      // если в выпуске пакета нет, ссылка скрывается, а AppImage остаётся основной.
+      const deb = document.getElementById('deb-download');
 
       // Волна иллюстрации: детерминированный «трек», чтобы картинка не менялась при каждой загрузке.
       const wave = document.getElementById('wave');
@@ -1108,6 +1121,11 @@
             const asset = release.assets?.find((item) => item.name.endsWith(target.suffix));
             if (asset) links[key] = { url: asset.browser_download_url, size: asset.size };
           }
+          const debAsset = release.assets?.find((item) => item.name.endsWith('.deb'));
+          if (debAsset) {
+            deb.href = debAsset.browser_download_url;
+            deb.textContent = `Пакет .deb для Ubuntu · ${formatSize(debAsset.size)}`;
+          } else deb.hidden = true;
           const version = release.tag_name;
           document.getElementById('version-line').textContent = `Версия ${version} от ${new Date(release.published_at).toLocaleDateString('ru-RU')}.`;
           render(current, version);

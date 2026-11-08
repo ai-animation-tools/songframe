@@ -1,0 +1,16 @@
+{
+  "description": "--next --json.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "--next --json"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--next",
+    "--json"
+  ],
+  "remove": [],
+  "mkdir": []
+}

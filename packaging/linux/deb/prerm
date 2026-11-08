@@ -1,0 +1,8 @@
+#!/bin/sh
+# Перед удалением пакета выгрузить его профиль AppArmor, пока файл профиля ещё на месте.
+# Профиль пользователя, проекты и компоненты остаются.
+set -e
+if [ "$1" = remove ] && [ -x /sbin/apparmor_parser ] && aa-enabled --quiet 2>/dev/null; then
+  apparmor_parser -R /etc/apparmor.d/songframe 2>/dev/null || true
+fi
+exit 0

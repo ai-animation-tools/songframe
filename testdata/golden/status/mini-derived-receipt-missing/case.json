@@ -1,0 +1,9 @@
+{
+  "description": "В generation M03 нет source_accepted_video_sha256.",
+  "call": "computeStatus",
+  "project": "project",
+  "covers": [
+    "derivedShotsNeedReview (source_receipt_missing)"
+  ],
+  "stubbedMedia": []
+}

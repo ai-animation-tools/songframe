@@ -1,0 +1,9 @@
+{
+  "description": "Опись другой версии.",
+  "call": "viewSources",
+  "project": "project",
+  "covers": [
+    "manifestInvalid (schema_version)"
+  ],
+  "stubbedMedia": []
+}

@@ -1,0 +1,16 @@
+{
+  "description": "select-image -h.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "sub help"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "select-image",
+    "-h"
+  ],
+  "remove": [],
+  "mkdir": []
+}

@@ -1,6 +1,6 @@
 # Темы и визуальные значения
 
-Источник токенов палитры для обеих тем — [theme-palette.ts](../../src/renderer/src/theme-palette.ts). Настройки темы и переключение режима находятся в [theme.tsx](../../src/renderer/src/theme.tsx). Используются MUI `ThemeProvider` и `CssBaseline`; режим `light`, `dark` или `system` сохраняется в `localStorage`, по умолчанию следует системной теме.
+Источник токенов палитры для обеих тем — [theme-palette.ts](../../frontend/src/renderer/theme-palette.ts). Настройки темы и переключение режима находятся в [theme.tsx](../../frontend/src/renderer/theme.tsx). Используются MUI `ThemeProvider` и `CssBaseline`; режим `light`, `dark` или `system` сохраняется в `localStorage`, по умолчанию следует системной теме.
 
 ## Палитра
 

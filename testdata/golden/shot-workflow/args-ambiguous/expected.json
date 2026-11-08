@@ -1,0 +1,9 @@
+{
+  "code": 2,
+  "stdout": "",
+  "stderr": "usage: shot_workflow.py decide [-h] --dir DIR --verdict\n                               {approve,revise,send,park,accept,retry,review}\n                               [--note NOTE] [--note-scope {frame,following}]\n                               [--json]\nshot_workflow.py decide: error: ambiguous option: --no could match --note, --note-scope\n",
+  "traceback": false,
+  "files": {},
+  "dirs": {},
+  "modes": {}
+}

@@ -1,0 +1,18 @@
+{
+  "description": "Снимок не совпадает: AssertionError.",
+  "call": "verify_asset_replay",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "preserved assert"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--report",
+    "<out>/report.json",
+    "--preserved",
+    "<project>/before.json"
+  ],
+  "remove": [],
+  "mkdir": []
+}

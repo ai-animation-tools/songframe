@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "logline": "Новая",
+  "sequences": [
+    {
+      "id": "one",
+      "title": "Одна",
+      "direction": "",
+      "start": 0,
+      "end": 12.3456,
+      "entities": []
+    }
+  ]
+}

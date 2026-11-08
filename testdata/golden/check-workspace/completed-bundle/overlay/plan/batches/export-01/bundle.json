@@ -1,0 +1,25 @@
+{
+  "project": {
+    "schema_version": 1,
+    "name": "x"
+  },
+  "fps": 30,
+  "song": "source/track.mp3",
+  "song_end_s": 30,
+  "references": {},
+  "lyrics": [],
+  "shots": [
+    {
+      "shot": "M01",
+      "status": "video",
+      "frames_30": 240,
+      "accepted_clip": "a.mp4"
+    },
+    {
+      "shot": "M03",
+      "status": "card",
+      "frames_30": true,
+      "card": "c.png"
+    }
+  ]
+}

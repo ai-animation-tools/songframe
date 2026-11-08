@@ -1,0 +1,13 @@
+{
+  "description": "Нет plan/scenes.json: сценарий нужен для работы.",
+  "call": "viewProduction+viewDashboard",
+  "project": "project",
+  "covers": [
+    "requiredForWork"
+  ],
+  "base": "checks-base",
+  "remove": [
+    "plan/scenes.json"
+  ],
+  "mkdir": []
+}

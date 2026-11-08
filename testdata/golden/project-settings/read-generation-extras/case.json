@@ -1,0 +1,11 @@
+{
+  "description": "Блок generation с расширениями провайдера и нестроковым image.",
+  "call": "readProjectSettings",
+  "project": "project",
+  "covers": [
+    "read: копия блоков",
+    "image не объект → null",
+    "name не строка → пусто"
+  ],
+  "stubbedMedia": []
+}

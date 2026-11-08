@@ -1,0 +1,20 @@
+{
+  "code": 0,
+  "stdout": "Обновлено представлений: 2.\n",
+  "stderr": "",
+  "traceback": false,
+  "files": {
+    "plan/animatic/cards/M01.png": "removed",
+    "plan/animatic/cards/M05.last.png": "removed"
+  },
+  "recheck": {
+    "code": 0,
+    "stdout": "Представления актуальны.\n",
+    "stderr": ""
+  },
+  "cards": [
+    "plan/animatic/cards/M03.png",
+    "plan/animatic/cards/M04.png",
+    "plan/animatic/cards/M05.png"
+  ]
+}

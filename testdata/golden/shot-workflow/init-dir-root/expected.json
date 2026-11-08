@@ -1,0 +1,9 @@
+{
+  "code": 1,
+  "stdout": "",
+  "stderr": "Папка пакета должна находиться внутри plan/batches, plan/awaiting или временной папки.\n",
+  "traceback": false,
+  "files": {},
+  "dirs": {},
+  "modes": {}
+}

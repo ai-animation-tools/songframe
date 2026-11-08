@@ -1,0 +1,62 @@
+{
+  "spec": {
+    "schema_version": 1,
+    "shot": "M03",
+    "kind": "video",
+    "provider": "test",
+    "command": "image_to_video",
+    "model": "test-video",
+    "parameters": {
+      "duration": 5,
+      "resolution": "1080p"
+    },
+    "inputs": [
+      {
+        "flag": "input",
+        "slot": "first_image",
+        "path": "frame.png",
+        "role": "first"
+      }
+    ],
+    "prompt_file": "prompt.txt",
+    "outputs": 1
+  },
+  "prompt": "Один дубль.",
+  "pricing": {
+    "schema_version": 1,
+    "currency": "credits",
+    "models": {
+      "test-video": {
+        "base_credits": 2,
+        "per_second": {
+          "1080p": 7,
+          "720p": null
+        }
+      }
+    },
+    "observed": []
+  },
+  "service": {
+    "balance": 1000,
+    "results": {
+      "video": "video.mp4"
+    },
+    "submit": {
+      "credits_consumed": 37
+    }
+  },
+  "probe": {
+    "streams": [
+      {
+        "codec_type": "video",
+        "width": 1920,
+        "height": 1080,
+        "r_frame_rate": "30/1",
+        "duration": "4.000000",
+        "nb_frames": "120"
+      }
+    ],
+    "format": {},
+    "chapters": []
+  }
+}

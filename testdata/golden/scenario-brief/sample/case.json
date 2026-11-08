@@ -1,0 +1,11 @@
+{
+  "description": "Все планы образца в обеих фазах.",
+  "call": "buildBrief",
+  "project": "project",
+  "covers": [
+    "мир первым",
+    "подписи и чек-лист словаря",
+    "источники"
+  ],
+  "stubbedMedia": []
+}

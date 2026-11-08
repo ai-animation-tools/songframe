@@ -1,0 +1,13 @@
+{
+  "description": "Производный комплект без source_scene_sha256.",
+  "call": "check_assets",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "source_scene_sha256"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

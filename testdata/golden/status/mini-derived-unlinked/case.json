@@ -1,0 +1,9 @@
+{
+  "description": "Комплект M03 производный, а в реестре derived_from нет.",
+  "call": "computeStatus",
+  "project": "project",
+  "covers": [
+    "derived_link_changed без derived_from в реестре"
+  ],
+  "stubbedMedia": []
+}

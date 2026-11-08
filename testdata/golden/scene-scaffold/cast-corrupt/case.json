@@ -1,0 +1,13 @@
+{
+  "description": "Повреждённый кастинг.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "повреждён"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--force"
+  ]
+}

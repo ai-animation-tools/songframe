@@ -1,0 +1,15 @@
+{
+  "description": "Правка камеры принятого M01: постановка изменена в ROADMAP.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "Постановка изменена"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--check"
+  ],
+  "remove": [],
+  "mkdir": []
+}

@@ -1,0 +1,22 @@
+{
+  "path": "<project>",
+  "state": "in_production",
+  "name": "Мини-клип",
+  "animaticVideo": "mini-animatic.mp4",
+  "checks": {
+    "marker": true,
+    "sources": true,
+    "timing": true,
+    "cast": true,
+    "treatment": true,
+    "scenes": true,
+    "shotsTotal": 3,
+    "shotsDone": 1,
+    "animaticBuilt": true,
+    "animaticFresh": false,
+    "animaticApproved": false
+  },
+  "problems": [
+    "Не подтверждена актуальность производных планов: M03. Проверьте версию источника и приёмку этих планов."
+  ]
+}

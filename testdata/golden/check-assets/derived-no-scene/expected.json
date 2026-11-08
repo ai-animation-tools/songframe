@@ -1,0 +1,6 @@
+{
+  "code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/check_assets/check_assets.py\", line 37, in <module>\n    motion = load_motion()\n             ^^^^^^^^^^^^^\n  File \"<songframe>/tools/check_assets/check_assets.py\", line 26, in load_motion\n    package = validate_package(path, sid)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/asset_package/asset_package.py\", line 77, in validate_package\n    raise ValueError(\nValueError: В производном комплекте нужен source_scene_sha256: SHA постановки источника либо null для неизвестной версии.\n",
+  "traceback": true
+}

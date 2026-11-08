@@ -1,0 +1,13 @@
+{
+  "description": "Сущность — список: unhashable.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "TypeError"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--force"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "description": "check -h.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "sub help"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "check",
+    "-h"
+  ],
+  "remove": [],
+  "mkdir": []
+}

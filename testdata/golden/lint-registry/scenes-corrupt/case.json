@@ -1,0 +1,13 @@
+{
+  "description": "Битый plan/scenes.json: текст JSONDecodeError и «файл отсутствует».",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "JSON не разбирается"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

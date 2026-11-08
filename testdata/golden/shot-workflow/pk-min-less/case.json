@@ -1,0 +1,19 @@
+{
+  "description": "Правило не меньше окна: меньше.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "min rule error"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "plan-keyframes",
+    "--dir",
+    "plan/batches/M04-attempt-01",
+    "--request-seconds",
+    "3"
+  ],
+  "remove": [],
+  "mkdir": []
+}

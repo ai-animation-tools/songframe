@@ -1,0 +1,19 @@
+{
+  "description": "Нет кандидатов.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "no candidates"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "decide",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "--verdict",
+    "approve"
+  ],
+  "remove": [],
+  "mkdir": []
+}

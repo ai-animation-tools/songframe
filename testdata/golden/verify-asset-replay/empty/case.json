@@ -1,0 +1,16 @@
+{
+  "description": "Пустой индекс комплектов.",
+  "call": "verify_asset_replay",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "no shots"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--report",
+    "<out>/report.json"
+  ],
+  "remove": [],
+  "mkdir": []
+}

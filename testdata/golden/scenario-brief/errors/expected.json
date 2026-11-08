@@ -1,0 +1,72 @@
+[
+  {
+    "shot": "M09",
+    "phase": "before",
+    "error": "M09: сцена отсутствует в реестре."
+  },
+  {
+    "shot": "M01",
+    "phase": "after",
+    "result": {
+      "shot": "M01",
+      "phase": "after",
+      "state": {
+        "world": {
+          "time_of_day": "вечер"
+        },
+        "mira": {
+          "position": "в лодке",
+          "clothes_condition": "сухая куртка"
+        },
+        "boat": {
+          "wet": "мокрая"
+        }
+      },
+      "sources": {
+        "world": {
+          "time_of_day": {
+            "kind": "cast"
+          }
+        },
+        "mira": {
+          "position": {
+            "kind": "plan",
+            "shot": "M01",
+            "phase": "after"
+          },
+          "clothes_condition": {
+            "kind": "cast"
+          }
+        },
+        "boat": {
+          "wet": {
+            "kind": "plan",
+            "shot": "M01",
+            "phase": "after"
+          }
+        }
+      },
+      "labels": {
+        "mira": {
+          "position": "Положение",
+          "clothes_condition": "Одежда"
+        }
+      },
+      "inherited": {
+        "world": {
+          "time_of_day": "вечер"
+        },
+        "mira": {
+          "position": "у причала",
+          "clothes_condition": "сухая куртка"
+        }
+      },
+      "paragraph": "Состояние на последний кадр M01. Мир сцены: time of day: вечер. Мира: положение: в лодке; одежда: сухая куртка. Лодка «Чайка»: wet: мокрая.",
+      "checklist": [
+        "Мира: Стоит там, где записано: в лодке?",
+        "Мира: Одежда: сухая куртка?"
+      ],
+      "text": "Состояние на последний кадр M01 (Действие M01.)\n\nМир сцены: time of day: вечер.\nМира: положение: в лодке; одежда: сухая куртка.\nЛодка «Чайка»: wet: мокрая.\n\nПроверить по кадру:\n- [ ] Мира: Стоит там, где записано: в лодке?\n- [ ] Мира: Одежда: сухая куртка?"
+    }
+  }
+]

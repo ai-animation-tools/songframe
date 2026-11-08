@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "fps": 30,
+  "audio": {
+    "path": "source/track.flac",
+    "end_seconds": "1"
+  },
+  "references": {
+    "П": {
+      "name": "Мира",
+      "path": "source/heroes/mira.jpg"
+    }
+  },
+  "visual_direction": "# Правила",
+  "sequences": [
+    {
+      "id": "s",
+      "title": "Сцена",
+      "direction": "направление"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "M01",
+      "original": "M01",
+      "sequence": "s",
+      "title": "M01",
+      "start_frame": 0,
+      "end_frame_exclusive": 9,
+      "camera": "статика",
+      "action": "действие",
+      "continuity": "связь",
+      "references": [
+        "П"
+      ],
+      "lipsync": false,
+      "card": {
+        "primary_reference": "П"
+      },
+      "state_from": null,
+      "state_changes": {}
+    },
+    {
+      "id": "M02",
+      "original": "M02",
+      "sequence": "s",
+      "title": "M02",
+      "start_frame": 9,
+      "end_frame_exclusive": 24,
+      "camera": "статика",
+      "action": "действие",
+      "continuity": "связь",
+      "references": [
+        "П"
+      ],
+      "lipsync": true,
+      "card": {
+        "primary_reference": "П"
+      },
+      "state_from": null,
+      "state_changes": {}
+    },
+    {
+      "id": "M03",
+      "original": "M03",
+      "sequence": "s",
+      "title": "M03",
+      "start_frame": 24,
+      "end_frame_exclusive": 30,
+      "camera": "статика",
+      "action": "действие",
+      "continuity": "связь",
+      "references": [
+        "П"
+      ],
+      "lipsync": true,
+      "card": {
+        "primary_reference": "П"
+      },
+      "state_from": null,
+      "state_changes": {}
+    }
+  ]
+}

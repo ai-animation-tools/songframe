@@ -1,0 +1,49 @@
+{
+  "version": 2,
+  "status": "Разметка образца: границы заданы вручную и подтверждены",
+  "source": "source/track.mp3",
+  "sha256": "d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640",
+  "duration_decoded": 30.0,
+  "duration_container": 30.040816,
+  "clock": "Секунды от начала декодированного звука, не SMPTE",
+  "lines": [
+    {
+      "id": 1,
+      "source_line": 2,
+      "start": 8.0,
+      "end": 12.0,
+      "verified": true
+    },
+    {
+      "id": 2,
+      "source_line": 3,
+      "start": 12.0,
+      "end": 16.0,
+      "verified": true
+    },
+    {
+      "id": 3,
+      "source_line": 4,
+      "start": 16.0,
+      "end": 20.0,
+      "verified": true
+    }
+  ],
+  "sections": [
+    {
+      "name": "Вступление",
+      "start": 0.0,
+      "end": 8.0
+    },
+    {
+      "name": "Куплет",
+      "start": 8.0,
+      "end": 20.0
+    },
+    {
+      "name": "Проигрыш",
+      "start": 20.0,
+      "end": 30.0
+    }
+  ]
+}

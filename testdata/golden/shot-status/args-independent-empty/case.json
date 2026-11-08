@@ -1,0 +1,15 @@
+{
+  "description": "--independent без кодов.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "expected at least one argument"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--independent"
+  ],
+  "remove": [],
+  "mkdir": []
+}

@@ -1,0 +1,17 @@
+{
+  "description": "Образец: оба комплекта воспроизводятся.",
+  "call": "verify_asset_replay",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "verify",
+    "report"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--report",
+    "<out>/report.json"
+  ],
+  "remove": [],
+  "mkdir": []
+}

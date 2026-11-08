@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "current_animatic": "plan/animatic/latest/manifest.json",
+  "current_animatic_status": "approved",
+  "approved_animatic": {
+    "manifest": "plan/animatic/latest/manifest.json",
+    "video": "plan/animatic/latest/mini-animatic.mp4",
+    "video_sha256": "a1addddfbcd6d9f50843931e0fa5d3853c43397d6d80272a62cc55ff318ed38f"
+  },
+  "shots": {
+    "M01": {
+      "scene_sha256": "63a34827981b7b198f1fc1aa2dd1a34f420553b13a05b080a4b925c76a35ac60"
+    },
+    "M02": {
+      "scene_sha256": "30a8f243f244202da8ac2949e1dbde155a75fd41779fa02667eecd1182ab1bd0"
+    },
+    "M03": {
+      "scene_sha256": "7ee23395cd189956fc9b7b6158648013d13cc4969963088cf24cf5db957babd6",
+      "source_review": {
+        "source_shot": "M02",
+        "source_scene_sha256": "63a34827981b7b198f1fc1aa2dd1a34f420553b13a05b080a4b925c76a35ac60",
+        "source_accepted_video_sha256": "6917a795297bd9db02e5cdad2ad9b32c87a24aedf86b9047d9fc95fa9f79dfe7",
+        "accepted_video_sha256": "1f04e8682c754a1ee1b2c249a3833e724c2add898f30fe37a970376f78d998c1"
+      }
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "description": "Владелец по имени папки и по рецепту пробы.",
+  "call": "check_workspace",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "SHOT_NAME",
+    "shots рецепта"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

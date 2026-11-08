@@ -1,0 +1,513 @@
+// Package animaticcards рисует условные PNG-карточки аниматика — перенос
+// tools/render_animatic_cards/render_animatic_cards.py замороженного оригинала (634fd94).
+//
+// Карточка — кадр-заглушка плана без видео: название проекта, интервал, заголовок, камера,
+// действие и непрерывность текстом, основной референс и миниатюры остальных; у плана с
+// принятыми опорами — первая опора на весь холст, остальные полоской. Полный текст плана
+// остаётся в монтажном списке и раскадровке, поэтому не поместившийся текст сокращается
+// многоточием, а не роняет сборку. Вызывает пакет обновления представлений сцены
+// (expected_cards оригинала); записью файлов и манифестом владеет он, здесь только байты PNG.
+//
+// Сохраняется результат оригинала: макет 1280×720, цвета, координаты, выбор кегля, переносы,
+// многоточие, размеры и положение вписанных изображений, пиксели фона, полос и вписанных
+// PNG/WebP/GIF (Lanczos Pillow и преобразования libwebp перенесены целочисленно), а также
+// тексты исключений для неверных данных (вызывающий инструмент печатает их последней строкой
+// трассировки). Отличаются сглаживание глифов (FreeType с хинтингом против растеризатора
+// x/image без хинтинга), пиксели JPEG на ±3 уровня (обратное DCT декодера Go) и сжатие PNG,
+// поэтому SHA-256 файла карточки не совпадает с записанным оригиналом.
+package animaticcards
+
+import (
+	"runtime"
+
+	"songframe-go/internal/pycompat"
+)
+
+// Макет карточки — константы оригинала.
+const (
+	cardWidth  = 1280
+	cardHeight = 720
+	accent     = "#E8B975"
+	background = "#171E24"
+	foreground = "#EDF0F2"
+	muted      = "#ACB7C0"
+)
+
+// trace — запись вызовов для эталона: поля text_box и вставки изображений (card.paste) в
+// порядке рисования. Рабочий вызов трассировку не ведёт.
+type trace struct {
+	Texts  []textCall
+	Pastes []pasteCall
+}
+
+// pasteCall — вставленное изображение: размер после вписывания, позиция и SHA-256 пикселей.
+type pasteCall struct {
+	Width, Height, X, Y int
+	SHA256              string
+}
+
+// card — холст карточки и необязательная трассировка.
+type card struct {
+	img   rgbImage
+	trace *trace
+}
+
+func (c *card) paste(source rgbImage, x, y int) {
+	c.img.paste(source, x, y)
+	if c.trace != nil {
+		c.trace.Pastes = append(c.trace.Pastes, pasteCall{source.width, source.height, x, y, source.digest()})
+	}
+}
+
+// cardResult — возвращаемое значение render_card оригинала (вызывающий его не использует,
+// эталон сверяет).
+type cardResult struct {
+	ActionFont       int
+	StateFont        int
+	PrimaryReference any
+	PrimaryImage     any
+}
+
+// RenderCard — render_card(shot, target, project, references, root): PNG текстовой карточки.
+// shot — элемент sceneregistry.Shots(data, nil) (*pycompat.Dict: id, title, interval, duration, camera,
+// action, state, refs, card.primary_reference, derived_from, lipsync); project — результат
+// sceneregistry.ValidateProject(..., false); references — data["references"] реестра (*pycompat.Dict);
+// root — корень проекта, пути изображений относительно него.
+//
+// Ошибки — исключения pycompat с типом и текстом Python: KeyError отсутствующего поля,
+// TypeError/AttributeError неверного типа, FileNotFoundError и PIL.UnidentifiedImageError
+// референса, AssertionError слова шире поля.
+func RenderCard(shot, project, references *pycompat.Dict, root string) ([]byte, error) {
+	c, _, err := renderCard(shot, project, references, root, nil)
+	if err != nil {
+		return nil, err
+	}
+	return c.img.encodePNG()
+}
+
+// RenderKeyframeCard — render_keyframe_card(shot, target, project, keyframes, root, last_target):
+// PNG карточки опор; last — PNG последней опоры (fit_canvas), если withLast и опор >= 2, иначе nil.
+// keyframes — словари {id, role, time_seconds, path, sha256}, path относительно root.
+// Пустой список опор — ValueError «Нет принятых опор для карточки.».
+func RenderKeyframeCard(shot, project *pycompat.Dict, keyframes []*pycompat.Dict, root string, withLast bool) (card, last []byte, err error) {
+	rendered, lastImage, err := renderKeyframeCard(shot, project, keyframes, root, withLast, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	if card, err = rendered.img.encodePNG(); err != nil {
+		return nil, nil, err
+	}
+	if lastImage != nil {
+		if last, err = lastImage.encodePNG(); err != nil {
+			return nil, nil, err
+		}
+	}
+	return card, last, nil
+}
+
+// pathName — имя класса Path в тексте TypeError деления пути.
+func pathName() string {
+	if runtime.GOOS == "windows" {
+		return "WindowsPath"
+	}
+	return "PosixPath"
+}
+
+// joinRoot — root / path: нестроковая часть — TypeError оператора «/» pathlib.
+func joinRoot(root string, path any) (string, error) {
+	text, ok := path.(string)
+	if !ok {
+		return "", pycompat.Raise(pycompat.TypeError, "unsupported operand type(s) for /: '%s' and '%s'", pathName(), pycompat.TypeName(path))
+	}
+	return pycompat.JoinPath(root, text), nil
+}
+
+// item — container[key] (ключ любого типа, ошибки Python).
+func item(container, key any) (any, error) { return pycompat.GetItem(container, key) }
+
+// concat — левоассоциативное сложение a + b + … Python: значения вычисляются по одному, поэтому
+// ошибка первого сложения возникает раньше KeyError следующего операнда.
+func concat(first any, rest ...func() (any, error)) (any, error) {
+	result := first
+	for _, next := range rest {
+		value, err := next()
+		if err != nil {
+			return nil, err
+		}
+		if result, err = pycompat.Add(result, value); err != nil {
+			return nil, err
+		}
+	}
+	return result, nil
+}
+
+// literal — операнд concat, который не может упасть.
+func literal(text string) func() (any, error) {
+	return func() (any, error) { return text, nil }
+}
+
+// field — операнд concat dict[key].
+func field(container any, key string) func() (any, error) {
+	return func() (any, error) { return item(container, key) }
+}
+
+// upperName — project["name"].upper().
+func upperName(project *pycompat.Dict) (any, error) {
+	name, err := item(project, "name")
+	if err != nil {
+		return nil, err
+	}
+	text, ok := name.(string)
+	if !ok {
+		return nil, pycompat.Raise(pycompat.AttributeError, "'%s' object has no attribute 'upper'", pycompat.TypeName(name))
+	}
+	return pythonUpper(text), nil
+}
+
+// placeReference — place_reference(card, path, box, root): референс вписывается в рамку и
+// центрируется (`//` целочисленное деление; смещения неотрицательны).
+func (c *card) placeReference(path any, x, y, width, height int, root string) error {
+	full, err := joinRoot(root, path)
+	if err != nil {
+		return err
+	}
+	source, err := openRGB(full)
+	if err != nil {
+		return err
+	}
+	fitted, err := contain(source, width, height)
+	if err != nil {
+		return err
+	}
+	c.paste(fitted, x+floorDiv(width-fitted.width, 2), y+floorDiv(height-fitted.height, 2))
+	return nil
+}
+
+// floorDiv — a // b Python для b > 0.
+func floorDiv(a, b int) int {
+	quotient := a / b
+	if (a%b != 0) && (a < 0) {
+		quotient--
+	}
+	return quotient
+}
+
+// fitCanvas — fit_canvas(path): изображение целиком на холсте 1280×720 цвета фона.
+func fitCanvas(path string, c *card) (rgbImage, error) {
+	canvas := &card{img: newRGB(cardWidth, cardHeight, hexColor(background))}
+	if c != nil {
+		canvas.trace = c.trace
+	}
+	source, err := openRGB(path)
+	if err != nil {
+		return rgbImage{}, err
+	}
+	fitted, err := contain(source, cardWidth, cardHeight)
+	if err != nil {
+		return rgbImage{}, err
+	}
+	canvas.paste(fitted, floorDiv(cardWidth-fitted.width, 2), floorDiv(cardHeight-fitted.height, 2))
+	return canvas.img, nil
+}
+
+// renderCard — тело render_card с необязательной трассировкой; порядок вычислений и рисования
+// совпадает с оригиналом, поэтому при неверных данных возникает та же первая ошибка.
+func renderCard(shot, project, references *pycompat.Dict, root string, tr *trace) (*card, cardResult, error) {
+	c := &card{img: newRGB(cardWidth, cardHeight, hexColor(background)), trace: tr}
+	c.img.fillRect(0, 0, 1280, 7, hexColor(accent))
+	fail := func(err error) (*card, cardResult, error) { return nil, cardResult{}, err }
+
+	name, err := upperName(project)
+	if err != nil {
+		return fail(err)
+	}
+	header, err := concat(name, literal("  /  ЧЕРНОВОЙ МОНТАЖ"))
+	if err != nil {
+		return fail(err)
+	}
+	if _, err := c.textBox(header, 32, 22, 760, 32, 20, accent, true); err != nil {
+		return fail(err)
+	}
+	interval, err := item(shot, "interval")
+	if err != nil {
+		return fail(err)
+	}
+	timing, err := concat(interval, literal("  •  "), field(shot, "duration"), literal(" с"))
+	if err != nil {
+		return fail(err)
+	}
+	if _, err := c.textBox(timing, 865, 24, 385, 30, 18, foreground, false); err != nil {
+		return fail(err)
+	}
+	title, err := item(shot, "title")
+	if err != nil {
+		return fail(err)
+	}
+	// План из материала другого плана помечается источником; у обычного плана заголовок прежний.
+	if derived := shot.Value("derived_from"); pycompat.Truthy(derived) {
+		source, err := item(derived, "shot")
+		if err != nil {
+			return fail(err)
+		}
+		suffix, err := concat("  •  из ", func() (any, error) { return source, nil })
+		if err != nil {
+			return fail(err)
+		}
+		if title, err = pycompat.Add(title, suffix); err != nil {
+			return fail(err)
+		}
+	}
+	id, err := item(shot, "id")
+	if err != nil {
+		return fail(err)
+	}
+	heading, err := concat(id, literal("  /  "), func() (any, error) { return title, nil })
+	if err != nil {
+		return fail(err)
+	}
+	if _, err := c.textBox(heading, 32, 63, 1216, 51, 32, foreground, true); err != nil {
+		return fail(err)
+	}
+	if _, err := c.textBox("РЕФЕРЕНСЫ • УСЛОВНЫЙ КАДР, НЕ ГОТОВАЯ СЦЕНА", 32, 128, 660, 26, 17, muted, false); err != nil {
+		return fail(err)
+	}
+	camera, err := item(shot, "camera")
+	if err != nil {
+		return fail(err)
+	}
+	if _, err := c.textBox(camera, 720, 128, 528, 83, 21, accent, false); err != nil {
+		return fail(err)
+	}
+	c.img.fillRoundedRect9(32, 166, 692, 540, hexColor("#101519"))
+	cardField, err := item(shot, "card")
+	if err != nil {
+		return fail(err)
+	}
+	key, err := item(cardField, "primary_reference")
+	if err != nil {
+		return fail(err)
+	}
+	primary, err := item(references, key)
+	if err != nil {
+		return fail(err)
+	}
+	sourcePath, err := item(primary, "path")
+	if err != nil {
+		return fail(err)
+	}
+	if err := c.placeReference(sourcePath, 32, 166, 660, 374, root); err != nil {
+		return fail(err)
+	}
+	primaryName, err := item(primary, "name")
+	if err != nil {
+		return fail(err)
+	}
+	label, err := concat(primaryName, literal(" • исходный референс"))
+	if err != nil {
+		return fail(err)
+	}
+	if _, err := c.textBox(label, 42, 545, 640, 25, 16, muted, false); err != nil {
+		return fail(err)
+	}
+	if _, err := c.textBox("ДЕЙСТВИЕ", 720, 218, 528, 27, 17, accent, true); err != nil {
+		return fail(err)
+	}
+	action, err := item(shot, "action")
+	if err != nil {
+		return fail(err)
+	}
+	actionFont, err := c.textBox(action, 720, 250, 528, 263, 24, foreground, false)
+	if err != nil {
+		return fail(err)
+	}
+	if _, err := c.textBox("НЕПРЕРЫВНОСТЬ", 720, 518, 528, 26, 17, accent, true); err != nil {
+		return fail(err)
+	}
+	state, err := item(shot, "state")
+	if err != nil {
+		return fail(err)
+	}
+	stateFont, err := c.textBox(state, 720, 549, 528, 108, 18, muted, false)
+	if err != nil {
+		return fail(err)
+	}
+	refsValue, err := item(shot, "refs")
+	if err != nil {
+		return fail(err)
+	}
+	refs, err := pycompat.Iter(refsValue)
+	if err != nil {
+		return fail(err)
+	}
+	others := []any{}
+	for _, ref := range refs {
+		if !pycompat.Equal(ref, key) {
+			others = append(others, ref)
+		}
+	}
+	cellWidth := min(106, 660/max(1, len(others)))
+	for index, ref := range others {
+		x := 32 + index*cellWidth
+		reference, err := item(references, ref)
+		if err != nil {
+			return fail(err)
+		}
+		path, err := item(reference, "path")
+		if err != nil {
+			return fail(err)
+		}
+		if err := c.placeReference(path, x, 582, cellWidth-6, 62, root); err != nil {
+			return fail(err)
+		}
+		// references[ref].get("short_name", references[ref]["name"]): метод ищется до вычисления
+		// аргумента, а запасное имя вычисляется всегда.
+		reference, err = item(references, ref)
+		if err != nil {
+			return fail(err)
+		}
+		if _, ok := reference.(*pycompat.Dict); !ok {
+			return fail(pycompat.Raise(pycompat.AttributeError, "'%s' object has no attribute 'get'", pycompat.TypeName(reference)))
+		}
+		fallback, err := item(reference, "name")
+		if err != nil {
+			return fail(err)
+		}
+		short, _ := pycompat.DictGet(reference, "short_name", fallback)
+		if _, err := c.textBox(short, x, 647, cellWidth-6, 23, 16, muted, false); err != nil {
+			return fail(err)
+		}
+	}
+	c.img.fillRect(0, 679, 1280, 720, hexColor("#0D1216"))
+	notice, color := "Референсы не показывают текущую позу, ракурс и состояние", muted
+	if pycompat.Truthy(shot.Value("lipsync")) {
+		notice, color = "РЕЧЕВОЙ ПЛАН • губы не анимированы, границы слов не проверены", accent
+	}
+	if _, err := c.textBox(notice, 32, 689, 974, 26, 17, color, false); err != nil {
+		return fail(err)
+	}
+	return c, cardResult{ActionFont: actionFont, StateFont: stateFont, PrimaryReference: key, PrimaryImage: sourcePath}, nil
+}
+
+// keyframePath — root / keyframe["path"].
+func keyframePath(keyframe *pycompat.Dict, root string) (string, error) {
+	path, err := item(keyframe, "path")
+	if err != nil {
+		return "", err
+	}
+	return joinRoot(root, path)
+}
+
+// renderKeyframeCard — тело render_keyframe_card с необязательной трассировкой. Вторым
+// значением возвращается холст последней опоры (nil, если он не нужен).
+func renderKeyframeCard(shot, project *pycompat.Dict, keyframes []*pycompat.Dict, root string, withLast bool, tr *trace) (*card, *rgbImage, error) {
+	if len(keyframes) == 0 {
+		return nil, nil, pycompat.New(pycompat.ValueError, "Нет принятых опор для карточки.")
+	}
+	c := &card{trace: tr}
+	firstPath, err := keyframePath(keyframes[0], root)
+	if err != nil {
+		return nil, nil, err
+	}
+	if c.img, err = fitCanvas(firstPath, c); err != nil {
+		return nil, nil, err
+	}
+	c.img.shadeBand(0, 58)
+	c.img.shadeBand(cardHeight-112, cardHeight)
+	c.img.fillRect(0, 0, cardWidth, 7, hexColor(accent))
+	name, err := upperName(project)
+	if err != nil {
+		return nil, nil, err
+	}
+	header, err := concat(name, literal("  /  ОПОРЫ ПРИНЯТЫ, ВИДЕО НЕ СГЕНЕРИРОВАНО"))
+	if err != nil {
+		return nil, nil, err
+	}
+	if _, err := c.textBox(header, 32, 20, 860, 28, 18, accent, true); err != nil {
+		return nil, nil, err
+	}
+	interval, err := item(shot, "interval")
+	if err != nil {
+		return nil, nil, err
+	}
+	timing, err := concat(interval, literal("  •  "), field(shot, "duration"), literal(" с"))
+	if err != nil {
+		return nil, nil, err
+	}
+	if _, err := c.textBox(timing, 900, 22, 350, 28, 18, foreground, false); err != nil {
+		return nil, nil, err
+	}
+	id, err := item(shot, "id")
+	if err != nil {
+		return nil, nil, err
+	}
+	heading, err := concat(id, literal("  /  "), field(shot, "title"))
+	if err != nil {
+		return nil, nil, err
+	}
+	if _, err := c.textBox(heading, 32, cardHeight-100, 760, 40, 24, foreground, true); err != nil {
+		return nil, nil, err
+	}
+	// " → ".join(f"{k['id']} {k['time_seconds']:g} с" for k in keyframes)
+	plan := ""
+	for index, keyframe := range keyframes {
+		keyID, err := item(keyframe, "id")
+		if err != nil {
+			return nil, nil, err
+		}
+		seconds, err := item(keyframe, "time_seconds")
+		if err != nil {
+			return nil, nil, err
+		}
+		formatted, err := formatG(seconds)
+		if err != nil {
+			return nil, nil, err
+		}
+		if index > 0 {
+			plan += " → "
+		}
+		plan += pycompat.Str(keyID) + " " + formatted + " с"
+	}
+	if _, err := c.textBox("План опор: "+plan, 32, cardHeight-58, 760, 24, 16, muted, false); err != nil {
+		return nil, nil, err
+	}
+	camera, err := item(shot, "camera")
+	if err != nil {
+		return nil, nil, err
+	}
+	if _, err := c.textBox(camera, 32, cardHeight-32, 760, 24, 16, accent, false); err != nil {
+		return nil, nil, err
+	}
+	others := keyframes[1:]
+	if len(others) > 0 {
+		width := min(176, (cardWidth-820-32)/max(1, len(others)))
+		for index, keyframe := range others {
+			x := cardWidth - 32 - width*(len(others)-index) + 6
+			path, err := item(keyframe, "path")
+			if err != nil {
+				return nil, nil, err
+			}
+			if err := c.placeReference(path, x, cardHeight-104, width-6, 76, root); err != nil {
+				return nil, nil, err
+			}
+			keyID, err := item(keyframe, "id")
+			if err != nil {
+				return nil, nil, err
+			}
+			if _, err := c.textBox(keyID, x, cardHeight-26, width-6, 24, 16, muted, false); err != nil {
+				return nil, nil, err
+			}
+		}
+	}
+	if !withLast || len(keyframes) < 2 {
+		return c, nil, nil
+	}
+	lastPath, err := keyframePath(keyframes[len(keyframes)-1], root)
+	if err != nil {
+		return nil, nil, err
+	}
+	last, err := fitCanvas(lastPath, c)
+	if err != nil {
+		return nil, nil, err
+	}
+	return c, &last, nil
+}

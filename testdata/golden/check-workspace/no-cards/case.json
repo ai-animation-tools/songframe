@@ -1,0 +1,15 @@
+{
+  "description": "Нет папки карточек и квитанции.",
+  "call": "check_workspace",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "cards нет"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [
+    "plan/animatic/cards"
+  ],
+  "mkdir": []
+}

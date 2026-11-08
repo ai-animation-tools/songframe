@@ -1,0 +1,16 @@
+{
+  "description": "set-note -h.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "sub help"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "set-note",
+    "-h"
+  ],
+  "remove": [],
+  "mkdir": []
+}

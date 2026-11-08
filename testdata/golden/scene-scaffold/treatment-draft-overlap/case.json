@@ -1,0 +1,13 @@
+{
+  "description": "Черновик: части накладываются, конец раньше начала.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "конец раньше начала"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--force"
+  ]
+}

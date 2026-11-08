@@ -1,0 +1,9 @@
+{
+  "code": 1,
+  "stdout": "",
+  "stderr": "Переход accepted → needs_revision не предусмотрен: вперёд только на следующий этап, назад — на любой.\n",
+  "traceback": false,
+  "files": {},
+  "dirs": {},
+  "modes": {}
+}

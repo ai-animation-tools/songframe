@@ -1,0 +1,13 @@
+{
+  "description": "Пауза перед первой строкой и после последней длиннее 2,5 с.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "GAP_SECONDS"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--force"
+  ]
+}

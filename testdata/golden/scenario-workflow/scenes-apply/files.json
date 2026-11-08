@@ -1,0 +1,26 @@
+{
+  "ROADMAP.md": {
+    "before": "92799d672bc2e0c28915300592772d33371619b647e0a9952e066010dd931317",
+    "after": "03fe6e4b018aa599f540e6d36789d123420eafbaf7033c6a05f7d3a58298388a"
+  },
+  "plan/animatic/cards/M04.png": {
+    "before": "1f6f73f9c2ee3fe755a199b2f0dea7742876cc0c355f2cc8cbd064fe29013976",
+    "after": "3a73238834f6bfb60f7e161749eb950d7345971f3bd6caf6cd0c18c9d6fea582"
+  },
+  "plan/animatic/cards/manifest.json": {
+    "before": "ae4497fbebf599f4ff88a933976d2f69b215f7377d21496c0247c3a6e55992de",
+    "after": "34c6ba75e85f315b741a743522eb90decf6cf8e3f38c47b62276fa5ad54b42e1"
+  },
+  "plan/edit-list.md": {
+    "before": "0b473e57b6e92e702a16b6154178a27e061e7b064da61a97591dd5b3adfbc356",
+    "after": "04ae7db9d561a1423d501e4d43d893ffe9328b4db1c897ad261cec8515af3507"
+  },
+  "plan/scenes.json": {
+    "before": "7a80da73a0f083fc3a9b31862b7b0ea2fe87c6536af966a50c3b1b579417401f",
+    "after": "ca198f3532bae4d08cb4c471845487f9edde2312fa5f5e25c4b42c1c435ce191"
+  },
+  "plan/storyboard.md": {
+    "before": "7f0154e12c063ec4e9dc21006ad1f825d8f510bc7f20755d0dec996ae723401b",
+    "after": "9267c44180881608b39666904d2df5d6e30799633b458dbd69c6fa673832decc"
+  }
+}

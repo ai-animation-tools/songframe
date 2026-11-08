@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "K01: опора уже утверждена.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

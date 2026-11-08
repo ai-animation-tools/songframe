@@ -66,7 +66,7 @@ func run() error {
 	updateReport := flag.String("update-smoke-report", "", "JSON-отчёт проверки обновления до перезапуска")
 	flag.Parse()
 	// Проверка поставки использует тот же менеджер, но не создаёт WebView и не читает профиль GUI.
-	// Это позволяет проверить CGO/ORT именно из AppImage, без инструментов сборки (Go, Node, Python)
+	// Это позволяет проверить CGO/ORT именно из AppImage, без инструментов сборки (Go, Node)
 	// на целевой машине.
 	if *componentInput != "" || *componentReport != "" {
 		if *componentInput == "" || *componentReport == "" || *timeout <= 0 || *smoke || *checkDir != "" || *checkProject != "" || *checkReport != "" || *report != "" {

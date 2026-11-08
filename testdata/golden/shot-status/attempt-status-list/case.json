@@ -1,5 +1,5 @@
 {
-  "description": "status попытки списком: unhashable — трассировка.",
+  "description": "status попытки списком: нельзя использовать как ключ — необработанная ошибка.",
   "call": "shot_status",
   "project": "project",
   "base": "checks-base",

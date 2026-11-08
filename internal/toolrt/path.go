@@ -81,15 +81,15 @@ func pathParts(path string) []string {
 }
 
 // RelativeTo — путь path относительно base: лексически, по компонентам, без разрешения ссылок.
-// Путь вне base — ValueError «'path' is not in the subpath of 'base'»; совпадающие пути — «.».
+// Путь вне base — ValueError «'path' не находится внутри 'base'»; совпадающие пути — «.».
 func RelativeTo(path, base string) (string, error) {
 	target, root := pathParts(path), pathParts(base)
 	if len(target) < len(root) {
-		return "", Raise(ValueError, "%s is not in the subpath of %s", Repr(cleanPath(path)), Repr(cleanPath(base)))
+		return "", Raise(ValueError, "%s не находится внутри %s", Repr(cleanPath(path)), Repr(cleanPath(base)))
 	}
 	for index := range root {
 		if target[index] != root[index] {
-			return "", Raise(ValueError, "%s is not in the subpath of %s", Repr(cleanPath(path)), Repr(cleanPath(base)))
+			return "", Raise(ValueError, "%s не находится внутри %s", Repr(cleanPath(path)), Repr(cleanPath(base)))
 		}
 	}
 	rest := target[len(root):]

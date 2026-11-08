@@ -2,5 +2,5 @@
   "code": 1,
   "stdout": "Принятых планов: 2.\n- plan/animatic/cards/M01.png: карточка принятого плана M01; обновите представления\n- plan/animatic/cards/M77.v2.png: карточка плана, которого нет в реестре\n- plan/animatic/cards/M04.png: нет карточки незавершённого плана M04; обновите представления\n- plan/animatic/cards/manifest.json: квитанция карточек не совпадает с незавершёнными планами; обновите представления\nНесоответствий: 4.\n",
   "stderr": "",
-  "traceback": false
+  "unhandled": false
 }

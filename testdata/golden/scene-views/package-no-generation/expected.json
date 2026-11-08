@@ -1,7 +1,7 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nKeyError: 'generation'\n",
-  "traceback": true,
+  "stderr": "Ошибка: нет ключа 'generation'\n",
+  "unhandled": true,
   "cards": null
 }

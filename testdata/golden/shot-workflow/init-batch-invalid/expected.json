@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Имя партии: латиница, цифры, точка, дефис, подчёркивание.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

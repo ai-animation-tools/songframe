@@ -137,7 +137,7 @@
         "code": 0,
         "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-video (video) |\n| Параметры | duration=7, resolution=1080p, результатов 1 |\n| Оценка | 51 кредитов (таблица цен) |\n| Остаток | 1824 кредитов (тестовый сервис) |\n| Вердикт | средств достаточно (`ok`) |\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"account\"}"
@@ -159,7 +159,7 @@
         "code": 0,
         "stdout": "{\n  \"model\": \"test-video\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": 51.0,\n  \"estimate_source\": \"таблица цен\",\n  \"balance_credits\": 1824.0,\n  \"balance_source\": \"тестовый сервис\",\n  \"verdict\": \"ok\",\n  \"verdict_label\": \"средств достаточно\",\n  \"reasons\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"account\"}"
@@ -181,7 +181,7 @@
         "code": 2,
         "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-video (video) |\n| Параметры | duration=7, resolution=1080p, результатов 1 |\n| Оценка | 51 кредитов (таблица цен) |\n| Остаток | 10 кредитов (тестовый сервис) |\n| Вердикт | средств не хватает (`insufficient_balance`) |\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"account\"}"
@@ -203,7 +203,7 @@
         "code": 0,
         "stdout": "{\n  \"model\": \"test-video\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": 51.0,\n  \"estimate_source\": \"таблица цен\",\n  \"balance_credits\": 51.0,\n  \"balance_source\": \"указан вручную\",\n  \"verdict\": \"ok\",\n  \"verdict_label\": \"средств достаточно\",\n  \"reasons\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -223,7 +223,7 @@
         "code": 0,
         "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-video (video) |\n| Параметры | duration=7, resolution=1080p, результатов 1 |\n| Оценка | 51 кредитов (таблица цен) |\n| Остаток | 51 кредитов (указан вручную) |\n| Вердикт | средств достаточно (`ok`) |\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -243,7 +243,7 @@
         "code": 2,
         "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-video (video) |\n| Параметры | duration=7, resolution=1080p, результатов 1 |\n| Оценка | 51 кредитов (таблица цен) |\n| Остаток | неизвестно (запрос к аккаунту отключён) |\n| Вердикт | стоимость или баланс неизвестны (`cost_or_balance_unknown`) |\n| Причина | остаток неизвестен: запрос к аккаунту отключён |\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -263,7 +263,7 @@
         "code": 2,
         "stdout": "{\n  \"model\": \"test-video\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": 51.0,\n  \"estimate_source\": \"таблица цен\",\n  \"balance_credits\": null,\n  \"balance_source\": \"тестовый сервис не сообщил остаток\",\n  \"verdict\": \"cost_or_balance_unknown\",\n  \"verdict_label\": \"стоимость или баланс неизвестны\",\n  \"reasons\": [\n    \"остаток неизвестен: тестовый сервис не сообщил остаток\"\n  ]\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"account\"}"
@@ -284,8 +284,8 @@
       {
         "code": 1,
         "stdout": "",
-        "stderr": "could not convert string to float: 'много'\n",
-        "traceback": false,
+        "stderr": "не число: 'много'\n",
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"account\"}"
@@ -347,7 +347,7 @@
         "code": 0,
         "stdout": "{\n  \"model\": \"test-video\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 2,\n  \"estimate_credits\": 102.0,\n  \"estimate_source\": \"таблица цен\",\n  \"balance_credits\": 1824.0,\n  \"balance_source\": \"тестовый сервис\",\n  \"verdict\": \"ok\",\n  \"verdict_label\": \"средств достаточно\",\n  \"reasons\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"account\"}"
@@ -421,7 +421,7 @@
         "code": 2,
         "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-video-fast (video) |\n| Параметры | duration=7, resolution=1080p, результатов 1 |\n| Оценка | неизвестно (нет данных) |\n| Остаток | 1824 кредитов (тестовый сервис) |\n| Вердикт | стоимость или баланс неизвестны (`cost_or_balance_unknown`) |\n| Причина | цена test-video-fast при 1080p не задана и не наблюдалась |\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"account\"}"
@@ -443,7 +443,7 @@
         "code": 2,
         "stdout": "{\n  \"model\": \"test-video-fast\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": null,\n  \"estimate_source\": null,\n  \"balance_credits\": null,\n  \"balance_source\": \"запрос к аккаунту отключён\",\n  \"verdict\": \"cost_or_balance_unknown\",\n  \"verdict_label\": \"стоимость или баланс неизвестны\",\n  \"reasons\": [\n    \"цена test-video-fast при 1080p не задана и не наблюдалась\",\n    \"остаток неизвестен: запрос к аккаунту отключён\"\n  ]\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -515,7 +515,7 @@
         "code": 2,
         "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-video-unknown (video) |\n| Параметры | duration=7, resolution=1080p, результатов 1 |\n| Оценка | неизвестно (нет данных) |\n| Остаток | 1824 кредитов (тестовый сервис) |\n| Вердикт | стоимость или баланс неизвестны (`cost_or_balance_unknown`) |\n| Причина | модель test-video-unknown отсутствует в таблице цен |\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"account\"}"
@@ -537,7 +537,7 @@
         "code": 2,
         "stdout": "{\n  \"model\": \"test-video-unknown\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": null,\n  \"estimate_source\": null,\n  \"balance_credits\": null,\n  \"balance_source\": \"запрос к аккаунту отключён\",\n  \"verdict\": \"cost_or_balance_unknown\",\n  \"verdict_label\": \"стоимость или баланс неизвестны\",\n  \"reasons\": [\n    \"модель test-video-unknown отсутствует в таблице цен\",\n    \"остаток неизвестен: запрос к аккаунту отключён\"\n  ]\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -609,7 +609,7 @@
         "code": 2,
         "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-video (video) |\n| Параметры | duration=7, resolution=720p, результатов 1 |\n| Оценка | неизвестно (нет данных) |\n| Остаток | 1824 кредитов (тестовый сервис) |\n| Вердикт | стоимость или баланс неизвестны (`cost_or_balance_unknown`) |\n| Причина | цена test-video при 720p не задана и не наблюдалась |\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"account\"}"
@@ -631,7 +631,7 @@
         "code": 2,
         "stdout": "{\n  \"model\": \"test-video\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": \"720p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": null,\n  \"estimate_source\": null,\n  \"balance_credits\": null,\n  \"balance_source\": \"запрос к аккаунту отключён\",\n  \"verdict\": \"cost_or_balance_unknown\",\n  \"verdict_label\": \"стоимость или баланс неизвестны\",\n  \"reasons\": [\n    \"цена test-video при 720p не задана и не наблюдалась\",\n    \"остаток неизвестен: запрос к аккаунту отключён\"\n  ]\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -703,7 +703,7 @@
         "code": 2,
         "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-video (video) |\n| Параметры | duration=7, resolution=—, результатов 1 |\n| Оценка | неизвестно (нет данных) |\n| Остаток | 1824 кредитов (тестовый сервис) |\n| Вердикт | стоимость или баланс неизвестны (`cost_or_balance_unknown`) |\n| Причина | в запросе нет resolution |\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"account\"}"
@@ -725,7 +725,7 @@
         "code": 2,
         "stdout": "{\n  \"model\": \"test-video\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": null,\n  \"estimate_source\": null,\n  \"balance_credits\": null,\n  \"balance_source\": \"запрос к аккаунту отключён\",\n  \"verdict\": \"cost_or_balance_unknown\",\n  \"verdict_label\": \"стоимость или баланс неизвестны\",\n  \"reasons\": [\n    \"в запросе нет resolution\",\n    \"остаток неизвестен: запрос к аккаунту отключён\"\n  ]\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -797,7 +797,7 @@
         "code": 2,
         "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-video (video) |\n| Параметры | duration=—, resolution=1080p, результатов 1 |\n| Оценка | неизвестно (нет данных) |\n| Остаток | 1824 кредитов (тестовый сервис) |\n| Вердикт | стоимость или баланс неизвестны (`cost_or_balance_unknown`) |\n| Причина | в запросе нет duration |\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"account\"}"
@@ -819,7 +819,7 @@
         "code": 2,
         "stdout": "{\n  \"model\": \"test-video\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": null,\n  \"estimate_source\": null,\n  \"balance_credits\": null,\n  \"balance_source\": \"запрос к аккаунту отключён\",\n  \"verdict\": \"cost_or_balance_unknown\",\n  \"verdict_label\": \"стоимость или баланс неизвестны\",\n  \"reasons\": [\n    \"в запросе нет duration\",\n    \"остаток неизвестен: запрос к аккаунту отключён\"\n  ]\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -891,7 +891,7 @@
         "code": 0,
         "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-video (video) |\n| Параметры | duration=7, resolution=1080p, результатов 1 |\n| Оценка | 51 кредитов (таблица цен) |\n| Остаток | 1824 кредитов (тестовый сервис) |\n| Вердикт | средств достаточно (`ok`) |\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"account\"}"
@@ -913,7 +913,7 @@
         "code": 2,
         "stdout": "{\n  \"model\": \"test-video\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": \"7\",\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": 51.0,\n  \"estimate_source\": \"таблица цен\",\n  \"balance_credits\": null,\n  \"balance_source\": \"запрос к аккаунту отключён\",\n  \"verdict\": \"cost_or_balance_unknown\",\n  \"verdict_label\": \"стоимость или баланс неизвестны\",\n  \"reasons\": [\n    \"остаток неизвестен: запрос к аккаунту отключён\"\n  ]\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -985,7 +985,7 @@
         "code": 2,
         "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-video (video) |\n| Параметры | duration=7, resolution=1080, результатов 1 |\n| Оценка | неизвестно (нет данных) |\n| Остаток | 1824 кредитов (тестовый сервис) |\n| Вердикт | стоимость или баланс неизвестны (`cost_or_balance_unknown`) |\n| Причина | цена test-video при 1080 не задана и не наблюдалась |\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"account\"}"
@@ -1007,7 +1007,7 @@
         "code": 2,
         "stdout": "{\n  \"model\": \"test-video\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": 1080\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": null,\n  \"estimate_source\": null,\n  \"balance_credits\": null,\n  \"balance_source\": \"запрос к аккаунту отключён\",\n  \"verdict\": \"cost_or_balance_unknown\",\n  \"verdict_label\": \"стоимость или баланс неизвестны\",\n  \"reasons\": [\n    \"цена test-video при 1080 не задана и не наблюдалась\",\n    \"остаток неизвестен: запрос к аккаунту отключён\"\n  ]\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -1079,7 +1079,7 @@
         "code": 2,
         "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-video (audio) |\n| Параметры | duration=7, resolution=1080p, результатов 1 |\n| Оценка | неизвестно (нет данных) |\n| Остаток | 1824 кредитов (тестовый сервис) |\n| Вердикт | стоимость или баланс неизвестны (`cost_or_balance_unknown`) |\n| Причина | неизвестный вид результата |\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"account\"}"
@@ -1101,7 +1101,7 @@
         "code": 2,
         "stdout": "{\n  \"model\": \"test-video\",\n  \"kind\": \"audio\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": null,\n  \"estimate_source\": null,\n  \"balance_credits\": null,\n  \"balance_source\": \"запрос к аккаунту отключён\",\n  \"verdict\": \"cost_or_balance_unknown\",\n  \"verdict_label\": \"стоимость или баланс неизвестны\",\n  \"reasons\": [\n    \"неизвестный вид результата\",\n    \"остаток неизвестен: запрос к аккаунту отключён\"\n  ]\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -1195,7 +1195,7 @@
         "code": 0,
         "stdout": "{\n  \"model\": \"test-video-fast\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": 70.0,\n  \"estimate_source\": \"наблюдение, пересчёт по секундам\",\n  \"balance_credits\": 1824.0,\n  \"balance_source\": \"тестовый сервис\",\n  \"verdict\": \"ok\",\n  \"verdict_label\": \"средств достаточно\",\n  \"reasons\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"account\"}"
@@ -1217,7 +1217,7 @@
         "code": 0,
         "stdout": "{\n  \"model\": \"test-video-fast\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": 66.0,\n  \"estimate_source\": \"наблюдение за прежним запросом\",\n  \"balance_credits\": 1824.0,\n  \"balance_source\": \"тестовый сервис\",\n  \"verdict\": \"ok\",\n  \"verdict_label\": \"средств достаточно\",\n  \"reasons\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"account\"}"
@@ -1239,7 +1239,7 @@
         "code": 0,
         "stdout": "{\n  \"model\": \"test-video-fast\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": 105.0,\n  \"estimate_source\": \"наблюдение, пересчёт по секундам\",\n  \"balance_credits\": 1824.0,\n  \"balance_source\": \"тестовый сервис\",\n  \"verdict\": \"ok\",\n  \"verdict_label\": \"средств достаточно\",\n  \"reasons\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"account\"}"
@@ -1340,7 +1340,7 @@
         "code": 0,
         "stdout": "Наблюдение записано: {\"model\": \"test-video\", \"kind\": \"video\", \"resolution\": \"1080p\", \"duration\": 7, \"outputs\": 1, \"credits\": 49.0}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -1363,7 +1363,7 @@
         "code": 0,
         "stdout": "Наблюдение записано: {\"model\": \"test-video\", \"kind\": \"video\", \"resolution\": \"1080p\", \"duration\": 7, \"outputs\": 1, \"credits\": 49.0}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -1386,7 +1386,7 @@
         "code": 0,
         "stdout": "{\n  \"model\": \"test-video\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": 51.0,\n  \"estimate_source\": \"таблица цен\",\n  \"balance_credits\": 1824.0,\n  \"balance_source\": \"тестовый сервис\",\n  \"verdict\": \"ok\",\n  \"verdict_label\": \"средств достаточно\",\n  \"reasons\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"account\"}"
@@ -1411,7 +1411,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "В attempt.json нет credits_consumed; наблюдение не записано.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -1507,7 +1507,7 @@
         "code": 0,
         "stdout": "{\n  \"model\": \"test-video-fast\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": 30.0,\n  \"estimate_source\": \"наблюдение за прежним запросом\",\n  \"balance_credits\": 1824.0,\n  \"balance_source\": \"тестовый сервис\",\n  \"verdict\": \"ok\",\n  \"verdict_label\": \"средств достаточно\",\n  \"reasons\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"account\"}"
@@ -1530,7 +1530,7 @@
         "code": 0,
         "stdout": "Наблюдение записано: {\"model\": \"test-video-fast\", \"kind\": \"video\", \"resolution\": \"1080p\", \"duration\": 7, \"outputs\": 1, \"credits\": 49.0}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -1554,7 +1554,7 @@
         "code": 0,
         "stdout": "{\n  \"model\": \"test-video-fast\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": 49.0,\n  \"estimate_source\": \"наблюдение за прежним запросом\",\n  \"balance_credits\": 1824.0,\n  \"balance_source\": \"тестовый сервис\",\n  \"verdict\": \"ok\",\n  \"verdict_label\": \"средств достаточно\",\n  \"reasons\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"account\"}"
@@ -1580,7 +1580,7 @@
         "code": 0,
         "stdout": "{\n  \"model\": \"test-video-fast\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"parameters\": {\n    \"duration\": 7,\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": 49.0,\n  \"estimate_source\": \"наблюдение за прежним запросом\",\n  \"balance_credits\": 1824.0,\n  \"balance_source\": \"тестовый сервис\",\n  \"verdict\": \"ok\",\n  \"verdict_label\": \"средств достаточно\",\n  \"reasons\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"account\"}"
@@ -1643,7 +1643,7 @@
         "code": 2,
         "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-video (video) |\n| Параметры | duration=7, resolution=1080p, результатов 1 |\n| Оценка | неизвестно (нет данных) |\n| Остаток | 1824 кредитов (тестовый сервис) |\n| Вердикт | стоимость или баланс неизвестны (`cost_or_balance_unknown`) |\n| Причина | модель test-video отсутствует в таблице цен |\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"account\"}"
@@ -1735,7 +1735,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Файл наблюдений цен повреждён: <state>/providers/test/pricing-observations.json. Исправьте или удалите его.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -1758,7 +1758,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Файл наблюдений цен повреждён: <state>/providers/test/pricing-observations.json. Исправьте или удалите его.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -1781,7 +1781,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Файл наблюдений цен повреждён: <state>/providers/test/pricing-observations.json. Исправьте или удалите его.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -1882,7 +1882,7 @@
         "code": 2,
         "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-image (image) |\n| Параметры | command=image_to_image, img_resolution=1k, quality=low, результатов 1 |\n| Оценка | неизвестно (нет данных) |\n| Остаток | 1824 кредитов (тестовый сервис) |\n| Вердикт | стоимость или баланс неизвестны (`cost_or_balance_unknown`) |\n| Причина | цена изображения test-image не задана и точная конфигурация запроса не наблюдалась |\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"account\"}"
@@ -1904,7 +1904,7 @@
         "code": 0,
         "stdout": "Наблюдение записано: {\"model\": \"test-image\", \"kind\": \"image\", \"command\": \"image_to_image\", \"img_resolution\": \"1k\", \"quality\": \"low\", \"image_signature\": \"{\\\"command\\\":\\\"image_to_image\\\",\\\"inputs\\\":[{\\\"flag\\\":\\\"input\\\",\\\"slot\\\":\\\"image_1\\\"}],\\\"outputs\\\":1,\\\"parameters\\\":{\\\"img_resolution\\\":\\\"1k\\\",\\\"nested\\\":[{\\\"x\\\":2}],\\\"quality\\\":\\\"low\\\"}}\", \"outputs\": 1, \"credits\": 8.0}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -1927,7 +1927,7 @@
         "code": 0,
         "stdout": "{\n  \"model\": \"test-image\",\n  \"kind\": \"image\",\n  \"command\": \"image_to_image\",\n  \"parameters\": {\n    \"img_resolution\": \"1k\",\n    \"quality\": \"low\",\n    \"prompt\": \"секрет\",\n    \"Api-Key\": \"k\",\n    \"nested\": [\n      {\n        \"token\": 1,\n        \"x\": 2\n      }\n    ]\n  },\n  \"outputs\": 1,\n  \"estimate_credits\": 8.0,\n  \"estimate_source\": \"наблюдение за точно таким же запросом изображения\",\n  \"balance_credits\": 1824.0,\n  \"balance_source\": \"тестовый сервис\",\n  \"verdict\": \"ok\",\n  \"verdict_label\": \"средств достаточно\",\n  \"reasons\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"account\"}"
@@ -1952,7 +1952,7 @@
         "code": 2,
         "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-image (image) |\n| Параметры | command=image_to_image, img_resolution=1k, quality=high, результатов 1 |\n| Оценка | неизвестно (нет данных) |\n| Остаток | 1824 кредитов (тестовый сервис) |\n| Вердикт | стоимость или баланс неизвестны (`cost_or_balance_unknown`) |\n| Причина | цена изображения test-image не задана и точная конфигурация запроса не наблюдалась |\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"account\"}"
@@ -2016,7 +2016,7 @@
         "code": 0,
         "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-image-fixed (image) |\n| Параметры | command=image_to_image, img_resolution=1k, quality=low, результатов 3 |\n| Оценка | 9 кредитов (таблица цен) |\n| Остаток | 1824 кредитов (тестовый сервис) |\n| Вердикт | средств достаточно (`ok`) |\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"account\"}"
@@ -2122,7 +2122,7 @@
         "code": 0,
         "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-video (video) |\n| Параметры | duration=7, resolution=1080p, результатов 1 |\n| Оценка | 51 кредитов (таблица цен) |\n| Остаток | 1824 кредитов (указан вручную) |\n| Вердикт | средств достаточно (`ok`) |\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -2145,7 +2145,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Не указан вид результата.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -2168,7 +2168,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Для провайдера генерации 'nope' нет адаптера: укажите provider подключённого сервиса.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -2191,7 +2191,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Ошибка локальных данных; сырой вывод скрыт.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -2326,7 +2326,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Рабочая папка должна находиться внутри plan/batches, plan/awaiting, plan/reference-images или временной папки ОС.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -2348,7 +2348,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Неизвестная схема таблицы цен.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -2370,7 +2370,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Ошибка локальных данных; сырой вывод скрыт.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -2392,7 +2392,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Ошибка локальных данных; сырой вывод скрыт.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -2414,7 +2414,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Ошибка локальных данных; сырой вывод скрыт.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -2436,7 +2436,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Для провайдера генерации 'nope' нет адаптера: укажите provider подключённого сервиса.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -2458,7 +2458,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Для провайдера генерации 'nope' нет адаптера: укажите provider подключённого сервиса.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -2587,8 +2587,8 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: cost_check [-h] {check,learn} ...\ncost_check: error: the following arguments are required: action\n",
-        "traceback": false,
+        "stderr": "использование: cost_check [-h] {check,learn} ...\ncost_check: ошибка: обязательные аргументы: action\n",
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -2607,8 +2607,8 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: cost_check check [-h] (--work-dir WORK_DIR | --request REQUEST)\n                        [--balance BALANCE] [--no-account] [--pricing PRICING]\n                        [--timeout TIMEOUT] [--json]\ncost_check check: error: one of the arguments --work-dir --request is required\n",
-        "traceback": false,
+        "stderr": "использование: cost_check check [-h] (--work-dir WORK_DIR | --request REQUEST)\n                                [--balance BALANCE] [--no-account]\n                                [--pricing PRICING] [--timeout TIMEOUT]\n                                [--json]\ncost_check check: ошибка: нужен один из аргументов: --work-dir --request\n",
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -2627,8 +2627,8 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: cost_check check [-h] (--work-dir WORK_DIR | --request REQUEST)\n                        [--balance BALANCE] [--no-account] [--pricing PRICING]\n                        [--timeout TIMEOUT] [--json]\ncost_check check: error: argument --request: not allowed with argument --work-dir\n",
-        "traceback": false,
+        "stderr": "использование: cost_check check [-h] (--work-dir WORK_DIR | --request REQUEST)\n                                [--balance BALANCE] [--no-account]\n                                [--pricing PRICING] [--timeout TIMEOUT]\n                                [--json]\ncost_check check: ошибка: аргумент --request: нельзя вместе с --work-dir\n",
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -2647,8 +2647,8 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: cost_check learn [-h] --work-dir WORK_DIR [--pricing PRICING]\ncost_check learn: error: the following arguments are required: --work-dir\n",
-        "traceback": false,
+        "stderr": "использование: cost_check learn [-h] --work-dir WORK_DIR [--pricing PRICING]\ncost_check learn: ошибка: обязательные аргументы: --work-dir\n",
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -2666,9 +2666,9 @@
       },
       {
         "code": 0,
-        "stdout": "usage: cost_check check [-h] (--work-dir WORK_DIR | --request REQUEST)\n                        [--balance BALANCE] [--no-account] [--pricing PRICING]\n                        [--timeout TIMEOUT] [--json]\n\noptions:\n  -h, --help           show this help message and exit\n  --work-dir WORK_DIR\n  --request REQUEST\n  --balance BALANCE    Остаток из кабинета, если account недоступен.\n  --no-account         Не обращаться к аккаунту.\n  --pricing PRICING    Файл тарифов вместо базовой таблицы адаптера\n                       провайдера.\n  --timeout TIMEOUT\n  --json\n",
+        "stdout": "использование: cost_check check [-h] (--work-dir WORK_DIR | --request REQUEST)\n                                [--balance BALANCE] [--no-account]\n                                [--pricing PRICING] [--timeout TIMEOUT]\n                                [--json]\n\nпараметры:\n  -h, --help           показать справку и выйти\n  --work-dir WORK_DIR\n  --request REQUEST\n  --balance BALANCE    Остаток из кабинета, если account недоступен.\n  --no-account         Не обращаться к аккаунту.\n  --pricing PRICING    Файл тарифов вместо базовой таблицы адаптера\n                       провайдера.\n  --timeout TIMEOUT\n  --json\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -2686,9 +2686,9 @@
       },
       {
         "code": 0,
-        "stdout": "usage: cost_check [-h] {check,learn} ...\n\nОценка стоимости запроса и остатка кредитов перед таблицей; @link README.md\n\npositional arguments:\n  {check,learn}\n\noptions:\n  -h, --help     show this help message and exit\n",
+        "stdout": "использование: cost_check [-h] {check,learn} ...\n\nОценка стоимости запроса и остатка кредитов перед таблицей; @link README.md\n\nаргументы:\n  {check,learn}\n\nпараметры:\n  -h, --help     показать справку и выйти\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -2707,8 +2707,8 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: cost_check check [-h] (--work-dir WORK_DIR | --request REQUEST)\n                        [--balance BALANCE] [--no-account] [--pricing PRICING]\n                        [--timeout TIMEOUT] [--json]\ncost_check check: error: argument --balance: invalid float value: 'zz'\n",
-        "traceback": false,
+        "stderr": "использование: cost_check check [-h] (--work-dir WORK_DIR | --request REQUEST)\n                                [--balance BALANCE] [--no-account]\n                                [--pricing PRICING] [--timeout TIMEOUT]\n                                [--json]\ncost_check check: ошибка: аргумент --balance: не число: 'zz'\n",
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -2727,8 +2727,8 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: cost_check [-h] {check,learn} ...\ncost_check: error: unrecognized arguments: --json\n",
-        "traceback": false,
+        "stderr": "использование: cost_check [-h] {check,learn} ...\ncost_check: ошибка: неизвестные аргументы: --json\n",
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -2748,7 +2748,7 @@
         "code": 0,
         "stdout": "| Параметр | Значение |\n| --- | --- |\n| Модель | test-video (video) |\n| Параметры | duration=7, resolution=1080p, результатов 1 |\n| Оценка | 51 кредитов (таблица цен) |\n| Остаток | 1000 кредитов (указан вручную) |\n| Вердикт | средств достаточно (`ok`) |\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {

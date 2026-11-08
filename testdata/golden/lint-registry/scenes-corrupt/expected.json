@@ -1,6 +1,6 @@
 {
   "code": 1,
-  "stdout": "ОШИБКА  plan/scenes.json · $: JSON не разбирается: Expecting property name enclosed in double quotes: line 1 column 9 (char 8)\nОШИБКА  plan/scenes.json · $: файл отсутствует\nпредупреждение  plan/production-status.json · shots.M01: отпечаток принятия плана, которого нет в реестре\nпредупреждение  plan/production-status.json · shots.M02: отпечаток принятия плана, которого нет в реестре\nОшибок: 2, предупреждений: 2.\n",
+  "stdout": "ОШИБКА  plan/scenes.json · $: JSON не разбирается: неверный JSON: ожидалось имя поля в двойных кавычках: строка 1, столбец 9 (символ 8)\nОШИБКА  plan/scenes.json · $: файл отсутствует\nпредупреждение  plan/production-status.json · shots.M01: отпечаток принятия плана, которого нет в реестре\nпредупреждение  plan/production-status.json · shots.M02: отпечаток принятия плана, которого нет в реестре\nОшибок: 2, предупреждений: 2.\n",
   "stderr": "",
-  "traceback": false
+  "unhandled": false
 }

@@ -2,7 +2,7 @@
   "code": 0,
   "stdout": "Пакет перенесён: <project>/plan/awaiting/M04\n",
   "stderr": "",
-  "traceback": false,
+  "unhandled": false,
   "files": {
     "plan/awaiting/M04/r/request.json": "created",
     "plan/awaiting/M04/workflow.json": "created",

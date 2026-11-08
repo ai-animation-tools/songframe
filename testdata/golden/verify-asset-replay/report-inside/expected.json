@@ -1,8 +1,8 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nValueError: Отчёт проверки нужно сохранить вне папки проекта.\n",
-  "traceback": true,
+  "stderr": "Ошибка: Отчёт проверки нужно сохранить вне папки проекта.\n",
+  "unhandled": true,
   "files": {},
   "dirs": {},
   "modes": {},

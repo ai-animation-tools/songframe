@@ -84,7 +84,7 @@ type Outcome struct {
 	Code        int               `json:"code"`
 	Stdout      string            `json:"stdout"`
 	Stderr      string            `json:"stderr"`
-	Traceback   bool              `json:"traceback"`
+	Unhandled   bool              `json:"unhandled"`
 	Interrupted bool              `json:"interrupted"`
 	Calls       []string          `json:"calls"`
 	Tree        map[string]string `json:"tree"`
@@ -211,12 +211,7 @@ func (s Scenario) Play(t *testing.T, run Runner) {
 			got.Code = output.Code
 			got.Stdout = normalizer.text(output.Stdout)
 			got.Stderr = output.Stderr
-			got.Traceback = strings.HasPrefix(output.Stderr, "Traceback (most recent call last):")
-			if got.Traceback {
-				// Как в эталоне: сравнивается строка исключения, а не кадры трассировки.
-				lines := strings.Split(strings.TrimRight(output.Stderr, "\n"), "\n")
-				got.Stderr = lines[len(lines)-1] + "\n"
-			}
+			got.Unhandled = toolrt.IsUnhandled(output.Stderr)
 			got.Stderr = normalizer.text(got.Stderr)
 		}
 		calls := readCalls(t, env)
@@ -392,8 +387,8 @@ func compare(t *testing.T, label string, want, got Outcome) {
 		if want.Stdout != got.Stdout {
 			t.Errorf("%s: stdout\n%s\nожидался\n%s", label, got.Stdout, want.Stdout)
 		}
-		if want.Stderr != got.Stderr || want.Traceback != got.Traceback {
-			t.Errorf("%s: stderr (трассировка %v)\n%s\nожидался (трассировка %v)\n%s", label, got.Traceback, got.Stderr, want.Traceback, want.Stderr)
+		if want.Stderr != got.Stderr || want.Unhandled != got.Unhandled {
+			t.Errorf("%s: stderr (необработанная ошибка %v)\n%s\nожидался (необработанная ошибка %v)\n%s", label, got.Unhandled, got.Stderr, want.Unhandled, want.Stderr)
 		}
 	}
 	if strings.Join(want.Calls, "\n") != strings.Join(got.Calls, "\n") {

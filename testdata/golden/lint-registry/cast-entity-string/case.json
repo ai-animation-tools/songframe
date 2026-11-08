@@ -1,5 +1,5 @@
 {
-  "description": "Сущность кастинга строкой: AttributeError validate_cast — трассировка.",
+  "description": "Сущность кастинга строкой: AttributeError validate_cast — необработанная ошибка.",
   "call": "lint_registry",
   "project": "project",
   "base": "checks-base",

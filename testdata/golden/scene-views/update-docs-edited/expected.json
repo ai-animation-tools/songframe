@@ -2,7 +2,7 @@
   "code": 0,
   "stdout": "Обновлено представлений: 3.\n",
   "stderr": "",
-  "traceback": false,
+  "unhandled": false,
   "files": {
     "assets/shots/manifest.json": "changed",
     "plan/context/characters.md": "changed",

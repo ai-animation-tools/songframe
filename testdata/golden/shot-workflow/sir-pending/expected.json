@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Сначала ответьте на текущий вопрос производства.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

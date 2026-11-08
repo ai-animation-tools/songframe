@@ -1,8 +1,8 @@
 {
   "code": 0,
-  "stdout": "usage: scene_scaffold [-h] [--force] [--dry-run] [--json]\n\nКаркас plan/scenes.json из трактовки, разметки и кастинга.\n\noptions:\n  -h, --help  show this help message and exit\n  --force     Перезаписать существующий реестр сцен\n  --dry-run   Показать планы, файл не писать\n  --json\n",
+  "stdout": "использование: scene_scaffold [-h] [--force] [--dry-run] [--json]\n\nКаркас plan/scenes.json из трактовки, разметки и кастинга.\n\nпараметры:\n  -h, --help  показать справку и выйти\n  --force     Перезаписать существующий реестр сцен\n  --dry-run   Показать планы, файл не писать\n  --json\n",
   "stderr": "",
-  "traceback": false,
+  "unhandled": false,
   "files": {
     "plan/scenes.json": "unchanged"
   }

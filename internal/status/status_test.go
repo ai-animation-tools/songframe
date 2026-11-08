@@ -82,7 +82,8 @@ func TestOpenExpectations(t *testing.T) {
 }
 
 // TestReviewProblem проверяет постобработку projects.status: без записи сценарного процесса она не
-// меняет статус существующих проектов, а несуществующий путь даёт ошибку realpath.
+// меняет статус существующих проектов, а несуществующий путь даёт файловую ошибку «нет такого
+// файла или каталога».
 func TestReviewProblem(t *testing.T) {
 	for _, item := range golden.Load(t, "status") {
 		t.Run(item.Name, func(t *testing.T) {
@@ -96,7 +97,7 @@ func TestReviewProblem(t *testing.T) {
 				return
 			}
 			if !item.HasProject() {
-				want := scenarioReviewFailed("ENOENT: no such file or directory, lstat '" + path + "'")
+				want := scenarioReviewFailed("нет такого файла или каталога: '" + path + "'")
 				if len(full.Problems) != 2 || full.Problems[1] != want || full.Checks.AnimaticFresh || full.Checks.AnimaticApproved {
 					t.Fatalf("проблема несуществующего пути: %+v", full.Problems)
 				}
@@ -130,7 +131,7 @@ func TestReviewInputsFailures(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(project, "source", "track.mp3"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if problem := reviewProblem(project); problem != scenarioReviewFailed("EISDIR: illegal operation on a directory, read") {
+	if problem := reviewProblem(project); problem != scenarioReviewFailed("это каталог") {
 		t.Fatalf("каталог на месте входа: %q", problem)
 	}
 	if err := os.Remove(filepath.Join(project, "source", "track.mp3")); err != nil {
@@ -144,7 +145,7 @@ func TestReviewInputsFailures(t *testing.T) {
 		t.Fatal(err)
 	}
 	write("assets/shots/M01", "файл")
-	if problem := reviewProblem(project); !strings.HasPrefix(problem, scenarioReviewFailed("ENOTDIR: not a directory, lstat ")) {
+	if problem := reviewProblem(project); !strings.HasPrefix(problem, scenarioReviewFailed("не каталог: ")) {
 		t.Fatalf("файл M01 в assets/shots: %q", problem)
 	}
 }

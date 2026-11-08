@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Отправленную image-попытку продолжайте через resume.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

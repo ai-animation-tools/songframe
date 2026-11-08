@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "[Errno 2] No such file or directory: '<project>/plan/scenes.json'\n",
-  "traceback": false
+  "stderr": "нет такого файла или каталога: '<project>/plan/scenes.json'\n",
+  "unhandled": false
 }

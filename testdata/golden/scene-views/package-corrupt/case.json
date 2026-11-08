@@ -1,5 +1,5 @@
 {
-  "description": "Битый манифест комплекта: трассировка.",
+  "description": "Битый манифест комплекта: необработанная ошибка.",
   "call": "update_scene_views",
   "project": "project",
   "base": "checks-base",

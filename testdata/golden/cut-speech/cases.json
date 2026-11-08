@@ -9,11 +9,11 @@
         "cut -h",
         "verify -h",
         "required action",
-        "invalid choice",
+        "недопустимое значение",
         "required shot/--out",
-        "invalid float value",
-        "expected one argument",
-        "unrecognized arguments"
+        "не число",
+        "нужно одно значение",
+        "неизвестные аргументы"
       ],
       "overlay": {},
       "remove": [],
@@ -23,7 +23,7 @@
             "-h"
           ],
           "code": 0,
-          "stdout": "usage: cut_speech [-h] {cut,verify} ...\n\nТочный WAV липсинка и его рецепт из исходной песни по разметке или заданным\nграницам; @link README.md\n\npositional arguments:\n  {cut,verify}\n\noptions:\n  -h, --help    show this help message and exit\n",
+          "stdout": "использование: cut_speech [-h] {cut,verify} ...\n\nТочный WAV липсинка и его рецепт из исходной песни по разметке или заданным\nграницам; @link README.md\n\nаргументы:\n  {cut,verify}\n\nпараметры:\n  -h, --help    показать справку и выйти\n",
           "stderr": ""
         },
         {
@@ -32,7 +32,7 @@
             "-h"
           ],
           "code": 0,
-          "stdout": "usage: cut_speech cut [-h] --out OUT [--start START] [--end END] [--lead LEAD]\n                      [--tail TAIL] [--min-seconds MIN_SECONDS] [--json]\n                      shot\n\npositional arguments:\n  shot\n\noptions:\n  -h, --help            show this help message and exit\n  --out OUT             Папка для speech.wav и audio-recipe.json\n  --start START         Начало среза, с; по умолчанию по разметке\n  --end END             Конец среза, с, исключительно\n  --lead LEAD           Запас до первой строки при выборе по разметке\n  --tail TAIL           Запас после последней строки\n  --min-seconds MIN_SECONDS\n                        Минимальная длина среза, например под длительность\n                        запроса\n  --json\n",
+          "stdout": "использование: cut_speech cut [-h] --out OUT [--start START] [--end END]\n                              [--lead LEAD] [--tail TAIL]\n                              [--min-seconds MIN_SECONDS] [--json]\n                              shot\n\nаргументы:\n  shot\n\nпараметры:\n  -h, --help            показать справку и выйти\n  --out OUT             Папка для speech.wav и audio-recipe.json\n  --start START         Начало среза, с; по умолчанию по разметке\n  --end END             Конец среза, с, исключительно\n  --lead LEAD           Запас до первой строки при выборе по разметке\n  --tail TAIL           Запас после последней строки\n  --min-seconds MIN_SECONDS\n                        Минимальная длина среза, например под длительность\n                        запроса\n  --json\n",
           "stderr": ""
         },
         {
@@ -41,14 +41,14 @@
             "-h"
           ],
           "code": 0,
-          "stdout": "usage: cut_speech verify [-h] recipe\n\npositional arguments:\n  recipe\n\noptions:\n  -h, --help  show this help message and exit\n",
+          "stdout": "использование: cut_speech verify [-h] recipe\n\nаргументы:\n  recipe\n\nпараметры:\n  -h, --help  показать справку и выйти\n",
           "stderr": ""
         },
         {
           "run": [],
           "code": 2,
           "stdout": "",
-          "stderr": "usage: cut_speech [-h] {cut,verify} ...\ncut_speech: error: the following arguments are required: action\n"
+          "stderr": "использование: cut_speech [-h] {cut,verify} ...\ncut_speech: ошибка: обязательные аргументы: action\n"
         },
         {
           "run": [
@@ -56,7 +56,7 @@
           ],
           "code": 2,
           "stdout": "",
-          "stderr": "usage: cut_speech [-h] {cut,verify} ...\ncut_speech: error: argument action: invalid choice: 'bogus' (choose from 'cut', 'verify')\n"
+          "stderr": "использование: cut_speech [-h] {cut,verify} ...\ncut_speech: ошибка: аргумент action: недопустимое значение 'bogus' (допустимо: 'cut', 'verify')\n"
         },
         {
           "run": [
@@ -64,7 +64,7 @@
           ],
           "code": 2,
           "stdout": "",
-          "stderr": "usage: cut_speech cut [-h] --out OUT [--start START] [--end END] [--lead LEAD]\n                      [--tail TAIL] [--min-seconds MIN_SECONDS] [--json]\n                      shot\ncut_speech cut: error: the following arguments are required: shot, --out\n"
+          "stderr": "использование: cut_speech cut [-h] --out OUT [--start START] [--end END]\n                              [--lead LEAD] [--tail TAIL]\n                              [--min-seconds MIN_SECONDS] [--json]\n                              shot\ncut_speech cut: ошибка: обязательные аргументы: shot, --out\n"
         },
         {
           "run": [
@@ -73,7 +73,7 @@
           ],
           "code": 2,
           "stdout": "",
-          "stderr": "usage: cut_speech cut [-h] --out OUT [--start START] [--end END] [--lead LEAD]\n                      [--tail TAIL] [--min-seconds MIN_SECONDS] [--json]\n                      shot\ncut_speech cut: error: the following arguments are required: --out\n"
+          "stderr": "использование: cut_speech cut [-h] --out OUT [--start START] [--end END]\n                              [--lead LEAD] [--tail TAIL]\n                              [--min-seconds MIN_SECONDS] [--json]\n                              shot\ncut_speech cut: ошибка: обязательные аргументы: --out\n"
         },
         {
           "run": [
@@ -81,7 +81,7 @@
           ],
           "code": 2,
           "stdout": "",
-          "stderr": "usage: cut_speech verify [-h] recipe\ncut_speech verify: error: the following arguments are required: recipe\n"
+          "stderr": "использование: cut_speech verify [-h] recipe\ncut_speech verify: ошибка: обязательные аргументы: recipe\n"
         },
         {
           "run": [
@@ -94,7 +94,7 @@
           ],
           "code": 2,
           "stdout": "",
-          "stderr": "usage: cut_speech cut [-h] --out OUT [--start START] [--end END] [--lead LEAD]\n                      [--tail TAIL] [--min-seconds MIN_SECONDS] [--json]\n                      shot\ncut_speech cut: error: argument --start: invalid float value: 'abc'\n"
+          "stderr": "использование: cut_speech cut [-h] --out OUT [--start START] [--end END]\n                              [--lead LEAD] [--tail TAIL]\n                              [--min-seconds MIN_SECONDS] [--json]\n                              shot\ncut_speech cut: ошибка: аргумент --start: не число: 'abc'\n"
         },
         {
           "run": [
@@ -107,7 +107,7 @@
           ],
           "code": 2,
           "stdout": "",
-          "stderr": "usage: cut_speech cut [-h] --out OUT [--start START] [--end END] [--lead LEAD]\n                      [--tail TAIL] [--min-seconds MIN_SECONDS] [--json]\n                      shot\ncut_speech cut: error: argument --lead: invalid float value: '1e'\n"
+          "stderr": "использование: cut_speech cut [-h] --out OUT [--start START] [--end END]\n                              [--lead LEAD] [--tail TAIL]\n                              [--min-seconds MIN_SECONDS] [--json]\n                              shot\ncut_speech cut: ошибка: аргумент --lead: не число: '1e'\n"
         },
         {
           "run": [
@@ -119,7 +119,7 @@
           ],
           "code": 2,
           "stdout": "",
-          "stderr": "usage: cut_speech cut [-h] --out OUT [--start START] [--end END] [--lead LEAD]\n                      [--tail TAIL] [--min-seconds MIN_SECONDS] [--json]\n                      shot\ncut_speech cut: error: argument --min-seconds: expected one argument\n"
+          "stderr": "использование: cut_speech cut [-h] --out OUT [--start START] [--end END]\n                              [--lead LEAD] [--tail TAIL]\n                              [--min-seconds MIN_SECONDS] [--json]\n                              shot\ncut_speech cut: ошибка: аргумент --min-seconds: нужно одно значение\n"
         },
         {
           "run": [
@@ -133,7 +133,7 @@
           ],
           "code": 2,
           "stdout": "",
-          "stderr": "usage: cut_speech cut [-h] --out OUT [--start START] [--end END] [--lead LEAD]\n                      [--tail TAIL] [--min-seconds MIN_SECONDS] [--json]\n                      shot\ncut_speech cut: error: argument --start: invalid float value: 'x'\n"
+          "stderr": "использование: cut_speech cut [-h] --out OUT [--start START] [--end END]\n                              [--lead LEAD] [--tail TAIL]\n                              [--min-seconds MIN_SECONDS] [--json]\n                              shot\ncut_speech cut: ошибка: аргумент --start: не число: 'x'\n"
         },
         {
           "run": [
@@ -144,7 +144,7 @@
           ],
           "code": 2,
           "stdout": "",
-          "stderr": "usage: cut_speech cut [-h] --out OUT [--start START] [--end END] [--lead LEAD]\n                      [--tail TAIL] [--min-seconds MIN_SECONDS] [--json]\n                      shot\ncut_speech cut: error: argument --start: invalid float value: 'x'\n"
+          "stderr": "использование: cut_speech cut [-h] --out OUT [--start START] [--end END]\n                              [--lead LEAD] [--tail TAIL]\n                              [--min-seconds MIN_SECONDS] [--json]\n                              shot\ncut_speech cut: ошибка: аргумент --start: не число: 'x'\n"
         },
         {
           "run": [
@@ -154,7 +154,7 @@
           ],
           "code": 2,
           "stdout": "",
-          "stderr": "usage: cut_speech [-h] {cut,verify} ...\ncut_speech: error: unrecognized arguments: b\n"
+          "stderr": "использование: cut_speech [-h] {cut,verify} ...\ncut_speech: ошибка: неизвестные аргументы: b\n"
         },
         {
           "run": [
@@ -166,7 +166,7 @@
           ],
           "code": 2,
           "stdout": "",
-          "stderr": "usage: cut_speech cut [-h] --out OUT [--start START] [--end END] [--lead LEAD]\n                      [--tail TAIL] [--min-seconds MIN_SECONDS] [--json]\n                      shot\ncut_speech cut: error: argument --start: invalid float value: '-0x?'\n"
+          "stderr": "использование: cut_speech cut [-h] --out OUT [--start START] [--end END]\n                              [--lead LEAD] [--tail TAIL]\n                              [--min-seconds MIN_SECONDS] [--json]\n                              shot\ncut_speech cut: ошибка: аргумент --start: не число: '-0x?'\n"
         }
       ],
       "files": {}
@@ -602,7 +602,7 @@
     },
     {
       "name": "nan-inf",
-      "description": "NaN — ValueError приведения к целому; бесконечность — OverflowError с трассировкой; начало переводится раньше конца.",
+      "description": "NaN — ValueError приведения к целому; бесконечность — OverflowError с необработанной ошибкой; начало переводится раньше конца.",
       "covers": [
         "NaN",
         "Infinity",
@@ -639,7 +639,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "traceback": "OverflowError: cannot convert Infinity to integer"
+          "unhandled": "Ошибка: cannot convert Infinity to integer"
         },
         {
           "run": [
@@ -654,7 +654,7 @@
           ],
           "code": 2,
           "stdout": "",
-          "stderr": "usage: cut_speech cut [-h] --out OUT [--start START] [--end END] [--lead LEAD]\n                      [--tail TAIL] [--min-seconds MIN_SECONDS] [--json]\n                      shot\ncut_speech cut: error: argument --start: expected one argument\n"
+          "stderr": "использование: cut_speech cut [-h] --out OUT [--start START] [--end END]\n                              [--lead LEAD] [--tail TAIL]\n                              [--min-seconds MIN_SECONDS] [--json]\n                              shot\ncut_speech cut: ошибка: аргумент --start: нужно одно значение\n"
         }
       ],
       "files": {}
@@ -866,7 +866,7 @@
       "name": "timing-list",
       "description": "plan/audio/timing.json — список.",
       "covers": [
-        "AttributeError traceback"
+        "AttributeError — необработанная ошибка"
       ],
       "overlay": {
         "plan/audio/timing.json": "[]"
@@ -886,7 +886,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "traceback": "AttributeError: 'list' object has no attribute 'get'"
+          "unhandled": "Ошибка: ожидается объект, получено: список"
         }
       ],
       "files": {}
@@ -949,7 +949,7 @@
       "name": "timing-line-string",
       "description": "Строка разметки — строка, а не объект.",
       "covers": [
-        "TypeError traceback"
+        "TypeError — необработанная ошибка"
       ],
       "overlay": {
         "plan/audio/timing.json": "{\"lines\": [\"x\"]}"
@@ -969,7 +969,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "traceback": "TypeError: string indices must be integers, not 'str'"
+          "unhandled": "Ошибка: индекс строки должен быть целым числом, получено: строка"
         }
       ],
       "files": {}
@@ -978,7 +978,7 @@
       "name": "timing-end-string",
       "description": "Конец строки разметки — строка.",
       "covers": [
-        "TypeError compare traceback"
+        "TypeError сравнения — необработанная ошибка"
       ],
       "overlay": {
         "plan/audio/timing.json": "{\"lines\": [{\"id\": 1, \"start\": 0.4, \"end\": \"0.5\"}]}"
@@ -998,7 +998,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "traceback": "TypeError: '>' not supported between instances of 'str' and 'float'"
+          "unhandled": "Ошибка: '>' not supported between instances of 'строка' and 'дробное число'"
         }
       ],
       "files": {}
@@ -1029,7 +1029,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "stderr": "'utf-8' codec can't decode byte 0x? in position 11: invalid start byte\n"
+          "stderr": "текст не в UTF-8: байт 0x? в позиции 11, неверный начальный байт\n"
         }
       ],
       "files": {}
@@ -1530,7 +1530,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "traceback": "TypeError: list indices must be integers or slices, not str"
+          "unhandled": "Ошибка: индекс списка должен быть целым числом, получено: строка"
         },
         {
           "write": "plan/batches/M02-attempt-01/audio/r3.json",
@@ -1556,7 +1556,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "traceback": "TypeError: unsupported operand type(s) for /: 'PosixPath' and 'int'"
+          "unhandled": "Ошибка: unsupported operand type(s) for /: 'PosixPath' and 'целое число'"
         },
         {
           "write": "plan/batches/M02-attempt-01/audio/r5.json",
@@ -1583,7 +1583,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "traceback": "TypeError: unsupported operand type(s) for /: 'PosixPath' and 'int'"
+          "unhandled": "Ошибка: unsupported operand type(s) for /: 'PosixPath' and 'целое число'"
         },
         {
           "write": "plan/batches/M02-attempt-01/audio/r7.json",
@@ -1609,7 +1609,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "traceback": "TypeError: string indices must be integers, not 'str'"
+          "unhandled": "Ошибка: индекс строки должен быть целым числом, получено: строка"
         }
       ],
       "files": {
@@ -1685,7 +1685,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "traceback": "wave.Error: # channels not specified"
+          "unhandled": "Ошибка: # channels not specified"
         },
         {
           "write": "plan/batches/M02-attempt-01/audio/w1.json",
@@ -1698,7 +1698,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "traceback": "wave.Error: sample width not specified"
+          "unhandled": "Ошибка: sample width not specified"
         },
         {
           "write": "plan/batches/M02-attempt-01/audio/w2.json",
@@ -1711,7 +1711,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "traceback": "wave.Error: sampling rate not specified"
+          "unhandled": "Ошибка: sampling rate not specified"
         },
         {
           "write": "plan/batches/M02-attempt-01/audio/w3.json",
@@ -1724,7 +1724,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "traceback": "wave.Error: sampling rate not specified"
+          "unhandled": "Ошибка: sampling rate not specified"
         },
         {
           "write": "plan/batches/M02-attempt-01/audio/w4.json",
@@ -1737,7 +1737,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "traceback": "wave.Error: sampling rate not specified"
+          "unhandled": "Ошибка: sampling rate not specified"
         },
         {
           "write": "plan/batches/M02-attempt-01/audio/w5.json",
@@ -1750,7 +1750,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "traceback": "struct.error: 'L' format requires 0 <= number <= 4294967295"
+          "unhandled": "Ошибка: 'L' format requires 0 <= number <= 4294967295"
         },
         {
           "write": "plan/batches/M02-attempt-01/audio/w6.json",
@@ -1776,7 +1776,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "traceback": "wave.Error: sampling rate not specified"
+          "unhandled": "Ошибка: sampling rate not specified"
         },
         {
           "write": "plan/batches/M02-attempt-01/audio/w8.json",
@@ -1789,7 +1789,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "traceback": "struct.error: 'H' format requires 0 <= number <= 65535"
+          "unhandled": "Ошибка: 'H' format requires 0 <= number <= 65535"
         },
         {
           "write": "plan/batches/M02-attempt-01/audio/w9.json",
@@ -1828,7 +1828,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "traceback": "TypeError: slice indices must be integers or None or have an __index__ method"
+          "unhandled": "Ошибка: slice indices must be integers or None or have an __index__ method"
         },
         {
           "write": "plan/batches/M02-attempt-01/audio/w12.json",
@@ -1841,7 +1841,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "traceback": "TypeError: unsupported operand type(s) for *: 'NoneType' and 'int'"
+          "unhandled": "Ошибка: unsupported operand type(s) for *: 'null' and 'целое число'"
         },
         {
           "write": "plan/batches/M02-attempt-01/audio/w13.json",

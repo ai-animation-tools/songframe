@@ -942,7 +942,7 @@
       "zero_low_bins": 3
     },
     "ctc": {
-      "engine": "go-ctc-global-v2",
+      "engine": "ctc-global-v2",
       "scoring": "margin",
       "pause_policy": "adaptive",
       "sample_rate": 16000,

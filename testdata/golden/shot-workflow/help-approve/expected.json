@@ -1,8 +1,8 @@
 {
   "code": 0,
-  "stdout": "usage: shot_workflow approve [-h] --dir DIR keyframe path\n\npositional arguments:\n  keyframe\n  path\n\noptions:\n  -h, --help  show this help message and exit\n  --dir DIR\n",
+  "stdout": "использование: shot_workflow approve [-h] --dir DIR keyframe path\n\nаргументы:\n  keyframe\n  path\n\nпараметры:\n  -h, --help  показать справку и выйти\n  --dir DIR\n",
   "stderr": "",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

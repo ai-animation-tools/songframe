@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nValueError: Общими могут быть только входные изображения и референсы подготовки.\n",
-  "traceback": true
+  "stderr": "Ошибка: Общими могут быть только входные изображения и референсы подготовки.\n",
+  "unhandled": true
 }

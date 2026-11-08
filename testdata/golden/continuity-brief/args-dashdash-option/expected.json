@@ -1,6 +1,6 @@
 {
   "code": 2,
   "stdout": "",
-  "stderr": "usage: continuity_brief [-h] [--phase {before,after}] [--json] [--paragraph]\n                        shot\ncontinuity_brief: error: unrecognized arguments: --json\n",
-  "traceback": false
+  "stderr": "использование: continuity_brief [-h] [--phase {before,after}] [--json]\n                                [--paragraph]\n                                shot\ncontinuity_brief: ошибка: неизвестные аргументы: --json\n",
+  "unhandled": false
 }

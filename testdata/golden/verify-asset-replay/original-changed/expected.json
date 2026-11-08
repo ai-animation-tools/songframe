@@ -1,8 +1,8 @@
 {
   "code": 1,
   "stdout": "M02 проверка не пройдена\nM01 воспроизведён RMS=0.000\n",
-  "stderr": "Traceback (most recent call last):\nAssertionError: [{'shot': 'M02', 'error': 'M02: изменился файл комплекта original.mp4'}]\n",
-  "traceback": true,
+  "stderr": "Ошибка: внутренняя проверка не прошла: [{'shot': 'M02', 'error': 'M02: изменился файл комплекта original.mp4'}]\n",
+  "unhandled": true,
   "files": {},
   "dirs": {},
   "modes": {},

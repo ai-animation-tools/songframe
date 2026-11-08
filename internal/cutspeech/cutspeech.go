@@ -101,7 +101,7 @@ func Run(ctx context.Context, root string, argv []string) toolcli.Output {
 	default:
 		var exception *toolrt.Exception
 		if errors.As(err, &exception) {
-			stderr.WriteString(toolrt.Traceback(err))
+			stderr.WriteString(toolrt.Unhandled(err))
 		} else {
 			stderr.WriteString(err.Error() + "\n")
 		}

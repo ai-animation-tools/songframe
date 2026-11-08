@@ -4203,7 +4203,7 @@
       "name": "missing-candidate",
       "description": "Удалённый кандидат скрывает пробу.",
       "covers": [
-        "realpath"
+        "файловая ошибка"
       ],
       "base": "sample",
       "steps": [
@@ -11693,7 +11693,7 @@
       "name": "accepted-missing",
       "description": "Удалённый комплект снимает признак.",
       "covers": [
-        "realpath"
+        "файловая ошибка"
       ],
       "base": "sample",
       "steps": [
@@ -13784,7 +13784,7 @@
     },
     {
       "name": "project-missing",
-      "description": "Папки проекта нет: текст realpath.",
+      "description": "Папки проекта нет: текст файловой ошибки.",
       "covers": [
         "ENOENT"
       ],
@@ -13794,7 +13794,7 @@
           "op": "view",
           "shot": "M01",
           "project": "<project>/missing",
-          "error": "ENOENT: no such file or directory, lstat '<project>/missing'",
+          "error": "нет такого файла или каталога: '<project>/missing'",
           "changed": {},
           "removed": []
         }
@@ -17199,7 +17199,7 @@
         },
         {
           "op": "recover",
-          "error": "Не удалось прочитать <project>/plan/derived-history/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/journal.json: Expected property name or '}' in JSON at position 1 (line 1 column 2). Файл сохранён; исправьте его или перенесите в резервную папку.",
+          "error": "Не удалось прочитать <project>/plan/derived-history/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/journal.json: неверный JSON: ожидалось имя поля или «}», позиция 1 (строка 1, столбец 2). Файл сохранён; исправьте его или перенесите в резервную папку.",
           "changed": {},
           "removed": [],
           "tree": {

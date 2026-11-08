@@ -2,7 +2,7 @@
   "code": 0,
   "stdout": "Пакет M05 создан: этап description_review, окно 10.0 с.\n",
   "stderr": "",
-  "traceback": false,
+  "unhandled": false,
   "files": {
     "plan/batches/M05-a/workflow.json": "created"
   },

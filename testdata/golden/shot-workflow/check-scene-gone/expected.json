@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "План M77 · режим shot · этап: опоры на согласовании (`keyframes_review`)\nОкно 4.0 с (120 кадров), запрос 5 с\n\n| Опора | Роль | Время, с | Принята | Файл |\n| --- | --- | --- | --- | --- |\n| K01 | first | 0 | нет | frames/K01.png |\n| K02 | last | 5 | нет | — |\n\nПромпт: не принят\nПроблема: M77: план отсутствует в реестре сцен.\nДальше: примите опоры: approve ID ПУТЬ; затем approve-prompt\n",
   "stderr": "",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

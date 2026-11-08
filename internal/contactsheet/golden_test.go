@@ -22,7 +22,7 @@ import (
 
 // Эталон contact-sheet описывает синтетические проекты: входы
 // воспроизводятся FFmpeg из описания случая. Сверяются код,
-// stdout (отчёт и таблица побайтно), stderr (у трассировки — заголовок и последняя строка), состав
+// stdout (отчёт и таблица побайтно), stderr (у необработанной ошибки — строка «Ошибка: …»), состав
 // файлов проекта, размеры и средние цвета сетки 4×4 каждого PNG, поля ffprobe превью, неизменность
 // входов и пустой TMPDIR. Граничные кадры совпадают по пикселям точно (их декодирует FFmpeg); лист и
 // сравнения — с допуском: сглаживание букв подписей и декодирование JPEG опоры эталон не фиксирует.
@@ -278,10 +278,6 @@ func TestRunGolden(t *testing.T) {
 				t.Errorf("stdout\n got %s\nwant %s", stdout, wantStdout)
 			}
 			stderr, wantStderr := normal(output.Stderr), expected.Stderr
-			if strings.HasPrefix(wantStderr, "Traceback (most recent call last):\n") {
-				lines := strings.Split(strings.TrimSuffix(wantStderr, "\n"), "\n")
-				wantStderr = lines[0] + "\n" + lines[len(lines)-1] + "\n"
-			}
 			if !sameFFmpeg && strings.HasPrefix(wantStderr, textMediaFailed) {
 				stderr, wantStderr = stderr[:min(len(stderr), len(textMediaFailed))], textMediaFailed
 			}

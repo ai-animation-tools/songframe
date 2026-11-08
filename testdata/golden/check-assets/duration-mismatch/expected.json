@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nValueError: Длительность принятого монтажа расходится с числом кадров.\n",
-  "traceback": true
+  "stderr": "Ошибка: Длительность принятого монтажа расходится с числом кадров.\n",
+  "unhandled": true
 }

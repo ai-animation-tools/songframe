@@ -1,8 +1,8 @@
 {
   "code": 2,
   "stdout": "",
-  "stderr": "usage: shot_workflow approve [-h] --dir DIR keyframe path\nshot_workflow approve: error: the following arguments are required: keyframe, path\n",
-  "traceback": false,
+  "stderr": "использование: shot_workflow approve [-h] --dir DIR keyframe path\nshot_workflow approve: ошибка: обязательные аргументы: keyframe, path\n",
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

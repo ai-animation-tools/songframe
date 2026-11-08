@@ -1,5 +1,5 @@
 {
-  "description": "Граница части строкой не числа: InvalidOperation — трассировка.",
+  "description": "Граница части строкой не числа: InvalidOperation — необработанная ошибка.",
   "call": "update_scene_views",
   "project": "project",
   "base": "checks-base",

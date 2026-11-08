@@ -198,7 +198,7 @@ func section(config *toolrt.Dict, key, kind string, fallback any) (any, error) {
 	}
 	dict, ok := value.(*toolrt.Dict)
 	if !ok {
-		return nil, failure(toolrt.AttributeError, "'"+toolrt.TypeName(value)+"' object has no attribute 'get'")
+		return nil, failure(toolrt.AttributeError, "ожидается объект, получено: "+toolrt.TypeName(value))
 	}
 	if item, has := dict.Get(kind); has {
 		return item, nil
@@ -294,13 +294,13 @@ func (s *Service) Poll(_ context.Context, directory string, request, state *tool
 	}
 	if list, ok := answer.([]any); ok {
 		if len(list) == 0 {
-			return mediaapi.PollResult{}, failure(toolrt.IndexError, "list index out of range")
+			return mediaapi.PollResult{}, failure(toolrt.IndexError, "индекс за пределами списка")
 		}
 		answer = list[min(previous, len(list)-1)]
 	}
 	dict, ok := answer.(*toolrt.Dict)
 	if !ok || !dict.Has("status") {
-		return mediaapi.PollResult{}, failure(toolrt.KeyError, "'status'")
+		return mediaapi.PollResult{}, toolrt.NewKeyError("status")
 	}
 	status, _ := dict.Value("status").(string)
 	result := mediaapi.PollResult{Status: status, ServiceStatus: dict.Value("status")}

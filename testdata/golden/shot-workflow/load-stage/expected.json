@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Неизвестный этап: mystery\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

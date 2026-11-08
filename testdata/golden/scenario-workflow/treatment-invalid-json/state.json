@@ -1060,7 +1060,7 @@
         }
       },
       "changedIds": [],
-      "message": "Expected ',' or '}' after property value in JSON at position 37 (line 1 column 38)"
+      "message": "неверный JSON: после значения поля ожидалась «,» или «}», позиция 37 (строка 1, столбец 38)"
     },
     "expectedHashes": {
       "plan/project.json": "5f1eae81882b0ec971b80a1e6ecd621647e7676e55f6ac37c19990e3d027de6d",

@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nValueError: Не сохранены параметры воспроизведения принятого монтажа.\n",
-  "traceback": true
+  "stderr": "Ошибка: Не сохранены параметры воспроизведения принятого монтажа.\n",
+  "unhandled": true
 }

@@ -5,7 +5,7 @@
   "base": "checks-base",
   "covers": [
     "help",
-    "positional arguments"
+    "раздел «аргументы»"
   ],
   "stubbedMedia": [],
   "args": [

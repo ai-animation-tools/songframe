@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nValueError: В комплекте липсинка отсутствует входное аудио.\n",
-  "traceback": true
+  "stderr": "Ошибка: В комплекте липсинка отсутствует входное аудио.\n",
+  "unhandled": true
 }

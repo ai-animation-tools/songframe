@@ -409,7 +409,7 @@
     "expected": {
       "error": {
         "type": "ValueError",
-        "message": "Out of range float values are not JSON compliant: nan"
+        "message": "в JSON нельзя записать nan"
       }
     }
   },
@@ -421,7 +421,7 @@
     "expected": {
       "error": {
         "type": "UnicodeEncodeError",
-        "message": "'utf-8' codec can't encode character '\\ud800' in position 61: surrogates not allowed"
+        "message": "символ '\\ud800' в позиции 61 нельзя записать в UTF-8"
       }
     }
   },
@@ -451,7 +451,7 @@
     "expected": {
       "error": {
         "type": "ValueError",
-        "message": "Out of range float values are not JSON compliant: nan"
+        "message": "в JSON нельзя записать nan"
       }
     }
   }

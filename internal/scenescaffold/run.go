@@ -40,7 +40,7 @@ func failure(err error, caught bool) Output {
 		// Ошибка Go-окружения (шлюз записи и т.п.): текст как есть, код как у отказа инструмента.
 		return Output{Code: 1, Stderr: toolrt.TextMode(err.Error() + "\n")}
 	}
-	return Output{Code: 1, Stderr: toolrt.TextMode(toolrt.Traceback(err))}
+	return Output{Code: 1, Stderr: toolrt.TextMode(toolrt.Unhandled(err))}
 }
 
 // prepare — основная часть Run: чтение входов проекта и построение реестра (её ValueError, OSError

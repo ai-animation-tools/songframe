@@ -1,5 +1,5 @@
 {
-  "description": "start null: TypeError — трассировка.",
+  "description": "start null: TypeError — необработанная ошибка.",
   "call": "scene_scaffold",
   "project": "project",
   "covers": [

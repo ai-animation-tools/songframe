@@ -75,7 +75,7 @@
           {
             "code": 2,
             "stdout": "",
-            "stderr": "usage: apply_montage [-h] (--spec SPEC | --recover) [--no-views]\napply_montage: error: argument --recover: not allowed with argument --spec\n"
+            "stderr": "usage: apply_montage [-h] (--spec SPEC | --recover) [--no-views]\napply_montage: ошибка: аргумент --recover: нельзя вместе с --spec\n"
           }
         ],
         "changed": {},
@@ -87,7 +87,7 @@
       "name": "args-unknown",
       "description": "Неизвестный аргумент.",
       "covers": [
-        "unrecognized"
+        "неизвестные аргументы"
       ],
       "setup": [],
       "steps": [
@@ -103,7 +103,7 @@
           {
             "code": 2,
             "stdout": "",
-            "stderr": "usage: apply_montage [-h] (--spec SPEC | --recover) [--no-views]\napply_montage: error: unrecognized arguments: --extra\n"
+            "stderr": "usage: apply_montage [-h] (--spec SPEC | --recover) [--no-views]\napply_montage: ошибка: неизвестные аргументы: --extra\n"
           }
         ],
         "changed": {},
@@ -115,7 +115,7 @@
       "name": "args-spec-value",
       "description": "--spec без значения.",
       "covers": [
-        "expected one argument"
+        "нужно одно значение"
       ],
       "setup": [],
       "steps": [
@@ -130,7 +130,7 @@
           {
             "code": 2,
             "stdout": "",
-            "stderr": "usage: apply_montage [-h] (--spec SPEC | --recover) [--no-views]\napply_montage: error: argument --spec: expected one argument\n"
+            "stderr": "usage: apply_montage [-h] (--spec SPEC | --recover) [--no-views]\napply_montage: ошибка: аргумент --spec: нужно одно значение\n"
           }
         ],
         "changed": {},

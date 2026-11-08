@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nValueError: M77: ассет отсутствует в реестре сцен.\n",
-  "traceback": true
+  "stderr": "Ошибка: M77: ассет отсутствует в реестре сцен.\n",
+  "unhandled": true
 }

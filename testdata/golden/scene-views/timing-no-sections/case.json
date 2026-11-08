@@ -1,5 +1,5 @@
 {
-  "description": "timing.json без sections: KeyError — трассировка.",
+  "description": "timing.json без sections: KeyError — необработанная ошибка.",
   "call": "update_scene_views",
   "project": "project",
   "base": "checks-base",

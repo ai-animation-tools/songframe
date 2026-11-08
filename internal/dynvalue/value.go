@@ -156,18 +156,88 @@ func isArrayIndex(key string) bool {
 
 // Parse разбирает JSON: числа — float64 (переполнение даёт ±Infinity), объекты сохраняют порядок
 // свойств. Ошибкой считается любое отклонение от синтаксиса JSON (в том числе BOM в начале) и
-// данные после значения.
+// данные после значения; текст ошибки — «неверный JSON: причина…» (parseError).
 func Parse(data []byte) (any, error) {
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.UseNumber()
 	value, err := parseValue(decoder)
 	if err != nil {
-		return nil, err
+		return nil, parseError(data, err)
 	}
 	if _, err := decoder.Token(); err != io.EOF {
-		return nil, errors.New("после JSON-значения есть лишние данные")
+		return nil, parseError(data, errors.New("лишние данные после JSON"))
 	}
 	return value, nil
+}
+
+// syntaxReasons — причины ошибок синтаксиса encoding/json по остатку их текста после символа в
+// кавычках; остаток сравнивается целиком. Прочие ошибки — «неожиданный символ 'x'».
+var syntaxReasons = map[string]string{
+	" looking for beginning of object key string": "ожидалось имя поля или «}»",
+	" after object key:value pair":                "после значения поля ожидалась «,» или «}»",
+	" after object key":                           "после имени поля ожидалось «:»",
+	" after array element":                        "после элемента списка ожидалась «,» или «]»",
+	" after top-level value":                      "лишние данные после JSON",
+	" in string literal":                          "управляющий символ в строке",
+	" in string escape code":                      "неверная escape-последовательность",
+	" in \\u hexadecimal character escape":        "неверная escape-последовательность",
+}
+
+// parseError — ошибка разбора Parse по-русски: «неверный JSON: причина, позиция N (строка L,
+// столбец C)». Причину и позицию даёт проверка документа сканером encoding/json (json.Unmarshal
+// в RawMessage): его смещение всегда указывает сразу за неверный байт, а у потока токенов
+// Decoder оно для разных ошибок отсчитывается по-разному. BOM в начале — «метка порядка байтов
+// в начале файла», обрыв — «данные оборваны» без позиции. Если сканер документ принял, остаётся
+// текст err (ошибки parseValue уже по-русски).
+func parseError(data []byte, err error) error {
+	if bytes.HasPrefix(data, []byte("\xef\xbb\xbf")) {
+		return errors.New("неверный JSON: метка порядка байтов в начале файла")
+	}
+	var raw json.RawMessage
+	var syntax *json.SyntaxError
+	if !errors.As(json.Unmarshal(data, &raw), &syntax) {
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+			return errors.New("неверный JSON: данные оборваны")
+		}
+		return errors.New("неверный JSON: " + err.Error())
+	}
+	message := syntax.Error()
+	if message == "unexpected end of JSON input" {
+		return errors.New("неверный JSON: данные оборваны")
+	}
+	body, ok := strings.CutPrefix(message, "invalid character ")
+	if !ok {
+		return errors.New("неверный JSON: неверный синтаксис")
+	}
+	reason := "неожиданный символ " + strings.TrimSuffix(body, syntaxRest(body))
+	if known, ok := syntaxReasons[syntaxRest(body)]; ok {
+		reason = known
+	}
+	return errors.New("неверный JSON: " + reason + syntaxPosition(data, int(syntax.Offset)-1))
+}
+
+// syntaxRest — остаток текста ошибки после символа в кавычках («'x' after array element» →
+// « after array element»); символ записан encoding/json в одинарных кавычках ('\” для кавычки).
+func syntaxRest(body string) string {
+	if strings.HasPrefix(body, `'\''`) {
+		return body[4:]
+	}
+	if end := strings.Index(body[min(1, len(body)):], "'"); end >= 0 {
+		return body[end+2:]
+	}
+	return ""
+}
+
+// syntaxPosition — «, позиция N (строка L, столбец C)» байта index: позиция — номер кодовой точки
+// с 0, строка и столбец — с 1.
+func syntaxPosition(data []byte, index int) string {
+	if index < 0 || index > len(data) {
+		return ""
+	}
+	prefix := data[:index]
+	line := bytes.Count(prefix, []byte("\n")) + 1
+	column := utf8.RuneCount(prefix[bytes.LastIndexByte(prefix, '\n')+1:]) + 1
+	return ", позиция " + strconv.Itoa(utf8.RuneCount(prefix)) + " (строка " + strconv.Itoa(line) + ", столбец " + strconv.Itoa(column) + ")"
 }
 
 // parseValue читает одно значение потока токенов.
@@ -354,14 +424,14 @@ type TypeError struct{ Message string }
 
 func (e *TypeError) Error() string { return e.Message }
 
-// Prop — обязательное чтение свойства key: у null и Undefined это TypeError «Cannot read
-// properties of …», в остальном — как Get.
+// Prop — обязательное чтение свойства key: у null и Undefined это TypeError «нет поля 'key':
+// значение null» или «… значение отсутствует», в остальном — как Get.
 func Prop(value any, key string) (any, error) {
 	switch value.(type) {
 	case nil:
-		return nil, &TypeError{"Cannot read properties of null (reading '" + key + "')"}
+		return nil, &TypeError{"нет поля '" + key + "': значение null"}
 	case undefinedType:
-		return nil, &TypeError{"Cannot read properties of undefined (reading '" + key + "')"}
+		return nil, &TypeError{"нет поля '" + key + "': значение отсутствует"}
 	}
 	return Get(value, key), nil
 }
@@ -412,7 +482,7 @@ func GetKey(value, key any) any {
 }
 
 // HasProperty — есть ли свойство key у объекта или массива (length и индексы в пределах). Для
-// не-объекта это TypeError «Cannot use 'in' operator …».
+// не-объекта это TypeError «нельзя проверить поле 'key': значение не объект».
 func HasProperty(value, key any) (bool, error) {
 	name := ToString(key)
 	switch item := value.(type) {
@@ -428,7 +498,7 @@ func HasProperty(value, key any) (bool, error) {
 		}
 		return false, nil
 	}
-	return false, &TypeError{"Cannot use 'in' operator to search for '" + name + "' in " + ToString(value)}
+	return false, &TypeError{"нельзя проверить поле '" + name + "': значение не объект"}
 }
 
 // Iterate — элементы перебора: элементы массива или кодовые точки строки, иначе TypeError.
@@ -443,7 +513,7 @@ func Iterate(value any) ([]any, error) {
 		}
 		return result, nil
 	}
-	return nil, &TypeError{"object is not iterable (cannot read property Symbol(Symbol.iterator))"}
+	return nil, &TypeError{"нельзя перебрать значение"}
 }
 
 // Entry — пара ключ-значение из Entries.
@@ -457,7 +527,7 @@ type Entry struct {
 func Entries(value any) ([]Entry, error) {
 	switch item := value.(type) {
 	case nil, undefinedType:
-		return nil, &TypeError{"Cannot convert undefined or null to object"}
+		return nil, &TypeError{"ожидается объект, получено: null"}
 	case *Object:
 		keys := item.Keys()
 		result := make([]Entry, 0, len(keys))

@@ -5824,7 +5824,7 @@
           "op": "copyVideo",
           "video": "plan/batches/review-manual-z/review.mp4",
           "destination": "<project>/export/x.mp4",
-          "error": "ENOENT: no such file or directory, lstat '<project>/export'",
+          "error": "нет такого файла или каталога: '<project>/export'",
           "out": {
             "second.MP4": "готовый ролик",
             "проба.mp4": "готовый ролик"
@@ -6165,7 +6165,7 @@
         },
         {
           "op": "recover",
-          "error": "ENOENT: no such file or directory, open '<project>/plan/montage-history/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/before/plan/scenes.json'",
+          "error": "нет такого файла или каталога: '<project>/plan/montage-history/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/before/plan/scenes.json'",
           "tree": {
             "assets": "dir",
             "assets/shots": "dir",
@@ -6794,7 +6794,7 @@
         },
         {
           "op": "recover",
-          "error": "Не удалось прочитать <project>/plan/montage-history/33333333333333333333333333333333/journal.json: Expected property name or '}' in JSON at position 1 (line 1 column 2). Файл сохранён; исправьте его или перенесите в резервную папку.",
+          "error": "Не удалось прочитать <project>/plan/montage-history/33333333333333333333333333333333/journal.json: неверный JSON: ожидалось имя поля или «}», позиция 1 (строка 1, столбец 2). Файл сохранён; исправьте его или перенесите в резервную папку.",
           "tree": {
             "assets": "dir",
             "assets/shots": "dir",

@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Историю запроса изображения нельзя переписать.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

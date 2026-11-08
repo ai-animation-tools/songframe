@@ -1,8 +1,8 @@
 {
   "code": 2,
   "stdout": "",
-  "stderr": "usage: scene_scaffold [-h] [--force] [--dry-run] [--json]\nscene_scaffold: error: argument --force: ignored explicit argument '1'\n",
-  "traceback": false,
+  "stderr": "использование: scene_scaffold [-h] [--force] [--dry-run] [--json]\nscene_scaffold: ошибка: аргумент --force: лишнее значение '1'\n",
+  "unhandled": false,
   "files": {
     "plan/scenes.json": "unchanged"
   }

@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nValueError: Повтор фильтров даёт другую длину монтажа.\n",
-  "traceback": true
+  "stderr": "Ошибка: Повтор фильтров даёт другую длину монтажа.\n",
+  "unhandled": true
 }

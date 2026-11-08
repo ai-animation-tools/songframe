@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nValueError: Неизвестная схема комплекта ассета.\n",
-  "traceback": true
+  "stderr": "Ошибка: Неизвестная схема комплекта ассета.\n",
+  "unhandled": true
 }

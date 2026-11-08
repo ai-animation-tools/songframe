@@ -2,6 +2,6 @@
   "code": 1,
   "stdout": "",
   "stderr": "Нет обязательного файла: plan/scenes.json. Сначала создайте сценарий.\n",
-  "traceback": false,
+  "unhandled": false,
   "cards": null
 }

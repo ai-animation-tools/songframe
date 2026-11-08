@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Отправленный запрос нельзя вернуть к новому submit; используйте resume.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

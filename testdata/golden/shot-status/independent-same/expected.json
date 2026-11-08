@@ -2,5 +2,5 @@
   "code": 0,
   "stdout": "{\n  \"shots\": [\n    \"M02\",\n    \"M05\"\n  ],\n  \"conflicts\": [\n    {\n      \"shot\": \"M05\",\n      \"depends_on\": \"M02\",\n      \"reason\": \"M05 наследует состояние после изменений M02\"\n    }\n  ],\n  \"adjacent\": []\n}\n",
   "stderr": "",
-  "traceback": false
+  "unhandled": false
 }

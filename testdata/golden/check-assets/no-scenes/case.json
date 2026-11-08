@@ -1,5 +1,5 @@
 {
-  "description": "Нет plan/scenes.json: FileNotFoundError — трассировка.",
+  "description": "Нет plan/scenes.json: FileNotFoundError — необработанная ошибка.",
   "call": "check_assets",
   "project": "project",
   "base": "checks-base",

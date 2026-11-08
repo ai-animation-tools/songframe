@@ -1,7 +1,7 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nValueError: M02: неизвестный референс.\n",
-  "traceback": true,
+  "stderr": "Ошибка: M02: неизвестный референс.\n",
+  "unhandled": true,
   "cards": null
 }

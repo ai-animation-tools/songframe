@@ -19,7 +19,7 @@ docker run --rm --network=none --cap-drop=ALL \
   songframe-deb-smoke:ubuntu24 sh -ec '
     test "$(id -u)" != 0
     mkdir -m 700 -p "$HOME" "$XDG_RUNTIME_DIR"
-    for command in node python3 go git ffmpeg ffprobe; do
+    for command in node go git ffmpeg ffprobe; do
       if command -v "$command" >/dev/null; then echo "Лишняя зависимость: $command" >&2; exit 1; fi
     done
     test -x /usr/bin/songframe && test -f /etc/apparmor.d/songframe && test -f /usr/share/applications/songframe.desktop

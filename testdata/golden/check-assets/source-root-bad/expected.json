@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nValueError: Неизвестный корень файла комплекта.\n",
-  "traceback": true
+  "stderr": "Ошибка: Неизвестный корень файла комплекта.\n",
+  "unhandled": true
 }

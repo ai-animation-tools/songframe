@@ -2,7 +2,7 @@
   "code": 0,
   "stdout": "Промпт принят: ab15d5ab166623795265154b6c5aea0d7385b6c1c77fe8e5a0b27b7c46bf943e\n",
   "stderr": "",
-  "traceback": false,
+  "unhandled": false,
   "files": {
     "plan/batches/M03-attempt-01/workflow.json": "changed"
   },

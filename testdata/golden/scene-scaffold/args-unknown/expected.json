@@ -1,8 +1,8 @@
 {
   "code": 2,
   "stdout": "",
-  "stderr": "usage: scene_scaffold [-h] [--force] [--dry-run] [--json]\nscene_scaffold: error: unrecognized arguments: --bogus x\n",
-  "traceback": false,
+  "stderr": "использование: scene_scaffold [-h] [--force] [--dry-run] [--json]\nscene_scaffold: ошибка: неизвестные аргументы: --bogus x\n",
+  "unhandled": false,
   "files": {
     "plan/scenes.json": "unchanged"
   }

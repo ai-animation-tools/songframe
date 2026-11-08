@@ -2,5 +2,5 @@
   "code": 1,
   "stdout": "Принятых планов: 2.\n- plan/awaiting/M01: пакет очереди принятого плана M01; приёмка без --clean\nНесоответствий: 1.\n",
   "stderr": "",
-  "traceback": false
+  "unhandled": false
 }

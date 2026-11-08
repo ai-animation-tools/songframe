@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Запрос изображения должен лежать внутри рабочего пакета.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

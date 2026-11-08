@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nValueError: Оригинал и принятый монтаж должны быть разными файлами.\n",
-  "traceback": true
+  "stderr": "Ошибка: Оригинал и принятый монтаж должны быть разными файлами.\n",
+  "unhandled": true
 }

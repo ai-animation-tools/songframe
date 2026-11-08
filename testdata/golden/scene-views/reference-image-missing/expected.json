@@ -1,13 +1,13 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nFileNotFoundError: [Errno 2] No such file or directory: '<project>/source/heroes/lev.png'\n",
-  "traceback": true,
+  "stderr": "Ошибка: нет такого файла или каталога: '<project>/source/heroes/lev.png'\n",
+  "unhandled": true,
   "files": {},
   "recheck": {
     "code": 1,
     "stdout": "",
-    "stderr": "Traceback (most recent call last):\nFileNotFoundError: [Errno 2] No such file or directory: '<project>/source/heroes/lev.png'\n"
+    "stderr": "Ошибка: нет такого файла или каталога: '<project>/source/heroes/lev.png'\n"
   },
   "cards": null
 }

@@ -127,7 +127,7 @@ FFmpeg/ffprobe, ONNX Runtime CPU и модели (выделение вокал�
 
 Инструменты комплекса (`scene_registry`, `shot_workflow`, `accept_shot` и другие) — Go-пакеты, которые выполняются в процессе приложения: внешних интерпретаторов приложение не запускает ни в работе, ни в тестах. Метод `tools.run` (`internal/tools`) отдаёт код завершения, stdout и stderr инструмента. Байты файлов проекта и вывода инструментов — JSON-вывод, различие `1`/`1.0`, регулярные выражения, сообщения о разборе аргументов и ошибках — закреплены эталонами `testdata/golden`; их формируют общие пакеты `toolrt`, `toolregex`, `toolsubcmd` и `toolcli`. Часть эталонов хранит JSON в той записи, в какой его печатают инструменты, и читается разбором `toolrt`.
 
-Сборщику поставок и отдельным проверкам разработчика нужен Python 3: `scripts/package-notices.py`, `scripts/package-metadata.py`, `scripts/linux_runtime_policy.py` (и его тест `scripts/test_linux_runtime_policy.py`), `scripts/check-windows-package.py` и `scripts/check-media-capabilities.sh` (рецепты обработки на выбранной паре FFmpeg/ffprobe). В поставку эти скрипты не входят.
+Сборщик поставок и отдельные проверки разработчика используют Go-инструмент `scripts/packtool` (`go run ./scripts/packtool ПОДКОМАНДА`): лицензионные материалы (`notices`), квитанции Linux-поставок (`metadata`), политика runtime AppDir (`runtime-policy`, тесты — `go test ./scripts/packtool`), подготовка и статическая проверка Windows-поставки (`windows-info`, `extract-vcruntime`, `check-windows`), рецепты обработки на выбранной паре FFmpeg/ffprobe (`media-check`, обёртка `scripts/check-media-capabilities.sh`) и синтетические медиафикстуры (`media-sources`, `media-hashes`). В поставку инструмент не входит.
 
 ## Тестовые данные
 

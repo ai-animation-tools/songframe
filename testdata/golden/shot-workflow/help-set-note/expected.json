@@ -1,8 +1,8 @@
 {
   "code": 0,
-  "stdout": "usage: shot_workflow set-note [-h] --dir DIR --id ID --active {true,false}\n\noptions:\n  -h, --help            show this help message and exit\n  --dir DIR\n  --id ID\n  --active {true,false}\n",
+  "stdout": "использование: shot_workflow set-note [-h] --dir DIR --id ID --active\n                                      {true,false}\n\nпараметры:\n  -h, --help            показать справку и выйти\n  --dir DIR\n  --id ID\n  --active {true,false}\n",
   "stderr": "",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

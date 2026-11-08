@@ -1,5 +1,5 @@
 {
-  "description": "source_line 2.0: индекс списка float — трассировка.",
+  "description": "source_line 2.0: индекс списка float — необработанная ошибка.",
   "call": "scene_scaffold",
   "project": "project",
   "covers": [

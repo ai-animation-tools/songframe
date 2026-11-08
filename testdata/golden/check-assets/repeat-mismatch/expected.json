@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nValueError: Число циклов и хвост повтора расходятся с длиной принятого монтажа.\n",
-  "traceback": true
+  "stderr": "Ошибка: Число циклов и хвост повтора расходятся с длиной принятого монтажа.\n",
+  "unhandled": true
 }

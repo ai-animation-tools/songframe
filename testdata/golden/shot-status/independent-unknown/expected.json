@@ -2,5 +2,5 @@
   "code": 1,
   "stdout": "",
   "stderr": "Неизвестные планы: M99, M98\n",
-  "traceback": false
+  "unhandled": false
 }

@@ -2,6 +2,6 @@
   "code": 1,
   "stdout": "",
   "stderr": "Нет обязательного файла: plan/production-status.json.\n",
-  "traceback": false,
+  "unhandled": false,
   "cards": null
 }

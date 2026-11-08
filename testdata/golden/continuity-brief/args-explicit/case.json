@@ -1,5 +1,5 @@
 {
-  "description": "--json=1 M01: ignored explicit argument.",
+  "description": "--json=1 M01: лишнее значение.",
   "call": "continuity_brief",
   "project": "project",
   "base": "checks-base",

@@ -221,25 +221,25 @@
       "validate": {
         "error": {
           "type": "AttributeError",
-          "message": "'list' object has no attribute 'get'"
+          "message": "ожидается объект, получено: список"
         }
       },
       "fingerprints": {
         "error": {
           "type": "AttributeError",
-          "message": "'list' object has no attribute 'get'"
+          "message": "ожидается объект, получено: список"
         }
       },
       "states": {
         "error": {
           "type": "TypeError",
-          "message": "list indices must be integers or slices, not str"
+          "message": "индекс списка должен быть целым числом, получено: строка"
         }
       },
       "derived": {
         "error": {
           "type": "TypeError",
-          "message": "list indices must be integers or slices, not str"
+          "message": "индекс списка должен быть целым числом, получено: строка"
         }
       },
       "state": {},
@@ -327,13 +327,13 @@
       "validate": {
         "error": {
           "type": "TypeError",
-          "message": "unsupported operand type(s) for /: 'decimal.Decimal' and 'float'"
+          "message": "операция «/» неприменима: десятичное число и дробное число"
         }
       },
       "fingerprints": {
         "error": {
           "type": "TypeError",
-          "message": "unsupported operand type(s) for /: 'decimal.Decimal' and 'float'"
+          "message": "операция «/» неприменима: десятичное число и дробное число"
         }
       },
       "states": {
@@ -346,19 +346,19 @@
         "M01": {
           "error": {
             "type": "TypeError",
-            "message": "unsupported operand type(s) for /: 'decimal.Decimal' and 'float'"
+            "message": "операция «/» неприменима: десятичное число и дробное число"
           }
         },
         "M02": {
           "error": {
             "type": "TypeError",
-            "message": "unsupported operand type(s) for /: 'decimal.Decimal' and 'float'"
+            "message": "операция «/» неприменима: десятичное число и дробное число"
           }
         },
         "M03": {
           "error": {
             "type": "TypeError",
-            "message": "unsupported operand type(s) for /: 'decimal.Decimal' and 'float'"
+            "message": "операция «/» неприменима: десятичное число и дробное число"
           }
         }
       },
@@ -366,19 +366,19 @@
         "M01": {
           "error": {
             "type": "TypeError",
-            "message": "unsupported operand type(s) for /: 'decimal.Decimal' and 'float'"
+            "message": "операция «/» неприменима: десятичное число и дробное число"
           }
         },
         "M02": {
           "error": {
             "type": "TypeError",
-            "message": "unsupported operand type(s) for /: 'decimal.Decimal' and 'float'"
+            "message": "операция «/» неприменима: десятичное число и дробное число"
           }
         },
         "M03": {
           "error": {
             "type": "TypeError",
-            "message": "unsupported operand type(s) for /: 'decimal.Decimal' and 'float'"
+            "message": "операция «/» неприменима: десятичное число и дробное число"
           }
         }
       }
@@ -586,13 +586,13 @@
       "validate": {
         "error": {
           "type": "TypeError",
-          "message": "expected string or bytes-like object, got 'int'"
+          "message": "expected string or bytes-like object, got 'целое число'"
         }
       },
       "fingerprints": {
         "error": {
           "type": "TypeError",
-          "message": "expected string or bytes-like object, got 'int'"
+          "message": "expected string or bytes-like object, got 'целое число'"
         }
       },
       "states": {
@@ -605,13 +605,13 @@
         "M01": {
           "error": {
             "type": "TypeError",
-            "message": "expected string or bytes-like object, got 'int'"
+            "message": "expected string or bytes-like object, got 'целое число'"
           }
         },
         "M03": {
           "error": {
             "type": "TypeError",
-            "message": "expected string or bytes-like object, got 'int'"
+            "message": "expected string or bytes-like object, got 'целое число'"
           }
         }
       },
@@ -619,13 +619,13 @@
         "M01": {
           "error": {
             "type": "TypeError",
-            "message": "expected string or bytes-like object, got 'int'"
+            "message": "expected string or bytes-like object, got 'целое число'"
           }
         },
         "M03": {
           "error": {
             "type": "TypeError",
-            "message": "expected string or bytes-like object, got 'int'"
+            "message": "expected string or bytes-like object, got 'целое число'"
           }
         }
       }
@@ -976,13 +976,13 @@
       "validate": {
         "error": {
           "type": "KeyError",
-          "message": "'start_frame'"
+          "message": "нет ключа 'start_frame'"
         }
       },
       "fingerprints": {
         "error": {
           "type": "KeyError",
-          "message": "'start_frame'"
+          "message": "нет ключа 'start_frame'"
         }
       },
       "states": {
@@ -995,19 +995,19 @@
         "M01": {
           "error": {
             "type": "KeyError",
-            "message": "'start_frame'"
+            "message": "нет ключа 'start_frame'"
           }
         },
         "M02": {
           "error": {
             "type": "KeyError",
-            "message": "'start_frame'"
+            "message": "нет ключа 'start_frame'"
           }
         },
         "M03": {
           "error": {
             "type": "KeyError",
-            "message": "'start_frame'"
+            "message": "нет ключа 'start_frame'"
           }
         }
       },
@@ -1015,19 +1015,19 @@
         "M01": {
           "error": {
             "type": "KeyError",
-            "message": "'start_frame'"
+            "message": "нет ключа 'start_frame'"
           }
         },
         "M02": {
           "error": {
             "type": "KeyError",
-            "message": "'start_frame'"
+            "message": "нет ключа 'start_frame'"
           }
         },
         "M03": {
           "error": {
             "type": "KeyError",
-            "message": "'start_frame'"
+            "message": "нет ключа 'start_frame'"
           }
         }
       }
@@ -1104,7 +1104,7 @@
   },
   {
     "name": "list-sequence",
-    "description": "Часть — список: unhashable.",
+    "description": "Часть — список: нельзя использовать как ключ.",
     "call": "registry",
     "args": {
       "data": "{\"schema_version\": 1, \"fps\": 30, \"audio\": {\"path\": \"source/track.mp3\", \"end_seconds\": \"10\"}, \"references\": {\"mira\": {\"name\": \"Мира\", \"path\": \"source/heroes/mira.png\"}, \"boat\": {\"name\": \"Лодка\", \"path\": \"source/vehicles/boat.png\"}}, \"visual_direction\": \"Тёплый вечер у воды.\", \"sequences\": [{\"id\": \"intro\", \"title\": \"Вступление\", \"direction\": \"Общий план причала.\"}, {\"id\": \"verse\", \"title\": \"Куплет\", \"direction\": \"Фонарики над водой.\"}], \"scenes\": [{\"id\": \"M01\", \"original\": \"Инструментал\", \"sequence\": \"intro\", \"start_frame\": 0, \"end_frame_exclusive\": 90, \"camera\": \"Общий план\", \"action\": \"Мира выходит на причал.\", \"continuity\": \"Вечер.\", \"references\": [\"mira\", \"boat\"], \"lipsync\": false, \"card\": {\"primary_reference\": \"mira\"}, \"state_from\": null, \"state_changes\": {\"after\": {\"mira\": {\"hands\": \"фонарь\"}, \"world\": {\"time_of_day\": null}}}}, {\"id\": \"M02\", \"original\": \"Вечер зажёг фонари\", \"sequence\": [\"verse\"], \"start_frame\": 90, \"end_frame_exclusive\": 200, \"camera\": \"Средний план\", \"action\": \"Мира поёт.\", \"continuity\": \"Фонарь в руке.\", \"references\": [\"mira\"], \"lipsync\": true, \"card\": {\"primary_reference\": \"mira\"}, \"state_from\": \"M01\", \"state_changes\": {\"before\": {\"boat\": {\"light\": \"горит\"}}, \"after\": {\"mira\": {\"hands\": null}}}}, {\"id\": \"M03\", \"original\": \"Повтор\", \"sequence\": \"verse\", \"start_frame\": 200, \"end_frame_exclusive\": 300, \"camera\": \"Общий план\", \"action\": \"Повтор вступления.\", \"continuity\": \"\", \"references\": [\"—\"], \"lipsync\": false, \"card\": {\"primary_reference\": \"boat\"}, \"state_from\": {\"scene\": \"M01\", \"phase\": \"same\"}, \"state_changes\": {}, \"derived_from\": {\"shot\": \"M01\"}}]}",
@@ -1114,13 +1114,13 @@
       "validate": {
         "error": {
           "type": "TypeError",
-          "message": "unhashable type: 'list'"
+          "message": "нельзя использовать как ключ: список"
         }
       },
       "fingerprints": {
         "error": {
           "type": "TypeError",
-          "message": "unhashable type: 'list'"
+          "message": "нельзя использовать как ключ: список"
         }
       },
       "states": {
@@ -1133,19 +1133,19 @@
         "M01": {
           "error": {
             "type": "TypeError",
-            "message": "unhashable type: 'list'"
+            "message": "нельзя использовать как ключ: список"
           }
         },
         "M02": {
           "error": {
             "type": "TypeError",
-            "message": "unhashable type: 'list'"
+            "message": "нельзя использовать как ключ: список"
           }
         },
         "M03": {
           "error": {
             "type": "TypeError",
-            "message": "unhashable type: 'list'"
+            "message": "нельзя использовать как ключ: список"
           }
         }
       },
@@ -1153,19 +1153,19 @@
         "M01": {
           "error": {
             "type": "TypeError",
-            "message": "unhashable type: 'list'"
+            "message": "нельзя использовать как ключ: список"
           }
         },
         "M02": {
           "error": {
             "type": "TypeError",
-            "message": "unhashable type: 'list'"
+            "message": "нельзя использовать как ключ: список"
           }
         },
         "M03": {
           "error": {
             "type": "TypeError",
-            "message": "unhashable type: 'list'"
+            "message": "нельзя использовать как ключ: список"
           }
         }
       }
@@ -1321,13 +1321,13 @@
       "validate": {
         "error": {
           "type": "KeyError",
-          "message": "'references'"
+          "message": "нет ключа 'references'"
         }
       },
       "fingerprints": {
         "error": {
           "type": "KeyError",
-          "message": "'references'"
+          "message": "нет ключа 'references'"
         }
       },
       "states": {
@@ -1340,19 +1340,19 @@
         "M01": {
           "error": {
             "type": "KeyError",
-            "message": "'references'"
+            "message": "нет ключа 'references'"
           }
         },
         "M02": {
           "error": {
             "type": "KeyError",
-            "message": "'references'"
+            "message": "нет ключа 'references'"
           }
         },
         "M03": {
           "error": {
             "type": "KeyError",
-            "message": "'references'"
+            "message": "нет ключа 'references'"
           }
         }
       },
@@ -1360,19 +1360,19 @@
         "M01": {
           "error": {
             "type": "KeyError",
-            "message": "'references'"
+            "message": "нет ключа 'references'"
           }
         },
         "M02": {
           "error": {
             "type": "KeyError",
-            "message": "'references'"
+            "message": "нет ключа 'references'"
           }
         },
         "M03": {
           "error": {
             "type": "KeyError",
-            "message": "'references'"
+            "message": "нет ключа 'references'"
           }
         }
       }
@@ -1539,7 +1539,7 @@
   },
   {
     "name": "end-invalid",
-    "description": "end_seconds не число: decimal.InvalidOperation.",
+    "description": "end_seconds не число: InvalidOperation.",
     "call": "registry",
     "args": {
       "data": "{\"schema_version\": 1, \"fps\": 30, \"audio\": {\"path\": \"source/track.mp3\", \"end_seconds\": \"десять\"}, \"references\": {\"mira\": {\"name\": \"Мира\", \"path\": \"source/heroes/mira.png\"}, \"boat\": {\"name\": \"Лодка\", \"path\": \"source/vehicles/boat.png\"}}, \"visual_direction\": \"Тёплый вечер у воды.\", \"sequences\": [{\"id\": \"intro\", \"title\": \"Вступление\", \"direction\": \"Общий план причала.\"}, {\"id\": \"verse\", \"title\": \"Куплет\", \"direction\": \"Фонарики над водой.\"}], \"scenes\": [{\"id\": \"M01\", \"original\": \"Инструментал\", \"sequence\": \"intro\", \"start_frame\": 0, \"end_frame_exclusive\": 90, \"camera\": \"Общий план\", \"action\": \"Мира выходит на причал.\", \"continuity\": \"Вечер.\", \"references\": [\"mira\", \"boat\"], \"lipsync\": false, \"card\": {\"primary_reference\": \"mira\"}, \"state_from\": null, \"state_changes\": {\"after\": {\"mira\": {\"hands\": \"фонарь\"}, \"world\": {\"time_of_day\": null}}}}, {\"id\": \"M02\", \"original\": \"Вечер зажёг фонари\", \"sequence\": \"verse\", \"start_frame\": 90, \"end_frame_exclusive\": 200, \"camera\": \"Средний план\", \"action\": \"Мира поёт.\", \"continuity\": \"Фонарь в руке.\", \"references\": [\"mira\"], \"lipsync\": true, \"card\": {\"primary_reference\": \"mira\"}, \"state_from\": \"M01\", \"state_changes\": {\"before\": {\"boat\": {\"light\": \"горит\"}}, \"after\": {\"mira\": {\"hands\": null}}}}, {\"id\": \"M03\", \"original\": \"Повтор\", \"sequence\": \"verse\", \"start_frame\": 200, \"end_frame_exclusive\": 300, \"camera\": \"Общий план\", \"action\": \"Повтор вступления.\", \"continuity\": \"\", \"references\": [\"—\"], \"lipsync\": false, \"card\": {\"primary_reference\": \"boat\"}, \"state_from\": {\"scene\": \"M01\", \"phase\": \"same\"}, \"state_changes\": {}, \"derived_from\": {\"shot\": \"M01\"}}]}",
@@ -1549,13 +1549,13 @@
       "validate": {
         "error": {
           "type": "InvalidOperation",
-          "message": "[<class 'decimal.ConversionSyntax'>]"
+          "message": "неверная запись десятичного числа"
         }
       },
       "fingerprints": {
         "error": {
           "type": "InvalidOperation",
-          "message": "[<class 'decimal.ConversionSyntax'>]"
+          "message": "неверная запись десятичного числа"
         }
       },
       "states": {
@@ -1568,19 +1568,19 @@
         "M01": {
           "error": {
             "type": "InvalidOperation",
-            "message": "[<class 'decimal.ConversionSyntax'>]"
+            "message": "неверная запись десятичного числа"
           }
         },
         "M02": {
           "error": {
             "type": "InvalidOperation",
-            "message": "[<class 'decimal.ConversionSyntax'>]"
+            "message": "неверная запись десятичного числа"
           }
         },
         "M03": {
           "error": {
             "type": "InvalidOperation",
-            "message": "[<class 'decimal.ConversionSyntax'>]"
+            "message": "неверная запись десятичного числа"
           }
         }
       },
@@ -1588,19 +1588,19 @@
         "M01": {
           "error": {
             "type": "InvalidOperation",
-            "message": "[<class 'decimal.ConversionSyntax'>]"
+            "message": "неверная запись десятичного числа"
           }
         },
         "M02": {
           "error": {
             "type": "InvalidOperation",
-            "message": "[<class 'decimal.ConversionSyntax'>]"
+            "message": "неверная запись десятичного числа"
           }
         },
         "M03": {
           "error": {
             "type": "InvalidOperation",
-            "message": "[<class 'decimal.ConversionSyntax'>]"
+            "message": "неверная запись десятичного числа"
           }
         }
       }
@@ -1618,13 +1618,13 @@
       "validate": {
         "error": {
           "type": "TypeError",
-          "message": "conversion from NoneType to Decimal is not supported"
+          "message": "нельзя преобразовать в десятичное число: null"
         }
       },
       "fingerprints": {
         "error": {
           "type": "TypeError",
-          "message": "conversion from NoneType to Decimal is not supported"
+          "message": "нельзя преобразовать в десятичное число: null"
         }
       },
       "states": {
@@ -1637,19 +1637,19 @@
         "M01": {
           "error": {
             "type": "TypeError",
-            "message": "conversion from NoneType to Decimal is not supported"
+            "message": "нельзя преобразовать в десятичное число: null"
           }
         },
         "M02": {
           "error": {
             "type": "TypeError",
-            "message": "conversion from NoneType to Decimal is not supported"
+            "message": "нельзя преобразовать в десятичное число: null"
           }
         },
         "M03": {
           "error": {
             "type": "TypeError",
-            "message": "conversion from NoneType to Decimal is not supported"
+            "message": "нельзя преобразовать в десятичное число: null"
           }
         }
       },
@@ -1657,19 +1657,19 @@
         "M01": {
           "error": {
             "type": "TypeError",
-            "message": "conversion from NoneType to Decimal is not supported"
+            "message": "нельзя преобразовать в десятичное число: null"
           }
         },
         "M02": {
           "error": {
             "type": "TypeError",
-            "message": "conversion from NoneType to Decimal is not supported"
+            "message": "нельзя преобразовать в десятичное число: null"
           }
         },
         "M03": {
           "error": {
             "type": "TypeError",
-            "message": "conversion from NoneType to Decimal is not supported"
+            "message": "нельзя преобразовать в десятичное число: null"
           }
         }
       }
@@ -1687,13 +1687,13 @@
       "validate": {
         "error": {
           "type": "InvalidOperation",
-          "message": "[<class 'decimal.InvalidOperation'>]"
+          "message": "недопустимая операция с десятичным числом"
         }
       },
       "fingerprints": {
         "error": {
           "type": "InvalidOperation",
-          "message": "[<class 'decimal.InvalidOperation'>]"
+          "message": "недопустимая операция с десятичным числом"
         }
       },
       "states": {
@@ -1706,19 +1706,19 @@
         "M01": {
           "error": {
             "type": "InvalidOperation",
-            "message": "[<class 'decimal.InvalidOperation'>]"
+            "message": "недопустимая операция с десятичным числом"
           }
         },
         "M02": {
           "error": {
             "type": "InvalidOperation",
-            "message": "[<class 'decimal.InvalidOperation'>]"
+            "message": "недопустимая операция с десятичным числом"
           }
         },
         "M03": {
           "error": {
             "type": "InvalidOperation",
-            "message": "[<class 'decimal.InvalidOperation'>]"
+            "message": "недопустимая операция с десятичным числом"
           }
         }
       },
@@ -1726,19 +1726,19 @@
         "M01": {
           "error": {
             "type": "InvalidOperation",
-            "message": "[<class 'decimal.InvalidOperation'>]"
+            "message": "недопустимая операция с десятичным числом"
           }
         },
         "M02": {
           "error": {
             "type": "InvalidOperation",
-            "message": "[<class 'decimal.InvalidOperation'>]"
+            "message": "недопустимая операция с десятичным числом"
           }
         },
         "M03": {
           "error": {
             "type": "InvalidOperation",
-            "message": "[<class 'decimal.InvalidOperation'>]"
+            "message": "недопустимая операция с десятичным числом"
           }
         }
       }
@@ -3193,7 +3193,7 @@
       "fingerprints": {
         "error": {
           "type": "UnicodeEncodeError",
-          "message": "'utf-8' codec can't encode character '\\ud800' in position 20: surrogates not allowed"
+          "message": "символ '\\ud800' в позиции 20 нельзя записать в UTF-8"
         }
       },
       "states": {
@@ -3220,7 +3220,7 @@
         "M02": {
           "error": {
             "type": "UnicodeEncodeError",
-            "message": "'utf-8' codec can't encode character '\\ud800' in position 20: surrogates not allowed"
+            "message": "символ '\\ud800' в позиции 20 нельзя записать в UTF-8"
           }
         },
         "M03": {
@@ -4430,7 +4430,7 @@
       "seconds": {
         "error": {
           "type": "InvalidOperation",
-          "message": "[<class 'decimal.InvalidOperation'>]"
+          "message": "недопустимая операция с десятичным числом"
         }
       }
     }
@@ -4654,7 +4654,7 @@
       "clock": {
         "error": {
           "type": "InvalidOperation",
-          "message": "[<class 'decimal.ConversionSyntax'>]"
+          "message": "неверная запись десятичного числа"
         }
       }
     }
@@ -4670,7 +4670,7 @@
       "clock": {
         "error": {
           "type": "ValueError",
-          "message": "cannot convert NaN to integer"
+          "message": "NaN нельзя преобразовать в целое число"
         }
       }
     }
@@ -4686,7 +4686,7 @@
       "clock": {
         "error": {
           "type": "InvalidOperation",
-          "message": "[<class 'decimal.InvalidOperation'>]"
+          "message": "недопустимая операция с десятичным числом"
         }
       }
     }
@@ -4702,7 +4702,7 @@
       "clock": {
         "error": {
           "type": "TypeError",
-          "message": "conversion from NoneType to Decimal is not supported"
+          "message": "нельзя преобразовать в десятичное число: null"
         }
       }
     }

@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Запрос изображения относится к другому плану.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

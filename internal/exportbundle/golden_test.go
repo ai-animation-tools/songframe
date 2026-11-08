@@ -25,8 +25,8 @@ import (
 )
 
 // Эталон export-edit-bundle — случаи CLI export_edit_bundle на копиях образца
-// checks-base: разность с образцом хранится в случае, сверяются код, stdout, stderr (у трассировки —
-// заголовок и последняя строка) и всё, что появилось в рабочей папке: тексты пакета побайтно, копии
+// checks-base: разность с образцом хранится в случае, сверяются код, stdout, stderr (необработанная ошибка —
+// строка «Ошибка: …» в поле unhandled) и всё, что появилось в рабочей папке: тексты пакета побайтно, копии
 // медиа — SHA-256 и размер. Абсолютный путь рабочей папки в текстах заменён на <tmp>.
 
 // bundleFile — файл входа или результата случая.
@@ -52,7 +52,7 @@ type bundleCase struct {
 		Code      int                   `json:"code"`
 		Stdout    string                `json:"stdout"`
 		Stderr    string                `json:"stderr"`
-		Traceback string                `json:"traceback"`
+		Unhandled string                `json:"unhandled"`
 		Created   map[string]bundleFile `json:"created"`
 	} `json:"expected"`
 }
@@ -270,11 +270,9 @@ func TestExportGolden(t *testing.T) {
 			if got := norm(output.Stdout); got != c.Expected.Stdout {
 				t.Errorf("stdout\n%q\nожидался\n%q", got, c.Expected.Stdout)
 			}
-			if c.Expected.Traceback != "" {
-				want := "Traceback (most recent call last):\n"
-				lines := strings.Split(strings.TrimRight(output.Stderr, "\n"), "\n")
-				if !strings.HasPrefix(output.Stderr, want) || norm(lines[len(lines)-1]) != c.Expected.Traceback {
-					t.Errorf("stderr\n%q\nожидалась трассировка\n%q", output.Stderr, c.Expected.Traceback)
+			if c.Expected.Unhandled != "" {
+				if !toolrt.IsUnhandled(output.Stderr) || norm(strings.TrimRight(output.Stderr, "\n")) != c.Expected.Unhandled {
+					t.Errorf("stderr\n%q\nожидалась необработанная ошибка\n%q", output.Stderr, c.Expected.Unhandled)
 				}
 			} else if got := norm(output.Stderr); got != c.Expected.Stderr {
 				t.Errorf("stderr\n%q\nожидался\n%q", got, c.Expected.Stderr)

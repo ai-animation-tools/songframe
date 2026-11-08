@@ -2,7 +2,7 @@
   "code": 0,
   "stdout": "Промпт принят: f551370d3700acf918a3f11082b7e71f0c8e6976d1909b066c3a35220717108c\nПромпт длиннее 2500 символов (2501).\n",
   "stderr": "",
-  "traceback": false,
+  "unhandled": false,
   "files": {
     "plan/batches/M03-attempt-01/workflow.json": "changed"
   },

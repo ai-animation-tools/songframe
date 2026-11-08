@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "'key'\n",
-  "traceback": false
+  "stderr": "нет ключа 'key'\n",
+  "unhandled": false
 }

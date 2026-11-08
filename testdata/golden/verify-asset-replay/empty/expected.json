@@ -2,7 +2,7 @@
   "code": 0,
   "stdout": "Проверка всех принятых комплектов завершена.\n",
   "stderr": "",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {},

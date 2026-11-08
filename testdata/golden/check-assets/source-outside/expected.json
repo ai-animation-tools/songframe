@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nValueError: Общий референс находится вне source.\n",
-  "traceback": true
+  "stderr": "Ошибка: Общий референс находится вне source.\n",
+  "unhandled": true
 }

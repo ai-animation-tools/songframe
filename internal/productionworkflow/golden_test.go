@@ -147,15 +147,14 @@ type captureConfig struct {
 }
 
 var (
-	parseErrorMessage = regexp.MustCompile(`(?s)^(Unexpected .*JSON.*|Expected .* in JSON at position \d+.*|.* is not valid JSON)$`)
+	parseErrorMessage = regexp.MustCompile(`(?s)^неверный JSON: .*$`)
 	uuidPattern       = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}`)
 	videoCmds         = []string{"text_to_video", "image_to_video", "omni_ref_video", "motion_control"}
 )
 
 // notJSONDeviation — осознанное отличие от эталона: ответ, который не разбирается как JSON,
 // отклоняется текстом textProposalNotJSON, а эталон хранит на его месте текст ошибки разбора
-// JSON (Unexpected token…, … is not valid JSON).
-// Заменяет такие строки в дереве эталона.
+// JSON («неверный JSON: …»). Заменяет такие строки в дереве эталона.
 func notJSONDeviation(value any) any {
 	switch typed := value.(type) {
 	case string:

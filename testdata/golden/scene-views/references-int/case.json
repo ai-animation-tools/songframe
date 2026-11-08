@@ -1,5 +1,5 @@
 {
-  "description": "Референс числом: ValueError validate — трассировка.",
+  "description": "Референс числом: ValueError validate — необработанная ошибка.",
   "call": "update_scene_views",
   "project": "project",
   "base": "checks-base",

@@ -154,11 +154,7 @@ func runReviewDomain(t *testing.T, name, overlay string) {
 				if result.Code == nil || *result.Code != want.Code {
 					t.Fatalf("шаг %d: код %v, ожидался %d; stderr %q", index, result.Code, want.Code, result.Stderr)
 				}
-				if got, expected := mark(result.Stderr), want.Stderr; strings.HasPrefix(expected, "Traceback") {
-					if lastLine(got) != lastLine(expected) {
-						t.Fatalf("шаг %d: stderr %q, ожидался %q", index, got, expected)
-					}
-				} else if got != expected {
+				if got, expected := mark(result.Stderr), want.Stderr; got != expected {
 					t.Fatalf("шаг %d: stderr %q, ожидался %q", index, got, expected)
 				}
 				compareText(t, "stdout", mark(result.Stdout), want.Stdout, exact)

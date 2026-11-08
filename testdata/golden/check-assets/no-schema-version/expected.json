@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nKeyError: 'schema_version'\n",
-  "traceback": true
+  "stderr": "Ошибка: нет ключа 'schema_version'\n",
+  "unhandled": true
 }

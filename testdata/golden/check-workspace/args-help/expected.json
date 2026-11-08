@@ -1,6 +1,6 @@
 {
   "code": 0,
-  "stdout": "usage: check_workspace [-h] [--json]\n\nПроверяет согласованность рабочего дерева после приёмки: лишние пакеты,\nкарточки, пустые папки; @link README.md\n\noptions:\n  -h, --help  show this help message and exit\n  --json\n",
+  "stdout": "использование: check_workspace [-h] [--json]\n\nПроверяет согласованность рабочего дерева после приёмки: лишние пакеты,\nкарточки, пустые папки; @link README.md\n\nпараметры:\n  -h, --help  показать справку и выйти\n  --json\n",
   "stderr": "",
-  "traceback": false
+  "unhandled": false
 }

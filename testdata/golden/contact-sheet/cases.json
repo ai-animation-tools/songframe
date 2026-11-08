@@ -1991,7 +1991,7 @@
       "expected": {
         "code": 1,
         "stdout": "",
-        "stderr": "'utf-8' codec can't decode byte 0xff in position 0: invalid start byte\n",
+        "stderr": "текст не в UTF-8: байт 0xff в позиции 0, неверный начальный байт\n",
         "files": [
           "plan/awaiting/M03/request/attempt.json"
         ],
@@ -2036,7 +2036,7 @@
       "name": "workflow-list",
       "description": "workflow.json — список",
       "covers": [
-        "AttributeError — трассировка"
+        "AttributeError — необработанная ошибка"
       ],
       "inputs": [
         {
@@ -2055,7 +2055,7 @@
       "expected": {
         "code": 1,
         "stdout": "",
-        "stderr": "Traceback (most recent call last):\nAttributeError: 'list' object has no attribute 'get'\n",
+        "stderr": "Ошибка: ожидается объект, получено: список\n",
         "files": [
           "plan/batches/M02-attempt-01/workflow.json"
         ],
@@ -2068,7 +2068,7 @@
       "name": "keyframe-path-number",
       "description": "путь опоры — число",
       "covers": [
-        "TypeError деления пути — трассировка"
+        "TypeError деления пути — необработанная ошибка"
       ],
       "inputs": [
         {
@@ -2087,7 +2087,7 @@
       "expected": {
         "code": 1,
         "stdout": "",
-        "stderr": "Traceback (most recent call last):\nTypeError: unsupported operand type(s) for /: 'PosixPath' and 'int'\n",
+        "stderr": "Ошибка: unsupported operand type(s) for /: 'PosixPath' and 'целое число'\n",
         "files": [
           "plan/batches/M02-attempt-01/workflow.json"
         ],
@@ -2803,7 +2803,7 @@
       "name": "probe-rate-undefined",
       "description": "поддельный ffprobe: r_frame_rate 0/0",
       "covers": [
-        "decimal.InvalidOperation — трассировка"
+        "InvalidOperation — необработанная ошибка"
       ],
       "inputs": [
         {
@@ -2837,7 +2837,7 @@
       "expected": {
         "code": 1,
         "stdout": "",
-        "stderr": "Traceback (most recent call last):\ndecimal.InvalidOperation: [<class 'decimal.DivisionUndefined'>]\n",
+        "stderr": "Ошибка: неопределённое деление нуля на ноль\n",
         "files": [
           "clip.mp4"
         ],
@@ -2860,7 +2860,7 @@
       "inputSha256": {},
       "expected": {
         "code": 0,
-        "stdout": "usage: contact_sheet [-h]\n                     (--package PACKAGE | --work-dir WORK_DIR | --video VIDEO)\n                     [--out OUT] [--no-preview] [--json]\n\nТехническая сводка полученного видео: параметры, контактный лист, границы,\nпревью; @link README.md\n\noptions:\n  -h, --help           show this help message and exit\n  --package PACKAGE    Папка shot_workflow: видео из попытки, опоры для\n                       сравнения\n  --work-dir WORK_DIR  Папка попытки media_request\n  --video VIDEO        Любой видеофайл\n  --out OUT            Папка сводки; по умолчанию preview/ рядом с пакетом или\n                       видео\n  --no-preview         Не делать превью 2×\n  --json\n",
+        "stdout": "использование: contact_sheet [-h]\n                             (--package PACKAGE | --work-dir WORK_DIR | --video VIDEO)\n                             [--out OUT] [--no-preview] [--json]\n\nТехническая сводка полученного видео: параметры, контактный лист, границы,\nпревью; @link README.md\n\nпараметры:\n  -h, --help           показать справку и выйти\n  --package PACKAGE    Папка shot_workflow: видео из попытки, опоры для\n                       сравнения\n  --work-dir WORK_DIR  Папка попытки media_request\n  --video VIDEO        Любой видеофайл\n  --out OUT            Папка сводки; по умолчанию preview/ рядом с пакетом или\n                       видео\n  --no-preview         Не делать превью 2×\n  --json\n",
         "stderr": "",
         "files": [],
         "produced": {},
@@ -2883,7 +2883,7 @@
       "expected": {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: contact_sheet [-h]\n                     (--package PACKAGE | --work-dir WORK_DIR | --video VIDEO)\n                     [--out OUT] [--no-preview] [--json]\ncontact_sheet: error: one of the arguments --package --work-dir --video is required\n",
+        "stderr": "использование: contact_sheet [-h]\n                             (--package PACKAGE | --work-dir WORK_DIR | --video VIDEO)\n                             [--out OUT] [--no-preview] [--json]\ncontact_sheet: error: one of the arguments --package --work-dir --video is required\n",
         "files": [],
         "produced": {},
         "inputsUnchanged": true,
@@ -2905,7 +2905,7 @@
       "expected": {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: contact_sheet [-h]\n                     (--package PACKAGE | --work-dir WORK_DIR | --video VIDEO)\n                     [--out OUT] [--no-preview] [--json]\ncontact_sheet: error: one of the arguments --package --work-dir --video is required\n",
+        "stderr": "использование: contact_sheet [-h]\n                             (--package PACKAGE | --work-dir WORK_DIR | --video VIDEO)\n                             [--out OUT] [--no-preview] [--json]\ncontact_sheet: error: one of the arguments --package --work-dir --video is required\n",
         "files": [],
         "produced": {},
         "inputsUnchanged": true,
@@ -2916,7 +2916,7 @@
       "name": "cli-two-sources",
       "description": "два источника",
       "covers": [
-        "not allowed with"
+        "нельзя вместе с"
       ],
       "inputs": [],
       "fakeProbe": null,
@@ -2930,7 +2930,7 @@
       "expected": {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: contact_sheet [-h]\n                     (--package PACKAGE | --work-dir WORK_DIR | --video VIDEO)\n                     [--out OUT] [--no-preview] [--json]\ncontact_sheet: error: argument --video: not allowed with argument --package\n",
+        "stderr": "использование: contact_sheet [-h]\n                             (--package PACKAGE | --work-dir WORK_DIR | --video VIDEO)\n                             [--out OUT] [--no-preview] [--json]\ncontact_sheet: ошибка: аргумент --video: нельзя вместе с --package\n",
         "files": [],
         "produced": {},
         "inputsUnchanged": true,
@@ -2941,7 +2941,7 @@
       "name": "cli-missing-value",
       "description": "--video без значения",
       "covers": [
-        "expected one argument"
+        "нужно одно значение"
       ],
       "inputs": [],
       "fakeProbe": null,
@@ -2952,7 +2952,7 @@
       "expected": {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: contact_sheet [-h]\n                     (--package PACKAGE | --work-dir WORK_DIR | --video VIDEO)\n                     [--out OUT] [--no-preview] [--json]\ncontact_sheet: error: argument --video: expected one argument\n",
+        "stderr": "использование: contact_sheet [-h]\n                             (--package PACKAGE | --work-dir WORK_DIR | --video VIDEO)\n                             [--out OUT] [--no-preview] [--json]\ncontact_sheet: ошибка: аргумент --video: нужно одно значение\n",
         "files": [],
         "produced": {},
         "inputsUnchanged": true,
@@ -2964,7 +2964,7 @@
       "description": "лишний аргумент при источнике",
       "covers": [
         "префикс опции",
-        "unrecognized arguments"
+        "неизвестные аргументы"
       ],
       "inputs": [],
       "fakeProbe": null,
@@ -2977,7 +2977,7 @@
       "expected": {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: contact_sheet [-h]\n                     (--package PACKAGE | --work-dir WORK_DIR | --video VIDEO)\n                     [--out OUT] [--no-preview] [--json]\ncontact_sheet: error: unrecognized arguments: --bogus\n",
+        "stderr": "использование: contact_sheet [-h]\n                             (--package PACKAGE | --work-dir WORK_DIR | --video VIDEO)\n                             [--out OUT] [--no-preview] [--json]\ncontact_sheet: ошибка: неизвестные аргументы: --bogus\n",
         "files": [],
         "produced": {},
         "inputsUnchanged": true,

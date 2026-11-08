@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nTypeError: unsupported operand type(s) for /: 'PosixPath' and 'int'\n",
-  "traceback": true
+  "stderr": "Ошибка: unsupported operand type(s) for /: 'PosixPath' and 'целое число'\n",
+  "unhandled": true
 }

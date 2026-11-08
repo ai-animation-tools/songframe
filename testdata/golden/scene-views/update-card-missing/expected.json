@@ -2,7 +2,7 @@
   "code": 0,
   "stdout": "Обновлено представлений: 2.\n",
   "stderr": "",
-  "traceback": false,
+  "unhandled": false,
   "files": {
     "ROADMAP.md": "changed",
     "plan/animatic/cards/M05.png": "created"

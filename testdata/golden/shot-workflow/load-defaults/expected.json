@@ -2,7 +2,7 @@
   "code": 0,
   "stdout": "План M03 · режим shot · этап: опоры на согласовании (`keyframes_review`)\nОкно 4.0 с (120 кадров), запрос 5 с\n\nПромпт: не принят\nДальше: примите опоры: approve ID ПУТЬ; затем approve-prompt\n",
   "stderr": "",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

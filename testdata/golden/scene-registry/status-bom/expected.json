@@ -14,7 +14,7 @@
   "read_production_status": {
     "error": {
       "type": "ValueError",
-      "message": "Не удалось прочитать plan/production-status.json: Unexpected UTF-8 BOM (decode using utf-8-sig): line 1 column 1 (char 0)"
+      "message": "Не удалось прочитать plan/production-status.json: неверный JSON: метка порядка байтов в начале файла"
     }
   },
   "load": {
@@ -23,7 +23,7 @@
   "project_shot_acceptance": {
     "error": {
       "type": "ValueError",
-      "message": "Не удалось прочитать plan/production-status.json: Unexpected UTF-8 BOM (decode using utf-8-sig): line 1 column 1 (char 0)"
+      "message": "Не удалось прочитать plan/production-status.json: неверный JSON: метка порядка байтов в начале файла"
     }
   },
   "source_video_snapshot": "{\"M01\": [\"41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d\", \"41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d\"], \"M02\": [null, null], \"M03\": [null, \"5b3975651c3cab92d044c096dc30a1c2d9525497457472de48c51ecb363d1f4a\"], \"M99\": [null, null]}"

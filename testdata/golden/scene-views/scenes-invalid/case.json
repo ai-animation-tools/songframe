@@ -1,5 +1,5 @@
 {
-  "description": "Неверный реестр: трассировка ValueError.",
+  "description": "Неверный реестр: необработанная ошибка ValueError.",
   "call": "update_scene_views",
   "project": "project",
   "base": "checks-base",

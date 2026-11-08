@@ -25,7 +25,7 @@ install -D -m 755 build/bin/songframe "$tree/usr/bin/songframe"
 install -D -m 644 packaging/linux/songframe.desktop "$tree/usr/share/applications/songframe.desktop"
 install -D -m 644 resources/icon.png "$tree/usr/share/icons/hicolor/1024x1024/apps/songframe.png"
 install -D -m 644 packaging/linux/deb/apparmor-songframe "$tree/etc/apparmor.d/songframe"
-python3 scripts/package-notices.py "$tree" deb
+go run ./scripts/packtool notices "$tree" deb
 install -m 644 LICENSE "$tree/usr/share/doc/songframe/copyright"
 # Библиотеки берёт dpkg-shlibdeps по ELF бинарника; рантайм WebKit, который не виден в
 # ELF (песочница, D-Bus proxy, плагины GStreamer, сертификаты), перечислен явно.
@@ -44,5 +44,5 @@ rm -f -- "$package.new"
 trap 'rm -f -- "$package.new"' EXIT
 dpkg-deb --root-owner-group -Zxz --build "$tree" "$package.new" >/dev/null
 mv -- "$package.new" "$package"
-python3 scripts/package-metadata.py --deb "$package" "$tree" "$version"
+go run ./scripts/packtool metadata --deb "$package" "$tree" "$version"
 printf 'Готово: %s\n' "$package"

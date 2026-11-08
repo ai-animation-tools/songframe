@@ -136,7 +136,7 @@ func treeText(t *testing.T, root string) map[string]any {
 
 // jsonParse — причина ошибки разбора JSON в эталоне записана с другой позицией и формулировкой,
 // чем у dynvalue.Parse: такие ошибки сверяются по тексту до причины и после неё.
-var jsonParse = regexp.MustCompile(`^(Не удалось прочитать .*?: )(?:Expected|Unexpected|Unterminated|Bad).*?(\. Файл сохранён; .*)$`)
+var jsonParse = regexp.MustCompile(`^(Не удалось прочитать .*?: )неверный JSON: .*?(\. Файл сохранён; .*)$`)
 
 // sameError сравнивает текст ошибки с эталоном с поправкой на jsonParse.
 func sameError(want, got string) bool {

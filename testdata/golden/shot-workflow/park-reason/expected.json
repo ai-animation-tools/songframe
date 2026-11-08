@@ -2,7 +2,7 @@
   "code": 0,
   "stdout": "Пакет перенесён: <project>/plan/awaiting/M03\n",
   "stderr": "",
-  "traceback": false,
+  "unhandled": false,
   "files": {
     "plan/awaiting/M03/description.md": "created",
     "plan/awaiting/M03/frames/K01.png": "created",

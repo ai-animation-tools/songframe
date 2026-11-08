@@ -7,8 +7,8 @@ import (
 
 // Операции над значениями модели с типизированными исключениями. Инструмент вызывает их там, где
 // значения из JSON индексируются, перебираются или складываются без проверки типа: неверные
-// данные дают исключение с зафиксированным эталонами текстом (KeyError: 'start', TypeError и
-// т.п.), которое попадает в stderr инструмента.
+// данные дают исключение с зафиксированным эталонами текстом (нет ключа 'start', ожидается
+// объект и т.п.), которое попадает в stderr инструмента.
 
 // GetItem — container[key] для словаря, списка и строки: у списка и строки целый индекс,
 // отрицательный отсчитывается с конца; строка индексируется кодовыми точками.
@@ -30,30 +30,30 @@ func GetItem(container, key any) (any, error) {
 	case []any:
 		index, ok := indexOf(key)
 		if !ok {
-			return nil, Raise(TypeError, "list indices must be integers or slices, not %s", TypeName(key))
+			return nil, Raise(TypeError, "индекс списка должен быть целым числом, получено: %s", TypeName(key))
 		}
 		if index < 0 {
 			index += int64(len(item))
 		}
 		if index < 0 || index >= int64(len(item)) {
-			return nil, Raise(IndexError, "list index out of range")
+			return nil, Raise(IndexError, "индекс за пределами списка")
 		}
 		return item[index], nil
 	case string:
 		index, ok := indexOf(key)
 		if !ok {
-			return nil, Raise(TypeError, "string indices must be integers, not '%s'", TypeName(key))
+			return nil, Raise(TypeError, "индекс строки должен быть целым числом, получено: %s", TypeName(key))
 		}
 		runes := Runes(item)
 		if index < 0 {
 			index += int64(len(runes))
 		}
 		if index < 0 || index >= int64(len(runes)) {
-			return nil, Raise(IndexError, "string index out of range")
+			return nil, Raise(IndexError, "индекс за пределами строки")
 		}
 		return FromRunes(runes[index : index+1]), nil
 	}
-	return nil, Raise(TypeError, "'%s' object is not subscriptable", TypeName(container))
+	return nil, Raise(TypeError, "нельзя обратиться по индексу или ключу: %s", TypeName(container))
 }
 
 // indexOf — целый индекс из Int или bool.
@@ -74,11 +74,11 @@ func indexOf(key any) (int64, bool) {
 // Item — container[key] для строкового ключа (самый частый случай).
 func Item(container any, key string) (any, error) { return GetItem(container, key) }
 
-// DictGet — значение ключа словаря или fallback; не-словарь — AttributeError (нет get).
+// DictGet — значение ключа словаря или fallback; не-словарь — AttributeError «ожидается объект».
 func DictGet(value any, key string, fallback any) (any, error) {
 	dict, ok := value.(*Dict)
 	if !ok {
-		return nil, Raise(AttributeError, "'%s' object has no attribute 'get'", TypeName(value))
+		return nil, Raise(AttributeError, "ожидается объект, получено: %s", TypeName(value))
 	}
 	if found, ok := dict.values[key]; ok {
 		return found, nil
@@ -87,7 +87,7 @@ func DictGet(value any, key string, fallback any) (any, error) {
 }
 
 // Iter — элементы перебора значения: элементы списка, ключи словаря, символы строки;
-// остальное — TypeError «not iterable».
+// остальное — TypeError «нельзя перебрать».
 func Iter(value any) ([]any, error) {
 	switch item := value.(type) {
 	case []any:
@@ -106,7 +106,7 @@ func Iter(value any) ([]any, error) {
 		}
 		return chars, nil
 	}
-	return nil, Raise(TypeError, "'%s' object is not iterable", TypeName(value))
+	return nil, Raise(TypeError, "нельзя перебрать: %s", TypeName(value))
 }
 
 // Contains — вхождение item в container: ключ словаря, равный элемент списка, подстрока строки.
@@ -128,11 +128,11 @@ func Contains(container, item any) (bool, error) {
 	case string:
 		text, ok := item.(string)
 		if !ok {
-			return false, Raise(TypeError, "'in <string>' requires string as left operand, not %s", TypeName(item))
+			return false, Raise(TypeError, "в строке можно искать только строку, получено: %s", TypeName(item))
 		}
 		return strings.Contains(value, text), nil
 	}
-	return false, Raise(TypeError, "argument of type '%s' is not iterable", TypeName(container))
+	return false, Raise(TypeError, "нельзя перебрать: %s", TypeName(container))
 }
 
 // Less — left < right: числа точно, строки по кодовым точкам, списки лексикографически.
@@ -175,7 +175,7 @@ func compare(left, right any, operator string) (bool, error) {
 			return len(a) <= len(b), nil
 		}
 	}
-	return false, Raise(TypeError, "'%s' not supported between instances of '%s' and '%s'", operator, TypeName(left), TypeName(right))
+	return false, Raise(TypeError, "нельзя сравнить «%s»: %s и %s", operator, TypeName(left), TypeName(right))
 }
 
 // arithmetic — операнды арифметики: оба целые (точно) или хотя бы один дробный (оба float64).
@@ -183,7 +183,7 @@ func arithmetic(left, right any, operator string) (*big.Int, *big.Int, float64, 
 	a, okA := asNumeric(left)
 	b, okB := asNumeric(right)
 	if !okA || !okB {
-		return nil, nil, 0, 0, false, Raise(TypeError, "unsupported operand type(s) for %s: '%s' and '%s'", operator, TypeName(left), TypeName(right))
+		return nil, nil, 0, 0, false, Raise(TypeError, "операция «%s» неприменима: %s и %s", operator, TypeName(left), TypeName(right))
 	}
 	if !a.isFloat && !b.isFloat {
 		return a.integer, b.integer, 0, 0, false, nil
@@ -212,12 +212,12 @@ func Add(left, right any) (any, error) {
 		if b, ok := right.(string); ok {
 			return a + b, nil
 		}
-		return nil, Raise(TypeError, `can only concatenate str (not "%s") to str`, TypeName(right))
+		return nil, Raise(TypeError, "к строке можно прибавить только строку, получено: %s", TypeName(right))
 	case []any:
 		if b, ok := right.([]any); ok {
 			return append(append([]any{}, a...), b...), nil
 		}
-		return nil, Raise(TypeError, `can only concatenate list (not "%s") to list`, TypeName(right))
+		return nil, Raise(TypeError, "к списку можно прибавить только список, получено: %s", TypeName(right))
 	}
 	x, y, fx, fy, isFloat, err := arithmetic(left, right, "+")
 	if err != nil {
@@ -250,12 +250,12 @@ func TrueDiv(left, right any) (float64, error) {
 	}
 	if isFloat {
 		if fy == 0 {
-			return 0, Raise(ZeroDivisionError, "float division by zero")
+			return 0, Raise(ZeroDivisionError, "деление на ноль")
 		}
 		return fx / fy, nil
 	}
 	if y.Sign() == 0 {
-		return 0, Raise(ZeroDivisionError, "division by zero")
+		return 0, Raise(ZeroDivisionError, "деление на ноль")
 	}
 	value, _ := new(big.Rat).SetFrac(x, y).Float64()
 	return value, nil

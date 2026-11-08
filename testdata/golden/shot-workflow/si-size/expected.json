@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Сохранённый оригинал отсутствует или изменён.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

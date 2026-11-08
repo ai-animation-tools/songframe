@@ -1,8 +1,8 @@
 {
   "code": 2,
   "stdout": "",
-  "stderr": "usage: shot_workflow [-h]\n                     {init,plan-keyframes,approve,approve-prompt,set-stage,set-image-request,select-image,park,propose,ask,decide,reopen,set-note,show,check}\n                     ...\nshot_workflow: error: unrecognized arguments: extra\n",
-  "traceback": false,
+  "stderr": "использование: shot_workflow [-h]\n                             {init,plan-keyframes,approve,approve-prompt,set-stage,set-image-request,select-image,park,propose,ask,decide,reopen,set-note,show,check}\n                             ...\nshot_workflow: ошибка: неизвестные аргументы: extra\n",
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

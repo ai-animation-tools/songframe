@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nValueError: Неизвестная схема или пустой реестр сцен.\n",
-  "traceback": true
+  "stderr": "Ошибка: Неизвестная схема или пустой реестр сцен.\n",
+  "unhandled": true
 }

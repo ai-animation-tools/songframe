@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nAttributeError: 'list' object has no attribute 'get'\n",
-  "traceback": true
+  "stderr": "Ошибка: ожидается объект, получено: список\n",
+  "unhandled": true
 }

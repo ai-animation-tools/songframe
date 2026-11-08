@@ -1,8 +1,8 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "'utf-8' codec can't decode byte 0xff in position 0: invalid start byte\n",
-  "traceback": false,
+  "stderr": "текст не в UTF-8: байт 0xff в позиции 0, неверный начальный байт\n",
+  "unhandled": false,
   "files": {
     "plan/scenes.json": "unchanged"
   }

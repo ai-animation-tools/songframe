@@ -11310,7 +11310,7 @@
   "expected": {
    "error": {
     "type": "FileNotFoundError",
-    "message": "[Errno 2] No such file or directory: '<project>/source/missing.png'"
+    "message": "нет такого файла или каталога: '<project>/source/missing.png'"
    },
    "result": null,
    "texts": [
@@ -11830,7 +11830,7 @@
   "expected": {
    "error": {
     "type": "IsADirectoryError",
-    "message": "[Errno 21] Is a directory: '<project>/source/folder'"
+    "message": "это каталог: '<project>/source/folder'"
    },
    "result": null,
    "texts": [
@@ -12090,7 +12090,7 @@
   "expected": {
    "error": {
     "type": "TypeError",
-    "message": "unsupported operand type(s) for /: 'PosixPath' and 'int'"
+    "message": "unsupported operand type(s) for /: 'PosixPath' and 'целое число'"
    },
    "result": null,
    "texts": [
@@ -12352,7 +12352,7 @@
   "expected": {
    "error": {
     "type": "KeyError",
-    "message": "'nope'"
+    "message": "нет ключа 'nope'"
    },
    "result": null,
    "texts": [
@@ -12613,7 +12613,7 @@
   "expected": {
    "error": {
     "type": "KeyError",
-    "message": "'action'"
+    "message": "нет ключа 'action'"
    },
    "result": null,
    "texts": [
@@ -12928,7 +12928,7 @@
   "expected": {
    "error": {
     "type": "AttributeError",
-    "message": "'int' object has no attribute 'split'"
+    "message": "'целое число' object has no attribute 'split'"
    },
    "result": null,
    "texts": [
@@ -13243,7 +13243,7 @@
   "expected": {
    "error": {
     "type": "TypeError",
-    "message": "can only concatenate str (not \"int\") to str"
+    "message": "к строке можно прибавить только строку, получено: целое число"
    },
    "result": null,
    "texts": [
@@ -13448,7 +13448,7 @@
   "expected": {
    "error": {
     "type": "KeyError",
-    "message": "'name'"
+    "message": "нет ключа 'name'"
    },
    "result": null,
    "texts": [
@@ -14962,7 +14962,7 @@
   "expected": {
    "error": {
     "type": "TypeError",
-    "message": "unsupported format string passed to NoneType.__format__"
+    "message": "unsupported format string passed to null.__format__"
    },
    "result": null,
    "texts": [
@@ -15219,7 +15219,7 @@
   "expected": {
    "error": {
     "type": "FileNotFoundError",
-    "message": "[Errno 2] No such file or directory: '<project>/frames/K09.png'"
+    "message": "нет такого файла или каталога: '<project>/frames/K09.png'"
    },
    "result": null,
    "texts": [
@@ -15381,7 +15381,7 @@
   "expected": {
    "error": {
     "type": "KeyError",
-    "message": "'path'"
+    "message": "нет ключа 'path'"
    },
    "result": null,
    "texts": [],

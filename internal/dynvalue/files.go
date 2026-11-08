@@ -11,33 +11,16 @@ import (
 )
 
 // PathArg проверяет, что аргумент name операции над путём — строка. Нестроковое значение —
-// TypeError «The "name" argument must be of type string. Received …»: например, его даёт
-// соединение пути на плане без строкового id.
+// TypeError «путь должен быть строкой» (для аргумента с другим именем — «путь name должен быть
+// строкой»): например, его даёт соединение пути на плане без строкового id.
 func PathArg(name string, value any) (string, error) {
 	if text, ok := value.(string); ok {
 		return text, nil
 	}
-	return "", &TypeError{`The "` + name + `" argument must be of type string. Received ` + describeReceived(value)}
-}
-
-// describeReceived — описание полученного значения в TypeError PathArg: null, undefined,
-// «an instance of Array/Object», «type boolean (true)», «type number (1.5)» или «type string».
-func describeReceived(value any) string {
-	switch item := value.(type) {
-	case nil:
-		return "null"
-	case undefinedType:
-		return "undefined"
-	case *Array:
-		return "an instance of Array"
-	case *Object:
-		return "an instance of Object"
-	case bool:
-		return "type boolean (" + ToString(item) + ")"
-	case float64:
-		return "type number (" + NumberToString(item) + ")"
+	if name == "path" {
+		return "", &TypeError{"путь должен быть строкой"}
 	}
-	return "type " + TypeOf(value)
+	return "", &TypeError{"путь " + name + " должен быть строкой"}
 }
 
 // IsAbs — путь абсолютный. В Windows абсолютным считается и путь от корня без буквы диска.
@@ -97,15 +80,17 @@ func Exists(path string) bool {
 	return err == nil
 }
 
-// errnoTexts — коды и описания errno в тексте файловых ошибок (строчными буквами) для ошибок,
-// которые реально встречаются при чтении проекта.
+// errnoTexts — коды и русские описания errno файловых ошибок, которые реально встречаются при
+// работе с проектом. Код — признак для логики (FileError.Code), описание — текст сообщения.
 var errnoTexts = map[syscall.Errno][2]string{
-	syscall.ENOENT:  {"ENOENT", "no such file or directory"},
-	syscall.ENOTDIR: {"ENOTDIR", "not a directory"},
-	syscall.EISDIR:  {"EISDIR", "illegal operation on a directory"},
-	syscall.EACCES:  {"EACCES", "permission denied"},
-	syscall.EPERM:   {"EPERM", "operation not permitted"},
-	syscall.ELOOP:   {"ELOOP", "too many symbolic links encountered"},
+	syscall.ENOENT:    {"ENOENT", "нет такого файла или каталога"},
+	syscall.ENOTDIR:   {"ENOTDIR", "не каталог"},
+	syscall.EISDIR:    {"EISDIR", "это каталог"},
+	syscall.EACCES:    {"EACCES", "нет доступа"},
+	syscall.EPERM:     {"EPERM", "операция запрещена"},
+	syscall.ELOOP:     {"ELOOP", "слишком много уровней символических ссылок"},
+	syscall.EEXIST:    {"EEXIST", "файл уже существует"},
+	syscall.ENOTEMPTY: {"ENOTEMPTY", "каталог не пуст"},
 }
 
 // FileError — файловая ошибка с кодом errno. Часть кода отличает её от прочих ошибок, например
@@ -118,11 +103,13 @@ type FileError struct {
 
 func (e *FileError) Error() string { return e.message }
 
-// FsError строит файловую ошибку вида «ENOENT: no such file or directory, lstat '<path>'»:
-// код, описание, имя системной операции и путь. Пустой path опускает хвост (чтение каталога даёт
-// «EISDIR: …, read»). Результат — *FileError с кодом ошибки.
+// FsError строит файловую ошибку вида «нет такого файла или каталога: '<path>'»: описание
+// по errno и путь. Имя системной операции syscallName в текст не входит (оно говорит о способе
+// чтения, а не о причине); пустой path опускает хвост (чтение каталога даёт «это каталог»).
+// Результат — *FileError с кодом ошибки; код вне errnoTexts — UNKNOWN с описанием «ошибка
+// файловой системы».
 func FsError(syscallName, path string, err error) error {
-	code, text := "UNKNOWN", err.Error()
+	code, text := "UNKNOWN", "ошибка файловой системы"
 	var errno syscall.Errno
 	if errors.As(err, &errno) {
 		if known, ok := errnoTexts[errno]; ok {
@@ -131,9 +118,9 @@ func FsError(syscallName, path string, err error) error {
 	} else if errors.Is(err, fs.ErrNotExist) {
 		code, text = errnoTexts[syscall.ENOENT][0], errnoTexts[syscall.ENOENT][1]
 	}
-	message := code + ": " + text + ", " + syscallName
+	message := text
 	if path != "" {
-		message += " '" + path + "'"
+		message += ": '" + path + "'"
 	}
 	return &FileError{Code: code, message: message}
 }

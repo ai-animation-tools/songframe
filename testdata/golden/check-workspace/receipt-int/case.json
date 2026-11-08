@@ -1,5 +1,5 @@
 {
-  "description": "cards квитанции — число: TypeError — трассировка.",
+  "description": "cards квитанции — число: TypeError — необработанная ошибка.",
   "call": "check_workspace",
   "project": "project",
   "base": "checks-base",

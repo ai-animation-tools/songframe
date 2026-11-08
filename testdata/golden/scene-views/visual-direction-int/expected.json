@@ -1,7 +1,7 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nAttributeError: 'int' object has no attribute 'strip'\n",
-  "traceback": true,
+  "stderr": "Ошибка: 'целое число' object has no attribute 'strip'\n",
+  "unhandled": true,
   "cards": null
 }

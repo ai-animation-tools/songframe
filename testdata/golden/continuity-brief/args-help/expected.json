@@ -1,6 +1,6 @@
 {
   "code": 0,
-  "stdout": "usage: continuity_brief [-h] [--phase {before,after}] [--json] [--paragraph]\n                        shot\n\nВрезка непрерывности и чек-лист для плана.\n\npositional arguments:\n  shot                  Код плана, например M37\n\noptions:\n  -h, --help            show this help message and exit\n  --phase {before,after}\n  --json\n  --paragraph           Только абзац для вставки в промпт\n",
+  "stdout": "использование: continuity_brief [-h] [--phase {before,after}] [--json]\n                                [--paragraph]\n                                shot\n\nВрезка непрерывности и чек-лист для плана.\n\nаргументы:\n  shot                  Код плана, например M37\n\nпараметры:\n  -h, --help            показать справку и выйти\n  --phase {before,after}\n  --json\n  --paragraph           Только абзац для вставки в промпт\n",
   "stderr": "",
-  "traceback": false
+  "unhandled": false
 }

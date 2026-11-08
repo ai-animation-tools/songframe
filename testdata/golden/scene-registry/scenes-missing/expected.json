@@ -17,13 +17,13 @@
   "load": {
     "error": {
       "type": "FileNotFoundError",
-      "message": "[Errno 2] No such file or directory: '<project>/plan/scenes.json'"
+      "message": "нет такого файла или каталога: '<project>/plan/scenes.json'"
     }
   },
   "project_shot_acceptance": {
     "error": {
       "type": "FileNotFoundError",
-      "message": "[Errno 2] No such file or directory: '<project>/plan/scenes.json'"
+      "message": "нет такого файла или каталога: '<project>/plan/scenes.json'"
     }
   },
   "source_video_snapshot": "{\"M01\": [\"41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d\", \"41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d\"], \"M02\": [null, null], \"M03\": [null, \"5b3975651c3cab92d044c096dc30a1c2d9525497457472de48c51ecb363d1f4a\"], \"M99\": [null, null]}"

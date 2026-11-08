@@ -11,9 +11,21 @@ import (
 	"songframe/internal/tools"
 )
 
-// tracebackHeader — первая строка трассировки инструмента; кадры стека инструменты не печатают,
-// поэтому у таких случаев сверяются заголовок и последняя строка (тип и текст исключения).
-const tracebackHeader = "Traceback (most recent call last):"
+// checkStderr сверяет stderr инструмента с эталоном: unhandled: true в эталоне — необработанная
+// ошибка, её stderr должен быть выведен toolrt.Unhandled; текст сверяется целиком (compare или
+// точное равенство).
+func checkStderr(t *testing.T, expected *toolrt.Dict, wantErr, gotErr string, compare func(want, got string) bool) {
+	t.Helper()
+	if unhandled := expected.Value("unhandled") == true; toolrt.IsUnhandled(gotErr) != unhandled {
+		t.Errorf("необработанная ошибка: ожидалось %v, stderr\n%s", unhandled, gotErr)
+	}
+	if compare == nil {
+		compare = func(want, got string) bool { return want == got }
+	}
+	if !compare(wantErr, gotErr) {
+		t.Errorf("stderr:\n--- ожидалось\n%s\n--- получено\n%s", wantErr, gotErr)
+	}
+}
 
 // TestSceneScaffoldGolden запускает tools.run("scene_scaffold") на копиях входов эталона
 // scene-scaffold и сверяет код завершения, stdout, stderr и байты plan/scenes.json с ожидаемыми.
@@ -41,13 +53,7 @@ func TestSceneScaffoldGolden(t *testing.T) {
 				t.Errorf("stdout:\n--- ожидалось\n%s\n--- получено\n%s", want, normalize(result.Stdout))
 			}
 			wantErr, gotErr := golden.ValueString(t, expected, "stderr"), normalize(result.Stderr)
-			if expected.Value("traceback") == true {
-				if !strings.HasPrefix(gotErr, tracebackHeader+"\n") || lastLine(gotErr) != lastLine(wantErr) {
-					t.Errorf("трассировка:\n--- ожидалось (последняя строка)\n%s\n--- получено\n%s", lastLine(wantErr), gotErr)
-				}
-			} else if gotErr != wantErr {
-				t.Errorf("stderr:\n--- ожидалось\n%s\n--- получено\n%s", wantErr, gotErr)
-			}
+			checkStderr(t, expected, wantErr, gotErr, nil)
 			after, afterErr := os.ReadFile(path)
 			switch state := item(expected, "files").(*toolrt.Dict).Value("plan/scenes.json"); state {
 			case "absent":
@@ -71,9 +77,3 @@ func TestSceneScaffoldGolden(t *testing.T) {
 }
 
 func item(value any, key string) any { return value.(*toolrt.Dict).Value(key) }
-
-// lastLine — последняя непустая строка текста.
-func lastLine(text string) string {
-	lines := strings.Split(strings.TrimRight(text, "\n"), "\n")
-	return lines[len(lines)-1]
-}

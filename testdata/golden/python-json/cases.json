@@ -88,7 +88,7 @@
       "ascii": "[\"\\ud800x\"]",
       "repr": "['\\ud800x']",
       "encodable": false,
-      "encodeError": "'utf-8' codec can't encode character '\\ud800' in position 5: surrogates not allowed"
+      "encodeError": "символ '\\ud800' в позиции 5 нельзя записать в UTF-8"
     }
   },
   {
@@ -137,7 +137,7 @@
     "expected": {
       "error": {
         "type": "JSONDecodeError",
-        "message": "Expecting value: line 1 column 1 (char 0)"
+        "message": "неверный JSON: ожидалось значение: строка 1, столбец 1 (символ 0)"
       }
     }
   },
@@ -148,7 +148,7 @@
     "expected": {
       "error": {
         "type": "JSONDecodeError",
-        "message": "Expecting value: line 1 column 4 (char 3)"
+        "message": "неверный JSON: ожидалось значение: строка 1, столбец 4 (символ 3)"
       }
     }
   },
@@ -159,7 +159,7 @@
     "expected": {
       "error": {
         "type": "JSONDecodeError",
-        "message": "Unexpected UTF-8 BOM (decode using utf-8-sig): line 1 column 1 (char 0)"
+        "message": "неверный JSON: метка порядка байтов в начале файла"
       }
     }
   },
@@ -170,7 +170,7 @@
     "expected": {
       "error": {
         "type": "JSONDecodeError",
-        "message": "Extra data: line 1 column 10 (char 9)"
+        "message": "неверный JSON: лишние данные после JSON: строка 1, столбец 10 (символ 9)"
       }
     }
   },
@@ -181,7 +181,7 @@
     "expected": {
       "error": {
         "type": "JSONDecodeError",
-        "message": "Extra data: line 1 column 2 (char 1)"
+        "message": "неверный JSON: лишние данные после JSON: строка 1, столбец 2 (символ 1)"
       }
     }
   },
@@ -192,7 +192,7 @@
     "expected": {
       "error": {
         "type": "JSONDecodeError",
-        "message": "Expecting property name enclosed in double quotes: line 1 column 9 (char 8)"
+        "message": "неверный JSON: ожидалось имя поля в двойных кавычках: строка 1, столбец 9 (символ 8)"
       }
     }
   },
@@ -203,7 +203,7 @@
     "expected": {
       "error": {
         "type": "JSONDecodeError",
-        "message": "Expecting value: line 1 column 4 (char 3)"
+        "message": "неверный JSON: ожидалось значение: строка 1, столбец 4 (символ 3)"
       }
     }
   },
@@ -214,7 +214,7 @@
     "expected": {
       "error": {
         "type": "JSONDecodeError",
-        "message": "Expecting ':' delimiter: line 1 column 6 (char 5)"
+        "message": "неверный JSON: ожидалось двоеточие: строка 1, столбец 6 (символ 5)"
       }
     }
   },
@@ -225,7 +225,7 @@
     "expected": {
       "error": {
         "type": "JSONDecodeError",
-        "message": "Expecting ',' delimiter: line 1 column 9 (char 8)"
+        "message": "неверный JSON: ожидалась запятая: строка 1, столбец 9 (символ 8)"
       }
     }
   },
@@ -236,7 +236,7 @@
     "expected": {
       "error": {
         "type": "JSONDecodeError",
-        "message": "Expecting ',' delimiter: line 1 column 4 (char 3)"
+        "message": "неверный JSON: ожидалась запятая: строка 1, столбец 4 (символ 3)"
       }
     }
   },
@@ -247,7 +247,7 @@
     "expected": {
       "error": {
         "type": "JSONDecodeError",
-        "message": "Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+        "message": "неверный JSON: ожидалось имя поля в двойных кавычках: строка 1, столбец 2 (символ 1)"
       }
     }
   },
@@ -258,7 +258,7 @@
     "expected": {
       "error": {
         "type": "JSONDecodeError",
-        "message": "Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+        "message": "неверный JSON: ожидалось имя поля в двойных кавычках: строка 1, столбец 2 (символ 1)"
       }
     }
   },
@@ -269,7 +269,7 @@
     "expected": {
       "error": {
         "type": "JSONDecodeError",
-        "message": "Unterminated string starting at: line 1 column 7 (char 6)"
+        "message": "неверный JSON: незакрытая строка: строка 1, столбец 7 (символ 6)"
       }
     }
   },
@@ -280,7 +280,7 @@
     "expected": {
       "error": {
         "type": "JSONDecodeError",
-        "message": "Unterminated string starting at: line 1 column 1 (char 0)"
+        "message": "неверный JSON: незакрытая строка: строка 1, столбец 1 (символ 0)"
       }
     }
   },
@@ -291,7 +291,7 @@
     "expected": {
       "error": {
         "type": "JSONDecodeError",
-        "message": "Invalid control character at: line 1 column 4 (char 3)"
+        "message": "неверный JSON: управляющий символ в строке: строка 1, столбец 4 (символ 3)"
       }
     }
   },
@@ -302,7 +302,7 @@
     "expected": {
       "error": {
         "type": "JSONDecodeError",
-        "message": "Invalid \\escape: line 1 column 3 (char 2)"
+        "message": "неверный JSON: неверная escape-последовательность: строка 1, столбец 3 (символ 2)"
       }
     }
   },
@@ -313,7 +313,7 @@
     "expected": {
       "error": {
         "type": "JSONDecodeError",
-        "message": "Invalid \\uXXXX escape: line 1 column 4 (char 3)"
+        "message": "неверный JSON: неверная последовательность \\uXXXX: строка 1, столбец 4 (символ 3)"
       }
     }
   },
@@ -324,7 +324,7 @@
     "expected": {
       "error": {
         "type": "JSONDecodeError",
-        "message": "Invalid \\uXXXX escape: line 1 column 4 (char 3)"
+        "message": "неверный JSON: неверная последовательность \\uXXXX: строка 1, столбец 4 (символ 3)"
       }
     }
   },
@@ -335,7 +335,7 @@
     "expected": {
       "error": {
         "type": "JSONDecodeError",
-        "message": "Expecting value: line 4 column 1 (char 20)"
+        "message": "неверный JSON: ожидалось значение: строка 4, столбец 1 (символ 20)"
       }
     }
   },
@@ -346,7 +346,7 @@
     "expected": {
       "error": {
         "type": "JSONDecodeError",
-        "message": "Expecting value: line 1 column 1 (char 0)"
+        "message": "неверный JSON: ожидалось значение: строка 1, столбец 1 (символ 0)"
       }
     }
   },
@@ -357,7 +357,7 @@
     "expected": {
       "error": {
         "type": "JSONDecodeError",
-        "message": "Expecting value: line 1 column 1 (char 0)"
+        "message": "неверный JSON: ожидалось значение: строка 1, столбец 1 (символ 0)"
       }
     }
   },
@@ -368,7 +368,7 @@
     "expected": {
       "error": {
         "type": "JSONDecodeError",
-        "message": "Expecting value: line 1 column 1 (char 0)"
+        "message": "неверный JSON: ожидалось значение: строка 1, столбец 1 (символ 0)"
       }
     }
   },
@@ -379,7 +379,7 @@
     "expected": {
       "error": {
         "type": "JSONDecodeError",
-        "message": "Extra data: line 1 column 2 (char 1)"
+        "message": "неверный JSON: лишние данные после JSON: строка 1, столбец 2 (символ 1)"
       }
     }
   },
@@ -390,7 +390,7 @@
     "expected": {
       "error": {
         "type": "JSONDecodeError",
-        "message": "Expecting ',' delimiter: line 1 column 3 (char 2)"
+        "message": "неверный JSON: ожидалась запятая: строка 1, столбец 3 (символ 2)"
       }
     }
   },
@@ -401,7 +401,7 @@
     "expected": {
       "error": {
         "type": "JSONDecodeError",
-        "message": "Expecting ',' delimiter: line 1 column 3 (char 2)"
+        "message": "неверный JSON: ожидалась запятая: строка 1, столбец 3 (символ 2)"
       }
     }
   },
@@ -412,7 +412,7 @@
     "expected": {
       "error": {
         "type": "JSONDecodeError",
-        "message": "Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+        "message": "неверный JSON: ожидалось имя поля в двойных кавычках: строка 1, столбец 2 (символ 1)"
       }
     }
   },
@@ -423,7 +423,7 @@
     "expected": {
       "error": {
         "type": "JSONDecodeError",
-        "message": "Expecting value: line 1 column 2 (char 1)"
+        "message": "неверный JSON: ожидалось значение: строка 1, столбец 2 (символ 1)"
       }
     }
   },
@@ -434,7 +434,7 @@
     "expected": {
       "error": {
         "type": "JSONDecodeError",
-        "message": "Expecting property name enclosed in double quotes: line 1 column 22 (char 21)"
+        "message": "неверный JSON: ожидалось имя поля в двойных кавычках: строка 1, столбец 22 (символ 21)"
       }
     }
   },
@@ -453,7 +453,7 @@
     "expected": {
       "error": {
         "type": "UnicodeDecodeError",
-        "message": "'utf-8' codec can't decode byte 0xff in position 1: invalid start byte"
+        "message": "текст не в UTF-8: байт 0xff в позиции 1, неверный начальный байт"
       }
     }
   },
@@ -464,7 +464,7 @@
     "expected": {
       "error": {
         "type": "UnicodeDecodeError",
-        "message": "'utf-8' codec can't decode byte 0xc3 in position 0: unexpected end of data"
+        "message": "текст не в UTF-8: байт 0xc3 в позиции 0, данные оборваны"
       }
     }
   },
@@ -475,7 +475,7 @@
     "expected": {
       "error": {
         "type": "UnicodeDecodeError",
-        "message": "'utf-8' codec can't decode byte 0xc3 in position 0: invalid continuation byte"
+        "message": "текст не в UTF-8: байт 0xc3 в позиции 0, неверный байт продолжения"
       }
     }
   },
@@ -486,7 +486,7 @@
     "expected": {
       "error": {
         "type": "UnicodeDecodeError",
-        "message": "'utf-8' codec can't decode bytes in position 2-3: unexpected end of data"
+        "message": "текст не в UTF-8: байты в позициях 2–3, данные оборваны"
       }
     }
   },
@@ -497,7 +497,7 @@
     "expected": {
       "error": {
         "type": "UnicodeDecodeError",
-        "message": "'utf-8' codec can't decode bytes in position 0-1: invalid continuation byte"
+        "message": "текст не в UTF-8: байты в позициях 0–1, неверный байт продолжения"
       }
     }
   },
@@ -508,7 +508,7 @@
     "expected": {
       "error": {
         "type": "UnicodeDecodeError",
-        "message": "'utf-8' codec can't decode byte 0xe0 in position 0: invalid continuation byte"
+        "message": "текст не в UTF-8: байт 0xe0 в позиции 0, неверный байт продолжения"
       }
     }
   },
@@ -519,7 +519,7 @@
     "expected": {
       "error": {
         "type": "UnicodeDecodeError",
-        "message": "'utf-8' codec can't decode byte 0xed in position 0: invalid continuation byte"
+        "message": "текст не в UTF-8: байт 0xed в позиции 0, неверный байт продолжения"
       }
     }
   },
@@ -530,7 +530,7 @@
     "expected": {
       "error": {
         "type": "UnicodeDecodeError",
-        "message": "'utf-8' codec can't decode bytes in position 0-2: unexpected end of data"
+        "message": "текст не в UTF-8: байты в позициях 0–2, данные оборваны"
       }
     }
   },
@@ -541,7 +541,7 @@
     "expected": {
       "error": {
         "type": "UnicodeDecodeError",
-        "message": "'utf-8' codec can't decode byte 0xf4 in position 0: invalid continuation byte"
+        "message": "текст не в UTF-8: байт 0xf4 в позиции 0, неверный байт продолжения"
       }
     }
   },
@@ -552,7 +552,7 @@
     "expected": {
       "error": {
         "type": "UnicodeDecodeError",
-        "message": "'utf-8' codec can't decode byte 0xc0 in position 0: invalid start byte"
+        "message": "текст не в UTF-8: байт 0xc0 в позиции 0, неверный начальный байт"
       }
     }
   },
@@ -587,7 +587,7 @@
     "expected": {
       "error": {
         "type": "ValueError",
-        "message": "could not convert string to float: '1__0'"
+        "message": "не число: '1__0'"
       }
     }
   },
@@ -598,7 +598,7 @@
     "expected": {
       "error": {
         "type": "ValueError",
-        "message": "could not convert string to float: '_1'"
+        "message": "не число: '_1'"
       }
     }
   },
@@ -609,7 +609,7 @@
     "expected": {
       "error": {
         "type": "ValueError",
-        "message": "could not convert string to float: '1_'"
+        "message": "не число: '1_'"
       }
     }
   },
@@ -644,7 +644,7 @@
     "expected": {
       "error": {
         "type": "ValueError",
-        "message": "could not convert string to float: '\\x1c1'"
+        "message": "не число: '\\x1c1'"
       }
     }
   },
@@ -687,7 +687,7 @@
     "expected": {
       "error": {
         "type": "ValueError",
-        "message": "could not convert string to float: '0x10'"
+        "message": "не число: '0x10'"
       }
     }
   },
@@ -698,7 +698,7 @@
     "expected": {
       "error": {
         "type": "ValueError",
-        "message": "could not convert string to float: 'abc'"
+        "message": "не число: 'abc'"
       }
     }
   },
@@ -709,7 +709,7 @@
     "expected": {
       "error": {
         "type": "ValueError",
-        "message": "could not convert string to float: ''"
+        "message": "не число: ''"
       }
     }
   },
@@ -720,7 +720,7 @@
     "expected": {
       "error": {
         "type": "ValueError",
-        "message": "could not convert string to float: '+-1'"
+        "message": "не число: '+-1'"
       }
     }
   },
@@ -747,7 +747,7 @@
     "expected": {
       "error": {
         "type": "ValueError",
-        "message": "could not convert string to float: '.'"
+        "message": "не число: '.'"
       }
     }
   },
@@ -758,7 +758,7 @@
     "expected": {
       "error": {
         "type": "ValueError",
-        "message": "could not convert string to float: '1.5.2'"
+        "message": "не число: '1.5.2'"
       }
     }
   },

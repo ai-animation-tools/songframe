@@ -2,5 +2,5 @@
   "code": 1,
   "stdout": "",
   "stderr": "slice(None, 80, None)\n",
-  "traceback": false
+  "unhandled": false
 }

@@ -27,7 +27,7 @@ type goldenStep struct {
 	Code       int      `json:"code"`
 	Stdout     string   `json:"stdout"`
 	Stderr     string   `json:"stderr"`
-	Traceback  string   `json:"traceback"`
+	Unhandled  string   `json:"unhandled"`
 	NoFFmpeg   bool     `json:"noFFmpeg"`
 	FFmpegText bool     `json:"ffmpegText"`
 	Write      string   `json:"write"`
@@ -111,8 +111,8 @@ func copyDir(t *testing.T, from, to string) {
 	}
 }
 
-// TestGolden — CLI cut_speech против эталона: коды, stdout, stderr (трассировки — последней
-// строкой) и итоговые файлы. Тексты FFmpeg и байты передискретизации сверяются только при той же
+// TestGolden — CLI cut_speech против эталона: коды, stdout, stderr (необработанная ошибка —
+// строкой «Ошибка: …» в поле unhandled) и итоговые файлы. Тексты FFmpeg и байты передискретизации сверяются только при той же
 // версии FFmpeg, что записана в эталоне; без FFmpeg тест пропускается.
 func TestGolden(t *testing.T) {
 	version := ffmpegVersion(t)
@@ -213,8 +213,8 @@ func TestGolden(t *testing.T) {
 					t.Fatal(err)
 				}
 				wantCode, wantStdout, wantStderr := step.Code, step.Stdout, step.Stderr
-				if step.Traceback != "" {
-					wantStderr = "Traceback (most recent call last):\n" + step.Traceback + "\n"
+				if step.Unhandled != "" {
+					wantStderr = step.Unhandled + "\n"
 				}
 				if item.GoDiffers != "" {
 					wantCode, wantStdout, wantStderr = 1, "", item.GoDiffers+"\n"

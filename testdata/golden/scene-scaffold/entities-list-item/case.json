@@ -1,5 +1,5 @@
 {
-  "description": "Сущность — список: unhashable.",
+  "description": "Сущность — список: нельзя использовать как ключ.",
   "call": "scene_scaffold",
   "project": "project",
   "covers": [

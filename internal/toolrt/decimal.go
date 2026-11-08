@@ -38,12 +38,12 @@ var (
 
 // conversionSyntax — исключение для строки, которая не является десятичным числом.
 func conversionSyntax() error {
-	return Raise(InvalidOperation, "[<class 'decimal.ConversionSyntax'>]")
+	return Raise(InvalidOperation, "неверная запись десятичного числа")
 }
 
 // invalidOperation — исключение недопустимой операции (NaN в сравнении, inf - inf, quantize inf).
 func invalidOperation() error {
-	return Raise(InvalidOperation, "[<class 'decimal.InvalidOperation'>]")
+	return Raise(InvalidOperation, "недопустимая операция с десятичным числом")
 }
 
 // DecimalInt — десятичное число из целого.
@@ -63,9 +63,9 @@ func NewDecimal(value any) (Decimal, error) {
 	case string:
 		return parseDecimal(item)
 	case []any:
-		return Decimal{}, Raise(ValueError, "argument must be a sequence of length 3")
+		return Decimal{}, Raise(ValueError, "ожидается последовательность из трёх элементов")
 	}
-	return Decimal{}, Raise(TypeError, "conversion from %s to Decimal is not supported", TypeName(value))
+	return Decimal{}, Raise(TypeError, "нельзя преобразовать в десятичное число: %s", TypeName(value))
 }
 
 // decimalFromFloat — точная десятичная запись двоичного значения.
@@ -289,9 +289,9 @@ func (d Decimal) Div(other Decimal) (Decimal, error) {
 	negative := d.negative != other.negative
 	if other.coef.Sign() == 0 {
 		if d.coef.Sign() == 0 {
-			return Decimal{}, Raise(InvalidOperation, "[<class 'decimal.DivisionUndefined'>]")
+			return Decimal{}, Raise(InvalidOperation, "неопределённое деление нуля на ноль")
 		}
-		return Decimal{}, Raise(ZeroDivisionError, "[<class 'decimal.DivisionByZero'>]")
+		return Decimal{}, Raise(ZeroDivisionError, "деление на ноль")
 	}
 	if d.coef.Sign() == 0 {
 		return Decimal{negative: negative, coef: new(big.Int), exp: d.exp - other.exp}, nil
@@ -338,7 +338,7 @@ func (d Decimal) Mod(other Decimal) (Decimal, error) {
 	b := new(big.Int).Mul(other.coef, pow10(other.exp-exp))
 	quotient, remainder := new(big.Int).QuoRem(a, b, new(big.Int))
 	if digits(quotient) > precision {
-		return Decimal{}, Raise(InvalidOperation, "[<class 'decimal.DivisionImpossible'>]")
+		return Decimal{}, Raise(InvalidOperation, "результат деления слишком велик")
 	}
 	return Decimal{negative: d.negative, coef: remainder, exp: exp}.fix(), nil
 }
@@ -391,9 +391,9 @@ func (d Decimal) Cmp(other Decimal) (int, error) {
 func (d Decimal) ToInt() (Int, error) {
 	switch d.special {
 	case infinite:
-		return Int{}, Raise(OverflowError, "cannot convert Infinity to integer")
+		return Int{}, Raise(OverflowError, "бесконечность нельзя преобразовать в целое число")
 	case quietNaN, signalingNaN:
-		return Int{}, Raise(ValueError, "cannot convert NaN to integer")
+		return Int{}, Raise(ValueError, "NaN нельзя преобразовать в целое число")
 	}
 	var value *big.Int
 	if d.exp >= 0 {
@@ -439,7 +439,7 @@ func (d Decimal) FormatF() string {
 func (d Decimal) String() string { return d.FormatF() }
 
 // DecimalOperand — правый операнд арифметики с Decimal: Int, bool и Decimal допустимы, остальное —
-// TypeError «unsupported operand type(s) for /: 'decimal.Decimal' and 'float'».
+// TypeError «операция «/» неприменима: десятичное число и дробное число».
 func DecimalOperand(value any, operator string) (Decimal, error) {
 	if IsInt(value) {
 		return NewDecimal(value)
@@ -447,5 +447,5 @@ func DecimalOperand(value any, operator string) (Decimal, error) {
 	if decimal, ok := value.(Decimal); ok {
 		return decimal, nil
 	}
-	return Decimal{}, Raise(TypeError, "unsupported operand type(s) for %s: 'decimal.Decimal' and '%s'", operator, TypeName(value))
+	return Decimal{}, Raise(TypeError, "операция «%s» неприменима: десятичное число и %s", operator, TypeName(value))
 }

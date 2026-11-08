@@ -2,7 +2,7 @@
   "code": 0,
   "stdout": "{\"written\": true, \"scenes\": 7, \"sequences\": 3, \"references\": [\"mira\", \"lev\", \"boat\", \"pier\"]}\n",
   "stderr": "",
-  "traceback": false,
+  "unhandled": false,
   "files": {
     "plan/scenes.json": "changed"
   }

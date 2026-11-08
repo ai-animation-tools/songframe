@@ -1,6 +1,6 @@
 {
   "code": 2,
   "stdout": "",
-  "stderr": "usage: lint_registry [-h] [--json] [--strict]\nlint_registry: error: argument --json: ignored explicit argument '1'\n",
-  "traceback": false
+  "stderr": "использование: lint_registry [-h] [--json] [--strict]\nlint_registry: ошибка: аргумент --json: лишнее значение '1'\n",
+  "unhandled": false
 }

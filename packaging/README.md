@@ -10,7 +10,7 @@ Linux AppImage и deb-пакет описаны ниже; для Windows amd64 N
 
 Первая база — **Ubuntu 24.04 amd64, glibc 2.39**. Сборочная и доступная настольная машина — Ubuntu 24.04; изолированная проверка использует Ubuntu 24.04 Docker. Более старые glibc и другие дистрибутивы пока не приняты. Для Windows и macOS рецепт этого пакета не применяется.
 
-AppImage содержит production Go-бинарник со встроенным frontend, GTK4, WebKitGTK 6.0 с helper processes, их библиотеки/ресурсы, bootstrap AppArmor и лицензионные материалы. GStreamer не вкладывается: ядро, plugins-base и плагины берутся из одной системной установки. Вложенная `libgstreamer` искала бы плагины рядом с собой внутри образа, не нашла бы `appsink`/`autoaudiosink`, и процесс страницы WebKit падал бы при первом `<audio>`. Собственных Node, Python и Git нет. FFmpeg/ffprobe, ORT и модели находятся вне AppImage и устанавливаются пользователем через «Компоненты». Приложение использует app ID `tools.songframe.desktop` и профиль `songframe-desktop`; smoke использует новые временные профили.
+AppImage содержит production Go-бинарник со встроенным frontend, GTK4, WebKitGTK 6.0 с helper processes, их библиотеки/ресурсы, bootstrap AppArmor и лицензионные материалы. GStreamer не вкладывается: ядро, plugins-base и плагины берутся из одной системной установки. Вложенная `libgstreamer` искала бы плагины рядом с собой внутри образа, не нашла бы `appsink`/`autoaudiosink`, и процесс страницы WebKit падал бы при первом `<audio>`. Собственных Node и Git нет. FFmpeg/ffprobe, ORT и модели находятся вне AppImage и устанавливаются пользователем через «Компоненты». Приложение использует app ID `tools.songframe.desktop` и профиль `songframe-desktop`; smoke использует новые временные профили.
 
 Системе нужны графическая сессия X11/Wayland, драйверы Mesa/GL/EGL/GBM, ALSA/PulseAudio, D-Bus, fonts/fontconfig, CA certificates, `bubblewrap`, `xdg-dbus-proxy`, GStreamer с GL-библиотекой и plugins. На Ubuntu базовый runtime устанавливается средствами ОС:
 
@@ -26,7 +26,7 @@ AppImage не обещает встроить драйверы GPU и все к�
 
 ## Команды сборки
 
-Нужны Go 1.26+, C-компилятор, Wails CLI 3.0.0, Node/Yarn проекта, GTK4/WebKitGTK 6.0 development packages, `curl`, `file`, `pkg-config`, `dpkg-query` и Python 3 для сборочных метаданных/лицензий. Python не входит в runtime. В чистом checkout сначала `wails3 task deps`.
+Нужны Go 1.26+, C-компилятор, Wails CLI 3.0.0, Node/Yarn проекта, GTK4/WebKitGTK 6.0 development packages, `curl`, `file`, `pkg-config`, `dpkg-query` и `readelf`. Лицензии, квитанции и политику runtime готовит Go-инструмент [packtool](../scripts/packtool/main.go) (`go run ./scripts/packtool`); в поставку он не входит. В чистом checkout сначала `wails3 task deps`.
 
 ```sh
 wails3 task check
@@ -38,7 +38,7 @@ wails3 task package:linux
 - `songframe-<VERSION>-linux-x86_64.AppImage`;
 - рядом `<имя>.sha256` и `<имя>.build.json`: версия, исходный commit и dirty, SHA/размер, распакованный объём, минимум ОС и версия упаковщика.
 
-AppImage оставлять в штатной папке. Повторная локальная сборка той же версии заменяет её предыдущий локальный результат; отчёты проверок создавать в новой папке. Это не рецепт переиздания опубликованных релизов. Состав лицензий собирает [package-notices.py](../scripts/package-notices.py): материалы system/Go/frontend и MIT notice Forktopus. Сетевые компоненты и их собственные notices устанавливаются отдельным менеджером.
+AppImage оставлять в штатной папке. Повторная локальная сборка той же версии заменяет её предыдущий локальный результат; отчёты проверок создавать в новой папке. Это не рецепт переиздания опубликованных релизов. Состав лицензий собирает подкоманда `notices` инструмента [packtool](../scripts/packtool/notices.go): материалы system/Go/frontend и MIT notice Forktopus. Сетевые компоненты и их собственные notices устанавливаются отдельным менеджером.
 
 ## Обычная локальная проверка
 
@@ -58,7 +58,7 @@ wails3 task smoke:appimage \
   OUTPUT=/tmp/songframe-appimage-new-check
 ```
 
-Сценарий [smoke-appimage.sh](../scripts/smoke-appimage.sh) собирает окружение из [smoke.Dockerfile](linux/smoke.Dockerfile), затем запускает конечный файл непривилегированным пользователем, без сети и без системных GTK/WebKit, Node, Python, Go, Git, FFmpeg/ORT/моделей. Новый профиль и `startup.json` сохраняются в выбранной папке. Успех — настоящий React frontend вызвал Wails State и подтвердил монтирование страницы. Сборка образа может требовать сеть; само приложение проверяется offline.
+Сценарий [smoke-appimage.sh](../scripts/smoke-appimage.sh) собирает окружение из [smoke.Dockerfile](linux/smoke.Dockerfile), затем запускает конечный файл непривилегированным пользователем, без сети и без системных GTK/WebKit, Node, Go, Git, FFmpeg/ORT/моделей. Новый профиль и `startup.json` сохраняются в выбранной папке. Успех — настоящий React frontend вызвал Wails State и подтвердил монтирование страницы. Сборка образа может требовать сеть; само приложение проверяется offline.
 
 В Docker разрешены user namespaces и mount `/proc` внутренней sandbox через container security options (`seccomp`/`systempaths`), иначе внешние seccomp/AppArmor блокируют внутреннюю песочницу. Песочница WebKit остаётся включённой; эта проверка не подтверждает desktop AppArmor setup или FUSE mount. Если Ubuntu запрещает uid mapping даже для container unconfined, можно задать `SONGFRAME_SMOKE_APPARMOR_PROFILE` с именем уже установленного профиля, разрешающего userns. В среде агента проверен существующий профиль `chatgpt`; сценарий не создаёт и не изменяет политику хоста. Это свойство тестовой среды, а не зависимость распространяемого приложения. При read-only Docker config можно задать отдельный `DOCKER_CONFIG=/tmp/songframe-docker-config`; Go cache аналогично задаётся через `GOCACHE`.
 
@@ -130,14 +130,14 @@ wails3 task smoke:update APPIMAGE=/absolute/file.AppImage OUTPUT=/tmp/new-update
 
 Применяется только при явно запрошенной Linux-сборке. Правка рецепта сама по себе не запускает сборку, распаковку или очистку существующего AppImage.
 
-Wails 3.0.0 может захватить helpers обеих установленных WebKit ABI. Сразу после generator рецепт вызывает `linux_runtime_policy.py prune APPDIR`: старые GTK2/3, WebKitGTK4.x/JavaScriptCore4.x, helpers и typelibs удаляются только если остающиеся ELF их не требуют. Анализ DT_NEEDED/SONAME выполняет readelf без запуска файлов. Внешние directory symlinks не обходятся. Общие GdkPixbuf/Pango/Cairo/libsoup сохраняются. Тем же шагом удаляются вложенные `libgst*-1.0.so*`: зависимость WebKit и GTK media от них разрешается системными библиотеками и не считается нарушением.
+Wails 3.0.0 может захватить helpers обеих установленных WebKit ABI. Сразу после generator рецепт вызывает `go run ./scripts/packtool runtime-policy prune APPDIR`: старые GTK2/3, WebKitGTK4.x/JavaScriptCore4.x, helpers и typelibs удаляются только если остающиеся ELF их не требуют. Анализ DT_NEEDED/SONAME выполняет readelf без запуска файлов. Внешние directory symlinks не обходятся. Общие GdkPixbuf/Pango/Cairo/libsoup сохраняются. Тем же шагом удаляются вложенные `libgst*-1.0.so*`: зависимость WebKit и GTK media от них разрешается системными библиотеками и не считается нарушением.
 
 Перед финализацией отдельный `check` блокирует попадание старого стека или копии GStreamer в образ, в том числе при замаскированных именах файлов/SONAME. Он требует GTK4/WebKit6 и единственный current backend/helpers. Metadata повторно проверяет policy; предыдущий готовый AppImage заменяется только после успешной финализации нового файла. Go module cache и системные библиотеки не изменяются.
 
 Адресная проверка рецепта без пересборки приложения:
 
 ```sh
-python3 -B -m unittest discover -s scripts -p test_linux_runtime_policy.py -v
+go test ./scripts/packtool -run 'Policy|Finalizer' -v
 ```
 
-Проверены 9 синтетических сценариев, включая отказ финализатора до обращения к runtime/toolchain. Существующий AppImage по поручению пользователя не пересобирался и не запускался; новый размер и runtime этого рецепта пока не измерены.
+Тесты покрывают 10 синтетических сценариев, включая отказ финализатора до обращения к runtime/toolchain; им нужны `gcc` и `readelf`, без них тесты пропускаются. Существующий AppImage по поручению пользователя не пересобирался и не запускался; новый размер и runtime этого рецепта пока не измерены.

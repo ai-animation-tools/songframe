@@ -68,7 +68,7 @@ nice -n 19 ionice -c3 wails3 task check:all
 
 ## Лицензии
 
-Код распространяется по лицензии MIT ([LICENSE](LICENSE)). Bootstrap AppArmor для AppImage основан на коде [Forktopus](https://github.com/forktopus/forktopus) (MIT, атрибуция — в исходниках `scripts/appimage-bootstrap`). Лицензионные материалы поставки собирает `scripts/package-notices.py`.
+Код распространяется по лицензии MIT ([LICENSE](LICENSE)). Bootstrap AppArmor для AppImage основан на коде [Forktopus](https://github.com/forktopus/forktopus) (MIT, атрибуция — в исходниках `scripts/appimage-bootstrap`). Лицензионные материалы поставки собирает подкоманда `notices` инструмента `scripts/packtool`.
 
 Модели, настоящие проекты, медиа, локальные отчёты, зависимости и результаты сборки в Git не входят.
 

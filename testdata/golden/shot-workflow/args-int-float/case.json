@@ -4,7 +4,7 @@
   "project": "project",
   "base": "checks-base",
   "covers": [
-    "invalid int"
+    "не целое число"
   ],
   "stubbedMedia": [],
   "args": [

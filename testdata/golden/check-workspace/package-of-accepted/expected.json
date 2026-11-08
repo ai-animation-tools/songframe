@@ -2,5 +2,5 @@
   "code": 1,
   "stdout": "{\n  \"accepted\": [\n    \"M01\",\n    \"M02\"\n  ],\n  \"stale\": [],\n  \"problems\": [\n    {\n      \"kind\": \"package_of_accepted\",\n      \"path\": \"plan/batches/M01-attempt-01\",\n      \"message\": \"рабочий пакет принятых планов M01; приёмка без --clean\"\n    }\n  ]\n}\n",
   "stderr": "",
-  "traceback": false
+  "unhandled": false
 }

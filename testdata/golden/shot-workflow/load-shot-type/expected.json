@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Неизвестная схема workflow.json.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

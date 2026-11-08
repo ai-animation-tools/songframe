@@ -1,8 +1,8 @@
 {
   "code": 2,
   "stdout": "",
-  "stderr": "usage: shot_workflow show [-h] --dir DIR [--json]\nshot_workflow show: error: argument --dir: expected one argument\n",
-  "traceback": false,
+  "stderr": "использование: shot_workflow show [-h] --dir DIR [--json]\nshot_workflow show: ошибка: аргумент --dir: нужно одно значение\n",
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

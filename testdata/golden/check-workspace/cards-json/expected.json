@@ -2,5 +2,5 @@
   "code": 1,
   "stdout": "{\n  \"accepted\": [\n    \"M01\",\n    \"M02\"\n  ],\n  \"stale\": [],\n  \"problems\": [\n    {\n      \"kind\": \"card_of_accepted\",\n      \"path\": \"plan/animatic/cards/M01.png\",\n      \"message\": \"карточка принятого плана M01; обновите представления\"\n    },\n    {\n      \"kind\": \"card_missing\",\n      \"path\": \"plan/animatic/cards/M04.png\",\n      \"message\": \"нет карточки незавершённого плана M04; обновите представления\"\n    }\n  ]\n}\n",
   "stderr": "",
-  "traceback": false
+  "unhandled": false
 }

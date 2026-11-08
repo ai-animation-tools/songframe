@@ -1962,7 +1962,7 @@
     "name": "status-bom",
     "description": "Файл принятия с BOM.",
     "covers": [
-      "Unexpected UTF-8 BOM"
+      "метка порядка байтов в начале файла"
     ]
   },
   {
@@ -2236,7 +2236,7 @@
   {
     "domain": "scene-scaffold",
     "name": "treatment-start-null",
-    "description": "start null: TypeError — трассировка.",
+    "description": "start null: TypeError — необработанная ошибка.",
     "covers": [
       "TypeError"
     ]
@@ -2317,7 +2317,7 @@
   {
     "domain": "scene-scaffold",
     "name": "timing-source-line-float",
-    "description": "source_line 2.0: индекс списка float — трассировка.",
+    "description": "source_line 2.0: индекс списка float — необработанная ошибка.",
     "covers": [
       "TypeError"
     ]
@@ -2462,7 +2462,7 @@
   {
     "domain": "scene-scaffold",
     "name": "entities-list-item",
-    "description": "Сущность — список: unhashable.",
+    "description": "Сущность — список: нельзя использовать как ключ.",
     "covers": [
       "TypeError"
     ]
@@ -2494,7 +2494,7 @@
   {
     "domain": "scene-scaffold",
     "name": "args-explicit",
-    "description": "--force=1: ignored explicit argument.",
+    "description": "--force=1: лишнее значение.",
     "covers": [
       "explicit argument"
     ]
@@ -2585,7 +2585,7 @@
     "name": "args-unknown",
     "description": "Неизвестный аргумент.",
     "covers": [
-      "unrecognized"
+      "неизвестные аргументы"
     ]
   },
   {
@@ -2599,7 +2599,7 @@
   {
     "domain": "lint-registry",
     "name": "args-explicit",
-    "description": "--json=1: ignored explicit argument.",
+    "description": "--json=1: лишнее значение.",
     "covers": [
       "explicit argument"
     ]
@@ -2697,7 +2697,7 @@
   {
     "domain": "lint-registry",
     "name": "visual-direction-type",
-    "description": "visual_direction числом: TypeError поиска по шаблону — трассировка.",
+    "description": "visual_direction числом: TypeError поиска по шаблону — необработанная ошибка.",
     "covers": [
       "TypeError"
     ]
@@ -2791,7 +2791,7 @@
   {
     "domain": "lint-registry",
     "name": "cast-entity-string",
-    "description": "Сущность кастинга строкой: AttributeError validate_cast — трассировка.",
+    "description": "Сущность кастинга строкой: AttributeError validate_cast — необработанная ошибка.",
     "covers": [
       "AttributeError"
     ]
@@ -2823,7 +2823,7 @@
   {
     "domain": "lint-registry",
     "name": "description-not-utf8",
-    "description": "Описание не в UTF-8: UnicodeDecodeError — трассировка.",
+    "description": "Описание не в UTF-8: UnicodeDecodeError — необработанная ошибка.",
     "covers": [
       "UnicodeDecodeError"
     ]
@@ -2990,7 +2990,7 @@
   {
     "domain": "check-assets",
     "name": "no-scenes",
-    "description": "Нет plan/scenes.json: FileNotFoundError — трассировка.",
+    "description": "Нет plan/scenes.json: FileNotFoundError — необработанная ошибка.",
     "covers": [
       "FileNotFoundError"
     ]
@@ -2998,7 +2998,7 @@
   {
     "domain": "check-assets",
     "name": "scenes-invalid",
-    "description": "Неверный реестр: ValueError validate — трассировка.",
+    "description": "Неверный реестр: ValueError validate — необработанная ошибка.",
     "covers": [
       "validate"
     ]
@@ -3256,7 +3256,7 @@
     "name": "args-unknown",
     "description": "Неизвестный аргумент.",
     "covers": [
-      "unrecognized"
+      "неизвестные аргументы"
     ]
   },
   {
@@ -3337,7 +3337,7 @@
   {
     "domain": "check-workspace",
     "name": "receipt-int",
-    "description": "cards квитанции — число: TypeError — трассировка.",
+    "description": "cards квитанции — число: TypeError — необработанная ошибка.",
     "covers": [
       "TypeError"
     ]
@@ -3588,7 +3588,7 @@
     "name": "args-choice",
     "description": "Неверный --filter.",
     "covers": [
-      "invalid choice"
+      "недопустимое значение"
     ]
   },
   {
@@ -3596,7 +3596,7 @@
     "name": "args-missing",
     "description": "--filter без значения.",
     "covers": [
-      "expected one argument"
+      "нужно одно значение"
     ]
   },
   {
@@ -3612,7 +3612,7 @@
     "name": "args-unknown",
     "description": "Неизвестный аргумент.",
     "covers": [
-      "unrecognized"
+      "неизвестные аргументы"
     ]
   },
   {
@@ -3788,7 +3788,7 @@
   {
     "domain": "shot-status",
     "name": "reviews-shots-int",
-    "description": "shots пробы числом: TypeError — трассировка.",
+    "description": "shots пробы числом: TypeError — необработанная ошибка.",
     "covers": [
       "TypeError"
     ]
@@ -3796,7 +3796,7 @@
   {
     "domain": "shot-status",
     "name": "request-dir-int",
-    "description": "request_dir числом: TypeError — трассировка.",
+    "description": "request_dir числом: TypeError — необработанная ошибка.",
     "covers": [
       "TypeError"
     ]
@@ -3804,7 +3804,7 @@
   {
     "domain": "shot-status",
     "name": "attempt-status-list",
-    "description": "status попытки списком: unhashable — трассировка.",
+    "description": "status попытки списком: нельзя использовать как ключ — необработанная ошибка.",
     "covers": [
       "TypeError"
     ]
@@ -4062,7 +4062,7 @@
   {
     "domain": "continuity-brief",
     "name": "checklist-index-error",
-    "description": "Позиционное поле шаблона: IndexError — трассировка.",
+    "description": "Позиционное поле шаблона: IndexError — необработанная ошибка.",
     "covers": [
       "IndexError"
     ]
@@ -4078,7 +4078,7 @@
   {
     "domain": "continuity-brief",
     "name": "checklist-not-string",
-    "description": "checklist числом: AttributeError — трассировка.",
+    "description": "checklist числом: AttributeError — необработанная ошибка.",
     "covers": [
       "AttributeError format"
     ]
@@ -4086,7 +4086,7 @@
   {
     "domain": "continuity-brief",
     "name": "label-not-string",
-    "description": "label числом: AttributeError — трассировка.",
+    "description": "label числом: AttributeError — необработанная ошибка.",
     "covers": [
       "AttributeError lower"
     ]
@@ -4135,9 +4135,9 @@
   {
     "domain": "continuity-brief",
     "name": "action-int",
-    "description": "Действие числом: TypeError — трассировка.",
+    "description": "Действие числом: TypeError — необработанная ошибка.",
     "covers": [
-      "TypeError subscriptable"
+      "TypeError: нельзя обратиться по индексу"
     ]
   },
   {
@@ -4151,7 +4151,7 @@
   {
     "domain": "continuity-brief",
     "name": "surrogate",
-    "description": "Одиночный суррогат в состоянии: печать — UnicodeEncodeError, трассировка.",
+    "description": "Одиночный суррогат в состоянии: печать — UnicodeEncodeError, необработанная ошибка.",
     "covers": [
       "UnicodeEncodeError print"
     ]
@@ -4202,7 +4202,7 @@
     "description": "-h: справка с позиционным аргументом.",
     "covers": [
       "help",
-      "positional arguments"
+      "раздел «аргументы»"
     ]
   },
   {
@@ -4218,7 +4218,7 @@
     "name": "args-extra",
     "description": "Лишний позиционный аргумент.",
     "covers": [
-      "unrecognized"
+      "неизвестные аргументы"
     ]
   },
   {
@@ -4226,7 +4226,7 @@
     "name": "args-phase",
     "description": "Неверная фаза.",
     "covers": [
-      "invalid choice"
+      "недопустимое значение"
     ]
   },
   {
@@ -4248,7 +4248,7 @@
   {
     "domain": "continuity-brief",
     "name": "args-dashdash-option",
-    "description": "Опция после --: unrecognized.",
+    "description": "Опция после --: неизвестные аргументы.",
     "covers": [
       "-- A"
     ]
@@ -4256,7 +4256,7 @@
   {
     "domain": "continuity-brief",
     "name": "args-explicit",
-    "description": "--json=1 M01: ignored explicit argument.",
+    "description": "--json=1 M01: лишнее значение.",
     "covers": [
       "explicit argument"
     ]
@@ -4587,15 +4587,15 @@
   {
     "domain": "scene-views",
     "name": "scenes-corrupt",
-    "description": "Битый plan/scenes.json: трассировка JSONDecodeError.",
+    "description": "Битый plan/scenes.json: необработанная ошибка JSONDecodeError.",
     "covers": [
-      "traceback"
+      "необработанная ошибка"
     ]
   },
   {
     "domain": "scene-views",
     "name": "scenes-invalid",
-    "description": "Неверный реестр: трассировка ValueError.",
+    "description": "Неверный реестр: необработанная ошибка ValueError.",
     "covers": [
       "validate"
     ]
@@ -4603,7 +4603,7 @@
   {
     "domain": "scene-views",
     "name": "project-invalid",
-    "description": "plan/project.json без названия: трассировка ValueError.",
+    "description": "plan/project.json без названия: необработанная ошибка ValueError.",
     "covers": [
       "validate_project"
     ]
@@ -4611,7 +4611,7 @@
   {
     "domain": "scene-views",
     "name": "timing-no-sections",
-    "description": "timing.json без sections: KeyError — трассировка.",
+    "description": "timing.json без sections: KeyError — необработанная ошибка.",
     "covers": [
       "KeyError"
     ]
@@ -4619,7 +4619,7 @@
   {
     "domain": "scene-views",
     "name": "timing-bad-start",
-    "description": "Граница части строкой не числа: InvalidOperation — трассировка.",
+    "description": "Граница части строкой не числа: InvalidOperation — необработанная ошибка.",
     "covers": [
       "InvalidOperation"
     ]
@@ -4627,7 +4627,7 @@
   {
     "domain": "scene-views",
     "name": "package-no-generation",
-    "description": "Манифест комплекта без generation: KeyError — трассировка.",
+    "description": "Манифест комплекта без generation: KeyError — необработанная ошибка.",
     "covers": [
       "KeyError generation"
     ]
@@ -4635,7 +4635,7 @@
   {
     "domain": "scene-views",
     "name": "package-video-missing",
-    "description": "Нет видео комплекта: ValueError «Нет материала» — трассировка.",
+    "description": "Нет видео комплекта: ValueError «Нет материала» — необработанная ошибка.",
     "covers": [
       "require"
     ]
@@ -4643,7 +4643,7 @@
   {
     "domain": "scene-views",
     "name": "package-corrupt",
-    "description": "Битый манифест комплекта: трассировка.",
+    "description": "Битый манифест комплекта: необработанная ошибка.",
     "covers": [
       "JSONDecodeError"
     ]
@@ -4651,7 +4651,7 @@
   {
     "domain": "scene-views",
     "name": "visual-direction-int",
-    "description": "visual_direction числом: AttributeError — трассировка.",
+    "description": "visual_direction числом: AttributeError — необработанная ошибка.",
     "covers": [
       "AttributeError strip"
     ]
@@ -4659,7 +4659,7 @@
   {
     "domain": "scene-views",
     "name": "original-missing",
-    "description": "План без original: KeyError — трассировка.",
+    "description": "План без original: KeyError — необработанная ошибка.",
     "covers": [
       "KeyError original"
     ]
@@ -4667,7 +4667,7 @@
   {
     "domain": "scene-views",
     "name": "references-int",
-    "description": "Референс числом: ValueError validate — трассировка.",
+    "description": "Референс числом: ValueError validate — необработанная ошибка.",
     "covers": [
       "validate неизвестный референс"
     ]
@@ -4675,7 +4675,7 @@
   {
     "domain": "scene-views",
     "name": "reference-image-missing",
-    "description": "Нет изображения референса: трассировка.",
+    "description": "Нет изображения референса: необработанная ошибка.",
     "covers": [
       "FileNotFoundError"
     ]
@@ -4683,7 +4683,7 @@
   {
     "domain": "scene-views",
     "name": "production-status-list",
-    "description": "plan/production-status.json списком: TypeError — трассировка.",
+    "description": "plan/production-status.json списком: TypeError — необработанная ошибка.",
     "covers": [
       "TypeError"
     ]
@@ -4701,7 +4701,7 @@
     "name": "args-unknown",
     "description": "Неизвестный аргумент.",
     "covers": [
-      "unrecognized"
+      "неизвестные аргументы"
     ]
   },
   {
@@ -6036,7 +6036,7 @@
     "name": "args-invalid",
     "description": "Неизвестная команда.",
     "covers": [
-      "invalid choice"
+      "недопустимое значение"
     ]
   },
   {
@@ -6180,7 +6180,7 @@
     "name": "args-unrecognized",
     "description": "Лишний аргумент подкоманды — ошибка верхнего парсера.",
     "covers": [
-      "unrecognized"
+      "неизвестные аргументы"
     ]
   },
   {
@@ -6188,7 +6188,7 @@
     "name": "args-int",
     "description": "--id не число.",
     "covers": [
-      "invalid int"
+      "не целое число"
     ]
   },
   {
@@ -6196,7 +6196,7 @@
     "name": "args-int-float",
     "description": "--request-seconds дробное.",
     "covers": [
-      "invalid int"
+      "не целое число"
     ]
   },
   {
@@ -6212,7 +6212,7 @@
     "name": "args-choice",
     "description": "Неверный этап ask.",
     "covers": [
-      "invalid choice"
+      "недопустимое значение"
     ]
   },
   {
@@ -6220,7 +6220,7 @@
     "name": "args-ambiguous",
     "description": "Неоднозначный префикс --no.",
     "covers": [
-      "ambiguous"
+      "неоднозначный параметр"
     ]
   },
   {
@@ -6236,7 +6236,7 @@
     "name": "args-expected-one",
     "description": "--dir без значения.",
     "covers": [
-      "expected one argument"
+      "нужно одно значение"
     ]
   },
   {
@@ -6638,7 +6638,7 @@
     "name": "load-list",
     "description": "workflow.json — список: AttributeError.",
     "covers": [
-      "traceback"
+      "необработанная ошибка"
     ]
   },
   {
@@ -8434,7 +8434,7 @@
     "name": "accept-edit/speed-text",
     "description": "Скорость не число: необработанное InvalidOperation.",
     "covers": [
-      "traceback"
+      "необработанная ошибка"
     ]
   },
   {
@@ -8823,10 +8823,10 @@
       "не скачано / нет downloads / нет файла",
       "скрытый текст OSError, KeyError, JSONDecodeError, UnidentifiedImageError",
       "UnicodeDecodeError и ValueError текстом",
-      "трассировка AttributeError, TypeError, InvalidOperation",
+      "необработанная ошибка AttributeError, TypeError, InvalidOperation",
       "ошибка ffprobe с хвостом stderr",
       "поддельный ffprobe",
-      "разбор аргументов: справка, обязательная группа, not allowed with, expected one argument, unrecognized arguments"
+      "разбор аргументов: справка, обязательная группа, нельзя вместе с, нужно одно значение, неизвестные аргументы"
     ]
   },
   {
@@ -8838,11 +8838,11 @@
       "cut -h",
       "verify -h",
       "required action",
-      "invalid choice",
+      "недопустимое значение",
       "required shot/--out",
-      "invalid float value",
-      "expected one argument",
-      "unrecognized arguments"
+      "не число",
+      "нужно одно значение",
+      "неизвестные аргументы"
     ]
   },
   {
@@ -8949,7 +8949,7 @@
   {
     "domain": "cut-speech",
     "name": "nan-inf",
-    "description": "NaN — ValueError приведения к целому; бесконечность — OverflowError с трассировкой; начало переводится раньше конца.",
+    "description": "NaN — ValueError приведения к целому; бесконечность — OverflowError с необработанной ошибкой; начало переводится раньше конца.",
     "covers": [
       "NaN",
       "Infinity",
@@ -9017,7 +9017,7 @@
     "name": "timing-list",
     "description": "plan/audio/timing.json — список.",
     "covers": [
-      "AttributeError traceback"
+      "AttributeError — необработанная ошибка"
     ]
   },
   {
@@ -9041,7 +9041,7 @@
     "name": "timing-line-string",
     "description": "Строка разметки — строка, а не объект.",
     "covers": [
-      "TypeError traceback"
+      "TypeError — необработанная ошибка"
     ]
   },
   {
@@ -9049,7 +9049,7 @@
     "name": "timing-end-string",
     "description": "Конец строки разметки — строка.",
     "covers": [
-      "TypeError compare traceback"
+      "TypeError сравнения — необработанная ошибка"
     ]
   },
   {
@@ -9566,7 +9566,7 @@
     "name": "spec-list",
     "description": "Спецификация — список: AttributeError.",
     "covers": [
-      "traceback"
+      "необработанная ошибка"
     ]
   },
   {
@@ -9887,7 +9887,7 @@
     "name": "edit-list",
     "description": "accepted_edit — список.",
     "covers": [
-      "TypeError: трассировка"
+      "TypeError: необработанная ошибка"
     ]
   },
   {
@@ -10709,7 +10709,7 @@
     "name": "args-unknown",
     "description": "Неизвестный аргумент.",
     "covers": [
-      "unrecognized"
+      "неизвестные аргументы"
     ]
   },
   {
@@ -10717,7 +10717,7 @@
     "name": "args-spec-value",
     "description": "--spec без значения.",
     "covers": [
-      "expected one argument"
+      "нужно одно значение"
     ]
   },
   {
@@ -11335,7 +11335,7 @@
       "папка не пустая, путь внутри проекта, файл вместо папки, ссылка внутрь проекта",
       "скрытый текст OSError, KeyError, JSONDecodeError",
       "ValueError и UnicodeDecodeError/EncodeError текстом",
-      "трассировка TypeError, AttributeError, IndexError, ZeroDivisionError",
+      "необработанная ошибка TypeError, AttributeError, IndexError, ZeroDivisionError",
       "разбор аргументов: обязательный --out, справка, префиксы, лишние аргументы"
     ]
   },
@@ -11418,7 +11418,7 @@
     "name": "args-invalid-command",
     "description": "Неизвестная подкоманда.",
     "covers": [
-      "invalid choice"
+      "недопустимое значение"
     ]
   },
   {
@@ -11442,7 +11442,7 @@
     "name": "args-unknown",
     "description": "Неизвестный аргумент подкоманды.",
     "covers": [
-      "unrecognized"
+      "неизвестные аргументы"
     ]
   },
   {
@@ -11450,7 +11450,7 @@
     "name": "args-value",
     "description": "--work-dir без значения.",
     "covers": [
-      "expected one argument"
+      "нужно одно значение"
     ]
   },
   {
@@ -11663,7 +11663,7 @@
     "name": "recipe-mode-list",
     "description": "Режим — список: TypeError скрыт.",
     "covers": [
-      "unhashable hidden"
+      "нельзя использовать как ключ (скрытый текст)"
     ]
   },
   {
@@ -12516,7 +12516,7 @@
     "name": "missing-candidate",
     "description": "Удалённый кандидат скрывает пробу.",
     "covers": [
-      "realpath"
+      "файловая ошибка"
     ]
   },
   {
@@ -12758,7 +12758,7 @@
     "name": "accepted-missing",
     "description": "Удалённый комплект снимает признак.",
     "covers": [
-      "realpath"
+      "файловая ошибка"
     ]
   },
   {
@@ -12820,7 +12820,7 @@
   {
     "domain": "derived-workflow",
     "name": "project-missing",
-    "description": "Папки проекта нет: текст realpath.",
+    "description": "Папки проекта нет: текст файловой ошибки.",
     "covers": [
       "ENOENT"
     ]

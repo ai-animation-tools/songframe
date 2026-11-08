@@ -395,7 +395,7 @@ func TestDerivedWorkflowGolden(t *testing.T) {
 
 // parseReason — причина разбора JSON в тексте ошибки чтения журнала: эталон её не фиксирует
 // (правило эталона agents-settings), поэтому сравниваются начало и окончание текста SongFrame.
-var parseReason = regexp.MustCompile(`journal\.json: (EOF|Expected [^.]*)\. Файл сохранён`)
+var parseReason = regexp.MustCompile(`journal\.json: неверный JSON: [^.]*\. Файл сохранён`)
 
 // sameParse убирает из текста ошибки причину разбора JSON.
 func sameParse(text string) string {

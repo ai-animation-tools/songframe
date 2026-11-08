@@ -1,5 +1,5 @@
 {
-  "description": "checklist числом: AttributeError — трассировка.",
+  "description": "checklist числом: AttributeError — необработанная ошибка.",
   "call": "continuity_brief",
   "project": "project",
   "base": "checks-base",

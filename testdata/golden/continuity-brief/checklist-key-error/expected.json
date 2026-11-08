@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "'mood'\n",
-  "traceback": false
+  "stderr": "нет ключа 'mood'\n",
+  "unhandled": false
 }

@@ -169,8 +169,8 @@ func (n *normalizer) json(t *testing.T, value any) []byte {
 }
 
 // parseMessage — текст ошибки разбора JSON, который эталон хранит на месте отказа
-// («Unexpected … JSON», «Expected … in JSON at position N», «… is not valid JSON»).
-var parseMessage = regexp.MustCompile(`^(Unexpected .*JSON.*|Expected .* in JSON at position \d+.*|.* is not valid JSON)$`)
+// («неверный JSON: …»).
+var parseMessage = regexp.MustCompile(`^неверный JSON: .*$`)
 
 // replaceParseMessages — ответ агента, который не разбирается как JSON, отклоняется текстом
 // proposalInvalidDocument (см. proposalDocuments), а эталон хранит на этом месте сообщение

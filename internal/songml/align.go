@@ -170,7 +170,7 @@ func Align(ctx context.Context, probs []float32, times []float64, classes, blank
 	}
 	policy := calibratePauses(baseline.trace)
 	baseline.Regularization = &policy
-	baseline.Engine = "go-ctc-global-v2"
+	baseline.Engine = "ctc-global-v2"
 	if !policy.Applied {
 		return baseline, nil
 	}
@@ -180,7 +180,7 @@ func Align(ctx context.Context, probs []float32, times []float64, classes, blank
 	if err != nil {
 		return result, err
 	}
-	result.Engine = "go-ctc-global-v2"
+	result.Engine = "ctc-global-v2"
 	policy.BaselinePathReward = baseline.PathReward
 	for i := range result.Lines {
 		old, updated := baseline.Lines[i], &result.Lines[i]
@@ -198,7 +198,7 @@ func Align(ctx context.Context, probs []float32, times []float64, classes, blank
 // alignPass — один проход Витерби по расширенному CTC-графу всего текста. pauseCost штрафует
 // blank между буквами одного слова (0 — исходный margin). Отмена проверяется каждые 64 кадра.
 func alignPass(ctx context.Context, probs []float32, times []float64, classes, blank int, lines []Line, options Options, pauseCost float64) (Result, error) {
-	result := Result{Engine: "go-ctc-global-v1", Status: "unavailable", Thresholds: options, Lines: make([]LineResult, len(lines))}
+	result := Result{Engine: "ctc-global-v1", Status: "unavailable", Thresholds: options, Lines: make([]LineResult, len(lines))}
 	var target []int
 	offsets := make([]int, len(lines))
 	invalid := false

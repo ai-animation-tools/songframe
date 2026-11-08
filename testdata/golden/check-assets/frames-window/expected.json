@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nValueError: M01: длина принятого клипа расходится с монтажным окном.\n",
-  "traceback": true
+  "stderr": "Ошибка: M01: длина принятого клипа расходится с монтажным окном.\n",
+  "unhandled": true
 }

@@ -187,13 +187,7 @@ func (run toolCase) checkStreams(t *testing.T, result tools.Result, sortedStdout
 		t.Errorf("stdout:\n--- ожидалось\n%s\n--- получено\n%s", want, got)
 	}
 	wantErr, gotErr := golden.ValueString(t, run.expected, "stderr"), run.markers.text(result.Stderr)
-	if run.expected.Value("traceback") == true {
-		if !strings.HasPrefix(gotErr, tracebackHeader+"\n") || lastLine(gotErr) != lastLine(wantErr) {
-			t.Errorf("трассировка:\n--- ожидалось (последняя строка)\n%s\n--- получено\n%s", lastLine(wantErr), gotErr)
-		}
-	} else if gotErr != wantErr {
-		t.Errorf("stderr:\n--- ожидалось\n%s\n--- получено\n%s", wantErr, gotErr)
-	}
+	checkStderr(t, run.expected, wantErr, gotErr, nil)
 }
 
 // sortedLines — строки вывода как мультимножество: планы печатаются по мере завершения потоков,

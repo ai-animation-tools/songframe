@@ -132,7 +132,7 @@
     "expected": {
       "error": {
         "type": "TypeError",
-        "message": "unhashable type: 'list'"
+        "message": "нельзя использовать как ключ: список"
       }
     }
   },
@@ -174,7 +174,7 @@
     "expected": {
       "error": {
         "type": "KeyError",
-        "message": "'kind'"
+        "message": "нет ключа 'kind'"
       }
     }
   },
@@ -202,7 +202,7 @@
     "expected": {
       "error": {
         "type": "TypeError",
-        "message": "expected string or bytes-like object, got 'int'"
+        "message": "expected string or bytes-like object, got 'целое число'"
       }
     }
   },
@@ -216,7 +216,7 @@
     "expected": {
       "error": {
         "type": "TypeError",
-        "message": "expected string or bytes-like object, got 'NoneType'"
+        "message": "expected string or bytes-like object, got 'null'"
       }
     }
   },
@@ -300,7 +300,7 @@
     "expected": {
       "error": {
         "type": "TypeError",
-        "message": "'<=' not supported between instances of 'int' and 'str'"
+        "message": "нельзя сравнить «<=»: целое число и строка"
       }
     }
   },
@@ -428,7 +428,7 @@
     "expected": {
       "error": {
         "type": "TypeError",
-        "message": "expected string or bytes-like object, got 'int'"
+        "message": "expected string or bytes-like object, got 'целое число'"
       }
     }
   },
@@ -484,7 +484,7 @@
     "expected": {
       "error": {
         "type": "AttributeError",
-        "message": "'str' object has no attribute 'get'"
+        "message": "ожидается объект, получено: строка"
       }
     }
   },
@@ -498,7 +498,7 @@
     "expected": {
       "error": {
         "type": "AttributeError",
-        "message": "'str' object has no attribute 'get'"
+        "message": "ожидается объект, получено: строка"
       }
     }
   },
@@ -548,7 +548,7 @@
     "expected": {
       "error": {
         "type": "KeyError",
-        "message": "'preferredModel'"
+        "message": "нет ключа 'preferredModel'"
       }
     }
   },
@@ -562,7 +562,7 @@
     "expected": {
       "error": {
         "type": "TypeError",
-        "message": "expected string or bytes-like object, got 'int'"
+        "message": "expected string or bytes-like object, got 'целое число'"
       }
     }
   },
@@ -673,7 +673,7 @@
     "expected": {
       "error": {
         "type": "TypeError",
-        "message": "expected string or bytes-like object, got 'int'"
+        "message": "expected string or bytes-like object, got 'целое число'"
       }
     }
   },
@@ -698,7 +698,7 @@
     "expected": {
       "error": {
         "type": "TypeError",
-        "message": "'int' object is not iterable"
+        "message": "нельзя перебрать: целое число"
       }
     }
   },
@@ -1417,7 +1417,7 @@
     "expected": {
       "error": {
         "type": "TypeError",
-        "message": "unhashable type: 'list'"
+        "message": "нельзя использовать как ключ: список"
       },
       "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\", \"inputs\": [{\"flag\": [\"image\"], \"path\": \"c\"}]}",
       "catalog": "[[\"image_to_video\"]]"
@@ -1494,7 +1494,7 @@
     "expected": {
       "error": {
         "type": "AttributeError",
-        "message": "'int' object has no attribute 'get'"
+        "message": "'целое число' object has no attribute 'get'"
       },
       "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\", \"inputs\": [{\"flag\": \"image\", \"path\": \"a\"}, 5]}",
       "catalog": "[[\"image_to_video\"]]"
@@ -1510,7 +1510,7 @@
     "expected": {
       "error": {
         "type": "KeyError",
-        "message": "'inputs'"
+        "message": "нет ключа 'inputs'"
       },
       "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\"}",
       "catalog": "[]"
@@ -1603,7 +1603,7 @@
     "expected": {
       "error": {
         "type": "ValueError",
-        "message": "Out of range float values are not JSON compliant: nan"
+        "message": "в JSON нельзя записать nan"
       }
     }
   },
@@ -1617,7 +1617,7 @@
     "expected": {
       "error": {
         "type": "ValueError",
-        "message": "Out of range float values are not JSON compliant: inf"
+        "message": "в JSON нельзя записать inf"
       }
     }
   },
@@ -1681,7 +1681,7 @@
     "expected": {
       "error": {
         "type": "ValueError",
-        "message": "Out of range float values are not JSON compliant: nan"
+        "message": "в JSON нельзя записать nan"
       }
     }
   },
@@ -1772,7 +1772,7 @@
     "expected": {
       "error": {
         "type": "OverflowError",
-        "message": "int too large to convert to float"
+        "message": "слишком большое число"
       }
     }
   },

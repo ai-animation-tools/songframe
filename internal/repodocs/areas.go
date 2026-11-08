@@ -146,7 +146,7 @@ var Areas = []Area{
 	{
 		Title:    "Сборка и поставки",
 		Docs:     []string{"packaging/README.md", "packaging/windows/README.md", "dev-skills/songframe-build/SKILL.md", "dev-skills/songframe-release/SKILL.md"},
-		Packages: []string{"scripts/appimage-bootstrap"},
+		Packages: []string{"scripts/packtool", "scripts/appimage-bootstrap"},
 		Paths:    []string{"packaging", "scripts", "Taskfile.yml", ".github/workflows", "www"},
 	},
 }

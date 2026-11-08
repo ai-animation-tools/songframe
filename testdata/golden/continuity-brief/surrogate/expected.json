@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nUnicodeEncodeError: 'utf-8' codec can't encode character '\\ud800' in position 186: surrogates not allowed\n",
-  "traceback": true
+  "stderr": "Ошибка: символ '\\ud800' в позиции 186 нельзя записать в UTF-8\n",
+  "unhandled": true
 }

@@ -485,7 +485,7 @@
     "expected": {
       "error": {
         "type": "NotSubmitted",
-        "message": "'utf-8' codec can't decode byte 0xff in position 3: invalid start byte Загрузка не завершена, отправка не начиналась."
+        "message": "текст не в UTF-8: байт 0xff в позиции 3, неверный начальный байт Загрузка не завершена, отправка не начиналась."
       },
       "log": "[[\"session\", 60, \"0190-trace\"]]"
     }
@@ -542,10 +542,10 @@
     "expected": {
       "error": {
         "type": "ValueError",
-        "message": "Out of range float values are not JSON compliant: nan"
+        "message": "в JSON нельзя записать nan"
       },
       "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"]]",
-      "debug": "--- submit <time> ValueError: Out of range float values are not JSON compliant: nan\n"
+      "debug": "--- submit <time> ValueError: в JSON нельзя записать nan\n"
     }
   },
   {
@@ -1082,7 +1082,7 @@
     "expected": {
       "error": {
         "type": "TypeError",
-        "message": "'int' object is not iterable"
+        "message": "нельзя перебрать: целое число"
       },
       "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
     }
@@ -1119,7 +1119,7 @@
     "expected": {
       "error": {
         "type": "KeyError",
-        "message": "'generation_id'"
+        "message": "нет ключа 'generation_id'"
       },
       "log": "[[\"session\", 5, \"tr\"]]"
     }

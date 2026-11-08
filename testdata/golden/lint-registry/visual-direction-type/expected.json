@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nTypeError: expected string or bytes-like object, got 'int'\n",
-  "traceback": true
+  "stderr": "Ошибка: expected string or bytes-like object, got 'целое число'\n",
+  "unhandled": true
 }

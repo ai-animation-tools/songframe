@@ -5,14 +5,15 @@
 //
 // Зачем отдельно от toolrt.ArgParser: у того нет подкоманд, обязательных опций и типов, а
 // приложение и журнал задания показывают stderr инструмента. Тексты и коды завершения
-// зафиксированы эталонами: usage с переносом по ширине 78, «the following arguments are
-// required», «invalid float value», «invalid choice», «expected one argument», «ambiguous option»,
-// «not allowed with argument», «one of the arguments … is required» и «unrecognized arguments»
-// (лишние аргументы подкоманды сообщает верхний парсер со своим usage). Справка (-h) собирается
-// toolrt.ArgParser.Help() с usage этого пакета.
+// зафиксированы эталонами: usage с переносом по ширине 78, «обязательные аргументы», «не число»,
+// «недопустимое значение», «нужно одно значение», «неоднозначный параметр», «нельзя вместе с»,
+// «нужен один из аргументов» и «неизвестные аргументы» (лишние аргументы подкоманды сообщает
+// верхний парсер со своим usage). Справка (-h) собирается toolrt.ArgParser.Help() с usage этого
+// пакета.
 //
 // Не поддерживаются редкие формы: склейка коротких флагов кроме -h, «--» внутри аргументов
-// подкоманды (все аргументы после него считаются лишними), длинное имя программы (> 58 символов).
+// подкоманды (все аргументы после него считаются лишними), длинное имя программы (больше 43
+// символов: префикс «использование: » с ним длиннее 0.75 ширины).
 package toolsubcmd
 
 import (
@@ -158,9 +159,9 @@ func getLines(items []string, indent string, prefix *string) []string {
 	return lines
 }
 
-// usage — «usage: prog опции позиционные\n» с переносом длинной строки.
+// usage — «использование: prog опции позиционные\n» с переносом длинной строки.
 func usage(prog string, optional, positional string) string {
-	const prefix = "usage: "
+	const prefix = "использование: "
 	full := strings.TrimSpace(prog + " " + strings.TrimSpace(optional+" "+positional))
 	if runeLen(prefix)+runeLen(full) <= textWidth {
 		return prefix + full + "\n"
@@ -193,9 +194,9 @@ func (p Parser) choicesText() string {
 // Usage — usage верхнего парсера.
 func (p Parser) Usage() string { return usage(p.Prog, "[-h]", p.choicesText()+" ...") }
 
-// fail — ошибка верхнего парсера: usage и «prog: error: текст» в stderr, код 2.
+// fail — ошибка верхнего парсера: usage и «prog: ошибка: текст» в stderr, код 2.
 func (p Parser) fail(message string) *Exit {
-	return &Exit{Code: 2, Stderr: p.Usage() + p.Prog + ": error: " + message + "\n"}
+	return &Exit{Code: 2, Stderr: p.Usage() + p.Prog + ": ошибка: " + message + "\n"}
 }
 
 // help — справка -h верхнего парсера.
@@ -245,7 +246,7 @@ func (p Parser) commandUsage(command Command) string {
 
 // commandFail — ошибка подкоманды со своим usage и prog, код 2.
 func (p Parser) commandFail(command Command, message string) *Exit {
-	return &Exit{Code: 2, Stderr: p.commandUsage(command) + p.prog(command) + ": error: " + message + "\n"}
+	return &Exit{Code: 2, Stderr: p.commandUsage(command) + p.prog(command) + ": ошибка: " + message + "\n"}
 }
 
 // commandHelp — справка -h подкоманды.
@@ -281,7 +282,7 @@ func (p Parser) Parse(args []string) (Result, *Exit) {
 		}
 		extras = append(extras, arg)
 	}
-	return Result{}, p.fail("the following arguments are required: " + p.Dest)
+	return Result{}, p.fail("обязательные аргументы: " + p.Dest)
 }
 
 // dispatch — выбор подкоманды: проверка имени, разбор её аргументов, ошибка за лишние.
@@ -296,7 +297,7 @@ func (p Parser) dispatch(name string, rest []string, extras []string) (Result, *
 		}
 		extras = append(extras, more...)
 		if len(extras) > 0 {
-			return Result{}, p.fail("unrecognized arguments: " + strings.Join(extras, " "))
+			return Result{}, p.fail("неизвестные аргументы: " + strings.Join(extras, " "))
 		}
 		result.Action = name
 		return result, nil
@@ -305,7 +306,7 @@ func (p Parser) dispatch(name string, rest []string, extras []string) (Result, *
 	for index, command := range p.Commands {
 		quoted[index] = toolrt.Repr(command.Name)
 	}
-	return Result{}, p.fail("argument " + p.Dest + ": invalid choice: " + toolrt.Repr(name) + " (choose from " + strings.Join(quoted, ", ") + ")")
+	return Result{}, p.fail("аргумент " + p.Dest + ": недопустимое значение " + toolrt.Repr(name) + " (допустимо: " + strings.Join(quoted, ", ") + ")")
 }
 
 // negativeNumber — отрицательное число (целое или с дробной частью): такие строки — значения,
@@ -372,7 +373,7 @@ func classify(command Command, arg string) (token, string) {
 		for index, match := range matches {
 			found[index] = match.name
 		}
-		return token{}, "ambiguous option: " + arg + " could match " + strings.Join(found, ", ")
+		return token{}, "неоднозначный параметр " + arg + ": подходят " + strings.Join(found, ", ")
 	}
 	if len(matches) == 1 {
 		return matches[0], ""
@@ -419,7 +420,7 @@ func (p Parser) parseCommand(command Command, args []string) (Result, []string, 
 		if option.Float {
 			number, err := toolrt.FloatFromString(values[0])
 			if err != nil {
-				return p.commandFail(command, "argument "+option.Name+": invalid float value: "+toolrt.Repr(values[0]))
+				return p.commandFail(command, "аргумент "+option.Name+": не число: "+toolrt.Repr(values[0]))
 			}
 			result.Floats[option.Name] = number
 		}
@@ -434,14 +435,14 @@ func (p Parser) parseCommand(command Command, args []string) (Result, []string, 
 					for position, choice := range option.Choices {
 						quoted[position] = toolrt.Repr(choice)
 					}
-					return p.commandFail(command, "argument "+option.Name+": invalid choice: "+toolrt.Repr(value)+" (choose from "+strings.Join(quoted, ", ")+")")
+					return p.commandFail(command, "аргумент "+option.Name+": недопустимое значение "+toolrt.Repr(value)+" (допустимо: "+strings.Join(quoted, ", ")+")")
 				}
 			}
 		}
 		if command.inGroup(option.Name) {
 			for _, other := range command.Exclusive {
 				if other != option.Name && seen["group:"+other] {
-					return p.commandFail(command, "argument "+option.Name+": not allowed with argument "+other)
+					return p.commandFail(command, "аргумент "+option.Name+": нельзя вместе с "+other)
 				}
 			}
 			seen["group:"+option.Name] = true
@@ -475,7 +476,7 @@ func (p Parser) parseCommand(command Command, args []string) (Result, []string, 
 				index++
 				continue
 			}
-			return result, nil, p.commandFail(command, "argument "+argumentName(item.option)+": ignored explicit argument "+toolrt.Repr(*item.explicit))
+			return result, nil, p.commandFail(command, "аргумент "+argumentName(item.option)+": лишнее значение "+toolrt.Repr(*item.explicit))
 		}
 		count := 0
 		if takes {
@@ -487,11 +488,11 @@ func (p Parser) parseCommand(command Command, args []string) (Result, []string, 
 				}
 			}
 			if count == 0 {
-				message := "expected one argument"
+				message := "нужно одно значение"
 				if plus {
-					message = "expected at least one argument"
+					message = "нужно хотя бы одно значение"
 				}
-				return result, nil, p.commandFail(command, "argument "+argumentName(item.option)+": "+message)
+				return result, nil, p.commandFail(command, "аргумент "+argumentName(item.option)+": "+message)
 			}
 		}
 		if exit := take(item.option, args[index+1:index+1+count]); exit != nil {
@@ -506,7 +507,7 @@ func (p Parser) parseCommand(command Command, args []string) (Result, []string, 
 		}
 	}
 	if len(missing) > 0 {
-		return result, nil, p.commandFail(command, "the following arguments are required: "+strings.Join(missing, ", "))
+		return result, nil, p.commandFail(command, "обязательные аргументы: "+strings.Join(missing, ", "))
 	}
 	if command.ExclusiveRequired {
 		given := false
@@ -514,7 +515,7 @@ func (p Parser) parseCommand(command Command, args []string) (Result, []string, 
 			given = given || seen[name]
 		}
 		if !given {
-			return result, nil, p.commandFail(command, "one of the arguments "+strings.Join(command.Exclusive, " ")+" is required")
+			return result, nil, p.commandFail(command, "нужен один из аргументов: "+strings.Join(command.Exclusive, " "))
 		}
 	}
 	return result, extras, nil

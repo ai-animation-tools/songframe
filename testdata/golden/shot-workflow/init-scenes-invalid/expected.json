@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Неизвестная схема или пустой реестр сцен.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

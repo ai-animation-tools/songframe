@@ -1,8 +1,8 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nFileNotFoundError: [Errno 2] No such file or directory: '<project>/assets/shots/manifest.json'\n",
-  "traceback": true,
+  "stderr": "Ошибка: нет такого файла или каталога: '<project>/assets/shots/manifest.json'\n",
+  "unhandled": true,
   "files": {},
   "dirs": {},
   "modes": {},

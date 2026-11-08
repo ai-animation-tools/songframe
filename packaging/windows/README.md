@@ -8,13 +8,13 @@
 wails3 task package:windows
 ```
 
-Нужны Go/Wails CLI 3.0.0 и frontend-зависимости проекта, Docker с существующим `wails-cross:latest` (Go 1.26+, Zig cc с MinGW ABI), `makensis`, `7z`, `objdump`, Python 3 и curl. Образ сборщика фиксируется в receipt. Веса и runtime моделей в образ не устанавливаются. Используются локальные Go modules и отдельные build/zig caches; read-only Docker config при необходимости задаётся через `DOCKER_CONFIG`.
+Нужны Go/Wails CLI 3.0.0 и frontend-зависимости проекта, Docker с существующим `wails-cross:latest` (Go 1.26+, Zig cc с MinGW ABI), `makensis`, `7z`, `objdump` и curl. Образ сборщика фиксируется в receipt. Веса и runtime моделей в образ не устанавливаются. Используются локальные Go modules и отдельные build/zig caches; read-only Docker config при необходимости задаётся через `DOCKER_CONFIG`.
 
 [package-windows.sh](../../scripts/package-windows.sh) заново собирает frontend, создаёт временный PE syso с иконкой/отдельным app ID/asInvoker/DPI, собирает основной exe с **CGO_ENABLED=1** и Windows GUI subsystem, затем NSIS. Ресурс удаляется trap. Версия — из `packaging/VERSION`, числовой PE version — её основной номер плюс четвёртая часть.
 
 Для Zig передаётся `-extldflags=-Wl,--subsystem,windows` вместе с Go `-H windowsgui`. Одного Go-флага в проверенном toolchain оказалось недостаточно: предварительный PE оставался консольным. Проверка заголовка не позволяет такому exe попасть в комплект. Чужая обёртка компилятора не используется.
 
-Результат — `build/release/songframe-<VERSION>-win-x64-setup.exe`, рядом `.sha256` и `.build.json`. [check-windows-package.py](../../scripts/check-windows-package.py) сверяет AMD64/GUI/resources/asInvoker, Go build info CGO/ORT, вшитую версию `packaging/VERSION`, системные PE imports и хеш извлечённого из NSIS app exe; проверяет bootstrapper, DLL Visual C++ рядом с exe, лицензии, uninstaller и отсутствие встроенных ORT/ONNX. Windows-код не запускается, receipt содержит `nativeWindowsTested: false`.
+Результат — `build/release/songframe-<VERSION>-win-x64-setup.exe`, рядом `.sha256` и `.build.json`. Подкоманда `check-windows` инструмента [packtool](../../scripts/packtool/windows.go) сверяет AMD64/GUI/resources/asInvoker, Go build info CGO/ORT, вшитую версию `packaging/VERSION`, системные PE imports и хеш извлечённого из NSIS app exe; проверяет bootstrapper, DLL Visual C++ рядом с exe, лицензии, uninstaller и отсутствие встроенных ORT/ONNX. Windows-код не запускается, receipt содержит `nativeWindowsTested: false`.
 
 ## Установка и prerequisites
 
@@ -22,7 +22,7 @@ wails3 task package:windows
 
 Microsoft WebView2 обнаруживается по pv в HKLM/HKCU. Отсутствующий runtime ставится встроенным официальным bootstrapper `/silent /install`; для этого нужен интернет. После установки проверяется действительное наличие runtime, а не только exit code. Источник — [документация Microsoft](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution). Bootstrapper берётся из закреплённого Wails 3.0.0, SHA проверяется.
 
-Оболочка не требует ORT и моделей. Отдельно скачиваемый Windows ORT импортирует Microsoft Visual C++ 14 Runtime x64 (`msvcp140.dll`, `msvcp140_1.dll`, `vcruntime140.dll`, `vcruntime140_1.dll`). Эти четыре DLL установщик кладёт рядом с `songframe.exe` (app-local): Windows ищет зависимости загружаемой DLL в папке программы, поэтому системная установка `vc_redist` и права администратора не нужны. Источник — колесо PyPI `msvc-runtime` 14.51.36231 URL и SHA закреплены в сборочном скрипте; DLL копируются без изменений по [REDIST list Microsoft](https://learn.microsoft.com/en-us/visualstudio/releases/2022/redistribution#visual-c-runtime-files), условия — `licenses/msvc-runtime/LICENSE`. Папку `prerequisites`, если она осталась от прежней установки, установщик удаляет.
+Оболочка не требует ORT и моделей. Отдельно скачиваемый Windows ORT импортирует Microsoft Visual C++ 14 Runtime x64 (`msvcp140.dll`, `msvcp140_1.dll`, `vcruntime140.dll`, `vcruntime140_1.dll`). Эти четыре DLL установщик кладёт рядом с `songframe.exe` (app-local): Windows ищет зависимости загружаемой DLL в папке программы, поэтому системная установка `vc_redist` и права администратора не нужны. Источник — сторонний zip-архив `msvc-runtime` 14.51.36231 с распространяемыми файлами Microsoft, его URL и SHA-256 закреплены в сборочном скрипте; DLL копируются без изменений по [REDIST list Microsoft](https://learn.microsoft.com/en-us/visualstudio/releases/2022/redistribution#visual-c-runtime-files), условия — `licenses/msvc-runtime/LICENSE`. Папку `prerequisites`, если она осталась от прежней установки, установщик удаляет.
 
 FFmpeg/ffprobe, ORT и модели устанавливаются через экран «Компоненты».
 

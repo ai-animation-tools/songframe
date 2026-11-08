@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Часть verse: начало 9.0 не стыкуется с 8.00 или конец раньше начала.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {
     "plan/scenes.json": "unchanged"
   }

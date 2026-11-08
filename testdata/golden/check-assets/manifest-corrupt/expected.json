@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\njson.decoder.JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)\n",
-  "traceback": true
+  "stderr": "Ошибка: неверный JSON: ожидалось имя поля в двойных кавычках: строка 1, столбец 2 (символ 1)\n",
+  "unhandled": true
 }

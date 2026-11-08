@@ -10,7 +10,9 @@ linuxdeploy=$4
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 # Финальный gate действует и при отдельном вызове финализатора: грязный AppDir
 # не должен попасть в образ или даже дойти до запуска runtime/toolchain.
-python3 "$root/scripts/linux_runtime_policy.py" check "$appdir"
+# go -C меняет текущий каталог, поэтому относительный AppDir дописывается к каталогу вызова.
+case $appdir in /*) policy_appdir=$appdir ;; *) policy_appdir=$PWD/$appdir ;; esac
+go -C "$root" run ./scripts/packtool runtime-policy check "$policy_appdir"
 toolchain="$(dirname -- "$appdir")/toolchain"
 mkdir -p "$toolchain"
 # Runtime берём из уже созданного Wails образа: финализация не скачивает другой runtime.

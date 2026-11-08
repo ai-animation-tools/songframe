@@ -1,8 +1,8 @@
 {
   "code": 2,
   "stdout": "",
-  "stderr": "usage: scene_scaffold [-h] [--force] [--dry-run] [--json]\nscene_scaffold: error: unrecognized arguments: -- --json\n",
-  "traceback": false,
+  "stderr": "использование: scene_scaffold [-h] [--force] [--dry-run] [--json]\nscene_scaffold: ошибка: неизвестные аргументы: -- --json\n",
+  "unhandled": false,
   "files": {
     "plan/scenes.json": "unchanged"
   }

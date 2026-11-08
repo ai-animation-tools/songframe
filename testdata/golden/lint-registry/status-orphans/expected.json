@@ -2,5 +2,5 @@
   "code": 0,
   "stdout": "предупреждение  source/description.md · mira: персонаж «Мира» из реестра не упомянут в сценарии\nпредупреждение  source/description.md · lev: персонаж «Лев» из реестра не упомянут в сценарии\nпредупреждение  plan/production-status.json · shots.M77: отпечаток принятия плана, которого нет в реестре\nпредупреждение  plan/production-status.json · shots.M04: отпечаток принятия плана без комплекта в assets\nОшибок: 0, предупреждений: 4.\n",
   "stderr": "",
-  "traceback": false
+  "unhandled": false
 }

@@ -1,8 +1,8 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "could not convert string to float: 'abc'\n",
-  "traceback": false,
+  "stderr": "не число: 'abc'\n",
+  "unhandled": false,
   "files": {
     "plan/scenes.json": "unchanged"
   }

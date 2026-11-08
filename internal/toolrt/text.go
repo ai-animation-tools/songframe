@@ -59,7 +59,7 @@ func FromRunes(runes []rune) string {
 func Len(text string) int { return len(Runes(text)) }
 
 // DecodeUTF8 — строгое декодирование UTF-8: ошибка — UnicodeDecodeError с текстом
-// «'utf-8' codec can't decode byte 0xff in position 3: invalid start byte». Позиция — смещение в
+// «текст не в UTF-8: байт 0xff в позиции 3, неверный начальный байт». Позиция — смещение в
 // байтах; границы неверного участка и причина — по invalidUTF8.
 func DecodeUTF8(data []byte) (string, error) {
 	if start, end, reason, ok := invalidUTF8(data, 0); ok {
@@ -88,9 +88,9 @@ func DecodeReplace(data []byte) string {
 
 // invalidUTF8 — первый неверный участок [start, end) начиная с from и его причина; ok=false —
 // дальше всё верно. Участок — максимальная допустимая начальная часть последовательности:
-// недопустимый первый байт — один байт («invalid start byte»), обрыв данных — до конца
-// («unexpected end of data»), неверный байт продолжения — до него, не включая
-// («invalid continuation byte»). Суррогаты (ED A0..BF) и избыточные записи (C0, C1, E0 80..9F,
+// недопустимый первый байт — один байт («неверный начальный байт»), обрыв данных — до конца
+// («данные оборваны»), неверный байт продолжения — до него, не включая
+// («неверный байт продолжения»). Суррогаты (ED A0..BF) и избыточные записи (C0, C1, E0 80..9F,
 // F0 80..8F) отвергаются вторым байтом. Те же границы печатает UnicodeDecodeError и заменяет
 // DecodeReplace.
 func invalidUTF8(data []byte, from int) (start, end int, reason string, ok bool) {
@@ -119,12 +119,12 @@ func invalidUTF8(data []byte, from int) (start, end int, reason string, ok bool)
 				high = 0x8F
 			}
 		default:
-			return index, index + 1, "invalid start byte", true
+			return index, index + 1, "неверный начальный байт", true
 		}
 		for offset := 1; offset <= need; offset++ {
 			position := index + offset
 			if position >= len(data) {
-				return index, len(data), "unexpected end of data", true
+				return index, len(data), "данные оборваны", true
 			}
 			value := data[position]
 			minimum, maximum := byte(0x80), byte(0xBF)
@@ -132,7 +132,7 @@ func invalidUTF8(data []byte, from int) (start, end int, reason string, ok bool)
 				minimum, maximum = low, high
 			}
 			if value < minimum || value > maximum {
-				return index, position, "invalid continuation byte", true
+				return index, position, "неверный байт продолжения", true
 			}
 		}
 		index += need + 1
@@ -143,9 +143,9 @@ func invalidUTF8(data []byte, from int) (start, end int, reason string, ok bool)
 // decodeError — UnicodeDecodeError для байтов [start, end).
 func decodeError(data []byte, start, end int, reason string) error {
 	if end-start == 1 {
-		return Raise(UnicodeDecodeError, "'utf-8' codec can't decode byte 0x%02x in position %d: %s", data[start], start, reason)
+		return Raise(UnicodeDecodeError, "текст не в UTF-8: байт 0x%02x в позиции %d, %s", data[start], start, reason)
 	}
-	return Raise(UnicodeDecodeError, "'utf-8' codec can't decode bytes in position %d-%d: %s", start, end-1, reason)
+	return Raise(UnicodeDecodeError, "текст не в UTF-8: байты в позициях %d–%d, %s", start, end-1, reason)
 }
 
 // EncodeUTF8 — кодирование строки в UTF-8: одиночный суррогат (или их серия) —
@@ -164,9 +164,9 @@ func EncodeUTF8(text string) ([]byte, error) {
 			end++
 		}
 		if end-index == 1 {
-			return nil, Raise(UnicodeEncodeError, "'utf-8' codec can't encode character '\\u%04x' in position %d: surrogates not allowed", r, index)
+			return nil, Raise(UnicodeEncodeError, "символ '\\u%04x' в позиции %d нельзя записать в UTF-8", r, index)
 		}
-		return nil, Raise(UnicodeEncodeError, "'utf-8' codec can't encode characters in position %d-%d: surrogates not allowed", index, end-1)
+		return nil, Raise(UnicodeEncodeError, "символы в позициях %d–%d нельзя записать в UTF-8", index, end-1)
 	}
 	return []byte(text), nil
 }
@@ -291,9 +291,9 @@ func digitGroups(text string) bool {
 
 // FloatFromString — дробное число из строки: пробелы по краям, знак, inf/infinity/nan без учёта
 // регистра, десятичная запись с подчёркиваниями между цифрами и цифры Unicode. Ошибка —
-// ValueError «could not convert string to float: 'текст'».
+// ValueError «не число: 'текст'».
 func FloatFromString(text string) (float64, error) {
-	failed := Raise(ValueError, "could not convert string to float: %s", Repr(text))
+	failed := Raise(ValueError, "не число: %s", Repr(text))
 	body := strings.TrimFunc(asciiNumber(text), asciiSpace)
 	unsigned := strings.TrimLeft(body, "+-")
 	if len(body)-len(unsigned) > 1 {
@@ -344,17 +344,17 @@ func Float(value any) (float64, error) {
 	case string:
 		return FloatFromString(item)
 	}
-	return 0, Raise(TypeError, "float() argument must be a string or a real number, not '%s'", TypeName(value))
+	return 0, Raise(TypeError, "ожидается число или строка, получено: %s", TypeName(value))
 }
 
 // FloatToInt — дробное в целое: с round — округление половины к чётному, без — отбрасывание
 // дробной части. NaN — ValueError, бесконечность и значение вне int64 — OverflowError.
 func FloatToInt(value float64, round bool) (int64, error) {
 	if math.IsNaN(value) {
-		return 0, Raise(ValueError, "cannot convert float NaN to integer")
+		return 0, Raise(ValueError, "NaN нельзя преобразовать в целое число")
 	}
 	if math.IsInf(value, 0) {
-		return 0, Raise(OverflowError, "cannot convert float infinity to integer")
+		return 0, Raise(OverflowError, "бесконечность нельзя преобразовать в целое число")
 	}
 	if round {
 		value = math.RoundToEven(value)
@@ -363,7 +363,7 @@ func FloatToInt(value float64, round bool) (int64, error) {
 	}
 	if value >= 9.223372036854775807e18 || value < -9.223372036854775808e18 {
 		// Целые вне int64 здесь не нужны: кадры такого порядка недостижимы в клипе.
-		return 0, Raise(OverflowError, "Python int too large to convert to C long")
+		return 0, Raise(OverflowError, "слишком большое число")
 	}
 	return int64(value), nil
 }

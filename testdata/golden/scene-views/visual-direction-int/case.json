@@ -1,5 +1,5 @@
 {
-  "description": "visual_direction числом: AttributeError — трассировка.",
+  "description": "visual_direction числом: AttributeError — необработанная ошибка.",
   "call": "update_scene_views",
   "project": "project",
   "base": "checks-base",

@@ -2,7 +2,7 @@
   "code": 0,
   "stdout": "Запрос опоры K01 ждёт отдельного подтверждения: image-02.\n",
   "stderr": "",
-  "traceback": false,
+  "unhandled": false,
   "files": {
     "plan/batches/M03-attempt-01/workflow.json": "changed"
   },

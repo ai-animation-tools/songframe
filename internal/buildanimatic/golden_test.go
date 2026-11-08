@@ -16,6 +16,7 @@ import (
 	"testing"
 
 	"songframe/internal/golden"
+	"songframe/internal/toolrt"
 )
 
 // domain — каталог эталона CLI build_animatic (см. testdata/golden/README.md).
@@ -164,9 +165,9 @@ func checkRun(t *testing.T, index int, project string, step goldenStep, same boo
 	}
 	stderr := normalize(output.Stderr, project)
 	switch {
-	case strings.HasPrefix(want.Stderr, "Traceback (most recent call last):\n"):
-		if !strings.HasPrefix(stderr, "Traceback (most recent call last):\n") || lastLine(stderr) != lastLine(want.Stderr) {
-			t.Fatalf("%s: трассировка\n%s\nждали\n%s", label, stderr, want.Stderr)
+	case toolrt.IsUnhandled(want.Stderr):
+		if stderr != want.Stderr {
+			t.Fatalf("%s: необработанная ошибка\n%s\nждали\n%s", label, stderr, want.Stderr)
 		}
 	case step.FFmpegStderr && !same:
 		prefix, _, _ := strings.Cut(want.Stderr, ": ")
@@ -247,11 +248,6 @@ func union(left, right map[string]string) map[string]bool {
 		result[name] = true
 	}
 	return result
-}
-
-func lastLine(text string) string {
-	lines := strings.Split(strings.TrimRight(text, "\n"), "\n")
-	return lines[len(lines)-1]
 }
 
 // snapshot — SHA-256 всех файлов проекта по путям через «/».

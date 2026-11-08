@@ -1,10 +1,10 @@
 {
-  "description": "Битый plan/scenes.json: трассировка JSONDecodeError.",
+  "description": "Битый plan/scenes.json: необработанная ошибка JSONDecodeError.",
   "call": "update_scene_views",
   "project": "project",
   "base": "checks-base",
   "covers": [
-    "traceback"
+    "необработанная ошибка"
   ],
   "stubbedMedia": [],
   "args": [

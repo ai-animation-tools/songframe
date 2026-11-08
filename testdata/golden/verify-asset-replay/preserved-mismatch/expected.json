@@ -1,8 +1,8 @@
 {
   "code": 1,
   "stdout": "M02 воспроизведён RMS=0.000\nM01 воспроизведён RMS=0.000\n",
-  "stderr": "Traceback (most recent call last):\nAssertionError\n",
-  "traceback": true,
+  "stderr": "Ошибка: внутренняя проверка не прошла\n",
+  "unhandled": true,
   "files": {},
   "dirs": {},
   "modes": {},

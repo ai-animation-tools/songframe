@@ -56,13 +56,13 @@ func TestConversions(t *testing.T) {
 	if Trim("\xef\xbb\xbf x ") != "x" || Trim("\u0085x") != "\u0085x" {
 		t.Fatal("Trim")
 	}
-	if _, err := PathArg("path", Undefined); err == nil || err.Error() != `The "path" argument must be of type string. Received undefined` {
+	if _, err := PathArg("path", Undefined); err == nil || err.Error() != "путь должен быть строкой" {
 		t.Fatalf("PathArg: %v", err)
 	}
-	if _, err := PathArg("path", 5.0); err.Error() != `The "path" argument must be of type string. Received type number (5)` {
+	if _, err := PathArg("paths[1]", 5.0); err.Error() != "путь paths[1] должен быть строкой" {
 		t.Fatalf("PathArg: %v", err)
 	}
-	if _, err := Prop(nil, "id"); err.Error() != "Cannot read properties of null (reading 'id')" {
+	if _, err := Prop(nil, "id"); err.Error() != "нет поля 'id': значение null" {
 		t.Fatal("Prop")
 	}
 	if !LessUTF16("￿", "\U0001F600") == true {

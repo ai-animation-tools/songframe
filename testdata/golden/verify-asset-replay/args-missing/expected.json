@@ -1,8 +1,8 @@
 {
   "code": 2,
   "stdout": "",
-  "stderr": "usage: verify_asset_replay [-h] --report REPORT [--preserved PRESERVED]\nverify_asset_replay: error: the following arguments are required: --report\n",
-  "traceback": false,
+  "stderr": "использование: verify_asset_replay [-h] --report REPORT\n                                   [--preserved PRESERVED]\nverify_asset_replay: ошибка: обязательные аргументы: --report\n",
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {},

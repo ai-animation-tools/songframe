@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Принятую или отсутствующую опору нельзя заменять.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

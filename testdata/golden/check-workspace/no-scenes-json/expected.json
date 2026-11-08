@@ -2,5 +2,5 @@
   "code": 1,
   "stdout": "{\n  \"error\": \"Сначала необходимо создать сценарий: отсутствует plan/scenes.json.\"\n}\n",
   "stderr": "",
-  "traceback": false
+  "unhandled": false
 }

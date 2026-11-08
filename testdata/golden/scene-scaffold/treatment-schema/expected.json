@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "plan/treatment.json: нужны schema_version 1 и непустой список sequences.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {
     "plan/scenes.json": "unchanged"
   }

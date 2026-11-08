@@ -14,7 +14,7 @@
   "read_production_status": {
     "error": {
       "type": "ValueError",
-      "message": "Не удалось прочитать plan/production-status.json: Expecting property name enclosed in double quotes: line 1 column 12 (char 11)"
+      "message": "Не удалось прочитать plan/production-status.json: неверный JSON: ожидалось имя поля в двойных кавычках: строка 1, столбец 12 (символ 11)"
     }
   },
   "load": {
@@ -23,7 +23,7 @@
   "project_shot_acceptance": {
     "error": {
       "type": "ValueError",
-      "message": "Не удалось прочитать plan/production-status.json: Expecting property name enclosed in double quotes: line 1 column 12 (char 11)"
+      "message": "Не удалось прочитать plan/production-status.json: неверный JSON: ожидалось имя поля в двойных кавычках: строка 1, столбец 12 (символ 11)"
     }
   },
   "source_video_snapshot": "{\"M01\": [\"41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d\", \"41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d\"], \"M02\": [null, null], \"M03\": [null, \"5b3975651c3cab92d044c096dc30a1c2d9525497457472de48c51ecb363d1f4a\"], \"M99\": [null, null]}"

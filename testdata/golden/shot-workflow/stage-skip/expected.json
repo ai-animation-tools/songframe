@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Переход keyframes_review → ready не предусмотрен: вперёд только на следующий этап, назад — на любой.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

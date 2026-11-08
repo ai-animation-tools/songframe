@@ -1,7 +1,7 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nValueError: В plan/project.json нужны схема и непустое название проекта.\n",
-  "traceback": true,
+  "stderr": "Ошибка: В plan/project.json нужны схема и непустое название проекта.\n",
+  "unhandled": true,
   "cards": null
 }

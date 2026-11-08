@@ -2,5 +2,5 @@
   "code": 1,
   "stdout": "ОШИБКА  plan/production-status.json · shots: shots.M01 должен содержать scene_sha256 из 64 hex-символов.\nпредупреждение  source/description.md · mira: персонаж «Мира» из реестра не упомянут в сценарии\nпредупреждение  source/description.md · lev: персонаж «Лев» из реестра не упомянут в сценарии\nОшибок: 1, предупреждений: 2.\n",
   "stderr": "",
-  "traceback": false
+  "unhandled": false
 }

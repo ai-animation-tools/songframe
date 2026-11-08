@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Расширение оригинала не соответствует формату PNG, JPEG или WebP.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

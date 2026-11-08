@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Сначала дождитесь image_downloaded текущей попытки.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

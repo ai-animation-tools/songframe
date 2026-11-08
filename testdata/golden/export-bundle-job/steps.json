@@ -76,7 +76,7 @@
       "export": {
         "target": "<tmp>/plain"
       },
-      "error": "ENOTDIR: not a directory, scandir '<tmp>/plain'",
+      "error": "не каталог: '<tmp>/plain'",
       "exists": {}
     },
     {
@@ -84,7 +84,7 @@
       "export": {
         "target": "<tmp>/plain/bundle"
       },
-      "error": "ENOTDIR: not a directory, mkdir '<tmp>/plain/bundle'",
+      "error": "не каталог: '<tmp>/plain/bundle'",
       "exists": {}
     },
     {

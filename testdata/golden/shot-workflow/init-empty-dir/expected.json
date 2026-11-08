@@ -2,7 +2,7 @@
   "code": 0,
   "stdout": "Пакет M04 создан: этап description_review, окно 4.0 с.\n",
   "stderr": "",
-  "traceback": false,
+  "unhandled": false,
   "files": {
     "plan/batches/M04-attempt-01/workflow.json": "created"
   },

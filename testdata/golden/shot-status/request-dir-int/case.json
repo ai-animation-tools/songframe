@@ -1,5 +1,5 @@
 {
-  "description": "request_dir числом: TypeError — трассировка.",
+  "description": "request_dir числом: TypeError — необработанная ошибка.",
   "call": "shot_status",
   "project": "project",
   "base": "checks-base",

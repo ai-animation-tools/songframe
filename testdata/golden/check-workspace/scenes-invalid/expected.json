@@ -2,5 +2,5 @@
   "code": 1,
   "stdout": "{\n  \"error\": \"Неизвестная схема или пустой реестр сцен.\"\n}\n",
   "stderr": "",
-  "traceback": false
+  "unhandled": false
 }

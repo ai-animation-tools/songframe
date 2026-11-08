@@ -2,7 +2,7 @@
   "code": 0,
   "stdout": "Замечание 1 включено.\n",
   "stderr": "",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

@@ -1,4 +1,4 @@
-# Проверочная система содержит WebView prerequisites, но не GTK/WebKit, FFmpeg, ORT, Node или Python.
+# Проверочная система содержит WebView prerequisites, но не GTK/WebKit, FFmpeg, ORT, Node или Go.
 # Сама проверка выполняется без сети и с непривилегированным пользователем.
 FROM ubuntu:24.04@sha256:fe81560990fae86dc4743202b2cb4d3df98d0bcf949173cecef15ce1127ef852
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \

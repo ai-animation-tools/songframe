@@ -2,7 +2,7 @@
   "code": 0,
   "stdout": "Замечание 2 выключено.\n",
   "stderr": "",
-  "traceback": false,
+  "unhandled": false,
   "files": {
     "plan/batches/M03-attempt-01/workflow.json": "changed"
   },

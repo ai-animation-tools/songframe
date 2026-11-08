@@ -1,5 +1,5 @@
 {
-  "description": "Неверный реестр: ValueError validate — трассировка.",
+  "description": "Неверный реестр: ValueError validate — необработанная ошибка.",
   "call": "check_assets",
   "project": "project",
   "base": "checks-base",

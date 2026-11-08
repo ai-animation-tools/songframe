@@ -2,5 +2,5 @@
   "code": 1,
   "stdout": "Принятых планов: 2.\n- plan/batches/M04-attempt-01: пустая папка пробы или пакета\nНесоответствий: 1.\n",
   "stderr": "",
-  "traceback": false
+  "unhandled": false
 }

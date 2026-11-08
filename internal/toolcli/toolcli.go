@@ -1,6 +1,6 @@
 // Package toolcli — общий каркас CLI-инструментов: результат запуска (код, stdout, stderr),
 // печать строк со строгим кодированием UTF-8, завершение ошибкой аргументов, сообщением или
-// необработанным исключением. Инструменты выполняются в процессе приложения, но наружу (renderer
+// необработанной ошибкой. Инструменты выполняются в процессе приложения, но наружу (renderer
 // и журнал задания) отдают вывод отдельного процесса — тексты, коды и переводы строк
 // зафиксированы эталонами.
 package toolcli
@@ -45,13 +45,13 @@ func (p *Printer) Fail(message string) Output {
 	return Output{Code: 1, Stdout: p.String(), Stderr: toolrt.TextMode(message + "\n")}
 }
 
-// Crash — необработанное исключение: трассировка (заголовок и последняя строка «Тип: текст»)
-// в stderr, код 1. Ошибка Go-окружения (не *toolrt.Exception) выводится текстом как есть.
+// Crash — необработанное исключение: строка «Ошибка: текст» (toolrt.Unhandled) в stderr, код 1.
+// Ошибка Go-окружения (не *toolrt.Exception) выводится текстом как есть.
 func (p *Printer) Crash(err error) Output {
 	if _, isException := err.(*toolrt.Exception); !isException {
 		return Output{Code: 1, Stdout: p.String(), Stderr: toolrt.TextMode(err.Error() + "\n")}
 	}
-	return Output{Code: 1, Stdout: p.String(), Stderr: toolrt.TextMode(toolrt.Traceback(err))}
+	return Output{Code: 1, Stdout: p.String(), Stderr: toolrt.TextMode(toolrt.Unhandled(err))}
 }
 
 // Args — разобранные аргументы либо готовое завершение (справка, ошибка аргументов).

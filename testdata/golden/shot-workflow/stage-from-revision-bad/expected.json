@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Переход needs_revision → submitted не предусмотрен: вперёд только на следующий этап, назад — на любой.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

@@ -15,7 +15,7 @@ import (
 //
 // Подкоманда получает все строки после своего имени, свои ошибки сообщает со своим prog
 // («prog имя»), а нераспознанные строки возвращает родителю, который завершает разбор ошибкой
-// «unrecognized arguments» со своим usage.
+// «неизвестные аргументы» со своим usage.
 
 // ActionKind — вид действия опции.
 type ActionKind int
@@ -38,10 +38,10 @@ type Action struct {
 	Metavar  string
 	Choices  []string
 	Required bool
-	// Int — значение — целое (ParseIntText), ошибка — «invalid int value».
+	// Int — значение — целое (ParseIntText), ошибка — «не целое число».
 	Int bool
 	// Float — значение — дробное (FloatFromString), ошибка —
-	// «invalid float value». Default такой опции задаётся уже числом float64.
+	// «не число». Default такой опции задаётся уже числом float64.
 	Float bool
 	// Default — значение по умолчанию (строка или nil); у AppendValue без него — пустой список.
 	Default any
@@ -147,7 +147,7 @@ func (c *Command) usageParts() (options, positionals []string) {
 // Usage — строка usage с переносом длинной строки, как у ArgParser.Usage.
 func (c *Command) Usage() string {
 	options, positionals := c.usageParts()
-	const prefix = "usage: "
+	const prefix = "использование: "
 	line := c.Prog + " " + strings.Join(append(append([]string{}, options...), positionals...), " ")
 	if runeLen(prefix)+runeLen(line) <= helpWidth {
 		return prefix + line + "\n"
@@ -160,10 +160,10 @@ func (c *Command) Usage() string {
 	return prefix + strings.Join(lines, "\n") + "\n"
 }
 
-// Help — справка -h: usage, описание и разделы positional arguments и options.
+// Help — справка -h: usage, описание и разделы «аргументы» и «параметры».
 func (c *Command) Help() string {
 	type row struct{ invocation, help string }
-	positionals, options := []row{}, []row{{"-h, --help", "show this help message and exit"}}
+	positionals, options := []row{}, []row{{"-h, --help", "показать справку и выйти"}}
 	for _, action := range c.Actions {
 		if action.optional() {
 			options = append(options, row{action.invocation(), action.Help})
@@ -206,14 +206,14 @@ func (c *Command) Help() string {
 		}
 	}
 	if len(positionals) > 0 {
-		section("positional arguments", positionals)
+		section("аргументы", positionals)
 	}
-	section("options", options)
+	section("параметры", options)
 	return builder.String()
 }
 
 func (c *Command) fail(message string) *ArgExit {
-	return &ArgExit{Code: 2, Stderr: c.Usage() + c.Prog + ": error: " + message + "\n"}
+	return &ArgExit{Code: 2, Stderr: c.Usage() + c.Prog + ": ошибка: " + message + "\n"}
 }
 
 // optionStrings — строки опций в порядке поиска префиксов: -h, --help, затем опции.
@@ -288,7 +288,7 @@ func (c *Command) parseOptional(arg string) (*option, string) {
 		for index, item := range tuples {
 			names[index] = item.name
 		}
-		return nil, "ambiguous option: " + arg + " could match " + strings.Join(names, ", ")
+		return nil, "неоднозначный параметр " + arg + ": подходят " + strings.Join(names, ", ")
 	}
 	if len(tuples) == 1 {
 		return &tuples[0], ""
@@ -343,7 +343,7 @@ func (c *Command) ParseArgs(args []string) (Namespace, *ArgExit) {
 		return nil, exit
 	}
 	if len(extras) > 0 {
-		return nil, c.fail("unrecognized arguments: " + strings.Join(extras, " "))
+		return nil, c.fail("неизвестные аргументы: " + strings.Join(extras, " "))
 	}
 	return result, nil
 }
@@ -402,14 +402,14 @@ func (c *Command) parseKnown(args []string) (Namespace, []string, *ArgExit) {
 		if action.Int {
 			number, ok := ParseIntText(values[0])
 			if !ok {
-				return c.fail("argument " + c.argumentName(index) + ": invalid int value: " + Repr(values[0]))
+				return c.fail("аргумент " + c.argumentName(index) + ": не целое число: " + Repr(values[0]))
 			}
 			value = number
 		}
 		if action.Float {
 			number, err := FloatFromString(values[0])
 			if err != nil {
-				return c.fail("argument " + c.argumentName(index) + ": invalid float value: " + Repr(values[0]))
+				return c.fail("аргумент " + c.argumentName(index) + ": не число: " + Repr(values[0]))
 			}
 			value = number
 		}
@@ -423,7 +423,7 @@ func (c *Command) parseKnown(args []string) (Namespace, []string, *ArgExit) {
 				for position, choice := range action.Choices {
 					quoted[position] = Repr(choice)
 				}
-				return c.fail("argument " + c.argumentName(index) + ": invalid choice: " + Repr(values[0]) + " (choose from " + strings.Join(quoted, ", ") + ")")
+				return c.fail("аргумент " + c.argumentName(index) + ": недопустимое значение " + Repr(values[0]) + " (допустимо: " + strings.Join(quoted, ", ") + ")")
 			}
 		}
 		if action.Kind == AppendValue {
@@ -506,7 +506,7 @@ func (c *Command) parseKnown(args []string) (Namespace, []string, *ArgExit) {
 				for position, choice := range c.choices() {
 					quoted[position] = Repr(choice)
 				}
-				return 0, c.fail("argument " + c.Dest + ": invalid choice: " + Repr(name) + " (choose from " + strings.Join(quoted, ", ") + ")")
+				return 0, c.fail("аргумент " + c.Dest + ": недопустимое значение " + Repr(name) + " (допустимо: " + strings.Join(quoted, ", ") + ")")
 			}
 			seen[c.Dest] = true
 			result[c.Dest] = name
@@ -540,7 +540,7 @@ func (c *Command) parseKnown(args []string) (Namespace, []string, *ArgExit) {
 				explicit := *current.explicit
 				if !takes && current.name[1] != '-' && explicit != "" {
 					if current.sep != "" || explicit[0] == '-' {
-						return 0, c.fail("argument " + c.argumentName(current.index) + ": ignored explicit argument " + Repr(explicit))
+						return 0, c.fail("аргумент " + c.argumentName(current.index) + ": лишнее значение " + Repr(explicit))
 					}
 					items = append(items, item{index: current.index})
 					first, size := utf8.DecodeRuneInString(explicit)
@@ -567,14 +567,14 @@ func (c *Command) parseKnown(args []string) (Namespace, []string, *ArgExit) {
 					stop = start + 1
 					break
 				}
-				return 0, c.fail("argument " + c.argumentName(current.index) + ": ignored explicit argument " + Repr(explicit))
+				return 0, c.fail("аргумент " + c.argumentName(current.index) + ": лишнее значение " + Repr(explicit))
 			}
 			count := 0
 			if takes {
 				if start+1 < len(args) && pattern[start+1] == 'A' {
 					count = 1
 				} else {
-					return 0, c.fail("argument " + c.argumentName(current.index) + ": expected one argument")
+					return 0, c.fail("аргумент " + c.argumentName(current.index) + ": нужно одно значение")
 				}
 			}
 			stop = start + 1 + count
@@ -632,7 +632,7 @@ func (c *Command) parseKnown(args []string) (Namespace, []string, *ArgExit) {
 		required = append(required, c.Dest)
 	}
 	if len(required) > 0 {
-		return nil, nil, c.fail("the following arguments are required: " + strings.Join(required, ", "))
+		return nil, nil, c.fail("обязательные аргументы: " + strings.Join(required, ", "))
 	}
 	return result, append(extras, subExtras...), nil
 }

@@ -11,17 +11,19 @@ import (
 
 // Строгий разбор JSON инструментов. Кроме стандартного JSON принимаются литералы NaN, Infinity и
 // -Infinity и повторные ключи; строка с управляющим символом и BOM в начале отвергаются. Ошибка —
-// JSONDecodeError с текстом причины и позицией («Expecting value: line 1 column 1 (char 0)»):
-// строка и столбец считаются с 1, char — индекс кодовой точки документа с 0. Тексты и позиции
+// JSONDecodeError с текстом причины и позицией («неверный JSON: ожидалось значение: строка 1,
+// столбец 1 (символ 0)»): строка и столбец считаются с 1, символ — индекс кодовой точки
+// документа с 0. Тексты и позиции
 // зафиксированы эталоном JSON (TestJSONGolden).
 
-// maxIntDigits — предел цифр целого литерала: более длинные целые JSON отвергаются ValueError.
+// maxIntDigits — предел цифр целого литерала: более длинные целые JSON отвергаются ValueError
+// «слишком длинное целое число».
 const maxIntDigits = 4300
 
 // stopIteration — внутренний сигнал сканера «здесь нет значения» с позицией.
 type stopIteration struct{ position int }
 
-func (s *stopIteration) Error() string { return "StopIteration" }
+func (s *stopIteration) Error() string { return "нет значения" }
 
 // scanner — разбор одной строки; runes — кодовые точки документа.
 type scanner struct{ runes []rune }
@@ -36,7 +38,7 @@ func (s *scanner) decodeError(message string, position int) error {
 			lastNewline = index
 		}
 	}
-	return Raise(JSONDecodeError, "%s: line %d column %d (char %d)", message, line, position-lastNewline, position)
+	return Raise(JSONDecodeError, "неверный JSON: %s: строка %d, столбец %d (символ %d)", message, line, position-lastNewline, position)
 }
 
 // LoadsJSON — разбор документа в значения модели пакета: дубликат ключа сохраняет первое место и
@@ -44,18 +46,18 @@ func (s *scanner) decodeError(message string, position int) error {
 func LoadsJSON(text string) (any, error) {
 	s := &scanner{runes: Runes(text)}
 	if len(s.runes) > 0 && s.runes[0] == 0xFEFF {
-		return nil, s.decodeError("Unexpected UTF-8 BOM (decode using utf-8-sig)", 0)
+		return nil, Raise(JSONDecodeError, "неверный JSON: метка порядка байтов в начале файла")
 	}
 	value, end, err := s.scan(s.skip(0))
 	if err != nil {
 		var stop *stopIteration
 		if errors.As(err, &stop) {
-			return nil, s.decodeError("Expecting value", stop.position)
+			return nil, s.decodeError("ожидалось значение", stop.position)
 		}
 		return nil, err
 	}
 	if end = s.skip(end); end != len(s.runes) {
-		return nil, s.decodeError("Extra data", end)
+		return nil, s.decodeError("лишние данные после JSON", end)
 	}
 	return value, nil
 }
@@ -141,7 +143,7 @@ func (s *scanner) scan(index int) (any, int, error) {
 func isDigit(r rune) bool { return r >= '0' && r <= '9' }
 
 // scanNumber — число: целое без ведущих нулей, необязательные дробь и экспонента
-// (экспонента без цифр откатывается и становится «Extra data»).
+// (экспонента без цифр откатывается и становится «лишние данные после JSON»).
 func (s *scanner) scanNumber(start int) (any, int, error) {
 	index, last := start, len(s.runes)-1
 	if s.runes[index] == '-' {
@@ -193,7 +195,7 @@ func (s *scanner) scanNumber(start int) (any, int, error) {
 		return value, index, nil
 	}
 	if digits := len(strings.TrimPrefix(text, "-")); digits > maxIntDigits {
-		return nil, 0, Raise(ValueError, "Exceeds the limit (%d digits) for integer string conversion: value has %d digits; use sys.set_int_max_str_digits() to increase the limit", maxIntDigits, digits)
+		return nil, 0, Raise(ValueError, "слишком длинное целое число: %d цифр, предел %d", digits, maxIntDigits)
 	}
 	value, _ := ParseInt(text)
 	return value, index, nil
@@ -227,11 +229,11 @@ func (s *scanner) scanString(end int) (string, int, error) {
 				break
 			}
 			if c <= 0x1f {
-				return "", 0, s.decodeError("Invalid control character at", next)
+				return "", 0, s.decodeError("управляющий символ в строке", next)
 			}
 		}
 		if next >= length {
-			return "", 0, s.decodeError("Unterminated string starting at", begin)
+			return "", 0, s.decodeError("незакрытая строка", begin)
 		}
 		for _, r := range s.runes[end:next] {
 			appendRune(&builder, r)
@@ -241,7 +243,7 @@ func (s *scanner) scanString(end int) (string, int, error) {
 			return builder.String(), next, nil
 		}
 		if next == length {
-			return "", 0, s.decodeError("Unterminated string starting at", begin)
+			return "", 0, s.decodeError("незакрытая строка", begin)
 		}
 		c = s.runes[next]
 		if c != 'u' {
@@ -259,19 +261,19 @@ func (s *scanner) scanString(end int) (string, int, error) {
 			case 't':
 				c = '\t'
 			default:
-				return "", 0, s.decodeError("Invalid \\escape", end-2)
+				return "", 0, s.decodeError("неверная escape-последовательность", end-2)
 			}
 		} else {
 			next++
 			end = next + 4
 			if end >= length {
-				return "", 0, s.decodeError("Invalid \\uXXXX escape", next-1)
+				return "", 0, s.decodeError("неверная последовательность \\uXXXX", next-1)
 			}
 			c = 0
 			for ; next < end; next++ {
 				digit := hexValue(s.runes[next])
 				if digit < 0 {
-					return "", 0, s.decodeError("Invalid \\uXXXX escape", end-5)
+					return "", 0, s.decodeError("неверная последовательность \\uXXXX", end-5)
 				}
 				c = c<<4 | digit
 			}
@@ -282,7 +284,7 @@ func (s *scanner) scanString(end int) (string, int, error) {
 				for ; next < end; next++ {
 					digit := hexValue(s.runes[next])
 					if digit < 0 {
-						return "", 0, s.decodeError("Invalid \\uXXXX escape", end-5)
+						return "", 0, s.decodeError("неверная последовательность \\uXXXX", end-5)
 					}
 					low = low<<4 | digit
 				}
@@ -307,7 +309,7 @@ func (s *scanner) scanObject(index int) (any, int, error) {
 	}
 	for {
 		if index > last || s.runes[index] != '"' {
-			return nil, 0, s.decodeError("Expecting property name enclosed in double quotes", index)
+			return nil, 0, s.decodeError("ожидалось имя поля в двойных кавычках", index)
 		}
 		key, next, err := s.scanString(index + 1)
 		if err != nil {
@@ -315,7 +317,7 @@ func (s *scanner) scanObject(index int) (any, int, error) {
 		}
 		index = s.skip(next)
 		if index > last || s.runes[index] != ':' {
-			return nil, 0, s.decodeError("Expecting ':' delimiter", index)
+			return nil, 0, s.decodeError("ожидалось двоеточие", index)
 		}
 		value, next, err := s.scan(s.skip(index + 1))
 		if err != nil {
@@ -327,7 +329,7 @@ func (s *scanner) scanObject(index int) (any, int, error) {
 			return object, index + 1, nil
 		}
 		if index > last || s.runes[index] != ',' {
-			return nil, 0, s.decodeError("Expecting ',' delimiter", index)
+			return nil, 0, s.decodeError("ожидалась запятая", index)
 		}
 		index = s.skip(index + 1)
 	}
@@ -352,7 +354,7 @@ func (s *scanner) scanArray(index int) (any, int, error) {
 			return items, index + 1, nil
 		}
 		if index > last || s.runes[index] != ',' {
-			return nil, 0, s.decodeError("Expecting ',' delimiter", index)
+			return nil, 0, s.decodeError("ожидалась запятая", index)
 		}
 		index = s.skip(index + 1)
 	}
@@ -427,7 +429,7 @@ func dump(builder *strings.Builder, value any, options DumpOptions, indent strin
 		switch {
 		case math.IsNaN(item) || math.IsInf(item, 0):
 			if options.RejectNaN {
-				return Raise(ValueError, "Out of range float values are not JSON compliant: %s", FloatRepr(item))
+				return Raise(ValueError, "в JSON нельзя записать %s", FloatRepr(item))
 			}
 			switch {
 			case math.IsNaN(item):
@@ -484,7 +486,7 @@ func dump(builder *strings.Builder, value any, options DumpOptions, indent strin
 		}
 		closing("}")
 	default:
-		return Raise(TypeError, "Object of type %T is not JSON serializable", value)
+		return Raise(TypeError, "в JSON нельзя записать значение вида %s", TypeName(value))
 	}
 	return nil
 }

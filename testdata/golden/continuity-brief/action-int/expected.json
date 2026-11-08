@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nTypeError: 'int' object is not subscriptable\n",
-  "traceback": true
+  "stderr": "Ошибка: 'целое число' object is not subscriptable\n",
+  "unhandled": true
 }

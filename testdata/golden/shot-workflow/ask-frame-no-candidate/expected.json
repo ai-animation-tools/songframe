@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "K02: у опоры нет кандидата для согласования.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

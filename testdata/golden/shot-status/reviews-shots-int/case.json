@@ -1,5 +1,5 @@
 {
-  "description": "shots пробы числом: TypeError — трассировка.",
+  "description": "shots пробы числом: TypeError — необработанная ошибка.",
   "call": "shot_status",
   "project": "project",
   "base": "checks-base",

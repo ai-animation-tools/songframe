@@ -1,8 +1,8 @@
 {
   "code": 0,
-  "stdout": "usage: shot_workflow [-h]\n                     {init,plan-keyframes,approve,approve-prompt,set-stage,set-image-request,select-image,park,propose,ask,decide,reopen,set-note,show,check}\n                     ...\n\nВедение workflow.json рабочего пакета плана: этапы, опоры, промпт, очередь;\n@link README.md\n\npositional arguments:\n  {init,plan-keyframes,approve,approve-prompt,set-stage,set-image-request,select-image,park,propose,ask,decide,reopen,set-note,show,check}\n\noptions:\n  -h, --help            show this help message and exit\n",
+  "stdout": "использование: shot_workflow [-h]\n                             {init,plan-keyframes,approve,approve-prompt,set-stage,set-image-request,select-image,park,propose,ask,decide,reopen,set-note,show,check}\n                             ...\n\nВедение workflow.json рабочего пакета плана: этапы, опоры, промпт, очередь;\n@link README.md\n\nаргументы:\n  {init,plan-keyframes,approve,approve-prompt,set-stage,set-image-request,select-image,park,propose,ask,decide,reopen,set-note,show,check}\n\nпараметры:\n  -h, --help            показать справку и выйти\n",
   "stderr": "",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

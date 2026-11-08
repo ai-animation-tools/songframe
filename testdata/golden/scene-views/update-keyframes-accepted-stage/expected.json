@@ -2,7 +2,7 @@
   "code": 0,
   "stdout": "Обновлено представлений: 0.\n",
   "stderr": "",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "recheck": {
     "code": 0,

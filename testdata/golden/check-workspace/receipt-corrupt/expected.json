@@ -2,5 +2,5 @@
   "code": 1,
   "stdout": "Принятых планов: 2.\n- plan/animatic/cards/manifest.json: квитанция карточек не совпадает с незавершёнными планами; обновите представления\nНесоответствий: 1.\n",
   "stderr": "",
-  "traceback": false
+  "unhandled": false
 }

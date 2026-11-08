@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Длительность запроса должна быть строго больше монтажного окна по правилу проекта.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

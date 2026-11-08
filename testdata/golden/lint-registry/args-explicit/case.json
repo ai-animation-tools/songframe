@@ -1,5 +1,5 @@
 {
-  "description": "--json=1: ignored explicit argument.",
+  "description": "--json=1: лишнее значение.",
   "call": "lint_registry",
   "project": "project",
   "base": "checks-base",

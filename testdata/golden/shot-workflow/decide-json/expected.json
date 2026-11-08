@@ -2,7 +2,7 @@
   "code": 0,
   "stdout": "{\"stage\": \"keyframes_review\", \"verdict\": \"revise\", \"note\": \"ё\", \"at\": \"2026-11-04T12:00:00+00:00\"}\n",
   "stderr": "",
-  "traceback": false,
+  "unhandled": false,
   "files": {
     "plan/batches/M03-attempt-01/workflow.json": "changed"
   },

@@ -2,5 +2,5 @@
   "code": 0,
   "stdout": "Кандидат next: M03.\nОчередь plan/awaiting: M04.\n",
   "stderr": "",
-  "traceback": false
+  "unhandled": false
 }

@@ -22,7 +22,7 @@ func AcceptedOptions(duration float64) Options {
 }
 
 // AcceptedEngine — идентификатор рецепта для ключа кэша emissions и журнала задания.
-const AcceptedEngine = "go-ctc-global-v2"
+const AcceptedEngine = "ctc-global-v2"
 
 // ToPCM16 переводит float32 в 16-битный PCM так же, как FFmpeg f32le→s16le: умножение на 2^15 точное,
 // округление к чётному, насыщение до [-32768, 32767]. Это граница «PCM16 stereo44100» рецепта.

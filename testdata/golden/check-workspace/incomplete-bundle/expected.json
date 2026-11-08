@@ -2,5 +2,5 @@
   "code": 1,
   "stdout": "Принятых планов: 2.\n- plan/batches/export-02: папка без плана-владельца; проверьте вручную\nНесоответствий: 1.\n",
   "stderr": "",
-  "traceback": false
+  "unhandled": false
 }

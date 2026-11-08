@@ -2,7 +2,7 @@
   "code": 0,
   "stdout": "Обновлено представлений: 4.\n",
   "stderr": "",
-  "traceback": false,
+  "unhandled": false,
   "files": {
     "ROADMAP.md": "created",
     "assets/shots/M01/README.md": "created",

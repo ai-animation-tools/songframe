@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nValueError: M01: изменился файл комплекта original.mp4\n",
-  "traceback": true
+  "stderr": "Ошибка: M01: изменился файл комплекта original.mp4\n",
+  "unhandled": true
 }

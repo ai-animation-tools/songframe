@@ -3,7 +3,7 @@
   "call": "project_battery",
   "project": "project",
   "covers": [
-    "Unexpected UTF-8 BOM"
+    "метка порядка байтов в начале файла"
   ],
   "stubbedMedia": [
     "assets/shots/M01/video.mp4",

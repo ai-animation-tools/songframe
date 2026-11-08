@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Ошибка файлов пакета; сырой вывод скрыт.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

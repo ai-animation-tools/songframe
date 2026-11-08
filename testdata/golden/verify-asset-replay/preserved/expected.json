@@ -2,7 +2,7 @@
   "code": 0,
   "stdout": "M02 воспроизведён RMS=0.000\nM01 воспроизведён RMS=0.000\nПроверка всех принятых комплектов завершена.\n",
   "stderr": "",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {},

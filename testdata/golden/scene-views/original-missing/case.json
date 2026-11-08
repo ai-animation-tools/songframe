@@ -1,5 +1,5 @@
 {
-  "description": "План без original: KeyError — трассировка.",
+  "description": "План без original: KeyError — необработанная ошибка.",
   "call": "update_scene_views",
   "project": "project",
   "base": "checks-base",

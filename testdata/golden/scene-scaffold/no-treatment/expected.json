@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Нет plan/treatment.json: сначала трактовка (первый проход сценария).\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {
     "plan/scenes.json": "unchanged"
   }

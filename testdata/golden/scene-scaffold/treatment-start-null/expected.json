@@ -1,8 +1,8 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nTypeError: float() argument must be a string or a real number, not 'NoneType'\n",
-  "traceback": true,
+  "stderr": "Ошибка: ожидается число или строка, получено: null\n",
+  "unhandled": true,
   "files": {
     "plan/scenes.json": "unchanged"
   }

@@ -2,5 +2,5 @@
   "code": 0,
   "stdout": "Состояние на последний кадр M04 (Мира поднимает фонарик, Лев улыбается.)\n\nboat: dirt: покрыта каплями; sink: у края причала.\nmira: position: стоит у края причала; clothes condition: яркая куртка.\n",
   "stderr": "",
-  "traceback": false
+  "unhandled": false
 }

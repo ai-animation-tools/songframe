@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Папка пакета уже содержит файлы; выберите новую.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

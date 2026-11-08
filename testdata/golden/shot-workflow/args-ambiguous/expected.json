@@ -1,8 +1,8 @@
 {
   "code": 2,
   "stdout": "",
-  "stderr": "usage: shot_workflow decide [-h] --dir DIR --verdict\n                            {approve,revise,send,park,accept,retry,review}\n                            [--note NOTE] [--note-scope {frame,following}]\n                            [--json]\nshot_workflow decide: error: ambiguous option: --no could match --note, --note-scope\n",
-  "traceback": false,
+  "stderr": "использование: shot_workflow decide [-h] --dir DIR --verdict\n                                    {approve,revise,send,park,accept,retry,review}\n                                    [--note NOTE]\n                                    [--note-scope {frame,following}] [--json]\nshot_workflow decide: ошибка: неоднозначный параметр --no: подходят --note, --note-scope\n",
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

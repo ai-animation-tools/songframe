@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Длительность запроса задаётся целым числом секунд.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

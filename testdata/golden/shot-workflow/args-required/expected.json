@@ -1,8 +1,8 @@
 {
   "code": 2,
   "stdout": "",
-  "stderr": "usage: shot_workflow init [-h] --dir DIR [--mode {shot,frame}] [--batch BATCH]\n                          [--retry-of RETRY_OF]\n                          shot\nshot_workflow init: error: the following arguments are required: shot, --dir\n",
-  "traceback": false,
+  "stderr": "использование: shot_workflow init [-h] --dir DIR [--mode {shot,frame}]\n                                  [--batch BATCH] [--retry-of RETRY_OF]\n                                  shot\nshot_workflow init: ошибка: обязательные аргументы: shot, --dir\n",
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

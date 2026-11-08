@@ -1,7 +1,7 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nTypeError: list indices must be integers or slices, not str\n",
-  "traceback": true,
+  "stderr": "Ошибка: индекс списка должен быть целым числом, получено: строка\n",
+  "unhandled": true,
   "cards": null
 }

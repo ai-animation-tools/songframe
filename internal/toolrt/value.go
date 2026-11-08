@@ -7,14 +7,14 @@
 // Модель отдельна от dynvalue, потому что правила здесь другие: целое и дробное — разные типы
 // (7 и 7.0 записываются по-разному, проверка «точно целое» отвергает 7.0), дробные числа
 // печатаются кратчайшей точной записью FloatRepr, ключи сравниваются по кодовым точкам, а тексты
-// исключений (KeyError: 'start', запись словаря в сообщении) попадают в stderr инструмента,
+// исключений (нет ключа 'start', запись словаря в сообщении) попадают в stderr инструмента,
 // который показывает интерфейс. Чтобы файлы и сообщения совпадали с эталонами байт в байт,
 // инструменты работают на значениях этого пакета.
 //
-// Модель значений: nil (None), bool, Int (целое), float64 (дробное), string (строка; одиночные
-// суррогаты хранятся в WTF-8), []any (список), *Dict (словарь со строковыми ключами в порядке
-// вставки). В скобках — имена типов, которые выводят сообщения об ошибках (TypeName). Ошибки —
-// *Exception с типом и текстом сообщения.
+// Модель значений: nil (null), bool (логическое значение), Int (целое число), float64 (дробное
+// число), string (строка; одиночные суррогаты хранятся в WTF-8), []any (список), *Dict (объект:
+// словарь со строковыми ключами в порядке вставки). В скобках — названия видов значений в
+// сообщениях об ошибках (TypeName). Ошибки — *Exception с типом и текстом сообщения.
 package toolrt
 
 import (
@@ -67,12 +67,12 @@ func (i Int) Int64() (int64, bool) {
 func (i Int) Sign() int { return i.Big().Sign() }
 
 // Float — приведение целого к дробному: корректно округлённое значение; целое вне диапазона
-// float64 — OverflowError.
+// float64 — OverflowError «слишком большое число».
 func (i Int) Float() (float64, error) {
 	// SetInt хранит целое точно, Float64 округляет к ближайшему с половиной к чётному.
 	value, _ := new(big.Float).SetInt(i.Big()).Float64()
 	if math.IsInf(value, 0) {
-		return 0, Raise(OverflowError, "int too large to convert to float")
+		return 0, Raise(OverflowError, "слишком большое число")
 	}
 	return value, nil
 }
@@ -96,7 +96,7 @@ func (d *Dict) Get(key string) (any, bool) {
 	return value, ok
 }
 
-// Value — значение по ключу; отсутствующий ключ — nil (None).
+// Value — значение по ключу; отсутствующий ключ — nil (null).
 // Методы чтения допускают nil-словарь (как пустой): так проверка «это словарь и в нём есть
 // значение» записывается без отдельной ветки для не-словаря.
 func (d *Dict) Value(key string) any {
@@ -181,26 +181,28 @@ func DeepCopy(value any) any {
 	return value
 }
 
-// TypeName — имя типа значения в сообщениях TypeError (NoneType, bool, int, float, str, list,
-// dict).
+// TypeName — вид значения в сообщениях об ошибках: null, логическое значение, целое число,
+// дробное число, строка, список, объект, десятичное число; прочее — «значение».
 func TypeName(value any) string {
 	switch value.(type) {
 	case nil:
-		return "NoneType"
+		return "null"
 	case bool:
-		return "bool"
+		return "логическое значение"
 	case Int:
-		return "int"
+		return "целое число"
 	case float64:
-		return "float"
+		return "дробное число"
 	case string:
-		return "str"
+		return "строка"
 	case []any:
-		return "list"
+		return "список"
 	case *Dict:
-		return "dict"
+		return "объект"
+	case Decimal:
+		return "десятичное число"
 	}
-	return "object"
+	return "значение"
 }
 
 // Truthy — истинность значения: ложны None, False, нулевые числа, пустые строка, список и
@@ -365,7 +367,7 @@ func equal(left, right any, inContainer bool) bool {
 }
 
 // HashKey — ключ множества или словаря для значения любого хешируемого типа: равные числа разных
-// типов (1, 1.0, True) дают один ключ. Список и словарь — TypeError unhashable type.
+// типов (1, 1.0, True) дают один ключ. Список и словарь — TypeError «нельзя использовать как ключ».
 func HashKey(value any) (string, error) {
 	switch item := value.(type) {
 	case nil:
@@ -382,5 +384,5 @@ func HashKey(value any) (string, error) {
 		}
 		return "f" + strconv.FormatFloat(item, 'g', -1, 64), nil
 	}
-	return "", Raise(TypeError, "unhashable type: '%s'", TypeName(value))
+	return "", Raise(TypeError, "нельзя использовать как ключ: %s", TypeName(value))
 }

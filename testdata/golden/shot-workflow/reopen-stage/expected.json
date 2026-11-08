@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "На этапе image_submitted опору вернуть нельзя: сначала завершите текущую отправку изображения и выберите её результат.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

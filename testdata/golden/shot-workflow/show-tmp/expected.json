@@ -2,7 +2,7 @@
   "code": 0,
   "stdout": "{\n  \"directory\": \"<tmp>/M04\",\n  \"shot\": \"M04\",\n  \"mode\": \"shot\",\n  \"stage\": \"description_review\",\n  \"stage_label\": \"описание на согласовании\",\n  \"wait_reason\": null,\n  \"batch\": null,\n  \"current_keyframe\": null,\n  \"timing\": {\n    \"fps\": 30,\n    \"frames\": 120,\n    \"window_seconds\": 4.0,\n    \"request_seconds\": null\n  },\n  \"keyframes\": [],\n  \"prompt\": {\n    \"path\": \"video-prompt.txt\",\n    \"approved\": false\n  },\n  \"request_dir\": null,\n  \"attempt_status\": null,\n  \"image_request_dir\": null,\n  \"image_frame_id\": null,\n  \"image_requests\": [],\n  \"image_attempt_status\": null,\n  \"description_approved\": false,\n  \"keyframe_notes\": [],\n  \"pending_decision\": null,\n  \"decision\": null,\n  \"problems\": [],\n  \"next_action\": \"согласуйте описание, затем plan-keyframes и approve\"\n}\n",
   "stderr": "",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

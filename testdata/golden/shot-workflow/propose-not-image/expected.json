@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Кандидат опоры должен быть существующим изображением.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

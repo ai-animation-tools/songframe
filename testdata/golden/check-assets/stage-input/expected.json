@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nValueError: Не сохранён вход или фильтр этапа воспроизведения.\n",
-  "traceback": true
+  "stderr": "Ошибка: Не сохранён вход или фильтр этапа воспроизведения.\n",
+  "unhandled": true
 }

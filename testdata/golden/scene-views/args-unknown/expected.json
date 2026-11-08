@@ -1,8 +1,8 @@
 {
   "code": 2,
   "stdout": "",
-  "stderr": "usage: update_scene_views [-h] [--check]\nupdate_scene_views: error: unrecognized arguments: --bogus\n",
-  "traceback": false,
+  "stderr": "использование: update_scene_views [-h] [--check]\nupdate_scene_views: ошибка: неизвестные аргументы: --bogus\n",
+  "unhandled": false,
   "files": {},
   "recheck": {
     "code": 0,

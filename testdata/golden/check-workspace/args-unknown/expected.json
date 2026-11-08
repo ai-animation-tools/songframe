@@ -1,6 +1,6 @@
 {
   "code": 2,
   "stdout": "",
-  "stderr": "usage: check_workspace [-h] [--json]\ncheck_workspace: error: unrecognized arguments: --x\n",
-  "traceback": false
+  "stderr": "использование: check_workspace [-h] [--json]\ncheck_workspace: ошибка: неизвестные аргументы: --x\n",
+  "unhandled": false
 }

@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Для изображения нужен относительный путь подготовленного запроса.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

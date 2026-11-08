@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "В кастинге нет сущностей с изображениями: карточкам планов нужен хотя бы один референс.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {
     "plan/scenes.json": "unchanged"
   }

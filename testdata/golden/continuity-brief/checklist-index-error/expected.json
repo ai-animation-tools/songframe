@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nIndexError: Replacement index 0 out of range for positional args tuple\n",
-  "traceback": true
+  "stderr": "Ошибка: Replacement index 0 out of range for positional args tuple\n",
+  "unhandled": true
 }

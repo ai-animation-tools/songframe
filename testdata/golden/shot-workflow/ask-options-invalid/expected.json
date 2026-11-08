@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Варианты ответа: approve, revise, send, park, accept, retry, review\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

@@ -2,7 +2,7 @@
   "code": 2,
   "stdout": "",
   "stderr": "Папка проекта не найдена: <project> (источник: argument).\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Устарели представления: plan/animatic/cards/M03.png, plan/animatic/cards/M03.last.png, plan/animatic/cards/manifest.json\n",
-  "traceback": false,
+  "unhandled": false,
   "cards": [
     "plan/animatic/cards/M03.png",
     "plan/animatic/cards/M03.last.png",

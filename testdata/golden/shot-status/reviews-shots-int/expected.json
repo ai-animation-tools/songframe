@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nTypeError: 'int' object is not iterable\n",
-  "traceback": true
+  "stderr": "Ошибка: нельзя перебрать: целое число\n",
+  "unhandled": true
 }

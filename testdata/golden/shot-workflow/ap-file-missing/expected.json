@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Файл промпта должен лежать в пакете.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

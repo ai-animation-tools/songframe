@@ -1,5 +1,5 @@
 {
-  "description": "Нет видео комплекта: ValueError «Нет материала» — трассировка.",
+  "description": "Нет видео комплекта: ValueError «Нет материала» — необработанная ошибка.",
   "call": "update_scene_views",
   "project": "project",
   "base": "checks-base",

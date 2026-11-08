@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nValueError: В комплекте отсутствуют кадры или промпт генерации.\n",
-  "traceback": true
+  "stderr": "Ошибка: В комплекте отсутствуют кадры или промпт генерации.\n",
+  "unhandled": true
 }

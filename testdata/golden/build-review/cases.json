@@ -19,7 +19,7 @@
         "steps": [
           {
             "code": 0,
-            "stdout": "usage: build_review [-h] (--shots SHOTS [SHOTS ...] | --spec SPEC) --output\n                    OUTPUT [--plan-only]\n\nСборка временной пробы по параметрам; @link README.md\n\noptions:\n  -h, --help            show this help message and exit\n  --shots SHOTS [SHOTS ...]\n  --spec SPEC\n  --output OUTPUT\n  --plan-only\n",
+            "stdout": "usage: build_review [-h] (--shots SHOTS [SHOTS ...] | --spec SPEC) --output\n                    OUTPUT [--plan-only]\n\nСборка временной пробы по параметрам; @link README.md\n\nпараметры:\n  -h, --help            показать справку и выйти\n  --shots SHOTS [SHOTS ...]\n  --spec SPEC\n  --output OUTPUT\n  --plan-only\n",
             "stderr": ""
           }
         ],
@@ -105,7 +105,7 @@
           {
             "code": 2,
             "stdout": "",
-            "stderr": "usage: build_review [-h] (--shots SHOTS [SHOTS ...] | --spec SPEC) --output\n                    OUTPUT [--plan-only]\nbuild_review: error: argument --spec: not allowed with argument --shots\n"
+            "stderr": "usage: build_review [-h] (--shots SHOTS [SHOTS ...] | --spec SPEC) --output\n                    OUTPUT [--plan-only]\nbuild_review: ошибка: аргумент --spec: нельзя вместе с --shots\n"
           }
         ],
         "changed": {},
@@ -1899,7 +1899,7 @@
       "name": "spec-list",
       "description": "Спецификация — список: AttributeError.",
       "covers": [
-        "traceback"
+        "необработанная ошибка"
       ],
       "setup": [
         {
@@ -1924,7 +1924,7 @@
           {
             "code": 1,
             "stdout": "",
-            "stderr": "Traceback (most recent call last):\nAttributeError: 'list' object has no attribute 'get'\n"
+            "stderr": "Ошибка: ожидается объект, получено: список\n"
           }
         ],
         "changed": {},

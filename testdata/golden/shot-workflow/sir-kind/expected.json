@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Нужен подготовленный запрос kind=image.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

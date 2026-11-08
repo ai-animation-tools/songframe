@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Сначала подтвердите отдельный запрос изображения ответом send.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

@@ -1,8 +1,8 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "'end'\n",
-  "traceback": false,
+  "stderr": "нет ключа 'end'\n",
+  "unhandled": false,
   "files": {
     "plan/scenes.json": "unchanged"
   }

@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nValueError: Комплект относится к другому плану.\n",
-  "traceback": true
+  "stderr": "Ошибка: Комплект относится к другому плану.\n",
+  "unhandled": true
 }

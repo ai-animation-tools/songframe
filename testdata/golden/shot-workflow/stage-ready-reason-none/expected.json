@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Для этапа очереди укажите причину ожидания: user_saved, insufficient_balance, cost_or_balance_unknown\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

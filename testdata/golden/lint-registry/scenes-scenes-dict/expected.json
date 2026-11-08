@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nAttributeError: 'str' object has no attribute 'get'\n",
-  "traceback": true
+  "stderr": "Ошибка: ожидается объект, получено: строка\n",
+  "unhandled": true
 }

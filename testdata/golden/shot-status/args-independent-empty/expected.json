@@ -1,6 +1,6 @@
 {
   "code": 2,
   "stdout": "",
-  "stderr": "usage: shot_status [-h]\n                   [--filter {all,planned,progress,completed,stale,unknown}]\n                   [--json] [--next] [--independent Mxx [Mxx ...]]\nshot_status: error: argument --independent: expected at least one argument\n",
-  "traceback": false
+  "stderr": "использование: shot_status [-h]\n                           [--filter {all,planned,progress,completed,stale,unknown}]\n                           [--json] [--next] [--independent Mxx [Mxx ...]]\nshot_status: ошибка: аргумент --independent: нужно хотя бы одно значение\n",
+  "unhandled": false
 }

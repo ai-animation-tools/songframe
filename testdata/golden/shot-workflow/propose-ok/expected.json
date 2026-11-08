@@ -2,7 +2,7 @@
   "code": 0,
   "stdout": "K02 предложена как кандидат; ждёт решения пользователя.\n",
   "stderr": "",
-  "traceback": false,
+  "unhandled": false,
   "files": {
     "plan/batches/M03-attempt-01/frames/K02.png": "created",
     "plan/batches/M03-attempt-01/workflow.json": "changed"

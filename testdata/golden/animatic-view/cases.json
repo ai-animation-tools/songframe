@@ -5011,12 +5011,12 @@
         },
         {
           "op": "view",
-          "error": "Cannot read properties of null (reading 'id')"
+          "error": "нет поля 'id': значение null"
         },
         {
           "op": "setStatus",
           "status": null,
-          "error": "Cannot read properties of null (reading 'id')",
+          "error": "нет поля 'id': значение null",
           "decision": "review"
         }
       ]
@@ -5041,7 +5041,7 @@
         },
         {
           "op": "view",
-          "error": "The \"path\" argument must be of type string. Received type number (5)"
+          "error": "путь должен быть строкой"
         }
       ]
     },

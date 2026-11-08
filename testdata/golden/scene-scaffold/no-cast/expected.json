@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Нет plan/cast.json: создайте кастинг (cast_registry init или страница «Кастинг»).\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {
     "plan/scenes.json": "unchanged"
   }

@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Промежуточная опора должна лежать внутри длительности запроса.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

@@ -1,6 +1,6 @@
 {
   "code": 2,
   "stdout": "",
-  "stderr": "usage: continuity_brief [-h] [--phase {before,after}] [--json] [--paragraph]\n                        shot\ncontinuity_brief: error: argument --json: ignored explicit argument '1'\n",
-  "traceback": false
+  "stderr": "использование: continuity_brief [-h] [--phase {before,after}] [--json]\n                                [--paragraph]\n                                shot\ncontinuity_brief: ошибка: аргумент --json: лишнее значение '1'\n",
+  "unhandled": false
 }

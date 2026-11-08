@@ -2,7 +2,7 @@
   "code": 0,
   "stdout": "План M03 · режим shot · этап: опоры на согласовании (`keyframes_review`)\nОкно 4.0 с (120 кадров), запрос 6 с\n\n| Опора | Роль | Время, с | Принята | Файл |\n| --- | --- | --- | --- | --- |\n| K01 | first | 0 | нет | — |\n| K02 | last | 6 | нет | — |\n\nПромпт: не принят\nДальше: примите опоры: approve ID ПУТЬ; затем approve-prompt\n",
   "stderr": "",
-  "traceback": false,
+  "unhandled": false,
   "files": {
     "plan/batches/M03-attempt-01/workflow.json": "changed"
   },

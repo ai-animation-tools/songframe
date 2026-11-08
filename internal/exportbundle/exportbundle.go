@@ -64,7 +64,7 @@ func parseArgs(args []string) (toolrt.Args, *toolcli.Output) {
 	}
 	if exit != nil {
 		// Об отсутствии обязательной опции сообщается раньше, чем о лишних аргументах.
-		if exit.Code == 2 && strings.Contains(exit.Stderr, ": error: unrecognized arguments: ") && !namesOut(args) {
+		if exit.Code == 2 && strings.Contains(exit.Stderr, ": ошибка: неизвестные аргументы: ") && !namesOut(args) {
 			return toolrt.Args{}, required()
 		}
 		exit.Stdout = strings.Replace(exit.Stdout, optionalOut, requiredOut, 1)

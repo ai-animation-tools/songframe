@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nValueError: Общий референс должен быть изображением из source.\n",
-  "traceback": true
+  "stderr": "Ошибка: Общий референс должен быть изображением из source.\n",
+  "unhandled": true
 }

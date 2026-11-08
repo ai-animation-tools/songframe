@@ -1,5 +1,5 @@
 {
-  "description": "plan/production-status.json списком: TypeError — трассировка.",
+  "description": "plan/production-status.json списком: TypeError — необработанная ошибка.",
   "call": "update_scene_views",
   "project": "project",
   "base": "checks-base",

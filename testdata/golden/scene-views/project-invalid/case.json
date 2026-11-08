@@ -1,5 +1,5 @@
 {
-  "description": "plan/project.json без названия: трассировка ValueError.",
+  "description": "plan/project.json без названия: необработанная ошибка ValueError.",
   "call": "update_scene_views",
   "project": "project",
   "base": "checks-base",

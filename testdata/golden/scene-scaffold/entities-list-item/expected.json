@@ -1,8 +1,8 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nTypeError: unhashable type: 'list'\n",
-  "traceback": true,
+  "stderr": "Ошибка: нельзя использовать как ключ: список\n",
+  "unhandled": true,
   "files": {
     "plan/scenes.json": "unchanged"
   }

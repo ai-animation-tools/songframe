@@ -1,7 +1,7 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nKeyError: 'original'\n",
-  "traceback": true,
+  "stderr": "Ошибка: нет ключа 'original'\n",
+  "unhandled": true,
   "cards": null
 }

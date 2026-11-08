@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nValueError: В производном комплекте нужен source_scene_sha256: SHA постановки источника либо null для неизвестной версии.\n",
-  "traceback": true
+  "stderr": "Ошибка: В производном комплекте нужен source_scene_sha256: SHA постановки источника либо null для неизвестной версии.\n",
+  "unhandled": true
 }

@@ -125,7 +125,7 @@
         "code": 0,
         "stdout": "{\n  \"reports\": [\n    {\n      \"command\": \"text_to_video\",\n      \"models\": {\n        \"test-video\": {\n          \"arguments\": {\n            \"duration\": {\n              \"default\": \"5\",\n              \"allowed\": [\n                \"3\",\n                \"4\",\n                \"5\",\n                \"6\",\n                \"8\",\n                \"10\"\n              ]\n            },\n            \"resolution\": {\n              \"default\": \"1080p\",\n              \"allowed\": [\n                \"720p\",\n                \"1080p\"\n              ]\n            },\n            \"aspect_ratio\": {\n              \"default\": \"16:9\",\n              \"allowed\": [\n                \"16:9\",\n                \"9:16\",\n                \"1:1\"\n              ]\n            }\n          },\n          \"slots\": {},\n          \"limits\": {}\n        }\n      }\n    },\n    {\n      \"command\": \"image_to_video\",\n      \"models\": {\n        \"test-video\": {\n          \"arguments\": {\n            \"duration\": {\n              \"default\": \"5\",\n              \"allowed\": [\n                \"3\",\n                \"4\",\n                \"5\",\n                \"6\",\n                \"8\",\n                \"10\"\n              ]\n            },\n            \"resolution\": {\n              \"default\": \"1080p\",\n              \"allowed\": [\n                \"720p\",\n                \"1080p\"\n              ]\n            },\n            \"aspect_ratio\": {\n              \"default\": \"16:9\",\n              \"allowed\": [\n                \"16:9\",\n                \"9:16\",\n                \"1:1\"\n              ]\n            }\n          },\n          \"slots\": {\n            \"first_image\": {\n              \"required\": true\n            },\n            \"tail_image\": {\n              \"required\": false\n            }\n          },\n          \"limits\": {}\n        }\n      }\n    }\n  ],\n  \"problems\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"capabilities\", \"kind\": \"video\"}"
@@ -146,7 +146,7 @@
         "code": 0,
         "stdout": "text_to_image: test-image\nimage_to_image: test-image\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"capabilities\", \"kind\": \"image\"}"
@@ -167,7 +167,7 @@
         "code": 0,
         "stdout": "image_to_video: —\nmotion_control: Команда недоступна.\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"capabilities\", \"kind\": \"video\"}"
@@ -188,7 +188,7 @@
         "code": 0,
         "stdout": "{\n  \"reports\": [\n    {\n      \"command\": \"image_to_video\",\n      \"models\": {}\n    }\n  ],\n  \"problems\": [\n    {\n      \"command\": \"motion_control\",\n      \"message\": \"Команда недоступна.\"\n    }\n  ]\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"capabilities\", \"kind\": \"video\"}"
@@ -209,7 +209,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Тестовый сервис не подтвердил возможности.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"capabilities\", \"kind\": \"video\"}"
@@ -230,7 +230,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Для провайдера генерации 'x' нет адаптера: укажите provider подключённого сервиса.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -323,7 +323,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -350,7 +350,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-02/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -384,7 +384,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Нужна новая папка попытки; существующая не перезаписывается.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -418,7 +418,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"prepared\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -498,7 +498,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    },\n    {\n      \"flag\": \"input\",\n      \"slot\": \"tail_image\",\n      \"role\": \"last\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    },\n    {\n      \"flag\": \"input\",\n      \"path\": \"inputs/03.png\",\n      \"sha256\": \"d9298a10d1b0735837dc4bd85dac641b0f3cef27a47e5d53a54f2f3f5b2fcffa\",\n      \"bytes\": 5\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"69601d1eb0f875c11dab39f5b0905cceaadd1134cc5a33b50c7b5d7cff122e9a\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -569,7 +569,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"model_selection\": {\n    \"preferredModel\": \"preferred-model\",\n    \"selectedModel\": \"test-video\",\n    \"reason\": \"  Предпочитаемая модель не поддерживает длительность.  \"\n  },\n  \"request_sha256\": \"2dab923255ea1aa09d875f82f5fd6c633cf3bf947a14271be5e5b9abf44010b8\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -638,7 +638,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Для провайдера генерации 'OtherService' нет адаптера: укажите provider подключённого сервиса.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -699,7 +699,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Поле provider должно быть непустой строкой.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -760,7 +760,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Поле provider должно быть непустой строкой.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -821,7 +821,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Промпт пуст.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -882,7 +882,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Ошибка локальных данных или файлов; сырой вывод скрыт.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -943,7 +943,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Ошибка локальных данных или файлов; сырой вывод скрыт.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -1004,7 +1004,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Хеш входа отличается от указанного в запросе.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -1067,7 +1067,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Ошибка локальных данных или файлов; сырой вывод скрыт.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -1130,7 +1130,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Ошибка локальных данных или файлов; сырой вывод скрыт.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -1191,7 +1191,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "model_selection должен содержать только preferredModel, selectedModel и reason.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -1252,7 +1252,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Рабочая папка должна находиться внутри plan/batches, plan/awaiting, plan/reference-images или временной папки ОС.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -1313,7 +1313,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Рабочая папка должна находиться внутри plan/batches, plan/awaiting, plan/reference-images или временной папки ОС.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -1374,7 +1374,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Рабочая папка должна находиться внутри plan/batches, plan/awaiting, plan/reference-images или временной папки ОС.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -1435,7 +1435,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Рабочая папка должна находиться внутри plan/batches, plan/awaiting, plan/reference-images или временной папки ОС.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -1496,7 +1496,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<tmp>/attempt\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -1563,7 +1563,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/awaiting/M32/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -1701,7 +1701,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -1728,7 +1728,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Нужно подтверждение SHA-256 именно подготовленного запроса.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -1756,7 +1756,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"generation_id\": \"job-123\",\n  \"credits_consumed\": 12\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\", \"provider\": \"test\", \"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -1786,7 +1786,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Эта попытка уже отправлялась; используйте resume. При неизвестной отправке повтор запрещён.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -1814,7 +1814,7 @@
         "code": 0,
         "stdout": "{\n  \"credits_consumed\": 12,\n  \"downloads\": [],\n  \"generation_id\": \"job-123\",\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -1842,7 +1842,7 @@
         "code": 0,
         "stdout": "{\n  \"credits_consumed\": 12,\n  \"downloads\": [\n    {\n      \"number\": 1,\n      \"path\": \"original.mp4\",\n      \"bytes\": 32\n    }\n  ],\n  \"generation_id\": \"job-123\",\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"downloaded\",\n  \"service_status\": \"completed\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"job-123\"}",
@@ -1874,7 +1874,7 @@
         "code": 0,
         "stdout": "{\n  \"credits_consumed\": 12,\n  \"downloads\": [\n    {\n      \"bytes\": 32,\n      \"number\": 1,\n      \"path\": \"original.mp4\"\n    }\n  ],\n  \"generation_id\": \"job-123\",\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"service_status\": \"completed\",\n  \"status\": \"downloaded\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -1989,7 +1989,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -2016,7 +2016,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"generation_id\": \"test-generation-1\",\n  \"credits_consumed\": 12.5\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\", \"provider\": \"test\", \"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -2046,7 +2046,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/b/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -2081,7 +2081,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"generation_id\": \"test-generation-2\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/b/request\", \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\", \"provider\": \"test\", \"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -2229,7 +2229,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -2256,7 +2256,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Исход отправки неизвестен. Не повторяйте запрос; выясните ID задания и продолжите через resume.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\", \"provider\": \"test\", \"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -2286,7 +2286,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Эта попытка уже отправлялась; используйте resume. При неизвестной отправке повтор запрещён.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -2314,7 +2314,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Нет ID задания; отправку через resume выполнить нельзя.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -2341,8 +2341,8 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: media_request resume [-h] --work-dir WORK_DIR [--timeout TIMEOUT]\n                            [--generation-id GENERATION_ID]\n                            [--wait-seconds WAIT_SECONDS]\n                            [--interval INTERVAL]\nmedia_request resume: error: argument --generation-id: expected one argument\n",
-        "traceback": false,
+        "stderr": "использование: media_request resume [-h] --work-dir WORK_DIR\n                                    [--timeout TIMEOUT]\n                                    [--generation-id GENERATION_ID]\n                                    [--wait-seconds WAIT_SECONDS]\n                                    [--interval INTERVAL]\nmedia_request resume: ошибка: аргумент --generation-id: нужно одно значение\n",
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -2370,7 +2370,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [\n    {\n      \"number\": 1,\n      \"path\": \"original.mp4\",\n      \"bytes\": 32\n    }\n  ],\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"downloaded\",\n  \"generation_id\": \"job-123\",\n  \"service_status\": \"completed\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"job-123\"}",
@@ -2402,7 +2402,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "У попытки уже другой ID.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -2489,7 +2489,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -2516,7 +2516,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Исход отправки неизвестен. Не повторяйте запрос; выясните ID задания и продолжите через resume.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\", \"provider\": \"test\", \"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -2619,7 +2619,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -2646,7 +2646,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Сервис отклонил запрос до оплаты: HTTP 400: неверная длина звука Генерация не создана, кредиты не списаны.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\", \"provider\": \"test\", \"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -2676,7 +2676,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"last_rejection\": \"HTTP 400: неверная длина звука\",\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"generation_id\": \"test-generation-2\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\", \"provider\": \"test\", \"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -2762,7 +2762,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -2789,7 +2789,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Тестовый сервис недоступен; отправка не начиналась.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\", \"provider\": \"test\", \"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -2968,7 +2968,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -2995,7 +2995,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Таймаут должен быть положительным.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -3022,7 +3022,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Таймаут должен быть положительным.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -3049,7 +3049,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Таймаут должен быть положительным.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -3076,7 +3076,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Таймаут должен быть положительным.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -3103,7 +3103,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Ручное восстановление ID разрешено только после неизвестной отправки.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -3131,7 +3131,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Ожидание ограничено 60 секундами; интервал — от 1 до 60.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -3159,7 +3159,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Ожидание ограничено 60 секундами; интервал — от 1 до 60.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -3187,7 +3187,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Таймаут должен быть положительным.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -3215,7 +3215,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Нет ID задания; отправку через resume выполнить нельзя.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -3332,7 +3332,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -3359,7 +3359,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Исход отправки неизвестен. Не повторяйте запрос; выясните ID задания и продолжите через resume.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\", \"provider\": \"test\", \"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -3389,7 +3389,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"prepared\",\n  \"unknown_outcomes\": [\n    {\n      \"resolution\": \"not_created\",\n      \"at\": \"<time>\"\n    }\n  ]\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -3417,7 +3417,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"unknown_outcomes\": [\n    {\n      \"at\": \"<time>\",\n      \"resolution\": \"not_created\"\n    }\n  ],\n  \"generation_id\": \"test-generation-2\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\", \"provider\": \"test\", \"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -3447,7 +3447,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Действие доступно только попытке с неизвестным исходом отправки и без ID задания.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -3566,7 +3566,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -3595,7 +3595,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Исход отправки неизвестен. Не повторяйте запрос; выясните ID задания и продолжите через resume.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\", \"provider\": \"test\", \"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -3627,7 +3627,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [\n    {\n      \"number\": 1,\n      \"path\": \"original.mp4\",\n      \"bytes\": 24\n    }\n  ],\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"downloaded\",\n  \"manual_result\": true,\n  \"unknown_outcomes\": [\n    {\n      \"resolution\": \"manual_result\",\n      \"at\": \"<time>\"\n    }\n  ]\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -3658,7 +3658,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [\n    {\n      \"bytes\": 24,\n      \"number\": 1,\n      \"path\": \"original.mp4\"\n    }\n  ],\n  \"manual_result\": true,\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"downloaded\",\n  \"unknown_outcomes\": [\n    {\n      \"at\": \"<time>\",\n      \"resolution\": \"manual_result\"\n    }\n  ]\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -3689,7 +3689,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Действие доступно только попытке с неизвестным исходом отправки и без ID задания.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -3847,7 +3847,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -3877,7 +3877,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Действие доступно только попытке с неизвестным исходом отправки и без ID задания.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -3908,7 +3908,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Исход отправки неизвестен. Не повторяйте запрос; выясните ID задания и продолжите через resume.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\", \"provider\": \"test\", \"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -3941,7 +3941,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Ожидается видео MP4: файл не похож на MP4 по сигнатуре.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -3972,7 +3972,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Нужно файлов результата: 1, выбрано: 2.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -4003,7 +4003,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Файл результата не найден: missing.mp4\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -4034,7 +4034,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Файл результата пуст: empty.mp4\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -4065,7 +4065,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"submission_unknown\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -4170,7 +4170,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 2,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"9687cee25ca5b2e4a040b3f3c95d29bc546d4a0e927673b28dd8571769e149f0\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -4200,7 +4200,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Исход отправки неизвестен. Не повторяйте запрос; выясните ID задания и продолжите через resume.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"9687cee25ca5b2e4a040b3f3c95d29bc546d4a0e927673b28dd8571769e149f0\", \"provider\": \"test\", \"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 2, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -4233,7 +4233,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [\n    {\n      \"number\": 1,\n      \"path\": \"original-01.mp4\",\n      \"bytes\": 32\n    },\n    {\n      \"number\": 2,\n      \"path\": \"original-02.mp4\",\n      \"bytes\": 33\n    }\n  ],\n  \"request_sha256\": \"9687cee25ca5b2e4a040b3f3c95d29bc546d4a0e927673b28dd8571769e149f0\",\n  \"schema_version\": 1,\n  \"status\": \"downloaded\",\n  \"manual_result\": true,\n  \"unknown_outcomes\": [\n    {\n      \"resolution\": \"manual_result\",\n      \"at\": \"<time>\"\n    }\n  ]\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -4336,7 +4336,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"image\",\n  \"command\": \"image_to_image\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"c67fbd81bcf3713acae2485d6177688dfbbcdbade2b4d0bf0953b3b4e86e2188\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -4365,7 +4365,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Исход отправки неизвестен. Не повторяйте запрос; выясните ID задания и продолжите через resume.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"c67fbd81bcf3713acae2485d6177688dfbbcdbade2b4d0bf0953b3b4e86e2188\", \"provider\": \"test\", \"kind\": \"image\", \"command\": \"image_to_image\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -4397,7 +4397,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [\n    {\n      \"number\": 1,\n      \"path\": \"original.webp\",\n      \"bytes\": 20,\n      \"sha256\": \"abfcef2a3c78aefb0e8318757c646c6b4f1014a6332f6cf60e73c2c6ce7f4d3a\"\n    }\n  ],\n  \"request_sha256\": \"c67fbd81bcf3713acae2485d6177688dfbbcdbade2b4d0bf0953b3b4e86e2188\",\n  \"schema_version\": 1,\n  \"status\": \"downloaded\",\n  \"manual_result\": true,\n  \"unknown_outcomes\": [\n    {\n      \"resolution\": \"manual_result\",\n      \"at\": \"<time>\"\n    }\n  ]\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -4515,7 +4515,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -4542,7 +4542,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Эту попытку уже обрабатывает другой процесс.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -4570,7 +4570,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Эту попытку уже обрабатывает другой процесс.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -4598,7 +4598,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"generation_id\": \"test-generation-1\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\", \"provider\": \"test\", \"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -4628,7 +4628,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Эта попытка уже отправлялась; используйте resume. При неизвестной отправке повтор запрещён.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -4835,7 +4835,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -4862,7 +4862,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"generation_id\": \"test-generation-1\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\", \"provider\": \"test\", \"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -4892,7 +4892,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"generation_id\": \"test-generation-1\",\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"running\",\n  \"service_status\": \"running\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}"
@@ -4922,7 +4922,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"generation_id\": \"test-generation-1\",\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"service_status\": \"outputs_pending\",\n  \"status\": \"outputs_pending\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}"
@@ -4952,7 +4952,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"generation_id\": \"test-generation-1\",\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"service_status\": \"watermark_free_pending\",\n  \"status\": \"watermark_free_pending\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}"
@@ -4982,7 +4982,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"generation_id\": \"test-generation-1\",\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"service_status\": \"unknown\",\n  \"status\": \"running\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}"
@@ -5012,7 +5012,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"generation_id\": \"test-generation-1\",\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"service_status\": \"queued\",\n  \"status\": \"running\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}"
@@ -5042,7 +5042,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Не удалось запросить состояние. ID сохранён; повторите resume, не submit.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}"
@@ -5072,7 +5072,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Не удалось запросить состояние. ID сохранён; повторите resume, не submit.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}"
@@ -5102,7 +5102,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"generation_id\": \"test-generation-1\",\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"service_status\": \"unknown\",\n  \"status\": \"failed\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}"
@@ -5132,7 +5132,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"generation_id\": \"test-generation-1\",\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"service_status\": \"unknown\",\n  \"status\": \"failed\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -5228,7 +5228,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -5255,7 +5255,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"generation_id\": \"test-generation-1\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\", \"provider\": \"test\", \"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -5285,7 +5285,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"generation_id\": \"test-generation-1\",\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"outputs_pending\",\n  \"service_status\": \"completed\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}"
@@ -5418,7 +5418,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -5445,7 +5445,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"generation_id\": \"test-generation-1\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\", \"provider\": \"test\", \"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -5475,7 +5475,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"generation_id\": \"test-generation-1\",\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"running\",\n  \"service_status\": \"running\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}",
@@ -5508,7 +5508,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [\n    {\n      \"number\": 1,\n      \"path\": \"original.mp4\",\n      \"bytes\": 32\n    }\n  ],\n  \"generation_id\": \"test-generation-1\",\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"service_status\": \"completed\",\n  \"status\": \"downloaded\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}",
@@ -5617,7 +5617,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 2,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"9687cee25ca5b2e4a040b3f3c95d29bc546d4a0e927673b28dd8571769e149f0\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -5644,7 +5644,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"9687cee25ca5b2e4a040b3f3c95d29bc546d4a0e927673b28dd8571769e149f0\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"generation_id\": \"test-generation-1\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"9687cee25ca5b2e4a040b3f3c95d29bc546d4a0e927673b28dd8571769e149f0\", \"provider\": \"test\", \"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 2, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -5674,7 +5674,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Не удалось сохранить результат. Повторите resume для того же задания; существующие файлы не перезаписываются.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}",
@@ -5707,7 +5707,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [\n    {\n      \"bytes\": 32,\n      \"number\": 1,\n      \"path\": \"original-01.mp4\"\n    },\n    {\n      \"number\": 2,\n      \"path\": \"original-02.mp4\",\n      \"bytes\": 32\n    }\n  ],\n  \"generation_id\": \"test-generation-1\",\n  \"request_sha256\": \"9687cee25ca5b2e4a040b3f3c95d29bc546d4a0e927673b28dd8571769e149f0\",\n  \"schema_version\": 1,\n  \"service_status\": \"completed\",\n  \"status\": \"downloaded\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}",
@@ -5813,7 +5813,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -5840,7 +5840,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"generation_id\": \"test-generation-1\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\", \"provider\": \"test\", \"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -5870,7 +5870,7 @@
         "code": -2,
         "stdout": "",
         "stderr": "",
-        "traceback": true,
+        "unhandled": true,
         "interrupted": true,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}",
@@ -5902,7 +5902,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [\n    {\n      \"number\": 1,\n      \"path\": \"original.mp4\",\n      \"bytes\": 32\n    }\n  ],\n  \"generation_id\": \"test-generation-1\",\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"service_status\": \"completed\",\n  \"status\": \"downloaded\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}"
@@ -6000,7 +6000,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -6027,7 +6027,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"generation_id\": \"test-generation-1\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\", \"provider\": \"test\", \"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -6057,7 +6057,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Выходной файл уже существует; он не будет перезаписан.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}"
@@ -6158,7 +6158,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -6186,7 +6186,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"generation_id\": \"test-generation-1\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\", \"provider\": \"test\", \"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -6217,7 +6217,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Не удалось сохранить результат. Повторите resume для того же задания; существующие файлы не перезаписываются.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}",
@@ -6320,7 +6320,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"image\",\n  \"command\": \"image_to_image\",\n  \"model\": \"test-image\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"image_1\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -6348,7 +6348,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"generation_id\": \"test-generation-1\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\", \"provider\": \"test\", \"kind\": \"image\", \"command\": \"image_to_image\", \"model\": \"test-image\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -6379,7 +6379,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [\n    {\n      \"number\": 1,\n      \"path\": \"original.png\",\n      \"bytes\": 34,\n      \"sha256\": \"da3b7b13a422fbec04a466448b231300a133f264cb738eb784f7edcb171845fc\"\n    }\n  ],\n  \"generation_id\": \"test-generation-1\",\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"schema_version\": 1,\n  \"status\": \"downloaded\",\n  \"service_status\": \"completed\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}",
@@ -6483,7 +6483,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"image\",\n  \"command\": \"image_to_image\",\n  \"model\": \"test-image\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"image_1\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -6511,7 +6511,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"generation_id\": \"test-generation-1\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\", \"provider\": \"test\", \"kind\": \"image\", \"command\": \"image_to_image\", \"model\": \"test-image\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -6542,7 +6542,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [\n    {\n      \"number\": 1,\n      \"path\": \"original.jpg\",\n      \"bytes\": 30,\n      \"sha256\": \"6b75747159c4f4f4874773467922a5fe3654bc78f8af11735f0f51780fd0a108\"\n    }\n  ],\n  \"generation_id\": \"test-generation-1\",\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"schema_version\": 1,\n  \"status\": \"downloaded\",\n  \"service_status\": \"completed\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}",
@@ -6646,7 +6646,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"image\",\n  \"command\": \"image_to_image\",\n  \"model\": \"test-image\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"image_1\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -6674,7 +6674,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"generation_id\": \"test-generation-1\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\", \"provider\": \"test\", \"kind\": \"image\", \"command\": \"image_to_image\", \"model\": \"test-image\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -6705,7 +6705,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [\n    {\n      \"number\": 1,\n      \"path\": \"original.webp\",\n      \"bytes\": 35,\n      \"sha256\": \"bc6c9907c7d4d65abbcf816776ef5d37945ede958a7e9ffe80277d3969869149\"\n    }\n  ],\n  \"generation_id\": \"test-generation-1\",\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"schema_version\": 1,\n  \"status\": \"downloaded\",\n  \"service_status\": \"completed\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}",
@@ -6812,7 +6812,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"image\",\n  \"command\": \"image_to_image\",\n  \"model\": \"test-image\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"image_1\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -6840,7 +6840,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"generation_id\": \"test-generation-1\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\", \"provider\": \"test\", \"kind\": \"image\", \"command\": \"image_to_image\", \"model\": \"test-image\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -6871,7 +6871,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [\n    {\n      \"number\": 1,\n      \"path\": \"original.png\",\n      \"bytes\": 69,\n      \"sha256\": \"e5dd92acd7d1f9550a1848c765289b33b408f0f6c002fd935696ac778965182d\"\n    }\n  ],\n  \"generation_id\": \"test-generation-1\",\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"schema_version\": 1,\n  \"status\": \"downloaded\",\n  \"service_status\": \"completed\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}",
@@ -6989,7 +6989,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"image\",\n  \"command\": \"image_to_image\",\n  \"model\": \"test-image\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"image_1\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -7017,7 +7017,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"generation_id\": \"test-generation-1\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\", \"provider\": \"test\", \"kind\": \"image\", \"command\": \"image_to_image\", \"model\": \"test-image\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -7048,7 +7048,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Не удалось сохранить оригинал PNG/JPEG/WebP. Повторите resume того же задания; существующие файлы не перезаписываются.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}",
@@ -7080,7 +7080,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [\n    {\n      \"number\": 1,\n      \"path\": \"original.png\",\n      \"bytes\": 34,\n      \"sha256\": \"da3b7b13a422fbec04a466448b231300a133f264cb738eb784f7edcb171845fc\"\n    }\n  ],\n  \"generation_id\": \"test-generation-1\",\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"schema_version\": 1,\n  \"service_status\": \"completed\",\n  \"status\": \"downloaded\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}",
@@ -7204,7 +7204,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"image\",\n  \"command\": \"image_to_image\",\n  \"model\": \"test-image\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"image_1\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -7232,7 +7232,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"generation_id\": \"test-generation-1\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\", \"provider\": \"test\", \"kind\": \"image\", \"command\": \"image_to_image\", \"model\": \"test-image\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -7263,7 +7263,7 @@
         "code": -2,
         "stdout": "",
         "stderr": "",
-        "traceback": true,
+        "unhandled": true,
         "interrupted": true,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}",
@@ -7296,7 +7296,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [\n    {\n      \"bytes\": 30,\n      \"number\": 1,\n      \"path\": \"original.jpg\",\n      \"sha256\": \"6b75747159c4f4f4874773467922a5fe3654bc78f8af11735f0f51780fd0a108\"\n    }\n  ],\n  \"generation_id\": \"test-generation-1\",\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"schema_version\": 1,\n  \"service_status\": \"completed\",\n  \"status\": \"downloaded\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}"
@@ -7415,7 +7415,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"image\",\n  \"command\": \"image_to_image\",\n  \"model\": \"test-image\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"image_1\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -7443,7 +7443,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"generation_id\": \"test-generation-1\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\", \"provider\": \"test\", \"kind\": \"image\", \"command\": \"image_to_image\", \"model\": \"test-image\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -7474,7 +7474,7 @@
         "code": -2,
         "stdout": "",
         "stderr": "",
-        "traceback": true,
+        "unhandled": true,
         "interrupted": true,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}",
@@ -7507,7 +7507,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Не удалось сохранить оригинал PNG/JPEG/WebP. Повторите resume того же задания; существующие файлы не перезаписываются.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}"
@@ -7615,7 +7615,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"image\",\n  \"command\": \"image_to_image\",\n  \"model\": \"test-image\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"image_1\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -7643,7 +7643,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"generation_id\": \"test-generation-1\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\", \"provider\": \"test\", \"kind\": \"image\", \"command\": \"image_to_image\", \"model\": \"test-image\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -7674,7 +7674,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Не удалось сохранить оригинал PNG/JPEG/WebP. Повторите resume того же задания; существующие файлы не перезаписываются.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}",
@@ -7797,7 +7797,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"image\",\n  \"command\": \"image_to_image\",\n  \"model\": \"test-image\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 2,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"image_1\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"b80b850fc25cccf88483e2ac5d42f9e765e8ece452fa57b3a74b15436f6d730d\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -7825,7 +7825,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"b80b850fc25cccf88483e2ac5d42f9e765e8ece452fa57b3a74b15436f6d730d\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"generation_id\": \"test-generation-1\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"b80b850fc25cccf88483e2ac5d42f9e765e8ece452fa57b3a74b15436f6d730d\", \"provider\": \"test\", \"kind\": \"image\", \"command\": \"image_to_image\", \"model\": \"test-image\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 2, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -7856,7 +7856,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Не удалось сохранить оригинал PNG/JPEG/WebP. Повторите resume того же задания; существующие файлы не перезаписываются.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}",
@@ -7890,7 +7890,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [\n    {\n      \"bytes\": 34,\n      \"number\": 1,\n      \"path\": \"original-01.png\",\n      \"sha256\": \"da3b7b13a422fbec04a466448b231300a133f264cb738eb784f7edcb171845fc\"\n    },\n    {\n      \"number\": 2,\n      \"path\": \"original-02.jpg\",\n      \"bytes\": 30,\n      \"sha256\": \"6b75747159c4f4f4874773467922a5fe3654bc78f8af11735f0f51780fd0a108\"\n    }\n  ],\n  \"generation_id\": \"test-generation-1\",\n  \"request_sha256\": \"b80b850fc25cccf88483e2ac5d42f9e765e8ece452fa57b3a74b15436f6d730d\",\n  \"schema_version\": 1,\n  \"service_status\": \"completed\",\n  \"status\": \"downloaded\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}",
@@ -8005,7 +8005,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"image\",\n  \"command\": \"image_to_image\",\n  \"model\": \"test-image\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"image_1\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -8033,7 +8033,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"generation_id\": \"test-generation-1\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\", \"provider\": \"test\", \"kind\": \"image\", \"command\": \"image_to_image\", \"model\": \"test-image\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -8064,7 +8064,7 @@
         "code": -2,
         "stdout": "",
         "stderr": "",
-        "traceback": true,
+        "unhandled": true,
         "interrupted": true,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}",
@@ -8096,7 +8096,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [\n    {\n      \"number\": 1,\n      \"path\": \"original.png\",\n      \"bytes\": 34,\n      \"sha256\": \"da3b7b13a422fbec04a466448b231300a133f264cb738eb784f7edcb171845fc\"\n    }\n  ],\n  \"generation_id\": \"test-generation-1\",\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"schema_version\": 1,\n  \"service_status\": \"completed\",\n  \"status\": \"downloaded\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}",
@@ -8241,7 +8241,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"image\",\n  \"command\": \"image_to_image\",\n  \"model\": \"test-image\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"image_1\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -8269,7 +8269,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"generation_id\": \"test-generation-1\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\", \"provider\": \"test\", \"kind\": \"image\", \"command\": \"image_to_image\", \"model\": \"test-image\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -8300,7 +8300,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [\n    {\n      \"number\": 1,\n      \"path\": \"original.jpg\",\n      \"bytes\": 30,\n      \"sha256\": \"6b75747159c4f4f4874773467922a5fe3654bc78f8af11735f0f51780fd0a108\"\n    }\n  ],\n  \"generation_id\": \"test-generation-1\",\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"schema_version\": 1,\n  \"status\": \"downloaded\",\n  \"service_status\": \"completed\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}",
@@ -8333,7 +8333,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [\n    {\n      \"bytes\": 30,\n      \"number\": 1,\n      \"path\": \"original.jpeg\"\n    }\n  ],\n  \"generation_id\": \"test-generation-1\",\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"schema_version\": 1,\n  \"service_status\": \"completed\",\n  \"status\": \"downloaded\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -8363,7 +8363,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Расширение сохранённого оригинала не соответствует изображению. Оригинал оставлен без изменений.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -8464,7 +8464,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"image\",\n  \"command\": \"image_to_image\",\n  \"model\": \"test-image\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"image_1\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -8492,7 +8492,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"generation_id\": \"test-generation-1\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"9c880470c19e830d1a4d726efc10c7aa2f267134883c9e09ae2fa075be7b03ea\", \"provider\": \"test\", \"kind\": \"image\", \"command\": \"image_to_image\", \"model\": \"test-image\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -8523,7 +8523,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Не удалось сохранить оригинал PNG/JPEG/WebP. Повторите resume того же задания; существующие файлы не перезаписываются.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}",
@@ -8698,7 +8698,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -8725,7 +8725,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"generation_id\": \"test-generation-1\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\", \"provider\": \"test\", \"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -8755,7 +8755,7 @@
         "code": 0,
         "stdout": "request: running\nrequest: downloaded\n{\n  \"<project>/plan/batches/M32-attempt-01/request\": {\n    \"downloads\": [\n      {\n        \"number\": 1,\n        \"path\": \"original.mp4\",\n        \"bytes\": 32\n      }\n    ],\n    \"generation_id\": \"test-generation-1\",\n    \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n    \"schema_version\": 1,\n    \"service_status\": \"completed\",\n    \"status\": \"downloaded\"\n  }\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}",
@@ -8789,7 +8789,7 @@
         "code": 0,
         "stdout": "request: downloaded\n{\n  \"<project>/plan/batches/M32-attempt-01/request\": {\n    \"downloads\": [\n      {\n        \"bytes\": 32,\n        \"number\": 1,\n        \"path\": \"original.mp4\"\n      }\n    ],\n    \"generation_id\": \"test-generation-1\",\n    \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n    \"schema_version\": 1,\n    \"service_status\": \"completed\",\n    \"status\": \"downloaded\"\n  }\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -8818,7 +8818,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/other/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -8854,7 +8854,7 @@
         "code": 2,
         "stdout": "request: Нет ID задания; отправку через resume выполнить нельзя.\nrequest: downloaded\n{\n  \"<project>/plan/batches/other/request\": {\n    \"status\": \"error\",\n    \"detail\": \"Нет ID задания; отправку через resume выполнить нельзя.\"\n  },\n  \"<project>/plan/batches/M32-attempt-01/request\": {\n    \"downloads\": [\n      {\n        \"bytes\": 32,\n        \"number\": 1,\n        \"path\": \"original.mp4\"\n      }\n    ],\n    \"generation_id\": \"test-generation-1\",\n    \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n    \"schema_version\": 1,\n    \"service_status\": \"completed\",\n    \"status\": \"downloaded\"\n  }\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -8891,7 +8891,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Ожидание — от 1 до 120 минут, интервал — от 5 до 300 секунд.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -8928,7 +8928,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Рабочая папка должна находиться внутри plan/batches, plan/awaiting, plan/reference-images или временной папки ОС.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -8965,7 +8965,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Ошибка локальных данных или файлов; сырой вывод скрыт.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -9073,7 +9073,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -9100,7 +9100,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"generation_id\": \"test-generation-1\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\", \"provider\": \"test\", \"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -9130,7 +9130,7 @@
         "code": 2,
         "stdout": "request: running\n{\n  \"<project>/plan/batches/M32-attempt-01/request\": {\n    \"status\": \"running\",\n    \"detail\": \"время ожидания вышло; задание не отменено, повторите watch\"\n  }\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"test-generation-1\"}",
@@ -9230,7 +9230,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -9257,7 +9257,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"generation_id\": \"provider+opaque/id==\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\", \"provider\": \"test\", \"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -9287,7 +9287,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [\n    {\n      \"number\": 1,\n      \"path\": \"original.mp4\",\n      \"bytes\": 32\n    }\n  ],\n  \"generation_id\": \"provider+opaque/id==\",\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"downloaded\",\n  \"service_status\": \"completed\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"generation_id\": \"provider+opaque/id==\"}",
@@ -9386,7 +9386,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -9413,7 +9413,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Подготовленный запрос изменён; нужна новая попытка и новое согласование.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -9441,7 +9441,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Подготовленный запрос изменён; нужна новая попытка и новое согласование.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -9527,7 +9527,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -9554,7 +9554,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Промпт или вход изменён; отправка запрещена.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -9661,7 +9661,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -9688,7 +9688,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "В подготовленном запросе нет provider подключённого адаптера генерации.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -9715,7 +9715,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "В подготовленном запросе нет provider подключённого адаптера генерации.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -9743,7 +9743,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "В подготовленном запросе нет provider подключённого адаптера генерации.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -9850,7 +9850,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -9877,7 +9877,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "В подготовленном запросе нет provider подключённого адаптера генерации.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -9904,7 +9904,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "В подготовленном запросе нет provider подключённого адаптера генерации.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -9932,7 +9932,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "В подготовленном запросе нет provider подключённого адаптера генерации.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -10039,7 +10039,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -10066,7 +10066,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "В подготовленном запросе нет provider подключённого адаптера генерации.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -10093,7 +10093,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "В подготовленном запросе нет provider подключённого адаптера генерации.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -10121,7 +10121,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "В подготовленном запросе нет provider подключённого адаптера генерации.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -10231,7 +10231,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -10258,7 +10258,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Исход отправки неизвестен. Не повторяйте запрос; выясните ID задания и продолжите через resume.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\", \"provider\": \"test\", \"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -10288,7 +10288,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"prepared\",\n  \"task_trace_id\": \"<uuid1>\",\n  \"unknown_outcomes\": [\n    {\n      \"resolution\": \"not_created\",\n      \"at\": \"<time>\"\n    }\n  ]\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -10316,7 +10316,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"task_trace_id\": \"<uuid1>\",\n  \"unknown_outcomes\": [\n    {\n      \"at\": \"<time>\",\n      \"resolution\": \"not_created\"\n    }\n  ],\n  \"generation_id\": \"job-2\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\", \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\", \"provider\": \"test\", \"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -10432,7 +10432,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -10459,7 +10459,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"generation_id\": \"test-generation-1\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"submit\", \"work_dir\": \"<project>/plan/awaiting/M32/request\", \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\", \"provider\": \"test\", \"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"enable_audio\": false, \"resolution\": \"1080p\"}, \"outputs\": 1, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\"}], \"prompt\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\"}"
@@ -10489,7 +10489,7 @@
         "code": 0,
         "stdout": "{\n  \"downloads\": [\n    {\n      \"number\": 1,\n      \"path\": \"original.mp4\",\n      \"bytes\": 32\n    }\n  ],\n  \"generation_id\": \"test-generation-1\",\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"schema_version\": 1,\n  \"status\": \"downloaded\",\n  \"service_status\": \"completed\"\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"poll\", \"work_dir\": \"<project>/plan/awaiting/M32/request\", \"generation_id\": \"test-generation-1\"}",
@@ -10614,7 +10614,7 @@
         "code": 0,
         "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M32\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 6,\n    \"resolution\": \"1080p\",\n    \"enable_audio\": false\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3\",\n      \"bytes\": 17\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4\"\n  },\n  \"request_sha256\": \"e6b350768821a839f9b54db37d14a90cca3c207bce1b28a82699b90d2546c548\",\n  \"prompt_text\": \"A single take. $(touch NEVER_EXECUTE) `not a command`\\r\\nSecond line.\",\n  \"work_dir\": \"<project>/plan/batches/M32-attempt-01/request\",\n  \"warnings\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -10641,7 +10641,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Ошибка локальных данных или файлов; сырой вывод скрыт.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -10668,7 +10668,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Ошибка локальных данных или файлов; сырой вывод скрыт.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -10694,8 +10694,8 @@
       {
         "code": 1,
         "stdout": "",
-        "stderr": "AttributeError: 'list' object has no attribute 'get'\n",
-        "traceback": true,
+        "stderr": "Ошибка: ожидается объект, получено: список\n",
+        "unhandled": true,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -10722,7 +10722,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Нет локального файла подготовленной попытки.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -10888,7 +10888,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Провайдер 'test' не поддерживает это действие.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -10907,7 +10907,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Провайдер 'test' не поддерживает это действие.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -10926,7 +10926,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Для провайдера генерации 'nope' нет адаптера: укажите provider подключённого сервиса.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -10945,7 +10945,7 @@
         "code": 0,
         "stdout": "{\"ok\": true, \"message\": \"Вход выполнен.\"}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"login\", \"open_browser\": false}"
@@ -10966,7 +10966,7 @@
         "code": 0,
         "stdout": "{\"status\": \"authenticated\"}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"auth_status\"}"
@@ -10987,7 +10987,7 @@
         "code": 0,
         "stdout": "authenticated\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"auth_status\"}"
@@ -11008,7 +11008,7 @@
         "code": 1,
         "stdout": "{\"ok\": false, \"message\": \"Вход не завершён.\"}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"login\", \"open_browser\": true}"
@@ -11029,7 +11029,7 @@
         "code": 0,
         "stdout": "Нужен вход.\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"auth_status\"}"
@@ -11050,7 +11050,7 @@
         "code": 0,
         "stdout": "{\"status\": \"unauthenticated\", \"message\": \"Нужен вход.\"}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"auth_status\"}"
@@ -11307,8 +11307,8 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: media_request [-h]\n                     {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                     ...\nmedia_request: error: the following arguments are required: action\n",
-        "traceback": false,
+        "stderr": "использование: media_request [-h]\n                             {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                             ...\nmedia_request: ошибка: обязательные аргументы: action\n",
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -11326,8 +11326,8 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: media_request [-h]\n                     {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                     ...\nmedia_request: error: argument action: invalid choice: 'bogus' (choose from 'capabilities', 'login', 'auth-status', 'prepare', 'watch', 'attach', 'submit', 'resume', 'status', 'not-created')\n",
-        "traceback": false,
+        "stderr": "использование: media_request [-h]\n                             {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                             ...\nmedia_request: ошибка: аргумент action: недопустимое значение 'bogus' (допустимо: 'capabilities', 'login', 'auth-status', 'prepare', 'watch', 'attach', 'submit', 'resume', 'status', 'not-created')\n",
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -11344,9 +11344,9 @@
       },
       {
         "code": 0,
-        "stdout": "usage: media_request [-h]\n                     {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                     ...\n\nПопытка генерации у выбранного провайдера: возможности, подготовка, отправка и\nполучение; @link README.md\n\npositional arguments:\n  {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n\noptions:\n  -h, --help            show this help message and exit\n",
+        "stdout": "использование: media_request [-h]\n                             {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                             ...\n\nПопытка генерации у выбранного провайдера: возможности, подготовка, отправка и\nполучение; @link README.md\n\nаргументы:\n  {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n\nпараметры:\n  -h, --help            показать справку и выйти\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -11363,9 +11363,9 @@
       },
       {
         "code": 0,
-        "stdout": "usage: media_request [-h]\n                     {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                     ...\n\nПопытка генерации у выбранного провайдера: возможности, подготовка, отправка и\nполучение; @link README.md\n\npositional arguments:\n  {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n\noptions:\n  -h, --help            show this help message and exit\n",
+        "stdout": "использование: media_request [-h]\n                             {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                             ...\n\nПопытка генерации у выбранного провайдера: возможности, подготовка, отправка и\nполучение; @link README.md\n\nаргументы:\n  {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n\nпараметры:\n  -h, --help            показать справку и выйти\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -11383,8 +11383,8 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: media_request status [-h] --work-dir WORK_DIR\nmedia_request status: error: the following arguments are required: --work-dir\n",
-        "traceback": false,
+        "stderr": "использование: media_request status [-h] --work-dir WORK_DIR\nmedia_request status: ошибка: обязательные аргументы: --work-dir\n",
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -11402,8 +11402,8 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: media_request submit [-h] --work-dir WORK_DIR [--timeout TIMEOUT]\n                            --confirm CONFIRM\nmedia_request submit: error: the following arguments are required: --work-dir, --confirm\n",
-        "traceback": false,
+        "stderr": "использование: media_request submit [-h] --work-dir WORK_DIR\n                                    [--timeout TIMEOUT] --confirm CONFIRM\nmedia_request submit: ошибка: обязательные аргументы: --work-dir, --confirm\n",
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -11421,8 +11421,8 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: media_request submit [-h] --work-dir WORK_DIR [--timeout TIMEOUT]\n                            --confirm CONFIRM\nmedia_request submit: error: the following arguments are required: --confirm\n",
-        "traceback": false,
+        "stderr": "использование: media_request submit [-h] --work-dir WORK_DIR\n                                    [--timeout TIMEOUT] --confirm CONFIRM\nmedia_request submit: ошибка: обязательные аргументы: --confirm\n",
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -11440,8 +11440,8 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: media_request submit [-h] --work-dir WORK_DIR [--timeout TIMEOUT]\n                            --confirm CONFIRM\nmedia_request submit: error: argument --timeout: invalid float value: 'abc'\n",
-        "traceback": false,
+        "stderr": "использование: media_request submit [-h] --work-dir WORK_DIR\n                                    [--timeout TIMEOUT] --confirm CONFIRM\nmedia_request submit: ошибка: аргумент --timeout: не число: 'abc'\n",
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -11459,8 +11459,8 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: media_request capabilities [-h] --provider PROVIDER --kind\n                                  {image,video} [--json] [--timeout TIMEOUT]\nmedia_request capabilities: error: argument --kind: invalid choice: 'z' (choose from 'image', 'video')\n",
-        "traceback": false,
+        "stderr": "использование: media_request capabilities [-h] --provider PROVIDER --kind\n                                          {image,video} [--json]\n                                          [--timeout TIMEOUT]\nmedia_request capabilities: ошибка: аргумент --kind: недопустимое значение 'z' (допустимо: 'image', 'video')\n",
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -11478,8 +11478,8 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: media_request watch [-h] --work-dir WORK_DIR [WORK_DIR ...]\n                           [--max-minutes MAX_MINUTES] [--interval INTERVAL]\n                           [--timeout TIMEOUT]\nmedia_request watch: error: argument --work-dir: expected at least one argument\n",
-        "traceback": false,
+        "stderr": "использование: media_request watch [-h] --work-dir WORK_DIR [WORK_DIR ...]\n                                   [--max-minutes MAX_MINUTES]\n                                   [--interval INTERVAL] [--timeout TIMEOUT]\nmedia_request watch: ошибка: аргумент --work-dir: нужно хотя бы одно значение\n",
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -11497,8 +11497,8 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: media_request [-h]\n                     {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                     ...\nmedia_request: error: unrecognized arguments: extra\n",
-        "traceback": false,
+        "stderr": "использование: media_request [-h]\n                             {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                             ...\nmedia_request: ошибка: неизвестные аргументы: extra\n",
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -11515,9 +11515,9 @@
       },
       {
         "code": 0,
-        "stdout": "usage: media_request submit [-h] --work-dir WORK_DIR [--timeout TIMEOUT]\n                            --confirm CONFIRM\n\noptions:\n  -h, --help           show this help message and exit\n  --work-dir WORK_DIR\n  --timeout TIMEOUT\n  --confirm CONFIRM\n",
+        "stdout": "использование: media_request submit [-h] --work-dir WORK_DIR\n                                    [--timeout TIMEOUT] --confirm CONFIRM\n\nпараметры:\n  -h, --help           показать справку и выйти\n  --work-dir WORK_DIR\n  --timeout TIMEOUT\n  --confirm CONFIRM\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -11534,9 +11534,9 @@
       },
       {
         "code": 0,
-        "stdout": "usage: media_request attach [-h] --work-dir WORK_DIR --file FILE [FILE ...]\n\noptions:\n  -h, --help            show this help message and exit\n  --work-dir WORK_DIR\n  --file FILE [FILE ...]\n",
+        "stdout": "использование: media_request attach [-h] --work-dir WORK_DIR --file FILE\n                                    [FILE ...]\n\nпараметры:\n  -h, --help            показать справку и выйти\n  --work-dir WORK_DIR\n  --file FILE [FILE ...]\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -11553,9 +11553,9 @@
       },
       {
         "code": 0,
-        "stdout": "usage: media_request watch [-h] --work-dir WORK_DIR [WORK_DIR ...]\n                           [--max-minutes MAX_MINUTES] [--interval INTERVAL]\n                           [--timeout TIMEOUT]\n\noptions:\n  -h, --help            show this help message and exit\n  --work-dir WORK_DIR [WORK_DIR ...]\n  --max-minutes MAX_MINUTES\n  --interval INTERVAL\n  --timeout TIMEOUT\n",
+        "stdout": "использование: media_request watch [-h] --work-dir WORK_DIR [WORK_DIR ...]\n                                   [--max-minutes MAX_MINUTES]\n                                   [--interval INTERVAL] [--timeout TIMEOUT]\n\nпараметры:\n  -h, --help            показать справку и выйти\n  --work-dir WORK_DIR [WORK_DIR ...]\n  --max-minutes MAX_MINUTES\n  --interval INTERVAL\n  --timeout TIMEOUT\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -11572,9 +11572,9 @@
       },
       {
         "code": 0,
-        "stdout": "usage: media_request capabilities [-h] --provider PROVIDER --kind\n                                  {image,video} [--json] [--timeout TIMEOUT]\n\noptions:\n  -h, --help            show this help message and exit\n  --provider PROVIDER\n  --kind {image,video}\n  --json\n  --timeout TIMEOUT\n",
+        "stdout": "использование: media_request capabilities [-h] --provider PROVIDER --kind\n                                          {image,video} [--json]\n                                          [--timeout TIMEOUT]\n\nпараметры:\n  -h, --help            показать справку и выйти\n  --provider PROVIDER\n  --kind {image,video}\n  --json\n  --timeout TIMEOUT\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -11592,8 +11592,8 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: media_request resume [-h] --work-dir WORK_DIR [--timeout TIMEOUT]\n                            [--generation-id GENERATION_ID]\n                            [--wait-seconds WAIT_SECONDS]\n                            [--interval INTERVAL]\nmedia_request resume: error: ambiguous option: --w could match --work-dir, --wait-seconds\n",
-        "traceback": false,
+        "stderr": "использование: media_request resume [-h] --work-dir WORK_DIR\n                                    [--timeout TIMEOUT]\n                                    [--generation-id GENERATION_ID]\n                                    [--wait-seconds WAIT_SECONDS]\n                                    [--interval INTERVAL]\nmedia_request resume: ошибка: неоднозначный параметр --w: подходят --work-dir, --wait-seconds\n",
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -11612,7 +11612,7 @@
         "code": 1,
         "stdout": "",
         "stderr": "Ошибка локальных данных или файлов; сырой вывод скрыт.\n",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -11630,8 +11630,8 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: media_request [-h]\n                     {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                     ...\nmedia_request: error: unrecognized arguments: --json\n",
-        "traceback": false,
+        "stderr": "использование: media_request [-h]\n                             {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                             ...\nmedia_request: ошибка: неизвестные аргументы: --json\n",
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -11649,8 +11649,8 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: media_request [-h]\n                     {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                     ...\nmedia_request: error: unrecognized arguments: --json=1\n",
-        "traceback": false,
+        "stderr": "использование: media_request [-h]\n                             {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                             ...\nmedia_request: ошибка: неизвестные аргументы: --json=1\n",
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -11668,8 +11668,8 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: media_request status [-h] --work-dir WORK_DIR\nmedia_request status: error: argument --work-dir: expected one argument\n",
-        "traceback": false,
+        "stderr": "использование: media_request status [-h] --work-dir WORK_DIR\nmedia_request status: ошибка: аргумент --work-dir: нужно одно значение\n",
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -11688,7 +11688,7 @@
         "code": 0,
         "stdout": "{\n  \"reports\": [\n    {\n      \"command\": \"text_to_video\",\n      \"models\": {\n        \"test-video\": {\n          \"arguments\": {\n            \"duration\": {\n              \"default\": \"5\",\n              \"allowed\": [\n                \"3\",\n                \"4\",\n                \"5\",\n                \"6\",\n                \"8\",\n                \"10\"\n              ]\n            },\n            \"resolution\": {\n              \"default\": \"1080p\",\n              \"allowed\": [\n                \"720p\",\n                \"1080p\"\n              ]\n            },\n            \"aspect_ratio\": {\n              \"default\": \"16:9\",\n              \"allowed\": [\n                \"16:9\",\n                \"9:16\",\n                \"1:1\"\n              ]\n            }\n          },\n          \"slots\": {},\n          \"limits\": {}\n        }\n      }\n    },\n    {\n      \"command\": \"image_to_video\",\n      \"models\": {\n        \"test-video\": {\n          \"arguments\": {\n            \"duration\": {\n              \"default\": \"5\",\n              \"allowed\": [\n                \"3\",\n                \"4\",\n                \"5\",\n                \"6\",\n                \"8\",\n                \"10\"\n              ]\n            },\n            \"resolution\": {\n              \"default\": \"1080p\",\n              \"allowed\": [\n                \"720p\",\n                \"1080p\"\n              ]\n            },\n            \"aspect_ratio\": {\n              \"default\": \"16:9\",\n              \"allowed\": [\n                \"16:9\",\n                \"9:16\",\n                \"1:1\"\n              ]\n            }\n          },\n          \"slots\": {\n            \"first_image\": {\n              \"required\": true\n            },\n            \"tail_image\": {\n              \"required\": false\n            }\n          },\n          \"limits\": {}\n        }\n      }\n    }\n  ],\n  \"problems\": []\n}\n",
         "stderr": "",
-        "traceback": false,
+        "unhandled": false,
         "interrupted": false,
         "calls": [
           "{\"action\": \"capabilities\", \"kind\": \"video\"}"
@@ -11708,8 +11708,8 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: media_request submit [-h] --work-dir WORK_DIR [--timeout TIMEOUT]\n                            --confirm CONFIRM\nmedia_request submit: error: the following arguments are required: --work-dir\n",
-        "traceback": false,
+        "stderr": "использование: media_request submit [-h] --work-dir WORK_DIR\n                                    [--timeout TIMEOUT] --confirm CONFIRM\nmedia_request submit: ошибка: обязательные аргументы: --work-dir\n",
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {
@@ -11727,8 +11727,8 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: media_request watch [-h] --work-dir WORK_DIR [WORK_DIR ...]\n                           [--max-minutes MAX_MINUTES] [--interval INTERVAL]\n                           [--timeout TIMEOUT]\nmedia_request watch: error: argument --max-minutes: invalid float value: 'x'\n",
-        "traceback": false,
+        "stderr": "использование: media_request watch [-h] --work-dir WORK_DIR [WORK_DIR ...]\n                                   [--max-minutes MAX_MINUTES]\n                                   [--interval INTERVAL] [--timeout TIMEOUT]\nmedia_request watch: ошибка: аргумент --max-minutes: не число: 'x'\n",
+        "unhandled": false,
         "interrupted": false,
         "calls": [],
         "tree": {

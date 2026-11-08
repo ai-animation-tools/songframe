@@ -32,12 +32,12 @@ wails3 generate appimage -binary "$root/build/bin/songframe" \
 appdir="$work/songframe-x86_64.AppDir"
 # Wails 3.0.0 ищет helpers обеих установленных WebKit ABI. Убираем старый стек
 # только после проверки, что остающиеся ELF его не требуют; иначе сборка завершается ошибкой.
-python3 scripts/linux_runtime_policy.py prune "$appdir" > "$work/runtime-prune.json"
+go run ./scripts/packtool runtime-policy prune "$appdir" > "$work/runtime-prune.json"
 mv -- "$appdir/AppRun" "$appdir/AppRun.wails"
 mkdir -p "$appdir/usr/libexec"
 CGO_ENABLED=0 go build -trimpath -buildvcs=false -ldflags='-s -w' \
   -o "$appdir/usr/libexec/songframe-appimage" ./scripts/appimage-bootstrap
-python3 scripts/package-notices.py "$appdir"
+go run ./scripts/packtool notices "$appdir"
 export OUTPUT="$out/songframe-$version-linux-x86_64.AppImage" NO_STRIP=1
 # Ошибка policy или упаковщика сохраняет предыдущий готовый AppImage.
 trap 'rm -f -- "$OUTPUT.new"' EXIT
@@ -45,5 +45,5 @@ bash scripts/finalize-appimage.sh "$appdir" "$out/songframe-x86_64.AppImage" "$O
 mv -- "$OUTPUT.new" "$OUTPUT"
 # Имя без версии — промежуточный результат Wails, не самостоятельный комплект.
 rm -- "$out/songframe-x86_64.AppImage"
-python3 scripts/package-metadata.py "$OUTPUT" "$appdir" "$linuxdeploy" "$version"
+go run ./scripts/packtool metadata "$OUTPUT" "$appdir" "$linuxdeploy" "$version"
 printf 'Готово: %s\n' "$OUTPUT"

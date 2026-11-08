@@ -1,5 +1,5 @@
 {
-  "description": "--force=1: ignored explicit argument.",
+  "description": "--force=1: лишнее значение.",
   "call": "scene_scaffold",
   "project": "project",
   "covers": [

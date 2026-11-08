@@ -1,8 +1,8 @@
 {
   "code": 2,
   "stdout": "",
-  "stderr": "usage: shot_workflow set-note [-h] --dir DIR --id ID --active {true,false}\nshot_workflow set-note: error: argument --id: invalid int value: 'q'\n",
-  "traceback": false,
+  "stderr": "использование: shot_workflow set-note [-h] --dir DIR --id ID --active\n                                      {true,false}\nshot_workflow set-note: ошибка: аргумент --id: не целое число: 'q'\n",
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

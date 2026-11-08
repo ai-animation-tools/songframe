@@ -4,7 +4,7 @@
   "project": "project",
   "base": "checks-base",
   "covers": [
-    "expected one argument"
+    "нужно одно значение"
   ],
   "stubbedMedia": [],
   "args": [

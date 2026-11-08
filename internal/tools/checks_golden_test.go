@@ -43,13 +43,7 @@ func TestProjectChecksGolden(t *testing.T) {
 					t.Errorf("stdout:\n--- ожидалось\n%s\n--- получено\n%s", want, normalize(result.Stdout))
 				}
 				wantErr, gotErr := golden.ValueString(t, expected, "stderr"), normalize(result.Stderr)
-				if expected.Value("traceback") == true {
-					if !strings.HasPrefix(gotErr, tracebackHeader+"\n") || lastLine(gotErr) != lastLine(wantErr) {
-						t.Errorf("трассировка:\n--- ожидалось (последняя строка)\n%s\n--- получено\n%s", lastLine(wantErr), gotErr)
-					}
-				} else if gotErr != wantErr {
-					t.Errorf("stderr:\n--- ожидалось\n%s\n--- получено\n%s", wantErr, gotErr)
-				}
+				checkStderr(t, expected, wantErr, gotErr, nil)
 				if beforeErr == nil {
 					if after, err := golden.TreeDigest(root); err != nil || after != before {
 						t.Errorf("инструмент изменил проект: %v", err)

@@ -2,7 +2,7 @@
   "code": 0,
   "stdout": "План M04 · режим shot · этап: описание на согласовании (`description_review`)\nОкно 4.0 с (120 кадров), запрос 6 с\n\n| Опора | Роль | Время, с | Принята | Файл |\n| --- | --- | --- | --- | --- |\n| K01 | first | 0 | нет | — |\n| K02 | last | 6 | нет | — |\n\nПромпт: не принят\nДальше: согласуйте описание, затем plan-keyframes и approve\n",
   "stderr": "",
-  "traceback": false,
+  "unhandled": false,
   "files": {
     "plan/batches/M04-attempt-01/workflow.json": "changed"
   },

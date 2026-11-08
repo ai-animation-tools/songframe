@@ -2,7 +2,7 @@
   "code": 0,
   "stdout": "Обновлено представлений: 3.\n",
   "stderr": "",
-  "traceback": false,
+  "unhandled": false,
   "files": {
     "plan/animatic/cards/M03.last.png": "created",
     "plan/animatic/cards/M03.png": "changed",

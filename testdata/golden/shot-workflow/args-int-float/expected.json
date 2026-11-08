@@ -1,8 +1,8 @@
 {
   "code": 2,
   "stdout": "",
-  "stderr": "usage: shot_workflow plan-keyframes [-h] --dir DIR --request-seconds\n                                    REQUEST_SECONDS [--middle СЕК:ЗАМЕТКА]\nshot_workflow plan-keyframes: error: argument --request-seconds: invalid int value: '2.5'\n",
-  "traceback": false,
+  "stderr": "использование: shot_workflow plan-keyframes [-h] --dir DIR --request-seconds\n                                            REQUEST_SECONDS\n                                            [--middle СЕК:ЗАМЕТКА]\nshot_workflow plan-keyframes: ошибка: аргумент --request-seconds: не целое число: '2.5'\n",
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

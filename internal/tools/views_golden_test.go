@@ -31,13 +31,7 @@ func checkStreams(t *testing.T, expected *toolrt.Dict, result tools.Result, root
 		t.Errorf("stdout:\n--- ожидалось\n%s\n--- получено\n%s", want, got)
 	}
 	wantErr, gotErr := golden.ValueString(t, expected, "stderr"), normalize(result.Stderr)
-	if expected.Value("traceback") == true {
-		if !strings.HasPrefix(gotErr, tracebackHeader+"\n") || lastLine(gotErr) != lastLine(wantErr) {
-			t.Errorf("трассировка:\n--- ожидалось (последняя строка)\n%s\n--- получено\n%s", lastLine(wantErr), gotErr)
-		}
-	} else if !compare(wantErr, gotErr) {
-		t.Errorf("stderr:\n--- ожидалось\n%s\n--- получено\n%s", wantErr, gotErr)
-	}
+	checkStderr(t, expected, wantErr, gotErr, compare)
 }
 
 // caseArgs — аргументы случая после --project.
@@ -290,13 +284,13 @@ func TestSceneViewsGolden(t *testing.T) {
 			}
 			if !rerendered {
 				// Карточки Go не рисовал: повторная проверка совпадает с эталоном.
-				recheck.Set("traceback", strings.HasPrefix(golden.ValueString(t, recheck, "stderr"), tracebackHeader))
+				recheck.Set("unhandled", toolrt.IsUnhandled(golden.ValueString(t, recheck, "stderr")))
 				checkStreams(t, recheck, again, root, rule.compare)
 				return
 			}
 			// Свежесть аниматика в ROADMAP зависит от байтов карточек, поэтому после перерисовки
 			// сверяется только то, что Go подтверждает свои карточки и квитанцию.
-			if strings.Contains(again.Stderr, ".png") || strings.Contains(again.Stderr, receiptPath) || strings.Contains(again.Stderr, tracebackHeader) {
+			if strings.Contains(again.Stderr, ".png") || strings.Contains(again.Stderr, receiptPath) || toolrt.IsUnhandled(again.Stderr) {
 				t.Errorf("повторная проверка после записи Go: %s", again.Stderr)
 			}
 		})

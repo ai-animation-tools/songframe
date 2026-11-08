@@ -1,5 +1,5 @@
 {
-  "description": "Нет изображения референса: трассировка.",
+  "description": "Нет изображения референса: необработанная ошибка.",
   "call": "update_scene_views",
   "project": "project",
   "base": "checks-base",

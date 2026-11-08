@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\nValueError: Файл комплекта находится вне папки ассета.\n",
-  "traceback": true
+  "stderr": "Ошибка: Файл комплекта находится вне папки ассета.\n",
+  "unhandled": true
 }

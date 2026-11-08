@@ -21,7 +21,7 @@
         "steps": [
           {
             "code": 0,
-            "stdout": "usage: derive_shot [-h] {build,accept,recover} ...\n\nЛокально собирает производный план и принимает подтверждённые байты; @link\nREADME.md.\n\npositional arguments:\n  {build,accept,recover}\n\noptions:\n  -h, --help            show this help message and exit\n",
+            "stdout": "использование: derive_shot [-h] {build,accept,recover} ...\n\nЛокально собирает производный план и принимает подтверждённые байты; @link\nREADME.md.\n\nаргументы:\n  {build,accept,recover}\n\nпараметры:\n  -h, --help            показать справку и выйти\n",
             "stderr": ""
           }
         ],
@@ -49,7 +49,7 @@
         "steps": [
           {
             "code": 0,
-            "stdout": "usage: derive_shot build [-h] --shot SHOT --recipe RECIPE --work-dir WORK_DIR\n                         [--json]\n\noptions:\n  -h, --help           show this help message and exit\n  --shot SHOT\n  --recipe RECIPE\n  --work-dir WORK_DIR\n  --json\n",
+            "stdout": "использование: derive_shot build [-h] --shot SHOT --recipe RECIPE --work-dir\n                                 WORK_DIR [--json]\n\nпараметры:\n  -h, --help           показать справку и выйти\n  --shot SHOT\n  --recipe RECIPE\n  --work-dir WORK_DIR\n  --json\n",
             "stderr": ""
           }
         ],
@@ -77,7 +77,7 @@
         "steps": [
           {
             "code": 0,
-            "stdout": "usage: derive_shot accept [-h] --work-dir WORK_DIR --confirm CONFIRM\n                          [--replace] [--json]\n\noptions:\n  -h, --help           show this help message and exit\n  --work-dir WORK_DIR\n  --confirm CONFIRM\n  --replace\n  --json\n",
+            "stdout": "использование: derive_shot accept [-h] --work-dir WORK_DIR --confirm CONFIRM\n                                  [--replace] [--json]\n\nпараметры:\n  -h, --help           показать справку и выйти\n  --work-dir WORK_DIR\n  --confirm CONFIRM\n  --replace\n  --json\n",
             "stderr": ""
           }
         ],
@@ -105,7 +105,7 @@
         "steps": [
           {
             "code": 0,
-            "stdout": "usage: derive_shot recover [-h] [--json]\n\noptions:\n  -h, --help  show this help message and exit\n  --json\n",
+            "stdout": "использование: derive_shot recover [-h] [--json]\n\nпараметры:\n  -h, --help  показать справку и выйти\n  --json\n",
             "stderr": ""
           }
         ],
@@ -131,7 +131,7 @@
           {
             "code": 2,
             "stdout": "",
-            "stderr": "usage: derive_shot [-h] {build,accept,recover} ...\nderive_shot: error: the following arguments are required: command\n"
+            "stderr": "использование: derive_shot [-h] {build,accept,recover} ...\nderive_shot: ошибка: обязательные аргументы: command\n"
           }
         ],
         "changed": {},
@@ -143,7 +143,7 @@
       "name": "args-invalid-command",
       "description": "Неизвестная подкоманда.",
       "covers": [
-        "invalid choice"
+        "недопустимое значение"
       ],
       "setup": [],
       "steps": [
@@ -158,7 +158,7 @@
           {
             "code": 2,
             "stdout": "",
-            "stderr": "usage: derive_shot [-h] {build,accept,recover} ...\nderive_shot: error: argument command: invalid choice: 'publish' (choose from 'build', 'accept', 'recover')\n"
+            "stderr": "использование: derive_shot [-h] {build,accept,recover} ...\nderive_shot: ошибка: аргумент command: недопустимое значение 'publish' (допустимо: 'build', 'accept', 'recover')\n"
           }
         ],
         "changed": {},
@@ -189,7 +189,7 @@
           {
             "code": 2,
             "stdout": "",
-            "stderr": "usage: derive_shot build [-h] --shot SHOT --recipe RECIPE --work-dir WORK_DIR\n                         [--json]\nderive_shot build: error: the following arguments are required: --shot\n"
+            "stderr": "использование: derive_shot build [-h] --shot SHOT --recipe RECIPE --work-dir\n                                 WORK_DIR [--json]\nderive_shot build: ошибка: обязательные аргументы: --shot\n"
           }
         ],
         "changed": {},
@@ -218,7 +218,7 @@
           {
             "code": 2,
             "stdout": "",
-            "stderr": "usage: derive_shot accept [-h] --work-dir WORK_DIR --confirm CONFIRM\n                          [--replace] [--json]\nderive_shot accept: error: the following arguments are required: --confirm\n"
+            "stderr": "использование: derive_shot accept [-h] --work-dir WORK_DIR --confirm CONFIRM\n                                  [--replace] [--json]\nderive_shot accept: ошибка: обязательные аргументы: --confirm\n"
           }
         ],
         "changed": {},
@@ -230,7 +230,7 @@
       "name": "args-unknown",
       "description": "Неизвестный аргумент подкоманды.",
       "covers": [
-        "unrecognized"
+        "неизвестные аргументы"
       ],
       "setup": [],
       "steps": [
@@ -246,7 +246,7 @@
           {
             "code": 2,
             "stdout": "",
-            "stderr": "usage: derive_shot [-h] {build,accept,recover} ...\nderive_shot: error: unrecognized arguments: --extra\n"
+            "stderr": "использование: derive_shot [-h] {build,accept,recover} ...\nderive_shot: ошибка: неизвестные аргументы: --extra\n"
           }
         ],
         "changed": {},
@@ -258,7 +258,7 @@
       "name": "args-value",
       "description": "--work-dir без значения.",
       "covers": [
-        "expected one argument"
+        "нужно одно значение"
       ],
       "setup": [],
       "steps": [
@@ -274,7 +274,7 @@
           {
             "code": 2,
             "stdout": "",
-            "stderr": "usage: derive_shot accept [-h] --work-dir WORK_DIR --confirm CONFIRM\n                          [--replace] [--json]\nderive_shot accept: error: argument --work-dir: expected one argument\n"
+            "stderr": "использование: derive_shot accept [-h] --work-dir WORK_DIR --confirm CONFIRM\n                                  [--replace] [--json]\nderive_shot accept: ошибка: аргумент --work-dir: нужно одно значение\n"
           }
         ],
         "changed": {},
@@ -2104,7 +2104,7 @@
       "name": "recipe-mode-list",
       "description": "Режим — список: TypeError скрыт.",
       "covers": [
-        "unhashable hidden"
+        "нельзя использовать как ключ (скрытый текст)"
       ],
       "setup": [
         {
@@ -2246,7 +2246,7 @@
         "steps": [
           {
             "code": 1,
-            "stdout": "{\"status\": \"error\", \"message\": \"Expecting ',' delimiter: line 1 column 29 (char 28)\"}\n",
+            "stdout": "{\"status\": \"error\", \"message\": \"неверный JSON: ожидалась запятая: строка 1, столбец 29 (символ 28)\"}\n",
             "stderr": ""
           }
         ],
@@ -3029,7 +3029,7 @@
         "steps": [
           {
             "code": 1,
-            "stdout": "{\"status\": \"error\", \"message\": \"Expecting property name enclosed in double quotes: line 1 column 2 (char 1)\"}\n",
+            "stdout": "{\"status\": \"error\", \"message\": \"неверный JSON: ожидалось имя поля в двойных кавычках: строка 1, столбец 2 (символ 1)\"}\n",
             "stderr": ""
           }
         ],
@@ -13364,7 +13364,7 @@
           },
           {
             "code": 1,
-            "stdout": "{\"status\": \"error\", \"message\": \"Expecting property name enclosed in double quotes: line 1 column 2 (char 1)\"}\n",
+            "stdout": "{\"status\": \"error\", \"message\": \"неверный JSON: ожидалось имя поля в двойных кавычках: строка 1, столбец 2 (символ 1)\"}\n",
             "stderr": ""
           }
         ],

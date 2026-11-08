@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Опора должна быть существующим изображением.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

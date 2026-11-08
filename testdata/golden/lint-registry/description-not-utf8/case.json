@@ -1,5 +1,5 @@
 {
-  "description": "Описание не в UTF-8: UnicodeDecodeError — трассировка.",
+  "description": "Описание не в UTF-8: UnicodeDecodeError — необработанная ошибка.",
   "call": "lint_registry",
   "project": "project",
   "base": "checks-base",

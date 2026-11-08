@@ -2,7 +2,7 @@
   "code": 1,
   "stdout": "",
   "stderr": "Промпт или вход изменён; отправка запрещена.\n",
-  "traceback": false,
+  "unhandled": false,
   "files": {},
   "dirs": {},
   "modes": {}

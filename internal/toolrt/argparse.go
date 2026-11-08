@@ -13,9 +13,9 @@ import (
 //   - каждая строка сначала классифицируется: опция, значение или «--» (после него всё — значения);
 //   - длинную опцию можно сократить до уникального префикса, значение можно дать через «=»;
 //   - короткие флаги склеиваются (-hx), отрицательные числа и строки с пробелом — значения;
-//   - ошибки идут в фиксированном порядке: неоднозначная опция — при классификации,
-//     «expected one argument», «invalid choice», «ignored explicit argument» — в момент обработки
-//     опции, «unrecognized arguments» — в конце; -h печатает справку в момент своей обработки.
+//   - ошибки идут в фиксированном порядке: неоднозначный параметр — при классификации,
+//     «нужно одно значение», «недопустимое значение», «лишнее значение» — в момент обработки
+//     опции, «неизвестные аргументы» — в конце; -h печатает справку в момент своей обработки.
 //
 // Usage и справка форматируются по ширине 78 символов. Тексты, отступы и переносы зафиксированы
 // эталонами вывода инструментов.
@@ -190,7 +190,7 @@ func (p ArgParser) optionParts() []string {
 }
 
 // getLines — жадная укладка частей usage по ширине с отступом indent; с префиксом первая строка
-// начинается сразу после «usage: ».
+// начинается сразу после «использование: ».
 func getLines(parts []string, indent string, prefix string, withPrefix bool) []string {
 	lines := []string{}
 	current := []string{}
@@ -216,7 +216,7 @@ func getLines(parts []string, indent string, prefix string, withPrefix bool) []s
 	return lines
 }
 
-// Usage — «usage: prog [-h] [--flag] … позиционные» и перевод строки. Длинная строка
+// Usage — «использование: prog [-h] [--flag] … позиционные» и перевод строки. Длинная строка
 // переносится: части опций выравниваются под первой после prog, позиционные аргументы начинаются
 // с новой строки.
 func (p ArgParser) Usage() string {
@@ -225,12 +225,12 @@ func (p ArgParser) Usage() string {
 	for _, positional := range p.Positionals {
 		positionals = append(positionals, positional.Name)
 	}
-	const prefix = "usage: "
+	const prefix = "использование: "
 	line := p.Prog + " " + strings.Join(append(append([]string{}, parts...), positionals...), " ")
 	if runeLen(prefix)+runeLen(line) <= helpWidth {
 		return prefix + line + "\n"
 	}
-	// Ветка короткого prog (не длиннее 0.75 ширины): опции всегда есть ([-h]).
+	// Ветка короткого prog (префикс с prog не длиннее 0.75 ширины): опции всегда есть ([-h]).
 	indent := strings.Repeat(" ", runeLen(prefix)+runeLen(p.Prog)+1)
 	lines := getLines(append([]string{p.Prog}, parts...), indent, prefix, true)
 	if len(positionals) > 0 {
@@ -239,7 +239,7 @@ func (p ArgParser) Usage() string {
 	return prefix + strings.Join(lines, "\n") + "\n"
 }
 
-// Help — справка -h: использование, описание, разделы positional arguments и options с
+// Help — справка -h: использование, описание, разделы «аргументы» и «параметры» с
 // выравниванием колонок (колонка справки — длина самого длинного вызова по всем разделам + 4,
 // не дальше 24; текст справки переносится по ширине 78 − колонка).
 func (p ArgParser) Help() string {
@@ -248,7 +248,7 @@ func (p ArgParser) Help() string {
 	for _, positional := range p.Positionals {
 		positionals = append(positionals, row{positional.Name, positional.Help})
 	}
-	rows := []row{{"-h, --help", "show this help message and exit"}}
+	rows := []row{{"-h, --help", "показать справку и выйти"}}
 	for _, flag := range p.Flags {
 		rows = append(rows, row{flag.invocation(), flag.Help})
 	}
@@ -284,15 +284,15 @@ func (p ArgParser) Help() string {
 		}
 	}
 	if len(positionals) > 0 {
-		section("positional arguments", positionals)
+		section("аргументы", positionals)
 	}
-	section("options", rows)
+	section("параметры", rows)
 	return builder.String()
 }
 
-// fail — ошибка аргументов: usage и «prog: error: текст» в stderr, код 2.
+// fail — ошибка аргументов: usage и «prog: ошибка: текст» в stderr, код 2.
 func (p ArgParser) fail(message string) *ArgExit {
-	return &ArgExit{Code: 2, Stderr: p.Usage() + p.Prog + ": error: " + message + "\n"}
+	return &ArgExit{Code: 2, Stderr: p.Usage() + p.Prog + ": ошибка: " + message + "\n"}
 }
 
 // helpName — «-h»/«--help» как строки опций справки.
@@ -383,7 +383,7 @@ func (p ArgParser) parseOptional(arg string) (result *option, ambiguous string) 
 		for index, item := range tuples {
 			names[index] = item.name
 		}
-		return nil, "ambiguous option: " + arg + " could match " + strings.Join(names, ", ")
+		return nil, "неоднозначный параметр " + arg + ": подходят " + strings.Join(names, ", ")
 	}
 	if len(tuples) == 1 {
 		return &tuples[0], ""
@@ -449,7 +449,7 @@ func (p ArgParser) ParseArgs(args []string) (Args, *ArgExit) {
 		seen[name] = true
 		for _, other := range p.Exclusive {
 			if other != name && seen[other] {
-				return p.fail("argument " + name + ": not allowed with argument " + other)
+				return p.fail("аргумент " + name + ": нельзя вместе с " + other)
 			}
 		}
 		return nil
@@ -478,7 +478,7 @@ func (p ArgParser) ParseArgs(args []string) (Args, *ArgExit) {
 					for position, choice := range flag.Choices {
 						quoted[position] = Repr(choice)
 					}
-					return p.fail("argument " + flag.Name + ": invalid choice: " + Repr(value) + " (choose from " + strings.Join(quoted, ", ") + ")")
+					return p.fail("аргумент " + flag.Name + ": недопустимое значение " + Repr(value) + " (допустимо: " + strings.Join(quoted, ", ") + ")")
 				}
 			}
 		}
@@ -539,7 +539,7 @@ func (p ArgParser) ParseArgs(args []string) (Args, *ArgExit) {
 				explicit := *current.explicit
 				if !takes && current.name[1] != '-' && explicit != "" {
 					if current.sep != "" || explicit[0] == '-' {
-						return 0, p.fail("argument " + p.argumentName(current.index) + ": ignored explicit argument " + Repr(explicit))
+						return 0, p.fail("аргумент " + p.argumentName(current.index) + ": лишнее значение " + Repr(explicit))
 					}
 					actions = append(actions, action{index: current.index})
 					first, size := utf8.DecodeRuneInString(explicit)
@@ -566,7 +566,7 @@ func (p ArgParser) ParseArgs(args []string) (Args, *ArgExit) {
 					stop = start + 1
 					break
 				}
-				return 0, p.fail("argument " + p.argumentName(current.index) + ": ignored explicit argument " + Repr(explicit))
+				return 0, p.fail("аргумент " + p.argumentName(current.index) + ": лишнее значение " + Repr(explicit))
 			}
 			count := 0
 			if takes {
@@ -577,11 +577,11 @@ func (p ArgParser) ParseArgs(args []string) (Args, *ArgExit) {
 					}
 				}
 				if count == 0 {
-					message := "expected one argument"
+					message := "нужно одно значение"
 					if p.Flags[current.index].Plus {
-						message = "expected at least one argument"
+						message = "нужно хотя бы одно значение"
 					}
-					return 0, p.fail("argument " + p.argumentName(current.index) + ": " + message)
+					return 0, p.fail("аргумент " + p.argumentName(current.index) + ": " + message)
 				}
 			}
 			stop = start + 1 + count
@@ -627,10 +627,10 @@ func (p ArgParser) ParseArgs(args []string) (Args, *ArgExit) {
 		for position, positional := range remaining {
 			names[position] = positional.Name
 		}
-		return Args{}, p.fail("the following arguments are required: " + strings.Join(names, ", "))
+		return Args{}, p.fail("обязательные аргументы: " + strings.Join(names, ", "))
 	}
 	if len(extras) > 0 {
-		return Args{}, p.fail("unrecognized arguments: " + strings.Join(extras, " "))
+		return Args{}, p.fail("неизвестные аргументы: " + strings.Join(extras, " "))
 	}
 	return result, nil
 }

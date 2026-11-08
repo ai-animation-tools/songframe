@@ -1,4 +1,4 @@
 {
-  "error": "The \"path\" argument must be of type string. Received undefined",
+  "error": "путь должен быть строкой",
   "sameAsStatus": null
 }

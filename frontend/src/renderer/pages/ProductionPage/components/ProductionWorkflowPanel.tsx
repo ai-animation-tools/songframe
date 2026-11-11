@@ -177,7 +177,9 @@ export function ProductionWorkflowPanel({
           ) : null}
         </Stack>
       ) : null}
-      {view?.canRevise && !reviewable && !questionOpen ? (
+      {/* Пока видеопромпта нет и ничего не возвращено на доработку, дорабатывать нечего: доработка повторила бы
+          «Подготовить видеопромпт» с указаниями. */}
+      {view?.canRevise && !(promptNext && decision?.verdict !== 'revise') && !reviewable && !questionOpen ? (
         reviseOpen || savedNote ? (
           <Stack spacing={1} ref={reviseArea}>
             <TextField

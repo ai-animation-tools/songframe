@@ -919,8 +919,11 @@ func buildKit(ctx context.Context, root, shot string, frames toolrt.Int, staging
 		if !originalMedia.Has("nb_frames") {
 			nbFrames = 0
 		}
-		if !toolrt.Equal(originalMedia.Value("r_frame_rate"), "30/1") || nbFrames != count {
-			return nil, "", valueError("Полный оригинал не совпадает с окном и FPS; задайте участок.")
+		// Целиком без перекодирования принимается только ролик в кадре проекта: другой размер
+		// (например, видео, созданное вне приложения) приводится к 1920×1080 участком.
+		if !toolrt.Equal(originalMedia.Value("r_frame_rate"), "30/1") || nbFrames != count ||
+			!toolrt.Equal(originalMedia.Value("width"), toolrt.NewInt(1920)) || !toolrt.Equal(originalMedia.Value("height"), toolrt.NewInt(1080)) {
+			return nil, "", valueError("Полный оригинал не совпадает с окном, кадром 1920×1080 и FPS; задайте участок.")
 		}
 		if err := copyFile(toolrt.JoinPath(staging, "original.mp4"), toolrt.JoinPath(staging, "video.mp4")); err != nil {
 			return nil, "", err
@@ -989,7 +992,11 @@ func buildKit(ctx context.Context, root, shot string, frames toolrt.Int, staging
 	snapshot.Set("generation_id", attempt.Value("generation_id"))
 	snapshot.Set("service_status", attempt.Value("service_status"))
 	snapshot.Set("path_base", "asset_directory")
-	if toolrt.Truthy(attempt.Value("manual_result")) {
+	if generation, ok := attempt.Value("manual_generation").(*toolrt.Dict); ok {
+		// Видео создано вне приложения: снимок хранит, откуда оно и что записал пользователь.
+		snapshot.Set("provenance", "Видео создано вне приложения: "+toolrt.Str(generation.Value("source"))+".")
+		snapshot.Set("manual_generation", generation)
+	} else if toolrt.Truthy(attempt.Value("manual_result")) {
 		snapshot.Set("provenance", "Исход отправки остался неизвестен; оригинал загружен пользователем из истории генераций сервиса, "+
 			"ID задания неизвестен.")
 	}

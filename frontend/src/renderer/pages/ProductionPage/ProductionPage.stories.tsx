@@ -479,6 +479,52 @@ export const GenerationStep: Story = {
   }
 };
 
+/** Речевой план у провайдера без липсинка: опора и промпт утверждены, срез речи готов, пакет ещё не собран. */
+function manualShots(): ShotProduction[] {
+  const source = preparedPackage();
+  const ready = {
+    ...source,
+    stage: 'prompt_review',
+    stageLabel: 'Видеопромпт утверждён',
+    request: null,
+    pendingDecision: null,
+    decision: { stage: 'prompt_review', verdict: 'approve' },
+    keyframes: source.keyframes.filter((frame) => frame.role === 'first').map((frame) => ({ ...frame, approved: true })),
+    prompt: source.prompt ? { ...source.prompt, approved: true } : null,
+    speech: { path: `${source.dir}/audio/speech.wav`, recipe: `${source.dir}/audio/audio-recipe.json`, start: 12, end: 17, lines: [] }
+  };
+  return baseShots({ lipsync: true, stageLabel: ready.stageLabel, attention: null, packages: [ready] });
+}
+
+export const ManualGeneration: Story = {
+  tags: ['ci'],
+  name: 'Ручная генерация · сборка пакета, загрузка видео и вопрос о результате',
+  parameters: { songframe: options({ manual: true, shots: manualShots }) },
+  play: async (context) => {
+    const screen = screenOf(context);
+    const manual = texts.manualGeneration;
+    await expect(await screen.findByText(steps.now({ text: steps.buildManual }), {}, POLL_TIMEOUT)).toBeInTheDocument();
+    // Вместо запроса и генерации — один шаг ручной генерации; платной отправки нет.
+    await expect(planStep(context, 'generation')).toBeNull();
+    const step = within(planStep(context, 'request'));
+    await expect(step.getByText(steps.titles.manual)).toBeInTheDocument();
+    await userEvent.click(await step.findByRole('button', { name: manual.build }));
+    await expect(await step.findByText(manual.built, {}, POLL_TIMEOUT)).toBeInTheDocument();
+    await expect(step.getByRole('link', { name: 'https://example.test/avatar' })).toBeInTheDocument();
+    await expect(await screen.findByText(steps.now({ text: steps.uploadManual }), {}, POLL_TIMEOUT)).toBeInTheDocument();
+    await userEvent.click(step.getByRole('button', { name: new RegExp(manual.zone) }));
+    await step.findByText(manual.chosen({ name: STORY_VIDEO_PATH.split('/').pop()! }));
+    await userEvent.type(step.getByRole('textbox', { name: new RegExp(manual.source) }), 'Тестовый сервис на сайте');
+    await userEvent.type(step.getByRole('textbox', { name: manual.cost }), '75');
+    await userEvent.click(step.getByRole('button', { name: manual.upload }));
+    // После загрузки — обычный вопрос о результате, сведения о видео остаются у результата.
+    await expect(await screen.findByText(steps.now({ text: steps.reviewResult }), {}, POLL_TIMEOUT)).toBeInTheDocument();
+    await expect(await within(planStep(context, 'result')).findByText(/Источник: Тестовый сервис на сайте · Стоимость: 75 кредитов/)).toBeInTheDocument();
+    await expect(counts(context)).toHaveTextContent('Отправок генерации: 0.');
+    await expect(counts(context)).toHaveTextContent('Пакетов ручной генерации: 1. Загрузок видео: 1.');
+  }
+};
+
 export const GenerationInterrupted: Story = {
   tags: ['ci'],
   name: 'Шаг генерации · после перезапуска ждать нечего, результат забирает кнопка',

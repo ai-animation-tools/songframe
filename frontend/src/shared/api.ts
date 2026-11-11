@@ -39,6 +39,7 @@ import type {
   DashboardView,
   EnvironmentCheck,
   JobInfo,
+  ManualVideo,
   PickOptions,
   PreviousSessionInfo,
   RendererErrorReport,
@@ -87,6 +88,8 @@ export interface Api {
     discard(project: string, shot: string, packageDir: string | undefined, id: string): Promise<ProductionWorkflowView>;
     generateFrames(project: string, shot: string, packageDir: string): Promise<ProductionWorkflowView>;
     importFrames(project: string, shot: string, packageDir: string, images: ProductionFrameCandidate[]): Promise<ProductionWorkflowView>;
+    /** Речевой план у провайдера без липсинка: собирает без агента пакет для генерации вне приложения (опора, срез речи, промпт). */
+    buildManual(project: string, shot: string, packageDir: string): Promise<ProductionWorkflowView>;
   };
   scenarioWorkflow: {
     view(project: string): Promise<ScenarioWorkflowView>;
@@ -198,6 +201,8 @@ export interface Api {
     attachResult(project: string, packageDir: string, files: string[]): Promise<JobInfo>;
     /** Неизвестный исход: генерации нет в истории сервиса, попытка снова ждёт подтверждения отправки. */
     markNotCreated(project: string, packageDir: string): Promise<void>;
+    /** Видео, созданное вне приложения по пакету ручной генерации, становится оригиналом попытки с источником и примечаниями. */
+    attachManual(project: string, packageDir: string, result: ManualVideo): Promise<JobInfo>;
     /** Выбирает кандидат опоры; художественное утверждение кадра выполняется отдельно. */
     selectImage(project: string, packageDir: string, index: number, expectedResultToken: string): Promise<void>;
     regenerate(project: string, shot: string): Promise<JobInfo>;
@@ -276,6 +281,8 @@ export interface Api {
   };
   shell: {
     openPath(path: string): Promise<void>;
+    /** Веб-адрес http или https в браузере ОС: встроенное окно внешние ссылки само не открывает. */
+    openExternal(url: string): Promise<void>;
     /** Текст небольшого файла (текст песни, идея) для подстановки в форму. */
     readText(path: string): Promise<string>;
     /** Абсолютный путь в URL локального медиасервера Go для <img>, <audio> и <video>; синхронно. */

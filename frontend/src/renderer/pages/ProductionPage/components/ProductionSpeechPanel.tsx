@@ -5,7 +5,7 @@ import { Alert, Box, Paper, Stack, TextField, Typography } from '@mui/material';
 import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
 import ContentCutIcon from '@mui/icons-material/ContentCut';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
-import type { PackageView, SpeechPlan } from '@shared/types';
+import type { PackageSpeech, PackageView, SpeechPlan } from '@shared/types';
 import { useApp } from '../../../state';
 import { formatClock } from '../../../format';
 import { ANCHORS } from '../../../components/linkTargets';
@@ -14,6 +14,27 @@ import { ActionButton } from '../../../components/ActionButton';
 import { BUSY_REASON } from '../constants';
 
 const seconds = productionTexts.productionSpeechPanel.seconds;
+
+/**
+ * Готовый срез речи: границы в песне и плеер WAV. Шаг «Речь» после нарезки сворачивается, поэтому следующий шаг
+ * (ручная генерация) показывает тот же блок, чтобы срез можно было прослушать перед сборкой пакета.
+ */
+export function SpeechSlice({ speech }: { speech: PackageSpeech }): ReactElement {
+  return (
+    <Alert severity="success" sx={{ '& .MuiAlert-message': { width: '100%' } }}>
+      <Stack spacing={1}>
+        <Typography variant="body1" fontWeight={600}>
+          {productionTexts.productionSpeechPanel.ready({
+            start: formatClock(speech.start),
+            end: formatClock(speech.end),
+            seconds: seconds(speech.end - speech.start)
+          })}
+        </Typography>
+        <Box component="audio" controls preload="metadata" src={window.api.shell.fileUrl(speech.path)} sx={{ width: '100%', maxWidth: 520 }} />
+      </Stack>
+    </Alert>
+  );
+}
 
 export function ProductionSpeechPanel({
   project,
@@ -59,18 +80,18 @@ export function ProductionSpeechPanel({
     setEnd(bounds ? String(bounds.end) : '');
   }, [bounds?.start, bounds?.end]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Пакет ручной генерации уже содержит копию WAV: срез, как и у отправленного запроса, больше не меняется.
   const sent = !!pkg.request?.attemptStatus && pkg.request.attemptStatus !== 'prepared';
+  const manual = pkg.request?.mode === 'manual';
   const startValue = Number(start.replace(',', '.'));
   const endValue = Number(end.replace(',', '.'));
   const boundsProblem =
     start.trim() === '' || end.trim() === '' || !Number.isFinite(startValue) || !Number.isFinite(endValue) || startValue < 0 || endValue <= startValue
       ? productionTexts.productionSpeechPanel.invalidRange
-      : plan && !plan.lipSync
-        ? productionTexts.productionSpeechPanel.unsupported
-        : plan?.lipSync && (endValue - startValue < plan.lipSync.min - 1e-6 || endValue - startValue > plan.lipSync.max + 1e-6)
-          ? productionTexts.productionSpeechPanel.duration({ min: plan.lipSync.min, max: plan.lipSync.max })
-          : null;
-  const sentReason = productionTexts.productionSpeechPanel.sent;
+      : plan?.lipSync && (endValue - startValue < plan.lipSync.min - 1e-6 || endValue - startValue > plan.lipSync.max + 1e-6)
+        ? productionTexts.productionSpeechPanel.duration({ min: plan.lipSync.min, max: plan.lipSync.max })
+        : null;
+  const sentReason = manual ? productionTexts.manualGeneration.builtSpeech : productionTexts.productionSpeechPanel.sent;
   const reason = sent ? sentReason : working ? BUSY_REASON : busy ? busyReason : boundsProblem;
   const lines = speech?.lines.length ? speech.lines : (plan?.lines ?? []);
 
@@ -119,18 +140,7 @@ export function ProductionSpeechPanel({
         ) : plan ? (
           <Alert severity="info">{productionTexts.productionSpeechPanel.noTiming}</Alert>
         ) : null}
-        {speech ? (
-          <Stack spacing={0.5}>
-            <Typography variant="body2">
-              {productionTexts.productionSpeechPanel.ready({
-                start: formatClock(speech.start),
-                end: formatClock(speech.end),
-                seconds: seconds(speech.end - speech.start)
-              })}
-            </Typography>
-            <Box component="audio" controls preload="metadata" src={window.api.shell.fileUrl(speech.path)} sx={{ width: '100%', maxWidth: 520 }} />
-          </Stack>
-        ) : null}
+        {speech ? <SpeechSlice speech={speech} /> : null}
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
           <TextField
             label={productionTexts.productionSpeechPanel.cutStart}

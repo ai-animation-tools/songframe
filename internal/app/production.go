@@ -206,6 +206,15 @@ func (s *ProductionService) AttachResult(ctx context.Context, project, packageDi
 	return wire.Done(s.production.AttachResult(project, packageDir, files))
 }
 
+// AttachManual — видео, созданное вне приложения по пакету ручной генерации, становится оригиналом.
+// Вход в сервис провайдера не нужен: видео уже создано и только копируется в попытку.
+func (s *ProductionService) AttachManual(project, packageDir string, result production.ManualResult) (jobs.Info, error) {
+	if err := s.idle(project, packageDir); err != nil {
+		return jobs.Info{}, err
+	}
+	return wire.Done(s.production.AttachManual(project, packageDir, result))
+}
+
 // MarkNotCreated — неизвестный исход: генерации нет, попытка снова ждёт подтверждения.
 func (s *ProductionService) MarkNotCreated(ctx context.Context, project, packageDir string) error {
 	if err := s.packageAccess(ctx, project, packageDir); err != nil {
@@ -286,10 +295,9 @@ func (s *ProductionService) PrepareSpeech(project, packageDir string, bounds *pr
 	if err != nil {
 		return nil, err
 	}
-	if limits.LipSync == nil {
-		return nil, errors.New(production.TextSpeechUnsupported)
-	}
-	if bounds != nil && (bounds.End-bounds.Start < limits.LipSync.Min-1e-6 || bounds.End-bounds.Start > limits.LipSync.Max+1e-6) {
+	// Без липсинка у провайдера видео создаётся вручную вне приложения: допустимую длину звука
+	// приложение не знает и не ограничивает.
+	if bounds != nil && limits.LipSync != nil && (bounds.End-bounds.Start < limits.LipSync.Min-1e-6 || bounds.End-bounds.Start > limits.LipSync.Max+1e-6) {
 		return nil, errors.New(production.TextSpeechDuration(limits.LipSync.Min, limits.LipSync.Max))
 	}
 	return wire.Done(s.production.PrepareSpeech(project, packageDir, bounds))

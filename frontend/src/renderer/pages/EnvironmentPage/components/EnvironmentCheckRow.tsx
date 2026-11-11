@@ -1,7 +1,7 @@
 import { environmentTexts } from '@shared/texts/environment';
 import type { ReactElement } from 'react';
 import { SlottedText } from '../../../components/SlottedText';
-import { Box, Button, Chip, CircularProgress, Link, ListItem, ListItemIcon, ListItemText, Stack, Typography } from '@mui/material';
+import { Box, Button, Chip, CircularProgress, ListItem, ListItemIcon, ListItemText, Stack, Typography } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
@@ -12,6 +12,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import type { EnvironmentCheck } from '@shared/types';
 import { OFFLINE_MESSAGE } from '../../../network';
 import { ActionButton } from '../../../components/ActionButton';
+import { ExternalLink } from '../../../components/ExternalLink';
 
 export type EnvironmentCheckCategory = 'core' | 'external';
 export type ProviderAuthStatus = 'checking' | 'authenticated' | 'unauthenticated' | 'unknown';
@@ -123,11 +124,7 @@ export function EnvironmentCheckRow({ check, category, logins }: EnvironmentChec
                       <SlottedText
                         text={environmentTexts.browserNotOpened}
                         slots={{
-                          link: (
-                            <Link href={login.authorizeUrl} target="_blank" rel="noreferrer">
-                              {environmentTexts.openLogin}
-                            </Link>
-                          )
+                          link: <ExternalLink href={login.authorizeUrl}>{environmentTexts.openLogin}</ExternalLink>
                         }}
                       />
                     ) : null}

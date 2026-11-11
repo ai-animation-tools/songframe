@@ -48,6 +48,26 @@ describe('путь плана', () => {
     expect(planPath(shot(), approved, view()).current).toBe('request');
   });
 
+  it('ручная генерация заменяет запрос и генерацию одним шагом', () => {
+    const manual = view({ manual: true });
+    const keys = planPath(shot({ lipsync: true }), null, manual).steps.map((step) => step.key);
+    expect(keys).toEqual(['description', 'frames', 'prompt', 'speech', 'request', 'result']);
+    const speech = { path: 's.wav', recipe: 'r.json', start: 0, end: 5, lines: [] };
+    const approved = pkg({ stage: 'prompt_review', keyframes: [frame('K01', true)], prompt: { path: 'p', approved: true, text: 'x' }, speech });
+    const before = planPath(shot({ lipsync: true }), approved, manual);
+    expect(before.current).toBe('request');
+    expect(before.steps[4].title).toBe('Ручная генерация');
+    expect(before.now).toContain('соберите пакет');
+    const built = pkg({
+      ...approved,
+      stage: 'request_choice',
+      request: { mode: 'manual', attemptStatus: 'manual_pending', inputs: [], downloads: [] } as unknown as PackageView['request']
+    });
+    expect(planPath(shot({ lipsync: true }), built, manual).now).toContain('загрузите');
+    // Задание загрузки проходит этап «отправлено»: план остаётся на шаге ручной генерации.
+    expect(planPath(shot({ lipsync: true }), pkg({ ...built, stage: 'submitted' }), manual, false, true)).toMatchObject({ current: 'request', tone: 'wait' });
+  });
+
   it('идущий агент — ожидание, готовое предложение — ход пользователя', () => {
     expect(planPath(shot(), null, view({ proposal: proposal('description', 'running') }))).toMatchObject({ current: 'description', tone: 'wait' });
     expect(planPath(shot(), pkg(), view({ proposal: proposal('prompt', 'ready') }))).toMatchObject({ current: 'prompt', tone: 'action' });

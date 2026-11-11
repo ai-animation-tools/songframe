@@ -86,7 +86,8 @@ export function unconfiguredStoryApi(): Api {
       apply: async () => unconfigured('productionWorkflow.apply'),
       discard: async () => unconfigured('productionWorkflow.discard'),
       generateFrames: async () => unconfigured('productionWorkflow.generateFrames'),
-      importFrames: async () => unconfigured('productionWorkflow.importFrames')
+      importFrames: async () => unconfigured('productionWorkflow.importFrames'),
+      buildManual: async () => unconfigured('productionWorkflow.buildManual')
     },
     scenarioWorkflow: {
       view: async () => unconfigured('scenarioWorkflow.view'),
@@ -168,6 +169,7 @@ export function unconfiguredStoryApi(): Api {
       submit: async () => unconfigured('production.submit'),
       resume: async () => unconfigured('production.resume'),
       attachResult: async () => unconfigured('production.attachResult'),
+      attachManual: async () => unconfigured('production.attachManual'),
       markNotCreated: async () => unconfigured('production.markNotCreated'),
       selectImage: async () => unconfigured('production.selectImage'),
       regenerate: async () => unconfigured('production.regenerate'),
@@ -225,6 +227,7 @@ export function unconfiguredStoryApi(): Api {
     },
     shell: {
       openPath: async () => unconfigured('shell.openPath'),
+      openExternal: async () => unconfigured('shell.openExternal'),
       readText: async () => unconfigured('shell.readText'),
       fileUrl: () => unconfigured('shell.fileUrl'),
       onFilesDropped: () => unconfigured('shell.onFilesDropped')

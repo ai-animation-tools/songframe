@@ -11,6 +11,7 @@ import (
 	"songframe/internal/acceptance"
 	"songframe/internal/derivedshot"
 	"songframe/internal/dynvalue"
+	"songframe/internal/mediaproviders"
 	"songframe/internal/projectfile"
 	"songframe/internal/providers"
 )
@@ -181,6 +182,13 @@ func attention(pkg *PackageView) string {
 func sameProvider(left, right string) bool {
 	l, r := dynvalue.Trim(left), dynvalue.Trim(right)
 	return l != "" && r != "" && strings.ToLower(l) == strings.ToLower(r)
+}
+
+// manualProvider — выбранный провайдер видео известен и не умеет липсинк: речевые планы с ним
+// создаются вручную вне приложения (productionworkflow.Context.Manual).
+func manualProvider(selected string) bool {
+	info, ok := mediaproviders.Lookup(selected)
+	return ok && info.LipSync == nil
 }
 
 // regenerateProblem — повтор выбирает источник как regenerate_shot --source auto: последний по
@@ -452,6 +460,10 @@ func shotProduction(project string, scene any, id string, packages []*PackageVie
 	if source := derivedshot.Source(scene); source != "" {
 		shot.DerivedFrom = &source
 		shot.RegenerateProblem = optional(derivedshot.Reason(source))
+	} else if dynvalue.StrictEqual(dynvalue.Get(scene, "lipsync"), true) && manualProvider(selected) {
+		// Речевой план у провайдера без липсинка делается вручную вне приложения: сохранённый запрос
+		// сервису повторять нельзя, нужна новая попытка с пакетом ручной генерации.
+		shot.RegenerateProblem = optional(textRetryManual(id))
 	} else {
 		shot.RegenerateProblem = optional(regenerateProblem(project, id, mine, selected))
 	}

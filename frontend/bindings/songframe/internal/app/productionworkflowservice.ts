@@ -29,6 +29,14 @@ export function Apply(project: string, shot: string, packageDir: string, id: str
 }
 
 /**
+ * BuildManual — productionWorkflow.buildManual: пакет ручной генерации речевого плана у
+ * провайдера без липсинка собирается без агента; доступ к ИИ и провайдеру не нужен.
+ */
+export function BuildManual(project: string, shot: string, packageDir: string): $CancellablePromise<productionworkflow$0.View> {
+    return $Call.ByID(3546597880, project, shot, packageDir);
+}
+
+/**
  * Discard — productionWorkflow.discard: отклонение непринятого предложения.
  */
 export function Discard(project: string, shot: string, packageDir: string, id: string): $CancellablePromise<productionworkflow$0.View> {

@@ -52,7 +52,7 @@ func TestProviderDocs(t *testing.T) {
 	want := map[[2]string]string{
 		{"image", "kling"}: "df5ac648b48827961f08877ec36660eb13f8aa5fc87b8a9e61b01901eb3da615",
 		{"image", "codex"}: "109a423e5eb1b66d2fccb1635a770bbb0c3d91ad8766274f6a263cd22153610b",
-		{"video", "kling"}: "89e9868af7eeae9bc5617a2a32f843275050ead0cad79d1e6f8d250a3fcdabe9",
+		{"video", "kling"}: "679945f5a4eb20a4ad75859708d02a436239c8c1fa538789bcc815712aa4d41d",
 	}
 	for key, digest := range want {
 		data, err := ProviderDoc(key[0], key[1])

@@ -207,7 +207,8 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
       apply: guardedAsync(merged.productionWorkflow.apply),
       discard: guardedAsync(merged.productionWorkflow.discard),
       generateFrames: guardedAsync(merged.productionWorkflow.generateFrames),
-      importFrames: guardedAsync(merged.productionWorkflow.importFrames)
+      importFrames: guardedAsync(merged.productionWorkflow.importFrames),
+      buildManual: guardedAsync(merged.productionWorkflow.buildManual)
     },
     scenarioWorkflow: {
       view: guardedAsync(merged.scenarioWorkflow.view),
@@ -289,6 +290,7 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
       submit: guardedAsync(merged.production.submit),
       resume: guardedAsync(merged.production.resume),
       attachResult: guardedAsync(merged.production.attachResult),
+      attachManual: guardedAsync(merged.production.attachManual),
       markNotCreated: guardedAsync(merged.production.markNotCreated),
       selectImage: guardedAsync(merged.production.selectImage),
       regenerate: guardedAsync(merged.production.regenerate),
@@ -346,6 +348,7 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
     },
     shell: {
       openPath: guardedAsync(merged.shell.openPath),
+      openExternal: guardedAsync(merged.shell.openExternal),
       readText: guardedAsync(merged.shell.readText),
       fileUrl: guardedSync(merged.shell.fileUrl),
       onFilesDropped: guardedSync(merged.shell.onFilesDropped)

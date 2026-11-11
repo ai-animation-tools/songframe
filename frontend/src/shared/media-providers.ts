@@ -17,6 +17,12 @@ export interface MediaProviderInfo {
    * Речевой план с таким провайдером не готовится: приложение блокирует действия и объясняет причину.
    */
   lipSync: { min: number; max: number } | null;
+  /**
+   * Как сделать видео речевого плана вне приложения, если у провайдера нет липсинка (lipSync null): адрес кабинета, шаги
+   * и пример источника для поля загрузки. В шагах {url} становится ссылкой, {image} и {audio} — именами файлов пакета.
+   * null — пошаговой инструкции нет: пакет и загрузка видео работают и без неё.
+   */
+  manualLipSync: { url: string; steps: readonly string[]; sourceExample: string } | null;
   /** Сервис не сообщает цену заранее: приложение запоминает фактическое списание и показывает цену для такой же конфигурации запроса. */
   learnsPriceFromCharges: boolean;
   /**
@@ -58,6 +64,21 @@ export const MEDIA_PROVIDERS: Record<MediaProviderId, MediaProviderInfo> = {
     paid: true,
     // Звуковой слот audio_1 режима omni_ref_video — референс звука: губы с ним не синхронизируются.
     lipSync: null,
+    // Режим Avatar есть только на сайте сервиса, не в его MCP: речевой план делается по пакету вручную.
+    /* eslint-disable no-restricted-syntax -- Особенность конкретного провайдера: его сайт и режим генерации. */
+    manualLipSync: {
+      url: 'https://kling.ai/app/creations/grid',
+      steps: [
+        'Откройте сайт Kling {url} и выберите режим Avatar.',
+        'Загрузите изображение {image} из папки пакета.',
+        'Загрузите звук {audio}.',
+        'Вставьте видеопромпт.',
+        'Выберите разрешение 1080p и количество 1.',
+        'Скачайте подходящий результат и загрузите его ниже.'
+      ],
+      sourceExample: 'Kling Avatar на сайте'
+    },
+    /* eslint-enable no-restricted-syntax */
     learnsPriceFromCharges: true,
     // eslint-disable-next-line no-restricted-syntax -- Особенность конкретного провайдера принадлежит его реестру, а не общему словарю интерфейса.
     generationHistory: 'галерею созданных работ на сайте kling.ai (раздел Creations, адрес kling.ai/app/creations)',
@@ -121,6 +142,7 @@ export const MEDIA_PROVIDERS: Record<MediaProviderId, MediaProviderInfo> = {
     executor: 'codex',
     paid: false,
     lipSync: null,
+    manualLipSync: null,
     learnsPriceFromCharges: false,
     generationHistory: null,
     requestParameters: false,

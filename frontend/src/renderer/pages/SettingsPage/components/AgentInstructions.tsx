@@ -1,11 +1,12 @@
 /** Официальные инструкции ведут во внешний браузер; вход выполняется пользователем в терминале. */
 import type { ReactElement } from 'react';
-import { Link, Stack, Typography } from '@mui/material';
+import { Stack, Typography } from '@mui/material';
 import type { AgentCheckResult } from '@shared/agents';
 import { AGENT_PROVIDERS, type AgentProvider } from '@shared/agent-providers';
 import { agentInstructionsTexts } from '@shared/texts/agent-instructions';
 import { SlottedText } from '../../../components/SlottedText';
 import { useApp } from '../../../state';
+import { ExternalLink } from '../../../components/ExternalLink';
 
 export function AgentInstructions({ provider, result }: { provider: AgentProvider; result: AgentCheckResult }): ReactElement | null {
   const { state } = useApp();
@@ -31,13 +32,9 @@ export function AgentInstructions({ provider, result }: { provider: AgentProvide
       )}
       <Stack direction="row" spacing={2}>
         {missing ? (
-          <Link href={info.installUrl} target="_blank" rel="noreferrer">
-            {agentInstructionsTexts.installation}
-          </Link>
+          <ExternalLink href={info.installUrl}>{agentInstructionsTexts.installation}</ExternalLink>
         ) : (
-          <Link href={info.loginUrl} target="_blank" rel="noreferrer">
-            {agentInstructionsTexts.authorization}
-          </Link>
+          <ExternalLink href={info.loginUrl}>{agentInstructionsTexts.authorization}</ExternalLink>
         )}
       </Stack>
     </Stack>

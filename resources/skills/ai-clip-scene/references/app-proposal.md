@@ -17,8 +17,8 @@
 }
 ```
 
-- `requestSeconds` — целое число по `settings.duration_rule`: строго больше окна для `min_supported_strictly_greater_than_window`, не меньше для `min_supported_not_less_than_window`, ровно окно для `exact_window`. Дробное окно с `exact_window` несовместимо с целой длительностью: верни понятную ошибку вместо округления.
-- `keyframes`: от 2 до 20 опор по возрастанию времени. ID `K01`, `K02`, … подряд; роль `first` у первой (время `0`), `last` у последней (время `requestSeconds`), `middle` у промежуточных строго между ними. При совместимой доработке ID сохраняются.
+- `requestSeconds` — целое число по `settings.duration_rule`: строго больше окна для `min_supported_strictly_greater_than_window`, не меньше для `min_supported_not_less_than_window`, ровно окно для `exact_window`. Дробное окно с `exact_window` несовместимо с целой длительностью: верни понятную ошибку вместо округления. При `manualGeneration=true` модель не выбирается: возьми наименьшее целое число по правилу, без сетки длительностей моделей и пределов `lipSync`.
+- `keyframes`: от 2 до 20 опор по возрастанию времени. ID `K01`, `K02`, … подряд; роль `first` у первой (время `0`), `last` у последней (время `requestSeconds`), `middle` у промежуточных строго между ними. При совместимой доработке ID сохраняются. При `manualGeneration=true` — ровно одна опора `K01` (роль `first`, время `0`).
 - `prompt` каждой опоры — полный самодостаточный промпт изображения по [каркасу промптов](prompt-template.md): внешность из кастинга, действие и камера, дословная врезка непрерывности (`before` для первой и промежуточных, `after` для последней).
 - `referencePaths` — только PNG/JPEG/WebP из `allowedPaths`; пути не выдумывай.
 

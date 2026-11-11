@@ -70,6 +70,8 @@ export interface ProductionPageModelOptions {
   videoReview?: { failFirstRun?: boolean; runMs?: number };
   /** Идёт получение результата: Go сообщает о занятой попытке. */
   receiving?: boolean;
+  /** Провайдер видео без липсинка: речевой план идёт ручной генерацией по пакету, с пошаговой инструкцией в реестре. */
+  manual?: boolean;
 }
 
 interface PageModel {
@@ -86,6 +88,8 @@ interface PageModel {
   discards: number;
   reviewStarts: number;
   reviewCancels: number;
+  manualBuilds: number;
+  manualUploads: number;
   subscribe(listener: () => void): () => void;
   revision(): number;
 }
@@ -136,6 +140,8 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
         discards: 0,
         reviewStarts: 0,
         reviewCancels: 0,
+        manualBuilds: 0,
+        manualUploads: 0,
         subscribe(listener) {
           listeners.add(listener);
           return () => {
@@ -208,7 +214,16 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
         const pkg = model.view.shots.flatMap((item) => item.packages).find((item) => item.dir === packageDir);
         // Как в Go: следующая опора доступна, пока к попытке нет открытого вопроса.
         const nextFrame = pkg && !pkg.pendingDecision ? (pkg.keyframes.find((frame) => !frame.approved && !frame.imagePath)?.id ?? null) : null;
+        // Как Go: пакет ручной генерации собирается после утверждённого промпта и готового среза, один раз на попытку.
+        const manualReason = !pkg
+          ? null
+          : pkg.request
+            ? 'Пакет для ручной генерации уже собран.'
+            : !pkg.speech
+              ? 'Сначала подготовьте WAV в блоке «Речь».'
+              : null;
         return workflowView({
+          ...(options.manual ? { manual: true, canBuildManual: !!pkg && !manualReason, videoProvider: TEST_PROVIDER } : {}),
           project: PAGE_PROJECT,
           shot,
           packageDir: packageDir ?? null,
@@ -218,7 +233,12 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
           nextFrame,
           proposal: (packageDir && frameImports.get(packageDir)) || null,
           reasons: packageDir
-            ? { prepare: null, continue: 'Сначала ответьте на вопрос пакета.', frames: nextFrame ? null : 'Сначала ответьте на вопрос пакета.' }
+            ? {
+                prepare: null,
+                continue: 'Сначала ответьте на вопрос пакета.',
+                frames: nextFrame ? null : 'Сначала ответьте на вопрос пакета.',
+                ...(options.manual ? { manual: manualReason } : {})
+              }
             : workflowView().reasons
         });
       };
@@ -312,6 +332,38 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
             });
             return structuredClone(job);
           },
+          // Загрузка видео ручной генерации: оригинал и сведения записываются сразу, затем вопрос о результате.
+          attachManual: async (project, dir, video) => {
+            const { shot, pkg } = find(project, dir);
+            if (pkg.request?.mode !== 'manual' || pkg.request.attemptStatus !== 'manual_pending') throw new Error('Пакет ручной генерации не ждёт видео.');
+            if (!video.source.trim()) throw new Error('Укажите источник видео.');
+            model.manualUploads++;
+            pkg.request = {
+              ...pkg.request,
+              attemptStatus: 'downloaded',
+              manualResult: true,
+              downloads: [video.file],
+              manualGeneration: {
+                source: video.source,
+                original_name: video.file.split('/').pop() ?? video.file,
+                attached_at: DATE,
+                cost: video.costAmount === null || !video.costUnit ? null : { amount: video.costAmount, unit: video.costUnit },
+                description: video.note || null
+              }
+            };
+            pkg.stage = 'downloaded';
+            pkg.stageLabel = 'Результат получен';
+            pkg.resultToken = `manual-result-${model.manualUploads}`;
+            ask(shot, pkg, {
+              stage: 'downloaded',
+              question: 'Принять полученный результат?',
+              options: ['accept', 'retry', 'review', 'revise'],
+              asked_at: DATE
+            });
+            shot.stageLabel = pkg.stageLabel;
+            publish();
+            return deliveryJob('submit', { id: `manual-${shot.id}-${model.manualUploads}`, project: PAGE_PROJECT, status: 'done', code: 0, finishedAt: DATE });
+          },
           discardAttempt: async (project, dir) => {
             const { shot, pkg } = find(project, dir);
             shot.packages = shot.packages.filter((item) => item !== pkg);
@@ -367,6 +419,36 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
             publish();
             return workflowSnapshot(project, shot, dir);
           },
+          buildManual: async (project, shot, dir) => {
+            const { pkg } = find(project, dir);
+            if (!options.manual || pkg.request || !pkg.speech) throw new Error('Пакет для ручной генерации сейчас собрать нельзя.');
+            const requestDir = `${pkg.dir}/request-01`;
+            model.manualBuilds++;
+            pkg.stage = 'request_choice';
+            pkg.stageLabel = 'Пакет для ручной генерации собран';
+            pkg.request = {
+              dir: requestDir,
+              kind: 'video',
+              provider: TEST_PROVIDER,
+              mode: 'manual',
+              sha256: 'b'.repeat(64),
+              model: '',
+              parameters: { duration: pkg.timing?.request_seconds ?? 5 },
+              inputs: [
+                { slot: 'image', role: 'Опора K01', path: 'inputs/01.png', imagePath: `${requestDir}/inputs/01.png` },
+                { slot: 'audio', role: 'Срез речи', path: 'inputs/02.wav', imagePath: `${requestDir}/inputs/02.wav` }
+              ],
+              attemptStatus: 'manual_pending',
+              promptText: pkg.prompt?.text ?? null,
+              generationId: null,
+              manualResult: false,
+              creditsConsumed: null,
+              downloads: []
+            };
+            touch(pkg);
+            publish();
+            return workflowSnapshot(project, shot, dir);
+          },
           importFrames: async (project, shot, dir, images) => {
             find(project, dir);
             model.frameImports++;
@@ -389,11 +471,27 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
             return workflowSnapshot(project, shotId, pkg.dir);
           }
         },
-        dialog: { pickFiles: async () => [STORY_IMAGE_PATH] },
+        dialog: { pickFiles: async () => [options.manual ? STORY_VIDEO_PATH : STORY_IMAGE_PATH] },
+        shell: { openPath: async () => undefined },
         derivedShots: derived.api.derivedShots
       });
       models.set(session.api, model);
-      session.onCleanup(registerMediaProviderForTests(TEST_PROVIDER, testProviderInfo));
+      session.onCleanup(
+        registerMediaProviderForTests(
+          TEST_PROVIDER,
+          options.manual
+            ? {
+                ...testProviderInfo,
+                lipSync: null,
+                manualLipSync: {
+                  url: 'https://example.test/avatar',
+                  steps: ['Откройте сайт {url} и выберите режим с липсинком.', 'Загрузите изображение {image} и звук {audio}.', 'Вставьте видеопромпт.'],
+                  sourceExample: 'Тестовый сервис на сайте'
+                }
+              }
+            : testProviderInfo
+        )
+      );
       session.onCleanup(derived.dispose);
       session.onCleanup(() => {
         disposed = true;
@@ -437,7 +535,8 @@ export function ProductionPageStory({ links = [] }: { links?: StoryLink[] }): Re
           <Typography variant="caption" color="text.secondary" data-testid="production-model">
             Чтений: {model.reads}. Ответов: {model.decisions}. Выборов оригинала: {model.selections}. Утверждено опор: {approved.join(', ') || 'нет'}. Приёмок
             комплекта: {model.accepts}. Отправок генерации: {model.submissions}. Своих файлов опор: {model.frameImports}. Указаний к опорам:{' '}
-            {model.frameNotes.join(', ') || 'нет'}. Созданий опор: {model.frameRuns}. Удалений попыток: {model.discards}.
+            {model.frameNotes.join(', ') || 'нет'}. Созданий опор: {model.frameRuns}. Удалений попыток: {model.discards}. Пакетов ручной генерации:{' '}
+            {model.manualBuilds}. Загрузок видео: {model.manualUploads}.
           </Typography>
           <Typography variant="caption" color="text.secondary" data-testid="production-review-model">
             Проверок видео: {model.reviewStarts}. Отмен проверок: {model.reviewCancels}.

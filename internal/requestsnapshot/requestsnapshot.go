@@ -253,7 +253,7 @@ func Prepare(request, directory string, extraFields *toolrt.Dict) (*toolrt.Dict,
 	}
 	// Временная заготовка: после переименования удалять нечего, при отказе удаляется целиком.
 	defer os.RemoveAll(staging)
-	frozen, digest, err := freeze(spec, base, staging, promptBytes, extraFields)
+	frozen, digest, err := freeze(spec, base, staging, promptBytes, extraFields, "prepared")
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +269,9 @@ func Prepare(request, directory string, extraFields *toolrt.Dict) (*toolrt.Dict,
 }
 
 // freeze собирает содержимое попытки в staging и возвращает зафиксированный запрос и его SHA.
-func freeze(spec *toolrt.Dict, base, staging string, promptBytes []byte, extraFields *toolrt.Dict) (*toolrt.Dict, string, error) {
+// status — начальное состояние attempt.json: prepared для отправки сервису, manual_pending для
+// ручной генерации вне приложения.
+func freeze(spec *toolrt.Dict, base, staging string, promptBytes []byte, extraFields *toolrt.Dict, status string) (*toolrt.Dict, string, error) {
 	if err := os.Mkdir(filepath.Join(staging, "inputs"), 0o777); err != nil {
 		return nil, "", toolrt.OSErrorFrom(err, staging)
 	}
@@ -354,7 +356,7 @@ func freeze(spec *toolrt.Dict, base, staging string, promptBytes []byte, extraFi
 	state := toolrt.NewDict()
 	state.Set("schema_version", toolrt.NewInt(1))
 	state.Set("request_sha256", digest)
-	state.Set("status", "prepared")
+	state.Set("status", status)
 	state.Set("downloads", []any{})
 	if err := AtomicJSON(filepath.Join(staging, "attempt.json"), state); err != nil {
 		return nil, "", err

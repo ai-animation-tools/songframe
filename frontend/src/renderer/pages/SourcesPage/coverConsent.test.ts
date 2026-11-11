@@ -132,6 +132,7 @@ describe('согласование обложки с текстами слова
       executor: null,
       paid,
       lipSync: null,
+      manualLipSync: null,
       learnsPriceFromCharges: false,
       generationHistory: null,
       requestParameters: true,

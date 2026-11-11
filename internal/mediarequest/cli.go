@@ -48,6 +48,14 @@ var Parser = toolsubcmd.Parser{
 			{Name: "--work-dir", Required: true},
 			{Name: "--file", Required: true, Plus: true},
 		}},
+		{Name: "attach-manual", Options: []toolsubcmd.Option{
+			{Name: "--work-dir", Required: true},
+			{Name: "--file", Required: true},
+			{Name: "--source", Required: true},
+			{Name: "--cost-amount", Float: true},
+			{Name: "--cost-unit"},
+			{Name: "--note"},
+		}},
 		{Name: "submit", Options: []toolsubcmd.Option{
 			{Name: "--work-dir", Required: true},
 			{Name: "--timeout", Float: true},
@@ -222,6 +230,12 @@ func run(ctx context.Context, root string, args toolsubcmd.Result, printer *tool
 		result, err = Submit(ctx, root, value("--work-dir"), value("--confirm"), args.Float("--timeout", 60))
 	case "attach":
 		result, err = Attach(root, value("--work-dir"), args.Values["--file"])
+	case "attach-manual":
+		meta := ManualMeta{Source: value("--source"), CostUnit: value("--cost-unit"), Note: value("--note")}
+		if amount, ok := args.Floats["--cost-amount"]; ok {
+			meta.CostAmount = &amount
+		}
+		result, err = AttachManual(root, value("--work-dir"), value("--file"), meta)
 	case "not-created":
 		result, err = NotCreated(root, value("--work-dir"))
 	case "resume":

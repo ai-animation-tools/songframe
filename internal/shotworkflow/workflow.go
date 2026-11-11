@@ -341,8 +341,9 @@ func (t *workflowTool) readProject() any {
 
 // planKeyframes — каркас K01 (первый кадр), промежуточные по времени и
 // конечная опора на границе запроса; длительность проверяется правилом generation.video проекта.
-// Принятые опоры с той же ролью и временем сохраняются.
-func (t *workflowTool) planKeyframes(dirArg string, requestSeconds toolrt.Int, middles []middle) (*toolrt.Dict, error) {
+// single — только K01: видео плана создаётся вне приложения по одной опоре, промежуточных и
+// конечной нет. Принятые опоры с той же ролью и временем сохраняются.
+func (t *workflowTool) planKeyframes(dirArg string, requestSeconds toolrt.Int, middles []middle, single bool) (*toolrt.Dict, error) {
 	directory, err := t.packageDir(dirArg, true)
 	if err != nil {
 		return nil, err
@@ -418,7 +419,13 @@ func (t *workflowTool) planKeyframes(dirArg string, requestSeconds toolrt.Int, m
 		}
 		points = append(points, point{item.seconds, "middle", item.note})
 	}
-	points = append(points, point{request, "last", "конечный кадр"})
+	if single {
+		if len(middles) > 0 {
+			return nil, valueError("У плана с одной опорой нет промежуточных опор.")
+		}
+	} else {
+		points = append(points, point{request, "last", "конечный кадр"})
+	}
 	items, err := keyframes(data)
 	if err != nil {
 		return nil, err

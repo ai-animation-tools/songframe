@@ -9,6 +9,7 @@ export const testProviderInfo: MediaProviderInfo = {
   executor: null,
   paid: true,
   lipSync: { min: 5, max: 30 },
+  manualLipSync: null,
   learnsPriceFromCharges: true,
   generationHistory: 'историю тестового сервиса',
   requestParameters: true,

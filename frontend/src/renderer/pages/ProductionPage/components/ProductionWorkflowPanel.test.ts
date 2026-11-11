@@ -133,6 +133,10 @@ describe('Явный запуск доработки плана', () => {
     const html = render({ reviseOpen: false, decision: null });
     expect(html).toContain('Подготовить видеопромпт');
     expect(html).toContain('сначала утвердите опоры');
+    // Видеопромпта ещё нет: доработка повторила бы подготовку с указаниями.
+    expect(html).not.toContain('Доработать с агентом');
+    // Возвращённый на доработку промпт дорабатывается по сохранённому замечанию.
+    expect(render()).toContain('Запустить доработку с агентом');
     expect(render({ questionOpen: true })).not.toContain('Подготовить видеопромпт');
   });
 

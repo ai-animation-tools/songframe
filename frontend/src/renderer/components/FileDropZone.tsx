@@ -12,11 +12,11 @@ import { useEffect, useId, useRef, useState, type DragEvent, type ReactElement }
 import { Box, Typography } from '@mui/material';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
 import { useApp } from '../state';
-import { AUDIO_FILTER, IMAGE_FILTER, TEXT_FILTER } from '../file-filters';
+import { AUDIO_FILTER, IMAGE_FILTER, TEXT_FILTER, VIDEO_FILTER } from '../file-filters';
 
 interface Props {
   label: string;
-  kind: 'image' | 'text' | 'audio';
+  kind: 'image' | 'text' | 'audio' | 'video';
   multiple?: boolean;
   hint?: string;
   message: string;
@@ -34,6 +34,9 @@ export function FileDropZone({ label, kind, multiple = false, hint, message, onF
   const { notify, describeError } = useApp();
   const image = kind === 'image';
   const audio = kind === 'audio';
+  // Одиночный файл — у звука и видео всегда; тексты для этих видов берутся из одного словаря.
+  const single = kind === 'audio' || kind === 'video';
+  const media = kind === 'video' ? componentsTexts.fileDrop.video : componentsTexts.fileDrop.audio;
   const pick = async (): Promise<void> => {
     try {
       await onPick?.();
@@ -41,7 +44,7 @@ export function FileDropZone({ label, kind, multiple = false, hint, message, onF
       notify(describeError(error), 'error');
     }
   };
-  const fromDisk = image ? componentsTexts.fileDrop.image.fromDisk : audio ? componentsTexts.fileDrop.audio.fromDisk : componentsTexts.fileDrop.text.fromDisk;
+  const fromDisk = image ? componentsTexts.fileDrop.image.fromDisk : single ? media.fromDisk : componentsTexts.fileDrop.text.fromDisk;
   // Обработчик нативных путей читает свежие props через ref: подписка на Go живёт весь срок монтирования.
   const pendingWarning = useRef<ReturnType<typeof setTimeout> | null>(null);
   const accept = useRef<(paths: string[]) => Promise<void>>(async () => undefined);
@@ -54,20 +57,17 @@ export function FileDropZone({ label, kind, multiple = false, hint, message, onF
       notify(componentsTexts.fileDrop.noNativePath, 'warning');
       return;
     }
-    if ((!multiple || audio) && paths.length !== 1) {
-      notify(image ? componentsTexts.fileDrop.image.single : audio ? componentsTexts.fileDrop.audio.single : componentsTexts.fileDrop.text.single, 'warning');
+    if ((!multiple || single) && paths.length !== 1) {
+      notify(image ? componentsTexts.fileDrop.image.single : single ? media.single : componentsTexts.fileDrop.text.single, 'warning');
       return;
     }
-    const extensions = (image ? IMAGE_FILTER : audio ? AUDIO_FILTER : TEXT_FILTER)[0].extensions;
+    const extensions = (image ? IMAGE_FILTER : audio ? AUDIO_FILTER : kind === 'video' ? VIDEO_FILTER : TEXT_FILTER)[0].extensions;
     const extension = (path: string): string => {
       const name = path.slice(Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\')) + 1);
       return name.includes('.') ? (name.split('.').pop()?.toLowerCase() ?? '') : '';
     };
     if (paths.some((path) => !extensions.includes(extension(path)))) {
-      notify(
-        image ? componentsTexts.fileDrop.image.allowed : audio ? componentsTexts.fileDrop.audio.allowed : componentsTexts.fileDrop.text.allowed,
-        'warning'
-      );
+      notify(image ? componentsTexts.fileDrop.image.allowed : single ? media.allowed : componentsTexts.fileDrop.text.allowed, 'warning');
       return;
     }
     try {
@@ -172,11 +172,11 @@ export function FileDropZone({ label, kind, multiple = false, hint, message, onF
                   : componentsTexts.fileDrop.image.dropSingle}{' '}
               {componentsTexts.fileDrop.image.formats}
             </>
-          ) : audio ? (
+          ) : single ? (
             onPick ? (
-              componentsTexts.fileDrop.audio.pick
+              media.pick
             ) : (
-              componentsTexts.fileDrop.audio.drop
+              media.drop
             )
           ) : onPick ? (
             componentsTexts.fileDrop.text.pick

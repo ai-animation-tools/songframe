@@ -658,7 +658,7 @@ func (s *Service) DiscardAttempt(project, packageDir string) error {
 		// Недописанная папка без workflow.json: удаляется, если в ней нет следов незавершённой
 		// отправки.
 		status := dynvalue.Get(readJSON(filepath.Join(directory, "request", "attempt.json")), "status")
-		if dynvalue.Truthy(status) && !slices.Contains([]string{"prepared", "downloaded", "failed", "download_failed", "download_partial"}, dynvalue.ToString(status)) {
+		if dynvalue.Truthy(status) && !slices.Contains([]string{"prepared", "manual_pending", "downloaded", "failed", "download_failed", "download_partial"}, dynvalue.ToString(status)) {
 			return errors.New(textUnfinishedAttemptBlocksRemoval(dynvalue.ToString(status)))
 		}
 		local := strings.ReplaceAll(dynvalue.Relative(root, directory), `\`, "/")
@@ -1187,6 +1187,58 @@ func (s *Service) AttachResult(project, packageDir string, files []string) (jobs
 	}
 	s.packageJobs[directory] = info.ID
 	return info, nil
+}
+
+// ManualResult — видео, созданное пользователем вне приложения по пакету ручной генерации:
+// абсолютный путь файла, источник и необязательные стоимость с единицей и примечание.
+type ManualResult struct {
+	File       string   `json:"file"`
+	Source     string   `json:"source"`
+	CostAmount *float64 `json:"costAmount"`
+	CostUnit   string   `json:"costUnit"`
+	Note       string   `json:"note"`
+}
+
+// AttachManual — видео пакета ручной генерации становится оригиналом попытки (media_request
+// attach-manual), затем — этапы «отправлено» и «получено», вопрос просмотра и техническая сводка,
+// как у обычного результата. Отправки сервису нет.
+func (s *Service) AttachManual(project, packageDir string, result ManualResult) (jobs.Info, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	directory, err := s.availableLocked(project, packageDir)
+	if err != nil {
+		return jobs.Info{}, err
+	}
+	view, err := mustPackage(project, directory)
+	if err != nil {
+		return jobs.Info{}, err
+	}
+	if view == nil || view.Request == nil || view.Request.Mode != "manual" || view.attemptStatus() != "manual_pending" {
+		return jobs.Info{}, errors.New(textManualPackageOnly)
+	}
+	info, statErr := os.Stat(result.File)
+	if !filepath.IsAbs(result.File) || statErr != nil || !info.Mode().IsRegular() {
+		return jobs.Info{}, errors.New(textResultFileMissing)
+	}
+	if dynvalue.Trim(result.Source) == "" {
+		return jobs.Info{}, errors.New(textManualSourceMissing)
+	}
+	args := []string{"attach-manual", "--work-dir", view.Request.Dir, "--file", result.File, "--source", result.Source}
+	if result.CostAmount != nil {
+		args = append(args, "--cost-amount", strconv.FormatFloat(*result.CostAmount, 'f', -1, 64), "--cost-unit", result.CostUnit)
+	}
+	if note := dynvalue.Trim(result.Note); note != "" {
+		args = append(args, "--note", note)
+	}
+	steps := s.restoreSubmission(project, directory, view.Stage, false)
+	steps = append(steps, s.toolStep(project, "media_request", args, textAttachManualStep, false, nil))
+	steps = append(steps, s.resumeSteps(project, directory, view.Request.Dir, false)...)
+	job, err := s.start(jobs.KindSubmit, textManualResultJob(view.Shot), project, steps)
+	if err != nil {
+		return jobs.Info{}, err
+	}
+	s.packageJobs[directory] = job.ID
+	return job, nil
 }
 
 // MarkNotCreated — генерации нет в истории сервиса: попытка снова ждёт подтверждения, отправка

@@ -7,13 +7,14 @@ import { productionTexts } from '@shared/texts/production';
 import { useEffect, useRef, useState, type ReactElement, type ReactNode } from 'react';
 import { Box, LinearProgress, Paper, Stack, Step, StepButton, StepContent, StepLabel, Stepper, Typography } from '@mui/material';
 import { normalizeMediaProvider } from '@shared/media-providers';
-import type { KeyframeNoteScope, PackageView, ShotProduction } from '@shared/types';
+import type { KeyframeNoteScope, ManualVideo, PackageView, ShotProduction } from '@shared/types';
 import { BUSY_REASON } from '../constants';
-import { planPath, questionStep, REQUEST_IN_FLIGHT, type PlanPath, type PlanStepKey } from '../planPath';
+import { manualGeneration, planPath, questionStep, REQUEST_IN_FLIGHT, type PlanPath, type PlanStepKey } from '../planPath';
 import { useProductionWorkflow, type ProductionWorkflow } from '../useProductionWorkflow';
 import { AcceptedAsset } from './AcceptedAsset';
 import { useApp } from '../../../state';
 import { FrameActions, type FrameInstruction } from './FrameActions';
+import { ManualGeneration, ManualGenerationInfo } from './ManualGeneration';
 import { PackageDecision } from './PackageDecision';
 import { PackageKeyframes } from './PackageKeyframes';
 import { PackageNotices } from './PackageNotices';
@@ -57,6 +58,7 @@ export function ProductionPath({
   onContactSheet,
   onResume,
   onAttachResult,
+  onAttachManual,
   onNotCreated,
   onSelectImage,
   onReopenFrame,
@@ -92,6 +94,8 @@ export function ProductionPath({
   onContactSheet(): void;
   onResume(): void;
   onAttachResult(files: string[]): void;
+  /** Видео, созданное вне приложения по пакету ручной генерации. */
+  onAttachManual(video: ManualVideo): void;
   onNotCreated(): void;
   onSelectImage(index: number): void;
   onReopenFrame(frame: string, note: string, scope: KeyframeNoteScope): void;
@@ -106,6 +110,7 @@ export function ProductionPath({
   // Занятость читается у Go: задание получения переживает уход со страницы, а локальное состояние — нет.
   const receiving = !!view?.busy;
   const path = planPath(shot, pkg, view, newAttempt, receiving);
+  const manual = manualGeneration(pkg, view);
   // Решения ждут и операции страницы, и задания агента; панель учитывает задание сама.
   const blocked = busy || workflow.busy;
   const [opened, setOpened] = useState<Record<string, boolean>>({});
@@ -305,7 +310,22 @@ export function ProductionPath({
           />
         ) : null;
       case 'request':
-        return (
+        return manual ? (
+          <>
+            {pkg ? (
+              <ManualGeneration
+                key={`manual:${pkg.dir}:${pkg.request?.dir ?? ''}`}
+                pkg={pkg}
+                view={view}
+                busy={blocked}
+                busyReason={busyReason}
+                onBuild={() => void workflow.buildManual()}
+                onAttach={onAttachManual}
+              />
+            ) : null}
+            {current ? panel(asked) : null}
+          </>
+        ) : (
           <>
             {pkg?.request?.kind !== 'image' ? request : null}
             {current ? panel(asked) : null}
@@ -323,6 +343,7 @@ export function ProductionPath({
         return (
           <>
             {pkg?.request?.kind !== 'image' ? result : null}
+            {pkg?.request?.manualGeneration ? <ManualGenerationInfo record={pkg.request.manualGeneration} /> : null}
             {shot.asset ? <AcceptedAsset asset={shot.asset} /> : null}
             {current ? decision(key) : null}
           </>

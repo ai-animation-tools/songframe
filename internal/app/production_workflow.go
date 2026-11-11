@@ -49,6 +49,12 @@ func (s *ProductionWorkflowService) Apply(ctx context.Context, project, shot, pa
 	return wire.Done(s.workflow.Apply(ctx, project, shot, packageDir, id))
 }
 
+// BuildManual — productionWorkflow.buildManual: пакет ручной генерации речевого плана у
+// провайдера без липсинка собирается без агента; доступ к ИИ и провайдеру не нужен.
+func (s *ProductionWorkflowService) BuildManual(ctx context.Context, project, shot, packageDir string) (productionworkflow.View, error) {
+	return wire.Done(s.workflow.BuildManual(ctx, project, shot, packageDir))
+}
+
 // Discard — productionWorkflow.discard: отклонение непринятого предложения.
 func (s *ProductionWorkflowService) Discard(project, shot, packageDir, id string) (productionworkflow.View, error) {
 	return wire.Done(s.workflow.Discard(project, shot, packageDir, id))

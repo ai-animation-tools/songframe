@@ -3,13 +3,14 @@ import { commonTexts } from '@shared/texts/common';
 import { technicalTexts } from '@shared/texts/technical';
 /** Показываем только подтверждённые CLI поля; неизвестные значения не подменяем предположениями о подписке. */
 import type { ReactElement } from 'react';
-import { Alert, Box, Divider, LinearProgress, Link, Stack, Typography, type Theme } from '@mui/material';
+import { Alert, Box, Divider, LinearProgress, Stack, Typography, type Theme } from '@mui/material';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import type { AgentAccountResult } from '@shared/agents';
 import { AGENT_PROVIDERS, type AgentProvider } from '@shared/agent-providers';
 import { formatDateTime } from '../../../format';
 import { ActionButton } from '../../../components/ActionButton';
+import { ExternalLink } from '../../../components/ExternalLink';
 
 const unknown = settingsTexts.unknownAccount;
 const percent = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 });
@@ -86,15 +87,10 @@ export function AgentAccountPanel({ provider, result, loading, failed, disabled,
       <Divider />
       <Typography fontWeight={600}>{settingsTexts.accountTitle}</Typography>
       {/* Ссылка открывается во внешнем браузере; там видны полные сведения подписки, которые CLI может не отдавать. */}
-      <Link
-        href={AGENT_PROVIDERS[provider].accountUrl}
-        target="_blank"
-        rel="noreferrer"
-        sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, alignSelf: 'flex-start' }}
-      >
+      <ExternalLink href={AGENT_PROVIDERS[provider].accountUrl} sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, alignSelf: 'flex-start' }}>
         {settingsTexts.accountLink(AGENT_PROVIDERS[provider].title)}
         <OpenInNewIcon fontSize="inherit" aria-hidden="true" />
-      </Link>
+      </ExternalLink>
       <Typography variant="body2" color="text.secondary">
         {settingsTexts.accountExplanation}
       </Typography>

@@ -595,12 +595,14 @@ func prepareShot(ctx context.Context, root string, config any, byID map[string]r
 	} else {
 		filters = append(filters, "trim=end_frame="+motion.String())
 	}
-	// Скорость и удержания явные; масштаб сохраняет пропорции и добавляет
-	// поля. Последний кадр дополняет только округление длительности до сетки.
+	// Скорость и удержания явные; масштаб сохраняет пропорции и заполняет кадр
+	// 1920×1080, выступающие края обрезаются по центру: ролик другого размера (например, созданный
+	// вне приложения) не получает чёрных полей. Последний кадр дополняет только округление
+	// длительности до сетки.
 	filters = append(filters,
 		"setpts=N/(30*TB)",
-		"scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos",
-		"pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black",
+		"scale=1920:1080:force_original_aspect_ratio=increase:flags=lanczos",
+		"crop=1920:1080",
 		"setsar=1",
 		"format=yuv420p",
 		"tpad=start_mode=clone:start="+holdFirst.String()+":stop_mode=clone:stop="+holdLast.String(),

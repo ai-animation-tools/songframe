@@ -167,6 +167,8 @@ export function useProductionWorkflow(project: string, shot: string, packageDir:
     start: (action: ProductionWorkflowStart['action'], note?: string) =>
       execute(() => window.api.productionWorkflow.start({ project, shot, packageDir, action, note })),
     generateFrames: () => (packageDir ? execute(() => window.api.productionWorkflow.generateFrames(project, shot, packageDir)) : Promise.resolve(false)),
+    /** Пакет ручной генерации собирается без агента: после записи попытка перечитывается, как после применения. */
+    buildManual: () => (packageDir ? execute(() => window.api.productionWorkflow.buildManual(project, shot, packageDir), true) : Promise.resolve(false)),
     /** Свой файл сразу становится кандидатом: вопрос об утверждении откроется у опоры, отдельного просмотра нет. */
     importFrames: (images: ProductionFrameCandidate[]) =>
       packageDir

@@ -305,6 +305,8 @@ export const PromptInstruction: Story = {
   play: async (context) => {
     const screen = screenOf(context);
     await userEvent.click(await screen.findByRole('button', { name: labels.instructionOpen }));
+    // Видеопромпта ещё нет: доработки нет, указания задаются здесь.
+    await expect(screen.queryByRole('textbox', { name: labels.note })).not.toBeInTheDocument();
     await userEvent.type(await screen.findByRole('textbox', { name: labels.instruction }), 'Без резких движений камеры');
     const next = screen.getByRole('button', { name: labels.continuePrompt });
     await waitFor(() => expect(next).toBeEnabled());

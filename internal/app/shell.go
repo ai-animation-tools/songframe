@@ -1,7 +1,9 @@
 package app
 
 import (
+	"errors"
 	"fmt"
+	"net/url"
 
 	"songframe/internal/desktop"
 )
@@ -15,17 +17,32 @@ type FileServer interface {
 	Register(path string) (string, error)
 }
 
-// ShellService реализует группу window.api.shell: открытие путей средствами ОС,
+// ShellService реализует группу window.api.shell: открытие путей и веб-адресов средствами ОС,
 // чтение небольшого текста и адрес локальных файлов. Проектные данные здесь не пишутся.
 type ShellService struct {
 	files   FileServer
 	desktop desktop.Desktop
+	openURL func(address string) error
 }
 
-// NewShellService связывает группу с медиасервером и системным открытием путей.
-// open — нативное открытие Wails (Browser.OpenFile); в тестах подменяется.
-func NewShellService(files FileServer, open desktop.Opener) *ShellService {
-	return &ShellService{files: files, desktop: desktop.Default(open)}
+// NewShellService связывает группу с медиасервером, системным открытием путей и браузером ОС.
+// open — нативное открытие Wails (Browser.OpenFile), openURL — Browser.OpenURL; в тестах подменяются.
+func NewShellService(files FileServer, open desktop.Opener, openURL func(address string) error) *ShellService {
+	return &ShellService{files: files, desktop: desktop.Default(open), openURL: openURL}
+}
+
+// OpenExternal открывает веб-адрес в браузере ОС. Встроенный WebView ссылки с target="_blank"
+// во внешнем браузере не открывает, поэтому страницы (кабинет провайдера, вход агента, заметки
+// выпуска) открывают их через этот метод. Принимаются только адреса http и https.
+func (s *ShellService) OpenExternal(address string) error {
+	parsed, err := url.Parse(address)
+	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
+		return fmt.Errorf("«%s» не является веб-адресом", address)
+	}
+	if s.openURL == nil {
+		return errors.New("браузер ОС недоступен")
+	}
+	return s.openURL(address)
 }
 
 // FileBase возвращает адрес loopback этого запуска. Адаптер получает его один раз

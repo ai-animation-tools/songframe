@@ -34,6 +34,9 @@ type Rules struct {
 	FramePrompts any
 	// LipSync — допустимая длина звукового входа провайдера для речевого плана; nil — null.
 	LipSync *mediaproviders.LipSync
+	// Manual — речевой план без липсинка у провайдера: видео создаётся вне приложения по одной
+	// опоре, этапа request нет.
+	Manual bool
 }
 
 // Tree — правила для локальной записи; порядок ключей зафиксирован эталоном.
@@ -58,6 +61,10 @@ func (r Rules) Tree() *dynvalue.Object {
 		limits.Set("max", r.LipSync.Max)
 		tree.Set("lipSync", limits)
 	}
+	// Ключ пишется только в ручном режиме: записи обычных планов не меняются.
+	if r.Manual {
+		tree.Set("manualGeneration", true)
+	}
 	return tree
 }
 
@@ -69,6 +76,7 @@ func RulesFromTree(value any) Rules {
 		FramePrompts: dynvalue.Get(value, "framePrompts"), AllowedPaths: []string{},
 	}
 	rules.Project, _ = dynvalue.Get(value, "project").(string)
+	rules.Manual = dynvalue.Get(value, "manualGeneration") == true
 	if paths, ok := dynvalue.AsArray(dynvalue.Get(value, "allowedPaths")); ok {
 		for _, path := range paths {
 			if text, isString := path.(string); isString {
@@ -290,14 +298,21 @@ func ParseProposal(raw string, rules Rules) (*dynvalue.Object, error) {
 }
 
 // parseDescription — проверка описания и плана опор: K01..KNN подряд, first на 0, last на
-// requestSeconds, middle строго между; референсы — изображения из allowedPaths.
+// requestSeconds, middle строго между; референсы — изображения из allowedPaths. В ручном режиме
+// (rules.Manual) опора ровно одна — K01 first на 0.
 func parseDescription(value *dynvalue.Object, rules Rules) error {
 	if err := keys(value, "schemaVersion", "stage", "description", "requestSeconds", "keyframes"); err != nil {
 		return err
 	}
 	seconds, isNumber := value.Value("requestSeconds").(float64)
 	frames, isArray := dynvalue.AsArray(value.Value("keyframes"))
-	if !isText(value.Value("description")) || !isNumber || !isArray || len(frames) < 2 || len(frames) > 20 {
+	if !isText(value.Value("description")) || !isNumber || !isArray {
+		return errors.New(textDescriptionInvalid)
+	}
+	if rules.Manual && len(frames) != 1 {
+		return errors.New(textManualSingleFrame)
+	}
+	if !rules.Manual && (len(frames) < 2 || len(frames) > 20) {
 		return errors.New(textDescriptionInvalid)
 	}
 	if err := CheckDuration(seconds, rules.WindowSeconds, rules.DurationRule); err != nil {

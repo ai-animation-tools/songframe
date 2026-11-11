@@ -149,6 +149,8 @@ type Reasons struct {
 	Prepare  *string `json:"prepare"`
 	Continue *string `json:"continue"`
 	Frames   *string `json:"frames"`
+	// Manual — почему нельзя собрать пакет ручной генерации; nil — можно или план не ручной.
+	Manual *string `json:"manual,omitempty"`
 }
 
 // View — ProductionWorkflowView: состояние прохода плана и доступность действий панели
@@ -172,6 +174,10 @@ type View struct {
 	CanContinue       bool    `json:"canContinue"`
 	CanRevise         bool    `json:"canRevise"`
 	CanGenerateFrames bool    `json:"canGenerateFrames"`
+	// Manual — речевой план у провайдера без липсинка: видео создаётся вне приложения по пакету
+	// ручной генерации. CanBuildManual — пакет можно собрать сейчас.
+	Manual         bool `json:"manual,omitempty"`
+	CanBuildManual bool `json:"canBuildManual,omitempty"`
 	// Paid — попытка пакета уже оплачена: дальше только новая попытка или возврат с замечанием.
 	Paid bool `json:"paid"`
 	// ImageProvider и VideoProvider — generation.image.provider и generation.video.provider
@@ -285,6 +291,10 @@ func (w *Workflow) view(project, shot, packageDir string) (View, error) {
 	if frame, ok := dynvalue.Get(c.workflowValue("pending_decision"), "frame").(string); ok && derived == "" && !c.SceneChanged && !busy && !proposalPending && !c.Paid && !imagePhase {
 		replaceFrame = frame
 	}
+	manual, err := manualReason(c, derived, common, imagePhase)
+	if err != nil {
+		return View{}, err
+	}
 	view := View{
 		Project: canonical, Shot: shot, PackageDir: optional(c.PackageDir), Busy: busy, Stage: optional(stage), DerivedFrom: optional(c.DerivedFrom),
 		NextStage: optional(nextStage), ReplaceFrame: optional(replaceFrame),
@@ -292,7 +302,9 @@ func (w *Workflow) view(project, shot, packageDir string) (View, error) {
 			Prepare:  optional(prepareReason(derived, busy, imagePhase, scenarioApproved, c.Problems)),
 			Continue: optional(continueReason(c, derived, common, imagePhase, nextStage, speechMismatch, framesApproved, descriptionApproved)),
 			Frames:   optional(framesReason(c, derived, common, imagePhase, framesApproved, descriptionApproved || frameRevision, undecided)),
+			Manual:   optional(manual),
 		},
+		Manual: c.Manual, CanBuildManual: c.Manual && manual == "" && !pending && !proposalPending && !busy,
 		CanPrepare: derived == "" && !busy && !imagePhase && scenarioApproved && len(c.Problems) == 0,
 		CanContinue: derived == "" && !c.SceneChanged && enabled && !imagePhase && nextStage != "" && nextStage != "description" &&
 			!(nextStage == "request" && speechMismatch != ""),
@@ -617,8 +629,10 @@ func (w *Workflow) continuedStage(c *Context, input StartInput) (string, error) 
 			return "", err
 		}
 		switch {
-		case prompt:
+		case prompt && !c.Manual:
 			stage = "request"
+		case prompt:
+			stage = "prompt"
 		case frames:
 			stage = "prompt"
 		default:
@@ -635,6 +649,9 @@ func (w *Workflow) continuedStage(c *Context, input StartInput) (string, error) 
 			return "", err
 		}
 	case "request":
+		if c.Manual {
+			return "", errors.New(textManualNoRequest)
+		}
 		if appropriate, err = c.PromptApproved(); err != nil {
 			return "", err
 		}
@@ -685,7 +702,7 @@ func (w *Workflow) launch(ctx context.Context, input StartInput, prepared *prepa
 	}
 	// Речевому плану нужен режим со звуковым входом; без него точный липсинк невозможен, и агент
 	// всё равно вернул бы ошибку.
-	if c.Scene.Value("lipsync") == true {
+	if c.Scene.Value("lipsync") == true && !c.Manual {
 		if stage == "request" && c.Speech == nil {
 			return errors.New(textSpeechRequired)
 		}
@@ -706,7 +723,7 @@ func (w *Workflow) launch(ctx context.Context, input StartInput, prepared *prepa
 		return err
 	}
 	prompt := agentPrompt(stage, c.Settings.Value("provider"), dynvalue.Get(dynvalue.Get(generation, "image"), "provider"))
-	contextInput := contextInput{stage: stage, briefs: briefs, description: nil, prompt: nil, lipSync: rules.LipSync, capabilities: capabilities,
+	contextInput := contextInput{stage: stage, briefs: briefs, description: nil, prompt: nil, lipSync: rules.LipSync, manual: rules.Manual, capabilities: capabilities,
 		capabilitiesProblem: capabilitiesProblem, inputFlags: []string{}}
 	before := ""
 	if c.PackageDir != "" {

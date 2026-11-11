@@ -281,6 +281,11 @@ export function AppProvider({ children, onReady }: { children: ReactNode; onRead
   );
 }
 
+/** Контекст приложения или null вне AppProvider: для общих элементов, которые рисуются и в статической разметке тестов. */
+export function useOptionalApp(): AppContextValue | null {
+  return useContext(AppContext);
+}
+
 export function useApp(): AppContextValue {
   const value = useContext(AppContext);
   // eslint-disable-next-line no-restricted-syntax -- Ошибка программного контракта hook; пользовательским сообщением интерфейса не является.

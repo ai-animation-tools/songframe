@@ -58,6 +58,11 @@ export function questionStep(stage: string): PlanStepKey | null {
   return QUESTION_STEPS[stage] ?? null;
 }
 
+/** Речевой план у провайдера без липсинка: видео создаётся вне приложения, шаг запроса — ручная генерация без отправки. */
+export function manualGeneration(pkg: PackageView | null, workflow: ProductionWorkflowView | null): boolean {
+  return !!workflow?.manual || pkg?.request?.mode === 'manual';
+}
+
 /** Текущий шаг: незавершённая работа агента важнее этапа попытки, открытый вопрос — важнее фактов. */
 function currentStep(shot: ShotProduction, pkg: PackageView | null, workflow: ProductionWorkflowView | null, newAttempt: boolean): PlanStepKey {
   const proposal = workflow?.proposal;
@@ -68,6 +73,8 @@ function currentStep(shot: ShotProduction, pkg: PackageView | null, workflow: Pr
   const { stage, request } = pkg;
   if (stage.startsWith('image_')) return 'frames';
   if (stage === 'downloaded' || stage === 'edit_review' || stage === 'accepted') return 'result';
+  // Видео ручной генерации загружается заданием приложения: шага ожидания сервиса у такого плана нет.
+  if (manualGeneration(pkg, workflow) && (stage === 'submitted' || stage === 'request_choice' || stage === 'ready')) return 'request';
   if (stage === 'submitted') return 'generation';
   if (request && request.kind !== 'image' && REQUEST_IN_FLIGHT.includes(request.attemptStatus ?? '')) return 'generation';
   if (stage === 'request_choice' || stage === 'ready') return 'request';
@@ -84,7 +91,7 @@ function currentStep(shot: ShotProduction, pkg: PackageView | null, workflow: Pr
 }
 
 /** Итог шага в его свёрнутой строке. */
-function stepSummary(key: PlanStepKey, pkg: PackageView | null): string | null {
+function stepSummary(key: PlanStepKey, pkg: PackageView | null, manual: boolean): string | null {
   const frames = pkg?.keyframes.length ?? 0;
   const approved = pkg?.keyframes.filter((frame) => frame.approved).length ?? 0;
   switch (key) {
@@ -97,7 +104,7 @@ function stepSummary(key: PlanStepKey, pkg: PackageView | null): string | null {
     case 'speech':
       return texts.speechSummary;
     case 'request':
-      return texts.requestSummary({ credits: pkg?.request?.creditsConsumed });
+      return manual ? texts.manualSummary : texts.requestSummary({ credits: pkg?.request?.creditsConsumed });
     case 'generation':
       return texts.generationSummary;
     case 'result':
@@ -106,7 +113,13 @@ function stepSummary(key: PlanStepKey, pkg: PackageView | null): string | null {
 }
 
 /** Фраза шапки: что происходит и чей сейчас ход. */
-function nowState(current: PlanStepKey, pkg: PackageView | null, workflow: ProductionWorkflowView | null, receiving: boolean): { now: string; tone: PlanTone } {
+function nowState(
+  current: PlanStepKey,
+  pkg: PackageView | null,
+  workflow: ProductionWorkflowView | null,
+  receiving: boolean,
+  manual: boolean
+): { now: string; tone: PlanTone } {
   const action = (text: string): { now: string; tone: PlanTone } => ({ now: texts.now({ text }), tone: 'action' });
   const wait = (text: string): { now: string; tone: PlanTone } => ({ now: texts.now({ text }), tone: 'wait' });
   const proposal = workflow?.proposal;
@@ -127,6 +140,7 @@ function nowState(current: PlanStepKey, pkg: PackageView | null, workflow: Produ
     case 'speech':
       return action(texts.prepareSpeech);
     case 'request':
+      if (manual) return receiving ? wait(texts.manualUploading) : action(pkg?.request ? texts.uploadManual : texts.buildManual);
       return action(pkg?.request ? texts.sendRequest : texts.prepareRequest);
     case 'generation':
       if (pkg?.request?.attemptStatus === 'submission_unknown') return action(texts.unknownSubmission);
@@ -149,7 +163,16 @@ export function planPath(
   newAttempt = false,
   receiving = false
 ): PlanPath {
-  const keys: PlanStepKey[] = ['description', 'frames', 'prompt', ...(shot.lipsync ? (['speech'] as const) : []), 'request', 'generation', 'result'];
+  const manual = manualGeneration(pkg, workflow);
+  const keys: PlanStepKey[] = [
+    'description',
+    'frames',
+    'prompt',
+    ...(shot.lipsync ? (['speech'] as const) : []),
+    'request',
+    ...(manual ? [] : (['generation'] as const)),
+    'result'
+  ];
   const current = currentStep(shot, pkg, workflow, newAttempt);
   const index = keys.indexOf(current);
   const finished = current === 'result' && (pkg ? pkg.stage === 'accepted' : !!shot.asset);
@@ -157,14 +180,21 @@ export function planPath(
     const status: PlanStepStatus = position < index || finished ? 'done' : position === index ? 'current' : 'future';
     return {
       key,
-      title: texts.titles[key],
+      title: manual && key === 'request' ? texts.titles.manual : texts.titles[key],
       status,
-      summary: status === 'future' ? texts.after[key] : status === 'done' || (key === 'frames' && !!pkg?.keyframes.length) ? stepSummary(key, pkg) : null
+      summary:
+        status === 'future'
+          ? manual && key === 'request'
+            ? texts.after.manual
+            : texts.after[key]
+          : status === 'done' || (key === 'frames' && !!pkg?.keyframes.length)
+            ? stepSummary(key, pkg, manual)
+            : null
     };
   });
   return finished
     ? { steps, current, finished, now: texts.finished, tone: 'done' }
-    : { steps, current, finished, ...nowState(current, pkg, workflow, receiving) };
+    : { steps, current, finished, ...nowState(current, pkg, workflow, receiving, manual) };
 }
 
 /** Какая попытка открывается сама: с открытым вопросом, иначе последняя. */

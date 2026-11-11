@@ -465,6 +465,27 @@ export interface SpeechLine {
   end: number;
 }
 
+/** Единица стоимости видео, созданного вне приложения: кредиты сервиса, рубли или доллары. */
+export type ManualCostUnit = 'credits' | 'RUB' | 'USD';
+
+/** Видео для пакета ручной генерации: файл, источник и необязательные стоимость и примечание. */
+export interface ManualVideo {
+  file: string;
+  source: string;
+  costAmount: number | null;
+  costUnit: ManualCostUnit | '';
+  note: string;
+}
+
+/** attempt.json manual_generation: откуда видео ручной генерации и что о нём записал пользователь. */
+export interface ManualGeneration {
+  source: string;
+  original_name: string;
+  attached_at: string;
+  cost: { amount: number; unit: ManualCostUnit } | null;
+  description: string | null;
+}
+
 /** Точный срез песни речевого плана в пакете: audio/speech.wav и audio/audio-recipe.json. */
 export interface PackageSpeech {
   path: string;
@@ -522,6 +543,10 @@ export interface PackageView {
     /** Оригинал загрузил пользователь из истории генераций сервиса после неизвестного исхода отправки; ID задания нет. */
     manualResult: boolean;
     creditsConsumed: number | null;
+    /** manual — пакет ручной генерации: видео создаётся вне приложения, отправки сервису нет. */
+    mode?: 'manual';
+    /** Сведения о видео, загруженном в пакет ручной генерации. */
+    manualGeneration?: ManualGeneration;
     /** Абсолютные пути скачанных оригиналов. */
     downloads: string[];
   } | null;

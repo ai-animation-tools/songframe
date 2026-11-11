@@ -77,6 +77,18 @@ export interface Keyframe {
 }
 
 /**
+ * ManualResult — видео, созданное пользователем вне приложения по пакету ручной генерации:
+ * абсолютный путь файла, источник и необязательные стоимость с единицей и примечание.
+ */
+export interface ManualResult {
+    "file": string;
+    "source": string;
+    "costAmount": number | null;
+    "costUnit": string;
+    "note": string;
+}
+
+/**
  * PackageView — вид рабочего пакета плана. Документы workflow.json без
  * схемы (timing, pendingDecision, decision, keyframeNotes) передаются как есть.
  */
@@ -164,6 +176,13 @@ export interface Request {
     "generationId": string | null;
     "manualResult": boolean;
     "creditsConsumed": number | null;
+
+    /**
+     * Mode — "manual" у пакета ручной генерации (видео создаётся вне приложения); поле опускается у
+     * обычного запроса. ManualGeneration — attempt.json manual_generation загруженного видео как есть.
+     */
+    "mode"?: string;
+    "manualGeneration"?: json$0.RawMessage;
 
     /**
      * Downloads — абсолютные пути существующих скачанных оригиналов.

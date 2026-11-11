@@ -74,6 +74,11 @@ const (
 	textWatchLimits      = "Ожидание — от 1 до 120 минут, интервал — от 5 до 300 секунд."
 	textWatchTimeout     = "время ожидания вышло; задание не отменено, повторите watch"
 	textKind             = "Вид медиа должен быть image или video."
+	textManualRequest    = "Запрос ручной генерации не отправляется сервису: загрузите видео, созданное по пакету."
+	textNotManual        = "Действие доступно только пакету ручной генерации, ещё не получившему видео."
+	textManualSource     = "Укажите источник видео."
+	textManualCost       = "Стоимость должна быть неотрицательным числом."
+	textManualCostUnit   = "Единица стоимости: credits, RUB или USD."
 )
 
 func valueError(message string) error { return toolrt.New(toolrt.ValueError, message) }
@@ -401,6 +406,9 @@ func Submit(ctx context.Context, root, directory, confirmation string, timeout f
 		request, state, err := LoadAttempt(workDir, true)
 		if err != nil {
 			return err
+		}
+		if toolrt.Equal(request.Value("mode"), "manual") {
+			return valueError(textManualRequest)
 		}
 		status, err := item(state, "status")
 		if err != nil {
@@ -1046,81 +1054,9 @@ func Attach(root, directory string, files []string) (*toolrt.Dict, error) {
 		if err != nil {
 			return err
 		}
-		outputs, err := item(request, "outputs")
+		downloads, err := publishOriginals(workDir, request, files, false)
 		if err != nil {
 			return err
-		}
-		if !toolrt.Equal(toolrt.NewInt(int64(len(files))), outputs) {
-			return valueError("Нужно файлов результата: " + toolrt.Str(outputs) + ", выбрано: " + toolrt.NewInt(int64(len(files))).String() + ".")
-		}
-		image := toolrt.Equal(request.Value("kind"), "image")
-		temporary, err := os.MkdirTemp(workDir, ".manual-result-")
-		if err != nil {
-			return toolrt.OSErrorFrom(err, workDir)
-		}
-		defer os.RemoveAll(temporary)
-		type staged struct {
-			number    int
-			raw, name string
-		}
-		prepared := []staged{}
-		for index, source := range files {
-			number := index + 1
-			name := toolrt.PathName(source)
-			if !toolrt.IsFile(source) {
-				return valueError("Файл результата не найден: " + name)
-			}
-			raw := filepath.Join(temporary, toolrt.NewInt(int64(number)).String()+".raw")
-			if err := requestsnapshot.CopyFile(source, raw); err != nil {
-				return err
-			}
-			rawSize, err := size(raw)
-			if err != nil {
-				return err
-			}
-			if rawSize.Sign() == 0 {
-				return valueError("Файл результата пуст: " + name)
-			}
-			var extension string
-			if image {
-				extension, err = imageExtension(raw)
-			} else {
-				extension, err = videoExtension(raw)
-			}
-			if err != nil {
-				return err
-			}
-			target := "original"
-			if len(files) != 1 {
-				target = "original-" + twoDigits(number)
-			}
-			target += extension
-			if path := filepath.Join(workDir, target); toolrt.Exists(path) || isSymlink(path) {
-				return valueError(textExists)
-			}
-			prepared = append(prepared, staged{number, raw, target})
-		}
-		downloads := []any{}
-		for _, entry := range prepared {
-			rawSize, err := size(entry.raw)
-			if err != nil {
-				return err
-			}
-			download := toolrt.NewDict()
-			download.Set("number", toolrt.NewInt(int64(entry.number)))
-			download.Set("path", entry.name)
-			download.Set("bytes", rawSize)
-			if image {
-				digest, err := requestsnapshot.FileSHA(entry.raw)
-				if err != nil {
-					return err
-				}
-				download.Set("sha256", digest)
-			}
-			if err := link(entry.raw, filepath.Join(workDir, entry.name)); err != nil {
-				return err
-			}
-			downloads = append(downloads, download)
 		}
 		state.Set("status", "downloaded")
 		state.Set("downloads", downloads)
@@ -1135,6 +1071,177 @@ func Attach(root, directory string, files []string) (*toolrt.Dict, error) {
 		return nil
 	})
 	return result, err
+}
+
+// ManualMeta — сведения о видео, созданном вне приложения: источник (обязателен), необязательная
+// стоимость с единицей и примечание пользователя. Пустая строка и nil — «не указано».
+type ManualMeta struct {
+	Source     string
+	CostAmount *float64
+	CostUnit   string
+	Note       string
+}
+
+// costUnits — допустимые единицы стоимости ручной генерации: кредиты сервиса, рубли, доллары.
+var costUnits = []string{"credits", "RUB", "USD"}
+
+// AttachManual — видео, созданное пользователем вне приложения по пакету ручной генерации
+// (requestsnapshot.PrepareManual), становится оригиналом попытки manual_pending. Проверки файла
+// те же, что у Attach; в attempt.json пишутся SHA оригинала и manual_generation: источник, имя
+// исходного файла, время загрузки UTC, стоимость {amount, unit} или null и примечание или null.
+func AttachManual(root, directory, file string, meta ManualMeta) (*toolrt.Dict, error) {
+	workDir, err := WorkPath(root, directory)
+	if err != nil {
+		return nil, err
+	}
+	source, note := toolrt.Strip(meta.Source), toolrt.Strip(meta.Note)
+	if source == "" {
+		return nil, valueError(textManualSource)
+	}
+	var cost any
+	if meta.CostAmount != nil {
+		if math.IsNaN(*meta.CostAmount) || math.IsInf(*meta.CostAmount, 0) || *meta.CostAmount < 0 {
+			return nil, valueError(textManualCost)
+		}
+		found := false
+		for _, unit := range costUnits {
+			found = found || unit == meta.CostUnit
+		}
+		if !found {
+			return nil, valueError(textManualCostUnit)
+		}
+		// Целая стоимость пишется целым числом JSON, дробная — числом с точкой.
+		var amount any = *meta.CostAmount
+		if *meta.CostAmount == math.Trunc(*meta.CostAmount) && *meta.CostAmount < 1e15 {
+			amount = toolrt.NewInt(int64(*meta.CostAmount))
+		}
+		entry := toolrt.NewDict()
+		entry.Set("amount", amount)
+		entry.Set("unit", meta.CostUnit)
+		cost = entry
+	}
+	var result *toolrt.Dict
+	err = withLock(workDir, func() error {
+		request, state, err := LoadAttempt(workDir, false)
+		if err != nil {
+			return err
+		}
+		status, err := item(state, "status")
+		if err != nil {
+			return err
+		}
+		if !toolrt.Equal(request.Value("mode"), "manual") || !toolrt.Equal(status, "manual_pending") || toolrt.Truthy(state.Value("downloads")) {
+			return valueError(textNotManual)
+		}
+		downloads, err := publishOriginals(workDir, request, []string{file}, true)
+		if err != nil {
+			return err
+		}
+		generation := toolrt.NewDict()
+		generation.Set("source", source)
+		generation.Set("original_name", toolrt.PathName(file))
+		generation.Set("attached_at", utcNow().Format("2006-01-02T15:04:05Z"))
+		generation.Set("cost", cost)
+		if note == "" {
+			generation.Set("description", nil)
+		} else {
+			generation.Set("description", note)
+		}
+		state.Set("status", "downloaded")
+		state.Set("downloads", downloads)
+		state.Set("manual_result", true)
+		state.Set("manual_generation", generation)
+		if err := writeState(workDir, state); err != nil {
+			return err
+		}
+		result = state
+		return nil
+	})
+	return result, err
+}
+
+// publishOriginals проверяет и публикует файлы результата в папке попытки: число файлов равно
+// outputs запроса, видео — сигнатура MP4, изображение — PNG/JPEG/WebP; копии собираются во
+// временной папке и публикуются жёсткими ссылками original*.ext без перезаписи. Возвращает записи
+// downloads; SHA-256 пишется для изображений и, с videoSHA, для видео.
+func publishOriginals(workDir string, request *toolrt.Dict, files []string, videoSHA bool) ([]any, error) {
+	outputs, err := item(request, "outputs")
+	if err != nil {
+		return nil, err
+	}
+	if !toolrt.Equal(toolrt.NewInt(int64(len(files))), outputs) {
+		return nil, valueError("Нужно файлов результата: " + toolrt.Str(outputs) + ", выбрано: " + toolrt.NewInt(int64(len(files))).String() + ".")
+	}
+	image := toolrt.Equal(request.Value("kind"), "image")
+	temporary, err := os.MkdirTemp(workDir, ".manual-result-")
+	if err != nil {
+		return nil, toolrt.OSErrorFrom(err, workDir)
+	}
+	defer os.RemoveAll(temporary)
+	type staged struct {
+		number    int
+		raw, name string
+	}
+	prepared := []staged{}
+	for index, source := range files {
+		number := index + 1
+		name := toolrt.PathName(source)
+		if !toolrt.IsFile(source) {
+			return nil, valueError("Файл результата не найден: " + name)
+		}
+		raw := filepath.Join(temporary, toolrt.NewInt(int64(number)).String()+".raw")
+		if err := requestsnapshot.CopyFile(source, raw); err != nil {
+			return nil, err
+		}
+		rawSize, err := size(raw)
+		if err != nil {
+			return nil, err
+		}
+		if rawSize.Sign() == 0 {
+			return nil, valueError("Файл результата пуст: " + name)
+		}
+		var extension string
+		if image {
+			extension, err = imageExtension(raw)
+		} else {
+			extension, err = videoExtension(raw)
+		}
+		if err != nil {
+			return nil, err
+		}
+		target := "original"
+		if len(files) != 1 {
+			target = "original-" + twoDigits(number)
+		}
+		target += extension
+		if path := filepath.Join(workDir, target); toolrt.Exists(path) || isSymlink(path) {
+			return nil, valueError(textExists)
+		}
+		prepared = append(prepared, staged{number, raw, target})
+	}
+	downloads := []any{}
+	for _, entry := range prepared {
+		rawSize, err := size(entry.raw)
+		if err != nil {
+			return nil, err
+		}
+		download := toolrt.NewDict()
+		download.Set("number", toolrt.NewInt(int64(entry.number)))
+		download.Set("path", entry.name)
+		download.Set("bytes", rawSize)
+		if image || videoSHA {
+			digest, err := requestsnapshot.FileSHA(entry.raw)
+			if err != nil {
+				return nil, err
+			}
+			download.Set("sha256", digest)
+		}
+		if err := link(entry.raw, filepath.Join(workDir, entry.name)); err != nil {
+			return nil, err
+		}
+		downloads = append(downloads, download)
+	}
+	return downloads, nil
 }
 
 // WatchEntry — итог одной попытки watch: путь (ключ JSON) и журнал либо {status, detail}.

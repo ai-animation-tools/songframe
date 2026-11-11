@@ -7,7 +7,10 @@ import { SettingsPage } from './SettingsPage';
 import { useAgentSettings } from './useAgentSettings';
 import { useInstalledAgents } from './useInstalledAgents';
 
-vi.mock('../../state', () => ({ useApp: () => ({ notify: vi.fn(), describeError: String, agentProvider: 'codex' }) }));
+vi.mock('../../state', () => ({
+  useApp: () => ({ notify: vi.fn(), describeError: String, agentProvider: 'codex' }),
+  useOptionalApp: () => null
+}));
 vi.mock('./useAgentSettings', () => ({ useAgentSettings: vi.fn() }));
 vi.mock('./useInstalledAgents', () => ({ useInstalledAgents: vi.fn() }));
 

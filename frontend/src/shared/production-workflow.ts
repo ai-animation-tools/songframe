@@ -67,7 +67,11 @@ export interface ProductionWorkflowView {
   /** Попытка пакета уже оплачена: подготовка продолжается только новой попыткой или возвратом с замечанием. */
   paid: boolean;
   /** Почему действие подготовки недоступно; пусто, когда оно доступно. */
-  reasons: { prepare: string | null; continue: string | null; frames: string | null };
+  reasons: { prepare: string | null; continue: string | null; frames: string | null; manual?: string | null };
+  /** Речевой план у провайдера без липсинка: видео создаётся вне приложения по пакету ручной генерации. */
+  manual?: boolean;
+  /** Пакет ручной генерации можно собрать сейчас; причина недоступности — reasons.manual. */
+  canBuildManual?: boolean;
   /** План собирается из материала другого плана (derived_from или комплект derived_video): подготовка и генерация заблокированы. */
   derivedFrom: string | null;
   /** Backend опор выбран в проекте независимо от текстового агента. */

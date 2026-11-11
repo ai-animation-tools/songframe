@@ -100,7 +100,8 @@ func Parser() *toolrt.Command {
 				toolrt.Action{Name: "--retry-of", Help: "Пакет того же плана, для которого создаётся исправленная попытка"}),
 			sub("plan-keyframes", dir,
 				toolrt.Action{Name: "--request-seconds", Int: true, Required: true},
-				toolrt.Action{Name: "--middle", Kind: toolrt.AppendValue, Metavar: "СЕК:ЗАМЕТКА"}),
+				toolrt.Action{Name: "--middle", Kind: toolrt.AppendValue, Metavar: "СЕК:ЗАМЕТКА"},
+				toolrt.Action{Name: "--single", Kind: toolrt.StoreTrue, Help: "Одна опора K01 на начале плана: видео создаётся вне приложения"}),
 			sub("approve", dir, toolrt.Action{Name: "keyframe"}, toolrt.Action{Name: "path"}),
 			sub("approve-prompt", dir, toolrt.Action{Name: "--file"}),
 			sub("set-stage", dir, toolrt.Action{Name: "stage"},
@@ -172,7 +173,8 @@ func Run(root string, argv []string) toolcli.Output {
 				}
 				middles = append(middles, middle{value, note})
 			}
-			if _, err := tool.planKeyframes(dir, args["request_seconds"].(toolrt.Int), middles); err != nil {
+			single, _ := args["single"].(bool)
+			if _, err := tool.planKeyframes(dir, args["request_seconds"].(toolrt.Int), middles, single); err != nil {
 				return err
 			}
 			return printTable(out, tool, dir)

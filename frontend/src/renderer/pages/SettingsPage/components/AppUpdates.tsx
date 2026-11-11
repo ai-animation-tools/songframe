@@ -1,6 +1,6 @@
 /** Обновление по кнопке: renderer видит только состояние, адрес пакета и путь к файлу остаются в Go. */
 import { useEffect, useRef, useState, type ReactElement } from 'react';
-import { Alert, LinearProgress, Link, Paper, Stack, Typography } from '@mui/material';
+import { Alert, LinearProgress, Paper, Stack, Typography } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import InstallDesktopIcon from '@mui/icons-material/InstallDesktop';
@@ -12,6 +12,7 @@ import type { UpdateView } from '@shared/updates';
 import { ActionButton } from '../../../components/ActionButton';
 import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 import { useApp } from '../../../state';
+import { ExternalLink } from '../../../components/ExternalLink';
 
 type Action = 'check' | 'download' | 'install';
 
@@ -57,15 +58,10 @@ export function AppUpdates(): ReactElement {
           <Alert severity={status === 'error' ? 'error' : status === 'current' ? 'success' : 'info'}>{view.message}</Alert>
         )}
         {view?.releaseUrl && status !== 'current' && (
-          <Link
-            href={view.releaseUrl}
-            target="_blank"
-            rel="noreferrer"
-            sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, alignSelf: 'flex-start' }}
-          >
+          <ExternalLink href={view.releaseUrl} sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, alignSelf: 'flex-start' }}>
             {updatesTexts.releaseNotes}
             <OpenInNewIcon fontSize="inherit" aria-hidden="true" />
-          </Link>
+          </ExternalLink>
         )}
         {downloading && (
           <Stack spacing={0.5}>

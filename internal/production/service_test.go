@@ -631,3 +631,43 @@ func TestAcceptFullAndRegenerate(t *testing.T) {
 		t.Fatalf("повтор отправил запрос: %d", e.paid())
 	}
 }
+
+// TestRegenerateManualLipSync — речевой план у провайдера без липсинка делается вручную: повтор
+// сохранённого запроса сервису недоступен с причиной в обзоре и отказом Regenerate.
+func TestRegenerateManualLipSync(t *testing.T) {
+	e := newEnv(t, "test-video")
+	path := filepath.Join(e.project, "plan", "scenes.json")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var scenes map[string]any
+	if err := json.Unmarshal(data, &scenes); err != nil {
+		t.Fatal(err)
+	}
+	for _, raw := range scenes["scenes"].([]any) {
+		if scene := raw.(map[string]any); scene["id"] == "M03" {
+			scene["lipsync"] = true
+		}
+	}
+	encoded, err := json.Marshal(scenes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, encoded, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	view, err := production.ViewProduction(e.project)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "M03: видео речевого плана создаётся вне приложения, повтор запроса недоступен. Начните новую попытку."
+	for _, shot := range view.Shots {
+		if shot.ID == "M03" && (shot.RegenerateProblem == nil || *shot.RegenerateProblem != want) {
+			t.Fatalf("причина повтора речевого плана: %v", shot.RegenerateProblem)
+		}
+	}
+	if _, err := e.prod.Regenerate(e.project, "M03"); err == nil || err.Error() != want {
+		t.Fatalf("повтор речевого плана без липсинка: %v", err)
+	}
+}

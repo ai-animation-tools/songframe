@@ -65,6 +65,10 @@ type Request struct {
 	GenerationID    *string         `json:"generationId"`
 	ManualResult    bool            `json:"manualResult"`
 	CreditsConsumed *float64        `json:"creditsConsumed"`
+	// Mode — "manual" у пакета ручной генерации (видео создаётся вне приложения); поле опускается у
+	// обычного запроса. ManualGeneration — attempt.json manual_generation загруженного видео как есть.
+	Mode             string          `json:"mode,omitempty"`
+	ManualGeneration json.RawMessage `json:"manualGeneration,omitempty"`
 	// Downloads — абсолютные пути существующих скачанных оригиналов.
 	Downloads []string `json:"downloads"`
 }
@@ -502,6 +506,12 @@ func readRequest(dir string, workflow, active any, imageRequest bool, problems *
 	}
 	if text, ok := kind.(string); ok {
 		request.Kind = text
+	}
+	if mode, ok := dynvalue.Get(frozen, "mode").(string); ok {
+		request.Mode = mode
+	}
+	if generation := dynvalue.Get(attempt, "manual_generation"); dynvalue.IsRecord(generation) {
+		request.ManualGeneration = dynvalue.Raw(generation)
 	}
 	if provider, ok := providerValue.(string); ok {
 		trimmed := dynvalue.Trim(provider)

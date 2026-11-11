@@ -43,6 +43,14 @@ export function AddKeyframeNote(project: string, packageDir: string, frame: stri
 }
 
 /**
+ * AttachManual — видео, созданное вне приложения по пакету ручной генерации, становится оригиналом.
+ * Вход в сервис провайдера не нужен: видео уже создано и только копируется в попытку.
+ */
+export function AttachManual(project: string, packageDir: string, result: production$0.ManualResult): $CancellablePromise<jobs$0.Info> {
+    return $Call.ByID(1535544604, project, packageDir, result);
+}
+
+/**
  * AttachResult — неизвестный исход: файл из истории генераций сервиса становится оригиналом.
  */
 export function AttachResult(project: string, packageDir: string, files: string[]): $CancellablePromise<jobs$0.Info> {

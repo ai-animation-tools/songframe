@@ -11307,7 +11307,7 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "использование: media_request [-h]\n                             {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                             ...\nmedia_request: ошибка: обязательные аргументы: action\n",
+        "stderr": "использование: media_request [-h]\n                             {capabilities,login,auth-status,prepare,watch,attach,attach-manual,submit,resume,status,not-created}\n                             ...\nmedia_request: ошибка: обязательные аргументы: action\n",
         "unhandled": false,
         "interrupted": false,
         "calls": [],
@@ -11326,7 +11326,7 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "использование: media_request [-h]\n                             {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                             ...\nmedia_request: ошибка: аргумент action: недопустимое значение 'bogus' (допустимо: 'capabilities', 'login', 'auth-status', 'prepare', 'watch', 'attach', 'submit', 'resume', 'status', 'not-created')\n",
+        "stderr": "использование: media_request [-h]\n                             {capabilities,login,auth-status,prepare,watch,attach,attach-manual,submit,resume,status,not-created}\n                             ...\nmedia_request: ошибка: аргумент action: недопустимое значение 'bogus' (допустимо: 'capabilities', 'login', 'auth-status', 'prepare', 'watch', 'attach', 'attach-manual', 'submit', 'resume', 'status', 'not-created')\n",
         "unhandled": false,
         "interrupted": false,
         "calls": [],
@@ -11344,7 +11344,7 @@
       },
       {
         "code": 0,
-        "stdout": "использование: media_request [-h]\n                             {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                             ...\n\nПопытка генерации у выбранного провайдера: возможности, подготовка, отправка и\nполучение; @link README.md\n\nаргументы:\n  {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n\nпараметры:\n  -h, --help            показать справку и выйти\n",
+        "stdout": "использование: media_request [-h]\n                             {capabilities,login,auth-status,prepare,watch,attach,attach-manual,submit,resume,status,not-created}\n                             ...\n\nПопытка генерации у выбранного провайдера: возможности, подготовка, отправка и\nполучение; @link README.md\n\nаргументы:\n  {capabilities,login,auth-status,prepare,watch,attach,attach-manual,submit,resume,status,not-created}\n\nпараметры:\n  -h, --help            показать справку и выйти\n",
         "stderr": "",
         "unhandled": false,
         "interrupted": false,
@@ -11363,7 +11363,7 @@
       },
       {
         "code": 0,
-        "stdout": "использование: media_request [-h]\n                             {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                             ...\n\nПопытка генерации у выбранного провайдера: возможности, подготовка, отправка и\nполучение; @link README.md\n\nаргументы:\n  {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n\nпараметры:\n  -h, --help            показать справку и выйти\n",
+        "stdout": "использование: media_request [-h]\n                             {capabilities,login,auth-status,prepare,watch,attach,attach-manual,submit,resume,status,not-created}\n                             ...\n\nПопытка генерации у выбранного провайдера: возможности, подготовка, отправка и\nполучение; @link README.md\n\nаргументы:\n  {capabilities,login,auth-status,prepare,watch,attach,attach-manual,submit,resume,status,not-created}\n\nпараметры:\n  -h, --help            показать справку и выйти\n",
         "stderr": "",
         "unhandled": false,
         "interrupted": false,
@@ -11497,7 +11497,7 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "использование: media_request [-h]\n                             {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                             ...\nmedia_request: ошибка: неизвестные аргументы: extra\n",
+        "stderr": "использование: media_request [-h]\n                             {capabilities,login,auth-status,prepare,watch,attach,attach-manual,submit,resume,status,not-created}\n                             ...\nmedia_request: ошибка: неизвестные аргументы: extra\n",
         "unhandled": false,
         "interrupted": false,
         "calls": [],
@@ -11630,7 +11630,7 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "использование: media_request [-h]\n                             {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                             ...\nmedia_request: ошибка: неизвестные аргументы: --json\n",
+        "stderr": "использование: media_request [-h]\n                             {capabilities,login,auth-status,prepare,watch,attach,attach-manual,submit,resume,status,not-created}\n                             ...\nmedia_request: ошибка: неизвестные аргументы: --json\n",
         "unhandled": false,
         "interrupted": false,
         "calls": [],
@@ -11649,7 +11649,7 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "использование: media_request [-h]\n                             {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                             ...\nmedia_request: ошибка: неизвестные аргументы: --json=1\n",
+        "stderr": "использование: media_request [-h]\n                             {capabilities,login,auth-status,prepare,watch,attach,attach-manual,submit,resume,status,not-created}\n                             ...\nmedia_request: ошибка: неизвестные аргументы: --json=1\n",
         "unhandled": false,
         "interrupted": false,
         "calls": [],

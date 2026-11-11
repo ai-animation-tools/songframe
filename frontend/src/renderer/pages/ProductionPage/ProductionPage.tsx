@@ -210,6 +210,14 @@ export function ProductionPage(): ReactElement {
                         selectedPackage.dir
                       )
                     }
+                    onAttachManual={(video) =>
+                      selectedPackage &&
+                      act(
+                        productionTexts.manualGeneration.started,
+                        () => window.api.production.attachManual(project, selectedPackage.dir, video),
+                        selectedPackage.dir
+                      )
+                    }
                     onNotCreated={() =>
                       selectedPackage &&
                       act(

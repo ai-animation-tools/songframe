@@ -95,7 +95,8 @@ export function apiSkeleton(): Api {
       apply: stub('productionWorkflow.apply'),
       discard: stub('productionWorkflow.discard'),
       generateFrames: stub('productionWorkflow.generateFrames'),
-      importFrames: stub('productionWorkflow.importFrames')
+      importFrames: stub('productionWorkflow.importFrames'),
+      buildManual: stub('productionWorkflow.buildManual')
     },
     scenarioWorkflow: {
       view: stub('scenarioWorkflow.view'),
@@ -177,6 +178,7 @@ export function apiSkeleton(): Api {
       submit: stub('production.submit'),
       resume: stub('production.resume'),
       attachResult: stub('production.attachResult'),
+      attachManual: stub('production.attachManual'),
       markNotCreated: stub('production.markNotCreated'),
       selectImage: stub('production.selectImage'),
       regenerate: stub('production.regenerate'),
@@ -234,6 +236,7 @@ export function apiSkeleton(): Api {
     },
     shell: {
       openPath: stub('shell.openPath'),
+      openExternal: stub('shell.openExternal'),
       readText: stub('shell.readText'),
       fileUrl: stub('shell.fileUrl'),
       onFilesDropped: stub('shell.onFilesDropped')

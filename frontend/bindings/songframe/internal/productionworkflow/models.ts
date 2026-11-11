@@ -23,6 +23,11 @@ export interface Reasons {
     "prepare": string | null;
     "continue": string | null;
     "frames": string | null;
+
+    /**
+     * Manual — почему нельзя собрать пакет ручной генерации; nil — можно или план не ручной.
+     */
+    "manual"?: string | null;
 }
 
 /**
@@ -73,6 +78,13 @@ export interface View {
     "canContinue": boolean;
     "canRevise": boolean;
     "canGenerateFrames": boolean;
+
+    /**
+     * Manual — речевой план у провайдера без липсинка: видео создаётся вне приложения по пакету
+     * ручной генерации. CanBuildManual — пакет можно собрать сейчас.
+     */
+    "manual"?: boolean;
+    "canBuildManual"?: boolean;
 
     /**
      * Paid — попытка пакета уже оплачена: дальше только новая попытка или возврат с замечанием.

@@ -8,6 +8,7 @@ export type {
     Broken,
     Bundle,
     Keyframe,
+    ManualResult,
     PackageView,
     Prompt,
     Quote,

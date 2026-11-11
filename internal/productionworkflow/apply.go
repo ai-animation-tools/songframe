@@ -256,6 +256,9 @@ func (w *Workflow) applyDescription(ctx context.Context, plan *applyPlan) error 
 	}
 	keyframes, _ := dynvalue.AsArray(after.Value("keyframes"))
 	args := []string{"plan-keyframes", "--dir", target, "--request-seconds", dynvalue.ToString(after.Value("requestSeconds"))}
+	if plan.stored.Rules().Manual {
+		args = append(args, "--single")
+	}
 	for _, frame := range keyframes {
 		if dynvalue.Get(frame, "role") == "middle" {
 			// Подпись опоры входит в данные аргумента --middle штатного инструмента.
@@ -314,6 +317,9 @@ var audioSlot = regexp.MustCompile(`(?i)^audio`)
 // спецификация запроса в каталоге состояния не пишется, чтобы там не копились файлы.
 func (w *Workflow) applyRequest(ctx context.Context, plan *applyPlan) (string, error) {
 	c, target := plan.context, plan.stored.Target()
+	if c.Manual {
+		return "", errors.New(textManualNoRequest)
+	}
 	prompt, err := c.PromptApproved()
 	if err != nil {
 		return "", err

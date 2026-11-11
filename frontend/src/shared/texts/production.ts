@@ -1,4 +1,4 @@
-import { countLabel } from '../plural';
+import { countLabel, plural } from '../plural';
 import { commonTexts } from './common';
 import { navigationTexts } from './navigation';
 
@@ -454,6 +454,7 @@ export const productionTexts = {
       prompt: 'Видеопромпт',
       speech: 'Срез речи',
       request: 'Запрос',
+      manual: 'Ручная генерация',
       generation: 'Генерация',
       result: 'Результат'
     },
@@ -463,6 +464,7 @@ export const productionTexts = {
       prompt: 'После опор',
       speech: 'После видеопромпта',
       request: 'После видеопромпта',
+      manual: 'После среза речи',
       generation: 'После отправки',
       result: 'После генерации'
     },
@@ -473,6 +475,10 @@ export const productionTexts = {
     speechSummary: 'Срез готов',
     requestSummary: ({ credits }: { credits: number | null | undefined }) => `Отправлен${credits ? `, списано кредитов: ${credits}` : ''}`,
     generationSummary: 'Видео получено',
+    manualSummary: 'Видео загружено',
+    buildManual: 'соберите пакет для ручной генерации',
+    uploadManual: 'создайте видео по пакету и загрузите его',
+    manualUploading: 'видео загружается в попытку',
     resultSummary: 'Принят',
     now: ({ text }: { text: string }) => `Сейчас: ${text}`,
     finished: 'План принят',
@@ -873,7 +879,6 @@ export const productionTexts = {
   productionSpeechPanel: {
     seconds: (value: number) => `${value.toFixed(2).replace('.', ',')} с`,
     invalidRange: 'Укажите начало и конец среза в секундах; конец позже начала.',
-    unsupported: 'Провайдер видео проекта не синхронизирует губы с заданным звуком.',
     duration: ({ min, max }: { min: number; max: number }) => `Провайдер видео принимает звук длиной от ${min} до ${max} с.`,
     sent: 'Запрос этой попытки уже отправлен: её WAV менять нельзя.',
     prepared: ({ shot, seconds }: { shot: string; seconds: string }) => `WAV речи ${shot} подготовлен: ${seconds}.`,
@@ -888,6 +893,45 @@ export const productionTexts = {
     recut: 'Обрезать заново',
     prepare: 'Подготовить WAV',
     timing: `Границы по разметке`
+  },
+  manualGeneration: {
+    heading: 'Ручная генерация',
+    description: 'У провайдера видео проекта нет синхронизации губ. Видео для этого плана создаётся вне приложения — по опоре, срезу речи и видеопромпту.',
+    build: 'Собрать пакет',
+    buildHint: 'Скопировать утверждённые опору, срез речи и видеопромпт в папку попытки',
+    built: 'Пакет для ручной генерации собран в папке попытки.',
+    input: ({ role, name }: { role: string; name: string }) => `${role} — ${name}`,
+    speechInput: ({ role, name, seconds }: { role: string; name: string; seconds: string }) => `${role} — ${name}, ${seconds}`,
+    promptInput: 'Видеопромпт — prompt.txt',
+    openFolder: 'Открыть папку',
+    prompt: 'Видеопромпт',
+    copy: 'Скопировать',
+    copyHint: 'Скопировать видеопромпт, чтобы вставить его в форму сервиса',
+    instruction: ({ provider }: { provider: string }) => `Как сделать видео в ${provider}:`,
+    zone: 'Видео результата',
+    chosen: ({ name }: { name: string }) => `Видео выбрано: ${name}`,
+    replace: 'Выбрать другое',
+    source: 'Источник',
+    sourceHint: ({ example }: { example: string | null }) => `Например: ${example ? `${example}, ` : ''}своё видео`,
+    cost: 'Стоимость',
+    costHint: 'Необязательно',
+    unit: 'Единица',
+    units: { credits: 'кредиты', RUB: '₽', USD: '$' },
+    note: 'Примечание',
+    noteHint: 'Нюансы генерации для истории: настройки, сколько было попыток, что меняли',
+    upload: 'Загрузить видео',
+    fileRequired: 'Перетащите или выберите видео результата.',
+    sourceRequired: 'Укажите источник видео.',
+    costInvalid: 'Стоимость — неотрицательное число.',
+    started: 'Загрузка видео запущена',
+    record: ({ source, cost, at, name }: { source: string; cost: string | null; at: string; name: string }) =>
+      `Источник: ${source}${cost ? ` · Стоимость: ${cost}` : ''} · Загружено ${at} из ${name}`,
+    /** Стоимость в записи: «75 кредитов», «120 ₽», «1,5 $». */
+    costValue: ({ amount, unit }: { amount: number; unit: 'credits' | 'RUB' | 'USD' }) => {
+      const number = String(amount).replace('.', ',');
+      return unit === 'credits' ? `${number} ${plural(amount, 'кредит', 'кредита', 'кредитов')}` : `${number} ${unit === 'RUB' ? '₽' : '$'}`;
+    },
+    builtSpeech: 'Пакет для ручной генерации уже собран: WAV этой попытки менять нельзя.'
   },
   productionToolbar: {
     heading: navigationTexts.pages.production,

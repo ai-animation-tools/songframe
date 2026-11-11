@@ -203,6 +203,9 @@ func textRetryOriginalProviderMissing(shot string) string {
 func textRetryProviderMismatch(shot, provider, selected string) string {
 	return shot + ": провайдер сцены — " + provider + ", текущий выбранный — " + selected + ". Для подготовки повтора провайдеры должны совпадать."
 }
+func textRetryManual(shot string) string {
+	return shot + ": видео речевого плана создаётся вне приложения, повтор запроса недоступен. Начните новую попытку."
+}
 func textRetryRequestMissing(shot string) string {
 	return shot + ": нет сохранённого запроса для повтора. Подготовьте новый пакет."
 }
@@ -290,8 +293,12 @@ func TextSpeechDuration(min, max float64) string {
 	return fmt.Sprintf("Провайдер видео принимает звук длиной от %s до %s с: поправьте границы среза.", number(min), number(max))
 }
 
-// TextSpeechUnsupported — productionTexts.productionSpeechPanel.unsupported.
-const TextSpeechUnsupported = "Провайдер видео проекта не синхронизирует губы с заданным звуком."
+// Ручная генерация: видео создаётся вне приложения по пакету попытки.
+const (
+	textManualPackageOnly   = "Загрузить видео можно только в собранный пакет ручной генерации, ещё не получивший видео."
+	textManualSourceMissing = "Укажите источник видео."
+	textAttachManualStep    = "Загрузка видео ручной генерации"
+)
 
 // number — число в кратчайшей десятичной записи без экспоненты и лишних нулей.
 func number(value float64) string { return strconv.FormatFloat(value, 'f', -1, 64) }

@@ -431,6 +431,7 @@ export function createApi(b: Bindings): Api {
   api.dialog.pickFiles = (options) => call('dialog.pickFiles', async () => (await b.native()).PickFiles(pickOptions(options)), false);
 
   api.shell.openPath = (path) => call('shell.openPath', async () => (await b.shell()).OpenPath(path));
+  api.shell.openExternal = (url) => call('shell.openExternal', async () => (await b.shell()).OpenExternal(url));
   api.shell.readText = (path) => call('shell.readText', async () => (await b.shell()).ReadText(path));
   api.shell.fileUrl = (path) => {
     if (fileBase === null) throw new ApiError('CONNECTION_FAILED', 'shell.fileUrl', platformTexts.connectionFailed);
@@ -765,6 +766,8 @@ export function createApi(b: Bindings): Api {
   api.production.resume = (project, packageDir) => call('production.resume', async () => toJob(await (await production()).Resume(project, packageDir)), false);
   api.production.attachResult = (project, packageDir, files) =>
     call('production.attachResult', async () => toJob(await (await production()).AttachResult(project, packageDir, files)), false);
+  api.production.attachManual = (project, packageDir, result) =>
+    call('production.attachManual', async () => toJob(await (await production()).AttachManual(project, packageDir, result)), false);
   api.production.markNotCreated = (project, packageDir) =>
     call('production.markNotCreated', async () => (await production()).MarkNotCreated(project, packageDir), false);
   api.production.selectImage = (project, packageDir, index, expectedResultToken) =>
@@ -811,6 +814,8 @@ export function createApi(b: Bindings): Api {
     call('productionWorkflow.generateFrames', async () => productionWorkflow((await b.productionWorkflow()).GenerateFrames(project, shot, packageDir)), false);
   api.productionWorkflow.importFrames = (project, shot, packageDir, images) =>
     call('productionWorkflow.importFrames', async () => productionWorkflow((await b.productionWorkflow()).ImportFrames(project, shot, packageDir, images)));
+  api.productionWorkflow.buildManual = (project, shot, packageDir) =>
+    call('productionWorkflow.buildManual', async () => productionWorkflow((await b.productionWorkflow()).BuildManual(project, shot, packageDir)));
   api.dashboard.view = (project) => call('dashboard.view', async () => (await (await b.dashboard()).View(project)) as unknown as DashboardView);
 
   api.notifications.onOpen = (listener) => subscribe<NotificationTarget>(b.events, 'notifications:open', listener);

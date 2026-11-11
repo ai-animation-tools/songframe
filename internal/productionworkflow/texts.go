@@ -72,6 +72,13 @@ const (
 	textFrameCandidateOrderInvalid   = "Кандидаты должны относиться к неутверждённым опорам плана, без повторов и в порядке плана; нужен абсолютный путь изображения."
 	textProposalVersionOrStage       = "Неверная версия или этап предложения."
 	textDescriptionInvalid           = "Описание требует текст, длительность и минимум две опоры."
+	textManualNoRequest              = "Видео этого плана создаётся вне приложения: вместо запроса соберите пакет для ручной генерации."
+	textManualPackageReady           = "Пакет для ручной генерации уже собран."
+	textManualPromptRequired         = "Сначала утвердите видеопромпт."
+	textManualSpeechRequired         = "Сначала подготовьте WAV в блоке «Речь»."
+	textManualUnavailable            = "Пакет для ручной генерации сейчас собрать нельзя."
+	textManualSpeechRole             = "Срез речи"
+	textManualSingleFrame            = "Видео этого плана создаётся вне приложения: в описании должна быть ровно одна опора K01 на начале плана."
 	textFrameStructureInvalid        = "Неверная структура опоры."
 	textFramePlanInvalid             = "Неверные ID, роли, порядок, промпт или референсы опор."
 	textFrameBoundariesInvalid       = "Первая опора должна быть на 0, последняя — на границе запроса."
@@ -194,10 +201,6 @@ func textVideoSettingsRequired() string {
 	return textVideoSettingsIncomplete + " проекта: поддерживается провайдер " + providerTitles(mediaproviders.Video) + "."
 }
 
-func textProviderLipSyncUnsupported(provider string) string {
-	return "Речевой план: " + provider + " не синхронизирует губы с заданным звуком. Снимите отметку «Липсинк» у плана на странице «Сценарий» или выберите другого провайдера видео."
-}
-
 func textSpeechWindowTooLong(seconds, provider string, max float64) string {
 	return "Речевой план: окно плана " + seconds + " с длиннее, чем " + provider + " принимает звук (до " + dynvalue.NumberToString(max) + " с). Разделите план на странице «Сценарий»."
 }
@@ -264,3 +267,5 @@ func textVideoAdapterMissing(provider string) string {
 func textInputFlagUnknown(flag, flags string) string {
 	return "Неизвестный флаг входа " + flag + "; допустимы input и " + flags + "."
 }
+
+func textManualFrameRole(id string) string { return "Опора " + id }

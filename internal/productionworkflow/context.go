@@ -78,6 +78,9 @@ type Context struct {
 	Paid bool
 	// Problems — что мешает подготовке: настройки видео, липсинк провайдера.
 	Problems []string
+	// Manual — речевой план у провайдера без липсинка: видео создаёт пользователь вне приложения
+	// по одной опоре, срезу речи и видеопромпту; агентского этапа request и отправки нет.
+	Manual bool
 	// DerivedFrom — план-источник производного плана; "" — план обычный.
 	DerivedFrom string
 	// SceneChanged — постановка плана изменилась после подготовки пакета.
@@ -135,18 +138,19 @@ func ReadContext(path, shot, requested string) (*Context, error) {
 		!mediaproviders.Supports(settings.Value("provider"), mediaproviders.Video) {
 		problems = append(problems, textVideoSettingsRequired())
 	}
-	// Речевой план готовится только у провайдера, который синхронизирует губы с заданным звуком и
-	// принимает такую длину.
+	// Речевой план у провайдера с липсинком ограничен допустимой длиной звука; у провайдера без
+	// липсинка видео создаётся вручную вне приложения, и ограничений сервиса приложение не знает.
 	provider, known := videoProvider(settings)
+	manual := false
 	if scene.Value("lipsync") == true && known {
 		if provider.LipSync == nil {
-			problems = append(problems, textProviderLipSyncUnsupported(provider.Title))
+			manual = true
 		} else if window > provider.LipSync.Max {
 			problems = append(problems, textSpeechWindowTooLong(dynvalue.ToFixed(window, 2), provider.Title, provider.LipSync.Max))
 		}
 	}
 	context := &Context{
-		Project: project, Shot: shot, Settings: settings, Window: window, DurationRule: durationRule, Problems: problems,
+		Project: project, Shot: shot, Settings: settings, Window: window, DurationRule: durationRule, Problems: problems, Manual: manual,
 		FramePrompts: &dynvalue.Array{Items: []any{}}, References: dynvalue.NewObject(),
 	}
 	if requested != "" {
@@ -351,14 +355,15 @@ func matchesDigest(path string, expected any) bool {
 	return dynvalue.Exists(path) && ok && expected == hash
 }
 
-// FramesApproved сообщает, что в пакете не меньше двух опор, все утверждены, файлы
-// на месте и совпадают с утверждёнными SHA-256. Результат вычисляется один раз на Context.
+// FramesApproved сообщает, что в пакете не меньше двух опор (в ручном режиме — ровно одна), все
+// утверждены, файлы на месте и совпадают с утверждёнными SHA-256. Результат вычисляется один раз
+// на Context.
 func (c *Context) FramesApproved() (bool, error) {
 	if c.framesApproved != nil {
 		return *c.framesApproved, nil
 	}
 	frames := keyframes(c.Workflow)
-	result := len(frames) >= 2
+	result := len(frames) >= 2 || (c.Manual && len(frames) == 1)
 	for _, frame := range frames {
 		if !result {
 			break
@@ -426,7 +431,7 @@ func (c *Context) StageFor() (string, error) {
 				return "description", err
 			}
 			prompt, err := c.PromptApproved()
-			if err != nil || !prompt {
+			if err != nil || !prompt || c.Manual {
 				return "prompt", err
 			}
 			return "request", nil
@@ -438,7 +443,8 @@ func (c *Context) StageFor() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if prompt && !dynvalue.Truthy(workflow.Value("request_dir")) {
+	// Пакет ручной генерации собирает приложение без агента (Workflow.BuildManual).
+	if prompt && !dynvalue.Truthy(workflow.Value("request_dir")) && !c.Manual {
 		return "request", nil
 	}
 	frames, err := c.FramesApproved()
@@ -536,6 +542,7 @@ func (c *Context) RulesFor(stage string) Rules {
 		RequestSeconds: orNull(dynvalue.Get(c.workflowValue("timing"), "request_seconds")), AllowedPaths: c.AllowedPaths,
 		FramePrompts: c.FramePrompts,
 	}
+	rules.Manual = c.Manual
 	if c.Scene.Value("lipsync") == true {
 		if provider, ok := videoProvider(c.Settings); ok && provider.LipSync != nil {
 			limits := *provider.LipSync

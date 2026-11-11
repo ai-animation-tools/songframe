@@ -8,6 +8,7 @@ import { KEEP_NOTHING_REASON, type ScenarioBrief, type ScenarioTab, type ScenesS
 import { scenesSavedView, workflowUpdatedView } from './workflowDrafts';
 import { requestedShot } from './shotNavigation';
 import { partsFromSections } from './treatmentParts';
+import { recalculateSceneBounds } from './sceneBounds';
 import { SHOT_PARAM } from '../../components/shotRoutes';
 
 /** Загружает сценарий и сохраняет вкладки независимо; проверка следует текущему черновику. */
@@ -266,6 +267,31 @@ export function useScenario() {
     }
   };
 
+  // Каркас строится без записи, а в черновик реестра переносятся только окна планов: сохраняет пользователь,
+  // обычным «Сохранить» со списком затронутых планов.
+  const recalculateBounds = async (): Promise<void> => {
+    if (scaffoldRunning.current || scaffoldProblem || !scenes) return;
+    scaffoldRunning.current = true;
+    setBusy(true);
+    try {
+      const result = await window.api.tools.run(project, 'scene_scaffold', ['--dry-run', '--json']);
+      if (result.code !== 0) throw new Error((result.stderr || result.stdout).trim().split('\n').slice(-2).join(' '));
+      const outcome = recalculateSceneBounds(scenes, JSON.parse(result.stdout) as ScenesFile);
+      if ('problem' in outcome) notify(outcome.problem, 'warning');
+      else if (outcome.scenes === scenes) notify(scenarioTexts.notice.boundsUnchanged, 'info');
+      else {
+        setScenes(outcome.scenes);
+        if (outcome.changed.length) setSelected(outcome.changed[0]);
+        notify(scenarioTexts.notice.boundsRecalculated({ count: outcome.changed.length }), 'success');
+      }
+    } catch (error) {
+      notify(describeError(error), 'error');
+    } finally {
+      scaffoldRunning.current = false;
+      setBusy(false);
+    }
+  };
+
   // Записывает именно тот черновик, по которому показан список затронутых планов.
   const writeScenes = async (draft: ScenesFile, mode: ScenesSaveMode): Promise<void> => {
     const saved = await window.api.scenario.saveScenes(project, draft, mode);
@@ -353,6 +379,7 @@ export function useScenario() {
     cancelSaveScenes,
     keepUseless,
     scaffold,
+    recalculateBounds,
     scaffoldProblem,
     scenesInputProblem,
     notify

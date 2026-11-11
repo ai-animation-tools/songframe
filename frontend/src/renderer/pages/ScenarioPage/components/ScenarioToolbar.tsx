@@ -3,6 +3,7 @@ import { commonTexts } from '@shared/texts/common';
 import { navigationTexts } from '@shared/texts/navigation';
 import BuildIcon from '@mui/icons-material/Build';
 import TimelineIcon from '@mui/icons-material/Timeline';
+import StraightenIcon from '@mui/icons-material/Straighten';
 import type { ReactElement } from 'react';
 import { Box, Button, Chip, Tab, Tabs, Tooltip, Typography } from '@mui/material';
 import { ActionButton } from '../../../components/ActionButton';
@@ -35,7 +36,8 @@ export function ScenarioToolbar({
   saveTreatment,
   saveScenes,
   keepUseless,
-  scaffold
+  scaffold,
+  recalculateBounds
 }: {
   tab: ScenarioTab;
   onTabChange(tab: ScenarioTab): void;
@@ -60,6 +62,8 @@ export function ScenarioToolbar({
   /** По последнему расчёту черновик не затрагивает планы с принятым комплектом или пакетом. */
   keepUseless: boolean;
   scaffold(force: boolean): Promise<void>;
+  /** Окна планов по сохранённым трактовке и разметке — в черновик реестра, постановка прежняя. */
+  recalculateBounds(): Promise<void>;
 }): ReactElement {
   const dirty = tab === 'treatment' ? treatmentDirty : scenesDirty;
   // Устаревшая карта референсов — тоже повод сохранить реестр: её обновляет только запись.
@@ -160,9 +164,20 @@ export function ScenarioToolbar({
             )}
           </>
         ) : (
-          <Button endIcon={<ExpandMoreIcon sx={{ transform: showGlobal ? 'rotate(180deg)' : 'none' }} />} onClick={() => onToggleGlobal()}>
-            {scenarioTexts.toolbar.globalRules}
-          </Button>
+          <>
+            <ActionButton
+              title={scenarioTexts.toolbar.recalculateBoundsHint}
+              startIcon={<StraightenIcon />}
+              disabled={scaffoldDisabled}
+              disabledReason={scaffoldReason}
+              onClick={() => void recalculateBounds()}
+            >
+              {scenarioTexts.toolbar.recalculateBounds}
+            </ActionButton>
+            <Button endIcon={<ExpandMoreIcon sx={{ transform: showGlobal ? 'rotate(180deg)' : 'none' }} />} onClick={() => onToggleGlobal()}>
+              {scenarioTexts.toolbar.globalRules}
+            </Button>
+          </>
         )}
         {tab === 'scenes' ? (
           <ActionButton

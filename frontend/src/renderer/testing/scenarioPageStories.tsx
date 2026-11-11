@@ -593,6 +593,15 @@ export function scenarioPageOptions({
             validate(project);
             if (tool !== 'scene_scaffold' || !model.saved.treatment) throw new Error(`Инструмент ${tool} не моделируется на этой странице.`);
             model.scaffolds.push(args);
+            // Каркас без записи — как после правки разметки: стык M01 и M02 на полсекунды позже исходного, остальные окна прежние.
+            if (args.includes('--dry-run') && model.saved.scenes) {
+              const shifted = structuredClone(model.saved.scenes);
+              shifted.scenes.forEach((shot) => Object.assign(shot, { camera: 'ЗАПОЛНИТЬ', action: 'ЗАПОЛНИТЬ' }));
+              shifted.scenes[0].end_frame_exclusive = shifted.scenes[1].start_frame = SHOT_SECONDS * FPS + FPS / 2;
+              // Сохранённое не меняется: публикация только обновляет счётчик построений в панели модели.
+              model.publish();
+              return { code: 0, stdout: JSON.stringify(shifted), stderr: '', command: `scene_scaffold ${args.join(' ')}` };
+            }
             model.saved.scenes = scaffoldScenes(model.saved.treatment);
             documentsWritten(false);
             model.publish();

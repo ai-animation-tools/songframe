@@ -99,6 +99,7 @@ export function ScenarioPage(): ReactElement {
           saveScenes={saveScenes}
           keepUseless={keepUseless}
           scaffold={scaffold}
+          recalculateBounds={scenario.recalculateBounds}
         />
       </PageActionBar>
       <ScenesSaveDialog request={saveRequest} busy={busy} onConfirm={() => void confirmSaveScenes()} onClose={cancelSaveScenes} />

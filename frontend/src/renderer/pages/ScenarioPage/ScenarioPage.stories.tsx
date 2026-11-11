@@ -216,6 +216,35 @@ export const SaveProducedShots: Story = {
   }
 };
 
+export const RecalculateBounds: Story = {
+  name: 'Пересчёт границ · постановка прежняя · принятые планы в списке сохранения',
+  tags: ['ci'],
+  parameters: { songframe: scenarioPageOptions({ variant: 'produced' }) },
+  play: async (context) => {
+    const screen = await ready(context);
+    const action = screen.getByTestId('page-model-shot-M01').textContent ?? '';
+    await userEvent.click(screen.getByRole('button', { name: scenarioTexts.toolbar.recalculateBounds }));
+    await screen.findByText(scenarioTexts.notice.boundsRecalculated({ count: 2 }));
+    await expect(screen.getByTestId('page-model-scaffold')).toHaveTextContent('Построений каркаса: 1 (--dry-run --json).');
+    // Черновик не записан: постановка в модели прежняя, правку нужно сохранить.
+    await expect(unsavedChip(screen)).toBeInTheDocument();
+    await expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений реестра: 0.');
+    await expect(field(screen, scenarioTexts.fields.action).value).not.toContain('ЗАПОЛНИТЬ');
+    await userEvent.click(saveButton(screen));
+    const production = within(await screen.findByRole('dialog', { name: scenarioTexts.save.productionTitle }));
+    await expect(production.getByText('M01')).toBeInTheDocument();
+    await expect(production.getByText('M02')).toBeInTheDocument();
+    await userEvent.click(production.getByRole('button', { name: commonTexts.save }));
+    await waitFor(() => expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений реестра: 1 (production).'));
+    await expect(screen.getByTestId('page-model-shot-M01')).toHaveTextContent(action);
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    // Повторный пересчёт ничего не меняет.
+    await userEvent.click(screen.getByRole('button', { name: scenarioTexts.toolbar.recalculateBounds }));
+    await screen.findByText(scenarioTexts.notice.boundsUnchanged);
+    await expect(unsavedChip(screen)).not.toBeInTheDocument();
+  }
+};
+
 export const WorkflowWithManualEditing: Story = {
   name: 'Процесс с агентом · панель рядом с ручной правкой и сохранением',
   tags: ['!autodocs', 'ci'],

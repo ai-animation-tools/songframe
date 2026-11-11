@@ -104,12 +104,13 @@ jobs:
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
       - name: Формат Go
         run: sh scripts/check-format.sh
-      # Bindings создают и временный frontend/dist для go:embed корневого пакета. Тесты идут один раз,
-      # под детектором гонок (шаг ниже): он выполняет те же тесты, что обычный go test ./...
-      - name: Bindings и vet
+      # Bindings создают и временный frontend/dist для go:embed корневого пакета. Тесты internal/ идут
+      # один раз, под детектором гонок (шаг ниже); пакеты вне internal/ — обычным go test.
+      - name: Bindings, vet и Go tests вне internal
         run: |
           wails3 task bindings
           go vet ./...
+          wails3 task check:go:outside
       # Локально check:all проверяет frontend по свежим bindings. Здесь frontend-job читает закоммиченные,
       # поэтому повторная генерация обязана дать чистый diff: иначе bindings забыли обновить.
       - name: Закоммиченные bindings актуальны
@@ -120,7 +121,7 @@ jobs:
             echo '::error::frontend/bindings устарели: выполните «wails3 task bindings» и закоммитьте результат.'
             exit 1
           fi
-      - name: Go tests под детектором гонок
+      - name: Go tests internal под детектором гонок
         run: wails3 task check:race
 
   frontend:

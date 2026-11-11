@@ -175,14 +175,15 @@ FFmpeg/ffprobe, ONNX Runtime CPU и модели (выделение вокал�
 | `wails3 task check:frontend` | `yarn typecheck` и все Vitest-тесты |
 | `wails3 task check:contracts` | Go-тесты `-run Contract` и `src/platform/contracts.test.ts` |
 | `wails3 task check:components` | Тесты закреплённого manifest компонентов без загрузки и ML |
-| `wails3 task check:race` | `go test -race ./...`: все Go-тесты под детектором гонок |
+| `wails3 task check:race` | `go test -race ./internal/...` |
+| `wails3 task check:go:outside` | Go-тесты пакетов вне `internal/` без детектора гонок |
 | `wails3 task check:format` | `gofmt` и Prettier без изменения файлов |
 | `wails3 task storybook` | Собрать статическую витрину `frontend/storybook-static` |
 | `wails3 task check:storybook` | Браузерные сценарии витрины |
 | `wails3 task check:ui` | `storybook`, затем `check:storybook` |
 | `wails3 task check:docs` | Ссылки, пути, переменные и задачи документации, актуальность карты кода (`internal/repodocs`) |
 | `wails3 task docs:map` | Перегенерировать [карту кода](code-map.md) из `internal/repodocs/areas.go` и комментариев пакетов |
-| `wails3 task check:all` | Все проверки перед коммитом с пониженным приоритетом (`nice`, `ionice`): bindings, затем параллельно Go-ветвь (`gofmt`, `go vet`, `check:race`) и frontend-ветвь (типы, Vitest, Prettier, сборка и обход витрины) |
+| `wails3 task check:all` | Все проверки перед коммитом с пониженным приоритетом (`nice`, `ionice`): bindings, затем параллельно Go-ветвь (`gofmt`, `go vet`, `check:go:outside`, `check:race`) и frontend-ветвь (типы, Vitest, Prettier, сборка и обход витрины) |
 | `wails3 task check:all:steps` | Те же шаги без понижения приоритета |
 
 Из `frontend/` (`frontend/package.json`): `yarn typecheck`, `yarn test [файл]`, `yarn build-storybook`, `yarn test:storybook [--grep группа]`, `yarn storybook` (dev-сервер на порту 6106, в приёмку не входит), `yarn format` (переформатирование — только отдельным поручением).
@@ -191,7 +192,7 @@ FFmpeg/ffprobe, ONNX Runtime CPU и модели (выделение вокал�
 
 - Во время работы гонять тесты изменённой области: `go test ./internal/<пакет> -run Имя`, `yarn test src/platform/<файл>.test.ts`, `yarn test:storybook --grep "<группа>"` после `yarn build-storybook`. После сбоя исправить и перезапустить только упавшее.
 - После правки только документации достаточно `wails3 task check:docs`; новый пакет или страница требуют строки в `internal/repodocs/areas.go` и `wails3 task docs:map`.
-- Перед коммитом — один полный `wails3 task check:all`. Он сам понижает приоритет процессора и диска (`scripts/low-priority.sh`), чтобы не мешать остальной работе машины. Обычный `go test ./...` в нём не повторяется: детектор гонок выполняет те же тесты.
+- Перед коммитом — один полный `wails3 task check:all`. Он сам понижает приоритет процессора и диска (`scripts/low-priority.sh`), чтобы не мешать остальной работе машины. Тесты `internal/` в нём идут один раз, под детектором гонок: он выполняет те же тесты, что обычный `go test`.
 
 - `go test ./...` в корне компилирует и `main.go`, которому нужен `frontend/dist`: в чистом checkout сначала `wails3 task bindings` или `build`. Пакеты `./internal/...` этого не требуют.
 - На ограниченном окружении кэш Go можно задать явно, например `GOCACHE=/tmp/songframe-build-cache`; профиль приложения от этого не меняется.

@@ -85,10 +85,15 @@ tasks:
     cmds:
       - go test ./internal/components -count=1
   check:race:
-    desc: Проверить все Go-тесты под детектором гонок
-    # Корневой пакет компилирует main.go с go:embed: frontend/dist создаёт bindings или build.
+    desc: Проверить конкурентный доступ сервисов детектором гонок
     cmds:
-      - go test -race ./...
+      - go test -race ./internal/...
+  check:go:outside:
+    desc: Проверить Go-пакеты вне internal/ без детектора гонок
+    # Пакеты internal/ проверяет check:race. Race-сборка корневого пакета (Wails, GTK через CGO)
+    # стоила бы дороже самих тестов. main.go с go:embed требует frontend/dist: его создаёт bindings.
+    cmds:
+      - go test $(go list ./... | grep -v /internal/)
   check:contracts:
     desc: Сверить общие fixtures на границах Go и TypeScript
     cmds:
@@ -147,11 +152,12 @@ tasks:
     deps: [check:all:go, check:all:frontend]
   check:all:go:
     internal: true
-    # Детектор гонок выполняет те же тесты, что go test ./... (ни один тест под ним не пропускается),
-    # поэтому обычный прогон перед ним не повторяется.
+    # Тесты internal/ идут один раз, под детектором гонок: он выполняет те же тесты, что обычный
+    # go test (ни один тест под ним не пропускается). Остальные пакеты — обычным go test.
     cmds:
       - sh scripts/check-format.sh
       - go vet ./...
+      - task: check:go:outside
       - task: check:race
   check:all:frontend:
     internal: true

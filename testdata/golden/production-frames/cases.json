@@ -13624,7 +13624,7 @@
           "op": "generate",
           "shot": "M01",
           "packageDir": "plan/batches/M01-attempt-01",
-          "error": "нет такого файла или каталога: '<project>/source/missing.png'",
+          "error": "в папке проекта нет «source/missing.png». Если файл удалили или переместили, верните его на место или выберите заново.",
           "local": "unchanged",
           "packages": "unchanged",
           "jobs": "unchanged"

@@ -12,10 +12,14 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
+	"syscall"
+
+	"songframe/internal/dynvalue"
+	"songframe/internal/project"
 )
 
 // writeData и syncFile — точки подмены для тестов сбоя посреди записи; в работе не меняются.
@@ -151,9 +155,37 @@ func syncDirectory(directory string) {
 	}
 }
 
-// writeFailed — пользовательское сообщение о сбое записи файла.
+// fileFailure — сообщение о сбое чтения или записи файла с исходной ошибкой (errors.Is/As по ней
+// продолжают работать).
+type fileFailure struct {
+	message string
+	err     error
+}
+
+func (e *fileFailure) Error() string { return e.message }
+func (e *fileFailure) Unwrap() error { return e.err }
+
+// fileReason — причина сбоя для сообщения: русское описание errno (dynvalue.FsError без пути)
+// или текст ошибки, если errno у неё нет.
+func fileReason(err error) string {
+	var errno syscall.Errno
+	if errors.As(err, &errno) || errors.Is(err, fs.ErrNotExist) {
+		return dynvalue.FsError("", "", err).Error()
+	}
+	return err.Error()
+}
+
+// writeFailed — пользовательское сообщение о сбое записи файла: путь от папки проекта
+// (project.ShownPath), причина по-русски и что сделать.
 func writeFailed(path string, err error) error {
-	return fmt.Errorf("Не удалось сохранить %s: %w. Проверьте доступ на запись к папке.", path, err)
+	hint := "Проверьте доступ на запись к папке."
+	switch {
+	case errors.Is(err, syscall.ENOSPC):
+		hint = "Освободите место на диске."
+	case errors.Is(err, syscall.EROFS):
+		hint = "Перенесите проект на диск, доступный для записи."
+	}
+	return &fileFailure{"Не удалось сохранить " + project.ShownPath(path) + ": " + fileReason(err) + ". " + hint, err}
 }
 
 // ReadJSON читает JSON-объект (или массив: он допускается наравне с объектом) в value.
@@ -177,7 +209,7 @@ func ReadJSON(path string, value any) (bool, error) {
 		}
 	}
 	if err != nil {
-		return true, fmt.Errorf("Не удалось прочитать %s: %w. Файл сохранён; исправьте его или перенесите в резервную папку.", path, err)
+		return true, &fileFailure{"Не удалось прочитать " + project.ShownPath(path) + ": " + fileReason(err) + ". Файл сохранён; исправьте его или перенесите в резервную папку.", err}
 	}
 	return true, nil
 }

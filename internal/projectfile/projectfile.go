@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"songframe/internal/dynvalue"
+	"songframe/internal/project"
 	"songframe/internal/projectfs"
 )
 
@@ -58,7 +59,7 @@ func readLocal(path string) (any, error) {
 		return nil, nil
 	}
 	if err != nil {
-		return nil, readFailed(path, dynvalue.FsError("open", path, err).Error())
+		return nil, readFailed(path, dynvalue.FsError("open", "", err).Error())
 	}
 	value, err := dynvalue.Parse([]byte(dynvalue.DecodeUTF8(data)))
 	if err != nil {
@@ -70,8 +71,10 @@ func readLocal(path string) (any, error) {
 	return value, nil
 }
 
+// readFailed — сообщение о непрочитанном маркере: путь от папки проекта (project.ShownPath),
+// причина и что сделать.
 func readFailed(path, reason string) error {
-	return fmt.Errorf("Не удалось прочитать %s: %s. Файл сохранён; исправьте его или перенесите в резервную папку.", path, reason)
+	return fmt.Errorf("Не удалось прочитать %s: %s. Файл сохранён; исправьте его или перенесите в резервную папку.", project.ShownPath(path), reason)
 }
 
 // hasMarker — readProjectMarker на уже прочитанном документе: непустое строковое name.
@@ -144,7 +147,7 @@ func readProjectFile(project string) (*dynvalue.Object, error) {
 	path := File(project)
 	bytes, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("Не удалось прочитать %s: %s", relativeFile, dynvalue.FsError("open", path, err).Error())
+		return nil, fmt.Errorf("Не удалось прочитать %s: %s", relativeFile, dynvalue.FsError("open", "", err).Error())
 	}
 	data, err := dynvalue.Parse([]byte(dynvalue.DecodeUTF8(bytes)))
 	if err != nil {

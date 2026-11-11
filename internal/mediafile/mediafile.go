@@ -132,8 +132,8 @@ const TextLocalFileRequired = "Нужен локальный файл внутр
 // LocalFile — абсолютный путь path относительно directory (dynvalue.Resolve) при условии, что это
 // обычный файл внутри directory (после разыменования ссылок у папки и файла), а сам путь — не
 // символическая ссылка. Нарушение — ошибка TextLocalFileRequired; отсутствующий файл или папка —
-// ошибка realpath/lstat в форме dynvalue.FsError («ENOENT: …, realpath '<путь>'»; её текст видит
-// пользователь).
+// файловая ошибка dynvalue.FsError первого недоступного префикса пути (её текст видит пользователь:
+// внутри проекта — путь от папки проекта и подсказка).
 func LocalFile(directory, path string) (string, error) {
 	file := dynvalue.Resolve(directory, path)
 	root, err := dynvalue.Realpath(directory)

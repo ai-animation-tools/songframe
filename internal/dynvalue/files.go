@@ -8,6 +8,8 @@ import (
 	"runtime"
 	"strings"
 	"syscall"
+
+	"songframe/internal/project"
 )
 
 // PathArg проверяет, что аргумент name операции над путём — строка. Нестроковое значение —
@@ -103,8 +105,9 @@ type FileError struct {
 
 func (e *FileError) Error() string { return e.message }
 
-// FsError строит файловую ошибку вида «нет такого файла или каталога: '<path>'»: описание
-// по errno и путь. Имя системной операции syscallName в текст не входит (оно говорит о способе
+// FsError строит файловую ошибку. Для пути в папке проекта текст даёт project.FileProblem: путь
+// от папки проекта и подсказка, что сделать. Иначе (путь вне проекта, служебный сбой) — технический
+// текст «нет такого файла или каталога: '<path>'»: описание по errno и путь. Имя системной операции syscallName в текст не входит (оно говорит о способе
 // чтения, а не о причине); пустой path опускает хвост (чтение каталога даёт «это каталог»).
 // Результат — *FileError с кодом ошибки; код вне errnoTexts — UNKNOWN с описанием «ошибка
 // файловой системы».
@@ -116,7 +119,11 @@ func FsError(syscallName, path string, err error) error {
 			code, text = known[0], known[1]
 		}
 	} else if errors.Is(err, fs.ErrNotExist) {
-		code, text = errnoTexts[syscall.ENOENT][0], errnoTexts[syscall.ENOENT][1]
+		errno = syscall.ENOENT
+		code, text = errnoTexts[errno][0], errnoTexts[errno][1]
+	}
+	if problem, ok := project.FileProblem(errno, path); ok {
+		return &FileError{Code: code, message: problem}
 	}
 	message := text
 	if path != "" {

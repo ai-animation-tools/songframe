@@ -1,6 +1,6 @@
 {
   "error": null,
-  "errorPrefix": "Не удалось прочитать <project>/plan/project.json: ",
+  "errorPrefix": "Не удалось прочитать «plan/project.json» в папке проекта: ",
   "status": null,
   "history": {
     "current": null,

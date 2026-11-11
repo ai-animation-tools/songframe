@@ -6,6 +6,8 @@ import (
 	"io/fs"
 	"strings"
 	"syscall"
+
+	"songframe/internal/project"
 )
 
 // Типы исключений, которые встречаются в инструментах. Тип — внутренний признак для перехвата
@@ -152,7 +154,8 @@ var strerrors = map[syscall.Errno]struct{ kind, text string }{
 	syscall.ENOTEMPTY: {OSError, "каталог не пуст"},
 }
 
-// OSErrorFrom — OSError для ошибки файловой операции Go над path: текст — «описание: 'путь'»,
+// OSErrorFrom — OSError для ошибки файловой операции Go над path. Путь в папке проекта
+// описывает project.FileProblem (путь от папки проекта и подсказка); иначе текст — «описание: 'путь'»,
 // тип — подтип по errno (FileNotFoundError и т.п.); errno вне strerrors получает описание
 // «ошибка файловой системы (код N)», ошибка без errno — «ошибка файловой системы: текст Go».
 func OSErrorFrom(err error, path string) *Exception {
@@ -165,6 +168,9 @@ func OSErrorFrom(err error, path string) *Exception {
 		}
 	}
 	known, ok := strerrors[errno]
+	if problem, inProject := project.FileProblem(errno, path); ok && inProject {
+		return &Exception{Type: known.kind, Message: problem}
+	}
 	if !ok {
 		known = struct{ kind, text string }{OSError, fmt.Sprintf("ошибка файловой системы (код %d)", int(errno))}
 	}

@@ -145,7 +145,7 @@ func TestReviewInputsFailures(t *testing.T) {
 		t.Fatal(err)
 	}
 	write("assets/shots/M01", "файл")
-	if problem := reviewProblem(project); !strings.HasPrefix(problem, scenarioReviewFailed("не каталог: ")) {
+	if problem := reviewProblem(project); !strings.HasPrefix(problem, scenarioReviewFailed("путь «assets/shots/M01/")) {
 		t.Fatalf("файл M01 в assets/shots: %q", problem)
 	}
 }

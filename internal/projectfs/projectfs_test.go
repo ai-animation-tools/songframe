@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
 )
 
@@ -153,5 +154,25 @@ func TestWriteProjectJSONRejectsEscape(t *testing.T) {
 		if err := WriteProjectJSON(root, rel, 1); err == nil {
 			t.Fatal(rel)
 		}
+	}
+}
+
+// TestWriteFailedMessage — сбой записи в папке проекта называет путь от неё и причину по-русски,
+// а исходная ошибка остаётся доступной errors.Is.
+func TestWriteFailedMessage(t *testing.T) {
+	project := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(project, "plan"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(project, "plan", "project.json"), []byte(`{"name":"Клип"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(project, "plan", "scenes"), []byte("файл"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	err := WriteFile(filepath.Join(project, "plan", "scenes", "M01.json"), []byte("{}"), 0)
+	want := "Не удалось сохранить «plan/scenes/M01.json» в папке проекта: не каталог. Проверьте доступ на запись к папке."
+	if err == nil || err.Error() != want || !errors.Is(err, syscall.ENOTDIR) {
+		t.Fatalf("сбой записи: %v", err)
 	}
 }

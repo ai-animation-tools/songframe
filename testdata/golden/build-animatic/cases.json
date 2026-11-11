@@ -1197,7 +1197,7 @@
           "expected": {
             "code": 1,
             "stdout": "",
-            "stderr": "нет такого файла или каталога: '<project>/plan/project.json'\n",
+            "stderr": "в выбранной папке нет «plan/project.json»: это не папка проекта SongFrame или её файл удалён. Выберите папку проекта заново.\n",
             "changes": {},
             "texts": {},
             "probe": {}
@@ -1225,7 +1225,7 @@
           "expected": {
             "code": 1,
             "stdout": "",
-            "stderr": "нет такого файла или каталога: '<project>/plan/project.json'\n",
+            "stderr": "в выбранной папке нет «plan/project.json»: это не папка проекта SongFrame или её файл удалён. Выберите папку проекта заново.\n",
             "changes": {},
             "texts": {},
             "probe": {}
@@ -1278,7 +1278,7 @@
           "expected": {
             "code": 1,
             "stdout": "",
-            "stderr": "нет такого файла или каталога: '<project>/plan/scenes.json'\n",
+            "stderr": "в папке проекта нет «plan/scenes.json». Если файл удалили или переместили вне приложения, верните его на место или повторите шаг, который его создаёт.\n",
             "changes": {},
             "texts": {},
             "probe": {}

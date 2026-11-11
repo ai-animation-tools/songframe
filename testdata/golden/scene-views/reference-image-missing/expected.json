@@ -1,13 +1,13 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Ошибка: нет такого файла или каталога: '<project>/source/heroes/lev.png'\n",
+  "stderr": "Ошибка: в папке проекта нет «source/heroes/lev.png». Если файл удалили или переместили, верните его на место или выберите заново.\n",
   "unhandled": true,
   "files": {},
   "recheck": {
     "code": 1,
     "stdout": "",
-    "stderr": "Ошибка: нет такого файла или каталога: '<project>/source/heroes/lev.png'\n"
+    "stderr": "Ошибка: в папке проекта нет «source/heroes/lev.png». Если файл удалили или переместили, верните его на место или выберите заново.\n"
   },
   "cards": null
 }

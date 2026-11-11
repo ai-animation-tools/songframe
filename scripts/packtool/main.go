@@ -1,5 +1,5 @@
 // Packtool — инструмент сборщика поставок и проверок разработчика: лицензионные материалы,
-// квитанции сборки, политика runtime AppDir, подготовка и статическая проверка Windows-поставки,
+// квитанции сборки, значки темы hicolor, политика runtime AppDir, подготовка и статическая проверка Windows-поставки,
 // проверка рецептов на паре FFmpeg/ffprobe. В поставку он не входит; shell-рецепты вызывают его
 // из корня репозитория через `go run ./scripts/packtool <подкоманда>`, поэтому сборщику не
 // нужно ничего, кроме уже обязательного Go и перечисленных системных программ.
@@ -39,12 +39,13 @@ var commands = map[string]command{
 	"media-check":       {"BIN_DIR WORK MANIFEST", mediaCheckCommand},
 	"media-sources":     {"DIR", withError(mediaSourcesCommand)},
 	"media-hashes":      {"DIR", withError(mediaHashesCommand)},
+	"icons":             {"SOURCE NAME SHARE", withError(iconsCommand)},
 }
 
 // commandOrder — порядок подкоманд в справке.
 var commandOrder = []string{
 	"notices", "metadata", "runtime-policy", "windows-info", "extract-vcruntime", "check-windows",
-	"media-check", "media-sources", "media-hashes",
+	"media-check", "media-sources", "media-hashes", "icons",
 }
 
 func main() {

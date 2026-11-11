@@ -38,6 +38,9 @@ mkdir -p "$appdir/usr/libexec"
 CGO_ENABLED=0 go build -trimpath -buildvcs=false -ldflags='-s -w' \
   -o "$appdir/usr/libexec/songframe-appimage" ./scripts/appimage-bootstrap
 go run ./scripts/packtool notices "$appdir"
+# Значок окна берётся из темы по имени (internal/app/icon_linux.go); AppRun добавляет
+# $APPDIR/usr/share в XDG_DATA_DIRS, поэтому тема hicolor образа находит его без интеграции.
+go run ./scripts/packtool icons resources/icon.png songframe "$appdir/usr/share"
 export OUTPUT="$out/songframe-$version-linux-x86_64.AppImage" NO_STRIP=1
 # Ошибка policy или упаковщика сохраняет предыдущий готовый AppImage.
 trap 'rm -f -- "$OUTPUT.new"' EXIT

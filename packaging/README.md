@@ -33,7 +33,7 @@ wails3 task check
 wails3 task package:linux
 ```
 
-`package:linux` заново генерирует bindings, проверяет TypeScript, собирает frontend и Go, упаковывает системные библиотеки через Wails, добавляет bootstrap и лицензии, финализирует AppImage. Финализация использует appimagetool из того же закреплённого linuxdeploy и runtime уже созданного Wails-образа; повторного обхода всех системных библиотек нет. Артефакты в `build/release`:
+`package:linux` заново генерирует bindings, проверяет TypeScript, собирает frontend и Go, упаковывает системные библиотеки через Wails, добавляет bootstrap, лицензии и значок в теме hicolor образа, финализирует AppImage. В GTK4 значок окна задаётся только именем из темы: приложение при старте назначает окнам значок `songframe`, и AppImage находит его в своей теме (AppRun добавляет `$APPDIR/usr/share` в `XDG_DATA_DIRS`), поэтому док показывает значок и без интеграции AppImage в систему; deb — из системной темы. Финализация использует appimagetool из того же закреплённого linuxdeploy и runtime уже созданного Wails-образа; повторного обхода всех системных библиотек нет. Артефакты в `build/release`:
 
 - `songframe-<VERSION>-linux-x86_64.AppImage`;
 - рядом `<имя>.sha256` и `<имя>.build.json`: версия, исходный commit и dirty, SHA/размер, распакованный объём, минимум ОС и версия упаковщика.
@@ -104,7 +104,7 @@ wails3 task package:deb
 wails3 task smoke:deb DEB=/absolute/build/release/songframe-<VERSION>-linux-amd64.deb OUTPUT=/tmp/new-deb-check
 ```
 
-[package-deb.sh](../scripts/package-deb.sh) собирает тот же production-бинарник, что AppImage, и упаковывает его `dpkg-deb` в `songframe-<VERSION>-linux-amd64.deb` (версия Debian `X.Y.Z~суффикс`). В пакет входят `/usr/bin/songframe`, `songframe.desktop`, значок, лицензии и [профиль AppArmor](linux/deb/apparmor-songframe) `/etc/apparmor.d/songframe`. Библиотек внутри нет: GTK4, WebKitGTK 6.0, libsoup и glib определяет `dpkg-shlibdeps` по ELF, а невидимый в ELF рантайм WebKit — bubblewrap, xdg-dbus-proxy, GStreamer с плагинами, Mesa и сертификаты — перечислен в Depends явно. Рядом пишутся `.sha256` и `.build.json` с итоговыми Depends.
+[package-deb.sh](../scripts/package-deb.sh) собирает тот же production-бинарник, что AppImage, и упаковывает его `dpkg-deb` в `songframe-<VERSION>-linux-amd64.deb` (версия Debian `X.Y.Z~суффикс`). В пакет входят `/usr/bin/songframe`, `songframe.desktop`, значок в теме hicolor (16–512 px, подкоманда `icons` инструмента packtool), лицензии и [профиль AppArmor](linux/deb/apparmor-songframe) `/etc/apparmor.d/songframe`. Библиотек внутри нет: GTK4, WebKitGTK 6.0, libsoup и glib определяет `dpkg-shlibdeps` по ELF, а невидимый в ELF рантайм WebKit — bubblewrap, xdg-dbus-proxy, GStreamer с плагинами, Mesa и сертификаты — перечислен в Depends явно. Рядом пишутся `.sha256` и `.build.json` с итоговыми Depends.
 
 Профиль AppArmor разрешает user namespaces только `/usr/bin/songframe`, как профили браузеров в Ubuntu: песочница WebKit остаётся включённой, общая политика не ослабляется. `postinst` загружает его, `prerm` выгружает. Отдельная настройка `--setup-apparmor`, как у AppImage, для deb не нужна.
 

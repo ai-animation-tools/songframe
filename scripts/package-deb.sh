@@ -23,7 +23,8 @@ mkdir -p "$tree/DEBIAN" "$out"
 wails3 task build
 install -D -m 755 build/bin/songframe "$tree/usr/bin/songframe"
 install -D -m 644 packaging/linux/songframe.desktop "$tree/usr/share/applications/songframe.desktop"
-install -D -m 644 resources/icon.png "$tree/usr/share/icons/hicolor/1024x1024/apps/songframe.png"
+# Значок — по размерам, которые объявляет тема hicolor (1024x1024 она не знает).
+go run ./scripts/packtool icons resources/icon.png songframe "$tree/usr/share"
 install -D -m 644 packaging/linux/deb/apparmor-songframe "$tree/etc/apparmor.d/songframe"
 go run ./scripts/packtool notices "$tree" deb
 install -m 644 LICENSE "$tree/usr/share/doc/songframe/copyright"

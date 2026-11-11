@@ -328,6 +328,7 @@ func run() error {
 		Assets:   application.AssetOptions{Handler: application.AssetFileServerFS(assets)},
 	})
 	shell.ConfigureNativeDesktop(native, desktop)
+	shell.ConfigureWindowIcon(desktop)
 	shell.ConfigureNativeMedia(native, mediaServer.ContainsURL, mediaServer.AllowFile)
 	shell.ConfigureMontageWindow(montageWindow, desktop)
 	shell.ConfigureMontageDesktop(montageService, desktop)

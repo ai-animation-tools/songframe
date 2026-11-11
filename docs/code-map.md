@@ -234,7 +234,7 @@
 
 | Пакет | Назначение |
 | --- | --- |
-| [`scripts/packtool`](../scripts/packtool) | Packtool — инструмент сборщика поставок и проверок разработчика: лицензионные материалы, квитанции сборки, политика runtime AppDir, подготовка и статическая проверка Windows-поставки, проверка рецептов на паре FFmpeg/ffprobe. |
+| [`scripts/packtool`](../scripts/packtool) | Packtool — инструмент сборщика поставок и проверок разработчика: лицензионные материалы, квитанции сборки, значки темы hicolor, политика runtime AppDir, подготовка и статическая проверка Windows-поставки, проверка рецептов на паре FFmpeg/ffprobe. |
 | [`scripts/appimage-bootstrap`](../scripts/appimage-bootstrap) | Подготовка AppArmor выполняется до загрузки GTK/WebKit: иначе отказ user namespaces завершает процесс внутри C и не оставляет понятной ошибки. |
 
 Ещё: [`packaging`](../packaging), [`scripts`](../scripts), [`Taskfile.yml`](../Taskfile.yml), [`.github/workflows`](../.github/workflows), [`www`](../www).

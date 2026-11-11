@@ -10,7 +10,7 @@ import { selectLyricTimings } from '@shared/lyrics';
 import { withTimingVerification } from '@shared/timing-verification';
 import { buildSections } from '@shared/timing-sections';
 import { type ReactElement, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Button, Stack, Typography } from '@mui/material';
+import { Alert, AlertTitle, Button, Stack, Typography } from '@mui/material';
 import type { JobInfo, TimingLine, TimingSection, TimingView } from '@shared/types';
 import { useApp } from '../../state';
 import { Link as RouterLink } from 'react-router-dom';
@@ -444,6 +444,10 @@ export function TimingPage(): ReactElement {
           onDiscard={() => load().catch((error) => setLoadError(describeError(error)))}
         />
       </PageActionBar>
+      <Alert severity="warning" aria-label={timingTexts.scenarioNotice.title}>
+        <AlertTitle>{timingTexts.scenarioNotice.title}</AlertTitle>
+        {timingTexts.scenarioNotice.text}
+      </Alert>
       {view.problems.length || !view.trackPath || !hasLyrics ? (
         <Alert
           severity="warning"

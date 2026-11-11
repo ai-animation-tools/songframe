@@ -41,7 +41,15 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Regular: Story = { name: 'Обычный режим по умолчанию' };
+export const Regular: Story = {
+  name: 'Обычный режим по умолчанию',
+  tags: ['ci'],
+  play: async ({ canvasElement }) => {
+    // Плашка о связи разметки со сценарием видна сразу, до любых правок.
+    const notice = await within(canvasElement).findByRole('alert', { name: timingTexts.scenarioNotice.title });
+    await expect(notice).toHaveTextContent(timingTexts.scenarioNotice.text);
+  }
+};
 
 /** Клики по source_line различают одинаковые припевы и раскрывают единственную рабочую строку. */
 async function selectSource(canvasElement: HTMLElement, number: number): Promise<void> {

@@ -16,6 +16,7 @@
         "canApproveCurrent": false,
         "treatmentApproved": true,
         "scenesNeedReview": false,
+        "changedInputs": [],
         "problems": [],
         "proposal": null,
         "job": null
@@ -33,6 +34,7 @@
         "canApproveCurrent": false,
         "treatmentApproved": true,
         "scenesNeedReview": false,
+        "changedInputs": [],
         "problems": [],
         "proposal": null,
         "job": null
@@ -51,6 +53,7 @@
         "canApproveCurrent": false,
         "treatmentApproved": true,
         "scenesNeedReview": false,
+        "changedInputs": [],
         "problems": [],
         "proposal": {
           "id": "<proposal-1>",
@@ -1159,6 +1162,7 @@
         "canApproveCurrent": false,
         "treatmentApproved": true,
         "scenesNeedReview": false,
+        "changedInputs": [],
         "problems": [],
         "proposal": {
           "id": "<proposal-1>",
@@ -2258,6 +2262,7 @@
         "canApproveCurrent": false,
         "treatmentApproved": true,
         "scenesNeedReview": false,
+        "changedInputs": [],
         "problems": [],
         "proposal": {
           "id": "<proposal-1>",
@@ -3357,6 +3362,7 @@
         "canApproveCurrent": false,
         "treatmentApproved": true,
         "scenesNeedReview": false,
+        "changedInputs": [],
         "problems": [],
         "proposal": {
           "id": "<proposal-1>",

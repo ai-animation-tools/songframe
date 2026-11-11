@@ -111,7 +111,7 @@ export function ScenarioWorkflowPanel({
         </Typography>
         <AiProblemAlert kinds={['agent']} />
         {view?.problems.length ? <ProblemList problems={view.problems} /> : null}
-        {view?.scenesNeedReview && <Alert severity="warning">{scenarioTexts.workflow.scenesNeedReview}</Alert>}
+        {view?.scenesNeedReview && <Alert severity="warning">{scenarioTexts.workflow.scenesNeedReview(view.changedInputs)}</Alert>}
         {view?.job && (
           <AgentJobCard
             compact

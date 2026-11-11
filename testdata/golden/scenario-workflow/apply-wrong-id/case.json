@@ -17,6 +17,7 @@
         "canApproveCurrent": false,
         "treatmentApproved": false,
         "scenesNeedReview": false,
+        "changedInputs": [],
         "problems": [],
         "proposal": {
           "id": "<proposal-1>",
@@ -1135,6 +1136,7 @@
         "canApproveCurrent": true,
         "treatmentApproved": false,
         "scenesNeedReview": false,
+        "changedInputs": [],
         "problems": [],
         "proposal": {
           "id": "<proposal-1>",

@@ -232,7 +232,12 @@ function toWorkflowView({ proposal, job, ...view }: scenarioworkflow.View): Scen
     };
     if (message) next.message = message;
   }
-  return { ...view, proposal: next, job: job ? (job as unknown as AgentJob) : null };
+  return {
+    ...view,
+    changedInputs: view.changedInputs as ScenarioWorkflowView['changedInputs'],
+    proposal: next,
+    job: job ? (job as unknown as AgentJob) : null
+  };
 }
 
 /**

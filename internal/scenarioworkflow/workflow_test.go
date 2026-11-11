@@ -372,3 +372,45 @@ func TestCorruptStateIgnored(t *testing.T) {
 		}
 	}
 }
+
+// TestChangedInputs — предупреждение о пересмотре сценария называет фактически изменившиеся входы:
+// после правки разметки — только её, причина сохраняется после нового утверждения пары и
+// сбрасывается утверждением сцен.
+func TestChangedInputs(t *testing.T) {
+	project := sampleProject(t)
+	workflow := New(Options{LocalDir: t.TempDir(), Agents: &fakeAgents{}})
+	check := func(label string, view View, err error, review bool, want ...string) {
+		t.Helper()
+		if err != nil {
+			t.Fatalf("%s: %v", label, err)
+		}
+		if view.ScenesNeedReview != review || strings.Join(view.ChangedInputs, ",") != strings.Join(want, ",") {
+			t.Fatalf("%s: пересмотр %v, изменения %v", label, view.ScenesNeedReview, view.ChangedInputs)
+		}
+	}
+	view, err := workflow.ApproveCurrent(project)
+	check("утверждение пары", view, err, false)
+	view, err = workflow.ApproveScenes(project)
+	if err == nil {
+		t.Fatal("сцены утверждены без пересмотра")
+	}
+	timing := filepath.Join(project, "plan", "audio", "timing.json")
+	data, err := os.ReadFile(timing)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(timing, append(data, '\n'), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	view, err = workflow.View(project)
+	check("правка разметки", view, err, true, "timing")
+	view, err = workflow.ApproveCurrent(project)
+	check("новое утверждение пары", view, err, true, "timing")
+	editCast(t, project)
+	view, err = workflow.View(project)
+	check("правка кастинга", view, err, true, "timing", "cast")
+	view, err = workflow.ApproveCurrent(project)
+	check("ещё одно утверждение пары", view, err, true, "timing", "cast")
+	view, err = workflow.ApproveScenes(project)
+	check("утверждение сцен", view, err, false)
+}

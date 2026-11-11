@@ -16,6 +16,7 @@
         "canApproveCurrent": true,
         "treatmentApproved": false,
         "scenesNeedReview": false,
+        "changedInputs": [],
         "problems": [],
         "proposal": null,
         "job": null

@@ -1,5 +1,14 @@
 import { commonTexts } from './common';
 import { countLabel } from '../plural';
+import type { ScenarioInput } from '../scenario-workflow';
+
+/** Входы утверждения в предупреждении о пересмотре сценария. */
+const scenarioInputLabels: Record<ScenarioInput, string> = {
+  sources: 'исходники',
+  timing: 'разметка песни',
+  cast: 'кастинг',
+  treatment: 'трактовка'
+};
 
 /** Тексты сценария; правила владения описаны в @link ../../../docs/ui/texts.md. */
 export const scenarioTexts = {
@@ -343,7 +352,15 @@ export const scenarioTexts = {
     treatmentApproved: 'Кастинг и трактовка утверждены',
     treatmentUnapproved: 'Кастинг и трактовка не утверждены',
     description: 'Агент готовит предложение. Сначала просмотрите сравнение, затем отдельно примените результат. Ручные редакторы доступны без агента.',
-    scenesNeedReview: 'Кастинг или трактовка изменились. Существующий сценарий требует пересмотра.',
+    /** Предупреждение о пересмотре сценария называет изменившиеся входы; без них — прежняя общая причина. */
+    scenesNeedReview: (changed: readonly ScenarioInput[]): string => {
+      if (!changed.length) return 'Кастинг или трактовка изменились. Существующий сценарий требует пересмотра.';
+      const list = changed.map((input) => scenarioInputLabels[input]).join(', ');
+      const bounds = changed.includes('timing')
+        ? ' Границы планов в сценарии могут не совпадать с новыми участками песни; принятые планы со сдвинутыми границами потребуют нового производства.'
+        : '';
+      return `После утверждения изменились: ${list}.${bounds} Существующий сценарий требует пересмотра.`;
+    },
     proposalAppliedSentence: commonTexts.proposal.appliedSentence,
     proposalStale: 'Предложение устарело. Исходные файлы изменились; нужен новый запуск.',
     reviewProposal: 'Просмотреть предложение и сравнение',

@@ -17,6 +17,7 @@
         "canApproveCurrent": false,
         "treatmentApproved": false,
         "scenesNeedReview": false,
+        "changedInputs": [],
         "problems": [],
         "proposal": {
           "id": "<proposal-1>",
@@ -1130,6 +1131,7 @@
         "canApproveCurrent": false,
         "treatmentApproved": false,
         "scenesNeedReview": false,
+        "changedInputs": [],
         "problems": [
           "source/description.md: файл отсутствует или изменён после загрузки исходников."
         ],

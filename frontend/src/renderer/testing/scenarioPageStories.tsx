@@ -459,6 +459,7 @@ export function scenarioPageOptions({
         canApproveScenes: false,
         treatmentApproved: approved,
         scenesNeedReview: false,
+        changedInputs: [],
         problems: [],
         proposal: null,
         job: null
@@ -509,7 +510,13 @@ export function scenarioPageOptions({
         const view = model.workflow;
         if (view.proposal && view.proposal.status !== 'applied') view.proposal.stale = true;
         if (treatment && view.treatmentApproved) {
-          Object.assign(view, { treatmentApproved: false, canApproveCurrent: true, canApproveScenes: false, scenesNeedReview: !!model.saved.scenes });
+          Object.assign(view, {
+            treatmentApproved: false,
+            canApproveCurrent: true,
+            canApproveScenes: false,
+            scenesNeedReview: !!model.saved.scenes,
+            changedInputs: ['treatment']
+          });
           capabilities();
         }
       };
@@ -666,7 +673,7 @@ export function scenarioPageOptions({
           },
           approveScenes: async (project) => {
             validate(project);
-            Object.assign(model.workflow, { canApproveScenes: false, scenesNeedReview: false });
+            Object.assign(model.workflow, { canApproveScenes: false, scenesNeedReview: false, changedInputs: [] });
             model.publish();
             return snapshot();
           }

@@ -73,6 +73,63 @@ func (h *hashes) object() *dynvalue.Object {
 	return result
 }
 
+// changedCategories — виды входов утверждения, чьи хеши в current отличаются хотя бы от одного
+// снимка: "sources" (любой файл source/*, включая добавленные и удалённые), "timing", "cast",
+// "treatment" в этом порядке.
+func changedCategories(current *hashes, snapshots ...*hashes) []string {
+	found := map[string]bool{}
+	mark := func(path string) {
+		switch {
+		case strings.HasPrefix(path, "source/"):
+			found["sources"] = true
+		case path == "plan/audio/timing.json":
+			found["timing"] = true
+		case path == "plan/cast.json":
+			found["cast"] = true
+		case path == "plan/treatment.json":
+			found["treatment"] = true
+		}
+	}
+	for _, snapshot := range snapshots {
+		for _, key := range current.keys {
+			if value, ok := snapshot.get(key); !ok || !sameDigest(current.values[key], value) {
+				mark(key)
+			}
+		}
+		for _, key := range snapshot.keys {
+			if _, ok := current.get(key); !ok {
+				mark(key)
+			}
+		}
+	}
+	return orderedCategories(found)
+}
+
+// inputCategories — виды входов утверждения в порядке показа.
+var inputCategories = []string{"sources", "timing", "cast", "treatment"}
+
+// orderedCategories — отмеченные виды в порядке inputCategories; неизвестные отбрасываются.
+func orderedCategories(found map[string]bool) []string {
+	result := []string{}
+	for _, category := range inputCategories {
+		if found[category] {
+			result = append(result, category)
+		}
+	}
+	return result
+}
+
+// mergeCategories — объединение списков видов входов в порядке inputCategories.
+func mergeCategories(lists ...[]string) []string {
+	found := map[string]bool{}
+	for _, list := range lists {
+		for _, category := range list {
+			found[category] = true
+		}
+	}
+	return orderedCategories(found)
+}
+
 // hashesFrom — снимок из проверенной локальной записи (checkHashes).
 func hashesFrom(value any) *hashes {
 	result := newHashes()

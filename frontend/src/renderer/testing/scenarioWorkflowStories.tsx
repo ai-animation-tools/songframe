@@ -201,6 +201,7 @@ export function scenarioWorkflowOptions(mode: ScenarioStoryMode = 'prepare'): St
         canApproveScenes: false,
         treatmentApproved: false,
         scenesNeedReview: false,
+        changedInputs: [],
         problems: [],
         proposal: null,
         job: null
@@ -257,7 +258,8 @@ export function scenarioWorkflowOptions(mode: ScenarioStoryMode = 'prepare'): St
               'Кастинг и трактовка требуют повторной проверки после исправления входов.'
             ];
           }
-          if (mode === 'manual') Object.assign(model.view, { canApproveCurrent: true, scenesNeedReview: true });
+          // Как в «Огороде»: после утверждения изменилась только разметка песни.
+          if (mode === 'manual') Object.assign(model.view, { canApproveCurrent: true, scenesNeedReview: true, changedInputs: ['timing'] });
           if (['ready', 'stale', 'applyConflict', 'applyFailure', 'scenes', 'revise'].includes(mode))
             Object.assign(model.view, {
               proposal: scenarioProposal(mode === 'scenes' ? 'scenes' : mode === 'revise' ? 'revise' : 'treatment', { stale: mode === 'stale' }),
@@ -386,6 +388,7 @@ export function scenarioWorkflowOptions(mode: ScenarioStoryMode = 'prepare'): St
             model.approvals++;
             model.view.canApproveScenes = false;
             model.view.scenesNeedReview = false;
+            model.view.changedInputs = [];
             model.publish();
             return snapshot();
           }

@@ -60,6 +60,13 @@ export interface View {
     "canApproveScenes": boolean;
     "treatmentApproved": boolean;
     "scenesNeedReview": boolean;
+
+    /**
+     * ChangedInputs — что изменилось после утверждения, из-за чего сценарий требует пересмотра:
+     * "sources", "timing", "cast", "treatment" в этом порядке. Пусто, если сравнить не с чем:
+     * пара до появления сценария не утверждалась.
+     */
+    "changedInputs": string[];
     "problems": string[];
     "proposal": Proposal | null;
     "job": AgentJob | null;

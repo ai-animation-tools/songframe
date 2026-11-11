@@ -54,6 +54,7 @@ const view = (proposal: unknown = null, job: unknown = null) => ({
   canApproveScenes: false,
   treatmentApproved: false,
   scenesNeedReview: false,
+  changedInputs: ['timing'],
   problems: [],
   proposal,
   job

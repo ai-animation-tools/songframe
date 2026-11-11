@@ -16,6 +16,7 @@
         "canApproveCurrent": false,
         "treatmentApproved": true,
         "scenesNeedReview": false,
+        "changedInputs": [],
         "problems": [],
         "proposal": null,
         "job": null
@@ -40,6 +41,7 @@
         "canApproveCurrent": true,
         "treatmentApproved": false,
         "scenesNeedReview": true,
+        "changedInputs": ["cast"],
         "problems": [],
         "proposal": null,
         "job": null
@@ -57,6 +59,7 @@
         "canApproveCurrent": false,
         "treatmentApproved": true,
         "scenesNeedReview": true,
+        "changedInputs": ["cast"],
         "problems": [],
         "proposal": null,
         "job": null
@@ -78,6 +81,7 @@
         "canApproveCurrent": false,
         "treatmentApproved": true,
         "scenesNeedReview": false,
+        "changedInputs": [],
         "problems": [],
         "proposal": null,
         "job": null

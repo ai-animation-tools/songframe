@@ -18,8 +18,8 @@ import (
 
 // Локальная запись сценарного прохода хранится вне проекта, в каталоге
 // состояния приложения: scenario-workflow/<sha256 пути проекта>.json. В ней утверждение пары
-// (approval), утверждение сцен (scenesApproval), признак needsScenesReview и ожидающее
-// предложение (pending: proposal, expectedHashes, scaffold, duration).
+// (approval), утверждение сцен (scenesApproval), признак needsScenesReview с видами изменившихся
+// входов reviewInputs и ожидающее предложение (pending: proposal, expectedHashes, scaffold, duration).
 //
 // Запись держится деревом dynvalue и меняется на месте: порядок ключей (в том числе message,
 // добавленного после status) и форма JSON зафиксированы эталоном testdata/golden/scenario-workflow.
@@ -153,6 +153,9 @@ func checkStoredState(value any) error {
 			if _, isBool := review.(bool); !isBool {
 				invalid = true
 			}
+		}
+		if reasons := state.Value("reviewInputs"); reasons != dynvalue.Undefined && !stringsArray(reasons) {
+			invalid = true
 		}
 	}
 	if invalid {

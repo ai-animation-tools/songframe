@@ -32,6 +32,9 @@ export interface ScenarioProposal {
   changedIds: string[];
 }
 
+/** Вид входа утверждения: исходники, разметка песни, кастинг, трактовка. */
+export type ScenarioInput = 'sources' | 'timing' | 'cast' | 'treatment';
+
 export interface ScenarioWorkflowView {
   project: string;
   busy: boolean;
@@ -42,6 +45,8 @@ export interface ScenarioWorkflowView {
   canApproveScenes: boolean;
   treatmentApproved: boolean;
   scenesNeedReview: boolean;
+  /** Что изменилось после утверждения, из-за чего сценарий требует пересмотра; пусто — сравнить не с чем. */
+  changedInputs: ScenarioInput[];
   problems: string[];
   proposal: ScenarioProposal | null;
   job: AgentJob | null;

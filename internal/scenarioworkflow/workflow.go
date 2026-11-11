@@ -53,18 +53,22 @@ type Proposal struct {
 
 // View — ScenarioWorkflowView: состояние прохода и доступность действий страницы «Сценарий».
 type View struct {
-	Project           string    `json:"project"`
-	Busy              bool      `json:"busy"`
-	CanStartTreatment bool      `json:"canStartTreatment"`
-	CanStartScenes    bool      `json:"canStartScenes"`
-	CanRevise         bool      `json:"canRevise"`
-	CanApproveCurrent bool      `json:"canApproveCurrent"`
-	CanApproveScenes  bool      `json:"canApproveScenes"`
-	TreatmentApproved bool      `json:"treatmentApproved"`
-	ScenesNeedReview  bool      `json:"scenesNeedReview"`
-	Problems          []string  `json:"problems"`
-	Proposal          *Proposal `json:"proposal"`
-	Job               *AgentJob `json:"job"`
+	Project           string `json:"project"`
+	Busy              bool   `json:"busy"`
+	CanStartTreatment bool   `json:"canStartTreatment"`
+	CanStartScenes    bool   `json:"canStartScenes"`
+	CanRevise         bool   `json:"canRevise"`
+	CanApproveCurrent bool   `json:"canApproveCurrent"`
+	CanApproveScenes  bool   `json:"canApproveScenes"`
+	TreatmentApproved bool   `json:"treatmentApproved"`
+	ScenesNeedReview  bool   `json:"scenesNeedReview"`
+	// ChangedInputs — что изменилось после утверждения, из-за чего сценарий требует пересмотра:
+	// "sources", "timing", "cast", "treatment" в этом порядке. Пусто, если сравнить не с чем:
+	// пара до появления сценария не утверждалась.
+	ChangedInputs []string  `json:"changedInputs"`
+	Problems      []string  `json:"problems"`
+	Proposal      *Proposal `json:"proposal"`
+	Job           *AgentJob `json:"job"`
 }
 
 // Options — зависимости Workflow.
@@ -297,11 +301,23 @@ func (w *Workflow) view(project string) (View, *inputs, error) {
 	approval, hasApproval := dynvalue.AsObject(state.Value("approval"))
 	treatmentApproved := input.pairValid && len(input.problems) == 0 && hasApproval && hashesFrom(approval).matches(input.approval)
 	scenesNeedReview := false
+	changedInputs := []string{}
 	if input.documents.Scenes != nil {
 		review, _ := state.Value("needsScenesReview").(bool)
 		scenes, hasScenes := dynvalue.AsObject(state.Value("scenesApproval"))
 		scenesNeedReview = review || (hasApproval && !treatmentApproved) ||
 			(hasScenes && !hashesFrom(scenes.Value("hashes")).matches(input.approval))
+		if scenesNeedReview {
+			// Причины, записанные при новом утверждении пары, плюс текущие отличия от обоих утверждений.
+			snapshots := []*hashes{}
+			if hasScenes {
+				snapshots = append(snapshots, hashesFrom(scenes.Value("hashes")))
+			}
+			if hasApproval {
+				snapshots = append(snapshots, hashesFrom(approval))
+			}
+			changedInputs = mergeCategories(stringItems(state.Value("reviewInputs")), changedCategories(input.approval, snapshots...))
+		}
 	}
 	noProblems := len(input.problems) == 0
 	view := View{
@@ -314,6 +330,7 @@ func (w *Workflow) view(project string) (View, *inputs, error) {
 		CanApproveCurrent: !busy && noProblems && input.pairValid && !treatmentApproved,
 		TreatmentApproved: treatmentApproved,
 		ScenesNeedReview:  scenesNeedReview,
+		ChangedInputs:     changedInputs,
 		Problems:          append(append([]string{}, input.problems...), input.documentProblems...),
 		Job:               job,
 	}
@@ -633,15 +650,47 @@ func (w *Workflow) apply(project, id string) (string, error) {
 		return "", err
 	}
 	if pass == "treatment" {
+		previous, hasPrevious := dynvalue.AsObject(state.Value("approval"))
 		state.Set("approval", published.approval.object())
-		state.Set("needsScenesReview", published.documents.Scenes != nil)
+		if published.documents.Scenes != nil {
+			var before *hashes
+			if hasPrevious {
+				before = hashesFrom(previous)
+			}
+			markScenesReview(state, published.approval, before)
+		} else {
+			state.Set("needsScenesReview", false)
+		}
 	} else {
 		state.Set("scenesApproval", scenesApproval(published))
-		state.Set("needsScenesReview", false)
+		clearScenesReview(state)
 	}
 	proposal.Set("status", "applied")
 	proposal.Set("after", after.object())
 	return view.Project, writeState(w.options.LocalDir, view.Project, state)
+}
+
+// markScenesReview — новое утверждение пары при существующем сценарии: сцены требуют пересмотра,
+// а виды входов, изменившиеся с прежнего утверждения пары, накапливаются в reviewInputs. Без них
+// после утверждения пары причина пересмотра терялась бы: текущие хеши уже совпадают с новым
+// утверждением. previous — прежнее утверждение пары (nil — его не было).
+func markScenesReview(state *dynvalue.Object, current, previous *hashes) {
+	reasons := stringItems(state.Value("reviewInputs"))
+	if previous != nil {
+		reasons = mergeCategories(reasons, changedCategories(current, previous))
+	}
+	state.Set("needsScenesReview", true)
+	if len(reasons) > 0 {
+		state.Set("reviewInputs", stringArray(reasons))
+	} else {
+		state.Delete("reviewInputs")
+	}
+}
+
+// clearScenesReview — сцены утверждены заново: признак и причины пересмотра сбрасываются.
+func clearScenesReview(state *dynvalue.Object) {
+	state.Set("needsScenesReview", false)
+	state.Delete("reviewInputs")
 }
 
 // scenesApproval — { hashes, sceneHash } утверждения сцен.
@@ -674,7 +723,7 @@ func (w *Workflow) ApproveCurrent(project string) (View, error) {
 	}
 	state := readState(w.options.LocalDir, view.Project)
 	if approval, ok := dynvalue.AsObject(state.Value("approval")); input.documents.Scenes != nil && ok && !hashesFrom(approval).matches(input.approval) {
-		state.Set("needsScenesReview", true)
+		markScenesReview(state, input.approval, hashesFrom(approval))
 	}
 	state.Set("approval", input.approval.object())
 	if err := writeState(w.options.LocalDir, view.Project, state); err != nil {
@@ -702,7 +751,7 @@ func (w *Workflow) ApproveScenes(project string) (View, error) {
 	}
 	state := readState(w.options.LocalDir, view.Project)
 	state.Set("scenesApproval", scenesApproval(input))
-	state.Set("needsScenesReview", false)
+	clearScenesReview(state)
 	if err := writeState(w.options.LocalDir, view.Project, state); err != nil {
 		return View{}, err
 	}

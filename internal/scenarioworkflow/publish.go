@@ -313,6 +313,14 @@ func (p publisher) publishPair(project string, input Publication) error {
 	if plan.Manifest != nil && dynvalue.Stringify(plan.Manifest) != dynvalue.Stringify(manifest) {
 		candidates = append(candidates, scenarioapply.Change{Path: "source/manifest.json", Next: jsonBytes(plan.Manifest)})
 	}
+	// Карта references реестра сцен выводится из кастинга и публикуется вместе с ним.
+	scenes, err := cast.ScenesWithReferences(project, plan.Cast)
+	if err != nil {
+		return err
+	}
+	if scenes != nil {
+		candidates = append(candidates, scenarioapply.Change{Path: cast.ScenesPath, Next: scenes})
+	}
 	if err := verifyHashes(project, input.ExpectedHashes); err != nil {
 		return err
 	}

@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "visual_direction": "Тёплый вечерний свет у воды",
+  "references": {
+    "mira": {
+      "name": "Мира",
+      "path": "source/heroes/mira-old.png"
+    },
+    "boat": {
+      "name": "Лодка",
+      "path": "source/vehicles/boat.png"
+    }
+  },
+  "sequences": [],
+  "scenes": [
+    {
+      "id": "M01",
+      "title": "Мира на причале",
+      "references": [
+        "mira",
+        "pier"
+      ],
+      "action": "Мира поднимает фонарик"
+    }
+  ]
+}

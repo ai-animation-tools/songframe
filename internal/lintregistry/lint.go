@@ -102,7 +102,7 @@ const (
 	textSnapshotReason   = "ID задания отсутствует, но причина не записана"
 	textStatusObject     = "файл должен быть объектом"
 	textNoWorld          = "нет сущности world: время суток, погода и стороны дороги негде хранить"
-	textReferencesDrift  = "карта references расходится с кастингом: её пересобирает каркас на странице «Сценарий»."
+	textReferencesDrift  = "карта references расходится с кастингом: сохраните кастинг, и карта обновится."
 	textCardReference    = "главный референс карточки не объявлен"
 	textAcceptedNoScene  = "отпечаток принятия плана, которого нет в реестре"
 	textAcceptedNoKit    = "отпечаток принятия плана без комплекта в assets"

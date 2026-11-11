@@ -26,7 +26,7 @@
 | `sources-save/` | `sourceedit.Save` и `referenceimage.SaveSources` без `plan/cast.json` | 6 |
 | `sources-save-cast/` | `referenceimage.SaveSources` при существующем `plan/cast.json` | 12 |
 | `cast-view/` | `cast.ViewProject` | 11 |
-| `cast-write/` | `cast.Init`, `cast.Save` | 16 |
+| `cast-write/` | `cast.Init`, `cast.Save` | 17 |
 | `scenario-view/` | `scenario.ViewProject` (с проблемами сцен), `scenario.RegistryStatus` | 14 |
 | `scenario-treatment/` | `scenario.SaveTreatment`, `scenario.ValidateProjectTreatment`, `scenario.NormalizeTreatment` | 7 |
 | `scenario-scenes/` | `scenesave.SaveImpact`, `scenario.ValidateProjectScenes`, `scenesave.SaveScenesWithMode` | 19 |

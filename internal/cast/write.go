@@ -151,7 +151,8 @@ func Init(project string) (*dynvalue.Object, error) {
 }
 
 // Save — cast.save: нормализует и проверяет документ, проверяет наличие изображений в
-// source и публикует cast.json вместе с описанием референсов в описи (descriptionPlan). Возвращает
+// source и публикует cast.json вместе с описанием референсов в описи (descriptionPlan) и картой
+// references реестра сцен (ScenesWithReferences). Возвращает
 // записанный кастинг. Отказ не меняет файлы.
 func Save(project string, input any) (*dynvalue.Object, error) {
 	return write(project, input, LoadDefaults())
@@ -245,13 +246,57 @@ type fileChange struct {
 	next   []byte
 }
 
-// publish — узкая публикация двух JSON. Опись (canonical-описание)
+// ScenesPath — реестр сцен относительно папки проекта: его карту references выводит кастинг.
+const ScenesPath = "plan/scenes.json"
+
+// ScenesWithReferences — новые байты plan/scenes.json, в которых карта references заменена картой
+// из кастинга castValue (References). nil — менять нечего: реестра нет, он не разбирается как
+// объект (его покажет проверка реестра) или карта уже совпадает. Карта полностью выводится из
+// кастинга, поэтому каждая запись кастинга обновляет её вместе с собой, а постановка планов
+// остаётся как есть; списки references планов не трогаются.
+func ScenesWithReferences(project string, castValue any) ([]byte, error) {
+	path := filepath.Join(project, filepath.FromSlash(ScenesPath))
+	data, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, dynvalue.FsError("open", path, err)
+	}
+	parsed, err := dynvalue.Parse([]byte(dynvalue.DecodeUTF8(data)))
+	if err != nil {
+		return nil, nil
+	}
+	scenes, ok := dynvalue.AsObject(parsed)
+	if !ok {
+		return nil, nil
+	}
+	references, err := References(castValue)
+	if err != nil {
+		return nil, err
+	}
+	if dynvalue.Stringify(scenes.Value("references")) == dynvalue.Stringify(references) {
+		return nil, nil
+	}
+	scenes.Set("references", references)
+	return encode(scenes), nil
+}
+
+// publish — узкая публикация JSON кастинга. Опись (canonical-описание)
 // пишется до кастинга, поэтому прерванный процесс всегда оставляет читаемую пару: кастинг
-// проецирует описание из описи при каждом чтении. Сбой записи восстанавливает прежние байты;
+// проецирует описание из описи при каждом чтении. Карта references реестра сцен пишется
+// последней: прерывание до неё оставляет прежнюю карту, расхождение показывает проверка реестра. Сбой записи восстанавливает прежние байты;
 // если и восстановление не удалось, прежние байты сохраняются во временный резерв, путь которого
 // входит в ошибку. Запись разрешена только шлюзом projectfs.
 func publish(project string, plan DescriptionPlan) error {
 	values := []fileChange{{rel: "plan/cast.json", next: encode(plan.Cast)}}
+	scenes, err := ScenesWithReferences(project, plan.Cast)
+	if err != nil {
+		return err
+	}
+	if scenes != nil {
+		values = append([]fileChange{{rel: ScenesPath, next: scenes}}, values...)
+	}
 	if plan.Manifest != nil {
 		current, err := sources.DescriptionManifest(project)
 		if err != nil {

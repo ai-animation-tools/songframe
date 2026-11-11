@@ -51,7 +51,7 @@ var (
 	// ids — порядок MEDIA_PROVIDER_IDS; providers — записи по id.
 	ids       = []string{"kling", "codex"}
 	providers = map[string]Info{
-		"kling": {Title: "Kling", Kinds: []string{Image, Video}, Paid: true, DefaultImageResolution: "2k", DefaultImageAspectRatio: "16:9", DefaultImageOutputs: 1, LipSync: &LipSync{Min: 5, Max: 30}},
+		"kling": {Title: "Kling", Kinds: []string{Image, Video}, Paid: true, DefaultImageResolution: "2k", DefaultImageAspectRatio: "16:9", DefaultImageOutputs: 1},
 		"codex": {Title: "Codex", Kinds: []string{Image}, Executor: "codex"},
 	}
 )

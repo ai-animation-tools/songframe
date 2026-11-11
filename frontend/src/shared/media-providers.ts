@@ -56,8 +56,8 @@ export const MEDIA_PROVIDERS: Record<MediaProviderId, MediaProviderInfo> = {
     kinds: ['image', 'video'],
     executor: null,
     paid: true,
-    // Звуковые слоты audio_N режима omni_ref_video (kling-video-v4_0): 5–30 с по объявлению who_am_i.
-    lipSync: { min: 5, max: 30 },
+    // Звуковой слот audio_1 режима omni_ref_video — референс звука: губы с ним не синхронизируются.
+    lipSync: null,
     learnsPriceFromCharges: true,
     // eslint-disable-next-line no-restricted-syntax -- Особенность конкретного провайдера принадлежит его реестру, а не общему словарю интерфейса.
     generationHistory: 'галерею созданных работ на сайте kling.ai (раздел Creations, адрес kling.ai/app/creations)',

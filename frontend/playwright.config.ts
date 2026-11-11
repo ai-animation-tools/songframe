@@ -37,7 +37,9 @@ export default defineConfig({
   failOnFlakyTests: ci,
   timeout: 90_000,
   reporter: [['list'], ['html', { outputFolder: resolve(root, 'playwright-report'), open: 'never' }]],
-  use: { baseURL, browserName: 'chromium', screenshot: 'only-on-failure', trace: 'retain-on-failure' },
+  // Трасса пишется для каждой истории и сохраняется только при падении: без покадровых скриншотов
+  // обход примерно на треть быстрее, а снимки DOM в трассе и скриншот падения остаются.
+  use: { baseURL, browserName: 'chromium', screenshot: 'only-on-failure', trace: { mode: 'retain-on-failure', screenshots: false } },
   // Минимальное и стартовое окно приложения 1320×860 даёт рабочую область 1084 px с учётом меню.
   projects: [
     { name: 'светлая 1320×860', use: { viewport: { width: 1320, height: 860 } }, metadata: { theme: 'light', workspace: 1084 } },

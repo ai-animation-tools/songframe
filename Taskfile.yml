@@ -85,9 +85,10 @@ tasks:
     cmds:
       - go test ./internal/components -count=1
   check:race:
-    desc: Проверить конкурентный доступ сервисов детектором гонок
+    desc: Проверить все Go-тесты под детектором гонок
+    # Корневой пакет компилирует main.go с go:embed: frontend/dist создаёт bindings или build.
     cmds:
-      - go test -race ./internal/...
+      - go test -race ./...
   check:contracts:
     desc: Сверить общие fixtures на границах Go и TypeScript
     cmds:
@@ -130,13 +131,38 @@ tasks:
     cmds:
       - yarn format:check
   check:all:
-    desc: Выполнить контракты, типы, race, форматирование и браузерную приёмку
-    # Последовательность исключает проверку старой витрины или bindings от предыдущей сборки.
+    desc: Выполнить все проверки перед коммитом с пониженным приоритетом процессора и диска
     cmds:
-      - task: check
+      - sh scripts/low-priority.sh wails3 task check:all:steps
+  check:all:steps:
+    desc: Шаги check:all без понижения приоритета
+    # Bindings генерируются до обеих ветвей: frontend проверяет типы по свежим bindings.
+    cmds:
+      - task: bindings
+      - task: check:all:branches
+  check:all:branches:
+    internal: true
+    # Ветви не зависят друг от друга и идут параллельно: хвост Go-прогона (один долгий пакет)
+    # занимает одно ядро, пока frontend собирает и обходит витрину.
+    deps: [check:all:go, check:all:frontend]
+  check:all:go:
+    internal: true
+    # Детектор гонок выполняет те же тесты, что go test ./... (ни один тест под ним не пропускается),
+    # поэтому обычный прогон перед ним не повторяется.
+    cmds:
+      - sh scripts/check-format.sh
+      - go vet ./...
       - task: check:race
-      - task: check:format
-      - task: check:ui
+  check:all:frontend:
+    internal: true
+    dir: frontend
+    # Порядок внутри ветви исключает обход старой витрины.
+    cmds:
+      - yarn typecheck
+      - yarn test
+      - yarn format:check
+      - yarn build-storybook
+      - yarn test:storybook
   run:
     desc: Открыть собранную оболочку
     cmds:

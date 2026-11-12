@@ -13,6 +13,11 @@ export interface MediaProviderInfo {
   /** Платный замороженный запрос: цена, баланс и отдельное подтверждение отправки. */
   paid: boolean;
   /**
+   * Сервиса нет: видео всех планов проекта создаёт пользователь вне приложения по пакету ручной генерации. Запроса, цены, входа,
+   * модели и проверки возможностей нет; способ генерации попытки не выбирается.
+   */
+  manual: boolean;
+  /**
    * Липсинк видео по точному звуку: допустимая длина звукового входа в секундах; null — провайдер не синхронизирует губы с заданным звуком.
    * Речевой план с таким провайдером не готовится: приложение блокирует действия и объясняет причину.
    */
@@ -67,6 +72,7 @@ export const MEDIA_PROVIDERS: Record<MediaProviderId, MediaProviderInfo> = {
     kinds: ['image', 'video'],
     executor: null,
     paid: true,
+    manual: false,
     // Звуковой слот audio_1 режима omni_ref_video — референс звука: губы с ним не синхронизируются.
     lipSync: null,
     // Kling 4.0 Keyframes: первый, промежуточные и последний кадр — не больше 10 изображений.
@@ -148,6 +154,7 @@ export const MEDIA_PROVIDERS: Record<MediaProviderId, MediaProviderInfo> = {
     kinds: ['image'],
     executor: 'codex',
     paid: false,
+    manual: false,
     lipSync: null,
     maxKeyframes: null,
     manualLipSync: null,
@@ -167,7 +174,33 @@ export const MEDIA_PROVIDERS: Record<MediaProviderId, MediaProviderInfo> = {
     modelOrder: {},
     commandLabels: {},
     parameterLabels: {}
+  },
+  // Способ видео проекта без сервиса: все планы идут ручной генерацией.
+  /* eslint-disable no-restricted-syntax -- Название и особенности способа принадлежат его записи реестра, как у сервисов. */
+  manual: {
+    title: 'Вручную вне приложения',
+    kinds: ['video'],
+    executor: null,
+    paid: false,
+    manual: true,
+    lipSync: null,
+    maxKeyframes: null,
+    manualLipSync: null,
+    learnsPriceFromCharges: false,
+    generationHistory: null,
+    requestParameters: false,
+    defaultModelLabel: '',
+    capabilitiesNote: '',
+    settingsNotes: {
+      video:
+        'Видео всех планов создаётся вне приложения: приложение собирает пакет из утверждённых опор и видеопромпта, видео загружается в попытку. Запросов, цен и списаний нет.'
+    },
+    defaults: {},
+    modelOrder: {},
+    commandLabels: {},
+    parameterLabels: {}
   }
+  /* eslint-enable no-restricted-syntax */
 };
 
 /** Подпись параметра запроса из реестра; неизвестный параметр или провайдер — имя API. */

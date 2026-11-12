@@ -7,6 +7,7 @@ export const aiAccessTexts = {
     agentUnchecked: 'Доступность агента ещё не проверена.',
     providerUnchecked: 'Доступность провайдера ещё не проверена.',
     providerUnsupported: 'Выбранный провайдер не поддерживается.',
+    manualVideoReady: 'Видео создаётся вручную вне приложения: вход не нужен.',
     settingsReadFailed: 'Не удалось прочитать настройки ИИ.',
     loginConfirmed: ({ title }: { title: string }) => `Вход в ${title} подтверждён.`,
     loginRequired: ({ title }: { title: string }) => `Выполните вход в ${title} в настройках приложения.`,

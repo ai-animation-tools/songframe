@@ -390,6 +390,27 @@ describe('Настройки независимых медиапровайдер
     expect(discoveries).toHaveBeenCalledTimes(2);
   });
 
+  it('для способа «Вручную вне приложения» не показывает модель и проверку возможностей, а объясняет способ', () => {
+    discoveries.mockClear();
+    fields.clear();
+    const info = MEDIA_PROVIDERS.manual;
+    const html = renderToStaticMarkup(
+      createElement(VideoGenerationSettings, {
+        project: '/fixture/project',
+        value: { ...DEFAULT_VIDEO, provider: 'manual', provider_selected: true },
+        onChange: unchanged,
+        onAdd: unchanged
+      })
+    );
+    expect(info.manual).toBe(true);
+    expect(discoveries).not.toHaveBeenCalled();
+    expect(fields.has('video-generation-model')).toBe(false);
+    expect(html).toContain(info.settingsNotes.video);
+    // Требования проекта к видео остаются: разрешение, пропорции и правило длительности.
+    expect(fields.has('video-generation-aspect-ratio')).toBe(true);
+    expect(menuItems('video-generation-provider')).toContainEqual({ value: 'manual', label: info.title, disabled: false });
+  });
+
   it.each([null, 'claude', 'codex'] as const)(
     'предлагает провайдера-агента и платного провайдера для изображений и читает их возможности при агенте %s',
     (agent) => {

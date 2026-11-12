@@ -131,6 +131,7 @@ describe('согласование обложки с текстами слова
       kinds: ['image'],
       executor: null,
       paid,
+      manual: false,
       lipSync: null,
       maxKeyframes: null,
       manualLipSync: null,

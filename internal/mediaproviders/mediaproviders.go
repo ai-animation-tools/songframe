@@ -41,6 +41,9 @@ type Info struct {
 	// MaxKeyframes — maxKeyframes реестра: сколько опорных кадров принимает один запрос видео у
 	// самой ёмкой модели провайдера; 0 — провайдер не объявляет предела (DefaultKeyframeLimit).
 	MaxKeyframes int
+	// Manual — manual реестра: сервиса нет, видео всех планов проекта создаёт пользователь вне
+	// приложения по пакету ручной генерации; запроса, цены, входа и возможностей моделей нет.
+	Manual bool
 }
 
 // DefaultKeyframeLimit — наибольшее число опор плана, если провайдер своего предела не объявляет.
@@ -66,10 +69,11 @@ type LipSync struct {
 var (
 	mu sync.RWMutex
 	// ids — порядок MEDIA_PROVIDER_IDS; providers — записи по id.
-	ids       = []string{"kling", "codex"}
+	ids       = []string{"kling", "codex", "manual"}
 	providers = map[string]Info{
-		"kling": {Title: "Kling", Kinds: []string{Image, Video}, Paid: true, DefaultImageResolution: "2k", DefaultImageAspectRatio: "16:9", DefaultImageOutputs: 1, MaxKeyframes: 10},
-		"codex": {Title: "Codex", Kinds: []string{Image}, Executor: "codex"},
+		"kling":  {Title: "Kling", Kinds: []string{Image, Video}, Paid: true, DefaultImageResolution: "2k", DefaultImageAspectRatio: "16:9", DefaultImageOutputs: 1, MaxKeyframes: 10},
+		"codex":  {Title: "Codex", Kinds: []string{Image}, Executor: "codex"},
+		"manual": {Title: "Вручную вне приложения", Kinds: []string{Video}, Manual: true},
 	}
 )
 
@@ -131,14 +135,15 @@ func Register(id string, info Info) (restore func()) {
 	}
 }
 
-// ManualVideo — план с отметкой липсинка у провайдера видео без липсинка (LipSync == nil)
-// делается ручной генерацией вне приложения: видео создаёт пользователь по пакету попытки.
-// Неизвестный провайдер или план без липсинка — false.
+// ManualVideo — план делается ручной генерацией вне приложения: видео создаёт пользователь по
+// пакету попытки. Так у способа видео проекта без сервиса (Manual) — для всех планов, а у
+// провайдера без липсинка (LipSync == nil) — для плана с отметкой липсинка. Неизвестный
+// провайдер — false.
 func ManualVideo(provider any, lipsync bool) bool {
 	id, ok := provider.(string)
-	if !lipsync || !ok || !Supports(id, Video) {
+	if !ok || !Supports(id, Video) {
 		return false
 	}
 	info, ok := Lookup(id)
-	return ok && info.LipSync == nil
+	return ok && (info.Manual || (lipsync && info.LipSync == nil))
 }

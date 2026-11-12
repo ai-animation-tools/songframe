@@ -229,7 +229,11 @@ func LoadAttempt(directory string, verifyInputs bool) (*toolrt.Dict, *toolrt.Dic
 	if err != nil {
 		return nil, nil, err
 	}
-	if !mediaadapters.Known(provider) {
+	// Пакету ручной генерации сервис не нужен: видео создаёт пользователь, адаптера у способа
+	// «Вручную вне приложения» нет.
+	mode, _ := toolrt.DictGet(requestValue, "mode", nil)
+	manual := mode == "manual"
+	if !mediaadapters.Known(provider) && !manual {
 		return nil, nil, valueError(textNoProvider)
 	}
 	request := requestValue.(*toolrt.Dict)

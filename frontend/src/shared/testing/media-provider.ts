@@ -8,6 +8,7 @@ export const testProviderInfo: MediaProviderInfo = {
   kinds: ['image', 'video'],
   executor: null,
   paid: true,
+  manual: false,
   lipSync: { min: 5, max: 30 },
   maxKeyframes: null,
   manualLipSync: null,

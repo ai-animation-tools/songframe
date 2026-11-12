@@ -6,7 +6,7 @@ import { productionTexts } from '@shared/texts/production';
  */
 import { useEffect, useRef, useState, type ReactElement, type ReactNode } from 'react';
 import { Box, Chip, LinearProgress, Paper, Stack, Step, StepButton, StepContent, StepLabel, Stepper, Typography } from '@mui/material';
-import { keyframeLimit, normalizeMediaProvider } from '@shared/media-providers';
+import { keyframeLimit, mediaProviderInfo, normalizeMediaProvider } from '@shared/media-providers';
 import type { KeyframeNoteScope, ManualVideo, PackageView, ShotProduction } from '@shared/types';
 import { BUSY_REASON } from '../constants';
 import { manualGeneration, planPath, questionStep, REQUEST_IN_FLIGHT, type PlanPath, type PlanStepKey } from '../planPath';
@@ -218,7 +218,9 @@ export function ProductionPath({
   const ownReason = ownReasonFor('description');
   const promptReason = ownReasonFor('prompt');
   // Способ генерации выбирается до утверждения промпта, пока запрос не подготовлен; речевой план без липсинка — всегда вручную.
-  const methodShown = !!pkg && !!view && !view.singleFrame && !view.paid && !pkg.prompt?.approved && !pkg.request;
+  // У способа видео проекта без сервиса все попытки ручные: выбирать нечего.
+  const projectManual = !!mediaProviderInfo(view?.videoProvider, 'video')?.manual;
+  const methodShown = !!pkg && !!view && !view.singleFrame && !projectManual && !view.paid && !pkg.prompt?.approved && !pkg.request;
   const methodReason = view?.derivedFrom ? view.reasons.continue : promptReason;
 
   /** Указание записывается замечанием к опоре до запуска: так агент получит его обычным путём. */

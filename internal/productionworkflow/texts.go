@@ -80,6 +80,7 @@ const (
 	textManualUnavailable            = "Пакет для ручной генерации сейчас собрать нельзя."
 	textManualSpeechRole             = "Срез речи"
 	textMethodSingleFrame            = "Речевой план у провайдера без липсинка всегда создаётся вручную вне приложения."
+	textMethodProjectManual          = "Видео всех планов проекта создаётся вручную вне приложения: так выбрано в настройках проекта."
 	textMethodRequestReady           = "Запрос или пакет уже подготовлен: чтобы сменить способ, верните видеопромпт на доработку."
 	textMethodPromptApproved         = "Видеопромпт уже утверждён: чтобы сменить способ, верните его на доработку."
 	textManualKeyframeCount          = "Видео этого плана создаётся вне приложения по одной опоре: другое число опор выбрать нельзя."
@@ -210,8 +211,8 @@ func textShotMissing(shot string) string {
 func providerTitles(kind string) string {
 	titles := []string{}
 	for _, id := range mediaproviders.IDs() {
-		if mediaproviders.Supports(id, kind) {
-			info, _ := mediaproviders.Lookup(id)
+		// Способ без сервиса — не провайдер: в перечне сервисов его нет.
+		if info, _ := mediaproviders.Lookup(id); mediaproviders.Supports(id, kind) && !info.Manual {
 			titles = append(titles, info.Title)
 		}
 	}

@@ -13,6 +13,9 @@ import (
 // providerKeyframes — maxKeyframes каждой записи реестра renderer по порядку.
 var providerKeyframes = regexp.MustCompile(`\n    maxKeyframes: (null|\d+),`)
 
+// providerManual — manual каждой записи реестра renderer по порядку.
+var providerManual = regexp.MustCompile(`\n    manual: (true|false),`)
+
 var providerBlock = regexp.MustCompile(`\n  (\w+): \{\n    title: '([^']*)',\n    kinds: \[([^\]]*)\],\n    executor: (null|'\w+'),\n    paid: (true|false),`)
 
 // TestRegistryMatchesFrontend — поля реестра Go совпадают с MEDIA_PROVIDERS renderer, порядок тоже.
@@ -29,7 +32,14 @@ func TestRegistryMatchesFrontend(t *testing.T) {
 	if len(limits) != len(blocks) {
 		t.Fatalf("maxKeyframes объявлен у %d провайдеров из %d", len(limits), len(blocks))
 	}
+	manual := providerManual.FindAllStringSubmatch(string(data), -1)
+	if len(manual) != len(blocks) {
+		t.Fatalf("manual объявлен у %d провайдеров из %d", len(manual), len(blocks))
+	}
 	for index, block := range blocks {
+		if got, _ := Lookup(block[1]); got.Manual != (manual[index][1] == "true") {
+			t.Fatalf("провайдер %s: manual Go %v, renderer %s", block[1], got.Manual, manual[index][1])
+		}
 		if got, _ := Lookup(block[1]); strconv.Itoa(got.MaxKeyframes) != strings.ReplaceAll(limits[index][1], "null", "0") {
 			t.Fatalf("провайдер %s: maxKeyframes Go %d, renderer %s", block[1], got.MaxKeyframes, limits[index][1])
 		}

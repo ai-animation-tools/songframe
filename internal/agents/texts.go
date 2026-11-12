@@ -76,6 +76,7 @@ const (
 	textMediaVideoRequired     = "Сначала выберите провайдера видео в настройках проекта."
 	textAgentUnchecked         = "Доступность агента ещё не проверена."
 	textProviderUnchecked      = "Доступность провайдера ещё не проверена."
+	textManualVideoReady       = "Видео создаётся вручную вне приложения: вход не нужен."
 	textProviderUnsupported    = "Выбранный провайдер не поддерживается."
 	textSettingsReadFailed     = "Не удалось прочитать настройки ИИ."
 	textAgentCheckFailed       = "Не удалось проверить доступность агента."

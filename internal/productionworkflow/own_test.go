@@ -260,3 +260,59 @@ func TestManualAttempt(t *testing.T) {
 		t.Fatalf("ручная попытка запускала агента: %d", len(run.agents.starts))
 	}
 }
+
+// TestProjectManualVideo — способ видео проекта «Вручную вне приложения»: сервиса и адаптера нет,
+// план без агента проходит от описания до пакета ручной генерации; способ попытки не выбирается.
+func TestProjectManualVideo(t *testing.T) {
+	run := ownRun(t)
+	project := `{"schema_version":1,"name":"Пробный клип","animatic_video":"sample-animatic.mp4","fps":30,"generation":{` +
+		`"video":{"provider":"manual","resolution":"1080p","aspect_ratio":"16:9","watermark":false,"duration_rule":"min_supported_strictly_greater_than_window","provider_selected":true},` +
+		`"image":{"provider":"test-agent","provider_selected":true}}}`
+	if err := os.WriteFile(filepath.Join(run.project, "plan", "project.json"), []byte(project), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	c, err := ReadContext(run.project, "M01", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(c.Problems) != 0 || !c.Manual || c.SingleFrame {
+		t.Fatalf("проект без сервиса видео: problems %v, manual %v, singleFrame %v", c.Problems, c.Manual, c.SingleFrame)
+	}
+	seconds := math.Floor(c.Window) + 1
+	view, err := run.workflow.SaveOwn(context.Background(), OwnInput{Project: run.project, Shot: "M01", Stage: "description",
+		Description: "Герой идёт к воротам.", RequestSeconds: seconds, Keyframes: ownFrames(3, seconds)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := *view.PackageDir
+	shot := func(args ...string) {
+		t.Helper()
+		if result, err := tools.Run(run.project, "shot_workflow", append(args, "--dir", dir)); err != nil || result.Code == nil || *result.Code != 0 {
+			t.Fatalf("shot_workflow %v: %+v %v", args, result, err)
+		}
+	}
+	shot("decide", "--verdict", "approve")
+	if _, err := run.workflow.SetGenerationMethod(run.project, "M01", dir, "provider"); err == nil || err.Error() != textMethodProjectManual {
+		t.Fatalf("способ попытки в проекте без сервиса: %v", err)
+	}
+	image := filepath.Join(run.project, "source", "locations", "pier.png")
+	for _, id := range []string{"K01", "K02", "K03"} {
+		shot("approve", id, image)
+	}
+	if _, err := run.workflow.SaveOwn(context.Background(), OwnInput{Project: run.project, Shot: "M01", PackageDir: dir, Stage: "prompt",
+		Prompt: "Камера приближается к воротам."}); err != nil {
+		t.Fatal(err)
+	}
+	shot("decide", "--verdict", "approve")
+	if _, err := run.workflow.BuildManual(context.Background(), run.project, "M01", dir); err != nil {
+		t.Fatal(err)
+	}
+	request, err := readJSON(filepath.Join(dir, "request-01", "request.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	inputs, _ := dynvalue.AsArray(dynvalue.Get(request, "inputs"))
+	if dynvalue.Get(request, "provider") != "manual" || dynvalue.Get(request, "mode") != "manual" || len(inputs) != 3 {
+		t.Fatalf("пакет ручной генерации проекта без сервиса: %s", dynvalue.Stringify(request))
+	}
+}

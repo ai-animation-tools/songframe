@@ -177,6 +177,10 @@ func (c *AccessChecker) GetAccess(ctx context.Context, project *string, required
 	// Провайдер-агент проверяется как программа агента; платный — по входу в его собственную программу.
 	mediaAvailability := func(provider string) (availability, error) {
 		info, _ := mediaproviders.Lookup(provider)
+		// Способ без сервиса: входить и проверять нечего, видео создаёт пользователь.
+		if info.Manual {
+			return availability{available: true, message: textManualVideoReady}, nil
+		}
 		if info.Executor != "" {
 			config, err := ImageAgent(info.Executor, "")
 			if err != nil {

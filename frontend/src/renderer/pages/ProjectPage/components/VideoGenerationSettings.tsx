@@ -31,10 +31,13 @@ export function VideoGenerationSettings({
 }): ReactElement {
   const [capabilities, setCapabilities] = useState<MediaCapabilities | null>(null);
   const providerSelected = value?.provider_selected === true;
+  // Способ без сервиса (manual реестра): моделей, возможностей и входа нет, остаются требования проекта к видео.
+  const info = providerSelected ? mediaProviderInfo(value?.provider, 'video') : undefined;
+  const manual = !!info?.manual;
   // Пустой неподтверждённый черновик сохраняется как null в ProjectSettingsCard и не блокирует обычное сохранение.
   const emptyUnselected = value !== null && !providerSelected && !value.provider.trim();
   // Выбранный текстовый агент не влияет на провайдера видео: проверка зависит только от явного выбора.
-  const canDiscover = providerSelected;
+  const canDiscover = providerSelected && !manual;
   const capabilitiesReady = canDiscover && capabilities !== null && capabilities.provider === value?.provider;
   const capabilitiesConfirmed = capabilitiesReady && capabilities.available && capabilities.problems.length === 0;
   const models = capabilitiesReady ? capabilities.models : [];
@@ -124,47 +127,49 @@ export function VideoGenerationSettings({
                   </MenuItem>
                 ))}
               </TextField>
-              <TextField
-                select
-                id="video-generation-model"
-                label={projectTexts.generation.preferredVideoModel}
-                error={modelError}
-                value={value.model ?? ''}
-                onChange={(event) => {
-                  const model = event.target.value || undefined;
-                  // Несохранённый стандарт подставляем только при заявленной поддержке новой модели.
-                  const aspect = aspectOptions(models, model).includes('16:9') ? '16:9' : undefined;
-                  patch({ model, ...(value.aspect_ratio === undefined ? { aspect_ratio: aspect } : {}) });
-                }}
-                size="small"
-                slotProps={{
-                  inputLabel: { shrink: true },
-                  select: {
-                    displayEmpty: true,
-                    // Закрытое поле остаётся однострочным, команды видны только в меню.
-                    renderValue: () =>
-                      value.model
-                        ? projectTexts.generation.modelChoice({ model: value.model, available: availableModels.includes(value.model) })
-                        : defaultModelLabel
-                  }
-                }}
-                helperText={modelError ? projectTexts.generation.modelUnavailable({ model: value.model }) : projectTexts.generation.modelHelp}
-              >
-                {modelChoices.map((id) => (
-                  <MenuItem key={id} value={id} disabled={Boolean(id) && !availableModels.includes(id)}>
-                    <Box>
-                      <Typography variant="body2">
-                        {id ? projectTexts.generation.modelChoice({ model: id, available: availableModels.includes(id) }) : defaultModelLabel}
-                      </Typography>
-                      {availableModels.includes(id) && (
-                        <Typography variant="caption" color="text.secondary">
-                          {Array.from(new Set(models.filter((model) => model.id === id).map((model) => model.command))).join(', ')}
+              {manual ? null : (
+                <TextField
+                  select
+                  id="video-generation-model"
+                  label={projectTexts.generation.preferredVideoModel}
+                  error={modelError}
+                  value={value.model ?? ''}
+                  onChange={(event) => {
+                    const model = event.target.value || undefined;
+                    // Несохранённый стандарт подставляем только при заявленной поддержке новой модели.
+                    const aspect = aspectOptions(models, model).includes('16:9') ? '16:9' : undefined;
+                    patch({ model, ...(value.aspect_ratio === undefined ? { aspect_ratio: aspect } : {}) });
+                  }}
+                  size="small"
+                  slotProps={{
+                    inputLabel: { shrink: true },
+                    select: {
+                      displayEmpty: true,
+                      // Закрытое поле остаётся однострочным, команды видны только в меню.
+                      renderValue: () =>
+                        value.model
+                          ? projectTexts.generation.modelChoice({ model: value.model, available: availableModels.includes(value.model) })
+                          : defaultModelLabel
+                    }
+                  }}
+                  helperText={modelError ? projectTexts.generation.modelUnavailable({ model: value.model }) : projectTexts.generation.modelHelp}
+                >
+                  {modelChoices.map((id) => (
+                    <MenuItem key={id} value={id} disabled={Boolean(id) && !availableModels.includes(id)}>
+                      <Box>
+                        <Typography variant="body2">
+                          {id ? projectTexts.generation.modelChoice({ model: id, available: availableModels.includes(id) }) : defaultModelLabel}
                         </Typography>
-                      )}
-                    </Box>
-                  </MenuItem>
-                ))}
-              </TextField>
+                        {availableModels.includes(id) && (
+                          <Typography variant="caption" color="text.secondary">
+                            {Array.from(new Set(models.filter((model) => model.id === id).map((model) => model.command))).join(', ')}
+                          </Typography>
+                        )}
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
               <TextField
                 select
                 label={projectTexts.generation.videoResolution}
@@ -242,6 +247,7 @@ export function VideoGenerationSettings({
                 ))}
               </TextField>
             </Box>
+            {info?.settingsNotes.video && <Alert severity="info">{info.settingsNotes.video}</Alert>}
             {/* Неподтверждённый старый default не должен запускать CLI или проверку входа. */}
             {canDiscover && (
               <MediaCapabilitiesPanel key={`video:${value.provider}`} project={project} kind="video" provider={value.provider} onResult={setCapabilities} />

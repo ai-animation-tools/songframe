@@ -110,3 +110,19 @@ func TestAttachManualWithoutCost(t *testing.T) {
 		t.Fatalf("необязательные поля: %v", generation)
 	}
 }
+
+// TestAttachManualWithoutAdapter — у способа «Вручную вне приложения» адаптера нет: пакет
+// ручной генерации всё равно читается, видео загружается и получается без обращения к сервису.
+func TestAttachManualWithoutAdapter(t *testing.T) {
+	root, work := manualPackage(t, "manual-without-adapter")
+	video := filepath.Join(t.TempDir(), "own.mp4")
+	if err := os.WriteFile(video, []byte("\x00\x00\x00\x18ftypisomсвоё"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := AttachManual(root, work, video, ManualMeta{Source: "своё видео"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Resume(context.Background(), root, work, "", 0, 15, 60); err != nil {
+		t.Fatalf("получение загруженного видео без адаптера: %v", err)
+	}
+}

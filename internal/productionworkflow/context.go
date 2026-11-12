@@ -152,7 +152,7 @@ func ReadContext(path, shot, requested string) (*Context, error) {
 		problems = append(problems, textSpeechWindowTooLong(dynvalue.ToFixed(window, 2), provider.Title, provider.LipSync.Max))
 	}
 	context := &Context{
-		Project: project, Shot: shot, Settings: settings, Window: window, DurationRule: durationRule, Problems: problems, Manual: manual, SingleFrame: manual,
+		Project: project, Shot: shot, Settings: settings, Window: window, DurationRule: durationRule, Problems: problems, Manual: manual, SingleFrame: manual && scene.Value("lipsync") == true,
 		FramePrompts: &dynvalue.Array{Items: []any{}}, References: dynvalue.NewObject(),
 	}
 	if requested != "" {

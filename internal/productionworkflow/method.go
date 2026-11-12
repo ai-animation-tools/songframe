@@ -7,6 +7,7 @@ import (
 
 	"songframe/internal/derivedshot"
 	"songframe/internal/dynvalue"
+	"songframe/internal/mediaproviders"
 )
 
 // Способ генерации видео попытки (D-043): «Провайдер проекта» — запрос и платная отправка
@@ -66,6 +67,8 @@ func methodReason(c *Context, view View) (string, error) {
 		return derivedshot.Reason(c.DerivedFrom), nil
 	case c.SingleFrame:
 		return textMethodSingleFrame, nil
+	case mediaproviders.ManualVideo(c.Settings.Value("provider"), false):
+		return textMethodProjectManual, nil
 	case view.Busy:
 		return textOperationBusy, nil
 	case proposalOpen(view.Proposal):

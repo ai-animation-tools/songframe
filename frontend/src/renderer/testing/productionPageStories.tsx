@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import type { VideoReviewView } from '@shared/video-review';
 import { videoReviewTexts } from '@shared/texts/video-review';
 import type { Api } from '@shared/api';
-import type { AppState, BrokenPackage, JobInfo, PackageView, ProductionView, ShotProduction } from '@shared/types';
+import type { AcceptedKit, AppState, BrokenPackage, JobInfo, PackageView, ProductionView, ShotProduction } from '@shared/types';
 import type { ProductionProposal } from '@shared/production-workflow';
 import { registerMediaProviderForTests } from '@shared/media-providers';
 import { productionTexts } from '@shared/texts/production';
@@ -74,6 +74,8 @@ export interface ProductionPageModelOptions {
   manual?: boolean;
   /** Предел длины видеопромпта провайдера (ProductionWorkflowView.promptMaxChars). */
   promptMaxChars?: number;
+  /** Сведения принятого комплекта плана (production.acceptedKit); без модели — комплект без сведений генерации. */
+  acceptedKit?: (shot: string) => AcceptedKit | null;
 }
 
 interface PageModel {
@@ -250,6 +252,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
       const derived = createDerivedScenario({ view: { project: PAGE_PROJECT } });
       const session = createStoryApi({
         production: {
+          acceptedKit: async (_project, shot) => structuredClone(options.acceptedKit?.(shot) ?? null),
           addKeyframeNote: async (project, dir, frame, note, scope) => {
             find(project, dir);
             model.frameNotes = [...model.frameNotes, `${frame}/${scope}: ${note}`];

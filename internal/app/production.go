@@ -286,6 +286,12 @@ func (s *ProductionService) SpeechPlan(project, shot, packageDir string) (speech
 	return wire.Done(speech.PlanFor(project, shot, limits))
 }
 
+// AcceptedKit — источник генерации, опоры, промпт и срез речи принятого плана по его комплекту;
+// nil — комплекта из генерации нет. Рабочий пакет попытки к этому моменту уже удалён приёмкой.
+func (s *ProductionService) AcceptedKit(project, shot string) (*production.AcceptedKit, error) {
+	return wire.Done(production.AcceptedKitFor(project, shot))
+}
+
 // PrepareSpeech — точный срез WAV липсинка инструментом cut_speech; прежний срез пакета заменяется.
 func (s *ProductionService) PrepareSpeech(project, packageDir string, bounds *production.Bounds) (*production.PackageView, error) {
 	if err := s.idle(project, packageDir); err != nil {

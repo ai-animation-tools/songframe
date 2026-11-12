@@ -22,6 +22,7 @@ import type {
   AcceptOptions,
   PackageView,
   SpeechPlan,
+  AcceptedKit,
   AnimaticView,
   AppState,
   BriefResult,
@@ -213,6 +214,8 @@ export interface Api {
     park(project: string, packageDir: string): Promise<void>;
     /** Строки песни в окне речевого плана и предложенные границы среза. */
     speechPlan(project: string, shot: string, packageDir?: string): Promise<SpeechPlan>;
+    /** Источник генерации, опоры, промпт и срез речи принятого плана по его комплекту; null — комплекта из генерации нет. */
+    acceptedKit(project: string, shot: string): Promise<AcceptedKit | null>;
     /** Режет точный WAV липсинка в audio/ пакета; без границ — по разметке «Таймингов». */
     prepareSpeech(project: string, packageDir: string, bounds?: { start: number; end: number }): Promise<PackageView>;
     /** Снова задать вопрос о полученном результате пакета приложения, если ответ уже записан. */

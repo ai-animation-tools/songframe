@@ -486,6 +486,24 @@ export interface ManualGeneration {
   description: string | null;
 }
 
+/**
+ * Как получено видео принятого плана — по снимку комплекта assets/shots/Mxx (рабочий пакет попытки приёмка удаляет).
+ * Пути — к существующим файлам комплекта; отсутствующее сведение — null.
+ */
+export interface AcceptedKit {
+  /** id провайдера видео из снимка запроса. */
+  provider: string | null;
+  /** Номер генерации у сервиса; null у ручной генерации и ручной загрузки. */
+  generationId: string | null;
+  /** Видео создано вне приложения: источник, стоимость, примечание. */
+  manualGeneration?: ManualGeneration;
+  prompt: string | null;
+  /** Изображения, переданные в генерацию (опоры). */
+  images: string[];
+  /** Срез речи речевого плана и его границы в песне. */
+  speech: { path: string; start: number | null; end: number | null } | null;
+}
+
 /** Точный срез песни речевого плана в пакете: audio/speech.wav и audio/audio-recipe.json. */
 export interface PackageSpeech {
   path: string;

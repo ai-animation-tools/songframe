@@ -886,6 +886,19 @@ export const productionTexts = {
     missingVideo: `Файл принятого монтажного видео отсутствует. Приёмка сохранена; восстановите файл перед сборкой с этим видео.`,
     retry: labels.prepareRetry
   },
+  acceptedKit: {
+    heading: 'Принятый комплект',
+    source: 'Как получено видео',
+    provider: ({ provider, id }: { provider: string; id: string | null }) => `Сервис: ${provider}${id ? ` · генерация ${id}` : ''}`,
+    noSource: 'Сведений об источнике в комплекте нет.',
+    images: 'Опоры',
+    image: ({ index }: { index: number }) => `Опора ${index}`,
+    prompt: 'Видеопромпт',
+    copy: 'Скопировать',
+    copyHint: 'Скопировать видеопромпт принятого плана',
+    speech: 'Срез речи',
+    loadFailed: ({ reason }: { reason: string }) => `Не удалось прочитать принятый комплект: ${reason}`
+  },
   productionShotList: {
     showAll: labels.showAllShots,
     derivedFrom: ({ derivedFrom }: { derivedFrom: string }) => `из ${derivedFrom}`,

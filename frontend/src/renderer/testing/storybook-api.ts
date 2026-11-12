@@ -178,6 +178,8 @@ export function unconfiguredStoryApi(): Api {
       contactSheet: async () => unconfigured('production.contactSheet'),
       park: async () => unconfigured('production.park'),
       speechPlan: async () => unconfigured('production.speechPlan'),
+      // Комплект без сведений генерации: принятые планы историй показывают только видео, пока модель не задана.
+      acceptedKit: async () => null,
       prepareSpeech: async () => unconfigured('production.prepareSpeech'),
       reopenQuestion: async () => unconfigured('production.reopenQuestion'),
       discardAttempt: async () => unconfigured('production.discardAttempt'),

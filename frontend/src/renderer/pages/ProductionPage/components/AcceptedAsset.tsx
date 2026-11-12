@@ -15,13 +15,22 @@ function LabeledVideo({ path, label, color }: { path: string; label: string | nu
   );
 }
 
-export function AcceptedAsset({ asset }: { asset: NonNullable<ShotProduction['asset']> }): ReactElement {
+/** title — заголовок блока; null, когда блок вложен в «Принятый комплект» с собственным заголовком. */
+export function AcceptedAsset({
+  asset,
+  title = productionTexts.productionShotCard.accepted
+}: {
+  asset: NonNullable<ShotProduction['asset']>;
+  title?: string | null;
+}): ReactElement {
   const original = asset.original && asset.original !== asset.video ? asset.original : null;
   return (
     <Box>
-      <Typography variant="subtitle2" gutterBottom>
-        {productionTexts.productionShotCard.accepted}
-      </Typography>
+      {title ? (
+        <Typography variant="subtitle2" gutterBottom>
+          {title}
+        </Typography>
+      ) : null}
       {!asset.video ? (
         <Alert severity="warning" sx={{ mb: 1 }}>
           {productionTexts.productionShotCard.missingVideo}

@@ -12,6 +12,7 @@ import { BUSY_REASON } from '../constants';
 import { manualGeneration, planPath, questionStep, REQUEST_IN_FLIGHT, type PlanPath, type PlanStepKey } from '../planPath';
 import { useProductionWorkflow, type ProductionWorkflow } from '../useProductionWorkflow';
 import { AcceptedAsset } from './AcceptedAsset';
+import { AcceptedKitPanel } from './AcceptedKitPanel';
 import { useApp } from '../../../state';
 import { FrameActions, type FrameInstruction } from './FrameActions';
 import { ManualGeneration, ManualGenerationInfo } from './ManualGeneration';
@@ -402,41 +403,46 @@ export function ProductionPath({
       {pkg ? (
         <PackageNotices pkg={pkg} busy={blocked} busyReason={busyReason} onKeepForScene={onKeepForScene} onOpenRevision={() => setReviseOpen(true)} />
       ) : null}
-      <Paper variant="outlined" sx={{ p: 2 }}>
-        <Stepper orientation="vertical" nonLinear activeStep={path.steps.findIndex((step) => step.key === path.current)}>
-          {path.steps.map((step) => {
-            const done = step.status === 'done';
-            const current = step.status === 'current' || (path.finished && step.key === 'result');
-            const expanded = current || (done && !!opened[step.key]);
-            const label = (
-              <Box>
-                <Typography variant="subtitle2" color={step.status === 'future' ? 'text.secondary' : undefined}>
-                  {step.title}
-                </Typography>
-                {step.summary ? (
-                  <Typography variant="caption" color="text.secondary">
-                    {step.summary}
+      {/* Приёмка удалила пакет попытки: шаги считались бы по пустоте, поэтому показывается принятый комплект. */}
+      {!pkg && shot.asset && !newAttempt ? (
+        <AcceptedKitPanel project={project} shot={shot} />
+      ) : (
+        <Paper variant="outlined" sx={{ p: 2 }}>
+          <Stepper orientation="vertical" nonLinear activeStep={path.steps.findIndex((step) => step.key === path.current)}>
+            {path.steps.map((step) => {
+              const done = step.status === 'done';
+              const current = step.status === 'current' || (path.finished && step.key === 'result');
+              const expanded = current || (done && !!opened[step.key]);
+              const label = (
+                <Box>
+                  <Typography variant="subtitle2" color={step.status === 'future' ? 'text.secondary' : undefined}>
+                    {step.title}
                   </Typography>
-                ) : null}
-              </Box>
-            );
-            return (
-              <Step key={step.key} completed={done} active={current} expanded={expanded} disabled={step.status === 'future'} data-plan-step={step.key}>
-                {done ? (
-                  <StepButton onClick={() => setOpened((value) => ({ ...value, [step.key]: !value[step.key] }))}>{label}</StepButton>
-                ) : (
-                  <StepLabel>{label}</StepLabel>
-                )}
-                <StepContent>
-                  <Stack spacing={1.5} sx={{ pt: 1, minWidth: 0 }}>
-                    {expanded ? body(step.key, current && !path.finished) : null}
-                  </Stack>
-                </StepContent>
-              </Step>
-            );
-          })}
-        </Stepper>
-      </Paper>
+                  {step.summary ? (
+                    <Typography variant="caption" color="text.secondary">
+                      {step.summary}
+                    </Typography>
+                  ) : null}
+                </Box>
+              );
+              return (
+                <Step key={step.key} completed={done} active={current} expanded={expanded} disabled={step.status === 'future'} data-plan-step={step.key}>
+                  {done ? (
+                    <StepButton onClick={() => setOpened((value) => ({ ...value, [step.key]: !value[step.key] }))}>{label}</StepButton>
+                  ) : (
+                    <StepLabel>{label}</StepLabel>
+                  )}
+                  <StepContent>
+                    <Stack spacing={1.5} sx={{ pt: 1, minWidth: 0 }}>
+                      {expanded ? body(step.key, current && !path.finished) : null}
+                    </Stack>
+                  </StepContent>
+                </Step>
+              );
+            })}
+          </Stepper>
+        </Paper>
+      )}
     </Stack>
   );
 }

@@ -2,16 +2,17 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { expectImplicitCloseBlocked } from '../../testing/dialogStories';
-import { testProviderInfo } from '@shared/testing/media-provider';
+import { TEST_PROVIDER, testProviderInfo } from '@shared/testing/media-provider';
 import { commonTexts } from '@shared/texts/common';
+import { componentsTexts } from '@shared/texts/components';
 import { navigationTexts } from '@shared/texts/navigation';
 import { videoReviewTexts } from '@shared/texts/video-review';
 import { productionTexts } from '@shared/texts/production';
-import type { ShotProduction } from '@shared/types';
+import type { AcceptedKit, ShotProduction } from '@shared/types';
 import { ANCHORS } from '../../components/linkTargets';
 import { formatClock } from '../../format';
 import { keyframePackage } from '../../testing/keyframeStories';
-import { STORY_VIDEO_PATH } from '../../testing/storybook';
+import { STORY_IMAGE_PATH, STORY_TRACK_PATH, STORY_VIDEO_PATH } from '../../testing/storybook';
 import { preparedPackage, queuedPackage } from '../../testing/productionQueueStories';
 import { receivingPackage, receivedPackage } from '../../testing/resultStories';
 import {
@@ -344,10 +345,11 @@ export const AcceptResult: Story = {
     await expect(screen.getByText(texts.productionToolbar.accepted({ completed: 1, total: 2 }))).toBeInTheDocument();
     await expect(await screen.findByText(texts.useProductionPage.jobDone({ title: 'Приёмка M02' }), {}, { timeout: 8000 })).toBeInTheDocument();
     await expect(await screen.findByText(texts.productionToolbar.accepted({ completed: 2, total: 2 }), {}, POLL_TIMEOUT)).toBeInTheDocument();
-    // Рабочие попытки очищены: выбирать больше нечего, путь показывает принятый план и новое видео.
+    // Рабочие попытки очищены: выбирать больше нечего, вместо пути — принятый комплект с новым видео.
     await waitFor(() => expect(screen.queryByRole('combobox', { name: new RegExp(texts.productionPage.packageLabel) })).not.toBeInTheDocument());
     await expect(await screen.findByText(steps.finished)).toBeInTheDocument();
-    await expect(within(planStep(context, 'result')).getByText(texts.productionShotCard.accepted)).toBeInTheDocument();
+    await expect(await screen.findByText(texts.acceptedKit.heading)).toBeInTheDocument();
+    await expect(context.canvasElement.ownerDocument.querySelectorAll('[data-plan-step]')).toHaveLength(0);
     await expect(context.canvasElement.ownerDocument.querySelector(`[data-anchor="${ANCHORS.productionWorkflow}"]`)).not.toBeNull();
   }
 };
@@ -566,9 +568,10 @@ export const GenerationInterrupted: Story = {
   }
 };
 
-const acceptedOptions = () =>
+const acceptedOptions = (model: Partial<ProductionPageModelOptions> = {}) =>
   options(
     {
+      ...model,
       shots: () => [
         pageShot('M01', {
           title: 'Подъезд к даче',
@@ -580,24 +583,74 @@ const acceptedOptions = () =>
     },
     '/project/production?shot=M01'
   );
+/** Комплект принятого речевого плана с ручной генерацией: источник, примечание, опора, промпт и срез речи. */
+const manualKit = (): AcceptedKit => ({
+  provider: TEST_PROVIDER,
+  generationId: null,
+  manualGeneration: {
+    source: 'Сайт сервиса',
+    original_name: 'avatar_0.mp4',
+    attached_at: '2026-11-11T21:08:28Z',
+    cost: { amount: 38, unit: 'credits' },
+    description: 'Точно следовал инструкции. Попыток: 1.'
+  },
+  prompt: 'Средний план спереди, камера плавно приближается; губы точно совпадают с исполнением в аудио.',
+  images: [STORY_IMAGE_PATH],
+  speech: { path: STORY_TRACK_PATH, start: 23.267, end: 27.267 }
+});
+
 export const AcceptedPlan: Story = {
   tags: ['ci'],
-  name: 'Принятый план · видео в шаге «Результат» и новая попытка из меню',
-  parameters: { songframe: acceptedOptions() },
+  name: 'Принятый план · комплект вместо пустых шагов и новая попытка из меню',
+  parameters: { songframe: acceptedOptions({ acceptedKit: manualKit }) },
   play: async (context) => {
     const screen = screenOf(context);
+    const kit = texts.acceptedKit;
     await expect(await screen.findByText(steps.finished, {}, POLL_TIMEOUT)).toBeInTheDocument();
-    const result = within(planStep(context, 'result'));
-    await expect(result.getByText(texts.productionShotCard.accepted)).toBeInTheDocument();
-    await expect(planStep(context, 'result').querySelectorAll('video')).toHaveLength(2);
-    await expect(result.getAllByRole('button', { name: texts.videoPlayer.fullscreen })).toHaveLength(2);
+    // Пакета попытки после приёмки нет: шаги с пустыми итогами не показываются, только принятый комплект.
+    await expect(await screen.findByText(kit.heading)).toBeInTheDocument();
+    await expect(context.canvasElement.ownerDocument.querySelectorAll('[data-plan-step]')).toHaveLength(0);
+    await expect(screen.getAllByRole('button', { name: texts.videoPlayer.fullscreen })).toHaveLength(2);
     // Два видео нельзя перепутать: у каждого своя подпись.
-    await expect(result.getByText(texts.productionShotCard.acceptedVideo)).toBeInTheDocument();
-    await expect(result.getByText(texts.productionShotCard.originalVideo)).toBeInTheDocument();
+    await expect(screen.getByText(texts.productionShotCard.acceptedVideo)).toBeInTheDocument();
+    await expect(screen.getByText(texts.productionShotCard.originalVideo)).toBeInTheDocument();
+    // Как получено видео: источник, стоимость и примечание ручной генерации из комплекта.
+    await expect(await screen.findByText(/^Источник: Сайт сервиса · Стоимость: 38 кредитов · Загружено .* из avatar_0\.mp4$/)).toBeInTheDocument();
+    await expect(screen.getByText('Точно следовал инструкции. Попыток: 1.')).toBeInTheDocument();
+    // Опора открывается в общем просмотре изображений, как опоры в пакете попытки.
+    await userEvent.click(screen.getByRole('button', { name: componentsTexts.gallery.openLarge({ label: kit.image({ index: 1 }) }) }));
+    const viewer = await screen.findByRole('dialog');
+    await expect(within(viewer).getByRole('img', { name: kit.image({ index: 1 }) })).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await expect(screen.getByText(/губы точно совпадают с исполнением в аудио/)).toBeInTheDocument();
+    await expect(screen.getByRole('button', { name: kit.copy })).toBeEnabled();
+    // Срез показан общим блоком среза речи с плеером.
+    const speech = texts.productionSpeechPanel.ready({ start: formatClock(23.267), end: formatClock(27.267), seconds: texts.productionSpeechPanel.seconds(4) });
+    await expect(screen.getByText(speech)).toBeInTheDocument();
     await userEvent.click((await openMenu(context)).getByRole('menuitem', { name: steps.newAttempt }));
     // Новый заход начинается с описания: принятый комплект не показывается как результат этой попытки.
     await expect(await within(planStep(context, 'description')).findByRole('button', { name: texts.productionWorkflowPanel.prepare })).toBeEnabled();
-    await expect(screen.queryByText(texts.productionShotCard.accepted)).not.toBeInTheDocument();
+    await expect(screen.queryByText(kit.heading)).not.toBeInTheDocument();
+  }
+};
+
+export const AcceptedProviderPlan: Story = {
+  tags: ['ci'],
+  name: 'Принятый план · сгенерирован сервисом, комплект без среза речи',
+  parameters: {
+    songframe: acceptedOptions({
+      acceptedKit: () => ({ provider: TEST_PROVIDER, generationId: 'gen-42', prompt: 'Камера плавно приближается к старым воротам.', images: [], speech: null })
+    })
+  },
+  play: async (context) => {
+    const screen = screenOf(context);
+    const kit = texts.acceptedKit;
+    await expect(await screen.findByText(kit.heading, {}, POLL_TIMEOUT)).toBeInTheDocument();
+    await expect(await screen.findByText(kit.provider({ provider: testProviderInfo.title, id: 'gen-42' }))).toBeInTheDocument();
+    await expect(screen.getByText('Камера плавно приближается к старым воротам.')).toBeInTheDocument();
+    await expect(screen.queryByText(kit.images)).not.toBeInTheDocument();
+    await expect(screen.queryByText(/^Срез речи/)).not.toBeInTheDocument();
   }
 };
 export const Empty: Story = {

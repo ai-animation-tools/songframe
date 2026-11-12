@@ -13,6 +13,7 @@ import { formatClock } from '../../../format';
 import { ANCHORS } from '../../../components/linkTargets';
 import { LinkedText } from '../../../components/LinkedText';
 import { ActionButton } from '../../../components/ActionButton';
+import { AudioPlayer } from '../../../components/AudioPlayer';
 import { BUSY_REASON } from '../constants';
 
 const seconds = productionTexts.productionSpeechPanel.seconds;
@@ -32,7 +33,9 @@ export function SpeechSlice({ speech }: { speech: PackageSpeech }): ReactElement
             seconds: seconds(speech.end - speech.start)
           })}
         </Typography>
-        <Box component="audio" controls preload="metadata" src={window.api.shell.fileUrl(speech.path)} sx={{ width: '100%', maxWidth: 520 }} />
+        <Box sx={{ maxWidth: 520 }}>
+          <AudioPlayer src={window.api.shell.fileUrl(speech.path)} duration={speech.end - speech.start} />
+        </Box>
       </Stack>
     </Alert>
   );

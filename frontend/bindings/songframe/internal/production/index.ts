@@ -3,6 +3,8 @@
 
 export type {
     AcceptOptions,
+    AcceptedKit,
+    AcceptedSpeech,
     Asset,
     Bounds,
     Broken,

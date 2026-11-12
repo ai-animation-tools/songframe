@@ -36,6 +36,14 @@ export function Accept(project: string, shot: string, packageDir: string, option
 }
 
 /**
+ * AcceptedKit — источник генерации, опоры, промпт и срез речи принятого плана по его комплекту;
+ * nil — комплекта из генерации нет. Рабочий пакет попытки к этому моменту уже удалён приёмкой.
+ */
+export function AcceptedKit(project: string, shot: string): $CancellablePromise<production$0.AcceptedKit | null> {
+    return $Call.ByID(2019785846, project, shot);
+}
+
+/**
  * AddKeyframeNote — необязательное указание к опоре до её создания.
  */
 export function AddKeyframeNote(project: string, packageDir: string, frame: string, note: string, noteScope: string): $CancellablePromise<void> {

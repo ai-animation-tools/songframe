@@ -187,6 +187,7 @@ export function apiSkeleton(): Api {
       contactSheet: stub('production.contactSheet'),
       park: stub('production.park'),
       speechPlan: stub('production.speechPlan'),
+      acceptedKit: stub('production.acceptedKit'),
       prepareSpeech: stub('production.prepareSpeech'),
       reopenQuestion: stub('production.reopenQuestion'),
       discardAttempt: stub('production.discardAttempt'),

@@ -299,6 +299,7 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
       contactSheet: guardedAsync(merged.production.contactSheet),
       park: guardedAsync(merged.production.park),
       speechPlan: guardedAsync(merged.production.speechPlan),
+      acceptedKit: guardedAsync(merged.production.acceptedKit),
       prepareSpeech: guardedAsync(merged.production.prepareSpeech),
       reopenQuestion: guardedAsync(merged.production.reopenQuestion),
       discardAttempt: guardedAsync(merged.production.discardAttempt),

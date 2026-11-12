@@ -24,6 +24,54 @@ export interface AcceptOptions {
 }
 
 /**
+ * AcceptedKit — то, как получено видео принятого плана, по снимку комплекта assets/shots/Mxx.
+ * Рабочий пакет попытки при приёмке удаляется, поэтому страница «Производство» показывает
+ * принятый план по комплекту: источник генерации, опоры, промпт и срез речи. Только чтение;
+ * пути — к существующим файлам комплекта. Поле отсутствующего в комплекте сведения — null.
+ */
+export interface AcceptedKit {
+    /**
+     * Provider — id провайдера видео из снимка запроса (generation-request.json).
+     */
+    "provider": string | null;
+
+    /**
+     * GenerationID — номер генерации у сервиса; null у ручной генерации и ручной загрузки.
+     */
+    "generationId": string | null;
+
+    /**
+     * ManualGeneration — manual_generation снимка запроса как есть: видео создано вне приложения.
+     */
+    "manualGeneration"?: json$0.RawMessage;
+
+    /**
+     * Prompt — текст видеопромпта, переданного в генерацию.
+     */
+    "prompt": string | null;
+
+    /**
+     * Images — изображения, переданные в генерацию (опоры), в порядке входов.
+     */
+    "images": string[];
+
+    /**
+     * Speech — срез речи речевого плана; null без него.
+     */
+    "speech": AcceptedSpeech | null;
+}
+
+/**
+ * AcceptedSpeech — WAV среза речи комплекта и его границы в песне из audio-recipe.json
+ * (null, если рецепта нет).
+ */
+export interface AcceptedSpeech {
+    "path": string;
+    "start": number | null;
+    "end": number | null;
+}
+
+/**
  * Asset — принятые материалы плана в assets/shots/Mxx: пути только к существующим файлам.
  */
 export interface Asset {

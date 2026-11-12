@@ -8,14 +8,38 @@ import { hasMinimumTimingLength } from '@shared/timing-validation';
 import { hitTimingBlock, timingDragPatch, timingWaveLayout, type TimingDragMode } from './timingWaveGeometry';
 import { timingPair, timingPairPatch, timingSelectionBounds, timingJoinBounds, timingZoomBounds, type TimingBounds } from './timingSelection';
 import { WAVE_TOP } from './timingWaveGeometry';
+import { timingSnap, timingSnapTargets } from './timingSnap';
 import { decodePeaks, drawWaveform, type Peaks } from './waveform';
 
 type Drag =
-  | { id: number; mode: TimingDragMode; offset: number; original: TimingLine }
-  | { mode: 'join'; ids: number[]; offset: number }
+  | { id: number; mode: TimingDragMode; offset: number; original: TimingLine; step: string }
+  | { mode: 'join'; ids: number[]; offset: number; step: string }
   | { mode: 'range'; start: number }
   | null;
 type Preview = 'selection' | 'join';
+
+/** Шаг точной подстройки границы с клавиатуры, с; с Ctrl — мелкий шаг. */
+export const TIMING_NUDGE_STEP = 0.05;
+export const TIMING_NUDGE_FINE_STEP = 0.01;
+const FOLLOW_KEY = 'songframe.timing.follow';
+const SNAP_KEY = 'songframe.timing.snap';
+
+/** Настройки вида шкалы запоминаются в браузере; недоступное хранилище оставляет значение по умолчанию. */
+function readFlag(key: string, fallback: boolean): boolean {
+  try {
+    const value = localStorage.getItem(key);
+    return value === null ? fallback : value === '1';
+  } catch {
+    return fallback;
+  }
+}
+function writeFlag(key: string, value: boolean): void {
+  try {
+    localStorage.setItem(key, value ? '1' : '0');
+  } catch {
+    /* хранилище недоступно: настройка действует до закрытия страницы */
+  }
+}
 type Range = { id: number; loop: boolean; selection?: { key: string; preview: Preview } };
 
 export interface TimingPlayerOptions {
@@ -28,7 +52,8 @@ export interface TimingPlayerOptions {
   sections: TimingSection[];
   selected: number | null;
   setSelected: (id: number | null) => void;
-  updateLine: (id: number, patch: Partial<TimingLine>) => void;
+  /** step объединяет правки одного жеста в один шаг отмены. */
+  updateLine: (id: number, patch: Partial<TimingLine>, step?: string) => void;
   busy: boolean;
   generating: boolean;
   generateOpen: boolean;
@@ -66,6 +91,23 @@ export function useTimingPlayer({
   const [selectionError, setSelectionError] = useState<string | null>(null);
   const [selectionPreview, setPreview] = useState<Preview>('selection');
   const [joinPadding, setPadding] = useState(0.7);
+  // Слежение прокручивает волну за плейхедом во время воспроизведения; на звук не влияет.
+  const [follow, setFollowState] = useState(() => readFlag(FOLLOW_KEY, true));
+  // Прилипание выключено по умолчанию: свободное перетаскивание остаётся обычным поведением.
+  const [snap, setSnapState] = useState(() => readFlag(SNAP_KEY, false));
+  const [snapGuide, setSnapGuide] = useState<number | null>(null);
+  const followRef = useRef(follow);
+  followRef.current = follow;
+  const setFollow = (value: boolean): void => {
+    setFollowState(value);
+    writeFlag(FOLLOW_KEY, value);
+  };
+  const setSnap = (value: boolean): void => {
+    setSnapState(value);
+    writeFlag(SNAP_KEY, value);
+  };
+  // Номера жестов: перетаскивание и серия автоповтора клавиши — по одному шагу отмены.
+  const stepSequence = useRef(0);
   const rangeSequence = useRef(0);
   const pausedByUser = useRef(false);
 
@@ -227,7 +269,7 @@ export function useTimingPlayer({
           }
         }
         const container = scrollRef.current;
-        if (!audio.paused && container) {
+        if (!audio.paused && container && followRef.current) {
           const x = audio.currentTime * pps;
           if (x < container.scrollLeft || x > container.scrollLeft + container.clientWidth - 40)
             container.scrollLeft = Math.max(0, x - container.clientWidth * 0.2);
@@ -253,12 +295,13 @@ export function useTimingPlayer({
       selectedIds: selectionIds,
       selectionBounds,
       join: pair?.join !== null && pair?.join !== undefined ? { time: pair.join, locked: pair.locked } : null,
+      guide: snapGuide,
       pps,
       time,
       mode: theme.palette.mode,
       layout
     });
-  }, [lines, peaks, pps, selected, selectionIds, selectionBounds, pair, theme.palette.mode, time, sections, layout]);
+  }, [lines, peaks, pps, selected, selectionIds, selectionBounds, pair, theme.palette.mode, time, sections, layout, snapGuide]);
 
   useEffect(() => {
     draw();
@@ -348,12 +391,12 @@ export function useTimingPlayer({
       if (hit) selectLine(hit.line.id, true);
     } else if (hitJoin(event.clientX, event.clientY) && pair && pair.join !== null) {
       // Закреплённый стык нельзя обойти переносом незакреплённой половины пары.
-      if (!pair.locked) dragRef.current = { mode: 'join', ids: [...selectionIds], offset: t - pair.join };
+      if (!pair.locked) dragRef.current = { mode: 'join', ids: [...selectionIds], offset: t - pair.join, step: `drag:${++stepSequence.current}` };
     } else if (hit) {
       selectLine(hit.line.id);
       if (hit.line.verified) return;
       const boundary = hit.mode === 'end' ? hit.line.end : hit.line.start;
-      dragRef.current = { id: hit.line.id, mode: hit.mode, offset: t - boundary, original: { ...hit.line } };
+      dragRef.current = { id: hit.line.id, mode: hit.mode, offset: t - boundary, original: { ...hit.line }, step: `drag:${++stepSequence.current}` };
     } else seek(t);
   };
 
@@ -381,22 +424,35 @@ export function useTimingPlayer({
       setRangeSelection((current) => (current ? { ...current, start: Math.min(drag.start, t), end: Math.max(drag.start, t) } : null));
       return;
     }
+    // Shift во время перетаскивания временно меняет режим прилипания на противоположный.
+    const snapping = snap !== event.shiftKey;
+    const pointer = timeAt(event.clientX, false);
     if (drag.mode === 'join') {
       const current = timingPair(linesRef.current, drag.ids);
-      const patches = current && timingPairPatch(current, timeAt(event.clientX, false) - drag.offset, duration);
-      if (patches) for (const { id, patch } of patches) updateLine(id, patch);
+      const snapped = snapping ? timingSnap([pointer - drag.offset], timingSnapTargets(linesRef.current, drag.ids, time), pps) : null;
+      setSnapGuide(snapped?.guide ?? null);
+      const patches = current && timingPairPatch(current, pointer - drag.offset + (snapped?.shift ?? 0), duration);
+      if (patches) for (const { id, patch } of patches) updateLine(id, patch, drag.step);
       return;
     }
     if (linesRef.current.find((line) => line.id === drag.id)?.verified) {
       dragRef.current = null;
+      setSnapGuide(null);
       return;
     }
-    const patch = timingDragPatch(drag.original, drag.mode, timeAt(event.clientX, false), drag.offset, linesRef.current, duration, manualMode);
-    if (patch) updateLine(drag.id, patch);
+    // Перенос строки прилипает ближайшим краем, изменение границы — только ею.
+    const proposed = pointer - drag.offset;
+    const length = drag.original.end - drag.original.start;
+    const edges = drag.mode === 'move' ? [proposed, proposed + length] : [proposed];
+    const snapped = snapping ? timingSnap(edges, timingSnapTargets(linesRef.current, [drag.id], time), pps) : null;
+    setSnapGuide(snapped?.guide ?? null);
+    const patch = timingDragPatch(drag.original, drag.mode, pointer + (snapped?.shift ?? 0), drag.offset, linesRef.current, duration, manualMode);
+    if (patch) updateLine(drag.id, patch, drag.step);
   };
 
   const onMouseUp = (): void => {
     dragRef.current = null;
+    setSnapGuide(null);
   };
 
   const onWheel = (event: WheelEvent): void => {
@@ -589,7 +645,9 @@ export function useTimingPlayer({
   useEffect(() => {
     const handler = (event: KeyboardEvent): void => {
       const target = event.target as HTMLElement | null;
-      if (busy || generating || generateOpen || event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
+      const horizontal = event.key === 'ArrowLeft' || event.key === 'ArrowRight';
+      // Ctrl допускается только у точной подстройки ←/→; остальные сочетания принадлежат системе и странице.
+      if (busy || generating || generateOpen || event.defaultPrevented || event.metaKey || event.altKey || (event.ctrlKey && !horizontal)) return;
       // Кнопки панели под волной (запуск, «Повторять», масштаб) после клика держат фокус, но относятся
       // к той же шкале: на них работают V, скобки и стрелки, а пробел и Enter остаются нажатием кнопки.
       const panelButton = !!target?.closest('[data-timing-shortcuts] button');
@@ -628,6 +686,21 @@ export function useTimingPlayer({
             for (const line of [currentPair.first, currentPair.second]) updateLineRef.current(line.id, { verified: !currentPair.locked });
           } else updateLineRef.current(current.id, { verified: !current.verified });
         }
+      } else if (horizontal && current && (selectionKind === 'line' || selectionKind === 'pair')) {
+        // ←/→ — начало строки, Shift — конец, у пары — общий стык; Ctrl уменьшает шаг.
+        event.preventDefault();
+        const delta = (event.key === 'ArrowLeft' ? -1 : 1) * (event.ctrlKey ? TIMING_NUDGE_FINE_STEP : TIMING_NUDGE_STEP);
+        const step = `nudge:${event.repeat ? stepSequence.current : ++stepSequence.current}`;
+        if (selectionKind === 'pair') {
+          const currentPair = timingPair(linesRef.current, selectionIds);
+          if (!currentPair || currentPair.join === null) return;
+          const patches = timingPairPatch(currentPair, currentPair.join + delta, duration);
+          if (patches) for (const { id, patch } of patches) updateLineRef.current(id, patch, step);
+          return;
+        }
+        const field = event.shiftKey ? 'end' : 'start';
+        const patch = timingDragPatch(current, field, current[field] + delta, 0, linesRef.current, duration, manualMode);
+        if (patch) updateLineRef.current(current.id, patch, step);
       } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
         const sorted = manualMode ? navigationLinesRef.current : [...navigationLinesRef.current].sort((a, b) => a.start - b.start);
         if (!sorted.length) return;
@@ -642,7 +715,7 @@ export function useTimingPlayer({
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected, selectionKey, selectionKind, selectionPreview, duration, pps, busy, generating, generateOpen, manualMode]);
+  }, [selected, selectionKey, selectionKind, selectionIds, selectionPreview, duration, pps, busy, generating, generateOpen, manualMode]);
 
   return {
     selectionIds,
@@ -666,6 +739,10 @@ export function useTimingPlayer({
     joinAtPlayhead,
     zoomAll,
     zoomSelection,
+    follow,
+    setFollow,
+    snap,
+    setSnap,
     selectLine,
     clearSelection,
     interactionDisabled,

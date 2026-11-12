@@ -34,6 +34,29 @@ import {
   type TimingCandidate
 } from './timingEditor';
 import { TimingLyricsEditor } from './components/TimingLyricsEditor';
+import { emptyTimingHistory, recordTimingStep, redoTimingStep, undoTimingStep } from './timingHistory';
+
+/** Черновик страницы, который возвращают отмена и повтор; выделение и звук в него не входят. */
+interface TimingSnapshot {
+  lines: TimingLine[];
+  candidates: TimingCandidate[];
+  lineOrder: number[];
+  sections: TimingSection[];
+  boundaryDrafts: TimingBoundaryDrafts;
+  dirty: boolean;
+}
+
+/** Состояния React неизменяемы: одинаковые ссылки означают тот же черновик. */
+function sameTimingSnapshot(a: TimingSnapshot, b: TimingSnapshot): boolean {
+  return (
+    a.lines === b.lines &&
+    a.candidates === b.candidates &&
+    a.lineOrder === b.lineOrder &&
+    a.sections === b.sections &&
+    a.boundaryDrafts === b.boundaryDrafts &&
+    a.dirty === b.dirty
+  );
+}
 
 export function TimingPage(): ReactElement {
   const { state, refresh, notify, describeError } = useApp();
@@ -86,8 +109,68 @@ export function TimingPage(): ReactElement {
 
   const editorRows = useMemo(() => editorTimingRows(view?.lyrics ?? [], lines, candidates, lineOrder), [view?.lyrics, lines, candidates, lineOrder]);
 
-  const updateLine = (id: number, patch: Partial<TimingLine>): void => {
+  // Отмена и повтор работают только в пределах несохранённого черновика: загрузка, сброс,
+  // автоматическая разметка и сохранение начинают историю заново.
+  const [history, setHistory] = useState(emptyTimingHistory<TimingSnapshot>);
+  const snapshot: TimingSnapshot = { lines, candidates, lineOrder, sections, boundaryDrafts, dirty };
+  /** Записывает черновик до правки; step объединяет правки одного жеста в один шаг. */
+  const record = (step: string | null = null): void => setHistory((current) => recordTimingStep(current, snapshot, step, sameTimingSnapshot));
+  const restore = (state: TimingSnapshot): void => {
+    setLines(state.lines);
+    setCandidates(state.candidates);
+    setLineOrder(state.lineOrder);
+    setSections(state.sections);
+    setBoundaryDrafts(state.boundaryDrafts);
+    setDirty(state.dirty);
+    setSaveProblems([]);
+  };
+  const undo = (): void => {
     if (busy || generating) return;
+    const result = undoTimingStep(history, snapshot);
+    if (!result) return;
+    setHistory(result.history);
+    restore(result.state);
+  };
+  const redo = (): void => {
+    if (busy || generating) return;
+    const result = redoTimingStep(history, snapshot);
+    if (!result) return;
+    setHistory(result.history);
+    restore(result.state);
+  };
+  const historyRef = useRef({ undo, redo });
+  historyRef.current = { undo, redo };
+
+  // Ctrl+Z и Ctrl+Shift+Z/Ctrl+Y страницы; в полях ввода и диалогах остаётся собственная отмена поля.
+  useEffect(() => {
+    const handler = (event: KeyboardEvent): void => {
+      if (!(event.ctrlKey || event.metaKey) || event.altKey || event.defaultPrevented) return;
+      const redoKey = event.code === 'KeyY' || (event.code === 'KeyZ' && event.shiftKey);
+      if (event.code !== 'KeyZ' && !redoKey) return;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]')) return;
+      event.preventDefault();
+      if (redoKey) historyRef.current.redo();
+      else historyRef.current.undo();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  const updateLine = (id: number, patch: Partial<TimingLine>, step?: string): void => {
+    if (busy || generating) return;
+    const row = editorRows.find((line) => line.id === id);
+    if (!row) return;
+    if (patch.verified && !canVerifyEditorLine({ ...row, ...patch })) return;
+    const candidate = candidates.find((item) => item.source_line === id);
+    const noteOnly = Object.keys(patch).every((key) => key === 'note');
+    // Предложение становится разметкой только после правки границ или явного подтверждения.
+    const adopt = patch.start !== undefined || patch.end !== undefined || patch.verified === true;
+    // Снятие подтверждения смешанной пары не принимает её кандидата: иначе копия в lines
+    // заслонит следующие изменения заметки, единственным владельцем которой остаётся candidates.
+    if (candidate && !noteOnly && !adopt) return;
+    // Набор заметки — один шаг на строку, как ввод в одно поле.
+    record(step ?? (noteOnly ? `note:${id}` : null));
     setSaveProblems([]);
     if (patch.start !== undefined || patch.end !== undefined)
       setBoundaryDrafts((current) => {
@@ -97,21 +180,12 @@ export function TimingPage(): ReactElement {
         if (!Object.keys(next[id]).length) delete next[id];
         return next;
       });
-    const row = editorRows.find((line) => line.id === id);
-    if (!row) return;
-    if (patch.verified && !canVerifyEditorLine({ ...row, ...patch })) return;
-    const candidate = candidates.find((item) => item.source_line === id);
-    if (candidate && Object.keys(patch).every((key) => key === 'note')) {
+    if (candidate && noteOnly) {
       // Заметка уточняет сомнительное предложение, но сама не принимает его границы.
       setCandidates((current) => current.map((item) => (item.source_line === id ? { ...item, note: patch.note } : item)));
       setDirty(true);
       return;
     }
-    // Предложение становится разметкой только после правки границ или явного подтверждения.
-    const adopt = patch.start !== undefined || patch.end !== undefined || patch.verified === true;
-    // Снятие подтверждения смешанной пары не принимает её кандидата: иначе копия в lines
-    // заслонит следующие изменения заметки, единственным владельцем которой остаётся candidates.
-    if (candidate && !adopt) return;
     const updated = { ...row, ...patch };
     const normalized = patch.verified === undefined ? updated : withTimingVerification(updated);
     setLines((current) => [...current.filter((line) => line.id !== id), normalized]);
@@ -121,7 +195,7 @@ export function TimingPage(): ReactElement {
 
   const onBoundaryInput = (id: number, field: 'start' | 'end', text: string): void => {
     if (busy || generating) return;
-    updateLine(id, { [field]: parseTimingBoundary(text), verified: false });
+    updateLine(id, { [field]: parseTimingBoundary(text), verified: false }, `input:${id}:${field}`);
     setBoundaryDrafts((current) => ({ ...current, [id]: { ...current[id], [field]: text } }));
     setSaveProblems([]);
     setDirty(true);
@@ -153,6 +227,7 @@ export function TimingPage(): ReactElement {
   const confirmAll = (): void => {
     if (busy || generating) return;
     const valid = editorRows.filter(canVerifyEditorLine);
+    record();
     setLines((current) => [...current.filter((line) => !valid.some((row) => row.id === line.id)), ...valid.map((line) => withTimingVerification(line, true))]);
     setCandidates((current) => current.filter((candidate) => !valid.some((line) => line.source_line === candidate.source_line)));
     setDirty(true);
@@ -176,6 +251,7 @@ export function TimingPage(): ReactElement {
     setBoundaryDrafts({});
     setSaveProblems([]);
     setSelected(null);
+    setHistory(emptyTimingHistory());
   }, [project]);
 
   useEffect(() => {
@@ -186,6 +262,7 @@ export function TimingPage(): ReactElement {
 
   const removeLine = (id: number): void => {
     player.stopLine();
+    record();
     setLines((current) => current.filter((l) => l.id !== id));
     setCandidates((current) => current.filter((candidate) => candidate.source_line !== id));
     setBoundaryDrafts((current) => {
@@ -209,6 +286,7 @@ export function TimingPage(): ReactElement {
       .filter((line) => Number.isFinite(line.start) && Number.isFinite(line.end) && line.end >= line.start)
       .sort((a, b) => a.start - b.start)
       .map((line, index) => ({ ...line, id: index + 1 }));
+    record();
     setSections(buildSections(view.lyrics, ordered, duration || null, candidates));
     setDirty(true);
     notify(timingTexts.sectionsRecalculated, 'info');
@@ -244,6 +322,7 @@ export function TimingPage(): ReactElement {
       setBoundaryDrafts({});
       setSaveProblems([]);
       setDirty(false);
+      setHistory(emptyTimingHistory());
       await refresh();
       notify(timingTexts.saved, 'success');
     } catch (error) {
@@ -487,7 +566,14 @@ export function TimingPage(): ReactElement {
         </Typography>
       ) : null}
 
-      {view.trackPath ? <TimingPlayer player={player} lines={lines} stickyTop={headerHeight + toolbarHeight} /> : null}
+      {view.trackPath ? (
+        <TimingPlayer
+          player={player}
+          lines={lines}
+          stickyTop={headerHeight + toolbarHeight}
+          history={{ canUndo: history.undo.length > 0, canRedo: history.redo.length > 0, onUndo: undo, onRedo: redo }}
+        />
+      ) : null}
       <TimingLyricsEditor
         lyrics={view.lyrics}
         filter={editorFilter}
@@ -510,6 +596,7 @@ export function TimingPage(): ReactElement {
         onLoop={player.toggleLoop}
         onRemove={removeLine}
         onOrder={(order) => {
+          record();
           setLineOrder(order);
           setDirty(true);
         }}

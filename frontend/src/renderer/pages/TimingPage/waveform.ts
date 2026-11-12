@@ -80,6 +80,8 @@ interface WaveformOptions {
   selectedIds?: number[];
   selectionBounds?: TimingBounds | null;
   join?: { time: number; locked: boolean } | null;
+  /** Направляющая прилипания: время цели, к которой притянута граница. */
+  guide?: number | null;
   pps: number;
   time: number;
   mode: 'light' | 'dark';
@@ -97,6 +99,7 @@ export function drawWaveform({
   selectedIds = [],
   selectionBounds = null,
   join = null,
+  guide = null,
   pps,
   time,
   mode,
@@ -240,6 +243,20 @@ export function drawWaveform({
     ctx.fill();
   }
 
+  // Направляющая прилипания — пунктир поверх волны и строк.
+  if (guide !== null && Number.isFinite(guide)) {
+    const gx = toX(guide);
+    if (gx >= 0 && gx <= width) {
+      ctx.strokeStyle = dark ? '#7cc4ff' : '#1565c0';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.moveTo(gx, 0);
+      ctx.lineTo(gx, canvasHeight);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
   // Плейхед.
   const px = toX(time);
   if (px >= 0 && px <= width) {

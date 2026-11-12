@@ -2,17 +2,19 @@ import { timingTexts } from '@shared/texts/timing';
 import type { ReactElement } from 'react';
 import { Alert, Box, Paper, Typography } from '@mui/material';
 import type { TimingLine } from '@shared/types';
-import { TimingSelectionControls } from './TimingSelectionControls';
+import { TimingSelectionControls, type TimingHistoryControls } from './TimingSelectionControls';
 import type { TimingPlayerController } from '../useTimingPlayer';
 
 interface TimingPlayerProps {
   player: TimingPlayerController;
   lines: TimingLine[];
   stickyTop: number;
+  /** Отмена и повтор правок страницы; без них кнопки не показываются. */
+  history?: TimingHistoryControls;
 }
 
 /** Прослушивание и волновая форма связаны со строками разметки. */
-export function TimingPlayer({ player, stickyTop }: TimingPlayerProps): ReactElement {
+export function TimingPlayer({ player, stickyTop, history }: TimingPlayerProps): ReactElement {
   const {
     trackUrl,
     audioRef,
@@ -73,7 +75,7 @@ export function TimingPlayer({ player, stickyTop }: TimingPlayerProps): ReactEle
         <Box sx={{ width: `${Math.max(1, duration * pps)}px`, height: '1px' }} />
         <canvas ref={canvasRef} style={{ position: 'sticky', left: 0, top: 0, display: 'block', height: canvasHeight, width: '100%', marginTop: -1 }} />
       </Box>
-      <TimingSelectionControls player={player} />
+      <TimingSelectionControls player={player} history={history} />
       {player.lockedLineId !== null && !player.pair && (
         <Alert severity="info" sx={{ mt: 1 }}>
           {timingTexts.lockedLine({ id: player.lockedLineId })}

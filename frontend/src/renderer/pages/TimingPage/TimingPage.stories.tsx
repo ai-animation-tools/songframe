@@ -781,6 +781,126 @@ export const PairJoinRoundTrip: Story = {
   }
 };
 
+export const GestureUndoAndNudge: Story = {
+  tags: ['ci'],
+  name: 'Отмена жеста · Ctrl+Z и кнопки · точная подстройка ←/→ без записи файла',
+  parameters: { songframe: timingPageOptions({ selection: 'joined-pair' }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const selection = await readySelectionWave(canvasElement);
+    const field = (kind: 'start' | 'end', id: number) =>
+      canvas.getByRole('textbox', { name: kind === 'start' ? timingTexts.lineStart({ id }) : timingTexts.lineEnd({ id }) });
+    const blur = () => (canvasElement.ownerDocument.activeElement as HTMLElement | null)?.blur();
+    // Кнопки перестраиваются при смене доступности: каждый раз берём текущий элемент.
+    const undo = () => canvas.getByRole('button', { name: selectionTexts.undo });
+    const redo = () => canvas.getByRole('button', { name: selectionTexts.redo });
+    await expect(undo()).toBeDisabled();
+    await expect(redo()).toBeDisabled();
+
+    // Перенос общей ручки меняет две строки за много движений мыши — это один шаг отмены.
+    await selection.pair();
+    await selection.input.pointer([
+      { target: selection.wave, coords: selection.point(1.2), keys: '[MouseLeft>]' },
+      { target: selection.wave, coords: selection.point(1.3) },
+      { target: selection.wave, coords: selection.point(1.4) },
+      { target: selection.wave, coords: selection.point(1.5) },
+      { target: selection.wave, coords: selection.point(1.5), keys: '[/MouseLeft]' }
+    ]);
+    await waitFor(() => expect(field('end', 2)).toHaveValue('1.5'));
+    await waitFor(() => expect(canvas.getByText(selectionTexts.joinReady({ time: '1.50' }))).toBeVisible());
+    blur();
+    await selection.input.keyboard('{Control>}z{/Control}');
+    await waitFor(() => expect(field('end', 2)).toHaveValue('1.2'));
+    await waitFor(() => expect(canvas.getByText(selectionTexts.joinReady({ time: '1.20' }))).toBeVisible());
+    // Возврат к исходному черновику снимает признак несохранённых правок.
+    await waitFor(() => expect(canvas.getByRole('button', { name: commonTexts.save })).toBeDisabled());
+    await expect(undo()).toBeDisabled();
+    await selection.input.keyboard('{Control>}{Shift>}z{/Shift}{/Control}');
+    await waitFor(() => expect(field('end', 2)).toHaveValue('1.5'));
+    await userEvent.click(undo());
+    await waitFor(() => expect(field('end', 2)).toHaveValue('1.2'));
+    await userEvent.click(redo());
+    await waitFor(() => expect(canvas.getByText(selectionTexts.joinReady({ time: '1.50' }))).toBeVisible());
+
+    // ←/→ двигают общий стык пары на 0,05 с, Ctrl — на 0,01 с; каждое нажатие — свой шаг.
+    blur();
+    await selection.input.keyboard('{ArrowRight}');
+    await waitFor(() => expect(field('end', 2)).toHaveValue('1.55'));
+    await selection.input.keyboard('{Control>}{ArrowLeft}{/Control}');
+    await waitFor(() => expect(canvas.getByText(selectionTexts.joinReady({ time: '1.54' }))).toBeVisible());
+    await selection.input.keyboard('{Control>}z{/Control}');
+    await waitFor(() => expect(field('end', 2)).toHaveValue('1.55'));
+
+    // Одна строка: ←/→ — начало, Shift+←/→ — конец.
+    await selection.click(0.6);
+    await expect(canvas.getByText(selectionTexts.line({ id: 2 }))).toBeVisible();
+    blur();
+    await selection.input.keyboard('{ArrowLeft}');
+    await waitFor(() => expect(field('start', 2)).toHaveValue('0.25'));
+    await selection.input.keyboard('{Shift>}{ArrowLeft}{/Shift}');
+    await waitFor(() => expect(field('end', 2)).toHaveValue('1.5'));
+    await expect(timingPageInspection().requests).toHaveLength(0);
+
+    // Сохранение начинает историю заново: отменять в сохранённый файл нечего.
+    await userEvent.click(canvas.getByRole('button', { name: commonTexts.save }));
+    await waitFor(() => expect(timingPageInspection().requests).toHaveLength(1));
+    await expect(timingPageInspection().saved.timing?.lines[0]).toMatchObject({ source_line: 2, start: 0.25, end: 1.5 });
+    await waitFor(() => expect(canvas.getByRole('button', { name: selectionTexts.undo })).toBeDisabled());
+  }
+};
+
+export const SnapAndFollow: Story = {
+  tags: ['ci'],
+  name: 'Прилипание к плейхеду · Shift временно отключает · слежение за воспроизведением',
+  parameters: { songframe: timingPageOptions({ selection: 'joined-pair' }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const selection = await readySelectionWave(canvasElement);
+    const snap = canvas.getByRole('switch', { name: selectionTexts.snap });
+    const follow = canvas.getByRole('switch', { name: selectionTexts.follow });
+    await expect(snap).not.toBeChecked();
+    await expect(follow).toBeChecked();
+    selection.audio.currentTime = 1.53;
+    await waitFor(() => expect(canvas.getByText(/^0:01\.5/)).toBeVisible());
+
+    // Без прилипания граница встаёт ровно под мышь.
+    await selection.pair();
+    await selection.drag(1.2, 1.5);
+    await waitFor(() => expect(canvas.getByRole('textbox', { name: timingTexts.lineEnd({ id: 2 }) })).toHaveValue('1.5'));
+    await userEvent.click(snap);
+    await expect(snap).toBeChecked();
+    // С прилипанием стык притягивается к плейхеду, который ближе 8 px.
+    await selection.drag(1.5, 1.45);
+    await waitFor(() => expect(canvas.getByRole('textbox', { name: timingTexts.lineEnd({ id: 2 }) })).toHaveValue('1.53'));
+    // Shift, нажатый после захвата, на время жеста возвращает свободный перенос.
+    await selection.input.pointer([{ target: selection.wave, coords: selection.point(1.53), keys: '[MouseLeft>]' }]);
+    await selection.input.keyboard('{Shift>}');
+    await selection.input.pointer([
+      { target: selection.wave, coords: selection.point(1.48) },
+      { target: selection.wave, coords: selection.point(1.48), keys: '[/MouseLeft]' }
+    ]);
+    await selection.input.keyboard('{/Shift}');
+    await waitFor(() => expect(canvas.getByRole('textbox', { name: timingTexts.lineEnd({ id: 2 }) })).toHaveValue('1.48'));
+    await userEvent.click(snap);
+
+    // Без слежения волна стоит на месте, пока плейхед уходит за край; включение возвращает прокрутку.
+    await userEvent.click(follow);
+    await expect(follow).not.toBeChecked();
+    const scale = canvas.getByRole('slider', { name: selectionTexts.timelineScale });
+    scale.focus();
+    await userEvent.keyboard('{End}');
+    selection.scroller.scrollLeft = 0;
+    selection.scroller.dispatchEvent(new Event('scroll'));
+    selection.audio.currentTime = 6;
+    await selection.audio.play();
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    await expect(selection.scroller.scrollLeft).toBe(0);
+    await userEvent.click(follow);
+    await waitFor(() => expect(selection.scroller.scrollLeft).toBeGreaterThan(0));
+    selection.audio.pause();
+  }
+};
+
 export const MixedCandidatePairNoteRoundTrip: Story = {
   tags: ['ci'],
   name: 'Смешанная пара · V не принимает кандидата · новая заметка · подтверждение · Save',

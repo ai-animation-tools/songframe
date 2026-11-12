@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { Alert, Box, Slider, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, FormControlLabel, Slider, Stack, Switch, TextField, Tooltip, Typography } from '@mui/material';
 import PauseIcon from '@mui/icons-material/Pause';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import RepeatIcon from '@mui/icons-material/Repeat';
@@ -9,6 +9,8 @@ import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import JoinInnerIcon from '@mui/icons-material/JoinInner';
 import HeadphonesIcon from '@mui/icons-material/Headphones';
 import SelectAllIcon from '@mui/icons-material/SelectAll';
+import UndoIcon from '@mui/icons-material/Undo';
+import RedoIcon from '@mui/icons-material/Redo';
 import { timingSelectionTexts as texts } from '@shared/texts/timing-selection';
 import { ActionButton } from '../../../components/ActionButton';
 import { ActionIconButton } from '../../../components/ActionIconButton';
@@ -16,12 +18,21 @@ import { VolumeSlider } from '../../../components/VolumeSlider';
 import { formatClock } from '../../../format';
 import type { TimingPlayerController } from '../useTimingPlayer';
 
+/** Отмена и повтор принадлежат странице: история охватывает и правки в списке строк. */
+export interface TimingHistoryControls {
+  canUndo: boolean;
+  canRedo: boolean;
+  onUndo(): void;
+  onRedo(): void;
+}
+
 interface TimingSelectionControlsProps {
   player: TimingPlayerController;
+  history?: TimingHistoryControls;
 }
 
 /** Одна панель под волной управляет текущим выделением; масштаб меняет только видимую область. */
-export function TimingSelectionControls({ player }: TimingSelectionControlsProps): ReactElement {
+export function TimingSelectionControls({ player, history }: TimingSelectionControlsProps): ReactElement {
   const {
     trackUrl,
     playing,
@@ -49,6 +60,10 @@ export function TimingSelectionControls({ player }: TimingSelectionControlsProps
     zoomAll,
     zoomSelection,
     clearSelection,
+    follow,
+    setFollow,
+    snap,
+    setSnap,
     interactionDisabled
   } = player;
   const selected = selectionKind !== 'none';
@@ -85,6 +100,30 @@ export function TimingSelectionControls({ player }: TimingSelectionControlsProps
         </Typography>
         <VolumeSlider volume={volume} onChange={setVolume} />
         <Box sx={{ flex: 1 }} />
+        {history && (
+          <Stack direction="row" spacing={0.5}>
+            <ActionIconButton
+              size="small"
+              aria-label={texts.undo}
+              title={texts.undoHint}
+              disabled={interactionDisabled || !history.canUndo}
+              disabledReason={interactionDisabled ? texts.operationPending : texts.nothingToUndo}
+              onClick={history.onUndo}
+            >
+              <UndoIcon fontSize="small" />
+            </ActionIconButton>
+            <ActionIconButton
+              size="small"
+              aria-label={texts.redo}
+              title={texts.redoHint}
+              disabled={interactionDisabled || !history.canRedo}
+              disabledReason={interactionDisabled ? texts.operationPending : texts.nothingToRedo}
+              onClick={history.onRedo}
+            >
+              <RedoIcon fontSize="small" />
+            </ActionIconButton>
+          </Stack>
+        )}
         <Slider
           aria-label={texts.timelineScale}
           size="small"
@@ -136,6 +175,22 @@ export function TimingSelectionControls({ player }: TimingSelectionControlsProps
           </ActionIconButton>
         )}
         <Box sx={{ flex: 1 }} />
+        <Stack direction="row" spacing={2} sx={{ mr: 1 }}>
+          <Tooltip title={texts.followHint} describeChild>
+            <FormControlLabel
+              control={<Switch size="small" checked={follow} onChange={(_event, checked) => setFollow(checked)} />}
+              label={<Typography variant="body2">{texts.follow}</Typography>}
+              sx={{ mr: 0 }}
+            />
+          </Tooltip>
+          <Tooltip title={texts.snapHint} describeChild>
+            <FormControlLabel
+              control={<Switch size="small" checked={snap} onChange={(_event, checked) => setSnap(checked)} />}
+              label={<Typography variant="body2">{texts.snap}</Typography>}
+              sx={{ mr: 0 }}
+            />
+          </Tooltip>
+        </Stack>
         <ActionButton
           size="small"
           startIcon={<RepeatIcon />}

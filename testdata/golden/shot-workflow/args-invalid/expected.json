@@ -1,7 +1,7 @@
 {
   "code": 2,
   "stdout": "",
-  "stderr": "использование: shot_workflow [-h]\n                             {init,plan-keyframes,approve,approve-prompt,set-stage,set-image-request,select-image,park,propose,ask,decide,reopen,set-note,show,check}\n                             ...\nshot_workflow: ошибка: аргумент action: недопустимое значение 'bad' (допустимо: 'init', 'plan-keyframes', 'approve', 'approve-prompt', 'set-stage', 'set-image-request', 'select-image', 'park', 'propose', 'ask', 'decide', 'reopen', 'set-note', 'show', 'check')\n",
+  "stderr": "использование: shot_workflow [-h]\n                             {init,plan-keyframes,approve,approve-prompt,set-stage,set-image-request,select-image,park,propose,ask,decide,reopen,reopen-prompt,set-note,show,check}\n                             ...\nshot_workflow: ошибка: аргумент action: недопустимое значение 'bad' (допустимо: 'init', 'plan-keyframes', 'approve', 'approve-prompt', 'set-stage', 'set-image-request', 'select-image', 'park', 'propose', 'ask', 'decide', 'reopen', 'reopen-prompt', 'set-note', 'show', 'check')\n",
   "unhandled": false,
   "files": {},
   "dirs": {},

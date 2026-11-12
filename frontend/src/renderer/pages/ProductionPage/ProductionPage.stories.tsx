@@ -737,3 +737,72 @@ export const UnknownSubmissionWarning: Story = {
     await expect(screen.getByRole('button', { name: texts.packageResume.notCreated })).toBeEnabled();
   }
 };
+
+/** Предел промпта провайдера в историях: короче настоящего, чтобы промпт образца его превышал. */
+const STORY_PROMPT_LIMIT = 40;
+
+/** Видеопромпт агента на согласовании длиннее предела провайдера. */
+function overLimitShots(): ShotProduction[] {
+  const source = preparedPackage();
+  const text = 'Камера плавно приближается к старым воротам, свет в окне медленно разгорается.';
+  const review = {
+    ...source,
+    stage: 'prompt_review',
+    stageLabel: 'Видеопромпт на согласовании',
+    request: null,
+    keyframes: source.keyframes.map((frame) => ({ ...frame, approved: true })),
+    prompt: { path: `${source.dir}/video-prompt.txt`, approved: false, text },
+    pendingDecision: { stage: 'prompt_review', question: 'Утвердить видеопромпт?', options: ['approve', 'revise'], asked_at: '2026-11-12T10:00:00Z' }
+  };
+  return baseShots({ stageLabel: review.stageLabel, attention: review.pendingDecision.question, packages: [review] });
+}
+
+export const PromptOverLimit: Story = {
+  tags: ['ci'],
+  name: 'Видеопромпт сверх предела · утвердить нельзя, доработка с подсказкой',
+  parameters: { songframe: options({ shots: overLimitShots, promptMaxChars: STORY_PROMPT_LIMIT }) },
+  play: async (context) => {
+    const screen = screenOf(context);
+    await expect(await screen.findByText(texts.promptLimit.title, {}, POLL_TIMEOUT)).toBeInTheDocument();
+    const step = within(planStep(context, 'prompt'));
+    const chars = Array.from('Камера плавно приближается к старым воротам, свет в окне медленно разгорается.').length;
+    const over = { chars, limit: STORY_PROMPT_LIMIT };
+    await expect(step.getByText(texts.promptLimit.description({ ...over, provider: testProviderInfo.title }))).toBeInTheDocument();
+    // Утверждение недоступно с причиной; доработка открывает поле с готовым замечанием о сокращении.
+    await expect(step.getByRole('button', { name: texts.verdictLabels.approve })).toBeDisabled();
+    await userEvent.click(step.getByRole('button', { name: texts.verdictLabels.revise }));
+    await expect(step.getByRole('textbox', { name: texts.packageDecision.note })).toHaveValue(texts.promptLimit.reviseNote(over));
+    await expect(counts(context)).toHaveTextContent('Ответов: 0.');
+  }
+};
+
+export const PromptReopenFromRequest: Story = {
+  tags: ['ci'],
+  name: 'Возврат видеопромпта с этапа запроса · описание и опоры остаются',
+  parameters: {
+    songframe: options({ shots: () => baseShots({ stageLabel: 'Запрос подготовлен', attention: null, packages: [preparedPackage()] }) })
+  },
+  play: async (context) => {
+    const screen = screenOf(context);
+    const dialogTexts = texts.promptReopenDialog;
+    const step = within(
+      await waitFor(() => {
+        const found = planStep(context, 'prompt');
+        if (!found) throw new Error('Шаг «Видеопромпт» ещё не показан.');
+        return found;
+      }, POLL_TIMEOUT)
+    );
+    // Пройденный шаг свёрнут: открываем его, чтобы вернуть промпт.
+    await userEvent.click(await step.findByRole('button', { name: new RegExp(steps.titles.prompt) }, POLL_TIMEOUT));
+    await userEvent.click(await step.findByRole('button', { name: dialogTexts.confirm }));
+    const dialog = within(await screen.findByRole('dialog', { name: dialogTexts.title }));
+    await expect(dialog.getByText(dialogTexts.description({ request: 'video-01' }))).toBeInTheDocument();
+    await expect(dialog.getByRole('button', { name: dialogTexts.confirm })).toBeDisabled();
+    await userEvent.type(dialog.getByRole('textbox', { name: dialogTexts.note }), 'убрать титры');
+    // Доступная кнопка отрисовывается заново (без обёртки причины), поэтому ищется после ввода.
+    await userEvent.click(dialog.getByRole('button', { name: dialogTexts.confirm }));
+    await expect(await screen.findByText(texts.useProductionPage.promptReopened, {}, POLL_TIMEOUT)).toBeInTheDocument();
+    await waitFor(() => expect(counts(context)).toHaveTextContent('Возвратов промпта: убрать титры.'), POLL_TIMEOUT);
+    await waitFor(() => expect(planStep(context, 'prompt')).toHaveTextContent(/не принят/), POLL_TIMEOUT);
+  }
+};

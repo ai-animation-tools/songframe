@@ -8,6 +8,8 @@ import type { ProductionProposal } from '@shared/production-workflow';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import { PRODUCTION_PASS_LABELS } from '../constants';
 import { ProductionProposalPreview, ProposalActions } from './ProductionProposalPreview';
+import { PromptLimitAlert } from './PromptLimitAlert';
+import { promptOverLimit } from '../promptLimit';
 
 export function ProductionProposalDialog({
   proposal,
@@ -15,6 +17,7 @@ export function ProductionProposalDialog({
   videoProvider = null,
   busy,
   error,
+  promptMaxChars,
   onApply,
   onRevise,
   onDiscard
@@ -24,6 +27,8 @@ export function ProductionProposalDialog({
   videoProvider?: string | null;
   busy: boolean;
   error?: string | null;
+  /** Предел длины видеопромпта провайдера: предложенный промпт длиннее него принять нельзя. */
+  promptMaxChars?: number;
   onApply(): Promise<boolean>;
   /** Замечание и запуск доработки агентом: одно действие над этим предложением. */
   onRevise(note: string): Promise<boolean>;
@@ -32,6 +37,8 @@ export function ProductionProposalDialog({
   const [open, setOpen] = useState(false);
   const [reviseNote, setReviseNote] = useState<string | null>(null);
   const titleId = useId();
+  const after = proposal.after;
+  const overLimit = after?.stage === 'prompt' ? promptOverLimit(after.prompt, promptMaxChars) : null;
   const apply = async (): Promise<void> => {
     if (await onApply()) setOpen(false);
   };
@@ -62,6 +69,11 @@ export function ProductionProposalDialog({
             <Alert severity="error" sx={{ mb: 2 }}>
               {error}
             </Alert>
+          ) : null}
+          {overLimit ? (
+            <Box sx={{ mb: 2 }}>
+              <PromptLimitAlert over={overLimit} videoProvider={videoProvider} />
+            </Box>
           ) : null}
           <ProductionProposalPreview
             proposal={proposal}
@@ -98,7 +110,8 @@ export function ProductionProposalDialog({
             busy={busy}
             revising={reviseNote !== null}
             reviseNote={reviseNote ?? ''}
-            onReviseOpen={() => setReviseNote('')}
+            applyBlockedReason={overLimit ? productionTexts.promptLimit.approveReason(overLimit) : null}
+            onReviseOpen={() => setReviseNote(overLimit ? productionTexts.promptLimit.reviseNote(overLimit) : '')}
             onRevise={() => void revise()}
             onApply={apply}
             onDiscard={discard}

@@ -93,7 +93,7 @@ func (klingAdapter) FrozenFields() *toolrt.Dict { return (&kling.Adapter{}).Froz
 
 func (klingAdapter) TaskTraceID() bool { return (&kling.Adapter{}).TaskTraceID() }
 
-// PromptWarningChars — длина промпта Kling, сверх которой shot_workflow предупреждает.
+// PromptWarningChars — предел длины промпта Kling: длиннее него shot_workflow не утверждает видеопромпт.
 func (klingAdapter) PromptWarningChars() int { return kling.PromptWarningChars }
 
 func (klingAdapter) PricingData() []byte { return (&kling.Adapter{}).PricingFile() }

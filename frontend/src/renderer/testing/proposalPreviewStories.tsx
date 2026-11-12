@@ -14,6 +14,8 @@ export interface ProposalPreviewStoryProps {
   failFirst?: boolean;
   dialog?: boolean;
   delay?: number;
+  /** Предел видеопромпта провайдера для окна предложения. */
+  promptMaxChars?: number;
 }
 
 function savedText(value: string | ProductionStageProposal): string {
@@ -30,7 +32,14 @@ function savedText(value: string | ProductionStageProposal): string {
   }
 }
 
-export function ProposalPreviewStory({ initialProposal, busy = false, failFirst = false, dialog = false, delay = 250 }: ProposalPreviewStoryProps) {
+export function ProposalPreviewStory({
+  initialProposal,
+  busy = false,
+  failFirst = false,
+  dialog = false,
+  delay = 250,
+  promptMaxChars
+}: ProposalPreviewStoryProps) {
   const [proposal, setProposal] = useState<ProductionProposal | null>(() => structuredClone(initialProposal ?? workflowProposal()));
   const [saved, setSaved] = useState<string | ProductionStageProposal>(() => (initialProposal ?? workflowProposal()).before);
   const [running, setRunning] = useState(false);
@@ -95,6 +104,8 @@ export function ProposalPreviewStory({ initialProposal, busy = false, failFirst 
             key={epoch}
             proposal={proposal}
             provider="codex"
+            videoProvider="test"
+            promptMaxChars={promptMaxChars}
             busy={locked}
             error={notice?.error ? notice.text : null}
             onApply={() => run('apply')}

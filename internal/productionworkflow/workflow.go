@@ -178,6 +178,9 @@ type View struct {
 	// ручной генерации. CanBuildManual — пакет можно собрать сейчас.
 	Manual         bool `json:"manual,omitempty"`
 	CanBuildManual bool `json:"canBuildManual,omitempty"`
+	// PromptMaxChars — предел длины видеопромпта провайдера (Context.PromptLimit): длиннее него
+	// промпт не утверждается; 0 — предела нет.
+	PromptMaxChars int `json:"promptMaxChars,omitempty"`
 	// Paid — попытка пакета уже оплачена: дальше только новая попытка или возврат с замечанием.
 	Paid bool `json:"paid"`
 	// ImageProvider и VideoProvider — generation.image.provider и generation.video.provider
@@ -304,7 +307,7 @@ func (w *Workflow) view(project, shot, packageDir string) (View, error) {
 			Frames:   optional(framesReason(c, derived, common, imagePhase, framesApproved, descriptionApproved || frameRevision, undecided)),
 			Manual:   optional(manual),
 		},
-		Manual: c.Manual, CanBuildManual: c.Manual && manual == "" && !pending && !proposalPending && !busy,
+		Manual: c.Manual, CanBuildManual: c.Manual && manual == "" && !pending && !proposalPending && !busy, PromptMaxChars: c.PromptLimit(),
 		CanPrepare: derived == "" && !busy && !imagePhase && scenarioApproved && len(c.Problems) == 0,
 		CanContinue: derived == "" && !c.SceneChanged && enabled && !imagePhase && nextStage != "" && nextStage != "description" &&
 			!(nextStage == "request" && speechMismatch != ""),
@@ -725,6 +728,9 @@ func (w *Workflow) launch(ctx context.Context, input StartInput, prepared *prepa
 	prompt := agentPrompt(stage, c.Settings.Value("provider"), dynvalue.Get(dynvalue.Get(generation, "image"), "provider"))
 	contextInput := contextInput{stage: stage, briefs: briefs, description: nil, prompt: nil, lipSync: rules.LipSync, manual: rules.Manual, capabilities: capabilities,
 		capabilitiesProblem: capabilitiesProblem, inputFlags: []string{}}
+	if stage == "prompt" {
+		contextInput.promptMaxChars = c.PromptLimit()
+	}
 	before := ""
 	if c.PackageDir != "" {
 		description, err := readText(filepath.Join(c.PackageDir, "description.md"))

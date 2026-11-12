@@ -113,3 +113,15 @@ func Register(id string, info Info) (restore func()) {
 		ids = slices.DeleteFunc(ids, func(item string) bool { return item == id })
 	}
 }
+
+// ManualVideo — план с отметкой липсинка у провайдера видео без липсинка (LipSync == nil)
+// делается ручной генерацией вне приложения: видео создаёт пользователь по пакету попытки.
+// Неизвестный провайдер или план без липсинка — false.
+func ManualVideo(provider any, lipsync bool) bool {
+	id, ok := provider.(string)
+	if !lipsync || !ok || !Supports(id, Video) {
+		return false
+	}
+	info, ok := Lookup(id)
+	return ok && info.LipSync == nil
+}

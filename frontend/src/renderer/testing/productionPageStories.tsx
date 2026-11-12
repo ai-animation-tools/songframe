@@ -72,6 +72,8 @@ export interface ProductionPageModelOptions {
   receiving?: boolean;
   /** Провайдер видео без липсинка: речевой план идёт ручной генерацией по пакету, с пошаговой инструкцией в реестре. */
   manual?: boolean;
+  /** Предел длины видеопромпта провайдера (ProductionWorkflowView.promptMaxChars). */
+  promptMaxChars?: number;
 }
 
 interface PageModel {
@@ -90,6 +92,7 @@ interface PageModel {
   reviewCancels: number;
   manualBuilds: number;
   manualUploads: number;
+  promptReopens: string[];
   subscribe(listener: () => void): () => void;
   revision(): number;
 }
@@ -142,6 +145,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
         reviewCancels: 0,
         manualBuilds: 0,
         manualUploads: 0,
+        promptReopens: [],
         subscribe(listener) {
           listeners.add(listener);
           return () => {
@@ -224,6 +228,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
               : null;
         return workflowView({
           ...(options.manual ? { manual: true, canBuildManual: !!pkg && !manualReason, videoProvider: TEST_PROVIDER } : {}),
+          ...(options.promptMaxChars ? { promptMaxChars: options.promptMaxChars, videoProvider: TEST_PROVIDER } : {}),
           project: PAGE_PROJECT,
           shot,
           packageDir: packageDir ?? null,
@@ -248,6 +253,21 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
           addKeyframeNote: async (project, dir, frame, note, scope) => {
             find(project, dir);
             model.frameNotes = [...model.frameNotes, `${frame}/${scope}: ${note}`];
+            publish();
+          },
+          // Как shot_workflow reopen-prompt: утверждённый промпт возвращается, пока запрос не отправлен; опоры остаются.
+          reopenPrompt: async (project, dir, note) => {
+            const { shot, pkg } = find(project, dir);
+            if (!pkg.prompt?.approved || !['prompt_review', 'request_choice'].includes(pkg.stage) || !note.trim())
+              throw new Error('Видеопромпт сейчас вернуть нельзя.');
+            model.promptReopens = [...model.promptReopens, note.trim()];
+            pkg.prompt = { ...pkg.prompt, approved: false };
+            pkg.request = null;
+            pkg.stage = 'prompt_review';
+            pkg.decision = { stage: 'prompt_review', verdict: 'revise', note: note.trim(), at: DATE };
+            ask(shot, pkg, null);
+            pkg.stageLabel = 'Видеопромпт возвращён на доработку';
+            shot.stageLabel = pkg.stageLabel;
             publish();
           },
           submit: async () => {
@@ -536,7 +556,7 @@ export function ProductionPageStory({ links = [] }: { links?: StoryLink[] }): Re
             Чтений: {model.reads}. Ответов: {model.decisions}. Выборов оригинала: {model.selections}. Утверждено опор: {approved.join(', ') || 'нет'}. Приёмок
             комплекта: {model.accepts}. Отправок генерации: {model.submissions}. Своих файлов опор: {model.frameImports}. Указаний к опорам:{' '}
             {model.frameNotes.join(', ') || 'нет'}. Созданий опор: {model.frameRuns}. Удалений попыток: {model.discards}. Пакетов ручной генерации:{' '}
-            {model.manualBuilds}. Загрузок видео: {model.manualUploads}.
+            {model.manualBuilds}. Загрузок видео: {model.manualUploads}. Возвратов промпта: {model.promptReopens.join(', ') || 'нет'}.
           </Typography>
           <Typography variant="caption" color="text.secondary" data-testid="production-review-model">
             Проверок видео: {model.reviewStarts}. Отмен проверок: {model.reviewCancels}.

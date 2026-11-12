@@ -37,6 +37,8 @@ export function PackageDecision({
   busy,
   busyReason = BUSY_REASON,
   revisionByAgent = false,
+  verdictReasons,
+  suggestedNote,
   onDecide
 }: {
   pending: PackageView['pendingDecision'];
@@ -49,6 +51,10 @@ export function PackageDecision({
   busyReason?: string;
   /** Доработка сразу запускает агента: кнопка с полем замечания становится кнопкой агента. */
   revisionByAgent?: boolean;
+  /** Ответы, недоступные по содержанию вопроса, с причиной: например, утверждение промпта сверх предела провайдера. */
+  verdictReasons?: Partial<Record<string, string>>;
+  /** Замечание, которым заполняется пустое поле при открытии доработки; пользователь может его изменить. */
+  suggestedNote?: string;
   /** Для вопроса об опоре передаётся охват замечания: только эта опора или и следующие. */
   onDecide(verdict: string, noteScope?: KeyframeNoteScope): void;
 }): ReactElement {
@@ -115,7 +121,7 @@ export function PackageDecision({
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             {options.map((verdict) => {
               const paid = ['send', 'retry'].includes(verdict);
-              const reason = paid ? problem : null;
+              const reason = paid ? problem : (verdictReasons?.[verdict] ?? null);
               const disabledReason =
                 reason ??
                 (busy
@@ -148,9 +154,11 @@ export function PackageDecision({
                   variant={verdict === options[0] ? 'contained' : 'outlined'}
                   color={VERDICT_LABELS[verdict]?.color ?? 'inherit'}
                   disabled={!!reason || busy || (sendingBlocked && ['send', 'retry'].includes(verdict)) || (verdict === 'revise' && revising && !note.trim())}
-                  onClick={() =>
-                    verdict === 'revise' && !revising ? setRevisingKey(questionKey) : onDecide(verdict, frame && verdict === 'revise' ? scope : undefined)
-                  }
+                  onClick={() => {
+                    if (verdict !== 'revise' || revising) return onDecide(verdict, frame && verdict === 'revise' ? scope : undefined);
+                    setRevisingKey(questionKey);
+                    if (suggestedNote && !note.trim()) setNote(suggestedNote);
+                  }}
                   startIcon={
                     verdict === 'send' ? (
                       <SendIcon />

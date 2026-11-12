@@ -126,6 +126,7 @@ func Parser() *toolrt.Command {
 			sub("reopen", dir, toolrt.Action{Name: "keyframe"},
 				toolrt.Action{Name: "--note", Required: true},
 				toolrt.Action{Name: "--note-scope", Choices: noteScopes, Default: "following"}),
+			sub("reopen-prompt", dir, toolrt.Action{Name: "--note", Required: true}),
 			sub("set-note", dir,
 				toolrt.Action{Name: "--id", Int: true, Required: true},
 				toolrt.Action{Name: "--active", Choices: []string{"true", "false"}, Required: true}),
@@ -189,15 +190,11 @@ func Run(root string, argv []string) toolcli.Output {
 			}
 			return out.Print(args["keyframe"].(string) + " принята; следующая: " + next + ".")
 		case "approve-prompt":
-			data, warnings, err := tool.approvePrompt(dir, optional(args, "file"))
+			data, err := tool.approvePrompt(dir, optional(args, "file"))
 			if err != nil {
 				return err
 			}
-			text := "Промпт принят: " + toolrt.Str(data.Value("approved_prompt_sha256"))
-			if len(warnings) > 0 {
-				text += "\n" + strings.Join(warnings, "\n")
-			}
-			return out.Print(text)
+			return out.Print("Промпт принят: " + toolrt.Str(data.Value("approved_prompt_sha256")))
 		case "set-stage":
 			data, err := tool.setStage(dir, args["stage"].(string), optional(args, "wait_reason"), optional(args, "request_dir"))
 			if err != nil {
@@ -265,6 +262,11 @@ func Run(root string, argv []string) toolcli.Output {
 				return err
 			}
 			return out.Print(args["keyframe"].(string) + " возвращена на доработку; видеопромпт согласуется заново.")
+		case "reopen-prompt":
+			if _, err := tool.reopenPrompt(dir, args["note"].(string)); err != nil {
+				return err
+			}
+			return out.Print("Видеопромпт возвращён на доработку; описание и опоры сохранены.")
 		case "set-note":
 			active := args["active"] == "true"
 			if _, err := tool.setNote(dir, args["id"].(toolrt.Int), active); err != nil {

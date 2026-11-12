@@ -303,6 +303,14 @@ func (s *ProductionService) PrepareSpeech(project, packageDir string, bounds *pr
 	return wire.Done(s.production.PrepareSpeech(project, packageDir, bounds))
 }
 
+// ReopenPrompt — вернуть утверждённый видеопромпт на доработку.
+func (s *ProductionService) ReopenPrompt(project, packageDir, note string) error {
+	if err := s.idle(project, packageDir); err != nil {
+		return err
+	}
+	return s.production.ReopenPrompt(project, packageDir, note)
+}
+
 // ReopenQuestion — снова задать вопрос о полученном результате.
 func (s *ProductionService) ReopenQuestion(project, packageDir string) error {
 	return s.production.ReopenQuestion(project, packageDir)

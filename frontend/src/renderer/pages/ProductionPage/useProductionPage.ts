@@ -340,6 +340,11 @@ export function useProductionPage() {
     );
   };
 
+  /** Возврат утверждённого видеопромпта: Go откажет, если запрос уже отправлен или попытка в очереди. */
+  const reopenPrompt = (pkg: PackageView, note: string): void => {
+    void act(productionTexts.useProductionPage.promptReopened, () => window.api.production.reopenPrompt(project, pkg.dir, note), pkg.dir);
+  };
+
   /** Пользователь решил, что правка сценария не меняет материалы неотправленного пакета. */
   const keepPackageForScene = (pkg: PackageView): void => {
     void act(productionTexts.useProductionPage.sceneRetained, () => window.api.production.keepPackageForScene(project, pkg.dir), pkg.dir);
@@ -440,6 +445,7 @@ export function useProductionPage() {
     decide,
     answerApplied,
     reopenFrame,
+    reopenPrompt,
     keepPackageForScene,
     setKeyframeNote,
     selectImage,

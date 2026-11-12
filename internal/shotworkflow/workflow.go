@@ -10,6 +10,7 @@ import (
 
 	"songframe/internal/assetpackage"
 	"songframe/internal/mediaadapters"
+	"songframe/internal/mediaproviders"
 	"songframe/internal/sceneregistry"
 	"songframe/internal/shotstatus"
 	"songframe/internal/toolrt"
@@ -19,14 +20,6 @@ import (
 // каждая команда заново читает workflow.json и записывает его атомарно.
 type workflowTool struct {
 	root string
-}
-
-// PromptLimiter — необязательная возможность адаптера провайдера: целый предел длины
-// видеопромпта. approve-prompt предупреждает о более длинном
-// тексте; адаптер без этой возможности (или с пределом ≤ 0) предупреждения не даёт. Интерфейс
-// узкий и локальный: таблица internal/mediaadapters знает только наличие адаптера.
-type PromptLimiter interface {
-	PromptWarningChars() int
 }
 
 // get — значение ключа или fallback: у не-словаря — AttributeError.
@@ -619,24 +612,24 @@ func (t *workflowTool) approve(dirArg, id, source string, candidate bool) (*tool
 }
 
 // approvePrompt — после всех опор принимает файл промпта из
-// пакета (по умолчанию prompt.path), записывает SHA и число символов; предупреждения о длине —
-// по пределу адаптера провайдера generation.video.
-func (t *workflowTool) approvePrompt(dirArg string, file *string) (*toolrt.Dict, []string, error) {
+// пакета (по умолчанию prompt.path), записывает SHA и число символов. Промпт длиннее предела
+// провайдера generation.video (promptLimit) не принимается: его возвращают на доработку.
+func (t *workflowTool) approvePrompt(dirArg string, file *string) (*toolrt.Dict, error) {
 	directory, err := t.packageDir(dirArg, true)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	data, err := load(directory)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	return t.approvePromptData(directory, data, file)
 }
 
-func (t *workflowTool) approvePromptData(directory string, data *toolrt.Dict, file *string) (*toolrt.Dict, []string, error) {
+func (t *workflowTool) approvePromptData(directory string, data *toolrt.Dict, file *string) (*toolrt.Dict, error) {
 	pending, err := pendingIDs(data)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	items, _ := keyframes(data)
 	if len(items) == 0 || len(pending) > 0 {
@@ -644,7 +637,7 @@ func (t *workflowTool) approvePromptData(directory string, data *toolrt.Dict, fi
 		for index, id := range pending {
 			text, ok := id.(string)
 			if !ok {
-				return nil, nil, toolrt.Raise(toolrt.TypeError, "элемент %d: ожидается строка, получено: %s", index, toolrt.TypeName(id))
+				return nil, toolrt.Raise(toolrt.TypeError, "элемент %d: ожидается строка, получено: %s", index, toolrt.TypeName(id))
 			}
 			names[index] = text
 		}
@@ -652,7 +645,7 @@ func (t *workflowTool) approvePromptData(directory string, data *toolrt.Dict, fi
 		if joined == "" {
 			joined = "план опор пуст"
 		}
-		return nil, nil, valueError("Сначала примите все опоры: " + joined)
+		return nil, valueError("Сначала примите все опоры: " + joined)
 	}
 	var name any
 	if file != nil && *file != "" {
@@ -660,62 +653,80 @@ func (t *workflowTool) approvePromptData(directory string, data *toolrt.Dict, fi
 	} else {
 		prompt, err := get(data, "prompt", toolrt.NewDict())
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		if name, err = get(prompt, "path", "video-prompt.txt"); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 	}
 	joined, err := pathPart(directory, name)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	path := toolrt.ResolvePath(joined)
 	if !toolrt.IsRelativeTo(path, directory) || !toolrt.IsFile(path) {
-		return nil, nil, valueError("Файл промпта должен лежать в пакете.")
+		return nil, valueError("Файл промпта должен лежать в пакете.")
 	}
 	text, err := toolrt.ReadText(path)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	if toolrt.Strip(text) == "" {
-		return nil, nil, valueError("Промпт пуст.")
+		return nil, valueError("Промпт пуст.")
 	}
 	digest, err := sha(path)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	relative, _ := toolrt.RelativeTo(path, directory)
 	chars := toolrt.Len(text)
+	if limit := t.promptLimit(data.Value("shot")); limit > 0 && chars > limit {
+		return nil, valueError(textPromptOverLimit(chars, limit))
+	}
 	data.Set("prompt", record("path", relative, "approved", true, "chars", toolrt.NewInt(int64(chars))))
 	data.Set("approved_prompt_sha256", digest)
 	if stage := data.Value("stage"); is(stage, "description_review") || is(stage, "keyframes_review") {
 		data.Set("stage", "prompt_review")
 	}
-	warnings := []string{}
-	if limit := t.promptWarningChars(); limit > 0 && chars > limit {
-		warnings = append(warnings, "Промпт длиннее "+toolrt.NewInt(int64(limit)).String()+" символов ("+toolrt.NewInt(int64(chars)).String()+").")
-	}
-	saved, err := save(directory, data)
-	return saved, warnings, err
+	return save(directory, data)
 }
 
-// promptWarningChars — предел длины видеопромпта адаптера провайдера
-// generation.video; нет блока, адаптера или предела — 0 (без предупреждения).
-func (t *workflowTool) promptWarningChars() int {
+// promptLimit — предел длины видеопромпта провайдера generation.video для плана shot; 0 — предела
+// нет: провайдер неизвестен или его не объявил, либо план делается ручной генерацией вне
+// приложения (у формы сервиса свои правила, приложение их не знает).
+func (t *workflowTool) promptLimit(shot any) int {
 	settings, err := sceneregistry.GenerationSettings(t.readProject(), "video")
 	if err != nil {
 		return 0
 	}
 	provider := settings.Value("provider")
-	if !mediaadapters.Known(provider) {
+	if mediaproviders.ManualVideo(provider, t.lipsync(shot)) {
 		return 0
 	}
-	adapter, _ := mediaadapters.Get(provider)
-	if limiter, ok := adapter.(PromptLimiter); ok {
-		return limiter.PromptWarningChars()
+	return mediaadapters.PromptLimit(provider)
+}
+
+// lipsync — отметка «Липсинк» плана shot в plan/scenes.json; повреждённый реестр или план без
+// записи — false.
+func (t *workflowTool) lipsync(shot any) bool {
+	registry, damaged := toolrt.ReadJSON(toolrt.JoinPath(t.root, "plan/scenes.json"))
+	if damaged {
+		return false
 	}
-	return 0
+	scenes, err := toolrt.DictGet(registry, "scenes", nil)
+	if err != nil {
+		return false
+	}
+	list, err := toolrt.Iter(scenes)
+	if err != nil {
+		return false
+	}
+	for _, item := range list {
+		if scene, ok := item.(*toolrt.Dict); ok && toolrt.Equal(scene.Value("id"), shot) {
+			return scene.Value("lipsync") == true
+		}
+	}
+	return false
 }
 
 // addNote — непустое замечание к опоре с номером подряд с 1 в пакете; пустое — нет.
@@ -988,7 +999,7 @@ func (t *workflowTool) decide(dirArg, verdict, note, scope string) (*toolrt.Dict
 			return nil, err
 		}
 		// approvePrompt заново читает пакет с диска, поэтому изменения сначала сохраняются.
-		data, _, err = t.approvePrompt(dirArg, nil)
+		data, err = t.approvePrompt(dirArg, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -1069,6 +1080,48 @@ func (t *workflowTool) reopen(dirArg, frame, note, scope string) (*toolrt.Dict, 
 	data.Set("wait_reason", nil)
 	data.Set("pending_decision", nil)
 	data.Set("decision", record("stage", "keyframes_review", "verdict", "revise", "note", entry.Value("note"), "at", entry.Value("at")))
+	return save(directory, data)
+}
+
+// reopenPromptStages — утверждённый видеопромпт можно вернуть, пока запрос видео не отправлен:
+// запрос ещё не готовили или он подготовлен и ждёт ответа «Отправить» (в том числе пакет ручной
+// генерации без загруженного видео). Пакет в очереди (ready) возвращают после выбора его судьбы.
+var reopenPromptStages = []string{"prompt_review", "request_choice"}
+
+// reopenPrompt — утверждённый видеопромпт возвращается на доработку с обязательным замечанием.
+// Описание и утверждённые опоры остаются. Неотправленный подготовленный запрос остаётся в папке
+// попытки историей, request_dir снимается: новый запрос готовится по новому промпту. Замечание
+// записывается ответом revise на этапе prompt_review — агент получает его тем же путём, что и
+// доработку предложенного промпта.
+func (t *workflowTool) reopenPrompt(dirArg, note string) (*toolrt.Dict, error) {
+	directory, err := t.packageDir(dirArg, true)
+	if err != nil {
+		return nil, err
+	}
+	data, err := load(directory)
+	if err != nil {
+		return nil, err
+	}
+	prompt, ok := data.Value("prompt").(*toolrt.Dict)
+	if !ok || !toolrt.Truthy(prompt.Value("approved")) {
+		return nil, valueError("Видеопромпт не утверждён: доработка задаётся ответом revise на его вопрос.")
+	}
+	if toolrt.Strip(note) == "" {
+		return nil, valueError("Для возврата видеопромпта на доработку нужно замечание.")
+	}
+	stage := toolrt.Str(data.Value("stage"))
+	if !contains(reopenPromptStages, stage) {
+		return nil, valueError("На этапе " + stage + " видеопромпт вернуть нельзя: запрос уже отправлен или пакет в очереди; исправленный промпт делается в новой попытке.")
+	}
+	merged := prompt.Clone()
+	merged.Set("approved", false)
+	data.Set("prompt", merged)
+	data.Set("approved_prompt_sha256", nil)
+	data.Set("request_dir", nil)
+	data.Set("stage", "prompt_review")
+	data.Set("wait_reason", nil)
+	data.Set("pending_decision", nil)
+	data.Set("decision", record("stage", "prompt_review", "verdict", "revise", "note", toolrt.Strip(note), "at", Now()))
 	return save(directory, data)
 }
 

@@ -162,6 +162,7 @@ export function unconfiguredStoryApi(): Api {
       view: async () => unconfigured('production.view'),
       decide: async () => unconfigured('production.decide'),
       reopenFrame: async () => unconfigured('production.reopenFrame'),
+      reopenPrompt: async () => unconfigured('production.reopenPrompt'),
       keepPackageForScene: async () => unconfigured('production.keepPackageForScene'),
       addKeyframeNote: async () => unconfigured('production.addKeyframeNote'),
       setKeyframeNote: async () => unconfigured('production.setKeyframeNote'),

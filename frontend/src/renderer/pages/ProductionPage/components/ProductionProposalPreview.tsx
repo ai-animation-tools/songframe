@@ -246,10 +246,13 @@ export function ProposalActions({
   onReviseOpen,
   onRevise,
   onApply,
-  onDiscard
+  onDiscard,
+  applyBlockedReason = null
 }: {
   proposal: ProductionProposal;
   busy: boolean;
+  /** Принять предложение нельзя по его содержанию (например, промпт сверх предела провайдера): причина; доработка остаётся. */
+  applyBlockedReason?: string | null;
   /** Открыто поле замечания: кнопка доработки запускает агента. */
   revising?: boolean;
   reviseNote?: string;
@@ -294,7 +297,13 @@ export function ProposalActions({
           </ActionButton>
         )
       ) : null}
-      <ActionButton variant="contained" startIcon={<CheckIcon />} disabled={busy || !ready} disabledReason={applyReason} onClick={onApply}>
+      <ActionButton
+        variant="contained"
+        startIcon={<CheckIcon />}
+        disabled={busy || !ready || !!applyBlockedReason}
+        disabledReason={applyReason ?? applyBlockedReason}
+        onClick={onApply}
+      >
         {productionTexts.productionProposalPreview.apply}
       </ActionButton>
     </>

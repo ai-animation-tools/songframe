@@ -530,6 +530,32 @@ func (s *Service) ReopenFrame(project, packageDir, frame, note, noteScope string
 	return s.askNextFrame(project, directory)
 }
 
+// ReopenPrompt — вернуть утверждённый видеопромпт на доработку с замечанием (shot_workflow
+// reopen-prompt), пока запрос видео не отправлен. Описание и опоры остаются; замечание агент
+// получает при новой подготовке промпта.
+func (s *Service) ReopenPrompt(project, packageDir, note string) error {
+	directory, err := s.available(project, packageDir)
+	if err != nil {
+		return err
+	}
+	if dynvalue.Trim(note) == "" {
+		return errors.New(textPromptRevisionRequired)
+	}
+	directory, release, err := s.claim(project, directory)
+	if err != nil {
+		return err
+	}
+	defer release()
+	result, err := s.run(project, "shot_workflow", "reopen-prompt", "--dir", directory, "--note", dynvalue.Trim(note))
+	if err != nil {
+		return err
+	}
+	if !ok(result) {
+		return failure(result, textReopenPromptFailed)
+	}
+	return nil
+}
+
 // AddKeyframeNote — необязательное указание пользователя к опоре до её создания. Занимает пакет
 // на время записи, как и другие изменения workflow.json; вопрос пакета не меняется.
 func (s *Service) AddKeyframeNote(project, packageDir, frame, note, noteScope string) error {

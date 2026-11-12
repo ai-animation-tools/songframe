@@ -15,6 +15,7 @@ import (
 	"strings"
 	"sync"
 
+	"songframe/internal/mediaapi"
 	"songframe/internal/toolrt"
 )
 
@@ -101,4 +102,18 @@ func Register(id string, adapter Adapter) func() {
 			delete(adapters, key)
 		}
 	}
+}
+
+// PromptLimit — предел длины видеопромпта провайдера в символах (mediaapi.PromptWarningLimiter):
+// промпт длиннее него приложение не даёт утвердить, а агент этапа prompt получает предел в
+// задании. 0 — провайдер неизвестен или предела не объявил.
+func PromptLimit(provider any) int {
+	adapter, ok := Get(provider)
+	if !ok {
+		return 0
+	}
+	if limiter, ok := adapter.(mediaapi.PromptWarningLimiter); ok && limiter.PromptWarningChars() > 0 {
+		return limiter.PromptWarningChars()
+	}
+	return 0
 }

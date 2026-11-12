@@ -1,5 +1,5 @@
 {
-  "description": "Предел длины промпта адаптера test.",
+  "description": "Промпт длиннее предела адаптера test не принимается.",
   "call": "shot_workflow",
   "project": "project",
   "base": "checks-base",

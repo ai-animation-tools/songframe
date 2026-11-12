@@ -121,6 +121,7 @@ export function ProductionWorkflowPanel({
           error={workflow.error}
           provider={view?.job?.provider ?? null}
           videoProvider={view?.videoProvider ?? null}
+          promptMaxChars={view?.promptMaxChars}
           busy={busy}
           onApply={onAcceptProposal}
           onRevise={onReviseProposal}

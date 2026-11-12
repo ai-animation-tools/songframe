@@ -544,6 +544,7 @@ export const productionTexts = {
     answerSaved: ({ label }: { label: string }) => `Ответ записан: ${label}`,
     relocated: 'Попытка перенесена. Откройте её в очереди на странице «Производство».',
     frameReopened: ({ frame }: { frame: string }) => `Опора ${frame} возвращена на доработку. Создайте её заново кнопкой «Создать ${frame}» на шаге «Опоры».`,
+    promptReopened: 'Видеопромпт возвращён на доработку. Замечание сохранено и будет передано агенту при подготовке промпта.',
     sceneRetained: 'Попытка оставлена для текущей постановки: подготовку и отправку можно продолжать.',
     frameNoteActivated: 'Замечание к опорам снова действует.',
     frameNoteDeactivated: 'Замечание снято: агент больше не получит его при создании опор.',
@@ -608,6 +609,25 @@ export const productionTexts = {
     removeFrame: ({ frame }: { frame: string }) => `Снять замечание к ${frame}`,
     removeAll: 'Снять замечание ко всем опорам',
     removeHint: 'Снять замечание: агент перестанет его получать'
+  },
+  promptLimit: {
+    title: 'Видеопромпт длиннее предела провайдера',
+    description: ({ chars, limit, provider }: { chars: number; limit: number; provider: string }) =>
+      `${countLabel(chars, 'символ', 'символа', 'символов')} при пределе ${limit} у ${provider}. Утвердить такой промпт нельзя: верните его агенту на доработку.`,
+    approveReason: ({ chars, limit }: { chars: number; limit: number }) => `Промпт длиннее предела провайдера: ${chars} из ${limit} символов.`,
+    reviseNote: ({ chars, limit }: { chars: number; limit: number }) =>
+      `Сократи видеопромпт до ${limit} символов (сейчас ${chars}), сохранив действие, опоры и важные детали.`
+  },
+  promptReopenDialog: {
+    title: 'Вернуть видеопромпт на доработку',
+    description: ({ request }: { request: string | null }) =>
+      `Утверждение промпта будет снято. Описание и утверждённые опоры останутся.${request ? ` Подготовленный запрос ${request} не отправлен: он останется в папке попытки, новый запрос готовится после нового промпта.` : ''}`,
+    confirm: labels.reopenFrame,
+    reason: 'Опишите, что исправить в видеопромпте.',
+    note: 'Что исправить в промпте',
+    placeholder: 'Например: убрать титры, движение камеры — медленный наезд.',
+    hint: 'Обязательно. Замечание передаётся агенту при подготовке промпта.',
+    unavailable: 'Запрос уже отправлен или попытка в очереди: исправленный промпт делается в новой попытке.'
   },
   keyframeReopenDialog: {
     title: ({ frame }: { frame: string }) => `Вернуть опору ${frame} на доработку`,

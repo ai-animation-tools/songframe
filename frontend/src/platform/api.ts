@@ -741,6 +741,8 @@ export function createApi(b: Bindings): Api {
     call('production.decide', async () => (await production()).Decide(project, packageDir, verdict, note ?? '', decisionToken ?? '', noteScope ?? ''), false);
   api.production.reopenFrame = (project, packageDir, frame, note, noteScope) =>
     call('production.reopenFrame', async () => (await production()).ReopenFrame(project, packageDir, frame, note, noteScope), false);
+  api.production.reopenPrompt = (project, packageDir, note) =>
+    call('production.reopenPrompt', async () => (await production()).ReopenPrompt(project, packageDir, note), false);
   api.production.keepPackageForScene = (project, packageDir) =>
     call('production.keepPackageForScene', async () => (await production()).KeepPackageForScene(project, packageDir));
   api.production.addKeyframeNote = (project, packageDir, frame, note, noteScope) =>

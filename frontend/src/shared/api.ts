@@ -179,6 +179,8 @@ export interface Api {
     decide(project: string, packageDir: string, verdict: string, note?: string, decisionToken?: string, noteScope?: KeyframeNoteScope): Promise<void>;
     /** Вернуть утверждённую опору на доработку с замечанием, пока видеопромпт не утверждён. */
     reopenFrame(project: string, packageDir: string, frame: string, note: string, noteScope: KeyframeNoteScope): Promise<void>;
+    /** Вернуть утверждённый видеопромпт на доработку с замечанием, пока запрос видео не отправлен; описание и опоры остаются. */
+    reopenPrompt(project: string, packageDir: string, note: string): Promise<void>;
     /** Оставить неотправленный пакет в силе для текущей постановки плана: правка сценария не меняет его материалы. */
     keepPackageForScene(project: string, packageDir: string): Promise<void>;
     /** Необязательное указание к опоре до её создания: записывается как замечание к опорам. */

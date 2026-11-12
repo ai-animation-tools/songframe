@@ -22,6 +22,11 @@ import { PackageRequest } from './PackageRequest';
 import { PackageResult } from './PackageResult';
 import { PackageResume } from './PackageResume';
 import { PackageTextSection } from './PackageTextSection';
+import { PromptLimitAlert } from './PromptLimitAlert';
+import { PromptReopenDialog } from './PromptReopenDialog';
+import { ActionButton } from '../../../components/ActionButton';
+import { promptOverLimit } from '../promptLimit';
+import ReplayIcon from '@mui/icons-material/Replay';
 import { ProductionSpeechPanel } from './ProductionSpeechPanel';
 import { ProductionWorkflowPanel } from './ProductionWorkflowPanel';
 
@@ -34,6 +39,11 @@ function resultQuestion(pkg: PackageView): NonNullable<PackageView['pendingDecis
     options: pkg.stage === 'downloaded' ? ['accept', 'retry', 'review', 'revise'] : ['accept', 'revise']
   };
 }
+
+/** Этапы, на которых Go принимает возврат утверждённого видеопромпта (shot_workflow reopen-prompt). */
+const PROMPT_REOPEN_STAGES = ['prompt_review', 'request_choice'];
+/** Где кнопка возврата видна: в очереди (ready) она недоступна с объяснением, после отправки не нужна. */
+const PROMPT_REOPEN_SHOWN = [...PROMPT_REOPEN_STAGES, 'ready'];
 
 export function ProductionPath({
   project,
@@ -62,6 +72,7 @@ export function ProductionPath({
   onNotCreated,
   onSelectImage,
   onReopenFrame,
+  onReopenPrompt,
   onKeepForScene,
   onSetKeyframeNote,
   onSpeechPrepared
@@ -99,6 +110,8 @@ export function ProductionPath({
   onNotCreated(): void;
   onSelectImage(index: number): void;
   onReopenFrame(frame: string, note: string, scope: KeyframeNoteScope): void;
+  /** Вернуть утверждённый видеопромпт на доработку с замечанием, пока запрос не отправлен. */
+  onReopenPrompt(note: string): void;
   onKeepForScene(): void;
   onSetKeyframeNote(id: number, active: boolean): void;
   onSpeechPrepared(): Promise<void>;
@@ -115,6 +128,9 @@ export function ProductionPath({
   const blocked = busy || workflow.busy;
   const [opened, setOpened] = useState<Record<string, boolean>>({});
   const [reviseOpen, setReviseOpen] = useState(false);
+  const [reopeningPrompt, setReopeningPrompt] = useState(false);
+  // Промпт на согласовании длиннее предела провайдера: утвердить нельзя, только вернуть агенту.
+  const overLimit = pkg?.prompt && !pkg.prompt.approved ? promptOverLimit(pkg.prompt.text, view?.promptMaxChars) : null;
   const reportBusy = useRef(onBusyChange);
   reportBusy.current = onBusyChange;
   useEffect(() => reportBusy.current(workflow.busy), [workflow.busy]);
@@ -178,6 +194,8 @@ export function ProductionPath({
     return (
       <PackageDecision
         aiKind={aiKind}
+        verdictReasons={key === 'prompt' && overLimit ? { approve: productionTexts.promptLimit.approveReason(overLimit) } : undefined}
+        suggestedNote={key === 'prompt' && overLimit ? productionTexts.promptLimit.reviseNote(overLimit) : undefined}
         sendingBlocked={['submitting', 'submission_unknown'].includes(pkg.request?.attemptStatus ?? '')}
         pending={shown}
         note={note}
@@ -287,11 +305,37 @@ export function ProductionPath({
       case 'prompt':
         return (
           <>
+            {overLimit ? <PromptLimitAlert over={overLimit} videoProvider={view?.videoProvider} /> : null}
             {pkg?.prompt ? (
               <PackageTextSection
                 title={productionTexts.packageCard.promptTitle({ approved: pkg.prompt.approved, characters: pkg.prompt.text.length })}
                 text={pkg.prompt.text}
                 maxHeight={220}
+              />
+            ) : null}
+            {pkg?.prompt?.approved && PROMPT_REOPEN_SHOWN.includes(pkg.stage) ? (
+              <ActionButton
+                size="small"
+                startIcon={<ReplayIcon />}
+                sx={{ alignSelf: 'flex-start' }}
+                title={productionTexts.promptReopenDialog.hint}
+                disabled={blocked || !PROMPT_REOPEN_STAGES.includes(pkg.stage)}
+                disabledReason={blocked ? busyReason : productionTexts.promptReopenDialog.unavailable}
+                onClick={() => setReopeningPrompt(true)}
+              >
+                {productionTexts.promptReopenDialog.confirm}
+              </ActionButton>
+            ) : null}
+            {reopeningPrompt && pkg ? (
+              <PromptReopenDialog
+                request={
+                  pkg.stage === 'request_choice' && pkg.request && pkg.request.kind !== 'image' ? (pkg.request.dir.split('/').pop() ?? pkg.request.dir) : null
+                }
+                onClose={() => setReopeningPrompt(false)}
+                onConfirm={(text) => {
+                  setReopeningPrompt(false);
+                  onReopenPrompt(text);
+                }}
               />
             ) : null}
             {current ? panel(asked) : null}

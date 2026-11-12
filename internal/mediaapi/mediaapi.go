@@ -115,8 +115,8 @@ type TaskTracer interface {
 	TaskTraceID() bool
 }
 
-// PromptWarningLimiter — предел длины видеопромпта, после которого
-// shot_workflow approve-prompt предупреждает (отказ по длине остаётся делом ValidatePrompt).
+// PromptWarningLimiter — документированный предел длины видеопромпта провайдера: промпт длиннее
+// него shot_workflow не утверждает (mediaadapters.PromptLimit), а агент получает предел в задании.
 type PromptWarningLimiter interface {
 	PromptWarningChars() int
 }

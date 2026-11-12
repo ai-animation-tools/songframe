@@ -14,6 +14,7 @@ import (
 
 	"songframe/internal/golden"
 	"songframe/internal/mediaadapters"
+	"songframe/internal/mediaapi"
 	"songframe/internal/shotworkflow"
 	"songframe/internal/toolrt"
 	"songframe/internal/tools"
@@ -28,10 +29,10 @@ const (
 )
 
 // promptAdapter — поддельный адаптер провайдера test эталона shot-workflow: предупреждение о
-// длине промпта начиная с 40 символов.
+// длине промпта: 62 символа, ровно длина промпта M03 общего образца.
 type promptAdapter struct{}
 
-func (promptAdapter) PromptWarningChars() int { return 40 }
+func (promptAdapter) PromptWarningChars() int { return 62 }
 
 // treeEntry — файл дерева: байты и права (st_mode & 0o777), как в состоянии дерева эталона.
 type treeEntry struct {
@@ -273,7 +274,7 @@ func (run toolCase) checkTree(t *testing.T, c golden.Case, before snapshot) {
 // TestShotWorkflowGolden запускает tools.run("shot_workflow") на входах эталона shot-workflow и
 // сверяет код, stdout, stderr и все изменения файлов проекта и временной папки ОС (байты, права
 // workflow.json, созданные и удалённые каталоги) с эталоном. Время now() фиксировано,
-// провайдер test проекта-образца получает предел длины промпта 40 символов.
+// провайдер test проекта-образца получает предел длины промпта 62 символа.
 func TestShotWorkflowGolden(t *testing.T) {
 	previousNow := shotworkflow.Now
 	shotworkflow.Now = func() string { return swNow }
@@ -286,7 +287,7 @@ func TestShotWorkflowGolden(t *testing.T) {
 			// PromptWarningChars, случай не проверяется.
 			if provider, ok := run.spec.Value("provider").(string); ok {
 				adapter, known := mediaadapters.Get(provider)
-				if _, limited := adapter.(shotworkflow.PromptLimiter); !known || !limited {
+				if _, limited := adapter.(mediaapi.PromptWarningLimiter); !known || !limited {
 					t.Skipf("адаптер %s не объявляет предел промпта", provider)
 				}
 			}

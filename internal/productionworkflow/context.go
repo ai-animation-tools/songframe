@@ -13,6 +13,7 @@ import (
 	"songframe/internal/derivedshot"
 	"songframe/internal/dynvalue"
 	"songframe/internal/filedigest"
+	"songframe/internal/mediaadapters"
 	"songframe/internal/mediaproviders"
 	"songframe/internal/production"
 	"songframe/internal/projectfile"
@@ -141,13 +142,9 @@ func ReadContext(path, shot, requested string) (*Context, error) {
 	// Речевой план у провайдера с липсинком ограничен допустимой длиной звука; у провайдера без
 	// липсинка видео создаётся вручную вне приложения, и ограничений сервиса приложение не знает.
 	provider, known := videoProvider(settings)
-	manual := false
-	if scene.Value("lipsync") == true && known {
-		if provider.LipSync == nil {
-			manual = true
-		} else if window > provider.LipSync.Max {
-			problems = append(problems, textSpeechWindowTooLong(dynvalue.ToFixed(window, 2), provider.Title, provider.LipSync.Max))
-		}
+	manual := mediaproviders.ManualVideo(settings.Value("provider"), scene.Value("lipsync") == true)
+	if scene.Value("lipsync") == true && known && !manual && window > provider.LipSync.Max {
+		problems = append(problems, textSpeechWindowTooLong(dynvalue.ToFixed(window, 2), provider.Title, provider.LipSync.Max))
 	}
 	context := &Context{
 		Project: project, Shot: shot, Settings: settings, Window: window, DurationRule: durationRule, Problems: problems, Manual: manual,
@@ -329,6 +326,16 @@ func videoProvider(settings *dynvalue.Object) (mediaproviders.Info, bool) {
 		return mediaproviders.Info{}, false
 	}
 	return mediaproviders.Lookup(id.(string))
+}
+
+// PromptLimit — предел длины видеопромпта провайдера видео проекта; 0 — предела нет или план
+// делается ручной генерацией (у формы сервиса свои правила). Тот же предел проверяет утверждение
+// промпта в shot_workflow.
+func (c *Context) PromptLimit() int {
+	if c.Manual {
+		return 0
+	}
+	return mediaadapters.PromptLimit(c.Settings.Value("provider"))
 }
 
 // keyframes — workflow.keyframes как массив (не массив — пусто).

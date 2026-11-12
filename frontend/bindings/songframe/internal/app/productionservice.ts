@@ -151,6 +151,13 @@ export function ReopenFrame(project: string, packageDir: string, frame: string, 
 }
 
 /**
+ * ReopenPrompt — вернуть утверждённый видеопромпт на доработку.
+ */
+export function ReopenPrompt(project: string, packageDir: string, note: string): $CancellablePromise<void> {
+    return $Call.ByID(4218803580, project, packageDir, note);
+}
+
+/**
  * ReopenQuestion — снова задать вопрос о полученном результате.
  */
 export function ReopenQuestion(project: string, packageDir: string): $CancellablePromise<void> {

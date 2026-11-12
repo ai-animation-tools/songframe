@@ -299,3 +299,23 @@ export const LongDialog: Story = {
     await waitFor(() => expect(body.queryByRole('dialog')).not.toBeInTheDocument());
   }
 };
+
+/** Предложенный видеопромпт длиннее предела провайдера: принять нельзя, доработка начинается с готового замечания. */
+export const PromptOverLimit: Story = {
+  tags: ['ci'],
+  name: 'Видеопромпт сверх предела · принять нельзя, замечание о сокращении',
+  args: { initialProposal: workflowProposal('prompt'), dialog: true, promptMaxChars: 40 },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(document.body);
+    await userEvent.click(canvas.getByRole('button', { name: dialogLabels.open }));
+    const dialog = within(await body.findByRole('dialog'));
+    const text = workflowProposal('prompt').after;
+    const chars = Array.from(text?.stage === 'prompt' ? text.prompt : '').length;
+    const over = { chars, limit: 40 };
+    await expect(dialog.getByText(productionTexts.promptLimit.title)).toBeInTheDocument();
+    await expect(dialog.getByRole('button', { name: labels.apply })).toBeDisabled();
+    await userEvent.click(dialog.getByRole('button', { name: productionTexts.verdictLabels.revise }));
+    await expect(dialog.getByRole('textbox', { name: productionTexts.productionWorkflowPanel.note })).toHaveValue(productionTexts.promptLimit.reviseNote(over));
+  }
+};

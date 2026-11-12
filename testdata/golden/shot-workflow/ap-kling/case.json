@@ -1,5 +1,5 @@
 {
-  "description": "Предел адаптера kling.",
+  "description": "Промпт длиннее предела адаптера kling не принимается.",
   "call": "shot_workflow",
   "project": "project",
   "base": "checks-base",

@@ -39,8 +39,9 @@ var secretWords = []string{"token", "credential", "password", "base_url"}
 // требуется явное значение.
 var explicitResolutionModels = map[string]bool{"kling-video-v4_0": true}
 
-// PromptWarningChars — документированный предел промпта API Kling; поведение сервера при
-// превышении не проверено, поэтому длинный промпт только предупреждает.
+// PromptWarningChars — документированный предел промпта API Kling. Поведение сервера при
+// превышении не проверено, поэтому приложение не утверждает видеопромпт длиннее предела
+// (mediaadapters.PromptLimit), а подготовка запроса по-прежнему лишь предупреждает (ValidatePrompt).
 const PromptWarningChars = 2500
 
 var (

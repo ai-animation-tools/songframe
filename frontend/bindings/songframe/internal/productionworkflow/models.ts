@@ -87,6 +87,12 @@ export interface View {
     "canBuildManual"?: boolean;
 
     /**
+     * PromptMaxChars — предел длины видеопромпта провайдера (Context.PromptLimit): длиннее него
+     * промпт не утверждается; 0 — предела нет.
+     */
+    "promptMaxChars"?: number;
+
+    /**
      * Paid — попытка пакета уже оплачена: дальше только новая попытка или возврат с замечанием.
      */
     "paid": boolean;

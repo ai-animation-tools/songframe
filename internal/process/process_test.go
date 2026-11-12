@@ -49,6 +49,21 @@ func TestHelperProcess(t *testing.T) {
 	case "hang":
 		time.Sleep(time.Minute)
 		os.Exit(0)
+	case "pid":
+		// Программа сообщает свой pid и ждёт: так тест сироты находит её после гибели родителя.
+		fmt.Fprintf(os.Stdout, "%d\n", os.Getpid())
+		time.Sleep(time.Minute)
+		os.Exit(0)
+	case "orphan-parent":
+		// Родитель запускает программу через Run, как приложение запускает агента, и пересылает её pid.
+		child := helper("pid")
+		child.OnOutput = func(data []byte, stderr bool) {
+			if !stderr {
+				os.Stdout.Write(data)
+			}
+		}
+		Run(context.Background(), child)
+		os.Exit(0)
 	case "spawn":
 		// Потомок без Prepare наследует группу родителя: KillTree должен убить и его.
 		child := helper("hang")

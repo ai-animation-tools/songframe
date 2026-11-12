@@ -102,3 +102,16 @@ func TestRunCancelKillsDescendants(t *testing.T) {
 		time.Sleep(50 * time.Millisecond)
 	}
 }
+
+// childGone — программа завершилась для теста сироты.
+func childGone(pid int) bool {
+	alive, known := running(pid)
+	return known && !alive || !known
+}
+
+// killPid убирает программу, если тест сироты не прошёл.
+func killPid(pid int) {
+	if process, err := os.FindProcess(pid); err == nil {
+		process.Kill()
+	}
+}

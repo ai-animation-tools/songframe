@@ -3,7 +3,10 @@
 // Программа запускается без shell, с отменой через context, необязательным таймаутом,
 // потоковой передачей вывода и захватом ограниченного хвоста stdout/stderr. Отмена и таймаут
 // завершают программу вместе с потомками: в Linux — всю группу процессов, в Windows — дерево
-// через taskkill. В Windows дочерние консольные программы не получают окна консоли.
+// через taskkill. Аварийное завершение приложения (kill -9, сбой) тоже не оставляет сирот: в Linux
+// программа получает SIGKILL по смерти родителя, в Windows её закрывает объект задания приложения.
+// В Windows дочерние консольные программы не получают окна консоли. StartDetached намеренно
+// запускает помощника вне этой привязки.
 package process
 
 import (
@@ -146,7 +149,9 @@ func Run(ctx context.Context, c Command) (Result, error) {
 	command.Stdout = stdout
 	command.Stderr = stderr
 
-	if err := command.Start(); err != nil {
+	// start привязывает программу к жизни приложения: в Linux — запуском на постоянном потоке с
+	// Pdeathsig, в Windows — объектом задания, который ОС закрывает при любом выходе приложения.
+	if err := start(command); err != nil {
 		if ctx.Err() != nil {
 			return result, canceled(ctx)
 		}

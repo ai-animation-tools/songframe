@@ -124,3 +124,9 @@ func TestRunForeignSignal(t *testing.T) {
 		t.Fatalf("%v %+v", err, result)
 	}
 }
+
+// childGone — программа завершилась (или стала зомби) для теста сироты.
+func childGone(pid int) bool { return processGone(pid) }
+
+// killPid убирает программу, если тест сироты не прошёл.
+func killPid(pid int) { syscall.Kill(pid, syscall.SIGKILL) }

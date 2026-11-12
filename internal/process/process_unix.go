@@ -12,13 +12,16 @@ import (
 
 // Prepare делает программу лидером собственной группы процессов:
 // так KillTree одним сигналом завершает и её потомков (вложенный CLI, ffmpeg, распознавание).
-// Остальные поля SysProcAttr сохраняются. Пригоден и для долгоживущих exec.Cmd вне Run.
+// В Linux программа ещё и завершается вместе с приложением (bindToParent); привязка надёжна
+// только при запуске через start, поэтому Prepare вызывается из Run. Остальные поля SysProcAttr
+// сохраняются.
 func Prepare(command *exec.Cmd) {
 	if command.SysProcAttr == nil {
 		command.SysProcAttr = &syscall.SysProcAttr{}
 	}
 	command.SysProcAttr.Setpgid = true
 	command.SysProcAttr.Pgid = 0
+	bindToParent(command.SysProcAttr)
 }
 
 // KillTree посылает SIGKILL всей группе процесса; если группы нет (процесс запущен без Prepare),

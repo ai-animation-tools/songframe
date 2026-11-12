@@ -6,8 +6,10 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"sync"
 	"syscall"
 	"time"
+	"unsafe"
 
 	"golang.org/x/sys/windows"
 )
@@ -75,6 +77,42 @@ func taskkillPath() string {
 		return filepath.Join(directory, "taskkill.exe")
 	}
 	return "taskkill.exe"
+}
+
+// appJob — объект задания приложения с JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE. Его единственный
+// handle не наследуется и не закрывается до выхода: ОС закрывает его при любом завершении
+// приложения, в том числе аварийном, и вместе с ним завершает все программы задания. Сбой
+// создания оставляет нулевой handle — программы тогда запускаются без привязки.
+var appJob = sync.OnceValue(func() windows.Handle {
+	job, err := windows.CreateJobObject(nil, nil)
+	if err != nil {
+		return 0
+	}
+	info := windows.JOBOBJECT_EXTENDED_LIMIT_INFORMATION{}
+	info.BasicLimitInformation.LimitFlags = windows.JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+	if _, err := windows.SetInformationJobObject(job, windows.JobObjectExtendedLimitInformation,
+		uintptr(unsafe.Pointer(&info)), uint32(unsafe.Sizeof(info))); err != nil {
+		windows.CloseHandle(job)
+		return 0
+	}
+	return job
+})
+
+// start запускает программу и сразу включает её в объект задания приложения: потомки, которых
+// она создаст, наследуют задание. Программа, успевшая породить потомка до включения, оставила бы
+// его вне задания; агенты и FFmpeg за это время не успевают. Сбой включения запуск не отменяет:
+// отмена и таймаут по-прежнему завершают дерево через taskkill.
+func start(command *exec.Cmd) error {
+	if err := command.Start(); err != nil {
+		return err
+	}
+	if job := appJob(); job != 0 {
+		if handle, err := windows.OpenProcess(windows.PROCESS_SET_QUOTA|windows.PROCESS_TERMINATE, false, uint32(command.Process.Pid)); err == nil {
+			_ = windows.AssignProcessToJobObject(job, handle)
+			windows.CloseHandle(handle)
+		}
+	}
+	return nil
 }
 
 // signalName пуст: в Windows программы не завершаются POSIX-сигналами.

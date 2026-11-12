@@ -7,3 +7,4 @@ export { SendRequestDialog } from './SendRequestDialog';
 export { RegenerateDialog } from './RegenerateDialog';
 export { AcceptResultDialog } from './AcceptResultDialog';
 export { DerivedShotPanel } from './DerivedShotPanel';
+export { FragmentPreviewDialog } from './FragmentPreviewDialog';

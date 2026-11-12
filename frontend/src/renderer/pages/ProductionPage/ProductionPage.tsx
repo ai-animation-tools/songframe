@@ -7,6 +7,7 @@ import { AiProblemAlert } from '../../components';
 import {
   AcceptResultDialog,
   DerivedShotPanel,
+  FragmentPreviewDialog,
   ProductionPath,
   ProductionOperationNotice,
   ProductionShotCard,
@@ -27,6 +28,7 @@ import { BUSY_REASON } from './constants';
 
 export function ProductionPage(): ReactElement {
   const [path, setPath] = useState<{ key: string; value: PlanPath } | null>(null);
+  const [fragmentOpen, setFragmentOpen] = useState(false);
   const {
     project,
     view,
@@ -157,6 +159,7 @@ export function ProductionPage(): ReactElement {
                 now={shot.derivedFrom || path?.key !== pathKey ? null : { text: path.value.now, tone: path.value.tone }}
                 onNewAttempt={shot.derivedFrom || (!shot.packages.length && !shot.asset) ? undefined : () => selectPackage('__new__')}
                 onDiscardAttempt={discardPackage}
+                onFragment={() => setFragmentOpen(true)}
               />
 
               {shot.derivedFrom ? (
@@ -240,6 +243,16 @@ export function ProductionPage(): ReactElement {
           )}
         </Box>
       ) : null}
+
+      {/* Ключ по проекту: задание и выбор фрагмента не переходят в другой проект. */}
+      <FragmentPreviewDialog
+        key={project}
+        open={fragmentOpen}
+        project={project}
+        shots={view.shots}
+        initialShot={selected}
+        onClose={() => setFragmentOpen(false)}
+      />
 
       <SendRequestDialog
         key={`${project}:${confirmSend?.dir ?? ''}:${confirmSend?.decisionToken ?? ''}:${confirmSend ? 'open' : 'closed'}`}

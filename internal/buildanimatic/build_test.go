@@ -264,3 +264,51 @@ func TestFrameRounding(t *testing.T) {
 		}
 	}
 }
+
+// TestFragment — фрагмент подряд идущих планов: правильное окно и участок песни, latest и
+// представления проекта не появляются, повторная сборка берёт фрагменты из кэша; неполный или
+// обратный диапазон и неизвестный план — понятный отказ без записи фрагмента.
+func TestFragment(t *testing.T) {
+	project := baseProject(t)
+	output := Run(context.Background(), project, []string{"--from", "M02", "--to", "M02"})
+	if output.Code != 0 || !strings.HasPrefix(output.Stdout, "M02 подготовлена\n") {
+		t.Fatalf("исход %+v", output)
+	}
+	var report map[string]any
+	if err := json.Unmarshal([]byte(output.Stdout[strings.Index(output.Stdout, "{"):]), &report); err != nil {
+		t.Fatal(err)
+	}
+	if report["video"] != FragmentFile || report["from"] != "M02" || report["start"] != "0.400000" || report["end"] != "0.800000" || report["shots"] != float64(1) {
+		t.Fatalf("отчёт %v", report)
+	}
+	info, err := probe(context.Background(), filepath.Join(project, FragmentFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	v, _ := streamOf(info, "video")
+	if ok, err := videoMatches(v, toolrt.NewInt(12)); err != nil || !ok {
+		t.Fatalf("видео фрагмента %v %v", v, err)
+	}
+	if toolrt.Exists(filepath.Join(project, "plan/animatic/latest/manifest.json")) {
+		t.Fatal("фрагмент записал latest")
+	}
+	again := Run(context.Background(), project, []string{"--from", "M01", "--to", "M02"})
+	if again.Code != 0 || !strings.HasPrefix(again.Stdout, "M01 подготовлена\nM02 из кэша\n") {
+		t.Fatalf("повтор %+v", again)
+	}
+	before := readFile(t, filepath.Join(project, FragmentFile))
+	failures := map[string][]string{
+		textFragmentRange + "\n":          {"--from", "M01"},
+		textFragmentOnly + "\n":           {"--from", "M01", "--to", "M02", "--plan-only"},
+		textFragmentOrder + "\n":          {"--from", "M02", "--to", "M01"},
+		textFragmentUnknown("M09") + "\n": {"--from", "M01", "--to", "M09"},
+	}
+	for stderr, args := range failures {
+		if output := Run(context.Background(), project, args); output.Code != 1 || output.Stderr != stderr {
+			t.Fatalf("%v: %+v", args, output)
+		}
+	}
+	if string(readFile(t, filepath.Join(project, FragmentFile))) != string(before) {
+		t.Fatal("отказ изменил фрагмент")
+	}
+}

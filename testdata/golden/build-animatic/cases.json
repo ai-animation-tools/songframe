@@ -1146,7 +1146,7 @@
           ],
           "expected": {
             "code": 0,
-            "stdout": "использование: build_animatic [-h] [--plan-only]\n\nДетерминированная сборка единственного latest; @link README.md\n\nпараметры:\n  -h, --help   показать справку и выйти\n  --plan-only  Проверить входы без записи и кодирования.\n",
+            "stdout": "использование: build_animatic [-h] [--plan-only] [--from ПЛАН] [--to ПЛАН]\n\nДетерминированная сборка единственного latest; @link README.md\n\nпараметры:\n  -h, --help   показать справку и выйти\n  --plan-only  Проверить входы без записи и кодирования.\n  --from ПЛАН  Первый план фрагмента для просмотра (вместе с --to).\n  --to ПЛАН    Последний план фрагмента для просмотра (вместе с --from).\n",
             "stderr": "",
             "changes": {},
             "texts": {},
@@ -1171,7 +1171,7 @@
           "expected": {
             "code": 2,
             "stdout": "",
-            "stderr": "использование: build_animatic [-h] [--plan-only]\nbuild_animatic: ошибка: неизвестные аргументы: --bogus\n",
+            "stderr": "использование: build_animatic [-h] [--plan-only] [--from ПЛАН] [--to ПЛАН]\nbuild_animatic: ошибка: неизвестные аргументы: --bogus\n",
             "changes": {},
             "texts": {},
             "probe": {}

@@ -193,6 +193,7 @@ export function unconfiguredStoryApi(): Api {
     animatic: {
       view: async () => unconfigured('animatic.view'),
       build: async () => unconfigured('animatic.build'),
+      fragment: async () => unconfigured('animatic.fragment'),
       setStatus: async () => unconfigured('animatic.setStatus')
     },
     checks: {

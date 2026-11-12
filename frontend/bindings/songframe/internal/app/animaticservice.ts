@@ -29,6 +29,14 @@ export function Build(project: string, planOnly: boolean): $CancellablePromise<j
 }
 
 /**
+ * Fragment — animatic:fragment: задание просмотра планов from…to под участок песни; как и
+ * сборку, его останавливает неутверждённый сценарий.
+ */
+export function Fragment(project: string, $from: string, to: string): $CancellablePromise<jobs$0.Info> {
+    return $Call.ByID(3610112292, project, $from, to);
+}
+
+/**
  * SetStatus — animatic:setStatus: status approved принимает текущую свежую сборку, review
  * возвращает её на просмотр. Проблема сценария запрещает только принятие.
  */

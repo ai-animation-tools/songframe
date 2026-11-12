@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"songframe/internal/dynvalue"
 	"songframe/internal/jobs"
@@ -19,7 +20,20 @@ const (
 	textBuildTitle      = "Сборка аниматика"
 	textCheckTitle      = "Проверка входов аниматика"
 	textJobNotCreated   = "Менеджер заданий не подключён: задание не создано."
+	textFragmentStep    = "сборка фрагмента"
+	textShotInvalid     = "Неверный номер плана фрагмента."
 )
+
+// textFragmentTitle — заголовок задания фрагмента: один план или диапазон.
+func textFragmentTitle(from, to string) string {
+	if from == to {
+		return "Фрагмент аниматика " + from
+	}
+	return "Фрагмент аниматика " + from + "–" + to
+}
+
+// shotID — номер плана реестра; иное значение не передаётся инструменту, чтобы не стать его опцией.
+var shotID = regexp.MustCompile(`^M\d{2}(?:\.\d+)?$`)
 
 // Runner — запуск инструмента комплекса по имени (tools.RunContext); тесты подменяют его.
 type Runner func(ctx context.Context, project, name string, args []string) (tools.Result, error)
@@ -64,6 +78,26 @@ func (s *Service) Build(project string, planOnly bool) (jobs.Info, error) {
 		s.toolStep(project, "build_animatic", args, label),
 	}
 	return s.start(jobs.Spec{Kind: jobs.KindAnimatic, Title: title, Project: project, Steps: steps})
+}
+
+// Fragment — задание просмотра планов from…to под участок песни: обновить карточки и
+// представления, затем build_animatic --from --to. Это не сборка аниматика: вид задания tool,
+// latest и принятие не меняются, страница «Аниматик» его не показывает.
+func (s *Service) Fragment(project, from, to string) (jobs.Info, error) {
+	if info, err := os.Stat(filepath.Join(project, "plan", "scenes.json")); err != nil || !info.Mode().IsRegular() {
+		return jobs.Info{}, errors.New(scenarioRequired)
+	}
+	if !shotID.MatchString(from) || !shotID.MatchString(to) {
+		return jobs.Info{}, errors.New(textShotInvalid)
+	}
+	if s.start == nil {
+		return jobs.Info{}, errors.New(textJobNotCreated)
+	}
+	steps := []jobs.Step{
+		s.toolStep(project, "update_scene_views", []string{}, textUpdateViewsStep),
+		s.toolStep(project, "build_animatic", []string{"--from", from, "--to", to}, textFragmentStep),
+	}
+	return s.start(jobs.Spec{Kind: jobs.KindTool, Title: textFragmentTitle(from, to), Project: project, Steps: steps})
 }
 
 // toolStep — шаг, запускающий инструмент: вывод уходит в журнал задания, ненулевой код — сбой с

@@ -235,6 +235,11 @@ export interface Api {
     view(project: string): Promise<AnimaticView>;
     /** Задание: update_scene_views, затем build_animatic (с --plan-only только проверка входов). */
     build(project: string, planOnly: boolean): Promise<JobInfo>;
+    /**
+     * Задание просмотра планов from…to под участок песни: update_scene_views, затем build_animatic --from --to.
+     * Видео — plan/animatic/.cache/fragment/fragment.mp4 проекта (каждая сборка заменяет его); latest и принятие аниматика не меняются.
+     */
+    fragment(project: string, from: string, to: string): Promise<JobInfo>;
     /** Принятие текущей сборки или возврат на просмотр в plan/production-status.json. */
     setStatus(project: string, status: 'approved' | 'review'): Promise<AnimaticView>;
   };

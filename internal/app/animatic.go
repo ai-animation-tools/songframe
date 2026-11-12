@@ -53,6 +53,15 @@ func (s *AnimaticService) Build(project string, planOnly bool) (jobs.Info, error
 	return wire.Done(s.service.Build(project, planOnly))
 }
 
+// Fragment — animatic:fragment: задание просмотра планов from…to под участок песни; как и
+// сборку, его останавливает неутверждённый сценарий.
+func (s *AnimaticService) Fragment(project, from, to string) (jobs.Info, error) {
+	if problem := reviewProblem(s.workflow, project); problem != "" {
+		return wire.Done(jobs.Info{}, errors.New(problem))
+	}
+	return wire.Done(s.service.Fragment(project, from, to))
+}
+
 // SetStatus — animatic:setStatus: status approved принимает текущую свежую сборку, review
 // возвращает её на просмотр. Проблема сценария запрещает только принятие.
 func (s *AnimaticService) SetStatus(project, status string) (animatic.View, error) {

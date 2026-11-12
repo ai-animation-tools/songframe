@@ -562,6 +562,7 @@ export function createApi(b: Bindings): Api {
   // отдаёт строками контракта, адаптер только сужает тип.
   api.animatic.view = (project) => call('animatic.view', async () => (await (await b.animatic()).View(project)) as AnimaticView);
   api.animatic.build = (project, planOnly) => call('animatic.build', async () => toJob(await (await b.animatic()).Build(project, planOnly ?? false)));
+  api.animatic.fragment = (project, from, to) => call('animatic.fragment', async () => toJob(await (await b.animatic()).Fragment(project, from, to)));
   api.animatic.setStatus = (project, status) =>
     call('animatic.setStatus', async () => (await (await b.animatic()).SetStatus(project, status)) as AnimaticView, false);
 

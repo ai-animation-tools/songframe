@@ -1207,11 +1207,16 @@ func unlinkMissingOK(path string) error {
 var Parser = toolrt.ArgParser{
 	Prog:        "build_animatic",
 	Description: "Детерминированная сборка единственного latest; @link README.md",
-	Flags:       []toolrt.Flag{{Name: "--plan-only", Help: "Проверить входы без записи и кодирования."}},
+	Flags: []toolrt.Flag{
+		{Name: "--plan-only", Help: "Проверить входы без записи и кодирования."},
+		{Name: "--from", Value: true, Metavar: "ПЛАН", Help: "Первый план фрагмента для просмотра (вместе с --to)."},
+		{Name: "--to", Value: true, Metavar: "ПЛАН", Help: "Последний план фрагмента для просмотра (вместе с --from)."},
+	},
 }
 
 // Run — инструмент build_animatic на разрешённом корне проекта: сборка (или --plan-only),
-// обновление текстовых представлений после сборки и отчёт JSON. ValueError, KeyError и OSError —
+// обновление текстовых представлений после сборки и отчёт JSON; с --from/--to — только фрагмент
+// для просмотра (BuildFragment), представления проекта при этом не пишутся. ValueError, KeyError и OSError —
 // текст в stderr с кодом 1 (строки готовности фрагментов остаются в stdout); прочие исключения —
 // необработанная ошибка «Ошибка: текст».
 func Run(ctx context.Context, root string, args []string) toolcli.Output {
@@ -1227,11 +1232,24 @@ func Run(ctx context.Context, root string, args []string) toolcli.Output {
 		}
 		return printer.Crash(err)
 	}
-	report, err := Build(ctx, root, planOnly, printer.Print)
+	from, to := parsed.Values["--from"], parsed.Values["--to"]
+	fragment := len(from) > 0 || len(to) > 0
+	var report *toolrt.Dict
+	var err error
+	switch {
+	case fragment && (len(from) == 0 || len(to) == 0):
+		return printer.Fail(textFragmentRange)
+	case fragment && planOnly:
+		return printer.Fail(textFragmentOnly)
+	case fragment:
+		report, err = BuildFragment(ctx, root, from[0], to[0], printer.Print)
+	default:
+		report, err = Build(ctx, root, planOnly, printer.Print)
+	}
 	if err != nil {
 		return fail(err)
 	}
-	if !planOnly {
+	if !planOnly && !fragment {
 		if err := writeDocuments(root); err != nil {
 			return fail(err)
 		}

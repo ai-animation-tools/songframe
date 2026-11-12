@@ -313,6 +313,7 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
     animatic: {
       view: guardedAsync(merged.animatic.view),
       build: guardedAsync(merged.animatic.build),
+      fragment: guardedAsync(merged.animatic.fragment),
       setStatus: guardedAsync(merged.animatic.setStatus)
     },
     checks: {

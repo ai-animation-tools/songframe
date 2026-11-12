@@ -6,6 +6,7 @@ import AddIcon from '@mui/icons-material/Add';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import ReplayIcon from '@mui/icons-material/Replay';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import MusicVideoIcon from '@mui/icons-material/MusicVideo';
 import type { BrokenPackage, JobInfo, PackageView, ShotProduction } from '@shared/types';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
@@ -33,7 +34,8 @@ export function ProductionShotCard({
   onDiscardBroken,
   now,
   onNewAttempt,
-  onDiscardAttempt
+  onDiscardAttempt,
+  onFragment
 }: {
   shot: ShotProduction;
   busy: boolean;
@@ -50,6 +52,8 @@ export function ProductionShotCard({
   onNewAttempt?(): void;
   /** Удалить попытку целиком; доступно вне незавершённой отправки. */
   onDiscardAttempt?(pkg: PackageView): void;
+  /** Открыть фрагмент под музыку, начиная с этого плана. */
+  onFragment?(): void;
 }): ReactElement {
   const [menu, setMenu] = useState<HTMLElement | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
@@ -78,6 +82,12 @@ export function ProductionShotCard({
         <Box sx={{ flex: 1 }} />
         {/* Постановку плана правят в реестре сцен; переход открывает её редактор у этого же плана. */}
         <ShotPageButton page="scenario" shot={shot.id} size="small" />
+        {/* Просмотр плана с соседями под песню: без генерации, поэтому кнопка всегда доступна. */}
+        {onFragment ? (
+          <Button size="small" variant="outlined" startIcon={<MusicVideoIcon />} title={productionTexts.fragmentPreview.openHint} onClick={onFragment}>
+            {productionTexts.fragmentPreview.open}
+          </Button>
+        ) : null}
         {canRetry || onNewAttempt || canDiscard ? (
           <Tooltip title={productionTexts.planPath.moreActions}>
             <IconButton size="small" aria-label={productionTexts.planPath.moreActions} onClick={(event) => setMenu(event.currentTarget)}>

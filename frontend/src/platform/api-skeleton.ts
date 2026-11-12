@@ -201,6 +201,7 @@ export function apiSkeleton(): Api {
     animatic: {
       view: stub('animatic.view'),
       build: stub('animatic.build'),
+      fragment: stub('animatic.fragment'),
       setStatus: stub('animatic.setStatus')
     },
     checks: {

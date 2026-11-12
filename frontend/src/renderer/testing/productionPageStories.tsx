@@ -17,6 +17,7 @@ import { ProductionPage } from '../pages/ProductionPage/ProductionPage';
 import { storyAccess } from './commonStories';
 import { assertDeliveryAcceptOptions, DELIVERY_PROJECT, deliveryJob } from './deliveryStories';
 import { createDerivedScenario } from './derivedStories';
+import { fragmentModel } from './fragmentStories';
 import { keyframePackage, keyframeQuestion } from './keyframeStories';
 import { productionShot } from './productionQueueStories';
 import { workflowProposal, workflowView } from './productionWorkflowStories';
@@ -250,7 +251,10 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
         });
       };
       const derived = createDerivedScenario({ view: { project: PAGE_PROJECT } });
+      // Фрагмент под музыку: задание tool и видео витрины; список заданий страницы остаётся своим.
+      const fragment = fragmentModel();
       const session = createStoryApi({
+        animatic: fragment.overrides.animatic,
         production: {
           acceptedKit: async (_project, shot) => structuredClone(options.acceptedKit?.(shot) ?? null),
           addKeyframeNote: async (project, dir, frame, note, scope) => {
@@ -432,7 +436,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
             return reviewSnapshot(pkg);
           }
         },
-        jobs: { list: async () => structuredClone(model.jobs) },
+        jobs: { list: async () => structuredClone(model.jobs), get: fragment.overrides.jobs.get },
         productionWorkflow: {
           // Подготовка агентом показана отдельной группой историй; здесь есть только свой файл опоры, идущий мимо агента.
           view: async (project, shot, packageDir) => workflowSnapshot(project, shot, packageDir),
@@ -495,7 +499,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
           }
         },
         dialog: { pickFiles: async () => [options.manual ? STORY_VIDEO_PATH : STORY_IMAGE_PATH] },
-        shell: { openPath: async () => undefined },
+        shell: { openPath: async () => undefined, fileUrl: fragment.overrides.shell.fileUrl },
         derivedShots: derived.api.derivedShots
       });
       models.set(session.api, model);
@@ -516,6 +520,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
         )
       );
       session.onCleanup(derived.dispose);
+      session.onCleanup(fragment.dispose);
       session.onCleanup(() => {
         disposed = true;
         for (const [timer, cancel] of timers) {

@@ -118,6 +118,30 @@ export const Overview: Story = {
   }
 };
 
+export const FragmentPreview: Story = {
+  tags: ['ci'],
+  name: 'Фрагмент под музыку · из панели страницы',
+  play: async (context) => {
+    const screen = screenOf(context);
+    const fragment = texts.fragmentPreview;
+    await shotHeading(context, 'M02');
+    await userEvent.click(screen.getByRole('button', { name: fragment.open }));
+    // Вход — в шапке выбранного плана; панель страницы остаётся прежней.
+    const dialog = within(await screen.findByRole('dialog', { name: fragment.title }));
+    // Диапазон начинается с выбранного плана страницы.
+    await expect(dialog.getByRole('combobox', { name: fragment.from })).toHaveTextContent('M02');
+    await userEvent.click(dialog.getByRole('combobox', { name: fragment.to }));
+    await userEvent.click(await screen.findByRole('option', { name: /^M04/ }));
+    await userEvent.click(dialog.getByRole('button', { name: fragment.build }));
+    await dialog.findByText(fragment.ready, undefined, POLL_TIMEOUT);
+    await expect(dialog.getByLabelText(fragment.video)).toHaveAttribute('src', expect.stringContaining('media/story-video.mp4?v='));
+    // Закрытие возвращает к плану; приёмка и попытки не менялись.
+    await userEvent.click(dialog.getByRole('button', { name: fragment.close }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: fragment.title })).not.toBeInTheDocument());
+    await expect(selectedCard(context)).toHaveTextContent('M02');
+  }
+};
+
 export const ShotFromQuery: Story = {
   name: 'Адрес ?shot= · выбор плана и новая ссылка на открытой странице',
   args: { links: [{ label: 'Уведомление: открыть M05', to: '/project/production?shot=M05' }] },

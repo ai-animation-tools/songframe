@@ -8,7 +8,7 @@
 {
   "schemaVersion": 1,
   "stage": "description",
-  "description": "Постановка, первый кадр, план опор и рекомендуемая модель словами",
+  "description": "Постановка, первый кадр, события плана, план опор и рекомендуемая модель словами",
   "requestSeconds": 7,
   "keyframes": [
     { "id": "K01", "role": "first", "timeSeconds": 0, "prompt": "Самодостаточное описание первого кадра", "referencePaths": ["source/heroes/hero.png"] },

@@ -523,6 +523,10 @@ type StartInput struct {
 	Action     string  `json:"action"`
 	Note       *string `json:"note,omitempty"`
 	Stage      *string `json:"stage,omitempty"`
+	// Keyframes — число опор, выбранное пользователем для этапа description (1…KeyframeLimit), 0 —
+	// «авто»; nil при доработке описания — прежний выбор попытки (workflow keyframe_count), при
+	// новой попытке — «авто».
+	Keyframes *int `json:"keyframes,omitempty"`
 }
 
 // Start проверяет доступность этапа, снимает входы, получает врезки
@@ -552,13 +556,15 @@ func (w *Workflow) Start(ctx context.Context, input StartInput) (View, error) {
 	return w.view(prepared.context.Project, input.Shot, input.PackageDir)
 }
 
-// preparedStart — проверенный запуск: контекст, этап, целевой пакет и снимок входов.
+// preparedStart — проверенный запуск: контекст, этап, целевой пакет, снимок входов и выбранное
+// число опор этапа description (0 — «авто»).
 type preparedStart struct {
 	context    *Context
 	stage      string
 	newPackage bool
 	target     string
 	hashes     *dynvalue.Object
+	keyframes  int
 }
 
 // prepare — синхронная часть start до первого ожидания: проверки этапа и снимок входов.
@@ -596,10 +602,43 @@ func (w *Workflow) prepare(input StartInput) (*preparedStart, error) {
 		}
 		prepared.target = c.PackageDir
 	}
+	if prepared.keyframes, err = keyframeChoice(c, prepared.stage, input.Keyframes, input.Action != "prepare"); err != nil {
+		return nil, err
+	}
 	if prepared.hashes, err = Snapshot(c.Project, c.PackageDir, prepared.target, c.AllowedPaths); err != nil {
 		return nil, err
 	}
 	return prepared, nil
+}
+
+// keyframeChoice — число опор для задания этапа stage: явный выбор пользователя в пределах
+// провайдера видео (0 — «авто»), без него при доработке описания попытки (inherit) — прежний
+// выбор попытки (keyframe_count), иначе 0 («авто»). Речевой план ручной генерации всегда с одной опорой: другой выбор отклоняется,
+// а сам он записывается как «авто» — правило одной опоры задаёт ручной режим.
+func keyframeChoice(c *Context, stage string, chosen *int, inherit bool) (int, error) {
+	if stage != "description" || (chosen != nil && *chosen == 0) {
+		return 0, nil
+	}
+	if chosen == nil {
+		if c.Manual || !inherit {
+			return 0, nil
+		}
+		previous, ok := c.workflowValue("keyframe_count").(float64)
+		if !ok || !dynvalue.IsInteger(previous) || previous < 1 || int(previous) > mediaproviders.KeyframeLimit(c.Settings.Value("provider")) {
+			return 0, nil
+		}
+		return int(previous), nil
+	}
+	if c.Manual {
+		if *chosen != 1 {
+			return 0, errors.New(textManualKeyframeCount)
+		}
+		return 0, nil
+	}
+	if limit := mediaproviders.KeyframeLimit(c.Settings.Value("provider")); *chosen < 1 || *chosen > limit {
+		return 0, errors.New(textKeyframeCountRange(limit))
+	}
+	return *chosen, nil
 }
 
 // continuedStage — этап доработки или продолжения пакета: явный, следующий по пакету или, для
@@ -721,6 +760,7 @@ func (w *Workflow) launch(ctx context.Context, input StartInput, prepared *prepa
 		capabilities.Items = append(capabilities.Items, object)
 	}
 	rules := c.RulesFor(stage)
+	rules.Keyframes = prepared.keyframes
 	generation, err := projectGeneration(c.Project)
 	if err != nil {
 		return err
@@ -731,6 +771,7 @@ func (w *Workflow) launch(ctx context.Context, input StartInput, prepared *prepa
 	if stage == "prompt" {
 		contextInput.promptMaxChars = c.PromptLimit()
 	}
+	contextInput.keyframeCount = rules.Keyframes
 	before := ""
 	if c.PackageDir != "" {
 		description, err := readText(filepath.Join(c.PackageDir, "description.md"))

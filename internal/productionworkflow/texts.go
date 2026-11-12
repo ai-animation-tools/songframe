@@ -1,6 +1,7 @@
 package productionworkflow
 
 import (
+	"fmt"
 	"strings"
 
 	"songframe/internal/dynvalue"
@@ -78,6 +79,7 @@ const (
 	textManualSpeechRequired         = "Сначала подготовьте WAV в блоке «Речь»."
 	textManualUnavailable            = "Пакет для ручной генерации сейчас собрать нельзя."
 	textManualSpeechRole             = "Срез речи"
+	textManualKeyframeCount          = "Видео этого плана создаётся вне приложения по одной опоре: другое число опор выбрать нельзя."
 	textManualSingleFrame            = "Видео этого плана создаётся вне приложения: в описании должна быть ровно одна опора K01 на начале плана."
 	textFrameStructureInvalid        = "Неверная структура опоры."
 	textFramePlanInvalid             = "Неверные ID, роли, порядок, промпт или референсы опор."
@@ -140,6 +142,16 @@ const (
 )
 
 // textToolExitCode — toolExitCode: инструмент завершился без текста ошибки; code nil — null.
+// textKeyframeCountMismatch — агент вернул не то число опор, которое выбрал пользователь.
+func textKeyframeCountMismatch(want, got int) string {
+	return fmt.Sprintf("Выбрано опор: %d, а в описании %d. Доработайте описание или выберите другое число опор.", want, got)
+}
+
+// textKeyframeCountRange — выбранное число опор вне предела провайдера видео.
+func textKeyframeCountRange(limit int) string {
+	return fmt.Sprintf("Число опор — от 1 до %d: столько кадров принимает провайдер видео проекта.", limit)
+}
+
 func textToolExitCode(tool string, code *int) string {
 	text := "null"
 	if code != nil {

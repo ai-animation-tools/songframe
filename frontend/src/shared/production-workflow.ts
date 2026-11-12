@@ -49,6 +49,8 @@ export interface ProductionWorkflowStart {
   action: 'prepare' | 'revise' | 'continue';
   note?: string;
   stage?: Exclude<ProductionPass, 'frames'>;
+  /** Число опор описания, выбранное пользователем (1…keyframeLimit); 0 — «авто», без поля при доработке — прежний выбор попытки. */
+  keyframes?: number;
 }
 export interface ProductionWorkflowView {
   project: string;

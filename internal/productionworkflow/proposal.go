@@ -37,6 +37,9 @@ type Rules struct {
 	// Manual — речевой план без липсинка у провайдера: видео создаётся вне приложения по одной
 	// опоре, этапа request нет.
 	Manual bool
+	// Keyframes — число опор, выбранное пользователем для этапа description; 0 — «авто»: агент
+	// выбирает сам в пределах 2–20.
+	Keyframes int
 }
 
 // Tree — правила для локальной записи; порядок ключей зафиксирован эталоном.
@@ -65,6 +68,10 @@ func (r Rules) Tree() *dynvalue.Object {
 	if r.Manual {
 		tree.Set("manualGeneration", true)
 	}
+	// Выбранное число опор пишется только при явном выборе: записи «авто» не меняются.
+	if r.Keyframes > 0 {
+		tree.Set("keyframeCount", float64(r.Keyframes))
+	}
 	return tree
 }
 
@@ -77,6 +84,9 @@ func RulesFromTree(value any) Rules {
 	}
 	rules.Project, _ = dynvalue.Get(value, "project").(string)
 	rules.Manual = dynvalue.Get(value, "manualGeneration") == true
+	if count, ok := dynvalue.Get(value, "keyframeCount").(float64); ok && dynvalue.IsInteger(count) && count > 0 {
+		rules.Keyframes = int(count)
+	}
 	if paths, ok := dynvalue.AsArray(dynvalue.Get(value, "allowedPaths")); ok {
 		for _, path := range paths {
 			if text, isString := path.(string); isString {
@@ -299,7 +309,8 @@ func ParseProposal(raw string, rules Rules) (*dynvalue.Object, error) {
 
 // parseDescription — проверка описания и плана опор: K01..KNN подряд, first на 0, last на
 // requestSeconds, middle строго между; референсы — изображения из allowedPaths. В ручном режиме
-// (rules.Manual) опора ровно одна — K01 first на 0.
+// (rules.Manual) опора ровно одна — K01 first на 0. Выбранное пользователем число опор
+// (rules.Keyframes) соблюдается точно; одна опора — только K01 first, без last.
 func parseDescription(value *dynvalue.Object, rules Rules) error {
 	if err := keys(value, "schemaVersion", "stage", "description", "requestSeconds", "keyframes"); err != nil {
 		return err
@@ -312,7 +323,10 @@ func parseDescription(value *dynvalue.Object, rules Rules) error {
 	if rules.Manual && len(frames) != 1 {
 		return errors.New(textManualSingleFrame)
 	}
-	if !rules.Manual && (len(frames) < 2 || len(frames) > 20) {
+	if !rules.Manual && rules.Keyframes > 0 && len(frames) != rules.Keyframes {
+		return errors.New(textKeyframeCountMismatch(rules.Keyframes, len(frames)))
+	}
+	if !rules.Manual && rules.Keyframes != 1 && (len(frames) < 2 || len(frames) > mediaproviders.DefaultKeyframeLimit) {
 		return errors.New(textDescriptionInvalid)
 	}
 	if err := CheckDuration(seconds, rules.WindowSeconds, rules.DurationRule); err != nil {

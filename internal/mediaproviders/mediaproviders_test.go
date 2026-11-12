@@ -5,9 +5,13 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 )
+
+// providerKeyframes — maxKeyframes каждой записи реестра renderer по порядку.
+var providerKeyframes = regexp.MustCompile(`\n    maxKeyframes: (null|\d+),`)
 
 var providerBlock = regexp.MustCompile(`\n  (\w+): \{\n    title: '([^']*)',\n    kinds: \[([^\]]*)\],\n    executor: (null|'\w+'),\n    paid: (true|false),`)
 
@@ -21,7 +25,14 @@ func TestRegistryMatchesFrontend(t *testing.T) {
 	if len(blocks) == 0 || len(blocks) != len(IDs()) {
 		t.Fatalf("в renderer %d провайдеров, в Go %v", len(blocks), IDs())
 	}
+	limits := providerKeyframes.FindAllStringSubmatch(string(data), -1)
+	if len(limits) != len(blocks) {
+		t.Fatalf("maxKeyframes объявлен у %d провайдеров из %d", len(limits), len(blocks))
+	}
 	for index, block := range blocks {
+		if got, _ := Lookup(block[1]); strconv.Itoa(got.MaxKeyframes) != strings.ReplaceAll(limits[index][1], "null", "0") {
+			t.Fatalf("провайдер %s: maxKeyframes Go %d, renderer %s", block[1], got.MaxKeyframes, limits[index][1])
+		}
 		kinds := []string{}
 		for _, kind := range strings.Split(block[3], ",") {
 			kinds = append(kinds, strings.Trim(strings.TrimSpace(kind), "'"))

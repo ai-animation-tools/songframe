@@ -28,6 +28,7 @@
                      "time_seconds": {"type": "number", "minimum": 0}, "note": {"type": ["string", "null"]},
                      "path": {"type": ["string", "null"]}, "sha256": {"type": ["string", "null"]}, "approved": {"type": "boolean"}}}},
     "approved_frames": {"type": "object"},
+    "keyframe_count": {"type": "integer", "minimum": 1},
     "keyframe_notes": {"type": "array", "items": {
       "type": "object", "required": ["id", "frame", "note", "scope", "active", "at"],
       "properties": {"id": {"type": "integer", "minimum": 1}, "frame": {"type": ["string", "null"], "pattern": "^K\\d{2}$"},

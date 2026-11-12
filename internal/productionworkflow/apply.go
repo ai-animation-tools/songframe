@@ -256,7 +256,8 @@ func (w *Workflow) applyDescription(ctx context.Context, plan *applyPlan) error 
 	}
 	keyframes, _ := dynvalue.AsArray(after.Value("keyframes"))
 	args := []string{"plan-keyframes", "--dir", target, "--request-seconds", dynvalue.ToString(after.Value("requestSeconds"))}
-	if plan.stored.Rules().Manual {
+	rules := plan.stored.Rules()
+	if rules.Manual || len(keyframes) == 1 {
 		args = append(args, "--single")
 	}
 	for _, frame := range keyframes {
@@ -294,6 +295,12 @@ func (w *Workflow) applyDescription(ctx context.Context, plan *applyPlan) error 
 		}
 	}
 	workflow.Set("approved_frames", approved)
+	// Выбор пользователя сохраняется в попытке: доработка описания без нового выбора его соблюдает.
+	if rules.Keyframes > 0 {
+		workflow.Set("keyframe_count", float64(rules.Keyframes))
+	} else {
+		workflow.Delete("keyframe_count")
+	}
 	workflow.Set("description_approved", false)
 	// Новое описание построено по текущей постановке: пакет снова соответствует сценарию.
 	if current := production.CurrentShotFingerprint(c.Project, plan.shot); current != "" {

@@ -41,6 +41,13 @@ export interface StartInput {
     "action": string;
     "note"?: string | null;
     "stage"?: string | null;
+
+    /**
+     * Keyframes — число опор, выбранное пользователем для этапа description (1…KeyframeLimit), 0 —
+     * «авто»; nil при доработке описания — прежний выбор попытки (workflow keyframe_count), при
+     * новой попытке — «авто».
+     */
+    "keyframes"?: number | null;
 }
 
 /**

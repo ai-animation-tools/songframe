@@ -4,11 +4,11 @@ import { productionTexts } from '@shared/texts/production';
  * Предложение решается целиком в окне сравнения; на самом шаге его текст не повторяется.
  */
 import { useEffect, useRef, useState, type ReactElement } from 'react';
-import { Alert, Button, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import type { ProductionPass, ProductionWorkflowStart } from '@shared/production-workflow';
 import type { PackageView } from '@shared/types';
-import { mediaProviderInfo } from '@shared/media-providers';
+import { keyframeLimit, mediaProviderInfo } from '@shared/media-providers';
 import { AgentButton } from '../../../components';
 import { AgentJobCard } from '../../../components/AgentJobCard';
 import type { ProductionWorkflow } from '../useProductionWorkflow';
@@ -62,6 +62,9 @@ export function ProductionWorkflowPanel({
   const promptNext = view?.nextStage === 'prompt';
   const [instructionOpen, setInstructionOpen] = useState(false);
   const [instruction, setInstruction] = useState('');
+  // Число опор выбирается перед подготовкой описания; 0 — «авто». Речевой план ручной генерации — всегда одна опора.
+  const [keyframes, setKeyframes] = useState(0);
+  const limit = keyframeLimit(view?.videoProvider);
   useEffect(() => {
     if (reviseOpen) reviseArea.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, [reviseOpen]);
@@ -79,7 +82,11 @@ export function ProductionWorkflowPanel({
     setValidation(null);
     setLastAction(action);
     const instructionText = action === 'continue' && promptNext ? instruction.trim() : '';
-    await workflow.start(action, action === 'revise' ? note.trim() : instructionText || undefined);
+    await workflow.start(
+      action,
+      action === 'revise' ? note.trim() : instructionText || undefined,
+      action === 'prepare' && !view?.manual ? Math.min(keyframes, limit) : undefined
+    );
   };
   const proposal = view?.proposal;
   // Кнопка просмотра есть только у законченного ответа: идущее задание и применённое предложение нечего решать.
@@ -156,15 +163,37 @@ export function ProductionWorkflowPanel({
               {continueLabel}
             </AgentButton>
           ) : (
-            <AgentButton
-              variant="contained"
-              disabled={primaryDisabled}
-              disabledReason={reason ?? productionTexts.productionWorkflowPanel.loadingReason}
-              title={productionTexts.productionWorkflowPanel.prepareHint}
-              onClick={() => void start('prepare')}
-            >
-              {productionTexts.productionWorkflowPanel.prepare}
-            </AgentButton>
+            <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: 'flex-start', flexWrap: 'wrap' }}>
+              <TextField
+                select
+                size="small"
+                sx={{ width: 120 }}
+                label={productionTexts.productionWorkflowPanel.keyframes}
+                // Речевой план ручной генерации делается по одной опоре: выбор заблокирован, причина — в подсказке.
+                value={view?.manual ? 1 : Math.min(keyframes, limit)}
+                disabled={busy || !!view?.manual}
+                title={
+                  view?.manual ? productionTexts.productionWorkflowPanel.keyframesManual : productionTexts.productionWorkflowPanel.keyframesHint({ limit })
+                }
+                onChange={(event) => setKeyframes(Number(event.target.value))}
+              >
+                {view?.manual ? null : <MenuItem value={0}>{productionTexts.productionWorkflowPanel.keyframesAuto}</MenuItem>}
+                {Array.from({ length: limit }, (_, index) => index + 1).map((count) => (
+                  <MenuItem key={count} value={count}>
+                    {count}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <AgentButton
+                variant="contained"
+                disabled={primaryDisabled}
+                disabledReason={reason ?? productionTexts.productionWorkflowPanel.loadingReason}
+                title={productionTexts.productionWorkflowPanel.prepareHint}
+                onClick={() => void start('prepare')}
+              >
+                {productionTexts.productionWorkflowPanel.prepare}
+              </AgentButton>
+            </Stack>
           )}
           {packageDir && promptNext && !instructionOpen ? (
             <Button size="small" startIcon={<EditIcon />} disabled={busy} onClick={() => setInstructionOpen(true)}>

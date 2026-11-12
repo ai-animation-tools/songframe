@@ -70,6 +70,8 @@ function PanelHost({
 
 export type WorkflowPanelMode =
   | 'empty'
+  /** Речевой план ручной генерации: описание всегда с одной опорой. */
+  | 'manual'
   | 'loading'
   | 'readFailure'
   | 'ready'
@@ -95,6 +97,8 @@ interface PanelModel {
   question: number;
   view: ProductionWorkflowView;
   starts: number;
+  /** Число опор последнего запуска: undefined — поле не передано, 0 — «авто». */
+  keyframes: number | undefined;
   applies: number;
   discards: number;
   callbacks: number;
@@ -152,6 +156,7 @@ export function workflowPanelOptions(mode: WorkflowPanelMode = 'empty'): StoryOp
           );
           view.job = workflowAgentJob({ status: 'completed', exitCode: 0 });
         }
+        if (mode === 'manual') view.manual = true;
         if (mode === 'failedJob') view.job = workflowAgentJob({ status: 'failed', exitCode: 1, message: 'Программа завершилась до ответа.' });
         if (mode === 'revision') Object.assign(view, { canRevise: true, canPrepare: false, stage: 'needs_revision' });
         // Как в Go: отправленная попытка не продолжается, но возврат с замечанием остаётся.
@@ -194,6 +199,7 @@ export function workflowPanelOptions(mode: WorkflowPanelMode = 'empty'): StoryOp
         question: 1,
         view: workflowView(),
         starts: 0,
+        keyframes: undefined,
         applies: 0,
         discards: 0,
         callbacks: 0,
@@ -239,6 +245,7 @@ export function workflowPanelOptions(mode: WorkflowPanelMode = 'empty'): StoryOp
           model.dir = model.view.packageDir ?? undefined;
           model.question = 1;
           model.starts = 0;
+          model.keyframes = undefined;
           model.applies = 0;
           model.discards = 0;
           model.callbacks = 0;
@@ -321,6 +328,7 @@ export function workflowPanelOptions(mode: WorkflowPanelMode = 'empty'): StoryOp
             )
               throw new Error('Подготовка этого этапа недоступна.');
             model.starts++;
+            model.keyframes = input.keyframes;
             model.note = input.note ?? '';
             running = true;
             model.view = {
@@ -511,6 +519,9 @@ export function WorkflowPanelStory() {
       <Typography data-testid="workflow-counts">
         Запусков: {model.starts}. Применений: {model.applies}. Отклонений: {model.discards}. Обновлений пакета: {model.callbacks}. Текст запуска:{' '}
         {model.note || 'нет'}.
+      </Typography>
+      <Typography data-testid="workflow-keyframes">
+        Опор при запуске: {model.keyframes === undefined ? 'не передано' : model.keyframes === 0 ? 'авто' : model.keyframes}.
       </Typography>
       <Typography data-testid="workflow-busy">
         Занятость: {model.busy ? 'да' : 'нет'}. Занятость наблюдалась: {model.busySeen ? 'да' : 'нет'}.

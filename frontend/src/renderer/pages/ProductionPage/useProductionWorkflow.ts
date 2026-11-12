@@ -164,8 +164,8 @@ export function useProductionWorkflow(project: string, shot: string, packageDir:
     view,
     error,
     busy: pending || !!view?.busy,
-    start: (action: ProductionWorkflowStart['action'], note?: string) =>
-      execute(() => window.api.productionWorkflow.start({ project, shot, packageDir, action, note })),
+    start: (action: ProductionWorkflowStart['action'], note?: string, keyframes?: number) =>
+      execute(() => window.api.productionWorkflow.start({ project, shot, packageDir, action, note, keyframes })),
     generateFrames: () => (packageDir ? execute(() => window.api.productionWorkflow.generateFrames(project, shot, packageDir)) : Promise.resolve(false)),
     /** Пакет ручной генерации собирается без агента: после записи попытка перечитывается, как после применения. */
     buildManual: () => (packageDir ? execute(() => window.api.productionWorkflow.buildManual(project, shot, packageDir), true) : Promise.resolve(false)),

@@ -85,6 +85,37 @@ export const RunningToReady: Story = {
     await expect(screen.getByTestId('workflow-busy')).toHaveTextContent('Занятость: нет. Занятость наблюдалась: да.');
   }
 };
+export const KeyframeCount: Story = {
+  name: 'Число опор · выбор доходит до задания описания',
+  tags: ['ci'],
+  play: async (context) => {
+    const screen = await ready(context);
+    const select = screen.getByRole('combobox', { name: labels.keyframes });
+    await expect(select).toHaveTextContent(labels.keyframesAuto);
+    await userEvent.click(select);
+    // Провайдер витрины не объявляет предела: доступны «Авто» и 1–20.
+    await expect(await screen.findAllByRole('option')).toHaveLength(21);
+    await userEvent.click(screen.getByRole('option', { name: '3' }));
+    await expect(select).toHaveTextContent('3');
+    await userEvent.click(screen.getByRole('button', { name: labels.prepare }));
+    await waitFor(() => expect(screen.getByTestId('workflow-keyframes')).toHaveTextContent('Опор при запуске: 3.'));
+  }
+};
+export const KeyframeCountManual: Story = {
+  name: 'Число опор · речевой план ручной генерации с одной опорой',
+  tags: ['ci'],
+  parameters: { songframe: workflowPanelOptions('manual') },
+  play: async (context) => {
+    const screen = await ready(context);
+    const select = screen.getByRole('combobox', { name: labels.keyframes });
+    await expect(select).toHaveTextContent('1');
+    await expect(select).toHaveAttribute('aria-disabled', 'true');
+    await expect(select.closest('[title]')).toHaveAttribute('title', labels.keyframesManual);
+    await userEvent.click(screen.getByRole('button', { name: labels.prepare }));
+    // Одна опора задаётся ручным режимом в Go: число в задание не передаётся.
+    await waitFor(() => expect(screen.getByTestId('workflow-keyframes')).toHaveTextContent('Опор при запуске: не передано.'));
+  }
+};
 export const InspectAndApply: Story = {
   name: 'Просмотр, Escape, отмена и применение · согласование отдельно',
   parameters: { songframe: workflowPanelOptions('ready') },

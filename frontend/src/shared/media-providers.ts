@@ -18,6 +18,11 @@ export interface MediaProviderInfo {
    */
   lipSync: { min: number; max: number } | null;
   /**
+   * Сколько опорных кадров принимает один запрос видео у самой ёмкой модели провайдера: предел выбора «Опор» при подготовке описания.
+   * null — провайдер предела не объявляет, действует DEFAULT_KEYFRAME_LIMIT.
+   */
+  maxKeyframes: number | null;
+  /**
    * Как сделать видео речевого плана вне приложения, если у провайдера нет липсинка (lipSync null): адрес кабинета, шаги
    * и пример источника для поля загрузки. В шагах {url} становится ссылкой, {image} и {audio} — именами файлов пакета.
    * null — пошаговой инструкции нет: пакет и загрузка видео работают и без неё.
@@ -64,6 +69,8 @@ export const MEDIA_PROVIDERS: Record<MediaProviderId, MediaProviderInfo> = {
     paid: true,
     // Звуковой слот audio_1 режима omni_ref_video — референс звука: губы с ним не синхронизируются.
     lipSync: null,
+    // Kling 4.0 Keyframes: первый, промежуточные и последний кадр — не больше 10 изображений.
+    maxKeyframes: 10,
     // Режим Avatar есть только на сайте сервиса, не в его MCP: речевой план делается по пакету вручную.
     /* eslint-disable no-restricted-syntax -- Особенность конкретного провайдера: его сайт и режим генерации. */
     manualLipSync: {
@@ -142,6 +149,7 @@ export const MEDIA_PROVIDERS: Record<MediaProviderId, MediaProviderInfo> = {
     executor: 'codex',
     paid: false,
     lipSync: null,
+    maxKeyframes: null,
     manualLipSync: null,
     learnsPriceFromCharges: false,
     generationHistory: null,
@@ -222,6 +230,14 @@ export function mediaProviderTitles(kind: MediaKind): string {
 /** Сведения о провайдере из сохранённой строки; неизвестное значение даёт null. */
 export function mediaProviderInfo(value: unknown, kind: MediaKind): MediaProviderInfo | null {
   return isMediaProvider(value, kind) ? MEDIA_PROVIDERS[value] : null;
+}
+
+/** Наибольшее число опор плана, если провайдер своего предела не объявляет (mediaproviders.DefaultKeyframeLimit в Go). */
+export const DEFAULT_KEYFRAME_LIMIT = 20;
+
+/** Предел выбора числа опор плана для провайдера видео проекта; его же проверяет Go при подготовке и применении описания. */
+export function keyframeLimit(provider: unknown): number {
+  return mediaProviderInfo(provider, 'video')?.maxKeyframes ?? DEFAULT_KEYFRAME_LIMIT;
 }
 
 /** Имя сервиса в сохранённом запросе и в настройках может отличаться регистром и крайними пробелами. */

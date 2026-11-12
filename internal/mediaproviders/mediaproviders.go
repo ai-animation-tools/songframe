@@ -38,6 +38,23 @@ type Info struct {
 	// LipSync — допустимая длина звукового входа липсинка в секундах; nil — провайдер не
 	// синхронизирует губы с заданным звуком (речевой план для него недоступен).
 	LipSync *LipSync
+	// MaxKeyframes — maxKeyframes реестра: сколько опорных кадров принимает один запрос видео у
+	// самой ёмкой модели провайдера; 0 — провайдер не объявляет предела (DefaultKeyframeLimit).
+	MaxKeyframes int
+}
+
+// DefaultKeyframeLimit — наибольшее число опор плана, если провайдер своего предела не объявляет.
+const DefaultKeyframeLimit = 20
+
+// KeyframeLimit — наибольшее число опор, которое пользователь может выбрать для плана: предел
+// провайдера видео из реестра, без него — DefaultKeyframeLimit.
+func KeyframeLimit(provider any) int {
+	if id, ok := provider.(string); ok {
+		if info, known := Lookup(id); known && info.MaxKeyframes > 0 {
+			return info.MaxKeyframes
+		}
+	}
+	return DefaultKeyframeLimit
 }
 
 // LipSync — поле lipSync реестра: границы длины звукового входа, секунды.
@@ -51,7 +68,7 @@ var (
 	// ids — порядок MEDIA_PROVIDER_IDS; providers — записи по id.
 	ids       = []string{"kling", "codex"}
 	providers = map[string]Info{
-		"kling": {Title: "Kling", Kinds: []string{Image, Video}, Paid: true, DefaultImageResolution: "2k", DefaultImageAspectRatio: "16:9", DefaultImageOutputs: 1},
+		"kling": {Title: "Kling", Kinds: []string{Image, Video}, Paid: true, DefaultImageResolution: "2k", DefaultImageAspectRatio: "16:9", DefaultImageOutputs: 1, MaxKeyframes: 10},
 		"codex": {Title: "Codex", Kinds: []string{Image}, Executor: "codex"},
 	}
 )

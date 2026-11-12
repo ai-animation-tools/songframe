@@ -61,6 +61,22 @@ export function ImportFrames(project: string, shot: string, packageDir: string, 
 }
 
 /**
+ * ReferenceImages — productionWorkflow.referenceImages: изображения, которые может назвать опора
+ * своего плана опор (разрешённые входы плана).
+ */
+export function ReferenceImages(project: string, shot: string): $CancellablePromise<string[]> {
+    return $Call.ByID(2855561353, project, shot);
+}
+
+/**
+ * SaveOwn — productionWorkflow.saveOwn: своё описание с планом опор или свой видеопромпт
+ * применяются без агента; доступ к ИИ и провайдеру не нужен.
+ */
+export function SaveOwn(input: productionworkflow$0.OwnInput): $CancellablePromise<productionworkflow$0.View> {
+    return $Call.ByID(2336799677, input);
+}
+
+/**
  * Start — productionWorkflow.start: сначала проверка доступа KindAgent — сохранённый агент,
  * найденная программа и вход, затем запуск подготовки.
  */

@@ -49,6 +49,18 @@ func (s *ProductionWorkflowService) Apply(ctx context.Context, project, shot, pa
 	return wire.Done(s.workflow.Apply(ctx, project, shot, packageDir, id))
 }
 
+// SaveOwn — productionWorkflow.saveOwn: своё описание с планом опор или свой видеопромпт
+// применяются без агента; доступ к ИИ и провайдеру не нужен.
+func (s *ProductionWorkflowService) SaveOwn(ctx context.Context, input productionworkflow.OwnInput) (productionworkflow.View, error) {
+	return wire.Done(s.workflow.SaveOwn(ctx, input))
+}
+
+// ReferenceImages — productionWorkflow.referenceImages: изображения, которые может назвать опора
+// своего плана опор (разрешённые входы плана).
+func (s *ProductionWorkflowService) ReferenceImages(project, shot string) ([]string, error) {
+	return wire.Done(s.workflow.ReferenceImages(project, shot))
+}
+
 // BuildManual — productionWorkflow.buildManual: пакет ручной генерации речевого плана у
 // провайдера без липсинка собирается без агента; доступ к ИИ и провайдеру не нужен.
 func (s *ProductionWorkflowService) BuildManual(ctx context.Context, project, shot, packageDir string) (productionworkflow.View, error) {

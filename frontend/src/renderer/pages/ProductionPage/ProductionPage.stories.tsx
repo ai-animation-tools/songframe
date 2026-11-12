@@ -932,3 +932,31 @@ export const PromptReopenFromRequest: Story = {
     context.canvasElement.ownerDocument.defaultView?.scrollTo({ top: 0 });
   }
 };
+
+/** Своё описание без агента: «Написать самому» создаёт попытку, сохранение сразу принимает описание (D-045). */
+export const OwnDescription: Story = {
+  name: 'Своё описание · сохранение создаёт попытку и принимает описание',
+  tags: ['ci'],
+  parameters: { songframe: options({}, '/project/production?shot=M04') },
+  play: async (context) => {
+    const screen = screenOf(context);
+    const own = texts.ownDescriptionDialog;
+    await shotHeading(context, 'M04');
+    await userEvent.click(await screen.findByRole('button', { name: own.writeOwn }, POLL_TIMEOUT));
+    const dialog = within(await screen.findByRole('dialog', { name: own.title({ shot: 'M04' }) }));
+    await userEvent.type(dialog.getByLabelText(own.description), 'Свет в окне загорается, герой поднимает голову.');
+    const prompts = dialog.getAllByLabelText(own.prompt);
+    await userEvent.type(prompts[0], 'Тёмное окно дома.');
+    await userEvent.type(prompts[1], 'Окно светится, герой смотрит вверх.');
+    await userEvent.click(dialog.getByRole('button', { name: own.save }));
+    await waitFor(() => expect(counts(context)).toHaveTextContent('Своих описаний: Свет в окне загорается, герой поднимает голову. (2).'), POLL_TIMEOUT);
+    // Принятие — тот же ответ approve на вопрос описания, что и после принятого предложения агента.
+    await waitFor(() => expect(counts(context)).toHaveTextContent('Ответов: 1.'), POLL_TIMEOUT);
+    await expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    const description = within(planStep(context, 'description'));
+    await expect(await description.findByText(steps.descriptionSummary({ frames: 2, seconds: 6 }), {}, POLL_TIMEOUT)).toBeInTheDocument();
+    // Принятое описание можно исправить вручную: пройденный шаг раскрывается и показывает «Изменить».
+    await userEvent.click(description.getByRole('button', { name: new RegExp(steps.titles.description) }));
+    await expect(await description.findByRole('button', { name: own.edit })).toBeEnabled();
+  }
+};

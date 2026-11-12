@@ -17,6 +17,32 @@ export interface FrameCandidate {
 }
 
 /**
+ * OwnInput — свой текст этапа: Stage description (Description, RequestSeconds, Keyframes) или
+ * prompt (Prompt). PackageDir — выбранная попытка; пусто — новая попытка с описанием.
+ */
+export interface OwnInput {
+    "project": string;
+    "shot": string;
+    "packageDir"?: string;
+    "stage": string;
+    "description"?: string;
+    "requestSeconds"?: number;
+    "keyframes"?: OwnKeyframe[];
+    "prompt"?: string;
+}
+
+/**
+ * OwnKeyframe — опора своего плана опор (строка keyframe-prompts.json).
+ */
+export interface OwnKeyframe {
+    "id": string;
+    "role": string;
+    "timeSeconds": number;
+    "prompt": string;
+    "referencePaths": string[];
+}
+
+/**
  * Reasons — почему действие подготовки недоступно; nil — доступно.
  */
 export interface Reasons {

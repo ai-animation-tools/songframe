@@ -6,10 +6,12 @@ import { productionTexts } from '@shared/texts/production';
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { Alert, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
+import EditNoteIcon from '@mui/icons-material/EditNote';
 import type { ProductionPass, ProductionWorkflowStart } from '@shared/production-workflow';
 import type { PackageView } from '@shared/types';
 import { keyframeLimit, mediaProviderInfo } from '@shared/media-providers';
 import { AgentButton } from '../../../components';
+import { ActionButton } from '../../../components/ActionButton';
 import { AgentJobCard } from '../../../components/AgentJobCard';
 import type { ProductionWorkflow } from '../useProductionWorkflow';
 import { ProductionProposalDialog } from './ProductionProposalDialog';
@@ -32,7 +34,8 @@ export function ProductionWorkflowPanel({
   reviseOpen,
   onReviseOpen,
   onAcceptProposal,
-  onReviseProposal
+  onReviseProposal,
+  onWriteOwn
 }: {
   workflow: ProductionWorkflow;
   packageDir: string | undefined;
@@ -45,6 +48,8 @@ export function ProductionWorkflowPanel({
   onReviseOpen(open: boolean): void;
   onAcceptProposal(): Promise<boolean>;
   onReviseProposal(note: string): Promise<boolean>;
+  /** Своё описание без агента для плана без попытки; кнопка стоит рядом с «Подготовить описание». */
+  onWriteOwn?(): void;
 }): ReactElement {
   // Замечание к опоре уже в списке замечаний и уходит в создание опоры: в поле доработки агентом его не подставляем.
   const savedNote = decision?.verdict === 'revise' && decision.stage !== 'keyframes_review' ? (decision.note ?? '') : '';
@@ -193,6 +198,18 @@ export function ProductionWorkflowPanel({
               >
                 {productionTexts.productionWorkflowPanel.prepare}
               </AgentButton>
+              {onWriteOwn ? (
+                // Своё описание не требует агента: доступно при той же готовности плана, что и подготовка.
+                <ActionButton
+                  startIcon={<EditNoteIcon />}
+                  title={productionTexts.ownDescriptionDialog.writeOwnHint}
+                  disabled={busy || !view?.canPrepare}
+                  disabledReason={busy ? BUSY_REASON : (view?.reasons.prepare ?? productionTexts.productionWorkflowPanel.loadingReason)}
+                  onClick={onWriteOwn}
+                >
+                  {productionTexts.ownDescriptionDialog.writeOwn}
+                </ActionButton>
+              ) : null}
             </Stack>
           )}
           {packageDir && promptNext && !instructionOpen ? (

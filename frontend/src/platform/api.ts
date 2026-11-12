@@ -832,6 +832,10 @@ export function createApi(b: Bindings): Api {
     call('productionWorkflow.importFrames', async () => productionWorkflow((await b.productionWorkflow()).ImportFrames(project, shot, packageDir, images)));
   api.productionWorkflow.buildManual = (project, shot, packageDir) =>
     call('productionWorkflow.buildManual', async () => productionWorkflow((await b.productionWorkflow()).BuildManual(project, shot, packageDir)));
+  api.productionWorkflow.saveOwn = (input) =>
+    call('productionWorkflow.saveOwn', async () => productionWorkflow((await b.productionWorkflow()).SaveOwn(input)), false);
+  api.productionWorkflow.referenceImages = (project, shot) =>
+    call('productionWorkflow.referenceImages', async () => (await b.productionWorkflow()).ReferenceImages(project, shot));
   api.dashboard.view = (project) => call('dashboard.view', async () => (await (await b.dashboard()).View(project)) as unknown as DashboardView);
 
   api.notifications.onOpen = (listener) => subscribe<NotificationTarget>(b.events, 'notifications:open', listener);

@@ -6,7 +6,7 @@ import { productionTexts } from '@shared/texts/production';
  */
 import { useEffect, useRef, useState, type ReactElement, type ReactNode } from 'react';
 import { Box, LinearProgress, Paper, Stack, Step, StepButton, StepContent, StepLabel, Stepper, Typography } from '@mui/material';
-import { normalizeMediaProvider } from '@shared/media-providers';
+import { keyframeLimit, normalizeMediaProvider } from '@shared/media-providers';
 import type { KeyframeNoteScope, ManualVideo, PackageView, ShotProduction } from '@shared/types';
 import { BUSY_REASON } from '../constants';
 import { manualGeneration, planPath, questionStep, REQUEST_IN_FLIGHT, type PlanPath, type PlanStepKey } from '../planPath';
@@ -28,6 +28,9 @@ import { PromptReopenDialog } from './PromptReopenDialog';
 import { ActionButton } from '../../../components/ActionButton';
 import { promptOverLimit } from '../promptLimit';
 import ReplayIcon from '@mui/icons-material/Replay';
+import EditNoteIcon from '@mui/icons-material/EditNote';
+import { initialDraft, ownText, type OwnDescriptionDraft } from '../ownDescription';
+import { OwnDescriptionDialog } from './OwnDescriptionDialog';
 import { ProductionSpeechPanel, SpeechSlice } from './ProductionSpeechPanel';
 import { ProductionWorkflowPanel } from './ProductionWorkflowPanel';
 
@@ -130,6 +133,9 @@ export function ProductionPath({
   const [opened, setOpened] = useState<Record<string, boolean>>({});
   const [reviseOpen, setReviseOpen] = useState(false);
   const [reopeningPrompt, setReopeningPrompt] = useState(false);
+  // Своё описание: черновик открытого редактора; null — редактор закрыт.
+  const [ownDescription, setOwnDescription] = useState<OwnDescriptionDraft | null>(null);
+  const [ownError, setOwnError] = useState<string | null>(null);
   // Промпт на согласовании длиннее предела провайдера: утвердить нельзя, только вернуть агенту.
   const overLimit = pkg?.prompt && !pkg.prompt.approved ? promptOverLimit(pkg.prompt.text, view?.promptMaxChars) : null;
   const reportBusy = useRef(onBusyChange);
@@ -154,6 +160,40 @@ export function ProductionPath({
       await answerApplied(applied.packageDir, 'revise', text);
       await window.api.productionWorkflow.start({ project, shot: shot.id, packageDir: applied.packageDir, action: 'revise', note: text });
     });
+
+  /** Редактор своего описания: текущее описание и план опор попытки либо пустой черновик новой попытки. */
+  const openOwnDescription = (): void => {
+    setOwnError(null);
+    setOwnDescription(
+      initialDraft({
+        description: pkg?.description,
+        requestSeconds: pkg?.timing?.request_seconds,
+        framePrompts: pkg ? (view?.framePrompts ?? []) : [],
+        window: pkg?.timing?.window_seconds ?? shot.end - shot.start,
+        manual: !!view?.manual
+      })
+    );
+  };
+  // Сохранение сразу принимает описание (D-045): автор своего текста — сам пользователь.
+  const saveOwnDescription = async (draft: OwnDescriptionDraft): Promise<void> => {
+    setOwnError(null);
+    const saved = await workflow.saveOwn(ownText(draft), async (applied) => {
+      if (applied.packageDir) await answerApplied(applied.packageDir, 'approve', '');
+    });
+    if (saved) setOwnDescription(null);
+  };
+  // Ошибка сохранения видна в окне редактора: оно остаётся открытым для исправления.
+  useEffect(() => {
+    if (ownDescription && workflow.error) setOwnError(workflow.error);
+  }, [ownDescription, workflow.error]);
+  // Своё описание доступно, пока агент не работает и нет непринятого предложения или открытого вопроса попытки.
+  const ownReason = blocked
+    ? busyReason
+    : view?.proposal && view.proposal.status !== 'applied'
+      ? productionTexts.productionWorkflowPanel.loadingReason
+      : pkg?.pendingDecision
+        ? productionTexts.main.workflow.resolveQuestionFirst
+        : null;
 
   /** Указание записывается замечанием к опоре до запуска: так агент получит его обычным путём. */
   const createFrame = async (frame: string, instruction?: FrameInstruction): Promise<void> => {
@@ -182,6 +222,7 @@ export function ProductionPath({
       onReviseOpen={setReviseOpen}
       onAcceptProposal={acceptProposal}
       onReviseProposal={reviseProposal}
+      onWriteOwn={pkg ? undefined : openOwnDescription}
     />
   );
 
@@ -257,6 +298,19 @@ export function ProductionPath({
         return (
           <>
             {pkg?.description ? <PackageTextSection title={productionTexts.packageCard.description} text={pkg.description} maxHeight={260} /> : null}
+            {pkg?.description && view ? (
+              <ActionButton
+                size="small"
+                startIcon={<EditNoteIcon />}
+                sx={{ alignSelf: 'flex-start' }}
+                title={productionTexts.ownDescriptionDialog.editHint}
+                disabled={!!ownReason}
+                disabledReason={ownReason}
+                onClick={openOwnDescription}
+              >
+                {productionTexts.ownDescriptionDialog.edit}
+              </ActionButton>
+            ) : null}
             {current ? panel(asked) : null}
             {current ? decision(key) : null}
           </>
@@ -400,6 +454,20 @@ export function ProductionPath({
 
   return (
     <Stack spacing={1.5}>
+      {ownDescription ? (
+        <OwnDescriptionDialog
+          project={project}
+          shot={shot.id}
+          windowSeconds={pkg?.timing?.window_seconds ?? shot.end - shot.start}
+          initial={ownDescription}
+          limit={keyframeLimit(view?.videoProvider)}
+          manual={!!view?.manual}
+          busy={workflow.busy}
+          error={ownError}
+          onClose={() => setOwnDescription(null)}
+          onSave={(draft) => void saveOwnDescription(draft)}
+        />
+      ) : null}
       {pkg ? (
         <PackageNotices pkg={pkg} busy={blocked} busyReason={busyReason} onKeepForScene={onKeepForScene} onOpenRevision={() => setReviseOpen(true)} />
       ) : null}

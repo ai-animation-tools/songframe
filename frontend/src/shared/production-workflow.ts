@@ -10,6 +10,14 @@ export interface ProductionFramePrompt {
   prompt: string;
   referencePaths: string[];
 }
+/**
+ * Свой текст этапа без агента: описание с планом опор или видеопромпт. Go проверяет его теми же правилами, что ответ агента,
+ * и применяет к попытке; packageDir не задан — новая попытка с описанием.
+ */
+export type ProductionOwnInput = { project: string; shot: string; packageDir?: string } & ProductionOwnText;
+/** Свой текст этапа: описание с планом опор или видеопромпт. */
+export type ProductionOwnText =
+  { stage: 'description'; description: string; requestSeconds: number; keyframes: ProductionFramePrompt[] } | { stage: 'prompt'; prompt: string };
 export interface ProductionFrameCandidate {
   id: string;
   path: string;

@@ -3,7 +3,7 @@ import type { VocalModelId, VocalPreparationView } from './vocals';
 
 import type { SongModelSetup } from './song-models';
 import type { AgentAccountResult, AgentCheckResult, AgentEvent, AgentJob, AgentModelsResult, AgentSettings, AgentStartInput } from './agents';
-import type { ProductionFrameCandidate, ProductionWorkflowStart, ProductionWorkflowView } from './production-workflow';
+import type { ProductionFrameCandidate, ProductionOwnInput, ProductionWorkflowStart, ProductionWorkflowView } from './production-workflow';
 import type { MediaCapabilities, MediaKind, ProviderAuth } from './media-providers';
 import type { ScenarioWorkflowStart, ScenarioWorkflowView } from './scenario-workflow';
 import type { NotificationTarget } from './notifications';
@@ -94,6 +94,10 @@ export interface Api {
     importFrames(project: string, shot: string, packageDir: string, images: ProductionFrameCandidate[]): Promise<ProductionWorkflowView>;
     /** Речевой план у провайдера без липсинка: собирает без агента пакет для генерации вне приложения (опора, срез речи, промпт). */
     buildManual(project: string, shot: string, packageDir: string): Promise<ProductionWorkflowView>;
+    /** Своё описание с планом опор или свой видеопромпт без агента; принимает их интерфейс сразу после применения. */
+    saveOwn(input: ProductionOwnInput): Promise<ProductionWorkflowView>;
+    /** Изображения, которые может назвать опора своего плана (разрешённые входы плана). */
+    referenceImages(project: string, shot: string): Promise<string[]>;
   };
   scenarioWorkflow: {
     view(project: string): Promise<ScenarioWorkflowView>;

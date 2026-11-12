@@ -3,6 +3,8 @@
 
 export type {
     FrameCandidate,
+    OwnInput,
+    OwnKeyframe,
     Reasons,
     StartInput,
     View

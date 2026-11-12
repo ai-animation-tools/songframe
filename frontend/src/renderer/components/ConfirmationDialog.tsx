@@ -34,6 +34,8 @@ interface Props {
   extraActions?: ReactNode;
   /** Подпись содержимого, которое может не поместиться: область прокрутки получает фокус для клавиатуры. */
   contentLabel?: string;
+  /** Ширина окна: md — для редакторов с таблицей, по умолчанию sm. */
+  maxWidth?: 'sm' | 'md';
 }
 
 /** Единое оформление подтверждения; решение и ограничения операции остаются у вызывающей страницы. */
@@ -57,7 +59,8 @@ export function ConfirmationDialog({
   cancelLabel = commonTexts.cancel,
   cancelAutoFocus = false,
   extraActions,
-  contentLabel
+  contentLabel,
+  maxWidth = 'sm'
 }: Props): ReactElement {
   const id = useId();
   return (
@@ -67,7 +70,7 @@ export function ConfirmationDialog({
       disableEscapeKeyDown={closeDisabled || explicitCancelOnly}
       aria-labelledby={`${id}-title`}
       aria-describedby={description ? `${id}-description` : undefined}
-      maxWidth="sm"
+      maxWidth={maxWidth}
       fullWidth
     >
       <DialogTitle id={`${id}-title`}>{title}</DialogTitle>

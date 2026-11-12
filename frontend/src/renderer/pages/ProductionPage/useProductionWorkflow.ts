@@ -1,7 +1,7 @@
 import { productionTexts } from '@shared/texts/production';
 /** Опрос выбранного пакета не переносит ответы агента между планами и не перекрывает применение предложения. */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ProductionFrameCandidate, ProductionWorkflowStart, ProductionWorkflowView } from '@shared/production-workflow';
+import type { ProductionFrameCandidate, ProductionOwnText, ProductionWorkflowStart, ProductionWorkflowView } from '@shared/production-workflow';
 import { useApp } from '../../state';
 import { PRODUCTION_PASS_LABELS } from './constants';
 
@@ -180,6 +180,17 @@ export function useProductionWorkflow(project: string, shot: string, packageDir:
           }, true)
         : Promise.resolve(false),
     apply,
+    /** Свой текст без агента применяется как предложение; follow принимает его в той же операции (D-045). */
+    saveOwn: (text: ProductionOwnText, follow?: (applied: ProductionWorkflowView) => Promise<void>): Promise<boolean> =>
+      execute(
+        async () => {
+          const applied = await window.api.productionWorkflow.saveOwn({ project, shot, packageDir, ...text });
+          await follow?.(applied);
+          return applied;
+        },
+        true,
+        productionTexts.useProductionWorkflow.ownSaved
+      ),
     discard: () =>
       view?.proposal
         ? execute(

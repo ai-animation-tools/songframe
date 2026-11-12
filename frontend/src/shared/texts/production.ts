@@ -555,6 +555,7 @@ export const productionTexts = {
     folderDeleted: ({ relative }: { relative: string }) => `Папка ${relative} удалена`
   },
   useProductionWorkflow: {
+    ownSaved: 'Сохранено и принято.',
     proposalReady: ({ stage }: { stage: string }) => `${stage}: предложение агента готово. Откройте «Просмотреть предложение и сравнение».`,
     proposalRefused: ({ stage }: { stage: string }) =>
       `${stage}: агент отказался подготовить предложение. Возможно, в сценарии есть противоречия. Причина — в «Просмотреть предложение и сравнение».`,
@@ -1021,6 +1022,34 @@ export const productionTexts = {
     staleHint: 'Планы, принятые по прежней постановке: им нужно новое производство; щелчок показывает их',
     show: 'Показать',
     refresh: commonTexts.refresh
+  },
+  ownDescriptionDialog: {
+    writeOwn: 'Написать самому',
+    writeOwnHint: 'Описание и опоры без агента: текст, длительность запроса и промпты опор задаёте вы',
+    edit: 'Изменить',
+    editHint: 'Исправить описание и план опор вручную. Сохранение сразу принимает их; изменённые опоры придётся создать заново',
+    title: ({ shot }: { shot: string }) => `Описание ${shot}`,
+    description: 'Описание плана',
+    descriptionHint: 'Что происходит в плане. Раздел «События плана» поможет видеопромпту и проверке видео',
+    requestSeconds: 'Длительность запроса, с',
+    requestSecondsHint: ({ window }: { window: string }) => `Окно плана ${window} с. Длительность — целое число секунд по правилу проекта`,
+    frames: 'Опоры',
+    framesHint: 'Первая опора — начало плана, последняя — конец запроса, промежуточные — между ними. Одна опора — только начало плана',
+    frameTitle: ({ id, role }: { id: string; role: 'first' | 'middle' | 'last' }) =>
+      `${id} · ${role === 'first' ? 'начало' : role === 'last' ? 'конец' : 'промежуточная'}`,
+    time: 'Время, с',
+    prompt: 'Промпт изображения',
+    references: 'Референсы',
+    addFrame: 'Добавить опору',
+    removeFrame: ({ id }: { id: string }) => `Удалить ${id}`,
+    save: 'Сохранить и принять',
+    saveHint: 'Приложение проверит описание теми же правилами, что ответ агента, запишет его в попытку и примет',
+    manualSingle: 'Видео этого плана создаётся вне приложения по одной опоре',
+    limit: ({ limit }: { limit: number }) => `Провайдер видео принимает не больше ${countLabel(limit, 'опоры', 'опор', 'опор')}`,
+    descriptionRequired: 'Напишите описание плана.',
+    secondsInvalid: 'Укажите длительность запроса целым числом секунд больше нуля.',
+    framePromptRequired: ({ id }: { id: string }) => `Напишите промпт опоры ${id}.`,
+    frameTimeInvalid: ({ id }: { id: string }) => `Время ${id} должно лежать строго между соседними опорами.`
   },
   productionWorkflowPanel: {
     noteReason: 'Опишите в поле выше, что агенту нужно исправить.',

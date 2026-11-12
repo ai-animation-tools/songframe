@@ -98,6 +98,8 @@ interface PageModel {
   manualBuilds: number;
   manualUploads: number;
   promptReopens: string[];
+  /** Свои описания, сохранённые без агента: описание и число опор каждого. */
+  ownSaves: string[];
   subscribe(listener: () => void): () => void;
   revision(): number;
 }
@@ -151,6 +153,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
         manualBuilds: 0,
         manualUploads: 0,
         promptReopens: [],
+        ownSaves: [],
         subscribe(listener) {
           listeners.add(listener);
           return () => {
@@ -318,8 +321,18 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
               failedAction = true;
               throw new Error(PAGE_ACTION_ERROR);
             }
+            // Как Go: принятое описание переводит попытку к опорам, первая из них становится следующей.
+            if (pending.stage === 'description_review' && verdict === 'approve') {
+              pkg.decision = { stage: pending.stage, verdict, note, at: DATE };
+              pkg.stage = 'keyframes_review';
+              ask(shot, pkg, null);
+              pkg.stageLabel = 'Описание утверждено';
+              shot.stageLabel = pkg.stageLabel;
+              publish();
+              return;
+            }
             const frame = pending.frame;
-            // Модель записывает только ответы об опорах; прочие переходы показаны историями своих блоков.
+            // Модель записывает только ответы об описании и опорах; прочие переходы показаны историями своих блоков.
             if (!frame || (verdict !== 'approve' && verdict !== 'revise')) throw new Error(`Ответ «${verdict}» на этой странице витрины не моделируется.`);
             pkg.decision = { stage: pending.stage, verdict, note, at: DATE };
             if (verdict === 'approve') pkg.keyframes = pkg.keyframes.map((item) => (item.id === frame ? { ...item, approved: true } : item));
@@ -501,6 +514,46 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
             );
             return workflowSnapshot(project, shot, dir);
           },
+          referenceImages: async (project) => {
+            checked(project);
+            return ['source/heroes/story-image.png', 'source/places/story-image.png'];
+          },
+          // Как Go: своё описание проверяется правилами ответа агента и записывается в новую попытку с вопросом описания.
+          saveOwn: async (input) => {
+            checked(input.project);
+            const shot = model.view.shots.find((item) => item.id === input.shot);
+            if (!shot || input.stage !== 'description') throw new Error('Своё описание этого плана в витрине не моделируется.');
+            if (input.keyframes.at(-1)?.timeSeconds !== input.requestSeconds) throw new Error('Последняя опора должна стоять в конце запроса.');
+            const existing = input.packageDir ? shot.packages.find((item) => item.dir === input.packageDir) : undefined;
+            const relative = `plan/batches/${shot.id}-attempt-0${shot.packages.length + 1}`;
+            const pkg =
+              existing ??
+              keyframePackage({
+                dir: `${PAGE_PROJECT}/${relative}`,
+                relative,
+                shot: shot.id,
+                keyframeNotes: [],
+                timing: { frames: Math.round((shot.end - shot.start) * 30), window_seconds: shot.end - shot.start, request_seconds: input.requestSeconds }
+              });
+            pkg.stage = 'description_review';
+            pkg.stageLabel = 'Описание на согласовании';
+            pkg.description = input.description;
+            pkg.timing = pkg.timing ? { ...pkg.timing, request_seconds: input.requestSeconds } : pkg.timing;
+            pkg.keyframes = input.keyframes.map((frame) => ({
+              id: frame.id,
+              role: frame.role,
+              time_seconds: frame.timeSeconds,
+              imagePath: null,
+              approved: false
+            }));
+            if (!existing) shot.packages = [...shot.packages, pkg];
+            shot.state = 'progress';
+            ask(shot, pkg, { stage: 'description_review', question: 'Утвердить описание?', options: ['approve', 'revise'], asked_at: DATE });
+            shot.stageLabel = pkg.stageLabel;
+            model.ownSaves = [...model.ownSaves, `${input.description} (${input.keyframes.length})`];
+            publish();
+            return workflowSnapshot(input.project, input.shot, pkg.dir);
+          },
           // Применение записывает кандидата и задаёт вопрос: утверждение остаётся отдельным ответом.
           apply: async (project, shotId, dir, id) => {
             const { shot, pkg } = find(project, dir ?? '');
@@ -580,7 +633,8 @@ export function ProductionPageStory({ links = [] }: { links?: StoryLink[] }): Re
             Чтений: {model.reads}. Ответов: {model.decisions}. Выборов оригинала: {model.selections}. Утверждено опор: {approved.join(', ') || 'нет'}. Приёмок
             комплекта: {model.accepts}. Отправок генерации: {model.submissions}. Своих файлов опор: {model.frameImports}. Указаний к опорам:{' '}
             {model.frameNotes.join(', ') || 'нет'}. Созданий опор: {model.frameRuns}. Удалений попыток: {model.discards}. Пакетов ручной генерации:{' '}
-            {model.manualBuilds}. Загрузок видео: {model.manualUploads}. Возвратов промпта: {model.promptReopens.join(', ') || 'нет'}.
+            {model.manualBuilds}. Загрузок видео: {model.manualUploads}. Возвратов промпта: {model.promptReopens.join(', ') || 'нет'}. Своих описаний:{' '}
+            {model.ownSaves.join(', ') || 'нет'}.
           </Typography>
           <Typography variant="caption" color="text.secondary" data-testid="production-review-model">
             Проверок видео: {model.reviewStarts}. Отмен проверок: {model.reviewCancels}.

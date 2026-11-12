@@ -248,7 +248,8 @@ func run() error {
 	montageWindow := shell.NewMontageWindowService(profilePath)
 	montageService := shell.NewMontageService(jobManager, scenarioWorkflow)
 	files := shell.NewShellService(mediaServer, func(path string) error { return desktop.Browser.OpenFile(path) },
-		func(address string) error { return desktop.Browser.OpenURL(address) })
+		func(address string) error { return desktop.Browser.OpenURL(address) },
+		func() (string, bool) { return desktop.Clipboard.Text() })
 	// Обновление приложения по кнопке: пакет своей поставки скачивается в каталог состояния.
 	// Установка закрывает окно после ответа binding; задания останавливаются штатными defer.
 	executable, _ := os.Executable()

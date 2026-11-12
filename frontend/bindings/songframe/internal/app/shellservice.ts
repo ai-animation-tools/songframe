@@ -12,6 +12,15 @@
 import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wailsio/runtime";
 
 /**
+ * ClipboardText возвращает текст буфера обмена ОС для пункта «Вставить» контекстного меню полей.
+ * WebKit не даёт странице читать буфер без разрешения пользователя, а Wails читает его в главном
+ * потоке GTK или Win32. Пустой буфер — пустая строка; запись в буфер страница делает сама.
+ */
+export function ClipboardText(): $CancellablePromise<string> {
+    return $Call.ByID(3337361037);
+}
+
+/**
  * FileBase возвращает адрес loopback этого запуска. Адаптер получает его один раз
  * до монтирования React и дальше строит URL файлов синхронно.
  */

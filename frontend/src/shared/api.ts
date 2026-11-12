@@ -287,6 +287,8 @@ export interface Api {
     openExternal(url: string): Promise<void>;
     /** Текст небольшого файла (текст песни, идея) для подстановки в форму. */
     readText(path: string): Promise<string>;
+    /** Текст буфера обмена ОС для «Вставить» контекстного меню: WebKit не даёт странице читать его сам. */
+    clipboardText(): Promise<string>;
     /** Абсолютный путь в URL локального медиасервера Go для <img>, <audio> и <video>; синхронно. */
     fileUrl(path: string): string;
     /**

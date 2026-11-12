@@ -239,6 +239,7 @@ export function apiSkeleton(): Api {
       openPath: stub('shell.openPath'),
       openExternal: stub('shell.openExternal'),
       readText: stub('shell.readText'),
+      clipboardText: stub('shell.clipboardText'),
       fileUrl: stub('shell.fileUrl'),
       onFilesDropped: stub('shell.onFilesDropped')
     },

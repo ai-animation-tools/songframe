@@ -433,6 +433,7 @@ export function createApi(b: Bindings): Api {
   api.shell.openPath = (path) => call('shell.openPath', async () => (await b.shell()).OpenPath(path));
   api.shell.openExternal = (url) => call('shell.openExternal', async () => (await b.shell()).OpenExternal(url));
   api.shell.readText = (path) => call('shell.readText', async () => (await b.shell()).ReadText(path));
+  api.shell.clipboardText = () => call('shell.clipboardText', async () => (await b.shell()).ClipboardText());
   api.shell.fileUrl = (path) => {
     if (fileBase === null) throw new ApiError('CONNECTION_FAILED', 'shell.fileUrl', platformTexts.connectionFailed);
     return fileUrl(fileBase, path);

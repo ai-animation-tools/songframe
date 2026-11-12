@@ -9,6 +9,7 @@ import { lazy, Suspense, type ReactElement } from 'react';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { HomeRedirect, Layout, RequireProject, RequireScenario } from './components';
 import { StartupProgress } from './components/StartupProgress';
+import { TextContextMenu } from './components/TextContextMenu';
 import { ComponentsPage } from './pages/ComponentsPage';
 import {
   AnimaticPage,
@@ -39,6 +40,8 @@ const NativePreviewPage = lazy(() => import('./pages/NativePreviewPage').then((m
 export function App({ onReady }: { onReady?: () => Promise<void> }): ReactElement {
   return (
     <ThemeModeProvider>
+      {/* Русское меню полей и выделенного текста во всех окнах, включая плеер монтажа. */}
+      <TextContextMenu />
       <HashRouter>
         <Routes>
           <Route

@@ -20,15 +20,31 @@ type FileServer interface {
 // ShellService реализует группу window.api.shell: открытие путей и веб-адресов средствами ОС,
 // чтение небольшого текста и адрес локальных файлов. Проектные данные здесь не пишутся.
 type ShellService struct {
-	files   FileServer
-	desktop desktop.Desktop
-	openURL func(address string) error
+	files     FileServer
+	desktop   desktop.Desktop
+	openURL   func(address string) error
+	clipboard func() (string, bool)
 }
 
 // NewShellService связывает группу с медиасервером, системным открытием путей и браузером ОС.
-// open — нативное открытие Wails (Browser.OpenFile), openURL — Browser.OpenURL; в тестах подменяются.
-func NewShellService(files FileServer, open desktop.Opener, openURL func(address string) error) *ShellService {
-	return &ShellService{files: files, desktop: desktop.Default(open), openURL: openURL}
+// open — нативное открытие Wails (Browser.OpenFile), openURL — Browser.OpenURL, clipboard — чтение
+// текста буфера обмена Wails (Clipboard.Text); в тестах подменяются.
+func NewShellService(files FileServer, open desktop.Opener, openURL func(address string) error, clipboard func() (string, bool)) *ShellService {
+	return &ShellService{files: files, desktop: desktop.Default(open), openURL: openURL, clipboard: clipboard}
+}
+
+// ClipboardText возвращает текст буфера обмена ОС для пункта «Вставить» контекстного меню полей.
+// WebKit не даёт странице читать буфер без разрешения пользователя, а Wails читает его в главном
+// потоке GTK или Win32. Пустой буфер — пустая строка; запись в буфер страница делает сама.
+func (s *ShellService) ClipboardText() (string, error) {
+	if s.clipboard == nil {
+		return "", errors.New("буфер обмена недоступен")
+	}
+	text, ok := s.clipboard()
+	if !ok {
+		return "", errors.New("буфер обмена не содержит текста или занят другой программой")
+	}
+	return text, nil
 }
 
 // OpenExternal открывает веб-адрес в браузере ОС. Встроенный WebView ссылки с target="_blank"

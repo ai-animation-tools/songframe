@@ -230,6 +230,7 @@ export function unconfiguredStoryApi(): Api {
       openPath: async () => unconfigured('shell.openPath'),
       openExternal: async () => unconfigured('shell.openExternal'),
       readText: async () => unconfigured('shell.readText'),
+      clipboardText: async () => unconfigured('shell.clipboardText'),
       fileUrl: () => unconfigured('shell.fileUrl'),
       onFilesDropped: () => unconfigured('shell.onFilesDropped')
     },

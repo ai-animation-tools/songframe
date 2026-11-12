@@ -2,7 +2,7 @@
 import { useState, type ComponentProps } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Alert, Stack } from '@mui/material';
-import { expect, fn, userEvent, within } from 'storybook/test';
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { DestructiveButton } from './DestructiveButton';
 function DeletePreview(args: ComponentProps<typeof DestructiveButton>) {
   const [removed, setRemoved] = useState(false);
@@ -38,5 +38,29 @@ export const VisibleConsequences: Story = {
     await userEvent.click(within(canvasElement).getByRole('button', { name: 'Удалить попытку' }));
     const dialog = await screen.findByRole('dialog');
     await expect(within(dialog).getByRole('alert')).toHaveTextContent('Удаляется только демонстрационный объект. Отмена сохранит его.');
+  }
+};
+
+// Фокус после отмены с клавиатуры — рамка цвета кнопки: фон за подписью не меняется, и axe проверяет контраст подписи.
+export const KeyboardCancelFocus: Story = {
+  name: 'Отмена с клавиатуры · фокус рамкой без заливки',
+  tags: ['ci'],
+  play: async ({ canvasElement }) => {
+    const screen = within(canvasElement.ownerDocument.body);
+    const button = within(canvasElement).getByRole('button', { name: 'Удалить попытку' });
+    await userEvent.tab();
+    await expect(button).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    await screen.findByRole('dialog');
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await expect(button).toHaveFocus();
+    await expect(button).toHaveClass('Mui-focusVisible');
+    const style = getComputedStyle(button);
+    await expect(style.outlineStyle).toBe('solid');
+    await expect(style.outlineColor).toBe(style.color);
+    await expect(style.backgroundColor).toBe('rgba(0, 0, 0, 0)');
+    await expect(button.querySelector('.MuiTouchRipple-ripplePulsate')).toBeNull();
+    await expect(within(canvasElement).getByRole('alert')).toHaveTextContent('Объект сохранён.');
   }
 };

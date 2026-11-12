@@ -1,7 +1,7 @@
 /** Светлая и тёмная темы MUI; выбор хранится в localStorage, по умолчанию следует системе. */
 
 import { type ReactElement, createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { CssBaseline, ThemeProvider, createTheme, touchRippleClasses, useMediaQuery } from '@mui/material';
+import { CssBaseline, ThemeProvider, buttonClasses, createTheme, touchRippleClasses, useMediaQuery } from '@mui/material';
 import { ruRU } from '@mui/material/locale';
 import { themePalettes } from './theme-palette';
 
@@ -24,11 +24,23 @@ export function createAppTheme(mode: 'light' | 'dark') {
       shape: { borderRadius: 8 },
       typography: { fontSize: 13.5 },
       components: {
-        // Волна фокуса с клавиатуры остаётся видимой, но не опускает контраст подписи ниже WCAG AA (4.5:1).
+        // Волна фокуса с клавиатуры у значков, вкладок и пунктов остаётся видимой, но приглушена.
         MuiButtonBase: {
           styleOverrides: { root: { [`& .${touchRippleClasses.ripplePulsate}.${touchRippleClasses.rippleVisible}`]: { opacity: 0.12 } } }
         },
-        MuiButton: { defaultProps: { disableElevation: true } },
+        // У кнопки с подписью фокус с клавиатуры — рамка её цвета: заливка за текстом опускала бы контраст подписи
+        // цветных кнопок ниже WCAG AA (4.5:1), а рамка оставляет фон покоя или наведения.
+        MuiButton: {
+          defaultProps: { disableElevation: true, disableFocusRipple: true },
+          styleOverrides: {
+            root: ({ ownerState, theme }) => ({
+              [`&.${buttonClasses.focusVisible}`]: {
+                outline: `2px solid ${ownerState.color && ownerState.color !== 'inherit' ? theme.palette[ownerState.color].main : 'currentColor'}`,
+                outlineOffset: 2
+              }
+            })
+          }
+        },
         MuiTextField: { defaultProps: { size: 'small' } }
       }
     },

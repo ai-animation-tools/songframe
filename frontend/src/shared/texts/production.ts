@@ -1051,6 +1051,15 @@ export const productionTexts = {
     framePromptRequired: ({ id }: { id: string }) => `Напишите промпт опоры ${id}.`,
     frameTimeInvalid: ({ id }: { id: string }) => `Время ${id} должно лежать строго между соседними опорами.`
   },
+  ownPromptDialog: {
+    writeOwnHint: 'Видеопромпт без агента: текст пишете вы, сохранение сразу утверждает его',
+    editHint: 'Исправить видеопромпт вручную. Сохранение сразу утверждает его; подготовленный запрос придётся собрать заново',
+    title: ({ shot }: { shot: string }) => `Видеопромпт ${shot}`,
+    prompt: 'Видеопромпт',
+    chars: ({ chars, limit }: { chars: number; limit: number | null | undefined }) => (limit ? `Символов: ${chars} из ${limit}` : `Символов: ${chars}`),
+    saveHint: 'Опишите движение и события плана по утверждённым опорам. Приложение запишет промпт в попытку и утвердит его',
+    required: 'Напишите видеопромпт.'
+  },
   productionWorkflowPanel: {
     noteReason: 'Опишите в поле выше, что агенту нужно исправить.',
     loadingReason: 'Дождитесь загрузки состояния плана.',

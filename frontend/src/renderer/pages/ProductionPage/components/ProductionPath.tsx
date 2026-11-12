@@ -31,6 +31,7 @@ import ReplayIcon from '@mui/icons-material/Replay';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import { initialDraft, ownText, type OwnDescriptionDraft } from '../ownDescription';
 import { OwnDescriptionDialog } from './OwnDescriptionDialog';
+import { OwnPromptDialog } from './OwnPromptDialog';
 import { ProductionSpeechPanel, SpeechSlice } from './ProductionSpeechPanel';
 import { ProductionWorkflowPanel } from './ProductionWorkflowPanel';
 
@@ -135,6 +136,8 @@ export function ProductionPath({
   const [reopeningPrompt, setReopeningPrompt] = useState(false);
   // Своё описание: черновик открытого редактора; null — редактор закрыт.
   const [ownDescription, setOwnDescription] = useState<OwnDescriptionDraft | null>(null);
+  // Свой видеопромпт: текст открытого редактора; null — редактор закрыт.
+  const [ownPrompt, setOwnPrompt] = useState<string | null>(null);
   const [ownError, setOwnError] = useState<string | null>(null);
   // Промпт на согласовании длиннее предела провайдера: утвердить нельзя, только вернуть агенту.
   const overLimit = pkg?.prompt && !pkg.prompt.approved ? promptOverLimit(pkg.prompt.text, view?.promptMaxChars) : null;
@@ -182,18 +185,37 @@ export function ProductionPath({
     });
     if (saved) setOwnDescription(null);
   };
+  const openOwnPrompt = (): void => {
+    setOwnError(null);
+    setOwnPrompt(pkg?.prompt?.text ?? '');
+  };
+  // Свой промпт тоже утверждается сразу; запрос после него готовится заново.
+  const saveOwnPrompt = async (prompt: string): Promise<void> => {
+    setOwnError(null);
+    const saved = await workflow.saveOwn({ stage: 'prompt', prompt }, async (applied) => {
+      if (applied.packageDir) await answerApplied(applied.packageDir, 'approve', '');
+    });
+    if (saved) setOwnPrompt(null);
+  };
   // Ошибка сохранения видна в окне редактора: оно остаётся открытым для исправления.
+  const ownOpen = ownDescription !== null || ownPrompt !== null;
   useEffect(() => {
-    if (ownDescription && workflow.error) setOwnError(workflow.error);
-  }, [ownDescription, workflow.error]);
-  // Своё описание доступно, пока агент не работает и нет непринятого предложения или открытого вопроса попытки.
-  const ownReason = blocked
-    ? busyReason
-    : view?.proposal && view.proposal.status !== 'applied'
-      ? productionTexts.productionWorkflowPanel.loadingReason
-      : pkg?.pendingDecision
-        ? productionTexts.main.workflow.resolveQuestionFirst
-        : null;
+    if (ownOpen && workflow.error) setOwnError(workflow.error);
+  }, [ownOpen, workflow.error]);
+  /**
+   * Свой текст этапа доступен, пока агент не работает и нет непринятого предложения или открытого вопроса попытки.
+   * Вопрос о тексте того же этапа (промпт агента сверх предела) не мешает: свой текст заменит его.
+   */
+  const ownReasonFor = (stage: 'description' | 'prompt'): string | null | undefined =>
+    blocked
+      ? busyReason
+      : view?.proposal && view.proposal.status !== 'applied'
+        ? productionTexts.productionWorkflowPanel.loadingReason
+        : pkg?.pendingDecision && pkg.pendingDecision.stage !== `${stage}_review`
+          ? productionTexts.main.workflow.resolveQuestionFirst
+          : null;
+  const ownReason = ownReasonFor('description');
+  const promptReason = ownReasonFor('prompt');
 
   /** Указание записывается замечанием к опоре до запуска: так агент получит его обычным путём. */
   const createFrame = async (frame: string, instruction?: FrameInstruction): Promise<void> => {
@@ -222,7 +244,7 @@ export function ProductionPath({
       onReviseOpen={setReviseOpen}
       onAcceptProposal={acceptProposal}
       onReviseProposal={reviseProposal}
-      onWriteOwn={pkg ? undefined : openOwnDescription}
+      onWriteOwn={!pkg ? openOwnDescription : view?.nextStage === 'prompt' ? openOwnPrompt : undefined}
     />
   );
 
@@ -368,6 +390,19 @@ export function ProductionPath({
                 maxHeight={220}
               />
             ) : null}
+            {pkg?.prompt && view && !view.paid && PROMPT_REOPEN_STAGES.includes(pkg.stage) ? (
+              <ActionButton
+                size="small"
+                startIcon={<EditNoteIcon />}
+                sx={{ alignSelf: 'flex-start' }}
+                title={productionTexts.ownPromptDialog.editHint}
+                disabled={!!promptReason}
+                disabledReason={promptReason}
+                onClick={openOwnPrompt}
+              >
+                {productionTexts.ownDescriptionDialog.edit}
+              </ActionButton>
+            ) : null}
             {pkg?.prompt?.approved && PROMPT_REOPEN_SHOWN.includes(pkg.stage) ? (
               <ActionButton
                 size="small"
@@ -466,6 +501,17 @@ export function ProductionPath({
           error={ownError}
           onClose={() => setOwnDescription(null)}
           onSave={(draft) => void saveOwnDescription(draft)}
+        />
+      ) : null}
+      {ownPrompt !== null ? (
+        <OwnPromptDialog
+          shot={shot.id}
+          initial={ownPrompt}
+          limit={view?.promptMaxChars}
+          busy={workflow.busy}
+          error={ownError}
+          onClose={() => setOwnPrompt(null)}
+          onSave={(prompt) => void saveOwnPrompt(prompt)}
         />
       ) : null}
       {pkg ? (

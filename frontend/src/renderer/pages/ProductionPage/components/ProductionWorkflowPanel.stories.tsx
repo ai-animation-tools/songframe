@@ -325,8 +325,13 @@ export const NextPass: Story = {
     const next = await screen.findByRole('button', { name: labels.continuePrompt });
     await waitFor(() => expect(next).toBeEnabled());
     await expect(screen.queryByRole('button', { name: labels.prepare })).not.toBeInTheDocument();
+    // Свой промпт — рядом с подготовкой агентом и при той же готовности попытки.
+    await userEvent.click(screen.getByRole('button', { name: productionTexts.ownDescriptionDialog.writeOwn }));
+    await expect(screen.getByTestId('workflow-own')).toHaveTextContent('Открытий своего текста: 1.');
     await userEvent.click(next);
     await expect(await screen.findByRole('button', { name: commonTexts.stop })).toBeEnabled();
+    // Пока агент готовит промпт, действия этапа скрыты вместе со своим текстом.
+    await expect(screen.queryByRole('button', { name: productionTexts.ownDescriptionDialog.writeOwn })).not.toBeInTheDocument();
     await expect(counts(context)).toHaveTextContent('Запусков: 1. Применений: 0.');
   }
 };

@@ -322,6 +322,18 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
               throw new Error(PAGE_ACTION_ERROR);
             }
             // Как Go: принятое описание переводит попытку к опорам, первая из них становится следующей.
+            // Как approve-prompt: утверждённый промпт ведёт к запросу; предел провайдера Go проверяет и здесь.
+            if (pending.stage === 'prompt_review' && verdict === 'approve' && pkg.prompt) {
+              if (options.promptMaxChars && Array.from(pkg.prompt.text).length > options.promptMaxChars)
+                throw new Error('Промпт длиннее предела провайдера: верните его на доработку.');
+              pkg.decision = { stage: pending.stage, verdict, note, at: DATE };
+              pkg.prompt = { ...pkg.prompt, approved: true };
+              ask(shot, pkg, null);
+              pkg.stageLabel = 'Видеопромпт утверждён';
+              shot.stageLabel = pkg.stageLabel;
+              publish();
+              return;
+            }
             if (pending.stage === 'description_review' && verdict === 'approve') {
               pkg.decision = { stage: pending.stage, verdict, note, at: DATE };
               pkg.stage = 'keyframes_review';
@@ -522,7 +534,21 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
           saveOwn: async (input) => {
             checked(input.project);
             const shot = model.view.shots.find((item) => item.id === input.shot);
-            if (!shot || input.stage !== 'description') throw new Error('Своё описание этого плана в витрине не моделируется.');
+            if (input.stage === 'prompt') {
+              const pkg = shot?.packages.find((item) => item.dir === input.packageDir);
+              if (!shot || !pkg || !pkg.keyframes.every((frame) => frame.approved)) throw new Error('Сначала утвердите все опоры.');
+              if (options.promptMaxChars && Array.from(input.prompt).length > options.promptMaxChars) throw new Error('Промпт длиннее предела провайдера.');
+              pkg.prompt = { path: `${pkg.dir}/video-prompt.txt`, approved: false, text: input.prompt };
+              pkg.request = null;
+              pkg.stage = 'prompt_review';
+              pkg.stageLabel = 'Видеопромпт на согласовании';
+              ask(shot, pkg, { stage: 'prompt_review', question: 'Утвердить видеопромпт?', options: ['approve', 'revise'], asked_at: DATE });
+              shot.stageLabel = pkg.stageLabel;
+              model.ownSaves = [...model.ownSaves, `промпт ${Array.from(input.prompt).length}`];
+              publish();
+              return workflowSnapshot(input.project, input.shot, pkg.dir);
+            }
+            if (!shot) throw new Error('Своё описание этого плана в витрине не моделируется.');
             if (input.keyframes.at(-1)?.timeSeconds !== input.requestSeconds) throw new Error('Последняя опора должна стоять в конце запроса.');
             const existing = input.packageDir ? shot.packages.find((item) => item.dir === input.packageDir) : undefined;
             const relative = `plan/batches/${shot.id}-attempt-0${shot.packages.length + 1}`;

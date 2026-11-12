@@ -23,7 +23,8 @@ function PanelHost({
   decisionToken,
   decision,
   onBusyChange,
-  onApplied
+  onApplied,
+  onWriteOwn
 }: {
   shot: string;
   packageDir: string | undefined;
@@ -31,6 +32,8 @@ function PanelHost({
   decision: PackageView['decision'];
   onBusyChange(busy: boolean): void;
   onApplied(packageDir: string | null): Promise<void>;
+  /** Открытие своего текста: на странице его редактор открывает путь плана. */
+  onWriteOwn(): void;
 }): ReactElement {
   const workflow = useProductionWorkflow(WORKFLOW_STORY_PROJECT, shot, packageDir, onApplied);
   const [reviseOpen, setReviseOpen] = useState(true);
@@ -63,6 +66,7 @@ function PanelHost({
         onReviseOpen={setReviseOpen}
         onAcceptProposal={() => workflow.apply()}
         onReviseProposal={() => Promise.resolve(false)}
+        onWriteOwn={onWriteOwn}
       />
     </Stack>
   );
@@ -110,6 +114,8 @@ interface PanelModel {
   lateFinished: boolean;
   images: Record<string, string>;
   jobFault: number;
+  /** Сколько раз открыт свой текст без агента. */
+  ownOpens: number;
   breakJob(): void;
   subscribe(listener: () => void): () => void;
   revision(): number;
@@ -211,6 +217,7 @@ export function workflowPanelOptions(mode: WorkflowPanelMode = 'empty'): StoryOp
         lateFinished: false,
         images: {},
         jobFault: 0,
+        ownOpens: 0,
         breakJob() {
           model.jobFault++;
           model.view = {
@@ -257,6 +264,7 @@ export function workflowPanelOptions(mode: WorkflowPanelMode = 'empty'): StoryOp
           model.lateFinished = false;
           model.images = mode === 'frames' ? { K01: `${STORY_IMAGE_PATH}?frame=K01` } : {};
           model.jobFault = 0;
+          model.ownOpens = 0;
           model.publish();
         },
         switchContext() {
@@ -515,6 +523,10 @@ export function WorkflowPanelStory() {
         decision={decision}
         onBusyChange={onBusyChange}
         onApplied={onApplied}
+        onWriteOwn={() => {
+          model.ownOpens++;
+          model.publish();
+        }}
       />
       <Typography data-testid="workflow-counts">
         Запусков: {model.starts}. Применений: {model.applies}. Отклонений: {model.discards}. Обновлений пакета: {model.callbacks}. Текст запуска:{' '}
@@ -523,6 +535,7 @@ export function WorkflowPanelStory() {
       <Typography data-testid="workflow-keyframes">
         Опор при запуске: {model.keyframes === undefined ? 'не передано' : model.keyframes === 0 ? 'авто' : model.keyframes}.
       </Typography>
+      <Typography data-testid="workflow-own">Открытий своего текста: {model.ownOpens}.</Typography>
       <Typography data-testid="workflow-busy">
         Занятость: {model.busy ? 'да' : 'нет'}. Занятость наблюдалась: {model.busySeen ? 'да' : 'нет'}.
       </Typography>

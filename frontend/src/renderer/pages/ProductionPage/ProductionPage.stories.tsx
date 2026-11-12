@@ -899,6 +899,38 @@ export const PromptOverLimit: Story = {
   }
 };
 
+/** Свой промпт вместо промпта агента сверх предела: «Изменить» не ждёт ответа на вопрос о промпте, сохранение утверждает. */
+export const OwnPromptOverLimit: Story = {
+  tags: ['ci'],
+  name: 'Свой видеопромпт · сокращение промпта агента сверх предела',
+  parameters: { songframe: options({ shots: overLimitShots, promptMaxChars: STORY_PROMPT_LIMIT }) },
+  play: async (context) => {
+    const screen = screenOf(context);
+    const own = texts.ownPromptDialog;
+    await expect(await screen.findByText(texts.promptLimit.title, {}, POLL_TIMEOUT)).toBeInTheDocument();
+    const step = within(planStep(context, 'prompt'));
+    await userEvent.click(step.getByRole('button', { name: texts.ownDescriptionDialog.edit }));
+    const dialog = within(await screen.findByRole('dialog', { name: own.title({ shot: 'M02' }) }));
+    const field = dialog.getByRole('textbox', { name: own.prompt });
+    const text = 'Камера плавно приближается к старым воротам, свет в окне медленно разгорается.';
+    await expect(field).toHaveValue(text);
+    // Сверх предела сохранить нельзя: причина та же, что у недоступного утверждения.
+    // Кнопка с причиной недоступности обёрнута подсказкой: после смены состояния её ищут заново.
+    const save = () => dialog.getByRole('button', { name: texts.ownDescriptionDialog.save });
+    await expect(save()).toBeDisabled();
+    await expect(dialog.getByText(own.chars({ chars: Array.from(text).length, limit: STORY_PROMPT_LIMIT }))).toBeVisible();
+    await userEvent.clear(field);
+    await userEvent.type(field, 'Камера приближается к воротам.');
+    await expect(dialog.getByText(own.chars({ chars: 30, limit: STORY_PROMPT_LIMIT }))).toBeVisible();
+    await waitFor(() => expect(save()).toBeEnabled(), POLL_TIMEOUT);
+    await userEvent.click(save());
+    await waitFor(() => expect(counts(context)).toHaveTextContent('Своих описаний: промпт 30.'), POLL_TIMEOUT);
+    await waitFor(() => expect(counts(context)).toHaveTextContent('Ответов: 1.'), POLL_TIMEOUT);
+    await expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText(texts.promptLimit.title)).not.toBeInTheDocument(), POLL_TIMEOUT);
+  }
+};
+
 export const PromptReopenFromRequest: Story = {
   tags: ['ci'],
   name: 'Возврат видеопромпта с этапа запроса · описание и опоры остаются',

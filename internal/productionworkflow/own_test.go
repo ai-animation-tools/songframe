@@ -123,3 +123,71 @@ func TestSaveOwnDescription(t *testing.T) {
 		t.Fatalf("keyframe-prompts.json после правки: %s", dynvalue.Stringify(prompts))
 	}
 }
+
+// limitedRules — провайдер test с пределом видеопромпта для проверки своего промпта.
+type limitedRules struct{ testRules }
+
+func (limitedRules) PromptWarningChars() int { return 40 }
+
+// TestSaveOwnPrompt — свой видеопромпт после утверждённых опор записывается в попытку и
+// утверждается тем же ответом; длиннее предела провайдера он отклоняется до записи.
+func TestSaveOwnPrompt(t *testing.T) {
+	run := ownRun(t)
+	t.Cleanup(mediaadapters.Register(mediatest.ID, limitedRules{testRules{Service: &mediatest.Service{Dir: t.TempDir()}}}))
+	c, err := ReadContext(run.project, "M01", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	seconds := math.Floor(c.Window) + 1
+	description := OwnInput{Project: run.project, Shot: "M01", Stage: "description", Description: "Герой идёт к воротам.", RequestSeconds: seconds,
+		Keyframes: ownFrames(1, seconds)}
+	view, err := run.workflow.SaveOwn(context.Background(), description)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := *view.PackageDir
+	prompt := OwnInput{Project: run.project, Shot: "M01", PackageDir: dir, Stage: "prompt", Prompt: "Камера медленно приближается."}
+	shot := func(args ...string) {
+		t.Helper()
+		if result, err := tools.Run(run.project, "shot_workflow", append(args, "--dir", dir)); err != nil || result.Code == nil || *result.Code != 0 {
+			t.Fatalf("shot_workflow %v: %+v %v", args, result, err)
+		}
+	}
+	shot("decide", "--verdict", "approve")
+	if _, err := run.workflow.SaveOwn(context.Background(), prompt); err == nil {
+		t.Fatal("свой промпт до утверждения опор принят")
+	}
+	image := filepath.Join(run.project, "source", "locations", "pier.png")
+	shot("approve", "K01", image)
+	long := prompt
+	long.Prompt = strings.Repeat("Камера приближается. ", 3)
+	if _, err := run.workflow.SaveOwn(context.Background(), long); err == nil || err.Error() != textOwnPromptOverLimit(63, 40) {
+		t.Fatalf("промпт сверх предела: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "video-prompt.txt")); !os.IsNotExist(err) {
+		t.Fatalf("отклонённый промпт записан: %v", err)
+	}
+	if view, err = run.workflow.SaveOwn(context.Background(), prompt); err != nil {
+		t.Fatal(err)
+	}
+	if *view.PackageDir != dir || len(run.agents.starts) != 0 {
+		t.Fatalf("свой промпт пишется в ту же попытку без агента: %s, запусков %d", *view.PackageDir, len(run.agents.starts))
+	}
+	// Открытый вопрос о промпте не мешает заменить его своим: применение спросит заново.
+	prompt.Prompt = "Камера медленно отъезжает."
+	if _, err = run.workflow.SaveOwn(context.Background(), prompt); err != nil {
+		t.Fatalf("замена промпта на согласовании: %v", err)
+	}
+	text, _ := os.ReadFile(filepath.Join(dir, "video-prompt.txt"))
+	if strings.TrimSpace(string(text)) != prompt.Prompt {
+		t.Fatalf("video-prompt.txt: %q", text)
+	}
+	shot("decide", "--verdict", "approve")
+	workflow, err := readJSON(filepath.Join(dir, "workflow.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !dynvalue.Truthy(dynvalue.Get(workflow, "approved_prompt_sha256")) {
+		t.Fatalf("свой промпт не утверждён: %s", dynvalue.Stringify(workflow))
+	}
+}

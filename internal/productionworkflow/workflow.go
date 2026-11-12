@@ -527,6 +527,9 @@ type StartInput struct {
 	// «авто»; nil при доработке описания — прежний выбор попытки (workflow keyframe_count), при
 	// новой попытке — «авто».
 	Keyframes *int `json:"keyframes,omitempty"`
+	// own — свой текст пользователя (SaveOwn): открытый вопрос о тексте того же этапа не мешает
+	// его заменить — применение задаст вопрос заново.
+	own bool
 }
 
 // Start проверяет доступность этапа, снимает входы, получает врезки
@@ -650,7 +653,8 @@ func (w *Workflow) continuedStage(c *Context, input StartInput) (string, error) 
 		}
 		return "", errors.New(textPackageUnavailable)
 	}
-	if dynvalue.Truthy(c.workflowValue("pending_decision")) {
+	if pending := c.workflowValue("pending_decision"); dynvalue.Truthy(pending) &&
+		!(input.own && input.Stage != nil && dynvalue.Get(pending, "stage") == *input.Stage+"_review") {
 		return "", errors.New(textResolveQuestionFirst)
 	}
 	next, err := c.StageFor()

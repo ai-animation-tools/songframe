@@ -7,6 +7,7 @@ import (
 
 	"songframe/internal/dynvalue"
 	"songframe/internal/mediaproviders"
+	"songframe/internal/toolrt"
 )
 
 // Свой текст пользователя вместо прохода агента (D-043, D-045): описание с планом опор или
@@ -69,8 +70,10 @@ func ownDocument(input OwnInput) string {
 // SaveOwn записывает свой текст этапа description или prompt и применяет его к попытке. Этап
 // должен быть доступен так же, как запуск агента: описание — для плана без попытки (новая
 // попытка), для неоплаченной попытки (та же) или оплаченной (новая с retry_of); промпт — после
-// утверждения всех опор. Ошибка проверки текста возвращается до записи; число опор — от 1 до
-// предела провайдера видео, у речевого плана ручной генерации — ровно одна.
+// утверждения всех опор, пока запрос не отправлен. Открытый вопрос о тексте того же этапа (например,
+// промпт агента сверх предела) не мешает: свой текст заменяет его и спрашивается заново. Ошибка проверки текста возвращается до записи;
+// число опор — от 1 до предела провайдера видео, у речевого плана ручной генерации — ровно одна;
+// промпт — не длиннее предела провайдера.
 func (w *Workflow) SaveOwn(ctx context.Context, input OwnInput) (View, error) {
 	if input.Stage != "description" && input.Stage != "prompt" {
 		return View{}, errors.New(textStartParametersInvalid)
@@ -88,7 +91,7 @@ func (w *Workflow) SaveOwn(ctx context.Context, input OwnInput) (View, error) {
 // и запись готового предложения без задания агента. Возвращает номер предложения и пакет, к
 // которому его применит Apply.
 func (w *Workflow) prepareOwn(input OwnInput) (string, string, error) {
-	start := StartInput{Project: input.Project, Shot: input.Shot, PackageDir: input.PackageDir, Action: "revise", Stage: &input.Stage}
+	start := StartInput{Project: input.Project, Shot: input.Shot, PackageDir: input.PackageDir, Action: "revise", Stage: &input.Stage, own: true}
 	if input.PackageDir == "" {
 		start.Action, start.Stage = "prepare", nil
 	}
@@ -113,6 +116,13 @@ func (w *Workflow) prepareOwn(input OwnInput) (string, string, error) {
 		}
 		if !c.Manual {
 			rules.Keyframes = count
+		}
+	}
+	// Свой промпт сразу утверждается: длиннее предела провайдера его нельзя ни утвердить, ни
+	// записать, иначе попытка осталась бы с неутверждаемым промптом без агента.
+	if limit := c.PromptLimit(); input.Stage == "prompt" && limit > 0 {
+		if chars := toolrt.Len(input.Prompt); chars > limit {
+			return "", "", errors.New(textOwnPromptOverLimit(chars, limit))
 		}
 	}
 	after, err := ParseProposal(ownDocument(input), rules)

@@ -148,6 +148,12 @@ func textKeyframeCountMismatch(want, got int) string {
 }
 
 // textKeyframeCountRange — выбранное число опор вне предела провайдера видео.
+// textOwnPromptOverLimit — отказ сохранить свой видеопромпт длиннее предела провайдера: тот же
+// предел, что у утверждения промпта (shot_workflow approve-prompt).
+func textOwnPromptOverLimit(chars, limit int) string {
+	return fmt.Sprintf("Промпт длиннее предела провайдера: символов %d при пределе %d. Сократите его.", chars, limit)
+}
+
 func textKeyframeCountRange(limit int) string {
 	return fmt.Sprintf("Число опор — от 1 до %d: столько кадров принимает провайдер видео проекта.", limit)
 }

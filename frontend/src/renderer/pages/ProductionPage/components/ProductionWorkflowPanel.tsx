@@ -48,7 +48,10 @@ export function ProductionWorkflowPanel({
   onReviseOpen(open: boolean): void;
   onAcceptProposal(): Promise<boolean>;
   onReviseProposal(note: string): Promise<boolean>;
-  /** Своё описание без агента для плана без попытки; кнопка стоит рядом с «Подготовить описание». */
+  /**
+   * Свой текст без агента: описание для плана без попытки (рядом с «Подготовить описание») или видеопромпт,
+   * когда следующий этап попытки — промпт (рядом с его подготовкой агентом).
+   */
   onWriteOwn?(): void;
 }): ReactElement {
   // Замечание к опоре уже в списке замечаний и уходит в создание опоры: в поле доработки агентом его не подставляем.
@@ -158,15 +161,29 @@ export function ProductionWorkflowPanel({
             />
           ) : null}
           {packageDir ? (
-            <AgentButton
-              variant="contained"
-              disabled={primaryDisabled}
-              disabledReason={reason ?? productionTexts.productionWorkflowPanel.loadingReason}
-              title={productionTexts.productionWorkflowPanel.continueHint}
-              onClick={() => void start('continue')}
-            >
-              {continueLabel}
-            </AgentButton>
+            <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: 'flex-start', flexWrap: 'wrap' }}>
+              <AgentButton
+                variant="contained"
+                disabled={primaryDisabled}
+                disabledReason={reason ?? productionTexts.productionWorkflowPanel.loadingReason}
+                title={productionTexts.productionWorkflowPanel.continueHint}
+                onClick={() => void start('continue')}
+              >
+                {continueLabel}
+              </AgentButton>
+              {onWriteOwn && promptNext ? (
+                // Свой промпт не требует агента: доступен при той же готовности попытки, что и подготовка промпта.
+                <ActionButton
+                  startIcon={<EditNoteIcon />}
+                  title={productionTexts.ownPromptDialog.writeOwnHint}
+                  disabled={busy || !view?.canContinue}
+                  disabledReason={busy ? BUSY_REASON : (view?.reasons.continue ?? productionTexts.productionWorkflowPanel.loadingReason)}
+                  onClick={onWriteOwn}
+                >
+                  {productionTexts.ownDescriptionDialog.writeOwn}
+                </ActionButton>
+              ) : null}
+            </Stack>
           ) : (
             <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: 'flex-start', flexWrap: 'wrap' }}>
               <TextField

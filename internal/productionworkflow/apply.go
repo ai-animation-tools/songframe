@@ -71,6 +71,13 @@ func replacesAskedFrame(c *Context, after any) bool {
 	return dynvalue.Get(after, "stage") == "frames" && dynvalue.Truthy(frame) && len(images) == 1 && dynvalue.Get(images[0], "id") == frame
 }
 
+// replacesAskedText сообщает, что свой текст пользователя заменяет текст того этапа, о котором
+// открыт вопрос (SaveOwn): применение задаст вопрос заново о новом тексте.
+func replacesAskedText(c *Context, proposal *dynvalue.Object) bool {
+	stage, _ := proposal.Value("stage").(string)
+	return proposal.Value("own") == true && dynvalue.Get(c.workflowValue("pending_decision"), "stage") == stage+"_review"
+}
+
 // checkApply — синхронная часть Apply до занятия плана: предложение готово, относится
 // к выбранному пакету и не устарело, вопрос пакета решён, сценарий утверждён (для нового пакета),
 // задание агента успешно, ответ проходит проверку, изображения и входы не изменились.
@@ -94,7 +101,8 @@ func (w *Workflow) checkApply(project, shot, packageDir, id string) (*applyPlan,
 		return nil, err
 	}
 	samePackage := stored.Target() == c.PackageDir
-	if samePackage && dynvalue.Truthy(c.workflowValue("pending_decision")) && !replacesAskedFrame(c, stored.Proposal().Value("after")) {
+	if samePackage && dynvalue.Truthy(c.workflowValue("pending_decision")) && !replacesAskedFrame(c, stored.Proposal().Value("after")) &&
+		!replacesAskedText(c, stored.Proposal()) {
 		return nil, errors.New(textResolveQuestionFirst)
 	}
 	if !samePackage && !w.options.IsScenarioApproved(view.Project) {

@@ -365,7 +365,7 @@ func (p publisher) publishScenes(project string, input Publication) error {
 	if input.After.Scenes == nil {
 		return errors.New(textProposedRegistryMissing)
 	}
-	problems, err := scenario.ValidateScenes(input.After.Scenes, input.After.Cast)
+	problems, err := scenario.ValidateScenes(input.After.Scenes, input.After.Cast, scenario.ExpectedFPS(project, input.After.Scenes))
 	if err != nil {
 		return err
 	}

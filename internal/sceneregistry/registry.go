@@ -2,6 +2,7 @@ package sceneregistry
 
 import (
 	"path/filepath"
+	"songframe/internal/projectfile"
 	"strings"
 
 	"songframe/internal/castregistry"
@@ -117,7 +118,7 @@ func DerivedFromProblems(scenes any) ([]DerivedProblem, error) {
 }
 
 // Validate — проверка реестра: кадровые границы планов проверяются до чтения медиа (схема 1,
-// 30 кадров/с, непрерывная шкала без повторов кодов, известные части и референсы, монтажный конец
+// допустимая частота кадров, непрерывная шкала без повторов кодов, известные части и референсы, монтажный конец
 // равен концу песни с точностью до кадра), затем derived_from и сюжетные состояния (ResolveStates).
 // initial — начальное состояние сущностей (InitialStatesFor проекта; nil — пустое). Возвращает тот
 // же документ; первая найденная проблема — ValueError.
@@ -127,7 +128,7 @@ func Validate(data any, initial *toolrt.Dict) (*toolrt.Dict, error) {
 		return nil, err
 	}
 	document := data.(*toolrt.Dict)
-	if !toolrt.Equal(schema, toolrt.NewInt(1)) || !toolrt.Equal(document.Value("fps"), toolrt.NewInt(30)) || !toolrt.Truthy(document.Value("scenes")) {
+	if !toolrt.Equal(schema, toolrt.NewInt(1)) || !RegistryFPS(document.Value("fps")) || !toolrt.Truthy(document.Value("scenes")) {
 		return nil, valueError("Неизвестная схема или пустой реестр сцен.")
 	}
 	seen := map[string]bool{}
@@ -306,6 +307,42 @@ func Load(root string) (*toolrt.Dict, error) {
 		return nil, err
 	}
 	return Validate(value, initial)
+}
+
+// RegistryFPS — fps реестра или монтажа равен одной из частот проекта по правилам сравнения toolrt (30.0 и 30
+// равны, как в остальных числовых проверках реестра).
+func RegistryFPS(value any) bool {
+	for _, rate := range projectfile.FrameRates {
+		if toolrt.Equal(value, toolrt.NewInt(int64(rate))) {
+			return true
+		}
+	}
+	return false
+}
+
+// FPS — частота кадров проверенного реестра (или принятого монтажа) целым числом; 0, если
+// значение не из допустимых.
+func FPS(value any) int64 {
+	for _, rate := range projectfile.FrameRates {
+		if toolrt.Equal(value, toolrt.NewInt(int64(rate))) {
+			return int64(rate)
+		}
+	}
+	return 0
+}
+
+// SameFPS — частота реестра совпадает с частотой проекта. Реестр получает её из проекта при
+// создании каркаса и дальше служит источником частоты для всех расчётов кадров; расхождение
+// означает, что границы планов посчитаны на другой сетке.
+func SameFPS(root string, registry *toolrt.Dict) error {
+	project, err := ProjectFPS(root)
+	if err != nil {
+		return err
+	}
+	if !toolrt.Equal(registry.Value("fps"), project) {
+		return valueError("Частота кадров plan/scenes.json (%s к/с) не совпадает с частотой проекта (%s к/с).", toolrt.Str(registry.Value("fps")), toolrt.Str(project))
+	}
+	return nil
 }
 
 // joinShots — коды цепочки state_from через « → ».

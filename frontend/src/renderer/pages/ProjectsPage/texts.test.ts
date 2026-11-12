@@ -40,7 +40,7 @@ describe('Тексты создания и выбора проекта', () => {
     expect(history).toContain('История пуста. Откройте папку существующего клипа или создайте новый проект.');
     const form = renderToStaticMarkup(
       createElement(NewProjectForm, {
-        values: { name: '', path: '', video: '' },
+        values: { name: '', path: '', video: '', fps: '30' },
         changeField: () => undefined,
         pickParent: async () => undefined,
         problems: [],
@@ -51,5 +51,9 @@ describe('Тексты создания и выбора проекта', () => {
     expect(form).toContain('Полный путь к новой папке');
     expect(form).toContain('placeholder="animatic.mp4"');
     expect(form).toContain('Попадёт в plan/project.json, README и заголовки документов');
+    expect(form).toContain('Частота кадров');
+    expect(form).toContain('30 кадров в секунду');
+    expect(projectsTexts.frameRateOption(24)).toBe('24 кадра в секунду');
+    expect(projectsTexts.frameRateOption(25)).toBe('25 кадров в секунду');
   });
 });

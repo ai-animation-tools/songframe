@@ -6,10 +6,10 @@
     "result": "{\"world\": {\"time_of_day\": \"вечер\", \"weather\": \"ясно\"}, \"mira\": {\"position\": \"у причала\"}}"
   },
   "load_project": {
-    "result": "{\"schema_version\": 1, \"name\": \"Мини\", \"animatic_video\": \"animatic.mp4\"}"
+    "result": "{\"schema_version\": 1, \"name\": \"Мини\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30}"
   },
   "load_project_generation": {
-    "result": "{\"schema_version\": 1, \"name\": \"Мини\", \"animatic_video\": \"animatic.mp4\"}"
+    "result": "{\"schema_version\": 1, \"name\": \"Мини\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30}"
   },
   "read_production_status": {
     "error": {

@@ -213,6 +213,7 @@ func lintScenes(root string, r *Report) (any, error) {
 	if !ok {
 		return data, nil
 	}
+	lintFPS(root, sceneregistry.ScenesPath, "$.fps", document.Value("fps"), r)
 	direction, _ := get(document, "visual_direction", "")
 	targets, err := links(direction)
 	if err != nil {
@@ -625,6 +626,9 @@ func lintAssets(root string, r *Report) error {
 		}
 		var request any
 		if document, ok := packageValue.(*toolrt.Dict); ok {
+			if edit, ok := document.Value("accepted_edit").(*toolrt.Dict); ok {
+				lintFPS(root, name, "$.accepted_edit.fps", edit.Value("fps"), r)
+			}
 			generation, _ := get(document, "generation", toolrt.NewDict())
 			if request, err = get(generation, "request", nil); err != nil {
 				return err
@@ -647,6 +651,19 @@ func lintAssets(root string, r *Report) error {
 		}
 	}
 	return nil
+}
+
+// lintFPS — частота документа (реестра или принятого монтажа) совпадает с частотой проекта.
+// Недопустимое значение уже отмечено схемой, а нечитаемый plan/project.json — не дело этой
+// проверки: тогда сверка пропускается.
+func lintFPS(root, file, where string, value any, r *Report) {
+	project, err := sceneregistry.ProjectFPS(root)
+	if err != nil || value == nil {
+		return
+	}
+	if !toolrt.Equal(value, project) && sceneregistry.RegistryFPS(value) {
+		r.error(file, where, "частота кадров "+toolrt.Str(value)+" не совпадает с частотой проекта "+toolrt.Str(project))
+	}
 }
 
 // lintPackages — workflow.json и request.json пакетов plan/awaiting и plan/batches.

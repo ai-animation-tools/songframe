@@ -9,8 +9,10 @@ export const derivedShotTexts = {
   openBuilder: ({ shot }: { shot: string }) => `Открыть сборку производного плана ${shot}`,
   sourceVideo: 'Принятый клип источника',
   previewVideo: 'Предпросмотр производного плана',
-  sourceFrames: ({ frames }: { frames: number }) => `Источник: ${countLabel(frames, 'кадр', 'кадра', 'кадров')} · ${(frames / 30).toFixed(3)} с · 30 FPS`,
-  targetFrames: ({ frames }: { frames: number }) => `Цель: ${countLabel(frames, 'кадр', 'кадра', 'кадров')} · ${(frames / 30).toFixed(3)} с · 30 FPS`,
+  sourceFrames: ({ frames, fps }: { frames: number; fps: number }) =>
+    `Источник: ${countLabel(frames, 'кадр', 'кадра', 'кадров')} · ${(frames / fps).toFixed(3)} с · ${fps} FPS`,
+  targetFrames: ({ frames, fps }: { frames: number; fps: number }) =>
+    `Цель: ${countLabel(frames, 'кадр', 'кадра', 'кадров')} · ${(frames / fps).toFixed(3)} с · ${fps} FPS`,
   action: 'Действие по сценарию (для справки)',
   actionHint: 'Текст постановки не выбирает операции автоматически. Задайте рецепт ниже.',
   mode: 'Способ использования',

@@ -31,7 +31,7 @@
       "required": ["video", "fps", "frames", "duration_seconds", "source_interval_seconds", "speed", "hold_first_seconds", "hold_last_seconds", "rebuild"],
       "properties": {
         "video": {"$ref": "#/$defs/file"},
-        "fps": {"const": 30},
+        "fps": {"enum": [24, 25, 30]},
         "frames": {"type": "integer", "minimum": 1},
         "duration_seconds": {"type": "number"},
         "source_interval_seconds": {"type": "array", "minItems": 2, "items": {"type": "number"}},

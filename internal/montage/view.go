@@ -13,6 +13,7 @@ import (
 	"syscall"
 
 	"songframe/internal/dynvalue"
+	"songframe/internal/projectfile"
 	"songframe/internal/timing"
 )
 
@@ -59,7 +60,10 @@ type LyricLine struct {
 // View — MontageView: всё, что нужно странице монтажа. ManifestSha256 — объект «сцена → SHA-256
 // манифеста» в порядке сцен реестра, поэтому отдаётся сырым JSON.
 type View struct {
-	ScenarioStatus string          `json:"scenarioStatus"`
+	ScenarioStatus string `json:"scenarioStatus"`
+	// FPS — частота кадров реестра и проекта: шкала кадров всех полей вида; 0, пока реестр не
+	// прочитан.
+	FPS            float64         `json:"fps"`
 	TrackPath      *string         `json:"trackPath"`
 	TrackSha256    *string         `json:"trackSha256"`
 	Duration       *float64        `json:"duration"`
@@ -79,13 +83,16 @@ type View struct {
 // registry — чтение реестра сцен: статус, реестр и SHA-256 тех же байтов (повторное чтение могло
 // бы захватить другую версию).
 type registry struct {
+	// fps — частота кадров реестра (равна частоте проекта); 0 у отсутствующего или неверного.
+	fps    float64
 	status string
 	value  *dynvalue.Object
 	scenes []*dynvalue.Object
 	sha256 string
 }
 
-// readRegistry — чтение реестра сцен проекта: общий контракт реестра (версия 1, fps 30, коды и
+// readRegistry — чтение реестра сцен проекта: общий контракт реестра (версия 1, частота кадров
+// проекта, коды и
 // кадровые окна планов). Отсутствующий файл — missing, ошибка чтения и неверная структура — invalid.
 func readRegistry(project string) registry {
 	raw, err := os.ReadFile(filepath.Join(project, "plan", "scenes.json"))
@@ -97,7 +104,7 @@ func readRegistry(project string) registry {
 	}
 	value, err := dynvalue.Parse([]byte(dynvalue.DecodeUTF8(raw)))
 	object, ok := dynvalue.AsObject(value)
-	if err != nil || !ok || !dynvalue.StrictEqual(object.Value("schema_version"), 1.0) || !dynvalue.StrictEqual(object.Value("fps"), float64(fps)) {
+	if err != nil || !ok || !dynvalue.StrictEqual(object.Value("schema_version"), 1.0) || !dynvalue.StrictEqual(object.Value("fps"), projectfile.ExpectedFPS(project, object.Value("fps"))) {
 		return registry{status: "invalid"}
 	}
 	items, ok := dynvalue.AsArray(object.Value("scenes"))
@@ -127,18 +134,18 @@ func readRegistry(project string) registry {
 	if len(scenes) > 0 {
 		status = "ready"
 	}
-	return registry{status: status, value: object, scenes: scenes, sha256: hex.EncodeToString(sum[:])}
+	return registry{fps: object.Value("fps").(float64), status: status, value: object, scenes: scenes, sha256: hex.EncodeToString(sum[:])}
 }
 
-// originalFrames — длина оригинала видео (original_media) в кадрах 30 к/с по duration,
-// иначе по nb_frames и r_frame_rate ffprobe; неизвестная — nil.
-func originalFrames(value any) *float64 {
+// originalFrames — длина оригинала видео (original_media) в кадрах частоты проекта fps по
+// duration, иначе по nb_frames и r_frame_rate ffprobe; неизвестная — nil.
+func originalFrames(value any, fps float64) *float64 {
 	media, ok := dynvalue.AsObject(value)
 	if !ok {
 		return nil
 	}
 	if duration := dynvalue.ToNumber(media.Value("duration")); dynvalue.IsFinite(duration) && duration > 0 {
-		frames := secondsToFrames(duration)
+		frames := secondsToFrames(duration, fps)
 		return &frames
 	}
 	rate := []float64{}
@@ -155,7 +162,7 @@ func originalFrames(value any) *float64 {
 	}
 	count := dynvalue.ToNumber(media.Value("nb_frames"))
 	if dynvalue.IsFinite(speed) && speed > 0 && dynvalue.IsFinite(count) && count > 0 {
-		frames := secondsToFrames(count / speed)
+		frames := secondsToFrames(count/speed, fps)
 		return &frames
 	}
 	return nil
@@ -179,6 +186,7 @@ func ViewProject(project string) (*View, error) {
 	}
 	scenario := readRegistry(project)
 	view.ScenarioStatus = scenario.status
+	view.FPS = scenario.fps
 	switch {
 	case scenario.status == "missing":
 		view.Problems = append(view.Problems, textScenarioRequired)
@@ -270,7 +278,7 @@ func ViewProject(project string) (*View, error) {
 				return err
 			}
 			generation, edit := section(manifest, "generation"), section(manifest, "accepted_edit")
-			addSource(scene.ID, scene.Title, textOriginal, dir, generation.Value("original"), originalFrames(generation.Value("original_media")), true, false)
+			addSource(scene.ID, scene.Title, textOriginal, dir, generation.Value("original"), originalFrames(generation.Value("original_media"), view.FPS), true, false)
 			var frames *float64
 			if value, ok := number(edit.Value("frames")); ok && isFrame(value) && value > 0 {
 				frames = &value
@@ -504,14 +512,14 @@ func viewLyrics(project string, view *View) error {
 			problem(textLyricTimingInvalid)
 			break
 		}
-		// Строки и склейки используют одну сетку 30 к/с и абсолютную ось исходного трека.
+		// Строки и склейки используют одну сетку частоты проекта и абсолютную ось исходного трека.
 		for _, line := range selected {
 			source, _ := number(dynvalue.Get(line, "source_line"))
 			start, _ := number(dynvalue.Get(line, "start"))
 			end, _ := number(dynvalue.Get(line, "end"))
 			view.LyricLines = append(view.LyricLines, LyricLine{
 				ID: dynvalue.Raw(dynvalue.Get(line, "id")), Text: texts[source],
-				StartFrame: secondsToFrames(start), EndFrame: secondsToFrames(end),
+				StartFrame: secondsToFrames(start, view.FPS), EndFrame: secondsToFrames(end, view.FPS),
 			})
 		}
 		if len(view.LyricLines) == 0 {

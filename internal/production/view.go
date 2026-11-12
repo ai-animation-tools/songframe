@@ -16,9 +16,6 @@ import (
 	"songframe/internal/providers"
 )
 
-// FPS — частота кадров шкалы клипа; реестр сцен хранит свою и её же требует.
-const FPS = 30
-
 // Asset — принятые материалы плана в assets/shots/Mxx: пути только к существующим файлам.
 type Asset struct {
 	Dir      string  `json:"dir"`
@@ -318,7 +315,7 @@ func ViewProduction(project string) (View, error) {
 	}
 	fps := dynvalue.ToNumber(dynvalue.Get(scenes, "fps"))
 	if fps == 0 || fps != fps {
-		fps = FPS
+		fps = projectfile.FPS(project)
 	}
 	accepted, err := acceptance.Compute(project, scenes)
 	if err != nil {

@@ -6,6 +6,7 @@ import { Alert, Stack, Typography } from '@mui/material';
 import type { MontageDraft, MontageView } from '@shared/montage';
 import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 import { clipLength, frameLabel } from '../model';
+import { useProjectFps } from '../../../hooks/useProjectFps';
 
 /** Применение отделено от черновика и экспорта: пользователь видит новые границы перед изменением сцен. */
 export function MontageApplyDialog({
@@ -23,6 +24,7 @@ export function MontageApplyDialog({
   onClose: () => void;
   onApply: () => void;
 }): ReactElement {
+  const fps = useProjectFps();
   let cursor = draft.audio.start_frame;
   return (
     <ConfirmationDialog
@@ -51,9 +53,9 @@ export function MontageApplyDialog({
             <Typography key={clip.id} variant="body2" color={changed ? 'warning.main' : 'text.primary'}>
               {montageTexts.applyRange({
                 scene: clip.scene,
-                start: frameLabel(start),
-                end: frameLabel(cursor),
-                previous: changed ? { start: frameLabel(canonical.startFrame), end: frameLabel(canonical.endFrame) } : undefined
+                start: frameLabel(start, fps),
+                end: frameLabel(cursor, fps),
+                previous: changed ? { start: frameLabel(canonical.startFrame, fps), end: frameLabel(canonical.endFrame, fps) } : undefined
               })}
             </Typography>
           );

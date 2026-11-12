@@ -586,7 +586,7 @@
         {
           "op": "write",
           "path": "plan/project.json",
-          "text": "{\n  \"schema_version\": 1,\n  \"name\": \"Клип <A>&;#=\\\\\",\n  \"animatic_video\": \"another-output.mp4\",\n  \"generation\": {\n    \"video\": null,\n    \"image\": null\n  }\n}\n"
+          "text": "{\n  \"schema_version\": 1,\n  \"name\": \"Клип <A>&;#=\\\\\",\n  \"animatic_video\": \"another-output.mp4\",\n  \"fps\": 30,\n  \"generation\": {\n    \"video\": null,\n    \"image\": null\n  }\n}\n"
         },
         {
           "op": "write",
@@ -1244,7 +1244,7 @@
         {
           "op": "write",
           "path": "plan/project.json",
-          "text": "{\n  \"schema_version\": 1,\n  \"name\": \"Тестовый клип\",\n  \"animatic_video\": \"../x.mp4\",\n  \"generation\": {\n    \"video\": null,\n    \"image\": null\n  }\n}\n"
+          "text": "{\n  \"schema_version\": 1,\n  \"name\": \"Тестовый клип\",\n  \"animatic_video\": \"../x.mp4\",\n  \"fps\": 30,\n  \"generation\": {\n    \"video\": null,\n    \"image\": null\n  }\n}\n"
         },
         {
           "op": "run",
@@ -1645,7 +1645,7 @@
         {
           "op": "write",
           "path": "plan/project.json",
-          "text": "{\n  \"schema_version\": 1,\n  \"name\": \"Другое имя\",\n  \"animatic_video\": \"test-output.mp4\",\n  \"generation\": {\n    \"video\": null,\n    \"image\": null\n  }\n}\n"
+          "text": "{\n  \"schema_version\": 1,\n  \"name\": \"Другое имя\",\n  \"animatic_video\": \"test-output.mp4\",\n  \"fps\": 30,\n  \"generation\": {\n    \"video\": null,\n    \"image\": null\n  }\n}\n"
         },
         {
           "op": "run",
@@ -1672,7 +1672,7 @@
         {
           "op": "write",
           "path": "plan/project.json",
-          "text": "{\n    \"schema_version\": 1,\n    \"name\": \"\\u0422\\u0435\\u0441\\u0442\\u043e\\u0432\\u044b\\u0439 \\u043a\\u043b\\u0438\\u043f\",\n    \"animatic_video\": \"test-output.mp4\",\n    \"generation\": {\n        \"video\": {\n            \"provider\": \"test\"\n        }\n    }\n}"
+          "text": "{\n    \"schema_version\": 1,\n    \"name\": \"\\u0422\\u0435\\u0441\\u0442\\u043e\\u0432\\u044b\\u0439 \\u043a\\u043b\\u0438\\u043f\",\n    \"animatic_video\": \"test-output.mp4\",\n    \"fps\": 30,\n    \"generation\": {\n        \"video\": {\n            \"provider\": \"test\"\n        }\n    }\n}"
         },
         {
           "op": "run",

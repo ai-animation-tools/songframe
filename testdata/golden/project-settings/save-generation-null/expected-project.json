@@ -2,5 +2,6 @@
   "schema_version": 2,
   "name": "Клип",
   "animatic_video": "a.mp4",
+  "fps": 30,
   "generation": null
 }

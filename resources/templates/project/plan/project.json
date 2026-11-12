@@ -2,6 +2,7 @@
   "schema_version": 1,
   "name": "{{project_name}}",
   "animatic_video": "{{animatic_video}}",
+  "fps": {{fps}},
   "agent_instructions": "",
   "generation": {
     "video": null,

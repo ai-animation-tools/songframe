@@ -5,6 +5,7 @@
     "state": "empty",
     "name": "Шаблон 2",
     "animaticVideo": "shablon-animatic.mp4",
+    "fps": 30,
     "checks": {
       "marker": true,
       "sources": false,

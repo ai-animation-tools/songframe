@@ -12,4 +12,10 @@ export interface Input {
      * AnimaticVideo — имя MP4 полного аниматика; пустое или отсутствующее выводится из названия.
      */
     "animaticVideo"?: string | null;
+
+    /**
+     * FPS — частота кадров проекта (projectfile.FrameRates); 0 или отсутствие — DefaultFrameRate.
+     * После создания не меняется: на ней строятся границы планов, монтаж и экспорт.
+     */
+    "fps"?: number;
 }

@@ -11,14 +11,16 @@ import (
 	"songframe/internal/toolrt"
 )
 
-// shotColumns — столбцы shots.csv по порядку.
-var shotColumns = []string{
-	"shot", "status", "song_in_tc", "song_out_tc", "song_in_s", "song_out_s", "duration_s", "frames_30",
-	"original", "original_fps", "original_duration_s", "source_shot", "rebuild_input", "source_in_s",
-	"source_out_s", "source_grid_fps", "source_in_frame_native", "source_out_frame_native", "speed",
-	"speed_ratio", "hold_first_s", "hold_last_s", "still_time_s", "repeat_full_cycles",
-	"repeat_tail_frames", "repeat_cycle_frames", "accepted_clip", "lipsync", "speech_wav", "audio_recipe",
-	"prompt", "inputs", "card", "camera", "action", "continuity", "original_sha256", "accepted_sha256",
+// shotColumns — столбцы shots.csv по порядку; число кадров плана — в столбце частоты проекта.
+func shotColumns(fps int64) []string {
+	return []string{
+		"shot", "status", "song_in_tc", "song_out_tc", "song_in_s", "song_out_s", "duration_s", framesKey(fps),
+		"original", "original_fps", "original_duration_s", "source_shot", "rebuild_input", "source_in_s",
+		"source_out_s", "source_grid_fps", "source_in_frame_native", "source_out_frame_native", "speed",
+		"speed_ratio", "hold_first_s", "hold_last_s", "still_time_s", "repeat_full_cycles",
+		"repeat_tail_frames", "repeat_cycle_frames", "accepted_clip", "lipsync", "speech_wav", "audio_recipe",
+		"prompt", "inputs", "card", "camera", "action", "continuity", "original_sha256", "accepted_sha256",
+	}
 }
 
 // lyricColumns — столбцы lyrics.csv.
@@ -161,8 +163,8 @@ func repeatList(cycle, count any) ([]any, error) {
 // repeatEvents — события полного цикла и хвоста: EDL не умеет задавать цикл одной строкой, поэтому
 // каждый повтор получает своё событие с непрерывными таймкодами песни. Возвращает строки и номер
 // последнего события. Вычисления идут через float (формат зафиксирован эталоном): длина делится
-// на 30, а секунды снова становятся таймкодом через строковую запись float (toolrt.Str).
-func repeatEvents(row *toolrt.Dict, number int) ([]string, int, error) {
+// на частоту проекта, а секунды снова становятся таймкодом через строковую запись float (toolrt.Str).
+func repeatEvents(row *toolrt.Dict, number int, fps int64) ([]string, int, error) {
 	shot := row.Value("shot").(string)
 	cycle, count, tail := row.Value("repeat_cycle_frames"), row.Value("repeat_full_cycles"), row.Value("repeat_tail_frames")
 	lengths, err := repeatList(cycle, count)
@@ -172,7 +174,7 @@ func repeatEvents(row *toolrt.Dict, number int) ([]string, int, error) {
 	if toolrt.Truthy(tail) {
 		lengths = append(lengths, tail)
 	}
-	frames, err := framesAt(row.Value("song_in_s"), frameGrid)
+	frames, err := framesAt(row.Value("song_in_s"), frameGrid(fps))
 	if err != nil {
 		return nil, 0, err
 	}
@@ -181,7 +183,7 @@ func repeatEvents(row *toolrt.Dict, number int) ([]string, int, error) {
 		" кадров, цикл " + toolrt.Str(cycle) + " кадров"}
 	frameRate := toolrt.NewInt(fps)
 	sourceIn := row.Value("source_in_s")
-	var r reader
+	r := reader{fps: fps}
 	divide := func(value any) any {
 		if r.err != nil {
 			return nil
@@ -213,20 +215,20 @@ func repeatEvents(row *toolrt.Dict, number int) ([]string, int, error) {
 }
 
 // videoLines — строки EDL плана с видео. Возвращает их и номер последнего события.
-func videoLines(row *toolrt.Dict, number int) ([]string, int, error) {
+func videoLines(row *toolrt.Dict, number int, fps int64) ([]string, int, error) {
 	shot := row.Value("shot").(string)
-	sourceIn, err := timecode(row.Value("source_in_s"))
+	sourceIn, err := timecode(row.Value("source_in_s"), fps)
 	if err != nil {
 		return nil, 0, err
 	}
 	var lines []string
 	if row.Value("repeat_cycle_frames") != "" {
-		if lines, number, err = repeatEvents(row, number); err != nil {
+		if lines, number, err = repeatEvents(row, number, fps); err != nil {
 			return nil, 0, err
 		}
 	} else {
 		number++
-		sourceOut, err := timecode(row.Value("source_out_s"))
+		sourceOut, err := timecode(row.Value("source_out_s"), fps)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -236,7 +238,7 @@ func videoLines(row *toolrt.Dict, number int) ([]string, int, error) {
 	speed := row.Value("speed").(float64)
 	still := row.Value("still_time_s")
 	if speed != 1 && speed != 0 && still == "" {
-		lines = append(lines, "M2   "+reel(shot)+" "+speedField(fps*speed)+strings.Repeat(" ", 16)+sourceIn)
+		lines = append(lines, "M2   "+reel(shot)+" "+speedField(float64(fps)*speed)+strings.Repeat(" ", 16)+sourceIn)
 	}
 	first, last := row.Value("hold_first_s").(float64), row.Value("hold_last_s").(float64)
 	if toolrt.Truthy(first) || toolrt.Truthy(last) {
@@ -251,7 +253,7 @@ func videoLines(row *toolrt.Dict, number int) ([]string, int, error) {
 	return lines, number, nil
 }
 
-// writeEDL — EDL CMX3600 на 30 кадров/с non-drop. Планы без видео — комментарии без событий.
+// writeEDL — EDL CMX3600 на частоте проекта non-drop. Планы без видео — комментарии без событий.
 func writeEDL(bundle *toolrt.Dict, path string) error {
 	name := toolrt.Str(bundle.Value("project").(*toolrt.Dict).Value("name"))
 	lines := []string{"TITLE: " + name + " animatic", "FCM: NON-DROP FRAME", ""}
@@ -262,7 +264,7 @@ func writeEDL(bundle *toolrt.Dict, path string) error {
 				toolrt.Str(row.Value("song_out_tc"))+": видео не сгенерировано, в аниматике карточка", "")
 			continue
 		}
-		added, next, err := videoLines(row, number)
+		added, next, err := videoLines(row, number, bundleFPS(bundle))
 		if err != nil {
 			return err
 		}
@@ -348,14 +350,14 @@ func (place mediaPlace) mediaURI(path any) (string, error) {
 }
 
 // timelineItem — asset и элемент spine одного плана FCPXML.
-func timelineItem(row *toolrt.Dict, place mediaPlace) (asset, clip string, err error) {
+func timelineItem(row *toolrt.Dict, place mediaPlace, fps int64) (asset, clip string, err error) {
 	shot := row.Value("shot").(string)
 	id := "c" + strings.ReplaceAll(shot, ".", "_")
-	offset, err := rational(row.Value("song_in_s"))
+	offset, err := rational(row.Value("song_in_s"), fps)
 	if err != nil {
 		return "", "", err
 	}
-	duration := toolrt.Str(row.Value("frames_30")) + "/30s"
+	duration := toolrt.Str(row.Value(framesKey(fps))) + "/" + strconv.FormatInt(fps, 10) + "s"
 	if row.Value("status") == "video" {
 		uri, err := place.mediaURI(row.Value("accepted_clip"))
 		if err != nil {
@@ -378,7 +380,9 @@ func timelineItem(row *toolrt.Dict, place mediaPlace) (asset, clip string, err e
 // writeFCPXML — FCPXML: шкала аниматика из принятых клипов и карточек по порядку, песня —
 // связанным клипом первого плана на дорожке -1.
 func writeFCPXML(bundle *toolrt.Dict, path string, place mediaPlace) error {
-	total, err := rational(bundle.Value("song_end_s"))
+	fps := bundleFPS(bundle)
+	rate := strconv.FormatInt(fps, 10)
+	total, err := rational(bundle.Value("song_end_s"), fps)
 	if err != nil {
 		return err
 	}
@@ -390,7 +394,7 @@ func writeFCPXML(bundle *toolrt.Dict, path string, place mediaPlace) error {
 		`" hasAudio="1" audioSources="1" audioChannels="2" audioRate="44100"/>`}
 	spine := []string{}
 	for index, row := range rowsOf(bundle) {
-		asset, clip, err := timelineItem(row, place)
+		asset, clip, err := timelineItem(row, place, fps)
 		if err != nil {
 			return err
 		}
@@ -412,7 +416,7 @@ func writeFCPXML(bundle *toolrt.Dict, path string, place mediaPlace) error {
 		"<!DOCTYPE fcpxml>",
 		`<fcpxml version="1.8">`,
 		"  <resources>",
-		`    <format id="r1" name="FFVideoFormat1080p30" frameDuration="1/30s" width="1920" height="1080"/>`,
+		`    <format id="r1" name="FFVideoFormat1080p` + rate + `" frameDuration="1/` + rate + `s" width="1920" height="1080"/>`,
 	}
 	document = append(document, assets...)
 	document = append(document,
@@ -427,6 +431,7 @@ func writeFCPXML(bundle *toolrt.Dict, path string, place mediaPlace) error {
 
 // readme — README.md пакета: пояснение полей и оговорки для монтажёра.
 func readme(bundle *toolrt.Dict, copied int) string {
+	rate := strconv.FormatInt(bundleFPS(bundle), 10)
 	rows := rowsOf(bundle)
 	videos := videoCount(rows)
 	files := "- Пути в таблицах относительны к корню папки проекта; файлы не копировались."
@@ -442,7 +447,7 @@ func readme(bundle *toolrt.Dict, copied int) string {
 		"",
 		"Планов " + strconv.Itoa(len(rows)) + ", с видео " + strconv.Itoa(videos) + ", карточек " + strconv.Itoa(len(rows)-videos) + ". " +
 			"Песня целиком: `" + toolrt.Str(bundle.Value("song")) + "`, длительность " + toolrt.FormatFixed(bundle.Value("song_end_s").(float64), 4) + " с. " +
-			"Шкала аниматика — 30 кадров/с, таймкоды non-drop от начала песни. " +
+			"Шкала аниматика — " + rate + " кадров/с, таймкоды non-drop от начала песни. " +
 			"Аниматик — демо: все монтажные решения в нём предварительные.",
 		"",
 		"## Файлы",
@@ -450,13 +455,13 @@ func readme(bundle *toolrt.Dict, copied int) string {
 		"- `shots.csv` — одна строка на план: таймкоды песни, оригинал " +
 			"генерации, выбранный участок, скорость, удержания, кадры-опоры, " +
 			"промпт, WAV липсинка.",
-		"- `timeline.edl` — CMX3600 на 30 кадров/с: события указывают на " +
-			"вход рецепта (`rebuild_input`), source in/out даны на сетке 30 " +
+		"- `timeline.edl` — CMX3600 на " + rate + " кадров/с: события указывают на " +
+			"вход рецепта (`rebuild_input`), source in/out даны на сетке " + rate + " " +
 			"кадров/с после конвертации, как в `shots.csv`; строки `M2` " +
 			"отмечают изменение скорости, комментарии — удержания и " +
 			"стоп-кадры. Карточки — комментарии без событий.",
 		"- `timeline.fcpxml` — точная шкала аниматика из принятых клипов " +
-			"30 кадров/с и карточек, песня связанным клипом; открывается в " +
+			rate + " кадров/с и карточек, песня связанным клипом; открывается в " +
 			"Final Cut Pro, DaVinci Resolve, Premiere Pro.",
 		"- `lyrics.csv` — строки песни с оценками времени из разметки проекта; границы не подтверждены на слух.",
 		"- `bundle.json` — те же данные для скриптов.",
@@ -466,7 +471,7 @@ func readme(bundle *toolrt.Dict, copied int) string {
 		"",
 		"- Оригиналы генерации сохраняют собственную частоту кадров (`original_fps`, например 24 кадра/с). " +
 			"Поля `source_in_s`/`source_out_s` — секунды выбранного участка " +
-			"на сетке `source_grid_fps` после конвертации в 30 кадров/с; " +
+			"на сетке `source_grid_fps` после конвертации в " + rate + " кадров/с; " +
 			"`source_in_frame_native`/`source_out_frame_native` — те же " +
 			"границы в кадрах исходной частоты (начало включительно, конец " +
 			"исключительно).",

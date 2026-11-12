@@ -37,9 +37,6 @@ import (
 // Now — время UTC для имени папки прежнего комплекта (подменяется в тестах).
 var Now = func() time.Time { return time.Now().UTC() }
 
-// fps — шкала монтажа.
-const fps = 30
-
 // Тексты отказов и примечаний манифеста; их видит пользователь, формулировки зафиксированы
 // эталоном testdata/golden/production-tools.
 const (
@@ -344,12 +341,13 @@ type editPlan struct {
 }
 
 // fullPlan — план режима --full: оригинал целиком, без скорости и удержаний.
-func fullPlan(frames toolrt.Int) editPlan {
+func fullPlan(frames toolrt.Int, fps int64) editPlan {
 	count := frames.Big()
+	rate := strconv.FormatInt(fps, 10)
 	return editPlan{
-		filter: "fps=30,trim=start_frame=0:end_frame=" + frames.String() + ",setpts=N/(30*TB),setsar=1",
+		filter: "fps=" + rate + ",trim=start_frame=0:end_frame=" + frames.String() + ",setpts=N/(" + rate + "*TB),setsar=1",
 		frames: frames, start: big.NewInt(0), end: count, motion: count, holdFirst: big.NewInt(0), holdLast: big.NewInt(0),
-		speed: "1", intervalSeconds: []any{0.0, intFloat(count) / fps},
+		speed: "1", intervalSeconds: []any{0.0, intFloat(count) / float64(fps)},
 	}
 }
 
@@ -501,10 +499,10 @@ func planEdit(ctx context.Context, shot, original string, frames toolrt.Int, roo
 }
 
 // renderEdit — участок оригинала по фильтру плана кодируется параметрами ENCODE build_animatic
-// без звука ровно в frames кадров; результат обязан быть 1920×1080, 30/1.
-func renderEdit(ctx context.Context, original, filter string, frames toolrt.Int, target string) error {
+// без звука ровно в frames кадров; результат обязан быть 1920×1080 с частотой проекта fps.
+func renderEdit(ctx context.Context, original, filter string, frames toolrt.Int, target string, fps int64) error {
 	args := append([]string{"-v", "error", "-nostdin", "-n", "-threads", "2", "-i", original, "-map", "0:v:0", "-vf", filter},
-		mediacmd.Encode...)
+		mediacmd.Encode(fps)...)
 	args = append(args, "-frames:v", frames.String(), target)
 	if _, err := run(ctx, mediacmd.FFmpeg(), args...); err != nil {
 		return err
@@ -530,7 +528,7 @@ func renderEdit(ctx context.Context, original, filter string, frames toolrt.Int,
 			return err
 		}
 		if !toolrt.Equal(values[0], toolrt.NewInt(1920)) || !toolrt.Equal(values[1], toolrt.NewInt(1080)) ||
-			!toolrt.Equal(values[2], "30/1") || count.Cmp(frames.Big()) != 0 {
+			!toolrt.Equal(values[2], strconv.FormatInt(fps, 10)+"/1") || count.Cmp(frames.Big()) != 0 {
 			return valueError(textBadEdit)
 		}
 		return nil
@@ -688,6 +686,9 @@ func Accept(ctx context.Context, root, shot string, options Options) (*toolrt.Di
 	if err != nil {
 		return nil, err
 	}
+	if err := sceneregistry.SameFPS(root, registry); err != nil {
+		return nil, err
+	}
 	var scene *toolrt.Dict
 	scenes, _ := registry.Value("scenes").([]any)
 	for _, raw := range scenes {
@@ -769,7 +770,7 @@ func Accept(ctx context.Context, root, shot string, options Options) (*toolrt.Di
 	if err := os.MkdirAll(staging, 0o755); err != nil {
 		return nil, toolrt.OSErrorFrom(err, staging)
 	}
-	video, replaced, err := buildKit(ctx, root, shot, frames, staging, target, original, promptFile, inputFiles, data, lipsync, options)
+	video, replaced, err := buildKit(ctx, root, shot, frames, sceneregistry.FPS(registry.Value("fps")), staging, target, original, promptFile, inputFiles, data, lipsync, options)
 	if err != nil {
 		_ = os.RemoveAll(staging)
 		return nil, err
@@ -829,7 +830,7 @@ func Accept(ctx context.Context, root, shot string, options Options) (*toolrt.Di
 
 // buildKit собирает комплект в staging и переносит его на место target
 // (прежний комплект уходит в assets/replaced). Возвращает описатель video и путь прежнего комплекта.
-func buildKit(ctx context.Context, root, shot string, frames toolrt.Int, staging, target, original, promptFile string,
+func buildKit(ctx context.Context, root, shot string, frames toolrt.Int, fps int64, staging, target, original, promptFile string,
 	inputFiles []string, data attemptData, lipsync bool, options Options) (*toolrt.Dict, string, error) {
 	request, attempt, workflow := data.request, data.attempt, data.workflow
 	count, _ := strconv.ParseInt(frames.String(), 10, 64)
@@ -913,6 +914,8 @@ func buildKit(ctx context.Context, root, shot string, frames toolrt.Int, staging
 			}
 		}
 	}
+	// grid — частота шкалы проекта в записи ffprobe (r_frame_rate).
+	grid := strconv.FormatInt(fps, 10) + "/1"
 	var plan editPlan
 	if options.Full {
 		nbFrames, _ := strconv.ParseInt(toolrt.Str(originalMedia.Value("nb_frames")), 10, 64)
@@ -921,19 +924,19 @@ func buildKit(ctx context.Context, root, shot string, frames toolrt.Int, staging
 		}
 		// Целиком без перекодирования принимается только ролик в кадре проекта: другой размер
 		// (например, видео, созданное вне приложения) приводится к 1920×1080 участком.
-		if !toolrt.Equal(originalMedia.Value("r_frame_rate"), "30/1") || nbFrames != count ||
+		if !toolrt.Equal(originalMedia.Value("r_frame_rate"), grid) || nbFrames != count ||
 			!toolrt.Equal(originalMedia.Value("width"), toolrt.NewInt(1920)) || !toolrt.Equal(originalMedia.Value("height"), toolrt.NewInt(1080)) {
 			return nil, "", valueError("Полный оригинал не совпадает с окном, кадром 1920×1080 и FPS; задайте участок.")
 		}
 		if err := copyFile(toolrt.JoinPath(staging, "original.mp4"), toolrt.JoinPath(staging, "video.mp4")); err != nil {
 			return nil, "", err
 		}
-		plan = fullPlan(frames)
+		plan = fullPlan(frames, fps)
 	} else {
 		if plan, err = planEdit(ctx, shot, toolrt.JoinPath(staging, "original.mp4"), frames, root, options); err != nil {
 			return nil, "", err
 		}
-		if err := renderEdit(ctx, toolrt.JoinPath(staging, "original.mp4"), plan.filter, frames, toolrt.JoinPath(staging, "video.mp4")); err != nil {
+		if err := renderEdit(ctx, toolrt.JoinPath(staging, "original.mp4"), plan.filter, frames, toolrt.JoinPath(staging, "video.mp4"), fps); err != nil {
 			return nil, "", err
 		}
 	}
@@ -1051,7 +1054,7 @@ func buildKit(ctx context.Context, root, shot string, frames toolrt.Int, staging
 	}
 	sourceFPS := originalMedia.Value("r_frame_rate")
 	conversion := "Исходная частота кадров совпадает со шкалой."
-	if !toolrt.Equal(sourceFPS, "30/1") {
+	if !toolrt.Equal(sourceFPS, grid) {
 		conversion = "Выбор кадров без интерполяции движения."
 	}
 	manifest := toolcli.Record(
@@ -1075,7 +1078,7 @@ func buildKit(ctx context.Context, root, shot string, frames toolrt.Int, staging
 			"video", video,
 			"fps", toolrt.NewInt(fps),
 			"frames", frames,
-			"duration_seconds", float64(count)/fps,
+			"duration_seconds", float64(count)/float64(fps),
 			"source_interval_seconds", plan.intervalSeconds,
 			"source_interval_end_exclusive", true,
 			"source_frame_grid_fps", toolrt.NewInt(fps),
@@ -1084,11 +1087,11 @@ func buildKit(ctx context.Context, root, shot string, frames toolrt.Int, staging
 				"factor", factor,
 				"ratio", ratio.RatString(),
 				"selected_source_seconds", selected,
-				"motion_output_seconds", intFloat(plan.motion)/fps,
+				"motion_output_seconds", intFloat(plan.motion)/float64(fps),
 				"duration_change_seconds", plan.durationChange,
 			),
-			"hold_first_seconds", intFloat(plan.holdFirst)/fps,
-			"hold_last_seconds", intFloat(plan.holdLast)/fps,
+			"hold_first_seconds", intFloat(plan.holdFirst)/float64(fps),
+			"hold_last_seconds", intFloat(plan.holdLast)/float64(fps),
 			"audio_policy", audioPolicy,
 			"montage_source", video,
 			"rebuild", toolcli.Record(

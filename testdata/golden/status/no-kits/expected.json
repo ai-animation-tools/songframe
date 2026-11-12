@@ -3,6 +3,7 @@
   "state": "scripted",
   "name": "Пробный клип",
   "animaticVideo": "sample-animatic.mp4",
+  "fps": 30,
   "checks": {
     "marker": true,
     "sources": true,

@@ -16,10 +16,8 @@ import (
 
 	"songframe/internal/dynvalue"
 	"songframe/internal/filedigest"
+	"songframe/internal/projectfile"
 )
-
-// fps — кадровая сетка приложения.
-const fps = 30.0
 
 var sha256Pattern = regexp.MustCompile(`^[a-f0-9]{64}$`)
 
@@ -169,6 +167,9 @@ func inputProblems(project string, manifest *dynvalue.Object) ([]string, error) 
 	}
 	receipt := readJSON(filepath.Join(project, "plan", "animatic", "cards", "manifest.json"))
 	registry := readJSON(filepath.Join(project, "plan", "scenes.json"))
+	// fps — частота проекта; неизвестная (повреждённый plan/project.json уже отмечен выше) не
+	// даёт ложных расхождений принятого монтажа.
+	fps := projectfile.FPS(project)
 	shots, _ := dynvalue.AsArray(manifest.Value("shots"))
 	for _, shot := range shots {
 		shotID := dynvalue.Get(shot, "id")
@@ -213,7 +214,7 @@ func inputProblems(project string, manifest *dynvalue.Object) ([]string, error) 
 			expected := dynvalue.Coalesce(dynvalue.GetKey(sources, path), dynvalue.Get(shot, "sha256"))
 			if !dynvalue.StrictEqual(dynvalue.Get(asset, "shot"), shotID) || !dynvalue.StrictEqual(selected, path) ||
 				!dynvalue.StrictEqual(dynvalue.GetPath(edit, "video", "sha256"), expected) ||
-				!dynvalue.StrictEqual(dynvalue.Get(edit, "fps"), fps) || !dynvalue.StrictEqual(dynvalue.Get(edit, "frames"), dynvalue.Get(shot, "frames")) {
+				(fps != 0 && !dynvalue.StrictEqual(dynvalue.Get(edit, "fps"), fps)) || !dynvalue.StrictEqual(dynvalue.Get(edit, "frames"), dynvalue.Get(shot, "frames")) {
 				problems = append(problems, acceptedEditChanged(shotID))
 			}
 			continue

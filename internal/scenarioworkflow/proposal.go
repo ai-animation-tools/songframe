@@ -9,15 +9,13 @@ import (
 
 	"songframe/internal/cast"
 	"songframe/internal/dynvalue"
+	"songframe/internal/projectfile"
 	"songframe/internal/scenario"
 )
 
 // Проверка недоверенного JSON агента: ответ агента разбирается в дерево dynvalue и проверяется
 // до любых доменных функций, которые ожидают уже типизированный документ. Тексты отказов —
 // scenarioTexts.main (frontend/src/shared/texts/scenario.ts).
-
-// fps — кадровая сетка реестра (FPS из frontend/src/shared/video.ts).
-const fps = 30.0
 
 // stagingFields — поля постановки, которые патч прохода revise может заменить.
 var stagingFields = []string{"title", "camera", "action", "continuity", "notes", "references", "lipsync", "card", "state_from", "state_changes", "derived_from"}
@@ -135,12 +133,18 @@ func deepEqual(left, right any) bool {
 	return left == right
 }
 
+// isFrameRate — число dynvalue — одна из допустимых частот кадров проекта.
+func isFrameRate(value any) bool {
+	number, ok := value.(float64)
+	return ok && number == math.Trunc(number) && number < 1000 && projectfile.ValidFrameRate(int(number))
+}
+
 // checkScenesShape — полная проверка вложенных полей реестра до scenario.ValidateScenes, который
 // ожидает уже типизированный документ. Первая найденная ошибка — отказ.
 func checkScenesShape(value any) error {
 	document, ok := dynvalue.AsObject(value)
 	audio, audioOK := dynvalue.AsObject(dynvalue.Get(value, "audio"))
-	if !ok || !dynvalue.StrictEqual(document.Value("schema_version"), 1.0) || !dynvalue.StrictEqual(document.Value("fps"), fps) ||
+	if !ok || !dynvalue.StrictEqual(document.Value("schema_version"), 1.0) || !isFrameRate(document.Value("fps")) ||
 		!isString(document.Value("visual_direction")) || !audioOK || !isString(audio.Value("path")) || !isString(audio.Value("end_seconds")) ||
 		!dynvalue.IsRecord(document.Value("references")) || !dynvalue.IsArray(document.Value("sequences")) || !dynvalue.IsArray(document.Value("scenes")) {
 		return errors.New(textRegistryInvalidDocument)
@@ -277,8 +281,8 @@ func arrayItems(value any) []any {
 // checkReadyScenes — строгая готовность реестра из предложения агента
 // (ручной черновик может быть неполным). Все проблемы — одной ошибкой, по строке на проблему:
 // интерфейс показывает их списком; незаполненные планы сводятся в один первый пункт.
-func checkReadyScenes(scenes, castValue any, duration float64) error {
-	problems, err := scenario.ValidateScenes(scenes, castValue)
+func checkReadyScenes(scenes, castValue any, duration, fps float64) error {
+	problems, err := scenario.ValidateScenes(scenes, castValue, fps)
 	if err != nil {
 		return err
 	}
@@ -359,7 +363,7 @@ func checkReadyScenes(scenes, castValue any, duration float64) error {
 //
 // Ответ, который не разбирается как JSON, отклоняется понятным пользователю текстом
 // proposalInvalidDocument, а не сообщением разборщика.
-func proposalDocuments(raw, pass string, before Documents, scaffold any, selected []string, duration float64) (Documents, error) {
+func proposalDocuments(raw, pass string, before Documents, scaffold any, selected []string, duration, fps float64) (Documents, error) {
 	parsed, err := dynvalue.Parse([]byte(raw))
 	if err != nil {
 		return Documents{}, errors.New(textProposalInvalidDocument)
@@ -446,7 +450,7 @@ func proposalDocuments(raw, pass string, before Documents, scaffold any, selecte
 		}
 		scenes = candidate
 	}
-	if err := checkReadyScenes(scenes, before.Cast, duration); err != nil {
+	if err := checkReadyScenes(scenes, before.Cast, duration, fps); err != nil {
 		return Documents{}, err
 	}
 	return Documents{Cast: before.Cast, Treatment: before.Treatment, Scenes: scenes}, nil

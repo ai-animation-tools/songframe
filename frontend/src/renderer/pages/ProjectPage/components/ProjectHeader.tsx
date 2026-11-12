@@ -1,9 +1,10 @@
 import { projectTexts } from '@shared/texts/project';
 import { commonTexts } from '@shared/texts/common';
-/** Название проекта и действия над открытой папкой; путь и статус уже показаны в шапке приложения. */
+/** Название и частота кадров проекта, действия над открытой папкой; путь и статус уже показаны в шапке приложения. */
 
 import type { ReactElement } from 'react';
-import { Box, Button, Typography } from '@mui/material';
+import { Box, Button, Chip, Tooltip, Typography } from '@mui/material';
+import { projectsTexts } from '@shared/texts/projects';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
@@ -27,6 +28,12 @@ export function ProjectHeader({ status, onRefresh, onOpenFolder, onClose, onRena
   return (
     <PageActionBar>
       <Typography variant="h5">{status.name}</Typography>
+      {/* Недопустимая частота показана среди проблем проекта; здесь — только действующая сетка. */}
+      {status.fps !== null ? (
+        <Tooltip title={projectsTexts.projectFrameRateHint}>
+          <Chip color="primary" variant="outlined" label={projectsTexts.projectFrameRate(status.fps)} />
+        </Tooltip>
+      ) : null}
       <Box sx={{ flex: 1 }} />
       <Button startIcon={<RefreshIcon />} onClick={onRefresh}>
         {commonTexts.refresh}

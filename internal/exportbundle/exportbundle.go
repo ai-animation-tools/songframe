@@ -166,7 +166,7 @@ func export(ctx context.Context, root, out string, copyMedia bool) (*toolrt.Dict
 		}
 		place.root, place.portable = target, target
 	}
-	if err := writeCSV(rowsOf(bundle), toolrt.JoinPath(target, "shots.csv"), shotColumns); err != nil {
+	if err := writeCSV(rowsOf(bundle), toolrt.JoinPath(target, "shots.csv"), shotColumns(bundleFPS(bundle))); err != nil {
 		return nil, err
 	}
 	if err := writeCSV(listOf(bundle, "lyrics"), toolrt.JoinPath(target, "lyrics.csv"), lyricColumns); err != nil {

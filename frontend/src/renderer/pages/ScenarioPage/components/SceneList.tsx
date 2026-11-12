@@ -5,7 +5,6 @@ import SearchIcon from '@mui/icons-material/Search';
 import { matchesWords, searchWords } from '../../../components/searchText';
 import type { ScenesFile } from '@shared/types';
 import { formatClock } from '../../../format';
-import { FPS } from '@shared/video';
 
 /** Показывает список планов с таймингом и признаками заполнения; поиск стоит сверху, прокручивается только список. */
 export function SceneList({
@@ -90,7 +89,7 @@ export function SceneList({
                   {s.id}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {scenarioTexts.timeline.range({ start: formatClock(s.start_frame / FPS), end: formatClock(s.end_frame_exclusive / FPS) })}
+                  {scenarioTexts.timeline.range({ start: formatClock(s.start_frame / scenes.fps), end: formatClock(s.end_frame_exclusive / scenes.fps) })}
                 </Typography>
                 {/* Заливка: контурный warning на фоне выбранной строки (action.selected) не держит 4.5:1. */}
                 {!filled ? <Chip size="small" label={scenarioTexts.brief.empty} color="warning" sx={{ height: 18 }} /> : null}

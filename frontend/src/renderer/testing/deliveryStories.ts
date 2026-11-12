@@ -1,6 +1,6 @@
 /** Общие снимки запроса и результата для локальных историй отправки, получения и приёмки. */
 import type { AcceptOptions, JobInfo, PackageView, ProductionQuote } from '@shared/types';
-import { FPS } from '@shared/video';
+import { DEFAULT_FPS } from '@shared/video';
 import { productionTexts } from '@shared/texts/production';
 import { preparedPackage, queuedPackage } from './productionQueueStories';
 import { STORY_IMAGE_PATH, STORY_VIDEO_PATH } from './storybook';
@@ -63,6 +63,7 @@ export function deliveryQuote(pkg: PackageView, overrides: Partial<ProductionQuo
 }
 
 /** Повторяет проверку Go в Production.Accept: неточные и пустые срезы не запускают задание.
+ * Проекты витрины идут на DEFAULT_FPS, поэтому сетка среза — она.
  * Реальную обработку медиа и полный контракт accept_shot проверяют тесты Go. */
 export function assertDeliveryAcceptOptions(options: AcceptOptions): void {
   if (options.mode === 'full') return;
@@ -71,11 +72,11 @@ export function assertDeliveryAcceptOptions(options: AcceptOptions): void {
       typeof seconds !== 'number' ||
       !Number.isFinite(seconds) ||
       seconds < 0 ||
-      !Number.isSafeInteger(Math.round(seconds * FPS)) ||
-      Math.abs(seconds * FPS - Math.round(seconds * FPS)) > 1e-6
+      !Number.isSafeInteger(Math.round(seconds * DEFAULT_FPS)) ||
+      Math.abs(seconds * DEFAULT_FPS - Math.round(seconds * DEFAULT_FPS)) > 1e-6
     )
-      throw new Error(productionTexts.main.package.acceptBoundsInvalid({ fps: FPS }));
-    return Math.round(seconds * FPS);
+      throw new Error(productionTexts.main.package.acceptBoundsInvalid({ fps: DEFAULT_FPS }));
+    return Math.round(seconds * DEFAULT_FPS);
   };
   const start = frame(options.cutStart);
   const end = frame(options.cutEnd);

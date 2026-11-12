@@ -11,7 +11,11 @@ import (
 // reader — последовательное чтение полей значений проекта: первая ошибка запоминается,
 // дальнейшие обращения ничего не делают. Так порядок вычисления (какое исключение возникнет на
 // неполных данных) остаётся порядком вызовов, а код не повторяет проверку после каждого поля.
-type reader struct{ err error }
+type reader struct {
+	err error
+	// fps — частота кадров проекта для таймкодов; нужна только reader.timecode.
+	fps int64
+}
 
 // keep — результат операции: ошибка запоминается, значение отдаётся дальше.
 func keep[T any](r *reader, value T, err error) T {
@@ -56,7 +60,7 @@ func (r *reader) timecode(value any) string {
 	if r.err != nil {
 		return ""
 	}
-	text, err := timecode(value)
+	text, err := timecode(value, r.fps)
 	return keep(r, text, err)
 }
 
@@ -103,7 +107,7 @@ func unpackPair(value any) (any, any, error) {
 
 // nativeFPS — собственная частота входа рецепта. Она известна, только если вход — сам оригинал
 // видео; иначе секунды участка лежат на сетке после конвертации.
-func nativeFPS(edit, media any) (*big.Rat, error) {
+func nativeFPS(edit, media any, fps int64) (*big.Rat, error) {
 	var r reader
 	rate := r.get(edit, "source_fps", nil)
 	if !toolrt.Truthy(rate) {
@@ -173,15 +177,15 @@ func inputPaths(r *reader, sid string, generation any) []any {
 
 // addVideo дополняет строку плана с манифестом полями оригинала генерации и принятого монтажа.
 // Значения вычисляются в порядке полей строки: он определяет, какая ошибка возникнет первой.
-func addVideo(row *toolrt.Dict, sid, folder string, kit any) error {
-	var r reader
+func addVideo(row *toolrt.Dict, sid, folder string, kit any, fps int64) error {
+	r := reader{fps: fps}
 	generation := r.item(kit, "generation")
 	edit := r.item(kit, "accepted_edit")
 	media := r.get(generation, "original_media", nil)
 	if r.err != nil {
 		return r.err
 	}
-	rate, err := nativeFPS(edit, media)
+	rate, err := nativeFPS(edit, media, fps)
 	if err != nil {
 		return err
 	}
@@ -263,8 +267,8 @@ func addVideo(row *toolrt.Dict, sid, folder string, kit any) error {
 }
 
 // shotRow — строка плана: карточка, а при наличии манифеста комплекта — принятое видео.
-func shotRow(root string, scene *toolrt.Dict) (*toolrt.Dict, error) {
-	var r reader
+func shotRow(root string, scene *toolrt.Dict, fps int64) (*toolrt.Dict, error) {
+	r := reader{fps: fps}
 	sid, _ := scene.Value("id").(string)
 	folder := toolrt.JoinPath(root, "assets/shots", sid)
 	row := toolrt.NewDict()
@@ -279,7 +283,7 @@ func shotRow(root string, scene *toolrt.Dict) (*toolrt.Dict, error) {
 	set("song_in_s", r.float(r.item(scene, "start")))
 	set("song_out_s", r.float(r.item(scene, "end")))
 	set("duration_s", r.float(r.item(scene, "duration")))
-	set("frames_30", r.item(scene, "frames"))
+	set(framesKey(fps), r.item(scene, "frames"))
 	set("song_in_tc", r.timecode(r.item(scene, "start")))
 	set("song_out_tc", r.timecode(r.item(scene, "end")))
 	set("camera", r.item(scene, "camera"))
@@ -297,7 +301,7 @@ func shotRow(root string, scene *toolrt.Dict) (*toolrt.Dict, error) {
 		if err != nil {
 			return nil, err
 		}
-		if err := addVideo(row, sid, folder, kit); err != nil {
+		if err := addVideo(row, sid, folder, kit, fps); err != nil {
 			return nil, err
 		}
 	}
@@ -322,8 +326,8 @@ func sourceText(lines []string, number any) string {
 }
 
 // lyricRow — строка песни с оценками времени из разметки проекта.
-func lyricRow(line any, text []string) (*toolrt.Dict, error) {
-	var r reader
+func lyricRow(line any, text []string, fps int64) (*toolrt.Dict, error) {
+	r := reader{fps: fps}
 	number := r.get(line, "source_line", nil)
 	row := toolrt.NewDict()
 	row.Set("id", r.item(line, "id"))
@@ -340,7 +344,7 @@ func lyricRow(line any, text []string) (*toolrt.Dict, error) {
 }
 
 // lyricRows — строки разметки и текст песни: без файлов разметка пуста.
-func lyricRows(timing any, text []string) ([]any, error) {
+func lyricRows(timing any, text []string, fps int64) ([]any, error) {
 	var r reader
 	listed := r.get(timing, "lines", []any{})
 	if r.err != nil {
@@ -352,7 +356,7 @@ func lyricRows(timing any, text []string) ([]any, error) {
 	}
 	rows := []any{}
 	for _, line := range lines {
-		row, err := lyricRow(line, text)
+		row, err := lyricRow(line, text, fps)
 		if err != nil {
 			return nil, err
 		}
@@ -371,6 +375,10 @@ func collect(root string) (*toolrt.Dict, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := sceneregistry.SameFPS(root, registry); err != nil {
+		return nil, err
+	}
+	fps := sceneregistry.FPS(registry.Value("fps"))
 	initial, err := sceneregistry.InitialStatesFor(root)
 	if err != nil {
 		return nil, err
@@ -395,13 +403,13 @@ func collect(root string) (*toolrt.Dict, error) {
 	}
 	rows := make([]any, 0, len(scenes))
 	for _, scene := range scenes {
-		row, err := shotRow(root, scene)
+		row, err := shotRow(root, scene, fps)
 		if err != nil {
 			return nil, err
 		}
 		rows = append(rows, row)
 	}
-	lyrics, err := lyricRows(timing, text)
+	lyrics, err := lyricRows(timing, text, fps)
 	if err != nil {
 		return nil, err
 	}

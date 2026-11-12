@@ -3279,14 +3279,14 @@
     "description": "validate_project и generation_settings.",
     "call": "project",
     "args": {
-      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
+      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
     },
     "expected": {
       "validate": {
-        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
+        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
       },
       "validateLoose": {
-        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
+        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
       },
       "video": {
         "result": "{\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}"
@@ -3347,7 +3347,7 @@
     "description": "validate_project и generation_settings.",
     "call": "project",
     "args": {
-      "data": "{\"schema_version\": 2, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
+      "data": "{\"schema_version\": 2, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
     },
     "expected": {
       "validate": {
@@ -3381,7 +3381,7 @@
     "description": "validate_project и generation_settings.",
     "call": "project",
     "args": {
-      "data": "{\"schema_version\": 1, \"name\": \"  \", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
+      "data": "{\"schema_version\": 1, \"name\": \"  \", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
     },
     "expected": {
       "validate": {
@@ -3415,7 +3415,7 @@
     "description": "validate_project и generation_settings.",
     "call": "project",
     "args": {
-      "data": "{\"schema_version\": 1, \"name\": \"a\\nb\", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
+      "data": "{\"schema_version\": 1, \"name\": \"a\\nb\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
     },
     "expected": {
       "validate": {
@@ -3449,7 +3449,7 @@
     "description": "validate_project и generation_settings.",
     "call": "project",
     "args": {
-      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"dir/a.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
+      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"dir/a.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
     },
     "expected": {
       "validate": {
@@ -3483,7 +3483,7 @@
     "description": "validate_project и generation_settings.",
     "call": "project",
     "args": {
-      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \".a.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
+      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \".a.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
     },
     "expected": {
       "validate": {
@@ -3517,14 +3517,14 @@
     "description": "validate_project и generation_settings.",
     "call": "project",
     "args": {
-      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"аниматик_1.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
+      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"аниматик_1.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
     },
     "expected": {
       "validate": {
-        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"аниматик_1.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
+        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"аниматик_1.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
       },
       "validateLoose": {
-        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"аниматик_1.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
+        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"аниматик_1.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
       },
       "video": {
         "result": "{\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}"
@@ -3545,7 +3545,7 @@
     "description": "validate_project и generation_settings.",
     "call": "project",
     "args": {
-      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}, \"agent_instructions\": 5}"
+      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}, \"agent_instructions\": 5}"
     },
     "expected": {
       "validate": {
@@ -3579,7 +3579,7 @@
     "description": "validate_project и generation_settings.",
     "call": "project",
     "args": {
-      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": []}"
+      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": []}"
     },
     "expected": {
       "validate": {
@@ -3589,7 +3589,7 @@
         }
       },
       "validateLoose": {
-        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": []}"
+        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": []}"
       },
       "video": {
         "error": {
@@ -3616,7 +3616,7 @@
     "description": "validate_project и generation_settings.",
     "call": "project",
     "args": {
-      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {}}"
+      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {}}"
     },
     "expected": {
       "validate": {
@@ -3626,7 +3626,7 @@
         }
       },
       "validateLoose": {
-        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {}}"
+        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {}}"
       },
       "video": {
         "error": {
@@ -3653,7 +3653,7 @@
     "description": "validate_project и generation_settings.",
     "call": "project",
     "args": {
-      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
+      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
     },
     "expected": {
       "validate": {
@@ -3663,7 +3663,7 @@
         }
       },
       "validateLoose": {
-        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
+        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
       },
       "video": {
         "error": {
@@ -3687,7 +3687,7 @@
     "description": "validate_project и generation_settings.",
     "call": "project",
     "args": {
-      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \" \", \"resolution\": 1, \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
+      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \" \", \"resolution\": 1, \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
     },
     "expected": {
       "validate": {
@@ -3697,7 +3697,7 @@
         }
       },
       "validateLoose": {
-        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \" \", \"resolution\": 1, \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
+        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \" \", \"resolution\": 1, \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
       },
       "video": {
         "error": {
@@ -3721,7 +3721,7 @@
     "description": "validate_project и generation_settings.",
     "call": "project",
     "args": {
-      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"x\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
+      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"x\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
     },
     "expected": {
       "validate": {
@@ -3731,7 +3731,7 @@
         }
       },
       "validateLoose": {
-        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"x\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
+        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"x\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
       },
       "video": {
         "error": {
@@ -3755,7 +3755,7 @@
     "description": "validate_project и generation_settings.",
     "call": "project",
     "args": {
-      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2, \"model\": \"\"}}}"
+      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2, \"model\": \"\"}}}"
     },
     "expected": {
       "validate": {
@@ -3765,7 +3765,7 @@
         }
       },
       "validateLoose": {
-        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2, \"model\": \"\"}}}"
+        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2, \"model\": \"\"}}}"
       },
       "video": {
         "result": "{\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}"
@@ -3789,14 +3789,14 @@
     "description": "validate_project и generation_settings.",
     "call": "project",
     "args": {
-      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"auto\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
+      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"auto\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
     },
     "expected": {
       "validate": {
-        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"auto\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
+        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"auto\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
       },
       "validateLoose": {
-        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"auto\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
+        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"auto\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
       },
       "video": {
         "result": "{\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"auto\", \"watermark\": false, \"duration_rule\": \"exact_window\"}"
@@ -3817,7 +3817,7 @@
     "description": "validate_project и generation_settings.",
     "call": "project",
     "args": {
-      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16x9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
+      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16x9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
     },
     "expected": {
       "validate": {
@@ -3827,7 +3827,7 @@
         }
       },
       "validateLoose": {
-        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16x9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
+        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16x9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
       },
       "video": {
         "error": {
@@ -3851,7 +3851,7 @@
     "description": "validate_project и generation_settings.",
     "call": "project",
     "args": {
-      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\", \"provider_selected\": \"yes\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
+      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\", \"provider_selected\": \"yes\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
     },
     "expected": {
       "validate": {
@@ -3861,7 +3861,7 @@
         }
       },
       "validateLoose": {
-        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\", \"provider_selected\": \"yes\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
+        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\", \"provider_selected\": \"yes\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2}}}"
       },
       "video": {
         "error": {
@@ -3885,7 +3885,7 @@
     "description": "validate_project и generation_settings.",
     "call": "project",
     "args": {
-      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2, \"options\": []}}}"
+      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2, \"options\": []}}}"
     },
     "expected": {
       "validate": {
@@ -3895,7 +3895,7 @@
         }
       },
       "validateLoose": {
-        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2, \"options\": []}}}"
+        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 2, \"options\": []}}}"
       },
       "video": {
         "result": "{\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}"
@@ -3919,7 +3919,7 @@
     "description": "validate_project и generation_settings.",
     "call": "project",
     "args": {
-      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 0}}}"
+      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 0}}}"
     },
     "expected": {
       "validate": {
@@ -3929,7 +3929,7 @@
         }
       },
       "validateLoose": {
-        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 0}}}"
+        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": 0}}}"
       },
       "video": {
         "result": "{\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}"
@@ -3953,7 +3953,7 @@
     "description": "validate_project и generation_settings.",
     "call": "project",
     "args": {
-      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": true}}}"
+      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": true}}}"
     },
     "expected": {
       "validate": {
@@ -3963,7 +3963,7 @@
         }
       },
       "validateLoose": {
-        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": true}}}"
+        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": {\"provider\": \"test\", \"outputs\": true}}}"
       },
       "video": {
         "result": "{\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}"
@@ -3987,14 +3987,14 @@
     "description": "validate_project и generation_settings.",
     "call": "project",
     "args": {
-      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": null}}"
+      "data": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": null}}"
     },
     "expected": {
       "validate": {
-        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": null}}"
+        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": null}}"
       },
       "validateLoose": {
-        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": null}}"
+        "result": "{\"schema_version\": 1, \"name\": \"Клип\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}, \"image\": null}}"
       },
       "video": {
         "result": "{\"provider\": \"test\", \"resolution\": \"720p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"exact_window\"}"

@@ -389,14 +389,14 @@ func readInputs(path string) (*inputs, error) {
 		}
 	}
 	if result.documents.Scenes != nil {
-		sceneProblems, err := scenario.ValidateScenes(result.documents.Scenes, result.documents.Cast)
+		sceneProblems, err := scenario.ValidateScenes(result.documents.Scenes, result.documents.Cast, scenario.ExpectedFPS(project, result.documents.Scenes))
 		if err != nil {
 			return nil, err
 		}
 		result.documentProblems = append(result.documentProblems, sceneProblems...)
 		result.scenesValid = len(sceneProblems) == 0
 		if result.scenesValid && result.documents.Cast != nil && result.duration != nil {
-			if err := checkReadyScenes(result.documents.Scenes, result.documents.Cast, *result.duration); err != nil {
+			if err := checkReadyScenes(result.documents.Scenes, result.documents.Cast, *result.duration, scenario.ExpectedFPS(project, result.documents.Scenes)); err != nil {
 				result.documentProblems = append(result.documentProblems, strings.Split(err.Error(), "\n")...)
 			} else {
 				result.scenesReady = true

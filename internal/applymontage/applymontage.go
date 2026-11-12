@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -601,10 +602,10 @@ func streams(meta any) ([]any, error) {
 
 // RenderEdit — accept_shot.render_edit: участок по фильтру кодируется ENCODE build_animatic без
 // звука ровно в frames кадров (run/probe build_animatic, как у accept_shot); результат обязан быть
-// 1920×1080, 30/1 и иметь ровно frames кадров.
-func RenderEdit(ctx context.Context, original, filter string, frames toolrt.Int, target string) error {
+// 1920×1080 с частотой проекта fps и иметь ровно frames кадров.
+func RenderEdit(ctx context.Context, original, filter string, frames toolrt.Int, target string, fps int64) error {
 	args := append([]string{"-v", "error", "-nostdin", "-n", "-threads", "2", "-i", original, "-map", "0:v:0", "-vf", filter},
-		mediacmd.Encode...)
+		mediacmd.Encode(fps)...)
 	args = append(args, "-frames:v", frames.String(), target)
 	if _, err := mediacmd.AnimaticRun(ctx, mediacmd.FFmpeg(), args...); err != nil {
 		return err
@@ -636,7 +637,7 @@ func RenderEdit(ctx context.Context, original, filter string, frames toolrt.Int,
 			return err
 		}
 		if !toolrt.Equal(values[0], toolrt.NewInt(1920)) || !toolrt.Equal(values[1], toolrt.NewInt(1080)) ||
-			!toolrt.Equal(values[2], "30/1") || !toolrt.Equal(count, frames) {
+			!toolrt.Equal(values[2], strconv.FormatInt(fps, 10)+"/1") || !toolrt.Equal(count, frames) {
 			return valueError(textBadEdit)
 		}
 		return nil
@@ -662,7 +663,7 @@ func toInt(value any) (toolrt.Int, error) {
 // editManifest — копия принятого комплекта с новым accepted_edit по участку item
 // рецепта. Рецепт повтора читает сохранённые байты выбранного источника, поэтому срез прежнего
 // accepted_edit не повторяет его цепочку ещё одним lossy проходом.
-func editManifest(ctx context.Context, pkg *toolrt.Dict, sourceName string, item *toolrt.Dict, directory, videoName, version, revision string) (*toolrt.Dict, error) {
+func editManifest(ctx context.Context, pkg *toolrt.Dict, sourceName string, item *toolrt.Dict, directory, videoName, version, revision string, fps int64) (*toolrt.Dict, error) {
 	manifest := toolrt.DeepCopy(pkg).(*toolrt.Dict)
 	video, err := Descriptor(directory, videoName)
 	if err != nil {
@@ -673,7 +674,7 @@ func editManifest(ctx context.Context, pkg *toolrt.Dict, sourceName string, item
 		return nil, err
 	}
 	frames := item.Value("frames").(toolrt.Int)
-	duration, err := toolrt.TrueDiv(frames, toolrt.NewInt(30))
+	duration, err := toolrt.TrueDiv(frames, toolrt.NewInt(fps))
 	if err != nil {
 		return nil, err
 	}
@@ -709,12 +710,12 @@ func editManifest(ctx context.Context, pkg *toolrt.Dict, sourceName string, item
 	}
 	edit := toolcli.Record(
 		"video", video,
-		"fps", toolrt.NewInt(30),
+		"fps", toolrt.NewInt(fps),
 		"frames", frames,
 		"duration_seconds", duration,
 		"source_interval_seconds", item.Value("source_interval_seconds"),
 		"source_interval_end_exclusive", true,
-		"source_frame_grid_fps", toolrt.NewInt(30),
+		"source_frame_grid_fps", toolrt.NewInt(fps),
 		"still_source_time_seconds", nil,
 		"source_frame_interval_exclusive", []any{item.Value("source_start_frame"), item.Value("source_end_frame_exclusive")},
 		"speed", toolcli.Record(
@@ -951,10 +952,11 @@ func Apply(ctx context.Context, draftValue any, rootPath string, updateViews boo
 			if err != nil {
 				return err
 			}
-			if err := renderEditHook(ctx, input, shot.Value("filter").(string), shot.Value("frames").(toolrt.Int), join(asset, videoName)); err != nil {
+			fps := sceneregistry.FPS(prepared.plan.Value("fps"))
+			if err := renderEditHook(ctx, input, shot.Value("filter").(string), shot.Value("frames").(toolrt.Int), join(asset, videoName), fps); err != nil {
 				return err
 			}
-			manifest, err := editManifest(ctx, prepared.packages[sid], sourceName, shot, asset, videoName, version, transaction)
+			manifest, err := editManifest(ctx, prepared.packages[sid], sourceName, shot, asset, videoName, version, transaction, fps)
 			if err != nil {
 				return err
 			}

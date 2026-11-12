@@ -2,6 +2,7 @@
   "schema_version": 1,
   "name": "Новый клип",
   "animatic_video": "novyi-klip.mp4",
+  "fps": 30,
   "agent_instructions": "  Пиши кратко.\r\n\tБез эмодзи.  ",
   "generation": {
     "video": {

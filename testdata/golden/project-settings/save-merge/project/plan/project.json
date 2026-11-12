@@ -2,6 +2,7 @@
   "schema_version": 1,
   "name": "Клип",
   "animatic_video": "klip.mp4",
+  "fps": 30,
   "agent_instructions": "Старые инструкции",
   "extra": {
     "keep": true

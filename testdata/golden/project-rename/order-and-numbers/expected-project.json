@@ -3,6 +3,7 @@
   "schema_version": 1,
   "name": "Новое имя",
   "animatic_video": "a.mp4",
+  "fps": 30,
   "custom": {
     "z": 1,
     "a": [

@@ -23,6 +23,7 @@ import (
 	"songframe/internal/jobs"
 	"songframe/internal/mediacmd"
 	"songframe/internal/montage"
+	"songframe/internal/projectfile"
 	"songframe/internal/projectfs"
 )
 
@@ -432,7 +433,7 @@ func (w *Workflow) View(project, shot string) (*View, error) {
 	edit := dynvalue.Get(manifest, "accepted_edit")
 	sourceFrames := 0.0
 	if frames := dynvalue.Get(edit, "frames"); dynvalue.IsRecord(edit) && dynvalue.TypeOf(frames) == "number" &&
-		dynvalue.StrictEqual(dynvalue.Get(edit, "fps"), 30.0) && dynvalue.IsSafeInteger(frames) {
+		dynvalue.StrictEqual(dynvalue.Get(edit, "fps"), projectfile.FPS(canonical)) && dynvalue.IsSafeInteger(frames) {
 		sourceFrames = dynvalue.ToNumber(frames)
 	}
 	state, accepted := scores.Accepted[sourceName]

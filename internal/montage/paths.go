@@ -22,12 +22,10 @@ var (
 	shotPattern   = regexp.MustCompile(`^M\d{2}(?:\.\d+)?$`)
 )
 
-// fps — шкала монтажа (FPS из frontend/src/shared/video.ts).
-const fps = 30
-
 // secondsToFrames — та же формула, что secondsToFrames в frontend/src/shared/video.ts: округление
-// до ближайшего кадра 30 к/с с запасом на погрешность двоичной дроби (4 эпсилона масштаба).
-func secondsToFrames(seconds float64) float64 {
+// до ближайшего кадра частоты проекта fps с запасом на погрешность двоичной дроби (4 эпсилона
+// масштаба).
+func secondsToFrames(seconds, fps float64) float64 {
 	scaled := seconds * fps
 	return math.Floor(scaled + 0.5 + 2.220446049250313e-16*math.Max(1, math.Abs(scaled))*4)
 }

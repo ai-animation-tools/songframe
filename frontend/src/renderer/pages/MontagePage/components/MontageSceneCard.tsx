@@ -10,6 +10,7 @@ import { materialColor, MontageMaterialChip } from './MontageMaterialChip';
 import { ActionButton } from '../../../components/ActionButton';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import SwapHoriz from '@mui/icons-material/SwapHoriz';
+import { useProjectFps } from '../../../hooks/useProjectFps';
 
 /** Карточка объединяет варианты сцены; у каждого материала своё превью и действие добавления. */
 export function MontageSceneCard({
@@ -31,6 +32,7 @@ export function MontageSceneCard({
   onPreview: (source: MontageSource) => void;
   onAdd: (id: string) => void;
 }): ReactElement {
+  const fps = useProjectFps();
   const selectedScene = used?.id === selectedClipId;
 
   return (
@@ -58,7 +60,7 @@ export function MontageSceneCard({
           {scene.title}
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          {montageTexts.scenarioDuration(frameLabel(scene.endFrame - scene.startFrame))}
+          {montageTexts.scenarioDuration(frameLabel(scene.endFrame - scene.startFrame, fps))}
         </Typography>
       </ButtonBase>
       {!sources.length ? (
@@ -105,7 +107,7 @@ export function MontageSceneCard({
               <Stack direction="row" gap={0.75} alignItems="center" flexWrap="wrap">
                 <MontageMaterialChip source={source} />
                 <Typography variant="caption" color="text.secondary">
-                  {source.kind === 'card' ? montageTexts.cardSource : source.frames === null ? montageTexts.readingLength : frameLabel(source.frames)}
+                  {source.kind === 'card' ? montageTexts.cardSource : source.frames === null ? montageTexts.readingLength : frameLabel(source.frames, fps)}
                 </Typography>
               </Stack>
               <Typography variant="caption" display="block" sx={{ my: 0.75 }} title={source.path}>

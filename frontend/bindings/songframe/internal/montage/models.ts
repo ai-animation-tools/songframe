@@ -73,6 +73,12 @@ export interface Source {
  */
 export interface View {
     "scenarioStatus": string;
+
+    /**
+     * FPS — частота кадров реестра и проекта: шкала кадров всех полей вида; 0, пока реестр не
+     * прочитан.
+     */
+    "fps": number;
     "trackPath": string | null;
     "trackSha256": string | null;
     "duration": number | null;

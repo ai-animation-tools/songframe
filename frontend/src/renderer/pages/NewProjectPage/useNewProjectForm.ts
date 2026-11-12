@@ -1,5 +1,6 @@
 import { projectsTexts } from '@shared/texts/projects';
 import { useEffect, useState } from 'react';
+import { DEFAULT_FPS } from '@shared/video';
 import { joinPath } from '../../format';
 import { slugify } from './helpers';
 
@@ -7,23 +8,25 @@ export interface NewProjectValues {
   name: string;
   path: string;
   video: string;
+  /** Частота кадров проекта строкой значения списка (FRAME_RATES). */
+  fps: string;
 }
 
 /** Проверка относится к точному набору полей; отменённые ответы не разрешают создание проекта. */
 export function useNewProjectForm(describeError: (error: unknown) => string) {
-  const [values, setValues] = useState<NewProjectValues>({ name: '', path: '', video: '' });
+  const [values, setValues] = useState<NewProjectValues>({ name: '', path: '', video: '', fps: String(DEFAULT_FPS) });
   const [problems, setProblems] = useState<string[]>([]);
   const [touched, setTouched] = useState(false);
   const [validated, setValidated] = useState<string | null>(null);
-  const { name, path, video } = values;
-  const validationKey = JSON.stringify([name, path, video]);
+  const { name, path, video, fps } = values;
+  const validationKey = JSON.stringify([name, path, video, fps]);
 
   useEffect(() => {
     if (!touched) return;
     let cancelled = false;
     const handle = setTimeout(() => {
       window.api.projects
-        .validateNew({ name, path, animaticVideo: video || undefined })
+        .validateNew({ name, path, animaticVideo: video || undefined, fps: Number(fps) })
         .then((next) => {
           if (!cancelled) {
             setProblems(next);
@@ -41,7 +44,7 @@ export function useNewProjectForm(describeError: (error: unknown) => string) {
       cancelled = true;
       clearTimeout(handle);
     };
-  }, [name, path, video, touched, validationKey, describeError]);
+  }, [name, path, video, fps, touched, validationKey, describeError]);
 
   const changeField = (field: keyof NewProjectValues, value: string): void => {
     setValues((previous) => ({ ...previous, [field]: value }));

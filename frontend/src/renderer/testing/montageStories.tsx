@@ -86,6 +86,7 @@ export function montageView(): MontageView {
     trackPath: STORY_TRACK_PATH,
     trackSha256: 'demo-track',
     duration: 5,
+    fps: 30,
     lyricLines: [],
     lyricProblem: null,
     scenes: MONTAGE_SCENES,

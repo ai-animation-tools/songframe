@@ -22,14 +22,15 @@ import (
 	"songframe/internal/toolrt"
 )
 
-// Кадровая сетка и пути документов каркаса.
+// Пути документов каркаса и правила разбиения. Частота кадров берётся из plan/project.json и
+// записывается в реестр: на ней строятся все границы планов.
 const (
-	FPS            = 30
-	TreatmentPath  = "plan/treatment.json"
-	TimingPath     = "plan/audio/timing.json"
-	ScenesPath     = "plan/scenes.json"
-	TextPath       = "source/text.md"
-	MinShotFrames  = 15
+	TreatmentPath = "plan/treatment.json"
+	TimingPath    = "plan/audio/timing.json"
+	ScenesPath    = "plan/scenes.json"
+	TextPath      = "source/text.md"
+	// MinShotSeconds — наименьшая длина плана при разбиении части (полсекунды).
+	MinShotSeconds = 0.5
 	GapSeconds     = 2.5
 	DefaultMaxShot = 6.0
 	Placeholder    = "ЗАПОЛНИТЬ"
@@ -40,13 +41,13 @@ const (
 // необработанной ошибкой «нехватка памяти».
 const maxPieces = 100_000_000
 
-// frame — номер кадра: seconds как дробное × 30, округлённое до целого с половиной к чётному.
-func frame(seconds any) (int64, error) {
+// frame — номер кадра: seconds как дробное × fps, округлённое до целого с половиной к чётному.
+func frame(seconds any, fps int64) (int64, error) {
 	value, err := toolrt.Float(seconds)
 	if err != nil {
 		return 0, err
 	}
-	return toolrt.FloatToInt(value*FPS, true)
+	return toolrt.FloatToInt(value*float64(fps), true)
 }
 
 // trueDiv — частное a / b целых как корректно округлённое float64; деление на ноль — ZeroDivisionError.
@@ -137,7 +138,7 @@ func asDict(value any) (*toolrt.Dict, error) {
 }
 
 // midpointFrame — frame((line["start"] + line["end"]) / 2): кадр середины строки песни.
-func midpointFrame(line any) (int64, error) {
+func midpointFrame(line any, fps int64) (int64, error) {
 	start, err := toolrt.GetItem(line, "start")
 	if err != nil {
 		return 0, err
@@ -154,16 +155,16 @@ func midpointFrame(line any) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return frame(middle)
+	return frame(middle, fps)
 }
 
 // lineFrame — frame(line[key]).
-func lineFrame(line any, key string) (int64, error) {
+func lineFrame(line any, key string, fps int64) (int64, error) {
 	value, err := toolrt.GetItem(line, key)
 	if err != nil {
 		return 0, err
 	}
-	return frame(value)
+	return frame(value, fps)
 }
 
 // maxShotSeconds — max_shot_seconds части как дробное, по умолчанию 6.0.
@@ -197,14 +198,14 @@ func pieces(start, length, count int64) ([]int64, error) {
 // последней строки длиннее 2,5 с — отдельный план), часть без строк делится на равные куски по
 // max_shot_seconds; планы короче 15 кадров сливаются, длинный кусок без строки делится на равные
 // планы не длиннее шага.
-func ShotBoundaries(part *toolrt.Dict, lines []any, endFrame int64) ([]int64, []any, error) {
-	start, err := lineFrame(part, "start")
+func ShotBoundaries(part *toolrt.Dict, lines []any, endFrame, fps int64) ([]int64, []any, error) {
+	start, err := lineFrame(part, "start", fps)
 	if err != nil {
 		return nil, nil, err
 	}
 	inside := []any{}
 	for _, line := range lines {
-		middle, err := midpointFrame(line)
+		middle, err := midpointFrame(line, fps)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -212,10 +213,10 @@ func ShotBoundaries(part *toolrt.Dict, lines []any, endFrame int64) ([]int64, []
 			inside = append(inside, line)
 		}
 	}
-	gap, _ := frame(GapSeconds)
+	gap, _ := frame(GapSeconds, fps)
 	boundaries := []int64{start}
 	if len(inside) > 0 {
-		first, err := lineFrame(inside[0], "start")
+		first, err := lineFrame(inside[0], "start", fps)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -223,13 +224,13 @@ func ShotBoundaries(part *toolrt.Dict, lines []any, endFrame int64) ([]int64, []
 			boundaries = append(boundaries, first)
 		}
 		for _, line := range inside[1:] {
-			value, err := lineFrame(line, "start")
+			value, err := lineFrame(line, "start", fps)
 			if err != nil {
 				return nil, nil, err
 			}
 			boundaries = append(boundaries, value)
 		}
-		lastEnd, err := lineFrame(inside[len(inside)-1], "end")
+		lastEnd, err := lineFrame(inside[len(inside)-1], "end", fps)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -241,7 +242,7 @@ func ShotBoundaries(part *toolrt.Dict, lines []any, endFrame int64) ([]int64, []
 		if err != nil {
 			return nil, nil, err
 		}
-		seconds, err := trueDiv(endFrame-start, FPS)
+		seconds, err := trueDiv(endFrame-start, fps)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -258,9 +259,11 @@ func ShotBoundaries(part *toolrt.Dict, lines []any, endFrame int64) ([]int64, []
 		}
 		boundaries = append(boundaries, extra...)
 	}
+	// minShot — полсекунды в кадрах проекта (15 при 30 к/с).
+	minShot, _ := toolrt.FloatToInt(MinShotSeconds*float64(fps), true)
 	cleaned := []int64{boundaries[0]}
 	for _, value := range boundaries[1:] {
-		if value-cleaned[len(cleaned)-1] >= MinShotFrames && endFrame-value >= MinShotFrames {
+		if value-cleaned[len(cleaned)-1] >= minShot && endFrame-value >= minShot {
 			cleaned = append(cleaned, value)
 		}
 	}
@@ -268,7 +271,7 @@ func ShotBoundaries(part *toolrt.Dict, lines []any, endFrame int64) ([]int64, []
 	if err != nil {
 		return nil, nil, err
 	}
-	stepFrames, err := toolrt.FloatToInt(step*FPS, false)
+	stepFrames, err := toolrt.FloatToInt(step*float64(fps), false)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -281,7 +284,7 @@ func ShotBoundaries(part *toolrt.Dict, lines []any, endFrame int64) ([]int64, []
 		result = append(result, startAt)
 		hasLine := false
 		for _, line := range inside {
-			middle, _ := midpointFrame(line)
+			middle, _ := midpointFrame(line, fps)
 			if startAt <= middle && middle < stopAt {
 				hasLine = true
 				break
@@ -388,7 +391,7 @@ func partTitle(part *toolrt.Dict) (any, error) {
 // последовательности из частей трактовки, планы по ShotBoundaries, заготовки полей постановки,
 // references из кастинга и visual_direction из прежнего реестра (existing, может быть nil) или
 // заготовка. initial — начальное состояние кастинга для итоговой проверки Validate.
-func BuildScenes(treatment any, timing *toolrt.Dict, textLines []string, cast *toolrt.Dict, duration float64, existing *toolrt.Dict, initial *toolrt.Dict) (*toolrt.Dict, error) {
+func BuildScenes(treatment any, timing *toolrt.Dict, textLines []string, cast *toolrt.Dict, duration float64, existing *toolrt.Dict, initial *toolrt.Dict, fps int64) (*toolrt.Dict, error) {
 	parts, err := ValidateTreatment(treatment, duration)
 	if err != nil {
 		return nil, err
@@ -414,7 +417,7 @@ func BuildScenes(treatment any, timing *toolrt.Dict, textLines []string, cast *t
 	if err != nil {
 		return nil, err
 	}
-	totalEnd, err := frame(duration)
+	totalEnd, err := frame(duration, fps)
 	if err != nil {
 		return nil, err
 	}
@@ -438,11 +441,11 @@ func BuildScenes(treatment any, timing *toolrt.Dict, textLines []string, cast *t
 		part := item.(*toolrt.Dict)
 		endFrame := totalEnd
 		if index != len(parts)-1 {
-			if endFrame, err = lineFrame(parts[index+1], "start"); err != nil {
+			if endFrame, err = lineFrame(parts[index+1], "start", fps); err != nil {
 				return nil, err
 			}
 		}
-		boundaries, inside, err := ShotBoundaries(part, lines, endFrame)
+		boundaries, inside, err := ShotBoundaries(part, lines, endFrame, fps)
 		if err != nil {
 			return nil, err
 		}
@@ -468,7 +471,7 @@ func BuildScenes(treatment any, timing *toolrt.Dict, textLines []string, cast *t
 			}
 			covering := []any{}
 			for _, line := range inside {
-				middle, _ := midpointFrame(line)
+				middle, _ := midpointFrame(line, fps)
 				if start <= middle && middle < end {
 					covering = append(covering, line)
 				}
@@ -523,7 +526,7 @@ func BuildScenes(treatment any, timing *toolrt.Dict, textLines []string, cast *t
 	}
 	data := toolrt.NewDict()
 	data.Set("schema_version", toolrt.NewInt(1))
-	data.Set("fps", toolrt.NewInt(FPS))
+	data.Set("fps", toolrt.NewInt(fps))
 	data.Set("audio", audio)
 	data.Set("references", refs)
 	data.Set("visual_direction", visual)

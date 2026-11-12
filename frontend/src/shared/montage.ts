@@ -66,6 +66,8 @@ export interface MontageView {
   trackPath: string | null;
   trackSha256: string | null;
   duration: number | null;
+  /** Частота кадров реестра и проекта: шкала всех кадровых полей; 0, пока реестр не прочитан. */
+  fps: number;
   lyricLines: MontageLyricLine[];
   lyricProblem: string | null;
   scenes: MontageScene[];

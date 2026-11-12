@@ -1,0 +1,11 @@
+{
+  "description": "Проект 24 кадров/с: частота из формы записывается в plan/project.json и показывается в статусе.",
+  "call": "Projects.create",
+  "project": null,
+  "covers": [
+    "копирование шаблона",
+    "fps формы в маркере",
+    "статус: fps"
+  ],
+  "stubbedMedia": []
+}

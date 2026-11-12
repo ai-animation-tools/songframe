@@ -95,7 +95,12 @@ func prepare(root string, force, dryRun bool) (*toolrt.Dict, error) {
 	if err != nil {
 		return nil, err
 	}
-	return BuildScenes(treatment, timing, textLines, cast, duration, existing, initial)
+	fps, err := sceneregistry.ProjectFPS(root)
+	if err != nil {
+		return nil, err
+	}
+	rate, _ := fps.Int64()
+	return BuildScenes(treatment, timing, textLines, cast, duration, existing, initial, rate)
 }
 
 // write — запись plan/scenes.json: JSON с отступом два пробела, не-ASCII без экранирования, перевод
@@ -149,8 +154,9 @@ func report(data *toolrt.Dict, dryRun, asJSON bool) (string, error) {
 		scene := item.(*toolrt.Dict)
 		start, _ := scene.Value("start_frame").(toolrt.Int).Int64()
 		end, _ := scene.Value("end_frame_exclusive").(toolrt.Int).Int64()
-		startSeconds, _ := trueDiv(start, FPS)
-		endSeconds, _ := trueDiv(end, FPS)
+		fps := sceneregistry.FPS(data.Value("fps"))
+		startSeconds, _ := trueDiv(start, fps)
+		endSeconds, _ := trueDiv(end, fps)
 		fmt.Fprintf(&builder, "%s %7.2f–%7.2f [%s] %s\n", scene.Value("id"), startSeconds, endSeconds,
 			toolrt.Str(scene.Value("sequence")), scene.Value("original"))
 	}

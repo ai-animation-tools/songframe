@@ -11,7 +11,6 @@ const (
 	textTreatmentRequiresParts  = "Трактовка: нужны schema_version 1 и хотя бы одна часть."
 	textTreatmentInvalidDoc     = "Трактовка: нужны schema_version 1, logline и sequences."
 	textTreatmentInvalidPart    = "Трактовка: неверная структура части песни."
-	textRegistryRequiresScenes  = "Реестр: нужны schema_version 1, fps 30 и хотя бы одна сцена."
 	textBriefStateUnsetPrefix   = "Состояние не задано"
 	textBriefTitleBefore        = "Состояние на первый кадр"
 	textBriefTitleAfter         = "Состояние на последний кадр"
@@ -64,6 +63,16 @@ func textShotUnknownReference(shot, reference string) string {
 func textShotPrimaryReferenceMissing(shot string) string {
 	return shot + ": главный референс карточки не объявлен."
 }
+
+// textRegistryRequiresScenes — реестр другой схемы, частоты кадров или без сцен.
+func textRegistryRequiresScenes(fps float64) string {
+	rate := "24, 25 или 30"
+	if fps != 0 {
+		rate = dynvalue.ToString(fps)
+	}
+	return "Реестр: нужны schema_version 1, fps " + rate + " и хотя бы одна сцена."
+}
+
 func textRegistryDurationMismatch(end, duration string) string {
 	return "Монтажный конец " + end + " с расходится с концом песни " + duration + "."
 }

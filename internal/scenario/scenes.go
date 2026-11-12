@@ -29,7 +29,7 @@ func isFrame(value any) bool {
 }
 
 // RegistryStatus — статус реестра сцен проекта: проверяется только общий контракт
-// реестра (версия, fps, коды и кадровые окна планов), художественную полноту оценивает страница
+// реестра (версия, частота кадров проекта, коды и кадровые окна планов), художественную полноту оценивает страница
 // сценария. Отсутствующий файл — missing, ошибка чтения и неверная структура — invalid.
 func RegistryStatus(project string) Status {
 	raw, err := os.ReadFile(filepath.Join(project, "plan", "scenes.json"))
@@ -41,7 +41,7 @@ func RegistryStatus(project string) Status {
 	}
 	registry, err := dynvalue.Parse([]byte(dynvalue.DecodeUTF8(raw)))
 	if err != nil || !dynvalue.IsRecord(registry) || !dynvalue.StrictEqual(dynvalue.Get(registry, "schema_version"), 1.0) ||
-		!dynvalue.StrictEqual(dynvalue.Get(registry, "fps"), float64(FPS)) {
+		!dynvalue.StrictEqual(dynvalue.Get(registry, "fps"), ExpectedFPS(project, registry)) {
 		return StatusInvalid
 	}
 	scenes, ok := dynvalue.AsArray(dynvalue.Get(registry, "scenes"))
@@ -77,7 +77,7 @@ func readCastValue(project string) any {
 
 // ValidateProjectScenes — scenario.validateScenes: проверка черновика с кастингом проекта без записи.
 func ValidateProjectScenes(project string, data any) ([]string, error) {
-	return ValidateScenes(data, readCastValue(project))
+	return ValidateScenes(data, readCastValue(project), ExpectedFPS(project, data))
 }
 
 // SaveScenes — сохранение реестра: карта references заменяется картой из кастинга (без кастинга остаётся
@@ -95,7 +95,7 @@ func SaveScenes(project string, data any) (*dynvalue.Object, error) {
 	} else {
 		normalized.Set("references", dynvalue.Get(data, "references"))
 	}
-	problems, err := ValidateScenes(normalized, castValue)
+	problems, err := ValidateScenes(normalized, castValue, ExpectedFPS(project, normalized))
 	if err != nil {
 		return nil, err
 	}

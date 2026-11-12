@@ -3,7 +3,7 @@
     {
       "op": "write",
       "path": "plan/project.json",
-      "text": "{\"schema_version\":1,\"name\":\"Проба\",\"animatic_video\":\"clip.mp4\"}"
+      "text": "{\"schema_version\":1,\"name\":\"Проба\",\"animatic_video\":\"clip.mp4\",\"fps\":30}"
     },
     {
       "op": "write",
@@ -91,7 +91,7 @@
         {
           "op": "write",
           "path": "plan/project.json",
-          "text": "{\"schema_version\":1,\"name\":\"Проба\",\"animatic_video\":\"clip.mp4\"}"
+          "text": "{\"schema_version\":1,\"name\":\"Проба\",\"animatic_video\":\"clip.mp4\",\"fps\":30}"
         },
         {
           "op": "view",
@@ -3617,7 +3617,7 @@
         {
           "op": "write",
           "path": "plan/project.json",
-          "text": "{\n  \"name\": \"\\u041f\\u0440\\u043e\\u0431\\u0430\", \"animatic_video\": \"clip.mp4\", \"generation\": {\"image\": {\"provider\": \"codex\"}}\n}\n"
+          "text": "{\n  \"name\": \"\\u041f\\u0440\\u043e\\u0431\\u0430\", \"animatic_video\": \"clip.mp4\", \"fps\": 30, \"generation\": {\"image\": {\"provider\": \"codex\"}}\n}\n"
         },
         {
           "op": "view",
@@ -3794,7 +3794,7 @@
         {
           "op": "write",
           "path": "plan/project.json",
-          "text": "{\"name\":\"Другое имя\",\"animatic_video\":\"clip.mp4\"}"
+          "text": "{\"name\":\"Другое имя\",\"animatic_video\":\"clip.mp4\",\"fps\":30}"
         },
         {
           "op": "view",
@@ -3890,7 +3890,7 @@
         {
           "op": "write",
           "path": "plan/project.json",
-          "text": "{\"name\":\"Проба\",\"animatic_video\":\"other.mp4\"}"
+          "text": "{\"name\":\"Проба\",\"animatic_video\":\"other.mp4\",\"fps\":30}"
         },
         {
           "op": "view",
@@ -4454,7 +4454,7 @@
     },
     {
       "name": "project-inputs-corrupt-6",
-      "description": "Повреждённый project_inputs {\"name\":\"Проба\",\"animatic_video\":\"clip.mp4\",\"future\":true} делает сборку устаревшей.",
+      "description": "Повреждённый project_inputs {\"name\":\"Проба\",\"animatic_video\":\"clip.mp4\",\"fps\":30,\"future\":true} делает сборку устаревшей.",
       "covers": [
         "projectInputsChanged"
       ],
@@ -4466,7 +4466,7 @@
         {
           "op": "write",
           "path": "plan/animatic/latest/manifest.json",
-          "text": "{\"project_inputs\":{\"name\":\"Проба\",\"animatic_video\":\"clip.mp4\",\"future\":true},\"scene_registry_sha256\":\"bed176081c44dcf372e261c50beaa2b364ccb4ab22d9775c3a93d789de97645a\",\"video_file\":\"clip.mp4\",\"video_sha256\":\"e80767da8de616788ccdd21e4327e1e0156862f0dfa7202a6f2b423692fc5518\",\"source_hashes\":{\"source/track.mp3\":\"2bb8bf7259c4ea0edaef5b8552247e06dde993959d3d33e4a2b32f32e1144c0a\",\"source/hero.png\":\"ae6c79d10f1fd410650790e63186ec108fa106325b52fbd88de21a43540e6f2c\",\"assets/shots/M01/edit.mp4\":\"0cab1c9617404faf2b24e221e189ca5945813e14d3f766345b09ca13bbe28ffc\",\"plan/animatic/cards/M02.png\":\"8367cd66fdd136bba8ba23f8805bb050dd6289401c8ec3b0be44a3c233eef90d\",\"plan/animatic/cards/M03.png\":\"d5ca660c71940f9de6b1b63d7988a329f8f5ad72e9c4dc4419ed018a491e9d02\",\"plan/animatic/cards/M03.last.png\":\"2d8017c6c9eccd1cfc7cbee2609752ecfdfe8590be0f09fe164219bd1c71324f\",\"plan/batches/M03-attempt-01/frames/K01.png\":\"2c0ac0aaba0d32b683ba587a901a5fce93822b88763defdfabcdeef1dae97265\",\"plan/batches/M03-attempt-01/frames/K02.png\":\"f3eccefda160141d05ae45d5fd780e2f1b24cbbf88680daca0c7eae719a34b96\"},\"shots\":[{\"id\":\"M01\",\"media\":\"video\",\"frames\":30,\"path\":\"assets/shots/M01/edit.mp4\",\"sha256\":\"0cab1c9617404faf2b24e221e189ca5945813e14d3f766345b09ca13bbe28ffc\"},{\"id\":\"M02\",\"media\":\"card\",\"path\":\"plan/animatic/cards/M02.png\",\"references\":[\"hero\"]},{\"id\":\"M03\",\"media\":\"keyframes\",\"path\":\"plan/animatic/cards/M03.png\",\"path_last\":\"plan/animatic/cards/M03.last.png\",\"keyframes\":[{\"id\":\"K01\",\"role\":\"first\",\"time_seconds\":0,\"path\":\"plan/batches/M03-attempt-01/frames/K01.png\",\"sha256\":\"2c0ac0aaba0d32b683ba587a901a5fce93822b88763defdfabcdeef1dae97265\"},{\"id\":\"K02\",\"role\":\"last\",\"time_seconds\":2,\"path\":\"plan/batches/M03-attempt-01/frames/K02.png\",\"sha256\":\"f3eccefda160141d05ae45d5fd780e2f1b24cbbf88680daca0c7eae719a34b96\"}]}]}"
+          "text": "{\"project_inputs\":{\"name\":\"Проба\",\"animatic_video\":\"clip.mp4\",\"fps\":30,\"future\":true},\"scene_registry_sha256\":\"bed176081c44dcf372e261c50beaa2b364ccb4ab22d9775c3a93d789de97645a\",\"video_file\":\"clip.mp4\",\"video_sha256\":\"e80767da8de616788ccdd21e4327e1e0156862f0dfa7202a6f2b423692fc5518\",\"source_hashes\":{\"source/track.mp3\":\"2bb8bf7259c4ea0edaef5b8552247e06dde993959d3d33e4a2b32f32e1144c0a\",\"source/hero.png\":\"ae6c79d10f1fd410650790e63186ec108fa106325b52fbd88de21a43540e6f2c\",\"assets/shots/M01/edit.mp4\":\"0cab1c9617404faf2b24e221e189ca5945813e14d3f766345b09ca13bbe28ffc\",\"plan/animatic/cards/M02.png\":\"8367cd66fdd136bba8ba23f8805bb050dd6289401c8ec3b0be44a3c233eef90d\",\"plan/animatic/cards/M03.png\":\"d5ca660c71940f9de6b1b63d7988a329f8f5ad72e9c4dc4419ed018a491e9d02\",\"plan/animatic/cards/M03.last.png\":\"2d8017c6c9eccd1cfc7cbee2609752ecfdfe8590be0f09fe164219bd1c71324f\",\"plan/batches/M03-attempt-01/frames/K01.png\":\"2c0ac0aaba0d32b683ba587a901a5fce93822b88763defdfabcdeef1dae97265\",\"plan/batches/M03-attempt-01/frames/K02.png\":\"f3eccefda160141d05ae45d5fd780e2f1b24cbbf88680daca0c7eae719a34b96\"},\"shots\":[{\"id\":\"M01\",\"media\":\"video\",\"frames\":30,\"path\":\"assets/shots/M01/edit.mp4\",\"sha256\":\"0cab1c9617404faf2b24e221e189ca5945813e14d3f766345b09ca13bbe28ffc\"},{\"id\":\"M02\",\"media\":\"card\",\"path\":\"plan/animatic/cards/M02.png\",\"references\":[\"hero\"]},{\"id\":\"M03\",\"media\":\"keyframes\",\"path\":\"plan/animatic/cards/M03.png\",\"path_last\":\"plan/animatic/cards/M03.last.png\",\"keyframes\":[{\"id\":\"K01\",\"role\":\"first\",\"time_seconds\":0,\"path\":\"plan/batches/M03-attempt-01/frames/K01.png\",\"sha256\":\"2c0ac0aaba0d32b683ba587a901a5fce93822b88763defdfabcdeef1dae97265\"},{\"id\":\"K02\",\"role\":\"last\",\"time_seconds\":2,\"path\":\"plan/batches/M03-attempt-01/frames/K02.png\",\"sha256\":\"f3eccefda160141d05ae45d5fd780e2f1b24cbbf88680daca0c7eae719a34b96\"}]}]}"
         },
         {
           "op": "view",

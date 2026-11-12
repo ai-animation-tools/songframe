@@ -70,6 +70,7 @@
           "op": "view",
           "result": {
             "scenarioStatus": "ready",
+            "fps": 30,
             "trackPath": "source/track.mp3",
             "trackSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "duration": 4,
@@ -233,6 +234,7 @@
           "op": "view",
           "result": {
             "scenarioStatus": "ready",
+            "fps": 30,
             "trackPath": "source/track.mp3",
             "trackSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "duration": 4,
@@ -341,6 +343,7 @@
           "op": "view",
           "result": {
             "scenarioStatus": "ready",
+            "fps": 30,
             "trackPath": "source/track.mp3",
             "trackSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "duration": 4,
@@ -438,6 +441,7 @@
           "op": "view",
           "result": {
             "scenarioStatus": "ready",
+            "fps": 30,
             "trackPath": "source/track.mp3",
             "trackSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "duration": 4,
@@ -535,6 +539,7 @@
           "op": "view",
           "result": {
             "scenarioStatus": "ready",
+            "fps": 30,
             "trackPath": "source/track.mp3",
             "trackSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "duration": 4,
@@ -630,6 +635,7 @@
           "op": "view",
           "result": {
             "scenarioStatus": "ready",
+            "fps": 30,
             "trackPath": "source/track.mp3",
             "trackSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "duration": 4,
@@ -725,6 +731,7 @@
           "op": "view",
           "result": {
             "scenarioStatus": "ready",
+            "fps": 30,
             "trackPath": "source/track.mp3",
             "trackSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "duration": 4,
@@ -820,6 +827,7 @@
           "op": "view",
           "result": {
             "scenarioStatus": "ready",
+            "fps": 30,
             "trackPath": "source/track.mp3",
             "trackSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "duration": 4,
@@ -917,6 +925,7 @@
           "op": "view",
           "result": {
             "scenarioStatus": "ready",
+            "fps": 30,
             "trackPath": "source/track.mp3",
             "trackSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "duration": 4,
@@ -1018,6 +1027,7 @@
           "op": "view",
           "result": {
             "scenarioStatus": "ready",
+            "fps": 30,
             "trackPath": "source/track.mp3",
             "trackSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "duration": 4,
@@ -1197,6 +1207,7 @@
           "op": "view",
           "result": {
             "scenarioStatus": "missing",
+            "fps": 0,
             "trackPath": null,
             "trackSha256": null,
             "duration": null,
@@ -1221,6 +1232,7 @@
           "op": "view",
           "result": {
             "scenarioStatus": "empty",
+            "fps": 30,
             "trackPath": null,
             "trackSha256": null,
             "duration": null,
@@ -1245,6 +1257,7 @@
           "op": "view",
           "result": {
             "scenarioStatus": "invalid",
+            "fps": 0,
             "trackPath": null,
             "trackSha256": null,
             "duration": null,
@@ -1263,12 +1276,13 @@
         {
           "op": "write",
           "path": "plan/scenes.json",
-          "text": "{\"schema_version\":1,\"fps\":24,\"scenes\":[]}"
+          "text": "{\"schema_version\":1,\"fps\":12,\"scenes\":[]}"
         },
         {
           "op": "view",
           "result": {
             "scenarioStatus": "invalid",
+            "fps": 0,
             "trackPath": null,
             "trackSha256": null,
             "duration": null,
@@ -1293,6 +1307,7 @@
           "op": "view",
           "result": {
             "scenarioStatus": "invalid",
+            "fps": 0,
             "trackPath": null,
             "trackSha256": null,
             "duration": null,
@@ -1317,6 +1332,7 @@
           "op": "view",
           "result": {
             "scenarioStatus": "invalid",
+            "fps": 0,
             "trackPath": null,
             "trackSha256": null,
             "duration": null,
@@ -1344,6 +1360,7 @@
           "op": "view",
           "result": {
             "scenarioStatus": "invalid",
+            "fps": 0,
             "trackPath": null,
             "trackSha256": null,
             "duration": null,
@@ -1468,6 +1485,7 @@
           "op": "view",
           "result": {
             "scenarioStatus": "ready",
+            "fps": 30,
             "trackPath": "source/track.mp3",
             "trackSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "duration": 4,
@@ -1752,6 +1770,7 @@
           "op": "view",
           "result": {
             "scenarioStatus": "ready",
+            "fps": 30,
             "trackPath": "source/track.mp3",
             "trackSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "duration": 4,
@@ -2006,6 +2025,7 @@
           "op": "view",
           "result": {
             "scenarioStatus": "ready",
+            "fps": 30,
             "trackPath": "source/track.mp3",
             "trackSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "duration": 4,
@@ -2310,6 +2330,7 @@
           "op": "view",
           "result": {
             "scenarioStatus": "ready",
+            "fps": 30,
             "trackPath": "source/track.mp3",
             "trackSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "duration": 4,
@@ -2575,6 +2596,7 @@
           "op": "view",
           "result": {
             "scenarioStatus": "ready",
+            "fps": 30,
             "trackPath": "source/track.mp3",
             "trackSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "duration": 4,

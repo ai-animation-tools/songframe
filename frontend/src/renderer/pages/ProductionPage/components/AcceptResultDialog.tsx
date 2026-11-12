@@ -1,11 +1,11 @@
 import { productionTexts } from '@shared/texts/production';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 /** Параметры переноса результата в assets с сохранением выбранного монтажного участка. */
-import { FPS } from '@shared/video';
 import type { ReactElement } from 'react';
 import { Alert, Box, Checkbox, FormControlLabel, MenuItem, Stack, TextField } from '@mui/material';
 import type { AcceptOptions } from '@shared/types';
 import type { AcceptTarget } from '../decisions';
+import { DEFAULT_FPS } from '@shared/video';
 import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 
 export function AcceptResultDialog({
@@ -22,7 +22,9 @@ export function AcceptResultDialog({
   onConfirm(): void;
 }): ReactElement {
   const mismatch = !!target?.windowFrames && !!target.originalFrames && target.windowFrames !== target.originalFrames;
-  const seconds = (frames?: number): string => ((frames ?? 0) / FPS).toFixed(2).replace('.', ',');
+  // Без открытого диалога (target null) шкала не используется; DEFAULT_FPS лишь держит расчёт определённым.
+  const fps = target?.fps ?? DEFAULT_FPS;
+  const seconds = (frames?: number): string => ((frames ?? 0) / fps).toFixed(2).replace('.', ',');
   return (
     <ConfirmationDialog
       open={!!target}
@@ -80,7 +82,7 @@ export function AcceptResultDialog({
               label={productionTexts.acceptResultDialog.cutStart}
               value={options.cutStart}
               onChange={(e) => onOptions({ ...options, cutStart: Number(e.target.value) })}
-              inputProps={{ step: 1 / FPS }}
+              inputProps={{ step: 1 / fps }}
             />
             <TextField
               size="small"
@@ -88,7 +90,7 @@ export function AcceptResultDialog({
               label={productionTexts.acceptResultDialog.cutEnd}
               value={options.cutEnd}
               onChange={(e) => onOptions({ ...options, cutEnd: Number(e.target.value) })}
-              inputProps={{ step: 1 / FPS }}
+              inputProps={{ step: 1 / fps }}
             />
             <TextField
               size="small"

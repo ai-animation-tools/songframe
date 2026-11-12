@@ -71,6 +71,7 @@ describe('Кадровый монтаж', () => {
       trackPath: 'source/track.mp3',
       trackSha256: null,
       duration: 5,
+      fps: 30,
       lyricLines: [],
       lyricProblem: null,
       scenes: [{ id: 'M01', title: 'Сцена', startFrame: 0, endFrame: 60 }],

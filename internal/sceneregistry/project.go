@@ -24,6 +24,7 @@ import (
 	"regexp"
 	"strings"
 
+	"songframe/internal/projectfile"
 	"songframe/internal/toolrt"
 )
 
@@ -66,7 +67,22 @@ var GenerationFields = []string{"provider", "resolution", "aspect_ratio", "water
 // DurationRules — допустимые правила длительности видео.
 var DurationRules = []string{"min_supported_strictly_greater_than_window", "min_supported_not_less_than_window", "exact_window"}
 
-// ValidateProject — схема, название без переводов строк, имя MP4 аниматика,
+// FrameRate — fps входит в допустимые частоты проекта (projectfile.FrameRates).
+func FrameRate(fps toolrt.Int) bool {
+	value, fits := fps.Int64()
+	return fits && projectfile.ValidFrameRate(int(value))
+}
+
+// ProjectFPS — частота кадров проекта root из проверенного plan/project.json.
+func ProjectFPS(root string) (toolrt.Int, error) {
+	document, err := LoadProject(root, false)
+	if err != nil {
+		return toolrt.Int{}, err
+	}
+	return document.Value("fps").(toolrt.Int), nil
+}
+
+// ValidateProject — схема, название без переводов строк, имя MP4 аниматика, частота кадров fps,
 // строковые agent_instructions и, если validateGeneration, независимые блоки generation.video и
 // generation.image (GenerationSettings). Возвращает тот же документ.
 func ValidateProject(data any, validateGeneration bool) (*toolrt.Dict, error) {
@@ -79,6 +95,9 @@ func ValidateProject(data any, validateGeneration bool) (*toolrt.Dict, error) {
 	filename, isString := document.Value("animatic_video").(string)
 	if !isString || !mp4Name.MatchString(filename) || strings.HasPrefix(filename, ".") {
 		return nil, valueError("animatic_video должен быть именем MP4 без пути к папке.")
+	}
+	if fps, isInt := document.Value("fps").(toolrt.Int); !isInt || !FrameRate(fps) {
+		return nil, valueError(projectfile.FrameRateInvalid)
 	}
 	if value, ok := document.Get("agent_instructions"); ok {
 		if _, isString := value.(string); !isString {

@@ -6,10 +6,10 @@
     "result": "{\"world\": {\"time_of_day\": \"вечер\", \"weather\": \"ясно\"}, \"mira\": {\"clothes_condition\": \"светлая куртка\", \"position\": \"у края причала\"}, \"lev\": {\"position\": \"рядом с фонарями\"}, \"boat\": {\"dirt\": \"чистая\", \"sink\": \"у причала\"}}"
   },
   "load_project": {
-    "result": "{\"schema_version\": 1, \"name\": \"Пробный клип\", \"animatic_video\": \"sample-animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"1080p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"min_supported_strictly_greater_than_window\"}, \"image\": null}}"
+    "result": "{\"schema_version\": 1, \"name\": \"Пробный клип\", \"animatic_video\": \"sample-animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"1080p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"min_supported_strictly_greater_than_window\"}, \"image\": null}}"
   },
   "load_project_generation": {
-    "result": "{\"schema_version\": 1, \"name\": \"Пробный клип\", \"animatic_video\": \"sample-animatic.mp4\", \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"1080p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"min_supported_strictly_greater_than_window\"}, \"image\": null}}"
+    "result": "{\"schema_version\": 1, \"name\": \"Пробный клип\", \"animatic_video\": \"sample-animatic.mp4\", \"fps\": 30, \"generation\": {\"video\": {\"provider\": \"test\", \"resolution\": \"1080p\", \"aspect_ratio\": \"16:9\", \"watermark\": false, \"duration_rule\": \"min_supported_strictly_greater_than_window\"}, \"image\": null}}"
   },
   "read_production_status": {
     "result": "{\"schema_version\": 1, \"current_animatic\": \"plan/animatic/latest/manifest.json\", \"current_animatic_status\": \"review\", \"shots\": {\"M01\": {\"scene_sha256\": \"a6cb3fb499ac2caf1589f2ecd4127504a1a9d766598493d9a61547a3fe720366\"}, \"M02\": {\"scene_sha256\": \"277499fd8f9387443cb75cc72ad2d0e2fb47afcca1d50ba9911c40c4f67c841d\"}}}"

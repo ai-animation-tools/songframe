@@ -4,7 +4,6 @@ import { Box, Chip, Paper, ToggleButton, ToggleButtonGroup, Tooltip, Typography 
 import { alpha, useTheme, type Theme } from '@mui/material/styles';
 import type { ScenesFile, ShotProductionState } from '@shared/types';
 import { formatClock } from '../../../format';
-import { FPS } from '@shared/video';
 import { useApp } from '../../../state';
 import { SHOT_STATE_LABELS } from '../../../components/shotState';
 
@@ -54,7 +53,7 @@ export function SceneTimeline({
     };
   }, [mode, project, state]);
 
-  const total = Math.max(duration * FPS, scenes.scenes.at(-1)?.end_frame_exclusive ?? 1);
+  const total = Math.max(duration * scenes.fps, scenes.scenes.at(-1)?.end_frame_exclusive ?? 1);
   const seqIndex = new Map(scenes.sequences.map((s, i) => [s.id, i]));
   const partColor = (sequence: string): string => theme.palette[PART_COLORS[(seqIndex.get(sequence) ?? 0) % PART_COLORS.length]].main;
   const shotState = (id: string): ShotProductionState => states?.[id] ?? 'planned';
@@ -139,8 +138,8 @@ export function SceneTimeline({
               key={s.id}
               title={scenarioTexts.timeline.shotHint({
                 id: s.id,
-                start: formatClock(s.start_frame / FPS),
-                end: formatClock(s.end_frame_exclusive / FPS),
+                start: formatClock(s.start_frame / scenes.fps),
+                end: formatClock(s.end_frame_exclusive / scenes.fps),
                 status: mode === 'status' ? SHOT_STATE_LABELS[shotState(s.id)].label : null
               })}
             >

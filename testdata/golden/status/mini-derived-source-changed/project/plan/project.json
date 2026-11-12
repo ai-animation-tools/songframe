@@ -1,5 +1,6 @@
 {
   "schema_version": 1,
   "name": "Мини-клип",
-  "animatic_video": "mini-animatic.mp4"
+  "animatic_video": "mini-animatic.mp4",
+  "fps": 30
 }

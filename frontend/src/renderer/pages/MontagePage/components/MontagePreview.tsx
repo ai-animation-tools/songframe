@@ -4,12 +4,13 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactElemen
 import { Alert, Box, Checkbox, FormControlLabel, Slider, Stack, Typography } from '@mui/material';
 import VolumeOffIcon from '@mui/icons-material/VolumeOff';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
-import { secondsToFrames, FPS } from '@shared/video';
+import { secondsToFrames } from '@shared/video';
 import type { MontageDraft } from '@shared/montage';
 import { ActionButton } from '../../../components/ActionButton';
 import { ActionIconButton } from '../../../components/ActionIconButton';
 import { clipLength, frameLabel, projectMediaUrl } from '../model';
 import { createMontagePlayback, cutPreviewWindow, type MontagePlayback } from '../montagePlayback';
+import { useProjectFps } from '../../../hooks/useProjectFps';
 
 interface Props {
   project: string;
@@ -53,6 +54,7 @@ export function MontagePreview({
   videoMaxWidth,
   actions
 }: Props): ReactElement {
+  const fps = useProjectFps();
   const audioRef = useRef<HTMLAudioElement>(null);
   const videoRefs = useRef<Array<HTMLVideoElement | null>>([null, null]);
   const videoStarts = useRef(new WeakSet<HTMLVideoElement>());
@@ -67,7 +69,7 @@ export function MontagePreview({
     selectedIndex >= 0 && selectedIndex < draft.clips.length - 1
       ? draft.clips.slice(0, selectedIndex + 1).reduce((sum, item) => sum + clipLength(item), 0)
       : null;
-  const cutWindow = cut === null ? null : cutPreviewWindow(cut, length);
+  const cutWindow = cut === null ? null : cutPreviewWindow(cut, length, fps);
   // Причины недоступности управления плеером; приостановка проверяется последней.
   const noTrackReason = trackUrl ? null : montageTexts.noTrack;
   const emptyReason = length ? null : montageTexts.emptyAudioRange;
@@ -89,7 +91,7 @@ export function MontagePreview({
     const current = latest.current;
     const audio = audioRef.current;
     const running = !!playbackRef.current?.isPlaying() && !!audio && !audio.paused;
-    const livePosition = running ? Math.max(0, Math.min(current.length - 1, audio.currentTime * FPS - current.draft.audio.start_frame)) : current.position;
+    const livePosition = running ? Math.max(0, Math.min(current.length - 1, audio.currentTime * fps - current.draft.audio.start_frame)) : current.position;
     let liveOffset = 0;
     const liveClip = current.draft.clips.find((source) => {
       if (livePosition < liveOffset + clipLength(source)) return true;
@@ -104,7 +106,7 @@ export function MontagePreview({
         if (!video.paused || videoStarts.current.has(video)) video.pause();
         return;
       }
-      const target = (source.source_start_frame + (selected ? livePosition - liveOffset : 0)) / FPS;
+      const target = (source.source_start_frame + (selected ? livePosition - liveOffset : 0)) / fps;
       const tolerance = selected && running ? 0.12 : 0.001;
       // Часы читаются прямо из audio: задержавшийся рендер React не перематывает видео назад.
       // Пока предыдущий seek декодируется, не запускаем новый на каждом animation frame.
@@ -177,7 +179,8 @@ export function MontagePreview({
         if (!value) previewWindow.current = null;
         setPlaying(value);
       },
-      onError: (cause) => setError(String(cause))
+      onError: (cause) => setError(String(cause)),
+      fps
     });
     playbackRef.current = playback;
     let request = 0;
@@ -194,7 +197,7 @@ export function MontagePreview({
       if (playbackRef.current === playback) playbackRef.current = null;
       videos.forEach((video) => video?.pause());
     };
-  }, [trackUrl]);
+  }, [trackUrl, fps]);
 
   useEffect(() => {
     if (suspended) playbackRef.current?.pause();
@@ -256,7 +259,7 @@ export function MontagePreview({
             src={source?.kind === 'video' ? projectMediaUrl(project, source.path) : undefined}
             onLoadedMetadata={(event) => {
               const video = event.currentTarget;
-              if (source && Number.isFinite(video.duration) && video.duration > 0) onMetadata(source.path, Math.max(1, secondsToFrames(video.duration)));
+              if (source && Number.isFinite(video.duration) && video.duration > 0) onMetadata(source.path, Math.max(1, secondsToFrames(video.duration, fps)));
               syncVideosRef.current();
             }}
             onLoadedData={() => syncVideosRef.current()}
@@ -305,7 +308,7 @@ export function MontagePreview({
           onLoadedMetadata={(event) => {
             event.currentTarget.volume = volume / 100;
             const duration = event.currentTarget.duration;
-            if (Number.isFinite(duration) && duration > 0) onTrackFrames(secondsToFrames(duration));
+            if (Number.isFinite(duration) && duration > 0) onTrackFrames(secondsToFrames(duration, fps));
             playbackRef.current?.seek(latest.current.position);
           }}
           onPause={(event) => {
@@ -395,7 +398,7 @@ export function MontagePreview({
           />
         </Stack>
         <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-          {montageTexts.playbackPosition({ position: frameLabel(position), length: frameLabel(length), scene: clip?.scene })}
+          {montageTexts.playbackPosition({ position: frameLabel(position, fps), length: frameLabel(length, fps), scene: clip?.scene })}
         </Typography>
         {actions}
       </Stack>

@@ -19,6 +19,7 @@ import { createStoryApi, type StoryApiSession, type StoryOptions } from './story
 import { assertDeliveryAcceptOptions, deliveryJob, deliveryPackage, DELIVERY_DATE, DELIVERY_PROJECT, DELIVERY_RESULT_TOKEN } from './deliveryStories';
 import { productionShot } from './productionQueueStories';
 import { storyAccess } from './commonStories';
+import { DEFAULT_FPS } from '@shared/video';
 
 export const RECEIVE_ERROR = 'Получение прервано. Сохранённый ID и скачанные оригиналы остались в пакете; повторите получение.';
 export const RESULT_ERROR = 'Не удалось сохранить результат операции. Оригиналы и выбранный пакет сохранены; повторите действие.';
@@ -295,7 +296,7 @@ function DeliveryStory({ resume, busy = false, providerAvailable = true, showDec
   if (!model) throw new Error('История требует resultStoryOptions.');
   const state = useSyncExternalStore(model.subscribe, model.snapshot);
   const [target, setTarget] = useState<AcceptTarget | null>(null);
-  const [options, setOptions] = useState<AcceptOptions>(() => defaultAcceptOptions(acceptTargetFor(state.pkg, false)));
+  const [options, setOptions] = useState<AcceptOptions>(() => defaultAcceptOptions(acceptTargetFor(state.pkg, false, DEFAULT_FPS)));
   const [repeat, setRepeat] = useState(false);
   const [note, setNote] = useState('');
   const navigate = useNavigate();
@@ -306,7 +307,7 @@ function DeliveryStory({ resume, busy = false, providerAvailable = true, showDec
     void operation.catch(model.report);
   };
   const openAccept = (): void => {
-    const next = acceptTargetFor(pkg, false);
+    const next = acceptTargetFor(pkg, false, DEFAULT_FPS);
     setOptions(defaultAcceptOptions(next));
     setTarget(next);
   };

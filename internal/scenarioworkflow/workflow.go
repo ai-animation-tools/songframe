@@ -21,6 +21,7 @@ import (
 
 	"songframe/internal/cast"
 	"songframe/internal/dynvalue"
+	"songframe/internal/scenario"
 	"songframe/internal/scenarioapply"
 	"songframe/internal/tools"
 	"songframe/resources"
@@ -225,7 +226,7 @@ func (w *Workflow) acceptResult(input *inputs, stored, proposal *dynvalue.Object
 	pass := dynvalue.ToString(proposal.Value("pass"))
 	before := documentsFrom(proposal.Value("before"))
 	duration, _ := stored.Value("duration").(float64)
-	after, err := proposalDocuments(result, pass, before, nullable(stored.Value("scaffold")), stringItems(proposal.Value("selectedIds")), duration)
+	after, err := proposalDocuments(result, pass, before, nullable(stored.Value("scaffold")), stringItems(proposal.Value("selectedIds")), duration, scenario.ExpectedFPS(input.project, before.Scenes))
 	if err != nil {
 		return err
 	}
@@ -619,7 +620,7 @@ func (w *Workflow) apply(project, id string) (string, error) {
 	}
 	before := documentsFrom(proposal.Value("before"))
 	duration, _ := stored.Value("duration").(float64)
-	after, err := proposalDocuments(job.Result, pass, before, nullable(stored.Value("scaffold")), stringItems(proposal.Value("selectedIds")), duration)
+	after, err := proposalDocuments(job.Result, pass, before, nullable(stored.Value("scaffold")), stringItems(proposal.Value("selectedIds")), duration, scenario.ExpectedFPS(initial.project, before.Scenes))
 	if err != nil {
 		w.mu.Unlock()
 		return "", err

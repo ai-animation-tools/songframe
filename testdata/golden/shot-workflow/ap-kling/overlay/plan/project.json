@@ -2,6 +2,7 @@
   "schema_version": 1,
   "name": "Пробный клип",
   "animatic_video": "sample-animatic.mp4",
+  "fps": 30,
   "generation": {
     "video": {
       "provider": "kling",

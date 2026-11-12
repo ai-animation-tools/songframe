@@ -57,7 +57,7 @@
 | Пакет | Назначение |
 | --- | --- |
 | [`internal/project`](../internal/project) | Содержит общие сведения о папке проекта, которые нужны нескольким областям: описание медиафайла для медиасервера, распознавание незавершённых многофайловых публикаций и понятные тексты файловых ошибок внутри папки проекта (FileProblem). |
-| [`internal/projectfile`](../internal/projectfile) | Владеет правкой маркера проекта plan/project.json: переименование и редактируемая часть настроек — название, имя MP4 аниматика, постоянные инструкции агенту и блок generation. |
+| [`internal/projectfile`](../internal/projectfile) | Владеет правкой маркера проекта plan/project.json: переименование и редактируемая часть настроек — название, имя MP4 аниматика, постоянные инструкции агенту и блок generation, — а также чтением частоты кадров проекта fps (framerate.go), которая задаётся при создании и не редактируется. |
 | [`internal/newproject`](../internal/newproject) | Создаёт папку клипа из встроенного шаблона: проверка формы «Новый проект», копирование шаблона с подстановкой плейсхолдеров и необязательный git init. |
 | [`internal/status`](../internal/status) | Вычисляет состояние проекта из файлов его папки (projects.status). |
 | [`internal/sources`](../internal/sources) | Читает опись исходников source/manifest.json. |
@@ -72,7 +72,7 @@
 | Страница | Назначение |
 | --- | --- |
 | [`ProjectsPage`](../frontend/src/renderer/pages/ProjectsPage/ProjectsPage.tsx) | Выбор проекта: история открытых папок, открытие любой папки, переход к созданию нового. |
-| [`NewProjectPage`](../frontend/src/renderer/pages/NewProjectPage/NewProjectPage.tsx) | Создание проекта: название, полный путь новой папки, имя MP4; папка создаётся из шаблона, Git используется при наличии. |
+| [`NewProjectPage`](../frontend/src/renderer/pages/NewProjectPage/NewProjectPage.tsx) | Создание проекта: название, полный путь новой папки, имя MP4 и частота кадров; папка создаётся из шаблона, Git используется при наличии. |
 | [`ProjectPage`](../frontend/src/renderer/pages/ProjectPage/ProjectPage.tsx) | Обзор проекта: состояние, признаки, проблемы и следующий шаг. |
 | [`SourcesPage`](../frontend/src/renderer/pages/SourcesPage/SourcesPage.tsx) | Исходники проекта: трек, текст песни, идея, обложка и референсы. |
 | [`CastPage`](../frontend/src/renderer/pages/CastPage/CastPage.tsx) | Кастинг: сущности клипа, их изображения из исходников, роль, внешность и начальное состояние. |

@@ -177,7 +177,7 @@ func copyGeneration(pkg *toolrt.Dict, sourceDirectory, target, root string) (*to
 }
 
 // divided — value / 30 числом с плавающей точкой.
-func divided(value toolrt.Int) (float64, error) { return toolrt.TrueDiv(value, fps) }
+func divided(value, fps toolrt.Int) (float64, error) { return toolrt.TrueDiv(value, fps) }
 
 // ratioFloat — ближайшее к дроби число двойной точности.
 func ratioFloat(value *big.Rat) float64 {
@@ -218,19 +218,20 @@ func makeManifest(result *checkedResult, target, candidate, root string) (*toolr
 		return nil, err
 	}
 	length := toolrt.IntFromBig(new(big.Int).Sub(plan.last.Big(), plan.first.Big()))
-	duration, err := divided(frames)
+	fps := result.state.fps
+	duration, err := divided(frames, fps)
 	if err != nil {
 		return nil, err
 	}
-	selected, err := divided(length)
+	selected, err := divided(length, fps)
 	if err != nil {
 		return nil, err
 	}
-	firstTime, err := divided(plan.first)
+	firstTime, err := divided(plan.first, fps)
 	if err != nil {
 		return nil, err
 	}
-	lastTime, err := divided(plan.last)
+	lastTime, err := divided(plan.last, fps)
 	if err != nil {
 		return nil, err
 	}
@@ -281,7 +282,7 @@ func makeManifest(result *checkedResult, target, candidate, root string) (*toolr
 		"hold_last_seconds", 0.0,
 		"audio_policy", applymontage.AudioPolicy,
 		"montage_source", video,
-		"source_fps", "30/1",
+		"source_fps", fps.String()+"/1",
 		"fps_conversion", applymontage.FPSConversion,
 		"rebuild", toolcli.Record(
 			"source", rebuildSource,

@@ -15,6 +15,7 @@ import (
 	"songframe/internal/dynvalue"
 	"songframe/internal/mediaproviders"
 	"songframe/internal/production"
+	"songframe/internal/projectfile"
 	"songframe/internal/scenario"
 )
 
@@ -332,10 +333,11 @@ func ViewDashboard(project string) (View, error) {
 	if !ok || dynvalue.IsNullish(scenes) {
 		return View{Shots: []Shot{}, Problems: []string{production.TextScenarioRequired}}, nil
 	}
-	// Частота кадров принадлежит реестру сцен (schema требует 30), приложение её не выбирает.
+	// Частота кадров реестра равна частоте проекта (её проверяют реестр и вид производства);
+	// неверное значение реестра заменяется частотой проекта.
 	fps := dynvalue.ToNumber(dynvalue.Get(scenes, "fps"))
 	if fps == 0 || fps != fps {
-		fps = production.FPS
+		fps = projectfile.FPS(project)
 	}
 	view, err := production.ViewProduction(project)
 	if err != nil {

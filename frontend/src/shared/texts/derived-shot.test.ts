@@ -22,8 +22,9 @@ describe('числовые формы производного плана', () =
     [111, 'кадров']
   ] as const)('согласует %s кадров во всех режимах', (count, word) => {
     const label = `${count} ${word}`;
-    expect(texts.sourceFrames({ frames: count })).toBe(`Источник: ${label} · ${(count / 30).toFixed(3)} с · 30 FPS`);
-    expect(texts.targetFrames({ frames: count })).toBe(`Цель: ${label} · ${(count / 30).toFixed(3)} с · 30 FPS`);
+    expect(texts.sourceFrames({ frames: count, fps: 30 })).toBe(`Источник: ${label} · ${(count / 30).toFixed(3)} с · 30 FPS`);
+    expect(texts.targetFrames({ frames: count, fps: 30 })).toBe(`Цель: ${label} · ${(count / 30).toFixed(3)} с · 30 FPS`);
+    expect(texts.targetFrames({ frames: count, fps: 24 })).toBe(`Цель: ${label} · ${(count / 24).toFixed(3)} с · 24 FPS`);
     expect(texts.trimInfo({ start: 0, end: count, frames: count })).toBe(`Кадры [0, ${count}) без изменения скорости → ${label}.`);
     expect(texts.fitInfo({ length: count, frames: count, speed: '1.000' })).toBe(`Участок: ${label} → ${label}; скорость 1.000×.`);
     expect(texts.repeatInfo({ length: count, cycles: 3, rest: count, frames: count })).toBe(

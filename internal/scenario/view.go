@@ -9,12 +9,15 @@ import (
 
 	"songframe/internal/cast"
 	"songframe/internal/dynvalue"
+	"songframe/internal/projectfile"
 	"songframe/internal/sources"
 	"songframe/internal/timing"
 )
 
-// FPS — кадровая сетка реестра, кадров в секунду.
-const FPS = 30
+// ExpectedFPS — частота, которой обязан следовать реестр scenes проекта (projectfile.ExpectedFPS).
+func ExpectedFPS(project string, scenes any) float64 {
+	return projectfile.ExpectedFPS(project, dynvalue.Get(scenes, "fps"))
+}
 
 // sceneID — код плана: M01, M23.5.
 var sceneID = regexp.MustCompile(`^M\d{2}(\.\d+)?$`)
@@ -92,7 +95,7 @@ func ViewProject(project string) (View, error) {
 		lyrics = timing.ParseLyricsLines(dynvalue.DecodeUTF8(text))
 	}
 	if scenes != nil {
-		found, err := ValidateScenes(scenes, castValue)
+		found, err := ValidateScenes(scenes, castValue, ExpectedFPS(project, scenes))
 		if err != nil {
 			return View{}, err
 		}
@@ -131,13 +134,14 @@ func ViewProject(project string) (View, error) {
 
 // ValidateScenes — структурная проверка реестра, как sceneregistry.Validate, с сообщениями для
 // редактора. castValue — кастинг проекта (его начальное состояние входит в проверку
-// наследования) или nil. Ошибка — реестр другой формы (части не массив,
+// наследования) или nil; fps — частота, которой обязан следовать реестр (ExpectedFPS), 0 —
+// неизвестна. Ошибка — реестр другой формы (части не массив,
 // камера не строка и т. п.); исключение вычисления состояния, напротив, становится проблемой.
-func ValidateScenes(data, castValue any) ([]string, error) {
+func ValidateScenes(data, castValue any, fps float64) ([]string, error) {
 	scenes, isArray := dynvalue.AsArray(dynvalue.Get(data, "scenes"))
-	if !dynvalue.StrictEqual(dynvalue.Get(data, "schema_version"), 1.0) || !dynvalue.StrictEqual(dynvalue.Get(data, "fps"), float64(FPS)) ||
+	if !dynvalue.StrictEqual(dynvalue.Get(data, "schema_version"), 1.0) || !dynvalue.StrictEqual(dynvalue.Get(data, "fps"), fps) ||
 		!isArray || len(scenes) == 0 {
-		return []string{textRegistryRequiresScenes}, nil
+		return []string{textRegistryRequiresScenes(fps)}, nil
 	}
 	sequences, ok := dynvalue.AsArray(dynvalue.Get(data, "sequences"))
 	if !ok {
@@ -234,8 +238,8 @@ func ValidateScenes(data, castValue any) ([]string, error) {
 	problems = append(problems, derived...)
 	audio := dynvalue.Get(data, "audio")
 	endSeconds := dynvalue.ToNumber(dynvalue.Get(audio, "end_seconds"))
-	if math.IsNaN(endSeconds) || math.IsInf(endSeconds, 0) || math.Abs(end/FPS-endSeconds) >= 1.0/FPS {
-		problems = append(problems, textRegistryDurationMismatch(dynvalue.ToFixed(end/FPS, 3), dynvalue.ToString(dynvalue.Get(audio, "end_seconds"))))
+	if math.IsNaN(endSeconds) || math.IsInf(endSeconds, 0) || math.Abs(end/fps-endSeconds) >= 1.0/fps {
+		problems = append(problems, textRegistryDurationMismatch(dynvalue.ToFixed(end/fps, 3), dynvalue.ToString(dynvalue.Get(audio, "end_seconds"))))
 	}
 	if initial, err := cast.InitialStates(castValue); err != nil {
 		problems = append(problems, err.Error())

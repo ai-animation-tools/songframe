@@ -5,7 +5,6 @@ import CallMergeIcon from '@mui/icons-material/CallMerge';
 import CallSplitIcon from '@mui/icons-material/CallSplit';
 import type { SceneShot, ScenesFile } from '@shared/types';
 import { formatClock } from '../../../format';
-import { FPS } from '@shared/video';
 import type { EntityOption } from '../types';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import { ShotPageButton } from '../../../components/ShotPageButton';
@@ -39,9 +38,9 @@ export function SceneShotEditor({
         <Typography variant="h6">{shot.id}</Typography>
         <Typography variant="body2" color="text.secondary">
           {scenarioTexts.shot.timing({
-            start: formatClock(shot.start_frame / FPS),
-            end: formatClock(shot.end_frame_exclusive / FPS),
-            seconds: ((shot.end_frame_exclusive - shot.start_frame) / FPS).toFixed(2),
+            start: formatClock(shot.start_frame / scenes.fps),
+            end: formatClock(shot.end_frame_exclusive / scenes.fps),
+            seconds: ((shot.end_frame_exclusive - shot.start_frame) / scenes.fps).toFixed(2),
             frames: shot.end_frame_exclusive - shot.start_frame
           })}
         </Typography>
@@ -58,8 +57,8 @@ export function SceneShotEditor({
           size="small"
           type="number"
           label={scenarioTexts.shot.nextBoundary}
-          value={(shot.end_frame_exclusive / FPS).toFixed(2)}
-          onChange={(e) => setBoundary(Number(e.target.value) * FPS)}
+          value={(shot.end_frame_exclusive / scenes.fps).toFixed(2)}
+          onChange={(e) => setBoundary(Number(e.target.value) * scenes.fps)}
           inputProps={{ step: 0.1 }}
           disabled={shotIndex >= scenes.scenes.length - 1}
           helperText={scenarioTexts.shot.boundaryHint}

@@ -5,6 +5,7 @@
     "state": "empty",
     "name": "Огород",
     "animaticVideo": "animatic.mp4",
+    "fps": 30,
     "checks": {
       "marker": true,
       "sources": false,

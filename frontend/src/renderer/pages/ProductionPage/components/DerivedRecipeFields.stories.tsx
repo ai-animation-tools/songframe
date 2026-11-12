@@ -6,6 +6,7 @@ import { derivedShotTexts as texts } from '@shared/texts/derived-shot';
 import { derivedView } from '../../../testing/derivedStories';
 import { derivedActionReasons, recipeDraft, recipeInfo } from '../derivedRecipeForm';
 import { DerivedRecipeFields } from './DerivedRecipeFields';
+import { DEFAULT_FPS } from '@shared/video';
 
 type FieldsProps = ComponentProps<typeof DerivedRecipeFields>;
 
@@ -16,8 +17,8 @@ function RecipeDemo(args: FieldsProps): ReactElement {
   const reasons = derivedActionReasons(view, draft, false);
   return (
     <Stack spacing={2}>
-      <Typography variant="body2">{texts.sourceFrames({ frames: view.sourceFrames })}</Typography>
-      <Typography variant="body2">{texts.targetFrames({ frames: view.targetFrames })}</Typography>
+      <Typography variant="body2">{texts.sourceFrames({ frames: view.sourceFrames, fps: DEFAULT_FPS })}</Typography>
+      <Typography variant="body2">{texts.targetFrames({ frames: view.targetFrames, fps: DEFAULT_FPS })}</Typography>
       <DerivedRecipeFields {...args} draft={draft} onChange={change} />
       {reasons.shapeProblem ? <Alert severity="warning">{reasons.shapeProblem}</Alert> : null}
       {reasons.boundsProblem ? <Alert severity="warning">{reasons.boundsProblem}</Alert> : null}

@@ -1063,7 +1063,7 @@
       "message": "Агент завершил задание без успешного результата."
     },
     "expectedHashes": {
-      "plan/project.json": "5f1eae81882b0ec971b80a1e6ecd621647e7676e55f6ac37c19990e3d027de6d",
+      "plan/project.json": "5b6fe365e9322ec426bbc5912ee44fedf188365d8062500d6a4621526bbddf4d",
       "plan/production-status.json": "5d0d61de85fc92ad1c184454147dee6a0e126275c9650a293a8beb7440e7b9e3",
       "source/manifest.json": "9003b4e856f2fd18ee7449c3a04a7c28253c7bc722162ec55d1eca4b91af29dc",
       "source/track.mp3": "d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640",

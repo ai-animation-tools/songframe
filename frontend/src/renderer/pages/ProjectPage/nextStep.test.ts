@@ -8,6 +8,7 @@ const status = (state: ProjectState, checks: Partial<ProjectStatus['checks']> = 
   state,
   name: 'Клип',
   animaticVideo: null,
+  fps: 30,
   checks: {
     marker: true,
     sources: true,

@@ -927,5 +927,8 @@ export const PromptReopenFromRequest: Story = {
     await expect(await screen.findByText(texts.useProductionPage.promptReopened, {}, POLL_TIMEOUT)).toBeInTheDocument();
     await waitFor(() => expect(counts(context)).toHaveTextContent('Возвратов промпта: убрать титры.'), POLL_TIMEOUT);
     await waitFor(() => expect(planStep(context, 'prompt')).toHaveTextContent(/не принят/), POLL_TIMEOUT);
+    // Шаг ниже по странице прокручивает её: шапка карточки уходит под закреплённую панель, и проверка
+    // размера целей axe считала бы частично закрытые кнопки. Итог проверяется с начала страницы.
+    context.canvasElement.ownerDocument.defaultView?.scrollTo({ top: 0 });
   }
 };

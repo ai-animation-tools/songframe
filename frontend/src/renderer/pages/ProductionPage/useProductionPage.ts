@@ -18,6 +18,7 @@ import {
   type AcceptTarget
 } from './decisions';
 import { completeInScope, RequestScope } from '../../hooks/requestScope';
+import { useProjectFps } from '../../hooks/useProjectFps';
 
 interface OperationResult {
   job?: JobInfo;
@@ -54,14 +55,18 @@ export function useProductionPage() {
     []
   );
   const [filter, setFilter] = useState<ProductionFilter>('all');
+  const fps = useProjectFps();
   const [acceptDialog, setAcceptDialog] = useState<AcceptTarget | null>(null);
   const [acceptOptions, setAcceptOptions] = useState<AcceptOptions>({ mode: 'full', cutStart: 0, cutEnd: 0, speed: '1', holdFirst: 0, holdLast: 0 });
   // Приёмка открывается с участком под окно плана, если длина оригинала заведомо другая.
-  const openAccept = useCallback((pkg: PackageView, hasAsset: boolean, lipsync = false) => {
-    const target = acceptTargetFor(pkg, hasAsset, lipsync);
-    setAcceptOptions(defaultAcceptOptions(target));
-    setAcceptDialog(target);
-  }, []);
+  const openAccept = useCallback(
+    (pkg: PackageView, hasAsset: boolean, lipsync = false) => {
+      const target = acceptTargetFor(pkg, hasAsset, fps, lipsync);
+      setAcceptOptions(defaultAcceptOptions(target));
+      setAcceptDialog(target);
+    },
+    [fps]
+  );
   const [confirmSend, setConfirmSend] = useState<PackageView | null>(null);
   const [confirmRegenerate, setConfirmRegenerate] = useState<string | null>(null);
   const projectScope = useRef(new RequestScope()).current;

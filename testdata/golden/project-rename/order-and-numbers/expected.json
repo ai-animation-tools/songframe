@@ -5,6 +5,7 @@
     "state": "empty",
     "name": "Новое имя",
     "animaticVideo": "a.mp4",
+    "fps": 30,
     "checks": {
       "marker": true,
       "sources": false,

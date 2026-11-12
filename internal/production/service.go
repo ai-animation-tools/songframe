@@ -1391,12 +1391,16 @@ type AcceptOptions struct {
 	HoldLast            float64  `json:"holdLast,omitempty"`
 }
 
-// cutFrame — UI задаёт секунды, accept_shot принимает кадры; неточные границы не округляются молча.
-func cutFrame(seconds *float64) (int, error) {
+// cutFrame — UI задаёт секунды, accept_shot принимает кадры частоты проекта fps; неточные границы
+// не округляются молча.
+func cutFrame(seconds *float64, fps float64) (int, error) {
 	if seconds == nil || math.IsInf(*seconds, 0) || math.IsNaN(*seconds) || *seconds < 0 {
 		return 0, errors.New(textAcceptBoundsInvalid)
 	}
-	frames := *seconds * FPS
+	if fps == 0 {
+		return 0, errors.New(projectfile.FrameRateInvalid)
+	}
+	frames := *seconds * fps
 	rounded := math.Floor(frames + 0.5)
 	if rounded > 1<<53-1 || math.Abs(frames-rounded) > 1e-6 {
 		return 0, errors.New(textAcceptBoundsInvalid)
@@ -1438,11 +1442,11 @@ func (s *Service) Accept(project, shot, packageDir string, options AcceptOptions
 	}
 	edit := []string{"--full"}
 	if options.Mode != "full" {
-		first, err := cutFrame(options.CutStart)
+		first, err := cutFrame(options.CutStart, projectfile.FPS(project))
 		if err != nil {
 			return jobs.Info{}, err
 		}
-		last, err := cutFrame(options.CutEnd)
+		last, err := cutFrame(options.CutEnd, projectfile.FPS(project))
 		if err != nil {
 			return jobs.Info{}, err
 		}

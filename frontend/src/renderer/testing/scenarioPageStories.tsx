@@ -18,7 +18,7 @@ import type {
   TreatmentFile
 } from '@shared/types';
 import type { ScenarioWorkflowView } from '@shared/scenario-workflow';
-import { FPS } from '@shared/video';
+import { DEFAULT_FPS } from '@shared/video';
 import { scenarioTexts } from '@shared/texts/scenario';
 import { ScenarioPage } from '../pages/ScenarioPage/ScenarioPage';
 import { shotPageRoute } from '../components/shotRoutes';
@@ -204,8 +204,8 @@ function regularShots(): SceneShot[] {
     ...row,
     id: id(index),
     sequence: PARTS[Math.min(Math.floor(index / 2), 2)].id,
-    start_frame: index * SHOT_SECONDS * FPS,
-    end_frame_exclusive: (index + 1) * SHOT_SECONDS * FPS,
+    start_frame: index * SHOT_SECONDS * DEFAULT_FPS,
+    end_frame_exclusive: (index + 1) * SHOT_SECONDS * DEFAULT_FPS,
     continuity: 'Свет слева, герой смотрит вправо.',
     card: { primary_reference: row.references[0] },
     state_from: index === 0 ? null : id(index - 1)
@@ -219,8 +219,8 @@ function longShots(): SceneShot[] {
     title: `План ${index + 1}: возвращение к старым воротам садового товарищества под затяжным осенним дождём`,
     original: `Строка песни ${index + 1}: я снова у старых ворот, и дождь стучит по крыше соседского сарая без остановки`,
     sequence: PARTS[Math.floor((index * PARTS.length) / LONG_COUNT)].id,
-    start_frame: index * LONG_SHOT_SECONDS * FPS,
-    end_frame_exclusive: (index + 1) * LONG_SHOT_SECONDS * FPS,
+    start_frame: index * LONG_SHOT_SECONDS * DEFAULT_FPS,
+    end_frame_exclusive: (index + 1) * LONG_SHOT_SECONDS * DEFAULT_FPS,
     camera: index % 7 === 3 ? 'ЗАПОЛНИТЬ: камера' : 'Медленный наезд от общего плана к среднему, камера чуть ниже уровня глаз героя.',
     action:
       index % 7 === 3
@@ -240,7 +240,7 @@ function pageScenes(long: boolean): ScenesFile {
   const base = scenarioDocuments().scenes!;
   return {
     ...base,
-    audio: { path: 'source/track.wav', end_seconds: (shots.at(-1)!.end_frame_exclusive / FPS).toFixed(3) },
+    audio: { path: 'source/track.wav', end_seconds: (shots.at(-1)!.end_frame_exclusive / DEFAULT_FPS).toFixed(3) },
     sequences: (long ? PARTS : PARTS.slice(0, 3)).map((part) => ({ ...part })),
     references: {
       hero: { name: 'Герой у ворот', path: 'source/heroes/story-image.png' },
@@ -273,8 +273,8 @@ function pageTiming(duration: number, scenes: ScenesFile | null, treatment: Trea
   const lines = (scenes?.scenes ?? []).map((shot, index) => ({
     id: index + 1,
     source_line: index + 1,
-    start: shot.start_frame / FPS,
-    end: shot.end_frame_exclusive / FPS - 0.2,
+    start: shot.start_frame / DEFAULT_FPS,
+    end: shot.end_frame_exclusive / DEFAULT_FPS - 0.2,
     verified: true
   }));
   return {
@@ -297,7 +297,7 @@ function pageView(variant: ScenarioPageVariant, gapped: boolean): ScenarioView {
   const treatment: TreatmentFile = gapped
     ? { ...plain, sequences: plain.sequences.map((part, index) => ({ ...part, ...(GAPPED_SECTIONS[index] ?? {}) })) }
     : plain;
-  const duration = scenes.scenes.at(-1)!.end_frame_exclusive / FPS;
+  const duration = scenes.scenes.at(-1)!.end_frame_exclusive / DEFAULT_FPS;
   return {
     scenes: variant === 'noRegistry' || variant === 'noTreatment' ? null : scenes,
     treatment: variant === 'noTreatment' ? null : treatment,
@@ -322,8 +322,8 @@ function scaffoldScenes(treatment: TreatmentFile): ScenesFile {
         title: '',
         original: '',
         sequence: part.id,
-        start_frame: Math.round(start * FPS),
-        end_frame_exclusive: Math.round(Math.min(part.end, start + SHOT_SECONDS) * FPS),
+        start_frame: Math.round(start * DEFAULT_FPS),
+        end_frame_exclusive: Math.round(Math.min(part.end, start + SHOT_SECONDS) * DEFAULT_FPS),
         camera: 'ЗАПОЛНИТЬ: камера',
         action: 'ЗАПОЛНИТЬ: действие',
         continuity: '',
@@ -597,7 +597,7 @@ export function scenarioPageOptions({
             if (args.includes('--dry-run') && model.saved.scenes) {
               const shifted = structuredClone(model.saved.scenes);
               shifted.scenes.forEach((shot) => Object.assign(shot, { camera: 'ЗАПОЛНИТЬ', action: 'ЗАПОЛНИТЬ' }));
-              shifted.scenes[0].end_frame_exclusive = shifted.scenes[1].start_frame = SHOT_SECONDS * FPS + FPS / 2;
+              shifted.scenes[0].end_frame_exclusive = shifted.scenes[1].start_frame = SHOT_SECONDS * DEFAULT_FPS + DEFAULT_FPS / 2;
               // Сохранённое не меняется: публикация только обновляет счётчик построений в панели модели.
               model.publish();
               return { code: 0, stdout: JSON.stringify(shifted), stderr: '', command: `scene_scaffold ${args.join(' ')}` };

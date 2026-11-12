@@ -102,7 +102,7 @@ func BuildFragment(ctx context.Context, root, from, to string, out func(line str
 		return nil, err
 	}
 	for _, shot := range shots {
-		if _, err := segment(ctx, cache, root, shot, toolchain); err != nil {
+		if _, err := segment(ctx, cache, root, shot, toolchain, prepared.fps); err != nil {
 			return nil, err
 		}
 		status := "подготовлена"
@@ -137,7 +137,7 @@ func BuildFragment(ctx context.Context, root, from, to string, out func(line str
 		if err != nil {
 			return nil, err
 		}
-		chapters = append(chapters, "[CHAPTER]", "TIMEBASE=1/"+strconv.Itoa(fps), "START="+strconv.FormatInt(start-startFrame, 10),
+		chapters = append(chapters, "[CHAPTER]", "TIMEBASE=1/"+strconv.FormatInt(prepared.fps, 10), "START="+strconv.FormatInt(start-startFrame, 10),
 			"END="+strconv.FormatInt(end-startFrame, 10), "title="+toolrt.Str(shot.Value("id")))
 	}
 	metadata := toolrt.JoinPath(work, "chapters.ffmeta")
@@ -149,13 +149,13 @@ func BuildFragment(ctx context.Context, root, from, to string, out func(line str
 	if _, err := run(ctx, mediacmd.FFmpeg(),
 		"-v", "error", "-nostdin", "-n", "-f", "concat", "-safe", "0", "-i", listing,
 		// Поиск по входу при перекодировании точен до отсчёта: участок песни совпадает с окнами планов.
-		"-ss", seconds(startFrame), "-t", seconds(total), "-i", toolrt.JoinPath(root, prepared.track), "-i", metadata,
+		"-ss", seconds(startFrame, prepared.fps), "-t", seconds(total, prepared.fps), "-i", toolrt.JoinPath(root, prepared.track), "-i", metadata,
 		"-map", "0:v:0", "-map", "1:a:0", "-map_metadata", "2", "-map_chapters", "2",
 		"-c:v", "copy", "-c:a", "aac", "-ac", "2", "-ar", "44100", "-threads", "1", "-b:a", "192k",
 		"-af", "asetpts=PTS-STARTPTS", "-movflags", "+faststart", video); err != nil {
 		return nil, err
 	}
-	if err := checkFragment(ctx, video, shots, total); err != nil {
+	if err := checkFragment(ctx, video, shots, total, prepared.fps); err != nil {
 		return nil, err
 	}
 	target := toolrt.JoinPath(root, FragmentFile)
@@ -171,14 +171,14 @@ func BuildFragment(ctx context.Context, root, from, to string, out func(line str
 	}
 	return toolcli.Record(
 		"status", "passed", "video", FragmentFile, "video_sha256", digest, "from", from, "to", to,
-		"shots", toolrt.NewInt(int64(len(shots))), "start", seconds(startFrame), "end", seconds(endFrame),
+		"shots", toolrt.NewInt(int64(len(shots))), "start", seconds(startFrame, prepared.fps), "end", seconds(endFrame, prepared.fps),
 	), nil
 }
 
 // checkFragment — проверки готового фрагмента: формат и число кадров окна, глава на план, стерео
 // 44,1 кГц и звук на всю длину окна (расхождение не больше одного кадра: вырезка MP3 по
 // отсчётам), затем полное декодирование.
-func checkFragment(ctx context.Context, video string, shots []*toolrt.Dict, total int64) error {
+func checkFragment(ctx context.Context, video string, shots []*toolrt.Dict, total, fps int64) error {
 	info, err := probe(ctx, video)
 	if err != nil {
 		return err
@@ -191,7 +191,7 @@ func checkFragment(ctx context.Context, video string, shots []*toolrt.Dict, tota
 	if err != nil {
 		return err
 	}
-	ok, err := videoMatches(v, toolrt.NewInt(total))
+	ok, err := videoMatches(v, toolrt.NewInt(total), fps)
 	if err != nil {
 		return err
 	}
@@ -219,8 +219,9 @@ func checkFragment(ctx context.Context, video string, shots []*toolrt.Dict, tota
 		if err != nil {
 			return err
 		}
-		difference := duration - float64(total)/fps
-		ok = toolrt.Equal(channels, toolrt.NewInt(2)) && toolrt.Equal(rate, "44100") && difference <= 1.0/fps && difference >= -1.0/fps
+		step := 1.0 / float64(fps)
+		difference := duration - float64(total)*step
+		ok = toolrt.Equal(channels, toolrt.NewInt(2)) && toolrt.Equal(rate, "44100") && difference <= step && difference >= -step
 	}
 	if !ok {
 		return toolrt.New(toolrt.ValueError, textFragmentInvalid)

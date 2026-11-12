@@ -42,9 +42,6 @@ import (
 	"songframe/internal/toolrt"
 )
 
-// fps — кадровая частота шкалы монтажа и выходного видео.
-const fps = mediacmd.FPS
-
 // Тексты отказов сборки; зафиксированы эталоном build-animatic.
 const (
 	textCardsReceiptMissing = "Нет манифеста карточек; обновите представления реестра сцен."
@@ -188,9 +185,9 @@ func toInt(value any) (toolrt.Int, error) {
 	return toolrt.Int{}, toolrt.Raise(toolrt.TypeError, "ожидается число или строка, получено: %s", toolrt.TypeName(value))
 }
 
-// frame — секунды как точное десятичное число, умноженные на 30, с округлением половины от нуля
-// до целого кадра.
-func frame(seconds any) (toolrt.Int, error) {
+// frame — секунды как точное десятичное число, умноженные на частоту кадров проекта fps, с
+// округлением половины от нуля до целого кадра.
+func frame(seconds any, fps int64) (toolrt.Int, error) {
 	value, err := toolrt.NewDecimal(seconds)
 	if err != nil {
 		return toolrt.Int{}, err
@@ -241,7 +238,7 @@ func streamOf(info any, kind string) (any, error) {
 // «30/1» и frames.
 // Поля читаются до сравнения, поэтому отсутствующее поле — KeyError, а нечисловой nb_frames —
 // ValueError.
-func videoMatches(stream any, frames any) (bool, error) {
+func videoMatches(stream any, frames any, fps int64) (bool, error) {
 	values := make([]any, 4)
 	for index, key := range []string{"width", "height", "r_frame_rate", "nb_frames"} {
 		value, err := item(stream, key)
@@ -255,7 +252,7 @@ func videoMatches(stream any, frames any) (bool, error) {
 		return false, err
 	}
 	values[3] = count
-	expected := []any{toolrt.NewInt(1920), toolrt.NewInt(1080), "30/1", frames}
+	expected := []any{toolrt.NewInt(1920), toolrt.NewInt(1080), strconv.FormatInt(fps, 10) + "/1", frames}
 	for index := range values {
 		if !toolrt.Equal(values[index], expected[index]) {
 			return false, nil
@@ -270,6 +267,8 @@ type plan struct {
 	shots    []*toolrt.Dict
 	track    string
 	trackSHA string
+	// fps — частота кадров проекта: шкала монтажа, фрагментов и выходного видео.
+	fps int64
 }
 
 // PreparePlan — планы реестра с выбранным входом каждого (media, path, sha256
@@ -294,6 +293,10 @@ func preparePlan(ctx context.Context, root string) (*plan, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := sceneregistry.SameFPS(root, registry); err != nil {
+		return nil, err
+	}
+	fps := sceneregistry.FPS(registry.Value("fps"))
 	initial, err := sceneregistry.InitialStatesFor(root)
 	if err != nil {
 		return nil, err
@@ -317,7 +320,7 @@ func preparePlan(ctx context.Context, root string) (*plan, error) {
 		manifest := toolrt.JoinPath(folder, "manifest.json")
 		var source string
 		if toolrt.IsFile(manifest) {
-			if source, err = acceptedEdit(root, folder, manifest, shot); err != nil {
+			if source, err = acceptedEdit(root, folder, manifest, shot, fps); err != nil {
 				return nil, err
 			}
 		} else {
@@ -369,12 +372,12 @@ func preparePlan(ctx context.Context, root string) (*plan, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &plan{shots: shots, track: "source/track.mp3", trackSHA: trackSHA}, nil
+	return &plan{shots: shots, track: "source/track.mp3", trackSHA: trackSHA, fps: fps}, nil
 }
 
 // acceptedEdit — ветка готовой сцены prepare_plan: accepted_edit.video комплекта совпадает с
 // планом по ID, SHA-256, fps и числу кадров; план получает media=video и путь клипа.
-func acceptedEdit(root, folder, manifest string, shot *toolrt.Dict) (string, error) {
+func acceptedEdit(root, folder, manifest string, shot *toolrt.Dict, fps int64) (string, error) {
 	pkg, err := toolrt.LoadJSONFile(manifest)
 	if err != nil {
 		return "", err
@@ -691,7 +694,7 @@ func mediaCounts(shots []*toolrt.Dict) (video, cards, keyframes int64) {
 // из кэша или новый. Готовый клип не обрезается и не меняет скорость; карточка масштабируется в
 // 1920×1080 и удерживается окно плана; карточка опор — удержание первой опоры, растворение в
 // последнюю и удержание последней (40 / 20 / 40 % окна). Новый фрагмент проверяется ffprobe.
-func segment(ctx context.Context, cache *artifactCache, root string, shot *toolrt.Dict, toolchain string) (string, error) {
+func segment(ctx context.Context, cache *artifactCache, root string, shot *toolrt.Dict, toolchain string, fps int64) (string, error) {
 	media := shot.Value("media")
 	vf := "setpts=PTS-STARTPTS,setsar=1"
 	if media == "card" || media == "keyframes" {
@@ -699,7 +702,7 @@ func segment(ctx context.Context, cache *artifactCache, root string, shot *toolr
 	}
 	recipe := toolcli.Record(
 		"schema", toolrt.NewInt(2), "sha256", shot.Value("sha256"), "media", media, "frames", shot.Value("frames"),
-		"filter", vf, "encode", toolcli.Strings(mediacmd.Encode), "toolchain", toolchain,
+		"filter", vf, "encode", toolcli.Strings(mediacmd.Encode(fps)), "toolchain", toolchain,
 	)
 	if media == "keyframes" {
 		recipe.Set("sha256_last", shot.Value("sha256_last"))
@@ -716,7 +719,7 @@ func segment(ctx context.Context, cache *artifactCache, root string, shot *toolr
 			if err != nil {
 				return nil, err
 			}
-			ok, err := videoMatches(stream, frames)
+			ok, err := videoMatches(stream, frames, fps)
 			if err != nil {
 				return nil, err
 			}
@@ -735,21 +738,21 @@ func segment(ctx context.Context, cache *artifactCache, root string, shot *toolr
 			fade := max(1, min(int64(math.RoundToEven(float64(total)*0.2)), total-offset))
 			graph := "[0:v]scale=1920:1080:flags=lanczos,setsar=1,format=yuv420p[a];" +
 				"[1:v]scale=1920:1080:flags=lanczos,setsar=1,format=yuv420p[b];" +
-				"[a][b]xfade=transition=fade:duration=" + seconds(fade) + ":" +
-				"offset=" + seconds(offset) + ",setpts=PTS-STARTPTS[v]"
-			args = append(args, "-loop", "1", "-framerate", strconv.Itoa(fps), "-t", seconds(offset+fade), "-i", source,
-				"-loop", "1", "-framerate", strconv.Itoa(fps), "-t", seconds(total-offset), "-i",
+				"[a][b]xfade=transition=fade:duration=" + seconds(fade, fps) + ":" +
+				"offset=" + seconds(offset, fps) + ",setpts=PTS-STARTPTS[v]"
+			args = append(args, "-loop", "1", "-framerate", strconv.FormatInt(fps, 10), "-t", seconds(offset+fade, fps), "-i", source,
+				"-loop", "1", "-framerate", strconv.FormatInt(fps, 10), "-t", seconds(total-offset, fps), "-i",
 				toolrt.JoinPath(root, toolrt.Str(shot.Value("path_last"))),
 				"-filter_complex", graph, "-map", "[v]")
 		} else {
 			if media == "video" {
 				args = append(args, "-i", source)
 			} else {
-				args = append(args, "-loop", "1", "-framerate", strconv.Itoa(fps), "-i", source)
+				args = append(args, "-loop", "1", "-framerate", strconv.FormatInt(fps, 10), "-i", source)
 			}
 			args = append(args, "-map", "0:v:0", "-vf", vf)
 		}
-		args = append(append(args, mediacmd.Encode...), "-frames:v", strconv.FormatInt(total, 10), path)
+		args = append(append(args, mediacmd.Encode(fps)...), "-frames:v", strconv.FormatInt(total, 10), path)
 		if _, err := run(ctx, mediacmd.FFmpeg(), args...); err != nil {
 			return nil, err
 		}
@@ -761,7 +764,7 @@ func segment(ctx context.Context, cache *artifactCache, root string, shot *toolr
 		if err != nil {
 			return nil, err
 		}
-		ok, err := videoMatches(stream, frames)
+		ok, err := videoMatches(stream, frames, fps)
 		if err != nil {
 			return nil, err
 		}
@@ -773,9 +776,9 @@ func segment(ctx context.Context, cache *artifactCache, root string, shot *toolr
 	return cache.obtain("segments", recipe, ".mp4", produce)
 }
 
-// seconds — f"{frames / FPS:.6f}": время в секундах с шестью знаками.
-func seconds(frames int64) string {
-	return strconv.FormatFloat(float64(frames)/fps, 'f', 6, 64)
+// seconds — время frames кадров при частоте fps в секундах с шестью знаками.
+func seconds(frames, fps int64) string {
+	return strconv.FormatFloat(float64(frames)/float64(fps), 'f', 6, 64)
 }
 
 // metadataSpecial — символы FFmetadata, которые экранируются обратной косой чертой.
@@ -825,7 +828,7 @@ func Build(ctx context.Context, root string, planOnly bool, out func(line string
 	}
 	parts := make([]string, 0, len(shots))
 	for _, shot := range shots {
-		part, err := segment(ctx, cache, root, shot, toolchain)
+		part, err := segment(ctx, cache, root, shot, toolchain, prepared.fps)
 		if err != nil {
 			return nil, err
 		}
@@ -885,15 +888,15 @@ func assemble(ctx context.Context, root string, cache *artifactCache, shots []*t
 	title := metadataSpecial.ReplaceAllString(toolrt.Str(project.Value("name"))+" — текущий аниматик", `\$1`)
 	chapters := []string{";FFMETADATA1", "title=" + title}
 	for _, shot := range shots {
-		start, err := frame(shot.Value("start"))
+		start, err := frame(shot.Value("start"), prepared.fps)
 		if err != nil {
 			return nil, err
 		}
-		end, err := frame(shot.Value("end"))
+		end, err := frame(shot.Value("end"), prepared.fps)
 		if err != nil {
 			return nil, err
 		}
-		chapters = append(chapters, "[CHAPTER]", "TIMEBASE=1/30", "START="+start.String(), "END="+end.String(), "title="+toolrt.Str(shot.Value("id")))
+		chapters = append(chapters, "[CHAPTER]", "TIMEBASE=1/"+strconv.FormatInt(prepared.fps, 10), "START="+start.String(), "END="+end.String(), "title="+toolrt.Str(shot.Value("id")))
 	}
 	metadata := toolrt.JoinPath(work, "chapters.ffmeta")
 	if err := writeText(metadata, strings.Join(chapters, "\n")+"\n"); err != nil {
@@ -921,7 +924,7 @@ func assemble(ctx context.Context, root string, cache *artifactCache, shots []*t
 	if err != nil {
 		return nil, err
 	}
-	if err := checkResult(info, v, a, shots); err != nil {
+	if err := checkResult(info, v, a, shots, prepared.fps); err != nil {
 		return nil, err
 	}
 	if _, err := run(ctx, mediacmd.FFmpeg(), "-v", "error", "-threads", "2", "-i", video, "-f", "null", "-"); err != nil {
@@ -959,15 +962,15 @@ func parts(cache *artifactCache) []string {
 	return result
 }
 
-// checkResult — проверки готового MP4: 1920×1080, 30 к/с, число кадров до конца последнего
+// checkResult — проверки готового MP4: 1920×1080, частота проекта, число кадров до конца последнего
 // плана на кадровой сетке, по главе на план, стерео 44,1 кГц и звук песни до её конца
 // (расхождение не больше 3 мс).
-func checkResult(info, v, a any, shots []*toolrt.Dict) error {
-	end, err := frame(shots[len(shots)-1].Value("end"))
+func checkResult(info, v, a any, shots []*toolrt.Dict, fps int64) error {
+	end, err := frame(shots[len(shots)-1].Value("end"), fps)
 	if err != nil {
 		return err
 	}
-	ok, err := videoMatches(v, end)
+	ok, err := videoMatches(v, end, fps)
 	if err != nil {
 		return err
 	}
@@ -1130,7 +1133,7 @@ func manifestOf(v, a any, shots []*toolrt.Dict, prepared *plan, inputs *toolrt.D
 	}
 	return toolcli.Record(
 		"schema_version", toolrt.NewInt(1), "version", "latest", "path_base", "project_root",
-		"resolution", []any{toolrt.NewInt(1920), toolrt.NewInt(1080)}, "fps", toolrt.NewInt(fps),
+		"resolution", []any{toolrt.NewInt(1920), toolrt.NewInt(1080)}, "fps", toolrt.NewInt(prepared.fps),
 		"total_frames", total, "video_duration", videoDuration, "source_audio", prepared.track,
 		"source_audio_sha256", prepared.trackSHA, "source_audio_duration", audioDuration,
 		"scene_registry_sha256", registryDigest, "project_inputs", inputs, "shots", list, "source_hashes", hashes,

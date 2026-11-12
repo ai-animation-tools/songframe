@@ -1,6 +1,7 @@
 {
   "name": "Клип 2",
   "animatic_video": "b.mp4",
+  "fps": 30,
   "generation": 5,
   "schema_version": 1
 }

@@ -83,3 +83,17 @@ func TestRenderPlaceholders(t *testing.T) {
 		t.Fatal("выбор текстовых файлов отличается от эталона")
 	}
 }
+
+// TestValidateFrameRate — частота формы: 0 означает частоту по умолчанию, допустимые проходят,
+// иные дают проблему формы.
+func TestValidateFrameRate(t *testing.T) {
+	base := Input{Name: "Клип", Path: filepath.Join(t.TempDir(), "new")}
+	for fps, ok := range map[int]bool{0: true, 24: true, 25: true, 30: true, 60: false, 12: false} {
+		input := base
+		input.FPS = fps
+		problems := Validate(input)
+		if ok != (len(problems) == 0) || (!ok && problems[0] != invalidFrameRate) {
+			t.Fatalf("fps %d: %v", fps, problems)
+		}
+	}
+}

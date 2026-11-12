@@ -1,0 +1,33 @@
+{
+  "error": null,
+  "status": {
+    "path": "<base>/Night Drive",
+    "state": "empty",
+    "name": "Night Drive 2",
+    "animaticVideo": "night-drive-2-animatic.mp4",
+    "fps": 24,
+    "checks": {
+      "marker": true,
+      "sources": false,
+      "timing": false,
+      "cast": false,
+      "treatment": false,
+      "scenes": false,
+      "shotsTotal": 0,
+      "shotsDone": 0,
+      "animaticBuilt": false,
+      "animaticFresh": false,
+      "animaticApproved": false
+    },
+    "problems": []
+  },
+  "state": {
+    "current": "<base>/Night Drive",
+    "history": [
+      {
+        "path": "<base>/Night Drive",
+        "name": "Night Drive 2"
+      }
+    ]
+  }
+}

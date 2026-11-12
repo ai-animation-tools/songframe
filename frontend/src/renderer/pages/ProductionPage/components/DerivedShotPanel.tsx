@@ -15,9 +15,11 @@ import { useDerivedShot } from '../useDerivedShot';
 import { recipeInfo } from '../derivedRecipeForm';
 import { DerivedRecipeFields } from './DerivedRecipeFields';
 import { DerivedShotPreview } from './DerivedShotPreview';
+import { useProjectFps } from '../../../hooks/useProjectFps';
 
 /** Отдельная локальная сборка заменяет подготовку нового платного запроса у производного плана. */
 export function DerivedShotPanel({ project, shot, onApplied }: { project: string; shot: string; onApplied(): Promise<void> }): ReactElement {
+  const fps = useProjectFps();
   const form = useDerivedShot(project, shot, onApplied);
   const { view, reasons } = form;
   const error = form.error ? (
@@ -52,7 +54,7 @@ export function DerivedShotPanel({ project, shot, onApplied }: { project: string
           <>
             <Typography variant="subtitle2">{texts.source({ shot: view.sourceShot ?? '—', title: view.sourceTitle })}</Typography>
             <Typography variant="body2" color="text.secondary">
-              {texts.sourceFrames({ frames: view.sourceFrames })}
+              {texts.sourceFrames({ frames: view.sourceFrames, fps })}
             </Typography>
             {view.sourcePath ? (
               <Box
@@ -65,7 +67,7 @@ export function DerivedShotPanel({ project, shot, onApplied }: { project: string
                 sx={{ width: '100%', maxHeight: 300, borderRadius: 1, bgcolor: 'common.black' }}
               />
             ) : null}
-            <Typography variant="subtitle2">{texts.targetFrames({ frames: view.targetFrames })}</Typography>
+            <Typography variant="subtitle2">{texts.targetFrames({ frames: view.targetFrames, fps })}</Typography>
             {view.action ? (
               <Box>
                 <Typography variant="subtitle2">{texts.action}</Typography>

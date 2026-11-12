@@ -5,6 +5,7 @@
     "state": "empty",
     "name": "Клип {{animatic_video}}",
     "animaticVideo": "final_cut.v2.mp4",
+    "fps": 30,
     "checks": {
       "marker": true,
       "sources": false,

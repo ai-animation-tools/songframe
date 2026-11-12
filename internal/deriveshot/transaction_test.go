@@ -315,8 +315,8 @@ func TestBuildNoticesChangesDuringRender(t *testing.T) {
 	}
 	song := toolrt.JoinPath(f.project, "source/track.mp3")
 	render := renderEdit
-	replaced(t, &renderEdit, func(ctx context.Context, original, filter string, frames toolrt.Int, target string) error {
-		if err := render(ctx, original, filter, frames, target); err != nil {
+	replaced(t, &renderEdit, func(ctx context.Context, original, filter string, frames toolrt.Int, target string, fps int64) error {
+		if err := render(ctx, original, filter, frames, target, fps); err != nil {
 			return err
 		}
 		file, err := os.OpenFile(song, os.O_APPEND|os.O_WRONLY, 0)
@@ -366,7 +366,7 @@ func TestCancelDuringBuild(t *testing.T) {
 		t.Fatal(err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	replaced(t, &renderEdit, func(ctx context.Context, _, _ string, _ toolrt.Int, _ string) error {
+	replaced(t, &renderEdit, func(ctx context.Context, _, _ string, _ toolrt.Int, _ string, _ int64) error {
 		cancel()
 		return ctx.Err()
 	})

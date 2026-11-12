@@ -7,7 +7,6 @@ import { useId, useLayoutEffect, useMemo, useRef, useState, type ReactElement } 
 import { Alert, Box, Button, FormControl, InputLabel, MenuItem, Paper, Select, Stack, TextField, Typography } from '@mui/material';
 import { VideoLibrary } from '@mui/icons-material';
 import type { MontageSource } from '@shared/montage';
-import { FPS } from '@shared/video';
 import { ActionButton } from '../../components/ActionButton';
 import { ActionIconButton } from '../../components/ActionIconButton';
 import { DateTime } from '../../components/DateTime';
@@ -36,12 +35,14 @@ import { useThemeMode } from '../../theme';
 import { useDetachedMontage } from './useDetachedMontage';
 import { useHeaderHeight } from '../../components/headerHeight';
 import { LinkedText } from '../../components/LinkedText';
+import { useProjectFps } from '../../hooks/useProjectFps';
 
 const SPLIT_KEY = 'montage-preview-split';
 const DIVIDER_HEIGHT = 20;
 
 /** Рабочая область монтируется заново при смене проекта или набора сцен, включая все медиаплееры. */
 export function MontageWorkspace({ project, shots, preferred = {} }: { project: string; shots: string[]; preferred?: Record<string, string> }): ReactElement {
+  const fps = useProjectFps();
   const page = useMontage(project, shots, preferred);
   const savedLabelId = useId();
   const previewPanelId = useId();
@@ -382,7 +383,7 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
               trackUrl={trackUrl}
               lyricLines={draft.audio.path === view.trackPath ? view.lyricLines : []}
               lyricProblem={draft.audio.path === view.trackPath ? view.lyricProblem : montageTexts.differentTrack}
-              duration={trackFrames === null ? (view.duration ?? 0) : trackFrames / FPS}
+              duration={trackFrames === null ? (view.duration ?? 0) : trackFrames / fps}
               frame={page.frame}
               selected={page.selected}
               onSelect={page.setSelected}

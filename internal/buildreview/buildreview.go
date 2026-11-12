@@ -29,9 +29,6 @@ import (
 	"songframe/internal/toolrt"
 )
 
-// FPS — монтажная сетка пробы.
-const FPS = 30
-
 // transitions — допустимые типы перехода xfade.
 var transitions = map[string]bool{"fade": true, "fadeblack": true, "fadewhite": true, "dissolve": true, "wipeleft": true, "wiperight": true}
 
@@ -69,8 +66,12 @@ const (
 	textInputChanged = "Вход изменился во время сборки."
 	textRegistryRun  = "Реестр изменился во время сборки пробы."
 	textOutsideAsset = "Файл комплекта находится вне папки ассета."
-	textTransform    = "Масштаб с сохранением пропорций и полями; все временные преобразования записаны по кадрам при 30 FPS."
 )
+
+// textTransform — пояснение преобразований рецепта на сетке частоты проекта fps.
+func textTransform(fps int64) string {
+	return "Масштаб с сохранением пропорций и полями; все временные преобразования записаны по кадрам при " + strconv.FormatInt(fps, 10) + " FPS."
+}
 
 func valueError(message string) error { return toolrt.New(toolrt.ValueError, message) }
 
@@ -262,6 +263,10 @@ func Prepare(ctx context.Context, spec any, root string) (*toolrt.Dict, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := sceneregistry.SameFPS(root, data); err != nil {
+		return nil, err
+	}
+	fps := sceneregistry.FPS(data.Value("fps"))
 	initial, err := sceneregistry.InitialStatesFor(root)
 	if err != nil {
 		return nil, err
@@ -299,7 +304,7 @@ func Prepare(ctx context.Context, spec any, root string) (*toolrt.Dict, error) {
 	seen := map[string]bool{}
 	var receipt any
 	for _, config := range configs {
-		item, err := prepareShot(ctx, root, config, byID, seen, &receipt, scenesPath)
+		item, err := prepareShot(ctx, root, config, byID, seen, &receipt, scenesPath, fps)
 		if err != nil {
 			return nil, err
 		}
@@ -378,7 +383,7 @@ func Prepare(ctx context.Context, spec any, root string) (*toolrt.Dict, error) {
 	}
 	// Конец песни округляется к ближайшему кадру так же, как монтажная шкала.
 	// Остаток до этой границы дополняется тишиной, но более длинная нехватка запрещена.
-	songFrames, err := framesTimesFPS(duration)
+	songFrames, err := framesTimesFPS(duration, fps)
 	if err != nil {
 		return nil, err
 	}
@@ -386,8 +391,8 @@ func Prepare(ctx context.Context, spec any, root string) (*toolrt.Dict, error) {
 	if end.Cmp(songFrames) > 0 {
 		return nil, valueError(textSongShort)
 	}
-	filter := "aresample=44100,atrim=start_sample=" + mulInt(audioStart, 1470).String() + ":end_sample=" + mulInt(end, 1470).String() +
-		",asetpts=PTS-STARTPTS,apad=whole_len=" + mulInt(total, 1470).String() + ",atrim=end_sample=" + mulInt(total, 1470).String()
+	filter := "aresample=44100,atrim=start_sample=" + samples(audioStart, fps).String() + ":end_sample=" + samples(end, fps).String() +
+		",asetpts=PTS-STARTPTS,apad=whole_len=" + samples(total, fps).String() + ",atrim=end_sample=" + samples(total, fps).String()
 	if digest, err := sha(scenesPath); err != nil {
 		return nil, err
 	} else if digest != registryDigest {
@@ -401,14 +406,14 @@ func Prepare(ctx context.Context, spec any, root string) (*toolrt.Dict, error) {
 	for index, item := range items {
 		shotList[index] = item
 	}
-	durationSeconds, err := secondsFloat(total)
+	durationSeconds, err := secondsFloat(total, fps)
 	if err != nil {
 		return nil, err
 	}
 	return toolcli.Record(
 		"schema_version", toolrt.NewInt(1),
 		"scene_registry_sha256", registryDigest,
-		"fps", toolrt.NewInt(FPS),
+		"fps", toolrt.NewInt(fps),
 		"resolution", []any{toolrt.NewInt(1920), toolrt.NewInt(1080)},
 		"shots", shotList,
 		"transitions", joins,
@@ -421,7 +426,7 @@ func Prepare(ctx context.Context, spec any, root string) (*toolrt.Dict, error) {
 			"end_frame_exclusive", newInt(end),
 			"filter", filter,
 		),
-		"transform", textTransform,
+		"transform", textTransform(fps),
 	), nil
 }
 
@@ -444,7 +449,7 @@ func overlap(joins *toolrt.Dict, item *toolrt.Dict) *big.Int {
 
 // prepareShot — тело цикла по участкам Prepare: выбор материала (явный path, принятый монтаж
 // или карточка реестра), проверка окна, скорости и удержаний и цепочка фильтров участка.
-func prepareShot(ctx context.Context, root string, config any, byID map[string]registryShot, seen map[string]bool, receipt *any, scenesPath string) (*toolrt.Dict, error) {
+func prepareShot(ctx context.Context, root string, config any, byID map[string]registryShot, seen map[string]bool, receipt *any, scenesPath string, fps int64) (*toolrt.Dict, error) {
 	if extra, err := unknownKeys(config, "scene", "path", "kind", "source_start_frame", "source_end_frame_exclusive", "speed", "hold_first_frames", "hold_last_frames"); err != nil || extra {
 		return nil, firstError(err, textShotFields)
 	}
@@ -495,7 +500,7 @@ func prepareShot(ctx context.Context, root string, config any, byID map[string]r
 		}
 	case toolrt.IsFile(packagePath):
 		kind, origin = "video", "accepted_edit"
-		if path, err = acceptedEdit(packagePath, sid, sceneFrames); err != nil {
+		if path, err = acceptedEdit(packagePath, sid, sceneFrames, fps); err != nil {
 			return nil, err
 		}
 	default:
@@ -574,7 +579,7 @@ func prepareShot(ctx context.Context, root string, config any, byID map[string]r
 		return nil, valueError(textShort)
 	}
 	if kind == "video" {
-		available, err := availableFrames(ctx, path)
+		available, err := availableFrames(ctx, path, fps)
 		if err != nil {
 			return nil, err
 		}
@@ -582,13 +587,14 @@ func prepareShot(ctx context.Context, root string, config any, byID map[string]r
 			return nil, valueError(sid + ": выбранный участок выходит за пределы видео.")
 		}
 	}
+	rate := strconv.FormatInt(fps, 10)
 	filters := []string{}
 	if kind == "video" {
 		filters = append(filters,
-			"fps=30",
+			"fps="+rate,
 			"trim=start_frame="+start.String()+":end_frame="+end.String(),
 			"setpts=(PTS-STARTPTS)/"+speedString,
-			"fps=30",
+			"fps="+rate,
 			"tpad=stop_mode=clone:stop=1",
 			"trim=end_frame="+motion.String(),
 		)
@@ -600,27 +606,27 @@ func prepareShot(ctx context.Context, root string, config any, byID map[string]r
 	// вне приложения) не получает чёрных полей. Последний кадр дополняет только округление
 	// длительности до сетки.
 	filters = append(filters,
-		"setpts=N/(30*TB)",
+		"setpts=N/("+rate+"*TB)",
 		"scale=1920:1080:force_original_aspect_ratio=increase:flags=lanczos",
 		"crop=1920:1080",
 		"setsar=1",
 		"format=yuv420p",
 		"tpad=start_mode=clone:start="+holdFirst.String()+":stop_mode=clone:stop="+holdLast.String(),
-		"settb=1/30",
+		"settb=1/"+rate,
 	)
 	digest, err := sha(path)
 	if err != nil {
 		return nil, err
 	}
-	startSeconds, err := secondsFloat(start)
+	startSeconds, err := secondsFloat(start, fps)
 	if err != nil {
 		return nil, err
 	}
-	endSeconds, err := secondsFloat(end)
+	endSeconds, err := secondsFloat(end, fps)
 	if err != nil {
 		return nil, err
 	}
-	change, err := secondsFloat(subInt(motion, subInt(end, start)))
+	change, err := secondsFloat(subInt(motion, subInt(end, start)), fps)
 	if err != nil {
 		return nil, err
 	}
@@ -645,7 +651,7 @@ func prepareShot(ctx context.Context, root string, config any, byID map[string]r
 
 // acceptedEdit — принятый монтаж готовой сцены из её манифеста; повреждённый или чужой монтаж
 // карточкой не заменяется.
-func acceptedEdit(packagePath, sid string, sceneFrames *big.Int) (string, error) {
+func acceptedEdit(packagePath, sid string, sceneFrames *big.Int, rate int64) (string, error) {
 	pkg, err := toolrt.LoadJSONFile(packagePath)
 	if err != nil {
 		return "", err
@@ -689,7 +695,7 @@ func acceptedEdit(packagePath, sid string, sceneFrames *big.Int) (string, error)
 	if err != nil {
 		return "", err
 	}
-	if !toolrt.Equal(fps, toolrt.NewInt(FPS)) {
+	if !toolrt.Equal(fps, toolrt.NewInt(rate)) {
 		return "", mismatch
 	}
 	count, err := toolrt.Item(edit, "frames")
@@ -770,9 +776,9 @@ func checkCard(root, sid, path string, receipt *any, scenesPath string) error {
 	return nil
 }
 
-// availableFrames — длина ролика в кадрах сетки 30 к/с: nb_frames у потока 30/1, иначе
-// длительность × 30 с округлением половины вверх.
-func availableFrames(ctx context.Context, path string) (*big.Int, error) {
+// availableFrames — длина ролика в кадрах сетки проекта fps: nb_frames у потока с той же частотой,
+// иначе длительность × fps с округлением половины вверх.
+func availableFrames(ctx context.Context, path string, fps int64) (*big.Int, error) {
 	meta, err := probe(ctx, path)
 	if err != nil {
 		return nil, err
@@ -795,7 +801,7 @@ func availableFrames(ctx context.Context, path string) (*big.Int, error) {
 	for _, r := range text {
 		digits = digits && toolrt.DigitValue(r) >= 0
 	}
-	if toolrt.Equal(rate, "30/1") && digits {
+	if toolrt.Equal(rate, strconv.FormatInt(fps, 10)+"/1") && digits {
 		value, ok := toolrt.ParseIntText(text)
 		if !ok {
 			return nil, toolrt.Raise(toolrt.ValueError, "не целое число: %s", toolrt.Repr(text))
@@ -810,7 +816,7 @@ func availableFrames(ctx context.Context, path string) (*big.Int, error) {
 	if err != nil {
 		return nil, err
 	}
-	return framesTimesFPS(duration)
+	return framesTimesFPS(duration, fps)
 }
 
 // prepareTransitions — переходы по стыкам: after — план (не последний), тип из TRANSITIONS,
@@ -960,12 +966,14 @@ func render(ctx context.Context, plan *toolrt.Dict, root, temporary string) erro
 	joins := plan.Value("transitions").(*toolrt.Dict)
 	audio := plan.Value("audio").(*toolrt.Dict)
 	total := bigInt(plan.Value("total_frames").(toolrt.Int))
+	fps := sceneregistry.FPS(plan.Value("fps"))
+	rate := strconv.FormatInt(fps, 10)
 	argv := []string{"-v", "error", "-nostdin", "-n"}
 	graph := []string{}
 	for index, raw := range shots {
 		item := raw.(*toolrt.Dict)
 		if item.Value("kind") == "card" {
-			argv = append(argv, "-loop", "1", "-framerate", "30")
+			argv = append(argv, "-loop", "1", "-framerate", rate)
 		}
 		argv = append(argv, "-i", item.Value("path").(string))
 		graph = append(graph, "["+strconv.Itoa(index)+":v]"+item.Value("filter").(string)+"[s"+strconv.Itoa(index)+"]")
@@ -987,17 +995,17 @@ func render(ctx context.Context, plan *toolrt.Dict, root, temporary string) erro
 		}
 		cut := subInt(length, overlapFrames)
 		if kind != "cut" {
-			duration, err := seconds(overlapFrames)
+			duration, err := seconds(overlapFrames, fps)
 			if err != nil {
 				return err
 			}
-			offset, err := seconds(cut)
+			offset, err := seconds(cut, fps)
 			if err != nil {
 				return err
 			}
 			graph = append(graph, "["+current+"][s"+strconv.Itoa(index)+"]xfade=transition="+kind+":duration="+duration+":offset="+offset+"["+label+"]")
 		} else {
-			graph = append(graph, "["+current+"][s"+strconv.Itoa(index)+"]concat=n=2:v=1:a=0,settb=1/30["+label+"]")
+			graph = append(graph, "["+current+"][s"+strconv.Itoa(index)+"]concat=n=2:v=1:a=0,settb=1/"+rate+"["+label+"]")
 		}
 		cuts = append(cuts, toolcli.Record(
 			"after", previous,
@@ -1035,7 +1043,7 @@ func render(ctx context.Context, plan *toolrt.Dict, root, temporary string) erro
 	if _, err := run(ctx, mediacmd.FFmpeg(), argv...); err != nil {
 		return err
 	}
-	if err := checkResult(ctx, target, total); err != nil {
+	if err := checkResult(ctx, target, total, fps); err != nil {
 		return err
 	}
 	for _, raw := range append(append([]any{}, shots...), audio) {
@@ -1062,8 +1070,8 @@ func render(ctx context.Context, plan *toolrt.Dict, root, temporary string) erro
 	return nil
 }
 
-// checkResult — проба 1920×1080 при 30/1 ровно с total кадрами, песня — той же длины ±3 мс.
-func checkResult(ctx context.Context, target string, total *big.Int) error {
+// checkResult — проба 1920×1080 при частоте проекта ровно с total кадрами, песня — той же длины ±3 мс.
+func checkResult(ctx context.Context, target string, total *big.Int, fps int64) error {
 	meta, err := probe(ctx, target)
 	if err != nil {
 		return err
@@ -1090,7 +1098,7 @@ func checkResult(ctx context.Context, target string, total *big.Int) error {
 	if !ok {
 		return toolrt.Raise(toolrt.ValueError, "не целое число: %s", toolrt.Repr(values[0]))
 	}
-	if bigInt(count).Cmp(total) != 0 || !toolrt.Equal(values[1], "30/1") || !toolrt.Equal(values[2], toolrt.NewInt(1920)) || !toolrt.Equal(values[3], toolrt.NewInt(1080)) {
+	if bigInt(count).Cmp(total) != 0 || !toolrt.Equal(values[1], strconv.FormatInt(fps, 10)+"/1") || !toolrt.Equal(values[2], toolrt.NewInt(1920)) || !toolrt.Equal(values[3], toolrt.NewInt(1080)) {
 		return valueError(textBadFormat)
 	}
 	durationValue, err := toolrt.Item(music, "duration")
@@ -1101,7 +1109,7 @@ func checkResult(ctx context.Context, target string, total *big.Int) error {
 	if err != nil {
 		return err
 	}
-	expected, err := decimalOf(total).Div(toolrt.DecimalInt(FPS))
+	expected, err := decimalOf(total).Div(toolrt.DecimalInt(fps))
 	if err != nil {
 		return err
 	}

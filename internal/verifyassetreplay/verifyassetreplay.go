@@ -18,7 +18,9 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"songframe/internal/sceneregistry"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -254,7 +256,10 @@ func verify(ctx context.Context, root string, shot any, temporary string) (*tool
 	if err != nil {
 		return nil, err
 	}
-	if err := checkMeta(sid, meta, frames); err != nil {
+	// Частота пересборки — частота принятого монтажа (она равна частоте проекта, это проверяет
+	// ValidatePackage вместе с реестром).
+	fps := sceneregistry.FPS(edit.(*toolrt.Dict).Value("fps"))
+	if err := checkMeta(sid, meta, frames, fps); err != nil {
 		return nil, err
 	}
 	count, ok := frames.(toolrt.Int)
@@ -295,15 +300,15 @@ func verify(ctx context.Context, root string, shot any, temporary string) (*tool
 		"accepted_copy_sha256_matches", true,
 		"rebuild_frames", frames,
 		"resolution", []any{toolrt.NewInt(1920), toolrt.NewInt(1080)},
-		"fps", toolrt.NewInt(30),
+		"fps", toolrt.NewInt(fps),
 		"sampled_frame_indices", sampled,
 		"sampled_yuv_rms", rms,
 	), nil
 }
 
 // checkMeta — сверка nb_frames (целое или строка с целым), r_frame_rate, width и height потока с
-// (frames, "30/1", 1920, 1080); текст отказа — repr пары (sid, meta) с полным словарём потока.
-func checkMeta(sid string, meta, frames any) error {
+// (frames, "<fps>/1", 1920, 1080); текст отказа — repr пары (sid, meta) с полным словарём потока.
+func checkMeta(sid string, meta, frames any, fps int64) error {
 	values := make([]any, 4)
 	for index, key := range []string{"nb_frames", "r_frame_rate", "width", "height"} {
 		value, err := toolrt.Item(meta, key)
@@ -323,7 +328,7 @@ func checkMeta(sid string, meta, frames any) error {
 	default:
 		return toolrt.Raise(toolrt.TypeError, "ожидается число или строка, получено: %s", toolrt.TypeName(number))
 	}
-	expected := []any{frames, "30/1", toolrt.NewInt(1920), toolrt.NewInt(1080)}
+	expected := []any{frames, strconv.FormatInt(fps, 10) + "/1", toolrt.NewInt(1920), toolrt.NewInt(1080)}
 	for index := range values {
 		if !toolrt.Equal(values[index], expected[index]) {
 			return toolrt.New(assertionError, "("+toolrt.Repr(sid)+", "+toolrt.Repr(meta)+")")

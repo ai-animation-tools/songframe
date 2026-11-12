@@ -22,13 +22,13 @@ const draft: MontageDraft = {
 
 describe('Привязка склейки к строке песни', () => {
   it('выбирает ближайшую строку на абсолютной шкале и учитывает масштаб', () => {
-    expect(snapCutDelta(draft, 'A', 3, [336, 334], 60)).toBe(4);
-    expect(snapCutDelta(draft, 'A', 3, [338], 60)).toBe(3);
-    expect(snapCutDelta(draft, 'A', 3, [338], 30)).toBe(8);
+    expect(snapCutDelta(draft, 'A', 3, [336, 334], 60, 30)).toBe(4);
+    expect(snapCutDelta(draft, 'A', 3, [338], 60, 30)).toBe(3);
+    expect(snapCutDelta(draft, 'A', 3, [338], 30, 30)).toBe(8);
   });
   it('не привязывает к недостижимой строке или за пределами музыкального участка', () => {
-    expect(snapCutDelta(draft, 'A', -9, [318], 30)).toBe(-9);
-    expect(snapCutDelta(draft, 'A', 27, [362], 10)).toBe(27);
-    expect(snapCutDelta(draft, 'B', 1, [334], 60)).toBe(1);
+    expect(snapCutDelta(draft, 'A', -9, [318], 30, 30)).toBe(-9);
+    expect(snapCutDelta(draft, 'A', 27, [362], 10, 30)).toBe(27);
+    expect(snapCutDelta(draft, 'B', 1, [334], 60, 30)).toBe(1);
   });
 });

@@ -5,6 +5,7 @@ import { Alert, Paper, Stack, TextField, Typography } from '@mui/material';
 import { ActionButton } from '../../../components/ActionButton';
 import type { MontageClip, MontageDraft } from '@shared/montage';
 import { clipLength, frameLabel, rollCut, slipClip, trimClip } from '../model';
+import { useProjectFps } from '../../../hooks/useProjectFps';
 
 interface Props {
   draft: MontageDraft;
@@ -27,6 +28,7 @@ export const MontageClipEditor = memo(function MontageClipEditor({
   disabled,
   disabledReason
 }: Props): ReactElement {
+  const fps = useProjectFps();
   if (!clip)
     return (
       <Paper variant="outlined" sx={{ p: 2 }}>
@@ -52,7 +54,11 @@ export const MontageClipEditor = memo(function MontageClipEditor({
           {clip.path}
         </Typography>
         <Typography variant="body2">
-          {montageTexts.sourceRange({ start: frameLabel(clip.source_start_frame), end: frameLabel(clip.source_end_frame_exclusive), frames: clipLength(clip) })}
+          {montageTexts.sourceRange({
+            start: frameLabel(clip.source_start_frame, fps),
+            end: frameLabel(clip.source_end_frame_exclusive, fps),
+            frames: clipLength(clip)
+          })}
         </Typography>
         {clip.kind === 'video' && clip.source_frames === null ? <Alert severity="info">{montageTexts.awaitSourceMetadata}</Alert> : null}
         <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">

@@ -7,8 +7,10 @@
 package status
 
 import (
+	"math"
 	"os"
 	"path/filepath"
+	"songframe/internal/projectfile"
 	"strings"
 
 	"songframe/internal/acceptance"
@@ -78,7 +80,9 @@ type ProjectStatus struct {
 	Name string `json:"name"`
 	// AnimaticVideo — animatic_video маркера, если это строка.
 	AnimaticVideo *string `json:"animaticVideo"`
-	Checks        Checks  `json:"checks"`
+	// FPS — частота кадров проекта (поле fps маркера); null, если она не задана допустимым числом.
+	FPS    *int   `json:"fps"`
+	Checks Checks `json:"checks"`
 	// Problems — что мешает перейти дальше; всегда массив, пустой у здорового проекта.
 	Problems []string `json:"problems"`
 }
@@ -87,6 +91,8 @@ type ProjectStatus struct {
 type Marker struct {
 	Name          string
 	AnimaticVideo *string
+	// FPS — допустимая частота кадров маркера; nil — поля нет или оно неверно.
+	FPS *int
 }
 
 // ReadMarker — readProjectMarker: plan/project.json — объект с непустым строковым name.
@@ -103,6 +109,10 @@ func ReadMarker(path string) *Marker {
 	marker := &Marker{Name: name}
 	if video, ok := object.Value("animatic_video").(string); ok {
 		marker.AnimaticVideo = &video
+	}
+	if fps, ok := object.Value("fps").(float64); ok && fps == math.Trunc(fps) && fps < 1000 && projectfile.ValidFrameRate(int(fps)) {
+		rate := int(fps)
+		marker.FPS = &rate
 	}
 	return marker
 }
@@ -154,6 +164,9 @@ func ComputeBase(path string) (ProjectStatus, error) {
 	checks := &result.Checks
 	checks.Marker = true
 	problems := &result.Problems
+	if marker.FPS == nil {
+		*problems = append(*problems, projectfile.FrameRateInvalid)
+	}
 
 	manifestPath := filepath.Join(path, "source", "manifest.json")
 	if manifest, ok := readJSON(manifestPath); ok {
@@ -323,6 +336,7 @@ func ComputeBase(path string) (ProjectStatus, error) {
 	}
 	result.Name = marker.Name
 	result.AnimaticVideo = marker.AnimaticVideo
+	result.FPS = marker.FPS
 	return result, nil
 }
 

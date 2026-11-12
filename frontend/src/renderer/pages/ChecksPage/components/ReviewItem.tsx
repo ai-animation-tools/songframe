@@ -1,6 +1,5 @@
 import { checksTexts } from '@shared/texts/checks';
 import { commonTexts } from '@shared/texts/common';
-import { FPS } from '@shared/video';
 import { useRef, type ReactElement } from 'react';
 import { Box, Chip, IconButton, Typography } from '@mui/material';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
@@ -11,6 +10,7 @@ import type { ReviewInfo } from '@shared/types';
 import { DateTime } from '../../../components/DateTime';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import { ActionButton } from '../../../components/ActionButton';
+import { useProjectFps } from '../../../hooks/useProjectFps';
 
 interface ReviewItemProps {
   review: ReviewInfo;
@@ -23,6 +23,7 @@ interface ReviewItemProps {
 
 /** Показывает сведения о пробе и раскрывает её встроенное видео. */
 export function ReviewItem({ review, openReview, deletingReview, setOpenReview, openDirectory, removeReview }: ReviewItemProps): ReactElement {
+  const fps = useProjectFps();
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const remove = (): void => {
@@ -44,7 +45,7 @@ export function ReviewItem({ review, openReview, deletingReview, setOpenReview, 
           {review.dir.split(/[\\/]/).pop()}
         </Typography>
         <Chip size="small" variant="outlined" label={review.shots.join(' ')} />
-        <Chip size="small" variant="outlined" label={checksTexts.reviewDuration(review.totalFrames / FPS)} />
+        <Chip size="small" variant="outlined" label={checksTexts.reviewDuration(review.totalFrames / fps)} />
         <Typography variant="caption" color="text.secondary">
           <DateTime value={review.createdAt} />
         </Typography>

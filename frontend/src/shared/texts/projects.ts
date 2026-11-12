@@ -1,3 +1,4 @@
+import { countLabel } from '../plural';
 import { commonTexts } from './common';
 
 /** Тексты создания проекта и истории папок; технические значения и проверки остаются у страниц. */
@@ -17,6 +18,11 @@ export const projectsTexts = {
   nameHelp: 'Попадёт в plan/project.json, README и заголовки документов',
   animaticName: 'Имя MP4 аниматика (необязательно)',
   animaticNameHelp: 'Латиница, цифры, дефис; по умолчанию образуется из названия',
+  frameRate: 'Частота кадров',
+  frameRateHelp: 'Кадровая сетка сценария, принятых видео и монтажа. После создания проекта не меняется',
+  frameRateOption: (fps: number) => `${countLabel(fps, 'кадр', 'кадра', 'кадров')} в секунду`,
+  projectFrameRate: (fps: number) => `${fps} к/с`,
+  projectFrameRateHint: 'Частота кадров проекта: в ней размечены сцены, принимаются видео и собирается монтаж',
   chooseProjectFolder: 'Папка проекта клипа',
   emptyHistory: 'История пуста. Откройте папку существующего клипа или создайте новый проект.',
   forget: ({ name }: { name: string }) => `Убрать проект «${name}» из истории`,

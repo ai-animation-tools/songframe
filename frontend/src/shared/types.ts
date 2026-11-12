@@ -2,7 +2,7 @@ import type { VocalModelId } from './vocals';
 /** Общие типы API и renderer: состояние приложения, проект, исходники, среда. */
 import type { MediaModelSelection } from './media-providers';
 import type { ProductionProposalSummary } from './production-workflow';
-import type { FPS } from './video';
+import type { FrameRate } from './video';
 import { generationTexts } from './texts/generation';
 import { projectDataTexts } from './texts/project-data';
 
@@ -15,6 +15,8 @@ export interface ProjectStatus {
   /** Название из plan/project.json либо имя папки для не-проекта. */
   name: string;
   animaticVideo: string | null;
+  /** Частота кадров проекта (fps в plan/project.json); null, если она не задана допустимым числом. */
+  fps: number | null;
   /** Признаки, из которых выведено состояние; показываются на странице проекта. */
   checks: {
     marker: boolean;
@@ -54,6 +56,8 @@ export interface CreateProjectInput {
   name: string;
   path: string;
   animaticVideo?: string;
+  /** Частота кадров проекта; без неё — DEFAULT_FPS. */
+  fps?: number;
 }
 
 /** Код типа референса; набор типов открыт и хранится в source/manifest.json (kinds). */
@@ -363,7 +367,7 @@ export interface SceneReference {
 /** plan/scenes.json: реестр постановки и монтажной шкалы (кадровая сетка и постановка). */
 export interface ScenesFile {
   schema_version: 1;
-  fps: typeof FPS;
+  fps: FrameRate;
   audio: { path: string; end_seconds: string };
   references: Record<string, SceneReference>;
   visual_direction: string;

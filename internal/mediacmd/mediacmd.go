@@ -41,14 +41,14 @@ func FFprobe() string {
 	return "ffprobe"
 }
 
-// FPS — шкала монтажа приложения (FPS build_animatic/build_review).
-const FPS = 30
-
-// Encode — параметры кодирования build_animatic: H.264 без звука на шкале 30 к/с, общие для
-// сегментов аниматика и рендера принятого участка. Изменение меняет байты результата и версию рецепта.
-var Encode = []string{
-	"-an", "-c:v", "libx264", "-preset", "fast", "-crf", "18", "-threads", "2", "-pix_fmt", "yuv420p",
-	"-r", strconv.Itoa(FPS), "-video_track_timescale", "15360", "-map_metadata", "-1",
+// Encode — параметры кодирования build_animatic: H.264 без звука на шкале fps кадров/с проекта,
+// общие для сегментов аниматика и рендера принятого участка. Список входит в рецепт кэша
+// фрагментов, поэтому изменение меняет байты результата и версию рецепта.
+func Encode(fps int64) []string {
+	return []string{
+		"-an", "-c:v", "libx264", "-preset", "fast", "-crf", "18", "-threads", "2", "-pix_fmt", "yuv420p",
+		"-r", strconv.FormatInt(fps, 10), "-video_track_timescale", "15360", "-map_metadata", "-1",
+	}
 }
 
 // Limits — сколько последних байт stdout и stderr сохранить. Нулевое поле — значение по умолчанию.

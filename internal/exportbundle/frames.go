@@ -3,15 +3,13 @@ package exportbundle
 import (
 	"math"
 	"math/big"
+	"songframe/internal/sceneregistry"
 	"strconv"
 	"strings"
 
 	"songframe/internal/toolregex"
 	"songframe/internal/toolrt"
 )
-
-// fps — частота шкалы аниматика.
-const fps = 30
 
 // Точная арифметика и форматы чисел, от которых зависят байты пакета (эталон
 // testdata/golden/export-edit-bundle): дроби big.Rat, десятичное деление с точностью 28 значащих
@@ -164,8 +162,14 @@ func framesAt(seconds any, rate *big.Rat) (*big.Int, error) {
 	return result, nil
 }
 
-// frameGrid — частота шкалы аниматика дробью.
-var frameGrid = big.NewRat(fps, 1)
+// frameGrid — частота шкалы аниматика (частота кадров проекта fps) дробью.
+func frameGrid(fps int64) *big.Rat { return big.NewRat(fps, 1) }
+
+// framesKey — поле числа кадров плана в строке пакета: frames_<частота проекта>.
+func framesKey(fps int64) string { return "frames_" + strconv.FormatInt(fps, 10) }
+
+// bundleFPS — частота кадров пакета (поле fps bundle.json).
+func bundleFPS(bundle *toolrt.Dict) int64 { return sceneregistry.FPS(bundle.Value("fps")) }
 
 // pad — целое, дополненное нулями до ширины width; нули стоят между знаком и цифрами.
 func pad(value *big.Int, width int) string {
@@ -177,11 +181,11 @@ func pad(value *big.Int, width int) string {
 	return sign + strings.Repeat("0", max(width-len(sign)-len(text), 0)) + text
 }
 
-// timecode — таймкод ЧЧ:ММ:СС:КК non-drop на 30 кадров/с. Частное округляется вниз, остаток
+// timecode — таймкод ЧЧ:ММ:СС:КК non-drop на частоте проекта fps. Частное округляется вниз, остаток
 // неотрицателен (big.Int.DivMod евклидов, при положительном делителе это то же самое): у
 // отрицательного времени отрицательны только часы.
-func timecode(seconds any) (string, error) {
-	total, err := framesAt(seconds, frameGrid)
+func timecode(seconds any, fps int64) (string, error) {
+	total, err := framesAt(seconds, frameGrid(fps))
 	if err != nil {
 		return "", err
 	}
@@ -195,13 +199,13 @@ func timecode(seconds any) (string, error) {
 	return pad(hours, 2) + ":" + pad(minutes, 2) + ":" + pad(secondsPart, 2) + ":" + pad(frames, 2), nil
 }
 
-// rational — время FCPXML «кадры/30s» на шкале 30 кадров/с.
-func rational(seconds any) (string, error) {
-	frames, err := framesAt(seconds, frameGrid)
+// rational — время FCPXML «кадры/<fps>s» на шкале частоты проекта.
+func rational(seconds any, fps int64) (string, error) {
+	frames, err := framesAt(seconds, frameGrid(fps))
 	if err != nil {
 		return "", err
 	}
-	return frames.String() + "/30s", nil
+	return frames.String() + "/" + strconv.FormatInt(fps, 10) + "s", nil
 }
 
 // ratFloat — дробь в ближайший float64; значение вне диапазона float — исключение toolrt OverflowError.

@@ -1,5 +1,5 @@
 /**
- * Создание проекта: название, полный путь новой папки, имя MP4; папка создаётся из шаблона, Git используется при наличии.
+ * Создание проекта: название, полный путь новой папки, имя MP4 и частота кадров; папка создаётся из шаблона, Git используется при наличии.
  * Шаблон встроен в приложение, поэтому создание не требует внешней папки ресурсов.
  */
 
@@ -26,9 +26,9 @@ export function NewProjectPage(): ReactElement {
   const create = async (): Promise<void> => {
     if (busy || !form.ready) return;
     setBusy(true);
-    const { name, path, video } = form.values;
+    const { name, path, video, fps } = form.values;
     try {
-      const status = await window.api.projects.create({ name: name.trim(), path: path.trim(), animaticVideo: video.trim() || undefined });
+      const status = await window.api.projects.create({ name: name.trim(), path: path.trim(), animaticVideo: video.trim() || undefined, fps: Number(fps) });
       await refresh();
       notify(projectsTexts.created({ name: status.name }), 'success');
       navigate('/project/sources');

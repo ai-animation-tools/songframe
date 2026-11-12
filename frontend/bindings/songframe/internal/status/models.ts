@@ -46,6 +46,11 @@ export interface ProjectStatus {
      * AnimaticVideo — animatic_video маркера, если это строка.
      */
     "animaticVideo": string | null;
+
+    /**
+     * FPS — частота кадров проекта (поле fps маркера); null, если она не задана допустимым числом.
+     */
+    "fps": number | null;
     "checks": Checks;
 
     /**

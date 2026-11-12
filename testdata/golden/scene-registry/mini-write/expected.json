@@ -6,10 +6,10 @@
     "result": "{\"world\": {\"time_of_day\": \"вечер\", \"weather\": \"ясно\"}, \"mira\": {\"position\": \"у причала\"}}"
   },
   "load_project": {
-    "result": "{\"schema_version\": 1, \"name\": \"Мини\", \"animatic_video\": \"animatic.mp4\"}"
+    "result": "{\"schema_version\": 1, \"name\": \"Мини\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30}"
   },
   "load_project_generation": {
-    "result": "{\"schema_version\": 1, \"name\": \"Мини\", \"animatic_video\": \"animatic.mp4\"}"
+    "result": "{\"schema_version\": 1, \"name\": \"Мини\", \"animatic_video\": \"animatic.mp4\", \"fps\": 30}"
   },
   "read_production_status": {
     "result": "{\"schema_version\": 1, \"current_animatic\": null, \"current_animatic_status\": \"none\", \"shots\": {\"M01\": {\"scene_sha256\": \"949caf12120f4ced6af255fe5526e3952234020d7645a3fb94bbc84ef6735f2d\"}, \"M02\": {\"scene_sha256\": \"add188ef1ceb3a865ea269835bc8aa3ee0810e54dc39712358eebd87eb4daa4d\"}, \"M03\": {\"scene_sha256\": \"8158ff55a10aa55feb6c38f2fa861e2feff36f1cba776668c2807f4c337c4604\", \"source_review\": {\"source_shot\": \"M01\", \"source_scene_sha256\": \"949caf12120f4ced6af255fe5526e3952234020d7645a3fb94bbc84ef6735f2d\", \"source_accepted_video_sha256\": \"41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d\", \"accepted_video_sha256\": \"5b3975651c3cab92d044c096dc30a1c2d9525497457472de48c51ecb363d1f4a\"}}}}"

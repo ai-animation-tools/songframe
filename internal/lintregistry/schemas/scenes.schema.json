@@ -5,7 +5,7 @@
   "additionalProperties": false,
   "properties": {
     "schema_version": {"const": 1},
-    "fps": {"const": 30},
+    "fps": {"enum": [24, 25, 30]},
     "audio": {"type": "object", "required": ["path", "end_seconds"], "additionalProperties": false,
               "properties": {"path": {"type": "string", "pattern": "^source/"}, "end_seconds": {"type": "string"}}},
     "references": {"type": "object", "additionalProperties": {

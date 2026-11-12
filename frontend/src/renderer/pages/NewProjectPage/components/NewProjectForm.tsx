@@ -1,6 +1,7 @@
 import { projectsTexts } from '@shared/texts/projects';
 import type { ReactElement } from 'react';
-import { Box, Paper, TextField } from '@mui/material';
+import { Box, MenuItem, Paper, TextField } from '@mui/material';
+import { FRAME_RATES } from '@shared/video';
 import { slugify } from '../helpers';
 import type { NewProjectValues } from '../useNewProjectForm';
 import { NewProjectFolderField } from './NewProjectFolderField';
@@ -16,7 +17,7 @@ interface NewProjectFormProps {
 
 /** Форма объединяет параметры проекта и показывает результат проверки перед созданием через API. */
 export function NewProjectForm({ values, changeField, pickParent, problems, touched }: NewProjectFormProps): ReactElement {
-  const { name, path, video } = values;
+  const { name, path, video, fps } = values;
   const slug = slugify(name);
 
   return (
@@ -46,6 +47,19 @@ export function NewProjectForm({ values, changeField, pickParent, problems, touc
           placeholder={`${slug || 'animatic'}${slug ? '-animatic' : ''}.mp4`}
           helperText={projectsTexts.animaticNameHelp}
         />
+        <TextField
+          select
+          label={projectsTexts.frameRate}
+          value={fps}
+          onChange={(event) => changeField('fps', event.target.value)}
+          helperText={projectsTexts.frameRateHelp}
+        >
+          {FRAME_RATES.map((rate) => (
+            <MenuItem key={rate} value={String(rate)}>
+              {projectsTexts.frameRateOption(rate)}
+            </MenuItem>
+          ))}
+        </TextField>
         {touched && problems.length ? (
           <Box sx={{ gridColumn: '1 / -1' }}>
             <NewProjectProblems problems={problems} />

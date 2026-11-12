@@ -157,7 +157,7 @@ type reviewContext struct {
 }
 
 // readRegistry — разобранный plan/scenes.json, если он
-// проходит общий контракт (версия, fps, коды и окна планов), иначе nil. Реестр и снимок берутся
+// проходит общий контракт (версия, частота кадров проекта, коды и окна планов), иначе nil. Реестр и снимок берутся
 // из одних байтов.
 func readRegistry(project string) any {
 	data, err := os.ReadFile(filepath.Join(project, "plan", "scenes.json"))
@@ -166,7 +166,7 @@ func readRegistry(project string) any {
 	}
 	registry, err := dynvalue.Parse([]byte(dynvalue.DecodeUTF8(data)))
 	if err != nil || !dynvalue.IsRecord(registry) || !dynvalue.StrictEqual(dynvalue.Get(registry, "schema_version"), 1.0) ||
-		!dynvalue.StrictEqual(dynvalue.Get(registry, "fps"), float64(scenario.FPS)) {
+		!dynvalue.StrictEqual(dynvalue.Get(registry, "fps"), scenario.ExpectedFPS(project, registry)) {
 		return nil
 	}
 	scenes, ok := dynvalue.AsArray(dynvalue.Get(registry, "scenes"))
@@ -300,7 +300,8 @@ func (s *Service) source(project, directory string) (*reviewContext, error) {
 	staging.Set("sequence", sequence)
 	start, _ := dynvalue.Get(scene, "start_frame").(float64)
 	finish, _ := dynvalue.Get(scene, "end_frame_exclusive").(float64)
-	staging.Set("windowSeconds", (finish-start)/float64(scenario.FPS))
+	fps, _ := dynvalue.Get(registry, "fps").(float64)
+	staging.Set("windowSeconds", (finish-start)/fps)
 	staging.Set("requestSeconds", dynvalue.Get(pkg.timing, "request_seconds"))
 	staging.Set("visualDirection", dynvalue.Get(registry, "visual_direction"))
 	staging.Set("cast", castValue)

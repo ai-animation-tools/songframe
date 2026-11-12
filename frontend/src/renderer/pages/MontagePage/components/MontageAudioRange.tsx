@@ -5,8 +5,9 @@ import { Stack, TextField, Typography } from '@mui/material';
 import { ActionButton } from '../../../components/ActionButton';
 import type { MontageDraft } from '@shared/montage';
 import { frameLabel, montageLength } from '../model';
+import { useProjectFps } from '../../../hooks/useProjectFps';
 
-/** Ручной ввод остаётся на сетке 30 FPS, выделение музыки не подгоняется под видео незаметно. */
+/** Ручной ввод остаётся на кадровой сетке проекта, выделение музыки не подгоняется под видео незаметно. */
 export function MontageAudioRange({
   draft,
   trackFrames,
@@ -16,6 +17,7 @@ export function MontageAudioRange({
   trackFrames: number | null;
   onChange: (draft: MontageDraft) => void;
 }): ReactElement {
+  const fps = useProjectFps();
   const length = montageLength(draft.clips);
   const pastTrackEnd = trackFrames !== null && draft.audio.start_frame + length > trackFrames;
   return (
@@ -54,7 +56,7 @@ export function MontageAudioRange({
         />
       </Stack>
       <Typography variant="caption" color="text.secondary">
-        {montageTexts.audioRange({ start: frameLabel(draft.audio.start_frame), end: frameLabel(draft.audio.end_frame_exclusive) })}
+        {montageTexts.audioRange({ start: frameLabel(draft.audio.start_frame, fps), end: frameLabel(draft.audio.end_frame_exclusive, fps) })}
       </Typography>
       <ActionButton
         startIcon={<Sync />}

@@ -37,9 +37,6 @@ import (
 // History — папка журналов приёмок производных планов от корня проекта.
 const History = "plan/derived-history"
 
-// fps — кадровая сетка производных планов.
-var fps = toolrt.NewInt(30)
-
 // Тексты отказов (ValueError, печатаются как есть).
 const (
 	textRelative      = "Нужен относительный путь внутри проекта."
@@ -49,7 +46,6 @@ const (
 	textNotDerived    = "Выберите производный план с derived_from.shot."
 	textLipsync       = "Производный план с липсинком нельзя собрать локально: синхронность губ не гарантируется."
 	textBadSource     = "Источником должен быть обычный план без derived_from."
-	textAcceptSource  = "Сначала примите источник по текущей постановке на сетке 30 FPS."
 	textNewWorkDir    = "Для новой пробы нужна новая рабочая папка plan/derived/Mxx/<id>."
 	textChangedBuild  = "Источник, постановка, музыка или рецепт изменились при сборке. Соберите новую пробу."
 	textBadConfirm    = "Подтверждение не соответствует показанному результату. Соберите новую пробу."
@@ -59,6 +55,11 @@ const (
 	textChangedKit    = "Комплект источника изменился после пробы. Соберите новую пробу."
 	textChangedFile   = "Файл результата изменился после пробы: "
 )
+
+// textAcceptSource — источник не принят по текущей постановке на сетке частоты проекта fps.
+func textAcceptSource(fps toolrt.Int) string {
+	return "Сначала примите источник по текущей постановке на сетке " + fps.String() + " FPS."
+}
 
 func valueError(message string) error { return toolrt.New(toolrt.ValueError, message) }
 
@@ -226,7 +227,7 @@ type cutPlan struct {
 // recipePlan — план кадров рецепта: все интервалы явные, fit дублирует или выбирает кадры,
 // repeat повторяет только заданный цикл. Порядок проверок зафиксирован эталоном: он задаёт,
 // какое сообщение увидит пользователь при нескольких ошибках сразу.
-func recipePlan(recipe, framesValue, sourceFrames any) (*cutPlan, error) {
+func recipePlan(recipe, framesValue, sourceFrames any, fps toolrt.Int) (*cutPlan, error) {
 	data, ok := recipe.(*toolrt.Dict)
 	if !ok {
 		return nil, valueError(textRecipeObject)
@@ -274,17 +275,18 @@ func recipePlan(recipe, framesValue, sourceFrames any) (*cutPlan, error) {
 		return nil, valueError(textRecipeBounds)
 	}
 	length := toolrt.IntFromBig(new(big.Int).Sub(last.Big(), first.Big()))
-	stages := []string{"fps=30", "trim=start_frame=" + first.String() + ":end_frame=" + last.String(), "setpts=PTS-STARTPTS"}
+	rate := fps.String()
+	stages := []string{"fps=" + rate, "trim=start_frame=" + first.String() + ":end_frame=" + last.String(), "setpts=PTS-STARTPTS"}
 	factor := big.NewRat(1, 1)
 	switch mode {
 	case "fit":
 		factor = new(big.Rat).SetFrac(length.Big(), frames.Big())
-		stages = append(stages, "setpts=PTS*"+frames.String()+"/"+length.String(), "fps=30:round=near")
+		stages = append(stages, "setpts=PTS*"+frames.String()+"/"+length.String(), "fps="+rate+":round=near")
 	case "still", "repeat":
 		if still {
 			factor = new(big.Rat)
 		}
-		stages = append(stages, "loop=loop=-1:size="+length.String()+":start=0", "trim=end_frame="+frames.String(), "setpts=N/(30*TB)")
+		stages = append(stages, "loop=loop=-1:size="+length.String()+":start=0", "trim=end_frame="+frames.String(), "setpts=N/("+rate+"*TB)")
 	}
 	stages = append(stages, "scale=1920:1080:force_original_aspect_ratio=decrease", "pad=1920:1080:(ow-iw)/2:(oh-ih)/2", "setsar=1")
 	return &cutPlan{filter: strings.Join(stages, ","), first: first, last: last, factor: factor}, nil
@@ -293,6 +295,8 @@ func recipePlan(recipe, framesValue, sourceFrames any) (*cutPlan, error) {
 // sourceContext — итог snapshot: контекст пробы current и прочитанные вместе с ним реестр, сцена,
 // комплект источника и путь его текущего принятого клипа.
 type sourceContext struct {
+	// fps — частота кадров проекта: сетка источника и производного плана.
+	fps      toolrt.Int
 	current  *toolrt.Dict
 	registry *toolrt.Dict
 	scene    *toolrt.Dict
@@ -352,16 +356,17 @@ func snapshot(shot any, root string) (*sourceContext, error) {
 	if sourceScene == nil || toolrt.Truthy(sourceScene.Value("derived_from")) {
 		return nil, valueError(textBadSource)
 	}
-	if !toolrt.Equal(registry.Value("fps"), fps) {
-		return nil, valueError(textAcceptSource)
+	if err := sceneregistry.SameFPS(root, registry); err != nil {
+		return nil, err
 	}
+	fps := toolrt.NewInt(sceneregistry.FPS(registry.Value("fps")))
 	acceptance, err := sceneregistry.ProjectShotAcceptance(root, registry)
 	if err != nil {
 		return nil, err
 	}
 	sourceName := sourceShot.(string)
 	if acceptance.States.Value(sourceName) != sceneregistry.Completed {
-		return nil, valueError(textAcceptSource)
+		return nil, valueError(textAcceptSource(fps))
 	}
 	manifest := toolrt.JoinPath(root, "assets/shots", sourceName, "manifest.json")
 	pkg, err := assetpackage.ValidatePackage(manifest, sourceName, root)
@@ -431,7 +436,7 @@ func snapshot(shot any, root string) (*sourceContext, error) {
 		"target_frames", frames,
 		"audio_source", toolcli.Record("path", track, "sha256", songDigest),
 	)
-	return &sourceContext{current: current, registry: registry, scene: scene, pkg: pkg, source: source}, nil
+	return &sourceContext{fps: fps, current: current, registry: registry, scene: scene, pkg: pkg, source: source}, nil
 }
 
 // tokenFor — result_token пробы: SHA-256 канонического JSON (preview без токена и build.json)
@@ -468,8 +473,8 @@ func ffmpegVersion(ctx context.Context) (string, error) {
 	return lines[0], nil
 }
 
-// seconds — время frames / FPS строкой (toolrt.Str) для аргумента FFmpeg.
-func seconds(frames any) (string, error) {
+// seconds — время frames / fps строкой (toolrt.Str) для аргумента FFmpeg.
+func seconds(frames any, fps toolrt.Int) (string, error) {
 	value, err := toolrt.TrueDiv(frames, fps)
 	if err != nil {
 		return "", err
@@ -491,11 +496,11 @@ func buildPreview(ctx context.Context, root string, state *sourceContext, tempor
 	if !toolrt.IsFile(song) {
 		return applymontage.CopyFile(candidate, preview)
 	}
-	start, err := seconds(state.scene.Value("start_frame"))
+	start, err := seconds(state.scene.Value("start_frame"), state.fps)
 	if err != nil {
 		return err
 	}
-	length, err := seconds(state.current.Value("target_frames"))
+	length, err := seconds(state.current.Value("target_frames"), state.fps)
 	if err != nil {
 		return err
 	}
@@ -532,7 +537,7 @@ func build(ctx context.Context, shot, recipe, workDir, root string) (*toolrt.Dic
 	if err != nil {
 		return nil, err
 	}
-	plan, err := recipePlan(selected, state.current.Value("target_frames"), sourceFrames)
+	plan, err := recipePlan(selected, state.current.Value("target_frames"), sourceFrames, state.fps)
 	if err != nil {
 		return nil, err
 	}
@@ -574,7 +579,7 @@ func build(ctx context.Context, shot, recipe, workDir, root string) (*toolrt.Dic
 	if err != nil {
 		return nil, err
 	}
-	if err := renderEdit(ctx, state.source, plan.filter, frames, filepath.Join(temporary, "candidate.mp4")); err != nil {
+	if err := renderEdit(ctx, state.source, plan.filter, frames, filepath.Join(temporary, "candidate.mp4"), sceneregistry.FPS(state.fps)); err != nil {
 		return nil, err
 	}
 	if err := buildPreview(ctx, root, state, temporary); err != nil {
@@ -725,7 +730,7 @@ func checkResult(directory, confirm, root string) (*checkedResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	plan, err := recipePlan(recipe, state.current.Value("target_frames"), sourceFrames)
+	plan, err := recipePlan(recipe, state.current.Value("target_frames"), sourceFrames, state.fps)
 	if err != nil {
 		return nil, err
 	}

@@ -100,8 +100,8 @@ func TestChangesDuringBuild(t *testing.T) {
 	cases := []struct {
 		name, file, text, message string
 	}{
-		{"generation", "plan/project.json", `{"schema_version": 1, "name": "Тестовый клип", "animatic_video": "test-output.mp4", "generation": {"video": {"provider": "test", "model": "новая"}}}`, ""},
-		{"project", "plan/project.json", `{"schema_version": 1, "name": "Изменилось во время сборки", "animatic_video": "test-output.mp4"}`, textProjectChanged},
+		{"generation", "plan/project.json", `{"schema_version": 1, "name": "Тестовый клип", "animatic_video": "test-output.mp4", "fps": 30, "generation": {"video": {"provider": "test", "model": "новая"}}}`, ""},
+		{"project", "plan/project.json", `{"schema_version": 1, "name": "Изменилось во время сборки", "animatic_video": "test-output.mp4", "fps": 30}`, textProjectChanged},
 		{"registry", "plan/scenes.json", "", textRegistryChanged},
 		{"track", "source/track.mp3", "", textTrackChanged},
 		{"input", "plan/animatic/cards/M02.png", "", textInputChanged},
@@ -258,7 +258,7 @@ func TestCachePartialAndCorrupted(t *testing.T) {
 // TestFrameRounding — frame(): половина кадра округляется от нуля.
 func TestFrameRounding(t *testing.T) {
 	for text, want := range map[string]string{"0": "0", "0.4": "12", "0.0166666": "0", "0.0166667": "1", "1.05": "32", "-0.05": "-2"} {
-		got, err := frame(text)
+		got, err := frame(text, 30)
 		if err != nil || got.String() != want {
 			t.Fatalf("frame(%s) = %v %v, ждали %s", text, got, err, want)
 		}
@@ -286,7 +286,7 @@ func TestFragment(t *testing.T) {
 		t.Fatal(err)
 	}
 	v, _ := streamOf(info, "video")
-	if ok, err := videoMatches(v, toolrt.NewInt(12)); err != nil || !ok {
+	if ok, err := videoMatches(v, toolrt.NewInt(12), 30); err != nil || !ok {
 		t.Fatalf("видео фрагмента %v %v", v, err)
 	}
 	if toolrt.Exists(filepath.Join(project, "plan/animatic/latest/manifest.json")) {
@@ -310,5 +310,26 @@ func TestFragment(t *testing.T) {
 	}
 	if string(readFile(t, filepath.Join(project, FragmentFile))) != string(before) {
 		t.Fatal("отказ изменил фрагмент")
+	}
+}
+
+// TestFrameGrid24 — сетка проекта 24 кадров/с: кадр, секунды, параметры кодирования и ожидаемая
+// частота готового потока берутся из частоты проекта, а не из 30.
+func TestFrameGrid24(t *testing.T) {
+	if got, err := frame("0.5", 24); err != nil || got.String() != "12" {
+		t.Fatalf("frame(0.5, 24) = %v %v", got, err)
+	}
+	if got := seconds(12, 24); got != "0.500000" {
+		t.Fatalf("seconds(12, 24) = %s", got)
+	}
+	if encode := strings.Join(mediacmd.Encode(24), " "); !strings.Contains(encode, "-r 24 ") {
+		t.Fatalf("кодирование %s", encode)
+	}
+	stream := toolcli.Record("width", toolrt.NewInt(1920), "height", toolrt.NewInt(1080), "r_frame_rate", "24/1", "nb_frames", "12")
+	if ok, err := videoMatches(stream, toolrt.NewInt(12), 24); err != nil || !ok {
+		t.Fatalf("поток 24/1 не принят: %v", err)
+	}
+	if ok, _ := videoMatches(stream, toolrt.NewInt(12), 30); ok {
+		t.Fatal("поток 24/1 принят на сетке 30")
 	}
 }

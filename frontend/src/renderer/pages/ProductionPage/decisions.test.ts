@@ -115,7 +115,7 @@ describe('показанный результат', () => {
     await acceptShownResult(
       api,
       '/fixture/project',
-      { shot: 'S01', dir: '/fixture/package', resultToken: 'shown-result-token' },
+      { shot: 'S01', dir: '/fixture/package', fps: 30, resultToken: 'shown-result-token' },
       { mode: 'full', expectedResultToken: 'old-form-token' }
     );
     expect(accept).toHaveBeenCalledExactlyOnceWith('/fixture/project', 'S01', '/fixture/package', { mode: 'full', expectedResultToken: 'shown-result-token' });
@@ -124,7 +124,9 @@ describe('показанный результат', () => {
   it('приёмка без токена показанных оригиналов не вызывает API', async () => {
     const accept = vi.fn();
     const api = { production: { accept } } as unknown as Api;
-    await expect(acceptShownResult(api, '/fixture/project', { shot: 'S01', dir: '/fixture/package' }, { mode: 'full' })).rejects.toThrow('Обновите попытку');
+    await expect(acceptShownResult(api, '/fixture/project', { shot: 'S01', dir: '/fixture/package', fps: 30 }, { mode: 'full' })).rejects.toThrow(
+      'Обновите попытку'
+    );
     expect(accept).not.toHaveBeenCalled();
   });
 });
@@ -167,7 +169,7 @@ describe('замена принятого комплекта и папка но�
   it('приёмка сцены с комплектом требует явного согласия и передаёт его в API', async () => {
     const accept = vi.fn().mockResolvedValue({ id: 'job' } as JobInfo);
     const api = { production: { accept } } as unknown as Api;
-    const target = { shot: 'M45', dir: '/p/plan/batches/M45-attempt-02', resultToken: 'token', hasAsset: true };
+    const target = { shot: 'M45', dir: '/p/plan/batches/M45-attempt-02', fps: 30, resultToken: 'token', hasAsset: true };
     await expect(acceptShownResult(api, '/p', target, { mode: 'full' })).rejects.toThrow(/уже есть принятый комплект/);
     expect(accept).not.toHaveBeenCalled();
     await acceptShownResult(api, '/p', target, { mode: 'full', replaceExisting: true });
@@ -220,14 +222,18 @@ describe('проба стыков', () => {
 
 describe('участок приёмки по умолчанию', () => {
   it('целиком — только при совпадении длины оригинала с окном плана', () => {
-    expect(defaultAcceptOptions({ shot: 'M08', dir: '/p', windowFrames: 90, originalFrames: 90 }).mode).toBe('full');
+    expect(defaultAcceptOptions({ shot: 'M08', dir: '/p', fps: 30, windowFrames: 90, originalFrames: 90 }).mode).toBe('full');
     // Оригинал 3 с при окне 3,1 с: тот же участок и удержание последнего кадра на недостающие кадры.
-    expect(defaultAcceptOptions({ shot: 'M08', dir: '/p', windowFrames: 93, originalFrames: 90 })).toMatchObject({
+    expect(defaultAcceptOptions({ shot: 'M08', dir: '/p', fps: 30, windowFrames: 93, originalFrames: 90 })).toMatchObject({
       mode: 'cut',
       cutStart: 0,
       cutEnd: 3,
       holdLast: 3
     });
-    expect(defaultAcceptOptions({ shot: 'M08', dir: '/p', windowFrames: 60, originalFrames: 90 })).toMatchObject({ mode: 'cut', cutEnd: 2, holdLast: 0 });
+    expect(defaultAcceptOptions({ shot: 'M08', dir: '/p', fps: 30, windowFrames: 60, originalFrames: 90 })).toMatchObject({
+      mode: 'cut',
+      cutEnd: 2,
+      holdLast: 0
+    });
   });
 });

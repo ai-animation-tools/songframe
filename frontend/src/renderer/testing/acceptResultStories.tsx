@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Alert, Paper, Stack, Typography } from '@mui/material';
 import type { Api } from '@shared/api';
 import type { AcceptOptions, JobInfo, PackageView } from '@shared/types';
-import { FPS } from '@shared/video';
+import { DEFAULT_FPS } from '@shared/video';
 import { ActionButton } from '../components/ActionButton';
 import { AcceptResultDialog } from '../pages/ProductionPage/components/AcceptResultDialog';
 import { acceptShownResult, acceptTargetFor, defaultAcceptOptions, type AcceptTarget } from '../pages/ProductionPage/decisions';
@@ -34,7 +34,7 @@ export function AcceptResultStory({
     return {
       ...pkg,
       resultToken: missingToken ? undefined : DELIVERY_RESULT_TOKEN,
-      timing: { ...pkg.timing!, frames: windowFrames, window_seconds: windowFrames / FPS }
+      timing: { ...pkg.timing!, frames: windowFrames, window_seconds: windowFrames / DEFAULT_FPS }
     };
   };
   const [pkg, setPackage] = useState(makePackage);
@@ -75,7 +75,7 @@ export function AcceptResultStory({
 
   const open = (): void => {
     if (backend.current.running || accepted) return;
-    const next = acceptTargetFor(pkg, hasAsset, speechMissing);
+    const next = acceptTargetFor(pkg, hasAsset, DEFAULT_FPS, speechMissing);
     setOptions(defaultAcceptOptions(next));
     setTarget(next);
     setNotice(null);
@@ -132,7 +132,7 @@ export function AcceptResultStory({
       <Paper variant="outlined" sx={{ p: 2 }}>
         <Stack spacing={1}>
           <Typography variant="h6">Приёмка результата M02</Typography>
-          <Typography>Оригинал попытки: 8 секунд, 240 кадров. Окно плана: {windowFrames / FPS} с.</Typography>
+          <Typography>Оригинал попытки: 8 секунд, 240 кадров. Окно плана: {windowFrames / DEFAULT_FPS} с.</Typography>
           <Typography>
             {accepted ? 'Принятый комплект: новый результат.' : hasAsset ? 'Принятый комплект: прежний результат.' : 'Принятого комплекта пока нет.'}
           </Typography>

@@ -1,5 +1,6 @@
 {
   "name": "Клип",
   "animatic_video": "a.mp4",
+  "fps": 30,
   "agent_instructions": 5
 }

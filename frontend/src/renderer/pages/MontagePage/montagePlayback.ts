@@ -1,5 +1,3 @@
-import { FPS } from '@shared/video';
-
 type AudioClock = Pick<HTMLAudioElement, 'currentTime' | 'paused' | 'ended' | 'play' | 'pause'>;
 
 interface PlaybackOptions {
@@ -8,12 +6,14 @@ interface PlaybackOptions {
   onFrame: (frame: number) => void;
   onPlaying: (playing: boolean) => void;
   onError: (error: unknown) => void;
+  /** Частота кадров проекта: шкала range, previewWindow и onFrame. */
+  fps: number;
 }
 
 /** Границы проверки стыка выражены в кадрах относительно начала музыкального участка. */
-export function cutPreviewWindow(cut: number, length: number): { start: number; end: number } | null {
+export function cutPreviewWindow(cut: number, length: number, fps: number): { start: number; end: number } | null {
   if (cut <= 0 || cut >= length) return null;
-  return { start: Math.max(0, cut - 2 * FPS), end: Math.min(length, cut + 2 * FPS) };
+  return { start: Math.max(0, cut - 2 * fps), end: Math.min(length, cut + 2 * fps) };
 }
 
 /** Аудио ведёт часы; только явная перемотка и граница участка меняют его currentTime.
@@ -65,7 +65,7 @@ export function createMontagePlayback(audio: AudioClock, options: PlaybackOption
     const length = Math.max(0, end - start);
     const position = Math.max(0, Math.min(Math.max(0, length - 1), frame));
     if (!length) pause();
-    audio.currentTime = (start + position) / FPS;
+    audio.currentTime = (start + position) / options.fps;
     publish(position);
   };
 
@@ -93,7 +93,7 @@ export function createMontagePlayback(audio: AudioClock, options: PlaybackOption
       if (!alive || !intended) return;
       const { start, end } = options.range();
       const length = Math.max(0, end - start);
-      const relative = Math.floor(audio.currentTime * FPS + 0.0001) - start;
+      const relative = Math.floor(audio.currentTime * options.fps + 0.0001) - start;
       const previewEnd = options.previewWindow?.()?.end ?? length;
       if (!length || audio.ended || (!audio.paused && relative >= previewEnd)) finish();
       else if (!audio.paused) publish(Math.max(0, relative));

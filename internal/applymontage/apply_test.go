@@ -132,12 +132,12 @@ func TestRenderFailureHasNoPartialMutation(t *testing.T) {
 	before := projectFiles(t, root)
 	draft := makeDraft(t, root, boundary...)
 	calls := 0
-	renderEditHook = func(ctx context.Context, original, filter string, frames toolrt.Int, target string) error {
+	renderEditHook = func(ctx context.Context, original, filter string, frames toolrt.Int, target string, fps int64) error {
 		calls++
 		if calls == 2 {
 			return valueError("Сбой второго рендера")
 		}
-		return RenderEdit(ctx, original, filter, frames, target)
+		return RenderEdit(ctx, original, filter, frames, target, fps)
 	}
 	t.Cleanup(func() { renderEditHook = RenderEdit })
 	if _, err := Apply(context.Background(), draft, root, false); !toolrt.Is(err, toolrt.ValueError) {
@@ -159,11 +159,11 @@ func TestChangeDuringRenderIsRejectedBeforePublication(t *testing.T) {
 	draft := makeDraft(t, root, interval{"M02", 5, 125})
 	before := projectFiles(t, root)
 	registry := filepath.Join(root, "plan", "scenes.json")
-	renderEditHook = func(ctx context.Context, original, filter string, frames toolrt.Int, target string) error {
+	renderEditHook = func(ctx context.Context, original, filter string, frames toolrt.Int, target string, fps int64) error {
 		if !Active() {
 			t.Error("во время рендера применение не отмечено")
 		}
-		if err := RenderEdit(ctx, original, filter, frames, target); err != nil {
+		if err := RenderEdit(ctx, original, filter, frames, target, fps); err != nil {
 			return err
 		}
 		data, _ := os.ReadFile(registry)
@@ -254,7 +254,7 @@ func TestNextLaunchRecoversInterruptedPublication(t *testing.T) {
 func TestInvalidDraftsNeverRender(t *testing.T) {
 	root := sampleProject(t)
 	before := projectFiles(t, root)
-	renderEditHook = func(context.Context, string, string, toolrt.Int, string) error {
+	renderEditHook = func(context.Context, string, string, toolrt.Int, string, int64) error {
 		t.Error("рендер неверного черновика")
 		return nil
 	}

@@ -1,5 +1,4 @@
 import { montageTexts } from '@shared/texts/montage';
-import { FPS } from '@shared/video';
 import type { MontageClip, MontageDraft, MontageScene, MontageSource, MontageView } from '@shared/montage';
 
 export const clipLength = (clip: MontageClip): number => clip.source_end_frame_exclusive - clip.source_start_frame;
@@ -130,11 +129,12 @@ export function projectMediaUrl(project: string, relative: string): string {
   return window.api.shell.fileUrl(`${project.replace(/[\\/]+$/, '')}${separator}${relative.replace(/^[\\/]+/, '')}`);
 }
 
-export function frameLabel(frame: number): string {
-  const seconds = Math.floor(frame / FPS);
+/** Время кадра «мм:сс:кк» на сетке fps проекта. */
+export function frameLabel(frame: number, fps: number): string {
+  const seconds = Math.floor(frame / fps);
   return `${Math.floor(seconds / 60)
     .toString()
-    .padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}:${(frame % FPS).toString().padStart(2, '0')}`;
+    .padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}:${(frame % fps).toString().padStart(2, '0')}`;
 }
 
 export interface DraftHistory {

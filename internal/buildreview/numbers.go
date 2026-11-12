@@ -63,21 +63,21 @@ func frames(value toolrt.Decimal) (*big.Int, error) {
 	return roundHalfUp(rational(value)), nil
 }
 
-// framesTimesFPS — frames(value * FPS): произведение с длительностью ffprobe или песни точное
+// framesTimesFPS — frames(value * fps): произведение с длительностью ffprobe или песни точное
 // (значения короче 28 значащих цифр), поэтому считается рационально без потери.
-func framesTimesFPS(value toolrt.Decimal) (*big.Int, error) {
+func framesTimesFPS(value toolrt.Decimal, fps int64) (*big.Int, error) {
 	if !isFinite(value) {
 		_, err := value.ToInt()
 		return nil, err
 	}
-	product := new(big.Rat).Mul(rational(value), new(big.Rat).SetInt64(FPS))
+	product := new(big.Rat).Mul(rational(value), new(big.Rat).SetInt64(fps))
 	return roundHalfUp(product), nil
 }
 
-// seconds — кадры в секунды: точное частное на 30, квантованное до 9 знаков после точки, в
-// записи без экспоненты.
-func seconds(value *big.Int) (string, error) {
-	divided, err := decimalOf(value).Div(toolrt.DecimalInt(FPS))
+// seconds — кадры в секунды: точное частное на частоту проекта fps, квантованное до 9 знаков
+// после точки, в записи без экспоненты.
+func seconds(value *big.Int, fps int64) (string, error) {
+	divided, err := decimalOf(value).Div(toolrt.DecimalInt(fps))
 	if err != nil {
 		return "", err
 	}
@@ -88,13 +88,19 @@ func seconds(value *big.Int) (string, error) {
 	return quantized.FormatF(), nil
 }
 
-// secondsFloat — строка seconds(value), разобранная как float64.
-func secondsFloat(value *big.Int) (float64, error) {
-	text, err := seconds(value)
+// secondsFloat — строка seconds(value, fps), разобранная как float64.
+func secondsFloat(value *big.Int, fps int64) (float64, error) {
+	text, err := seconds(value, fps)
 	if err != nil {
 		return 0, err
 	}
 	return strconv.ParseFloat(text, 64)
+}
+
+// samples — отсчёт звука 44,1 кГц на границе кадра frames при частоте fps, с округлением
+// половины вверх (при 24 к/с кадр длится 1837,5 отсчёта).
+func samples(frames *big.Int, fps int64) *big.Int {
+	return roundHalfUp(new(big.Rat).SetFrac(new(big.Int).Mul(frames, big.NewInt(44100)), big.NewInt(fps)))
 }
 
 // decimalOf — целое произвольной длины как toolrt.Decimal.

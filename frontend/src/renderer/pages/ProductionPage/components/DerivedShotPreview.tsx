@@ -6,6 +6,7 @@ import { derivedShotTexts as texts } from '@shared/texts/derived-shot';
 import { ActionButton } from '../../../components/ActionButton';
 import { recipeInfo } from '../derivedRecipeForm';
 import { LinkedText } from '../../../components/LinkedText';
+import { useProjectFps } from '../../../hooks/useProjectFps';
 
 /** Предпросмотр не заменяет комплект: даже после окончания сборки нужно отдельное явное принятие. */
 export function DerivedShotPreview({
@@ -19,10 +20,11 @@ export function DerivedShotPreview({
   disabledReason: string | null;
   onAccept(): void;
 }): ReactElement {
+  const fps = useProjectFps();
   return (
     <Stack spacing={1.5}>
       <Typography variant="subtitle1">{texts.preview}</Typography>
-      <Typography variant="body2">{texts.targetFrames({ frames: preview.frames })}</Typography>
+      <Typography variant="body2">{texts.targetFrames({ frames: preview.frames, fps })}</Typography>
       <Typography variant="body2">{recipeInfo(preview.recipe, preview.frames)}</Typography>
       {preview.problem || !preview.fresh ? (
         <Alert severity="warning">

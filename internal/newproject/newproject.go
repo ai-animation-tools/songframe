@@ -19,6 +19,8 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"songframe/internal/projectfile"
+	"strconv"
 	"strings"
 
 	"songframe/internal/dynvalue"
@@ -33,6 +35,7 @@ const (
 	absolutePathRequired = "Путь должен быть абсолютным."
 	targetExists         = "Папка уже существует: выберите новый путь или откройте её как существующий проект."
 	invalidAnimaticName  = "Имя MP4: латиница, цифры, точка, дефис, подчёркивание и расширение .mp4."
+	invalidFrameRate     = "Частота кадров проекта: 24, 25 или 30 кадров/с."
 )
 
 func parentMissing(path string) string {
@@ -48,6 +51,9 @@ type Input struct {
 	Path string `json:"path"`
 	// AnimaticVideo — имя MP4 полного аниматика; пустое или отсутствующее выводится из названия.
 	AnimaticVideo *string `json:"animaticVideo,omitempty"`
+	// FPS — частота кадров проекта (projectfile.FrameRates); 0 или отсутствие — DefaultFrameRate.
+	// После создания не меняется: на ней строятся границы планов, монтаж и экспорт.
+	FPS int `json:"fps,omitempty"`
 }
 
 // animaticPattern — допустимое явное имя MP4 в форме создания (регистр расширения важен).
@@ -101,6 +107,9 @@ func Validate(input Input) []string {
 			problems = append(problems, invalidAnimaticName)
 		}
 	}
+	if input.FPS != 0 && !projectfile.ValidFrameRate(input.FPS) {
+		problems = append(problems, invalidFrameRate)
+	}
 	return problems
 }
 
@@ -123,7 +132,12 @@ func Create(ctx context.Context, template fs.FS, input Input) (string, error) {
 	if video == "" {
 		video = DefaultAnimaticName(name)
 	}
-	if err := materialize(template, target, Placeholders{"project_name": name, "animatic_video": video}); err != nil {
+	fps := input.FPS
+	if fps == 0 {
+		fps = projectfile.DefaultFrameRate
+	}
+	values := Placeholders{"project_name": name, "animatic_video": video, "fps": strconv.Itoa(fps)}
+	if err := materialize(template, target, values); err != nil {
 		return "", err
 	}
 	initGit(ctx, target)
@@ -194,7 +208,7 @@ func initGit(ctx context.Context, target string) {
 	_ = os.WriteFile(filepath.Join(target, GitFailedFile), []byte("git init не удался: "+reason+"\n"), 0o666)
 }
 
-// Placeholders — значения {{ключ}} шаблона: project_name и animatic_video.
+// Placeholders — значения {{ключ}} шаблона: project_name, animatic_video и fps.
 type Placeholders map[string]string
 
 // placeholderPattern — {{ ключ }} с необязательными пробелами; ключ из строчной латиницы и «_».

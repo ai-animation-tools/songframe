@@ -36,16 +36,16 @@ function setup(loop = false) {
   const playing = vi.fn<(playing: boolean) => void>();
   const errors = vi.fn<(error: unknown) => void>();
   const range = { start: 6000, end: 6360, loop };
-  const playback = createMontagePlayback(audio, { range: () => range, onFrame: frames, onPlaying: playing, onError: errors });
+  const playback = createMontagePlayback(audio, { range: () => range, onFrame: frames, onPlaying: playing, onError: errors, fps: 30 });
   return { audio, frames, playing, errors, range, playback };
 }
 
 describe('воспроизведение музыкального участка монтажа', () => {
   it('ограничивает проверку склейки двумя секундами и границами музыкального участка', () => {
-    expect(cutPreviewWindow(150, 360)).toEqual({ start: 90, end: 210 });
-    expect(cutPreviewWindow(20, 60)).toEqual({ start: 0, end: 60 });
-    expect(cutPreviewWindow(0, 60)).toBeNull();
-    expect(cutPreviewWindow(60, 60)).toBeNull();
+    expect(cutPreviewWindow(150, 360, 30)).toEqual({ start: 90, end: 210 });
+    expect(cutPreviewWindow(20, 60, 30)).toEqual({ start: 0, end: 60 });
+    expect(cutPreviewWindow(0, 60, 30)).toBeNull();
+    expect(cutPreviewWindow(60, 60, 30)).toBeNull();
   });
 
   it('проверяет стык с повтором и останавливает его на последнем кадре без повтора', async () => {
@@ -57,7 +57,8 @@ describe('воспроизведение музыкального участка
         previewWindow: () => ({ start: 90, end: 210 }),
         onFrame: frames,
         onPlaying: vi.fn(),
-        onError: vi.fn()
+        onError: vi.fn(),
+        fps: 30
       });
       playback.seek(90);
       playback.play();

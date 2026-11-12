@@ -99,7 +99,7 @@ func validate(project string, value any, complete bool, view *View, checkFiles b
 		// При сохранении известная длина проверяется и при source_frames=null. Изменённый комплект
 		// не подменяет метаданные старого черновика: его всё ещё можно открыть и сохранить.
 		if checkFiles && view == nil && kind == "video" {
-			known, err := manifestLimit(project, scene, path, snapshot)
+			known, err := manifestLimit(project, scene, path, snapshot, gridFPS(project, view))
 			if err != nil {
 				return checkedDraft{}, err
 			}
@@ -132,16 +132,25 @@ func validate(project string, value any, complete bool, view *View, checkFiles b
 		if view.TrackPath == nil || !dynvalue.StrictEqual(audio.Value("path"), *view.TrackPath) {
 			return checkedDraft{}, errors.New(textAudioChanged)
 		}
-		if view.Duration != nil && dynvalue.IsFinite(*view.Duration) && end.(float64) > secondsToFrames(*view.Duration) {
+		if view.Duration != nil && dynvalue.IsFinite(*view.Duration) && end.(float64) > secondsToFrames(*view.Duration, view.FPS) {
 			return checkedDraft{}, errors.New(textAudioBoundsExceeded)
 		}
 	}
 	return result, nil
 }
 
+// gridFPS — частота кадров шкалы черновика: из вида, если он передан, иначе из реестра сцен.
+func gridFPS(project string, view *View) float64 {
+	if view != nil {
+		return view.FPS
+	}
+	return readRegistry(project).fps
+}
+
 // manifestLimit — известная длина выбранного видео по текущему манифесту сцены, если снимок
-// черновика совпадает с ним: original (по original_media) или принятый клип (frames). Иначе nil.
-func manifestLimit(project, scene string, path any, snapshot *dynvalue.Object) (*float64, error) {
+// черновика совпадает с ним: original (по original_media) или принятый клип (frames) в кадрах
+// частоты fps. Иначе nil.
+func manifestLimit(project, scene string, path any, snapshot *dynvalue.Object, fps float64) (*float64, error) {
 	dir := filepath.Join(project, "assets", "shots", scene)
 	manifestPath := filepath.Join(dir, "manifest.json")
 	if !dynvalue.Exists(manifestPath) {
@@ -167,7 +176,7 @@ func manifestLimit(project, scene string, path any, snapshot *dynvalue.Object) (
 	for _, candidate := range []struct {
 		descriptor any
 		frames     *float64
-	}{{generation.Value("original"), originalFrames(generation.Value("original_media"))}, {edit.Value("video"), editFrames}} {
+	}{{generation.Value("original"), originalFrames(generation.Value("original_media"), fps)}, {edit.Value("video"), editFrames}} {
 		descriptor, ok := dynvalue.AsObject(candidate.descriptor)
 		if !ok {
 			continue

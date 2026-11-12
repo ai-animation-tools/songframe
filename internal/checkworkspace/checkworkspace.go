@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	"songframe/internal/sceneregistry"
@@ -73,7 +74,9 @@ func completedBundle(folder string, bundle *toolrt.Dict) bool {
 	if !isDict || !toolrt.Equal(project.Value("schema_version"), toolrt.NewInt(1)) || !truthy(project.Value("name")) {
 		return false
 	}
-	if !toolrt.Equal(bundle.Value("fps"), toolrt.NewInt(30)) || !nonEmptyString(bundle.Value("song")) {
+	// Частота пакета — одна из частот проекта; число кадров плана лежит в поле frames_<частота>.
+	fps := sceneregistry.FPS(bundle.Value("fps"))
+	if fps == 0 || !nonEmptyString(bundle.Value("song")) {
 		return false
 	}
 	if end := bundle.Value("song_end_s"); !toolrt.IsNumber(end) {
@@ -100,7 +103,7 @@ func completedBundle(folder string, bundle *toolrt.Dict) bool {
 		if found, _ := toolrt.Contains([]any{"video", "card"}, status); !found {
 			return false
 		}
-		if !positiveInt(row.Value("frames_30")) {
+		if !positiveInt(row.Value("frames_" + strconv.FormatInt(fps, 10))) {
 			return false
 		}
 		key := "card"
@@ -121,7 +124,7 @@ func completedBundle(folder string, bundle *toolrt.Dict) bool {
 
 // completedReview — условие готовой пробы build_review: рецепт рядом с непустым MP4.
 func completedReview(recipe string, document *toolrt.Dict) bool {
-	if !toolrt.Equal(document.Value("schema_version"), toolrt.NewInt(1)) || !toolrt.Equal(document.Value("fps"), toolrt.NewInt(30)) ||
+	if !toolrt.Equal(document.Value("schema_version"), toolrt.NewInt(1)) || sceneregistry.FPS(document.Value("fps")) == 0 ||
 		!toolrt.Equal(document.Value("status"), "review_pending") {
 		return false
 	}

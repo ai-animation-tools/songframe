@@ -1,12 +1,12 @@
 import { montageTexts } from '@shared/texts/montage';
 import { useEffect, useRef, useState, type DragEvent, type PointerEvent, type ReactElement } from 'react';
 import { Alert, Box, Checkbox, FormControlLabel, Slider, Stack, Typography, useTheme } from '@mui/material';
-import { FPS } from '@shared/video';
 import type { MontageClip, MontageDraft, MontageLyricLine } from '@shared/montage';
 import { decodePeaks, type Peaks } from '../../TimingPage/waveform';
 import { clipLength, frameLabel, montageLength, rollCut, slipClip, trimClip } from '../model';
 import { snapCutDelta } from '../snapCut';
 import { LinkedText } from '../../../components/LinkedText';
+import { useProjectFps } from '../../../hooks/useProjectFps';
 
 interface Props {
   draft: MontageDraft;
@@ -45,6 +45,7 @@ export function MontageTimeline({
   onDropSource,
   onMove
 }: Props): ReactElement {
+  const fps = useProjectFps();
   const theme = useTheme();
   const scrollRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -58,15 +59,15 @@ export function MontageTimeline({
   const [gesture, setGesture] = useState<Gesture | null>(null);
   const active = gesture?.next ?? draft;
   const maxFrames = Math.max(
-    Math.ceil((peaks?.duration ?? duration) * FPS),
+    Math.ceil((peaks?.duration ?? duration) * fps),
     active.audio.end_frame_exclusive,
     active.audio.start_frame + montageLength(active.clips),
     1
   );
-  const timelineWidth = Math.max(width, (maxFrames / FPS) * pps + 40);
-  const xFor = (value: number): number => (value / FPS) * pps;
+  const timelineWidth = Math.max(width, (maxFrames / fps) * pps + 40);
+  const xFor = (value: number): number => (value / fps) * pps;
   const absoluteFrame = (clientX: number): number =>
-    Math.max(0, Math.min(maxFrames, Math.round(((clientX - scrollRef.current!.getBoundingClientRect().left + scrollRef.current!.scrollLeft) / pps) * FPS)));
+    Math.max(0, Math.min(maxFrames, Math.round(((clientX - scrollRef.current!.getBoundingClientRect().left + scrollRef.current!.scrollLeft) / pps) * fps)));
 
   useEffect(() => {
     setPeaks(null);
@@ -121,8 +122,8 @@ export function MontageTimeline({
         }
         context.fillRect(x, 75 - high * 45, 1, Math.max(1, (high - low) * 45));
       }
-    const start = (active.audio.start_frame / FPS) * pps - scroll;
-    const end = (active.audio.end_frame_exclusive / FPS) * pps - scroll;
+    const start = (active.audio.start_frame / fps) * pps - scroll;
+    const end = (active.audio.end_frame_exclusive / fps) * pps - scroll;
     context.fillStyle = 'rgba(76,175,80,0.22)';
     context.fillRect(start, 22, end - start, 100);
     context.fillStyle = theme.palette.success.main;
@@ -133,7 +134,7 @@ export function MontageTimeline({
     context.font = '11px sans-serif';
     for (let second = Math.ceil(scroll / pps / secondsStep) * secondsStep; second * pps < scroll + width; second += secondsStep) {
       const x = second * pps - scroll;
-      context.fillText(frameLabel(second * FPS), x + 3, 14);
+      context.fillText(frameLabel(second * fps, fps), x + 3, 14);
       context.fillRect(x, 17, 1, 5);
     }
     // Курсор расположен отдельным слоем: движение плеера не пересоздаёт canvas и звуковую волну.
@@ -171,7 +172,8 @@ export function MontageTimeline({
                       gesture.id,
                       delta,
                       lyricLines.map((line) => line.startFrame),
-                      pps
+                      pps,
+                      fps
                     )
                   : delta
               )
@@ -340,7 +342,7 @@ export function MontageTimeline({
             style={{ display: 'block', position: 'sticky', left: 0, width, height: 140, cursor: 'crosshair' }}
             onPointerDown={(event) => {
               const at = absoluteFrame(event.clientX);
-              const tolerance = (8 / pps) * FPS;
+              const tolerance = (8 / pps) * fps;
               begin(
                 event,
                 Math.abs(at - draft.audio.start_frame) < tolerance
@@ -368,7 +370,7 @@ export function MontageTimeline({
             {lyricLines.map((line) => (
               <Box
                 key={line.id}
-                title={montageTexts.lyricTitle({ time: frameLabel(line.startFrame), text: line.text })}
+                title={montageTexts.lyricTitle({ time: frameLabel(line.startFrame, fps), text: line.text })}
                 sx={{
                   position: 'absolute',
                   left: xFor(line.startFrame),

@@ -5,11 +5,11 @@ import { useState, type ReactElement, type Ref } from 'react';
 import { Link } from 'react-router-dom';
 import { Box, Chip, Divider, ListItemIcon, ListItemText, Menu, MenuItem, Stack, Tooltip, Typography } from '@mui/material';
 import { DeleteOutline, ErrorOutline, FileDownload, MoreVert, OndemandVideo, Redo, Refresh, Save, SaveAs, Undo, WarningAmber } from '@mui/icons-material';
-import { FPS } from '@shared/video';
 import { ActionButton } from '../../../components/ActionButton';
 import { ActionIconButton } from '../../../components/ActionIconButton';
 import { JobStatus } from '../../../components/JobStatus';
 import { PageActionBar } from '../../../components/PageActionBar';
+import { useProjectFps } from '../../../hooks/useProjectFps';
 
 interface Props {
   barRef: Ref<HTMLDivElement>;
@@ -49,6 +49,7 @@ interface Props {
  * редкие действия и действия с готовой пробой собраны в меню «Ещё».
  */
 export function MontageActionBar(props: Props): ReactElement {
+  const fps = useProjectFps();
   const { locked, running, exportProblem, stale } = props;
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const closeMenu = (): void => setMenuAnchor(null);
@@ -64,7 +65,7 @@ export function MontageActionBar(props: Props): ReactElement {
       <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap sx={{ minWidth: 0 }}>
         <Typography variant="h5">{navigationTexts.pages.montage}</Typography>
         {/* Частота кадров постоянна и не требует места в панели: она в подсказке состояния пробы. */}
-        <Tooltip title={montageTexts.draftStatus({ name: props.name, fps: FPS })}>
+        <Tooltip title={montageTexts.draftStatus({ name: props.name, fps: fps })}>
           <Chip
             size="small"
             color={props.dirty ? 'warning' : props.saved ? 'success' : 'default'}

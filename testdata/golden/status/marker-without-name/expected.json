@@ -3,6 +3,7 @@
   "state": "invalid",
   "name": "project",
   "animaticVideo": null,
+  "fps": null,
   "checks": {
     "marker": false,
     "sources": false,

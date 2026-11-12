@@ -436,11 +436,11 @@ func TestNumbersGolden(t *testing.T) {
 		if err != nil || frames.String() != item.Frames {
 			t.Errorf("framesAt(%v, %s) = %v, %v; ожидалось %s", item.Seconds, rate, frames, err, item.Frames)
 		}
-		code, err := timecode(item.Seconds)
+		code, err := timecode(item.Seconds, 30)
 		if err != nil || code != item.Timecode {
 			t.Errorf("timecode(%v) = %q, %v; ожидалось %q", item.Seconds, code, err, item.Timecode)
 		}
-		time, err := rational(item.Seconds)
+		time, err := rational(item.Seconds, 30)
 		if err != nil || time != item.Rational {
 			t.Errorf("rational(%v) = %q, %v; ожидалось %q", item.Seconds, time, err, item.Rational)
 		}

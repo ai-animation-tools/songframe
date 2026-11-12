@@ -32,6 +32,7 @@ const projectStatus: ProjectStatus = {
   name: DRAFT_NAME,
   state: 'empty',
   animaticVideo: null,
+  fps: 30,
   problems: [],
   checks: {
     marker: true,

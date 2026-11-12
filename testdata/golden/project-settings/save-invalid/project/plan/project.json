@@ -2,6 +2,7 @@
   "schema_version": 1,
   "name": "Шаблон",
   "animatic_video": "shablon-animatic.mp4",
+  "fps": 30,
   "agent_instructions": "",
   "generation": {
     "video": null,

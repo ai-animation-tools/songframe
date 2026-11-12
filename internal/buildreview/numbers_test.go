@@ -1,6 +1,7 @@
 package buildreview
 
 import (
+	"math/big"
 	"testing"
 
 	"songframe/internal/toolrt"
@@ -43,5 +44,26 @@ func TestFramesHalfUp(t *testing.T) {
 	nan, _ := toolrt.NewDecimal("NaN")
 	if _, err := frames(nan); err == nil {
 		t.Error("frames(NaN) без ошибки")
+	}
+}
+
+// TestFrameGridSamples — границы звука на сетке проекта: при 30 кадрах/с кадр — ровно 1470
+// отсчётов, при 24 — 1837,5 с округлением половины вверх; секунды и кадры длительности считаются
+// по той же частоте.
+func TestFrameGridSamples(t *testing.T) {
+	for _, item := range []struct {
+		frames, fps int64
+		want        string
+	}{{1, 30, "1470"}, {1, 24, "1838"}, {2, 24, "3675"}, {1, 25, "1764"}} {
+		if got := samples(big.NewInt(item.frames), item.fps).String(); got != item.want {
+			t.Fatalf("samples(%d, %d) = %s, ждали %s", item.frames, item.fps, got, item.want)
+		}
+	}
+	if got, err := seconds(big.NewInt(12), 24); err != nil || got != "0.500000000" {
+		t.Fatalf("seconds(12, 24) = %s %v", got, err)
+	}
+	duration, _ := toolrt.NewDecimal("0.5")
+	if got, err := framesTimesFPS(duration, 24); err != nil || got.Int64() != 12 {
+		t.Fatalf("framesTimesFPS(0.5, 24) = %v %v", got, err)
 	}
 }

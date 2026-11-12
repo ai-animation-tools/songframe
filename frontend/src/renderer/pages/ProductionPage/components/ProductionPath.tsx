@@ -46,6 +46,12 @@ function resultQuestion(pkg: PackageView): NonNullable<PackageView['pendingDecis
   };
 }
 
+/** Своё видео не повторяется по запросу и не дорабатывается агентом: у результата остаются приёмка и проба стыков. */
+const OWN_VIDEO_EXCLUDED = ['retry', 'revise'];
+function withoutAgentOptions(question: NonNullable<PackageView['pendingDecision']>, pkg: PackageView): NonNullable<PackageView['pendingDecision']> {
+  return pkg.request?.ownVideo ? { ...question, options: question.options.filter((option) => !OWN_VIDEO_EXCLUDED.includes(option)) } : question;
+}
+
 /** Этапы, на которых Go принимает возврат утверждённого видеопромпта (shot_workflow reopen-prompt). */
 const PROMPT_REOPEN_STAGES = ['prompt_review', 'request_choice'];
 /** Где кнопка возврата видна: в очереди (ready) она недоступна с объяснением, после отправки не нужна. */
@@ -81,7 +87,8 @@ export function ProductionPath({
   onReopenPrompt,
   onKeepForScene,
   onSetKeyframeNote,
-  onSpeechPrepared
+  onSpeechPrepared,
+  onOwnVideo
 }: {
   project: string;
   shot: ShotProduction;
@@ -121,6 +128,8 @@ export function ProductionPath({
   onKeepForScene(): void;
   onSetKeyframeNote(id: number, active: boolean): void;
   onSpeechPrepared(): Promise<void>;
+  /** Открыть окно своего видео плана (новая попытка без описания, опор и промпта). */
+  onOwnVideo?(): void;
 }): ReactElement {
   const packageDir = pkg?.dir;
   const workflow: ProductionWorkflow = useProductionWorkflow(project, shot.id, packageDir, onApplied);
@@ -251,6 +260,7 @@ export function ProductionPath({
       onAcceptProposal={acceptProposal}
       onReviseProposal={reviseProposal}
       onWriteOwn={!pkg ? openOwnDescription : view?.nextStage === 'prompt' ? openOwnPrompt : undefined}
+      onOwnVideo={!pkg ? onOwnVideo : undefined}
     />
   );
 
@@ -259,8 +269,9 @@ export function ProductionPath({
   const decision = (key: PlanStepKey): ReactNode => {
     if (!pkg) return null;
     const pending = pkg.pendingDecision && questionStep(pkg.pendingDecision.stage) === key ? pkg.pendingDecision : null;
-    const shown = pending ?? (key === 'result' ? resultQuestion(pkg) : null);
-    if (!shown) return null;
+    const asked = pending ?? (key === 'result' ? resultQuestion(pkg) : null);
+    if (!asked) return null;
+    const shown = withoutAgentOptions(asked, pkg);
     return (
       <PackageDecision
         aiKind={aiKind}

@@ -9,7 +9,7 @@ import type { VideoReviewView } from '@shared/video-review';
 import { videoReviewTexts } from '@shared/texts/video-review';
 import type { Api } from '@shared/api';
 import type { AcceptedKit, AppState, ShotSpend, BrokenPackage, JobInfo, PackageView, ProductionView, ShotProduction } from '@shared/types';
-import type { ProductionProposal } from '@shared/production-workflow';
+import type { ProductionFramePrompt, ProductionProposal } from '@shared/production-workflow';
 import { registerMediaProviderForTests } from '@shared/media-providers';
 import { productionTexts } from '@shared/texts/production';
 import { TEST_PROVIDER, testProviderInfo } from '@shared/testing/media-provider';
@@ -57,6 +57,9 @@ export function pageShot(id: string, overrides: Partial<ShotProduction> = {}): S
   });
 }
 
+/** Отказ Go для файла не MP4 (production.CheckManualResult). */
+export const OWN_VIDEO_FORMAT_ERROR = 'Нужно видео в формате MP4, а выбранный файл в другом формате. Перекодируйте его в MP4 и загрузите снова.';
+
 export interface ProductionPageModelOptions {
   shots: () => ShotProduction[];
   broken?: () => BrokenPackage[];
@@ -97,6 +100,8 @@ interface PageModel {
   reviewCancels: number;
   manualBuilds: number;
   manualUploads: number;
+  /** Загрузок своего видео плана (production.attachOwnVideo). */
+  ownVideos: number;
   promptReopens: string[];
   /** Свои описания, сохранённые без агента: описание и число опор каждого. */
   ownSaves: string[];
@@ -154,6 +159,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
         reviewCancels: 0,
         manualBuilds: 0,
         manualUploads: 0,
+        ownVideos: 0,
         promptReopens: [],
         ownSaves: [],
         methodChanges: [],
@@ -224,6 +230,8 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
       };
       // Попытки со способом «Вручную вне приложения» (productionWorkflow.setGenerationMethod).
       const manualMethods = new Set<string>();
+      // План опор своих описаний по папке попытки: опора без промпта создаётся только своим файлом.
+      const ownFramePrompts = new Map<string, ProductionFramePrompt[]>();
       // Свой файл опоры становится предложением только на время между импортом и применением.
       const frameImports = new Map<string, ProductionProposal>();
       const workflowSnapshot = (project: string, shot: string, packageDir: string | undefined) => {
@@ -256,6 +264,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
           canPrepare: !packageDir,
           canGenerateFrames: !!nextFrame,
           nextFrame,
+          framePrompts: (packageDir && ownFramePrompts.get(packageDir)) || [],
           proposal: (packageDir && frameImports.get(packageDir)) || null,
           reasons: packageDir
             ? {
@@ -444,6 +453,67 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
             publish();
             return deliveryJob('submit', { id: `manual-${shot.id}-${model.manualUploads}`, project: PAGE_PROJECT, status: 'done', code: 0, finishedAt: DATE });
           },
+          // Как Go: своё видео — новая попытка без описания, опор и промпта; вопрос о результате тот же, что после загрузки.
+          attachOwnVideo: async (project, shotId, video) => {
+            checked(project);
+            const shot = model.view.shots.find((item) => item.id === shotId);
+            if (!shot) throw new Error('План не найден.');
+            if (!/\.mp4$/i.test(video.file)) throw new Error(OWN_VIDEO_FORMAT_ERROR);
+            if (!video.source.trim()) throw new Error('Укажите источник видео.');
+            model.ownVideos++;
+            const relative = `plan/batches/${shot.id}-attempt-0${shot.packages.length + 1}`;
+            const dir = `${PAGE_PROJECT}/${relative}`;
+            const pkg = keyframePackage({
+              dir,
+              relative,
+              shot: shot.id,
+              stage: 'downloaded',
+              stageLabel: 'Результат получен',
+              keyframes: [],
+              keyframeNotes: [],
+              pendingDecision: null,
+              timing: { frames: Math.round((shot.end - shot.start) * 30), window_seconds: shot.end - shot.start, request_seconds: null },
+              resultToken: `own-video-${model.ownVideos}`,
+              request: {
+                dir: `${dir}/request-01`,
+                kind: 'video',
+                provider: 'manual',
+                mode: 'manual',
+                ownVideo: true,
+                sha256: 'c'.repeat(64),
+                model: '',
+                parameters: {},
+                inputs: [],
+                attemptStatus: 'downloaded',
+                promptText: '',
+                generationId: null,
+                manualResult: true,
+                creditsConsumed: null,
+                downloads: [video.file],
+                manualGeneration: {
+                  source: video.source,
+                  original_name: video.file.split('/').pop() ?? video.file,
+                  attached_at: DATE,
+                  cost: video.costAmount === null || !video.costUnit ? null : { amount: video.costAmount, unit: video.costUnit },
+                  description: video.note || null
+                }
+              }
+            });
+            shot.packages = [...shot.packages, pkg];
+            shot.state = 'progress';
+            ask(shot, pkg, {
+              stage: 'downloaded',
+              question: 'Принять полученный результат?',
+              options: ['accept', 'retry', 'review', 'revise'],
+              asked_at: DATE
+            });
+            shot.stageLabel = pkg.stageLabel;
+            publish();
+            return {
+              packageDir: dir,
+              job: deliveryJob('submit', { id: `own-video-${shot.id}-${model.ownVideos}`, project: PAGE_PROJECT, status: 'done', code: 0, finishedAt: DATE })
+            };
+          },
           discardAttempt: async (project, dir) => {
             const { shot, pkg } = find(project, dir);
             shot.packages = shot.packages.filter((item) => item !== pkg);
@@ -603,6 +673,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
               imagePath: null,
               approved: false
             }));
+            ownFramePrompts.set(pkg.dir, input.keyframes);
             if (!existing) shot.packages = [...shot.packages, pkg];
             shot.state = 'progress';
             ask(shot, pkg, { stage: 'description_review', question: 'Утвердить описание?', options: ['approve', 'revise'], asked_at: DATE });
@@ -624,7 +695,12 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
             return workflowSnapshot(project, shotId, pkg.dir);
           }
         },
-        dialog: { pickFiles: async () => [options.manual || manualMethods.size ? STORY_VIDEO_PATH : STORY_IMAGE_PATH] },
+        // Видео выбирается окном с фильтром MP4 (своё видео, ручная генерация), иначе — изображение опоры.
+        dialog: {
+          pickFiles: async (request) => [
+            request?.filters?.some((filter) => filter.extensions.includes('mp4')) || options.manual || manualMethods.size ? STORY_VIDEO_PATH : STORY_IMAGE_PATH
+          ]
+        },
         shell: { openPath: async () => undefined, fileUrl: fragment.overrides.shell.fileUrl },
         derivedShots: derived.api.derivedShots
       });
@@ -690,8 +766,9 @@ export function ProductionPageStory({ links = [] }: { links?: StoryLink[] }): Re
             Чтений: {model.reads}. Ответов: {model.decisions}. Выборов оригинала: {model.selections}. Утверждено опор: {approved.join(', ') || 'нет'}. Приёмок
             комплекта: {model.accepts}. Отправок генерации: {model.submissions}. Своих файлов опор: {model.frameImports}. Указаний к опорам:{' '}
             {model.frameNotes.join(', ') || 'нет'}. Созданий опор: {model.frameRuns}. Удалений попыток: {model.discards}. Пакетов ручной генерации:{' '}
-            {model.manualBuilds}. Загрузок видео: {model.manualUploads}. Возвратов промпта: {model.promptReopens.join(', ') || 'нет'}. Своих описаний:{' '}
-            {model.ownSaves.join(', ') || 'нет'}. Способов генерации: {model.methodChanges.join(', ') || 'нет'}.
+            {model.manualBuilds}. Загрузок видео: {model.manualUploads}. Своих видео: {model.ownVideos}. Возвратов промпта:{' '}
+            {model.promptReopens.join(', ') || 'нет'}. Своих описаний: {model.ownSaves.join(', ') || 'нет'}. Способов генерации:{' '}
+            {model.methodChanges.join(', ') || 'нет'}.
           </Typography>
           <Typography variant="caption" color="text.secondary" data-testid="production-review-model">
             Проверок видео: {model.reviewStarts}. Отмен проверок: {model.reviewCancels}.

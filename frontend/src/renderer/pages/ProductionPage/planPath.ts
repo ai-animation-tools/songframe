@@ -147,6 +147,7 @@ function nowState(
     case 'speech':
       return action(texts.prepareSpeech);
     case 'request':
+      if (pkg?.request?.ownVideo) return receiving ? wait(texts.manualUploading) : action(texts.uploadOwnVideo);
       if (manual) return receiving ? wait(texts.manualUploading) : action(pkg?.request ? texts.uploadManual : texts.buildManual);
       return action(pkg?.request ? texts.sendRequest : texts.prepareRequest);
     case 'generation':
@@ -159,9 +160,15 @@ function nowState(
   }
 }
 
+/** Попытка своего видео плана: без описания, опор и промпта, видео пользователь сделал сам. */
+export function ownVideoAttempt(pkg: PackageView | null): boolean {
+  return !!pkg?.request?.ownVideo;
+}
+
 /**
  * Шаги пути плана. Срез речи есть только у речевого плана; newAttempt — пользователь сам начал
- * новую попытку; receiving — приложение сейчас отправляет запрос или получает результат.
+ * новую попытку; receiving — приложение сейчас отправляет запрос или получает результат. У попытки
+ * своего видео путь короткий: «Своё видео» (загрузка, если она не состоялась) и «Результат».
  */
 export function planPath(
   shot: ShotProduction,
@@ -171,15 +178,10 @@ export function planPath(
   receiving = false
 ): PlanPath {
   const manual = manualGeneration(pkg, workflow);
-  const keys: PlanStepKey[] = [
-    'description',
-    'frames',
-    'prompt',
-    ...(shot.lipsync ? (['speech'] as const) : []),
-    'request',
-    ...(manual ? [] : (['generation'] as const)),
-    'result'
-  ];
+  const own = ownVideoAttempt(pkg);
+  const keys: PlanStepKey[] = own
+    ? ['request', 'result']
+    : ['description', 'frames', 'prompt', ...(shot.lipsync ? (['speech'] as const) : []), 'request', ...(manual ? [] : (['generation'] as const)), 'result'];
   const current = currentStep(shot, pkg, workflow, newAttempt);
   const index = keys.indexOf(current);
   const finished = current === 'result' && (pkg ? pkg.stage === 'accepted' : !!shot.asset);
@@ -187,7 +189,7 @@ export function planPath(
     const status: PlanStepStatus = position < index || finished ? 'done' : position === index ? 'current' : 'future';
     return {
       key,
-      title: manual && key === 'request' ? texts.titles.manual : texts.titles[key],
+      title: own && key === 'request' ? texts.titles.ownVideo : manual && key === 'request' ? texts.titles.manual : texts.titles[key],
       status,
       summary:
         status === 'future'

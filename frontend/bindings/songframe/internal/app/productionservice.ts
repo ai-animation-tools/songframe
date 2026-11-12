@@ -62,6 +62,16 @@ export function AttachManual(project: string, packageDir: string, result: produc
 }
 
 /**
+ * AttachOwnVideo — своё видео плана: файл и источник проверяются до записей, затем проход создаёт
+ * попытку без описания, опор и промпта, а видео загружается в неё тем же заданием, что результат
+ * ручной генерации. Сервис провайдера не участвует, вход в него не нужен. Если задание не
+ * запустилось, попытка остаётся ждать видео: загрузить его можно на её шаге «Своё видео».
+ */
+export function AttachOwnVideo(project: string, shot: string, result: production$0.ManualResult): $CancellablePromise<$models.OwnVideoStart> {
+    return $Call.ByID(2060569673, project, shot, result);
+}
+
+/**
  * AttachResult — неизвестный исход: файл из истории генераций сервиса становится оригиналом.
  */
 export function AttachResult(project: string, packageDir: string, files: string[]): $CancellablePromise<jobs$0.Info> {

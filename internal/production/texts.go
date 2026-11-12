@@ -302,6 +302,8 @@ func TextSpeechDuration(min, max float64) string {
 const (
 	textManualPackageOnly   = "Загрузить видео можно только в собранный пакет ручной генерации, ещё не получивший видео."
 	textManualSourceMissing = "Укажите источник видео."
+	textManualCostInvalid   = "Стоимость — целое неотрицательное число."
+	textManualVideoFormat   = "Нужно видео в формате MP4, а выбранный файл в другом формате. Перекодируйте его в MP4 и загрузите снова."
 	textAttachManualStep    = "Загрузка видео ручной генерации"
 )
 

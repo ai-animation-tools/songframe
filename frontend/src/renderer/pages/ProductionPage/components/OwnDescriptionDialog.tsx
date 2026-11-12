@@ -152,6 +152,7 @@ export function OwnDescriptionDialog({
                 </Stack>
                 <TextField
                   label={texts.prompt}
+                  helperText={texts.promptHint}
                   multiline
                   minRows={2}
                   maxRows={8}

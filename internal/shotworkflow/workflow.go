@@ -1129,6 +1129,28 @@ func (t *workflowTool) reopenPrompt(dirArg, note string) (*toolrt.Dict, error) {
 	return save(directory, data)
 }
 
+// StartOwnVideo — попытка своего видео плана: только что созданный init пакет (description_review
+// без принятого описания и опор) получает отметку own_video, папку собранного пакета ручной
+// генерации requestDir и этап request_choice, с которого загрузка видео ведёт попытку к результату
+// тем же путём, что ручную генерацию. Описания, опор и промпта у такой попытки нет и не будет:
+// шаги до результата пропускаются по выбору пользователя, а не обходом проверок.
+func StartOwnVideo(directory, requestDir string) error {
+	data, err := load(directory)
+	if err != nil {
+		return err
+	}
+	frames, _ := data.Value("keyframes").([]any)
+	if toolrt.Str(data.Value("stage")) != "description_review" || toolrt.Truthy(data.Value("description_approved")) || len(frames) > 0 {
+		return valueError("Своё видео ставится только в новую попытку без описания и опор.")
+	}
+	data.Set("own_video", true)
+	data.Set("request_dir", requestDir)
+	data.Set("stage", "request_choice")
+	data.Set("wait_reason", nil)
+	_, err = save(directory, data)
+	return err
+}
+
 // AddFrameNote записывает необязательное указание пользователя к неутверждённой опоре до её
 // создания. Это обычная запись keyframe_notes: агент получает её тем же путём, что и замечание
 // доработки, а у платного провайдера текст входит в промпт, SHA и подтверждение цены. directory —

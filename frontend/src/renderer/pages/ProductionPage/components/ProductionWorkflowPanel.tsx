@@ -7,6 +7,7 @@ import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { Alert, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import EditNoteIcon from '@mui/icons-material/EditNote';
+import VideoFileOutlinedIcon from '@mui/icons-material/VideoFileOutlined';
 import type { ProductionPass, ProductionWorkflowStart } from '@shared/production-workflow';
 import type { PackageView } from '@shared/types';
 import { keyframeLimit, mediaProviderInfo } from '@shared/media-providers';
@@ -35,7 +36,8 @@ export function ProductionWorkflowPanel({
   onReviseOpen,
   onAcceptProposal,
   onReviseProposal,
-  onWriteOwn
+  onWriteOwn,
+  onOwnVideo
 }: {
   workflow: ProductionWorkflow;
   packageDir: string | undefined;
@@ -53,6 +55,8 @@ export function ProductionWorkflowPanel({
    * когда следующий этап попытки — промпт (рядом с его подготовкой агентом).
    */
   onWriteOwn?(): void;
+  /** Своё готовое видео плана без описания, опор и промпта: рядом с подготовкой описания у плана без попытки. */
+  onOwnVideo?(): void;
 }): ReactElement {
   // Замечание к опоре уже в списке замечаний и уходит в создание опоры: в поле доработки агентом его не подставляем.
   const savedNote = decision?.verdict === 'revise' && decision.stage !== 'keyframes_review' ? (decision.note ?? '') : '';
@@ -225,6 +229,18 @@ export function ProductionWorkflowPanel({
                   onClick={onWriteOwn}
                 >
                   {productionTexts.ownDescriptionDialog.writeOwn}
+                </ActionButton>
+              ) : null}
+              {onOwnVideo ? (
+                // Сервис и агент не участвуют: готовность плана проверяет Go при загрузке, отказ показывает окно.
+                <ActionButton
+                  startIcon={<VideoFileOutlinedIcon />}
+                  title={productionTexts.ownVideo.openHint}
+                  disabled={busy}
+                  disabledReason={busy ? BUSY_REASON : null}
+                  onClick={onOwnVideo}
+                >
+                  {productionTexts.ownVideo.open}
                 </ActionButton>
               ) : null}
             </Stack>

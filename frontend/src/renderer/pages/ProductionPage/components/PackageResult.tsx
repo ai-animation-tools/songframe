@@ -118,7 +118,8 @@ export function PackageResult({
               {productionTexts.packageResult.createSummary}
             </ActionButton>
           )}
-          {!image && ['downloaded', 'edit_review', 'accepted'].includes(pkg.stage) ? (
+          {/* Проверке нужны утверждённые опоры и описание: у своего видео их нет (D-048). */}
+          {!image && !pkg.request?.ownVideo && ['downloaded', 'edit_review', 'accepted'].includes(pkg.stage) ? (
             <VideoReviewPanel
               key={pkg.dir}
               packageDir={pkg.dir}

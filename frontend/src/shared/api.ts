@@ -221,6 +221,8 @@ export interface Api {
     markNotCreated(project: string, packageDir: string): Promise<void>;
     /** Видео, созданное вне приложения по пакету ручной генерации, становится оригиналом попытки с источником и примечаниями. */
     attachManual(project: string, packageDir: string, result: ManualVideo): Promise<JobInfo>;
+    /** Своё видео плана: новая попытка без описания, опор и промпта, видео MP4 сразу становится её результатом; packageDir — папка попытки. */
+    attachOwnVideo(project: string, shot: string, result: ManualVideo): Promise<{ packageDir: string; job: JobInfo }>;
     /** Выбирает кандидат опоры; художественное утверждение кадра выполняется отдельно. */
     selectImage(project: string, packageDir: string, index: number, expectedResultToken: string): Promise<void>;
     regenerate(project: string, shot: string): Promise<JobInfo>;

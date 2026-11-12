@@ -42,6 +42,11 @@ const (
 	framesCorrectionsLabel = "\n\nИсправления к прежним вариантам: "
 )
 
+// textFramePromptMissing — отказ создать опору своего описания без промпта: её загружают своим файлом.
+func textFramePromptMissing(frame any) string {
+	return "У опоры " + dynvalue.ToString(frame) + " нет промпта: загрузите её своим файлом или добавьте промпт в описании."
+}
+
 func textAcceptFrameFirst(frame any) string {
 	return "Сначала утвердите опору " + dynvalue.ToString(frame) + " или отправьте её на доработку."
 }

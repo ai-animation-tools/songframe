@@ -40,6 +40,10 @@ type Rules struct {
 	// Keyframes — число опор, выбранное пользователем для этапа description; 0 — «авто»: агент
 	// выбирает сам в пределах 2–20.
 	Keyframes int
+	// Own — свой текст пользователя (предложение с отметкой own): промпт опоры может быть пустым,
+	// такую опору пользователь делает своим файлом. В дерево правил не входит: признак берётся из
+	// предложения при каждом разборе.
+	Own bool
 }
 
 // Tree — правила для локальной записи; порядок ключей зафиксирован эталоном.
@@ -310,7 +314,9 @@ func ParseProposal(raw string, rules Rules) (*dynvalue.Object, error) {
 // parseDescription — проверка описания и плана опор: K01..KNN подряд, first на 0, last на
 // requestSeconds, middle строго между; референсы — изображения из allowedPaths. В ручном режиме
 // (rules.Manual) опора ровно одна — K01 first на 0. Выбранное пользователем число опор
-// (rules.Keyframes) соблюдается точно; одна опора — только K01 first, без last.
+// (rules.Keyframes) соблюдается точно; одна опора — только K01 first, без last. У своего описания
+// (rules.Own) промпт опоры может быть пустой строкой: опору без промпта создать нельзя, только
+// загрузить своим файлом.
 func parseDescription(value *dynvalue.Object, rules Rules) error {
 	if err := keys(value, "schemaVersion", "stage", "description", "requestSeconds", "keyframes"); err != nil {
 		return err
@@ -353,7 +359,7 @@ func parseDescription(value *dynvalue.Object, rules Rules) error {
 		time, timeOK := frame.Value("timeSeconds").(float64)
 		references, referencesOK := dynvalue.AsArray(frame.Value("referencePaths"))
 		valid := frame.Value("id") == "K"+twoDigits(index+1) && frame.Value("role") == role && timeOK && dynvalue.IsFinite(time) &&
-			time > previous && isText(frame.Value("prompt")) && referencesOK
+			time > previous && (isText(frame.Value("prompt")) || (rules.Own && isOptionalText(frame.Value("prompt")))) && referencesOK
 		for _, path := range references {
 			text, _ := path.(string)
 			if !valid || !isText(path) || !imagePath.MatchString(text) || !slices.Contains(rules.AllowedPaths, text) {

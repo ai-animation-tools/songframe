@@ -69,6 +69,9 @@ type Request struct {
 	// обычного запроса. ManualGeneration — attempt.json manual_generation загруженного видео как есть.
 	Mode             string          `json:"mode,omitempty"`
 	ManualGeneration json.RawMessage `json:"manualGeneration,omitempty"`
+	// OwnVideo — своё видео плана (request.json own_video): попытка без описания, опор и промпта,
+	// видео пользователь сделал сам; поле опускается у остальных запросов.
+	OwnVideo bool `json:"ownVideo,omitempty"`
 	// Downloads — абсолютные пути существующих скачанных оригиналов.
 	Downloads []string `json:"downloads"`
 }
@@ -510,6 +513,7 @@ func readRequest(dir string, workflow, active any, imageRequest bool, problems *
 	if mode, ok := dynvalue.Get(frozen, "mode").(string); ok {
 		request.Mode = mode
 	}
+	request.OwnVideo = dynvalue.StrictEqual(dynvalue.Get(frozen, "own_video"), true)
 	if generation := dynvalue.Get(attempt, "manual_generation"); dynvalue.IsRecord(generation) {
 		request.ManualGeneration = dynvalue.Raw(generation)
 	}

@@ -91,6 +91,10 @@ func (w *Workflow) planFrames(project, shot, packageDir string) (*framesPlan, er
 		}
 		return nil, errors.New(textAllFramesCreated)
 	}
+	// Опору без промпта (своё описание) создать нечем: её делает пользователь своим файлом.
+	if text, _ := dynvalue.Get(prompt, "prompt").(string); dynvalue.Trim(text) == "" {
+		return nil, errors.New(textFramePromptMissing(target))
+	}
 	generation, err := projectGeneration(c.Project)
 	if err != nil {
 		return nil, err

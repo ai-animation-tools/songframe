@@ -20,7 +20,7 @@
   "files": {
     ".gitignore": "a2ea3a218565954a700f285a9428fee885d705afdd73fadb1eeb908b3f424a1a",
     "README.md": "e2adcc90ab0e138350d34b17903d9ae55a042a3d2b22f0d21a8da350e30aa16a",
-    "assets/README.md": "e2090c370fe76876bb0c134b74dda00977a9602dec76639da8ee552f3a1e522d",
+    "assets/README.md": "b50f6220dfd2deb00686b7c60cbbc640dc0b09218ee81229177b2198fd39661d",
     "assets/shots/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "plan/README.md": "3958baeb9d8be8fe115d0db3609157207417954510e48a5711ea5e13db38e71e",
     "plan/animatic/README.md": "50667db6d080fcc6922d3841704068a71454c64079e6dc9498fd248944994c2a",
@@ -28,7 +28,7 @@
     "plan/animatic/latest/README.md": "27a7126041d46c97bbba93dd61f51c89a0fc7e1e12b035627deaa32b57fd9a1a",
     "plan/audio/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "plan/awaiting/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "plan/awaiting/README.md": "7639d8c6af8d959ced8dfc484247d947e8298967e2674ce2e9e0695a5510b11a",
+    "plan/awaiting/README.md": "2e11bb2287e32e3e85f2ea253c2d0fd9d20ade6a911d1f2bd1e20f51bf4a8e1a",
     "plan/batches/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "plan/context/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "plan/production-status.json": "49b08582891d98949467417ea61075f173ec82b5d1df4d0a4c99ced168eeb2e7",

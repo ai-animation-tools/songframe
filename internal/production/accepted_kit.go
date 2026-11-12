@@ -21,6 +21,8 @@ type AcceptedKit struct {
 	GenerationID *string `json:"generationId"`
 	// ManualGeneration — manual_generation снимка запроса как есть: видео создано вне приложения.
 	ManualGeneration json.RawMessage `json:"manualGeneration,omitempty"`
+	// OwnVideo — своё видео плана (generation.own_video): описания, опор и промпта у комплекта нет.
+	OwnVideo bool `json:"ownVideo,omitempty"`
 	// Prompt — текст видеопромпта, переданного в генерацию.
 	Prompt *string `json:"prompt"`
 	// Images — изображения, переданные в генерацию (опоры), в порядке входов.
@@ -52,7 +54,7 @@ func AcceptedKitFor(project, shot string) (*AcceptedKit, error) {
 	if !dynvalue.IsRecord(generation) {
 		return nil, nil
 	}
-	kit := &AcceptedKit{Images: []string{}}
+	kit := &AcceptedKit{Images: []string{}, OwnVideo: dynvalue.StrictEqual(dynvalue.Get(generation, "own_video"), true)}
 	if path, err := existingAssetFile(dir, dynvalue.GetPath(generation, "request", "path")); err != nil {
 		return nil, err
 	} else if path != nil {

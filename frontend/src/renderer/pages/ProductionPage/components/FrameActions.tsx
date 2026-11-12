@@ -1,7 +1,8 @@
 import { productionTexts } from '@shared/texts/production';
 /**
  * Действия одной опоры на её карточке: создать следующую по порядку или поставить свой файл.
- * Файл сразу становится кандидатом; утверждение остаётся отдельным вопросом шага.
+ * Файл сразу становится кандидатом; утверждение остаётся отдельным вопросом шага. Опору своего описания без промпта
+ * создать нечем: кнопка создания недоступна с причиной, остаётся свой файл.
  */
 import { useState, type ReactElement } from 'react';
 import EditNoteIcon from '@mui/icons-material/EditNote';
@@ -42,6 +43,16 @@ export function FrameActions({
   const replacing = view.replaceFrame === frame.id;
   const available = replacing || view.canGenerateFrames;
   const reason = busy ? BUSY_REASON : !available ? (view.reasons.frames ?? productionTexts.productionWorkflowPanel.descriptionRequired) : null;
+  // Пустой промпт бывает только у своего описания; опоры вне плана опор кнопки создания не получают и без этой проверки.
+  const framePrompt = view.framePrompts.find((prompt) => prompt.id === frame.id);
+  const hasPrompt = !framePrompt || framePrompt.prompt.trim() !== '';
+  const generateReason = busy
+    ? BUSY_REASON
+    : !view.canGenerateFrames
+      ? view.reasons.frames
+      : !hasPrompt
+        ? productionTexts.frameActions.noPrompt({ id: frame.id })
+        : null;
   const choose = async (): Promise<void> => {
     try {
       const files = await window.api.dialog.pickFiles({
@@ -56,7 +67,7 @@ export function FrameActions({
   };
   return (
     <Stack spacing={0.5} sx={{ mt: 0.5, alignItems: 'flex-start' }}>
-      {view.nextFrame === frame.id && !replacing && instructionOpen ? (
+      {view.nextFrame === frame.id && !replacing && hasPrompt && instructionOpen ? (
         <Stack spacing={1} sx={{ alignSelf: 'stretch' }}>
           <TextField
             label={productionTexts.frameActions.instruction}
@@ -76,8 +87,8 @@ export function FrameActions({
       {view.nextFrame === frame.id && !replacing ? (
         <ProductionFrameGenerationButton
           provider={view.imageProvider}
-          disabled={busy || !view.canGenerateFrames}
-          disabledReason={busy ? BUSY_REASON : !view.canGenerateFrames ? view.reasons.frames : null}
+          disabled={busy || !view.canGenerateFrames || !hasPrompt}
+          disabledReason={generateReason}
           frame={frame.id}
           title={productionTexts.productionWorkflowPanel.frameHint({ nextFrame: frame.id })}
           onGenerate={() => {
@@ -88,7 +99,7 @@ export function FrameActions({
           }}
         />
       ) : null}
-      {view.nextFrame === frame.id && !replacing && !instructionOpen ? (
+      {view.nextFrame === frame.id && !replacing && hasPrompt && !instructionOpen ? (
         <Button size="small" startIcon={<EditNoteIcon />} disabled={busy} onClick={() => setInstructionOpen(true)}>
           {productionTexts.frameActions.instructionOpen}
         </Button>

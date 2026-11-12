@@ -1,33 +1,30 @@
 import { productionTexts } from '@shared/texts/production';
 import { commonTexts } from '@shared/texts/common';
-import { componentsTexts } from '@shared/texts/components';
 /**
  * Ручная генерация: речевой план у провайдера без липсинка или попытка со способом «Вручную вне приложения». Приложение
  * без агента собирает пакет (утверждённые опоры, у речевого плана срез речи, видеопромпт), показывает его и инструкцию —
  * пошаговую провайдера из реестра для речевого плана или общую для выбранного способа, а созданное вне приложения видео
- * загружается в попытку с источником и необязательными стоимостью и примечанием. Файлы и проверки — у Go.
+ * загружается в попытку с источником и необязательными стоимостью и примечанием. У попытки своего видео пакета нет: шаг
+ * только принимает видео, если первая загрузка не состоялась. Файлы и проверки — у Go.
  */
-import { Fragment, useState, type ReactElement, type ReactNode } from 'react';
-import { Alert, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { Fragment, type ReactElement, type ReactNode } from 'react';
+import { Button, Stack, Typography } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
-import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { mediaProviderInfo } from '@shared/media-providers';
 import type { ProductionWorkflowView } from '@shared/production-workflow';
-import type { ManualCostUnit, ManualGeneration as ManualGenerationRecord, ManualVideo, PackageView } from '@shared/types';
+import type { ManualGeneration as ManualGenerationRecord, ManualVideo, PackageView } from '@shared/types';
 import { ActionButton } from '../../../components/ActionButton';
-import { FileDropZone } from '../../../components/FileDropZone';
-import { VIDEO_FILTER } from '../../../file-filters';
 import { formatDateTime } from '../../../format';
 import { useApp } from '../../../state';
 import { BUSY_REASON } from '../constants';
 import { PackageTextSection } from './PackageTextSection';
 import { SpeechSlice } from './ProductionSpeechPanel';
 import { ExternalLink } from '../../../components/ExternalLink';
+import { ManualVideoForm } from './ManualVideoForm';
 
 const texts = productionTexts.manualGeneration;
-const UNITS: ManualCostUnit[] = ['credits', 'RUB', 'USD'];
 
 /** Имя файла без папок: пакет показывает файлы так, как их видит пользователь в «Открыть папку». */
 const fileName = (path: string): string => path.split(/[\\/]/).pop() ?? path;
@@ -85,16 +82,28 @@ export function ManualGeneration({
   onAttach(video: ManualVideo): void;
 }): ReactElement {
   const { notify, describeError } = useApp();
-  const [file, setFile] = useState<string | null>(null);
-  const [source, setSource] = useState('');
-  const [cost, setCost] = useState('');
-  const [unit, setUnit] = useState<ManualCostUnit>('credits');
-  const [note, setNote] = useState('');
   const request = pkg.request?.mode === 'manual' ? pkg.request : null;
   const provider = mediaProviderInfo(view?.videoProvider ?? request?.provider, 'video');
   // Инструкция провайдера описывает липсинк по одной опоре и звуку: она относится только к речевому плану без липсинка.
   const instruction = view?.singleFrame ? (provider?.manualLipSync ?? null) : null;
   const chosen = view?.generationMethod === 'manual';
+
+  // Попытка своего видео без пакета: если загрузка не состоялась, видео загружается здесь же.
+  if (request?.ownVideo) {
+    return request.attemptStatus === 'manual_pending' ? (
+      <Stack spacing={1.5}>
+        <Typography variant="body2" color="text.secondary">
+          {texts.ownVideoPending}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {productionTexts.ownVideo.format}
+        </Typography>
+        <ManualVideoForm busy={busy} busyReason={busyReason} sourceHint={productionTexts.ownVideo.sourceHint} onSubmit={onAttach} />
+      </Stack>
+    ) : (
+      <Typography variant="body2">{productionTexts.planPath.manualSummary}</Typography>
+    );
+  }
 
   if (!request) {
     const reason = busy ? busyReason : view ? (view.reasons.manual ?? null) : productionTexts.productionWorkflowPanel.loadingReason;
@@ -124,10 +133,6 @@ export function ManualGeneration({
   const files = { image: fileName(image?.path ?? ''), audio: fileName(audio?.path ?? '') };
   const speech = pkg.speech;
   const pending = request.attemptStatus === 'manual_pending';
-  const costText = cost.trim().replace(',', '.');
-  const costValue = costText === '' ? null : Number(costText);
-  const costProblem = costValue !== null && (!Number.isFinite(costValue) || costValue < 0);
-  const uploadReason = busy ? busyReason : !file ? texts.fileRequired : !source.trim() ? texts.sourceRequired : costProblem ? texts.costInvalid : null;
 
   const copy = async (): Promise<void> => {
     try {
@@ -136,10 +141,6 @@ export function ManualGeneration({
     } catch (error) {
       notify(describeError(error), 'error');
     }
-  };
-  const pick = async (): Promise<void> => {
-    const [picked] = await window.api.dialog.pickFiles({ title: texts.zone, filters: VIDEO_FILTER, multiple: false });
-    if (picked) setFile(picked);
   };
 
   return (
@@ -203,83 +204,12 @@ export function ManualGeneration({
         </Stack>
       ) : null}
       {pending ? (
-        <Stack spacing={1.5}>
-          {/* Выбранный файл — заметная плашка вместо зоны: по ней сразу видно, что видео готово к загрузке. */}
-          {file ? (
-            <Alert
-              severity="success"
-              action={
-                <Button color="inherit" size="small" startIcon={<FolderOpenIcon />} onClick={() => void pick()}>
-                  {texts.replace}
-                </Button>
-              }
-            >
-              <Typography variant="body1" fontWeight={600} sx={{ overflowWrap: 'anywhere' }}>
-                {texts.chosen({ name: fileName(file) })}
-              </Typography>
-            </Alert>
-          ) : (
-            // Доступное имя повторяет видимый текст зоны вместе с подсказкой, как у зон страницы «Исходники».
-            <FileDropZone
-              label={`${texts.zone} ${componentsTexts.fileDrop.video.pick}`}
-              kind="video"
-              message={texts.zone}
-              hint={componentsTexts.fileDrop.video.pick}
-              onFiles={([path]) => setFile(path ?? null)}
-              onPick={pick}
-            />
-          )}
-          <TextField
-            label={texts.source}
-            required
-            fullWidth
-            value={source}
-            onChange={(event) => setSource(event.target.value)}
-            helperText={texts.sourceHint({ example: instruction?.sourceExample ?? null })}
-          />
-          <Stack direction="row" spacing={1}>
-            <TextField
-              label={texts.cost}
-              value={cost}
-              onChange={(event) => setCost(event.target.value)}
-              error={costProblem}
-              helperText={costProblem ? texts.costInvalid : texts.costHint}
-              inputProps={{ inputMode: 'decimal' }}
-              sx={{ width: 180 }}
-            />
-            <TextField select label={texts.unit} value={unit} onChange={(event) => setUnit(event.target.value as ManualCostUnit)} sx={{ width: 140 }}>
-              {UNITS.map((value) => (
-                <MenuItem key={value} value={value}>
-                  {texts.units[value]}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Stack>
-          <TextField
-            label={texts.note}
-            multiline
-            fullWidth
-            minRows={2}
-            maxRows={8}
-            value={note}
-            onChange={(event) => setNote(event.target.value)}
-            helperText={texts.noteHint}
-          />
-          <Stack direction="row">
-            <ActionButton
-              variant="contained"
-              startIcon={<UploadFileIcon />}
-              disabled={!!uploadReason}
-              disabledReason={uploadReason}
-              onClick={() => {
-                if (!file || uploadReason) return;
-                onAttach({ file, source: source.trim(), costAmount: costValue, costUnit: costValue === null ? '' : unit, note: note.trim() });
-              }}
-            >
-              {texts.upload}
-            </ActionButton>
-          </Stack>
-        </Stack>
+        <ManualVideoForm
+          busy={busy}
+          busyReason={busyReason}
+          sourceHint={texts.sourceHint({ example: instruction?.sourceExample ?? null })}
+          onSubmit={onAttach}
+        />
       ) : null}
     </Stack>
   );

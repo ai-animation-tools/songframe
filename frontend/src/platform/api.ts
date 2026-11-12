@@ -783,6 +783,15 @@ export function createApi(b: Bindings): Api {
     call('production.attachResult', async () => toJob(await (await production()).AttachResult(project, packageDir, files)), false);
   api.production.attachManual = (project, packageDir, result) =>
     call('production.attachManual', async () => toJob(await (await production()).AttachManual(project, packageDir, result)), false);
+  api.production.attachOwnVideo = (project, shot, result) =>
+    call(
+      'production.attachOwnVideo',
+      async () => {
+        const started = await (await production()).AttachOwnVideo(project, shot, result);
+        return { packageDir: started.packageDir, job: toJob(started.job) };
+      },
+      false
+    );
   api.production.markNotCreated = (project, packageDir) =>
     call('production.markNotCreated', async () => (await production()).MarkNotCreated(project, packageDir), false);
   api.production.selectImage = (project, packageDir, index, expectedResultToken) =>

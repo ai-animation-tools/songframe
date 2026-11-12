@@ -26,6 +26,12 @@ func isText(value any) bool {
 	return ok && dynvalue.Trim(text) != "" && !strings.Contains(text, "\x00")
 }
 
+// isOptionalText — строка, возможно пустая, без нулевых символов.
+func isOptionalText(value any) bool {
+	text, ok := value.(string)
+	return ok && !strings.Contains(text, "\x00")
+}
+
 // outside — относительный путь выходит из корня (`..`, `../…` или абсолютный).
 func outside(local string) bool {
 	local = filepath.ToSlash(local)

@@ -16,6 +16,9 @@ import {
   RegenerateDialog,
   SendRequestDialog
 } from './components';
+import { OwnVideoDialog } from './components/OwnVideoDialog';
+import type { ManualVideo } from '@shared/types';
+import { useApp } from '../../state';
 import { useProductionPage } from './useProductionPage';
 import { acceptShownResult } from './decisions';
 import type { PlanPath } from './planPath';
@@ -29,6 +32,9 @@ import { BUSY_REASON } from './constants';
 export function ProductionPage(): ReactElement {
   const [path, setPath] = useState<{ key: string; value: PlanPath } | null>(null);
   const [fragmentOpen, setFragmentOpen] = useState(false);
+  // Окно своего видео плана: план, идёт ли запуск загрузки и отказ Go при последней попытке.
+  const [ownVideo, setOwnVideo] = useState<{ shot: string; busy: boolean; error: string | null } | null>(null);
+  const { describeError } = useApp();
   const {
     project,
     view,
@@ -81,6 +87,20 @@ export function ProductionPage(): ReactElement {
   if (!view) return <></>;
   // Смена плана или попытки сбрасывает черновики пути и устаревшую фразу шапки.
   const pathKey = `${project}:${shot?.id ?? ''}:${packageSelection}`;
+  /** Своё видео: отказ Go (не MP4, план занят) остаётся в окне; после запуска открывается новая попытка. */
+  const uploadOwnVideo = async (video: ManualVideo): Promise<void> => {
+    if (!ownVideo) return;
+    const target = ownVideo.shot;
+    setOwnVideo({ shot: target, busy: true, error: null });
+    try {
+      const started = await window.api.production.attachOwnVideo(project, target, video);
+      setOwnVideo(null);
+      selectPackage(started.packageDir);
+      await act(productionTexts.ownVideo.started, async () => started.job, started.packageDir, target);
+    } catch (error) {
+      setOwnVideo({ shot: target, busy: false, error: describeError(error) });
+    }
+  };
 
   return (
     <Stack spacing={2} sx={{ width: '100%', minWidth: 0, pb: 8, '--shot-card-scroll-margin': `${stickyTop}px` }}>
@@ -158,6 +178,7 @@ export function ProductionPage(): ReactElement {
                 onDiscardBroken={discardBroken}
                 now={shot.derivedFrom || path?.key !== pathKey ? null : { text: path.value.now, tone: path.value.tone }}
                 onNewAttempt={shot.derivedFrom || (!shot.packages.length && !shot.asset) ? undefined : () => selectPackage('__new__')}
+                onOwnVideo={shot.derivedFrom ? undefined : () => setOwnVideo({ shot: shot.id, busy: false, error: null })}
                 onDiscardAttempt={discardPackage}
                 onFragment={() => setFragmentOpen(true)}
                 project={project}
@@ -233,6 +254,7 @@ export function ProductionPage(): ReactElement {
                       )
                     }
                     onSpeechPrepared={load}
+                    onOwnVideo={() => setOwnVideo({ shot: shot.id, busy: false, error: null })}
                   />
                 </Box>
               )}
@@ -243,6 +265,17 @@ export function ProductionPage(): ReactElement {
             </Paper>
           )}
         </Box>
+      ) : null}
+
+      {ownVideo ? (
+        <OwnVideoDialog
+          key={`${project}:${ownVideo.shot}`}
+          shot={ownVideo.shot}
+          busy={ownVideo.busy}
+          error={ownVideo.error}
+          onClose={() => setOwnVideo(null)}
+          onUpload={(video) => void uploadOwnVideo(video)}
+        />
       ) : null}
 
       {/* Ключ по проекту: задание и выбор фрагмента не переходят в другой проект. */}

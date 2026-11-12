@@ -174,6 +174,7 @@ export function unconfiguredStoryApi(): Api {
       resume: async () => unconfigured('production.resume'),
       attachResult: async () => unconfigured('production.attachResult'),
       attachManual: async () => unconfigured('production.attachManual'),
+      attachOwnVideo: async () => unconfigured('production.attachOwnVideo'),
       markNotCreated: async () => unconfigured('production.markNotCreated'),
       selectImage: async () => unconfigured('production.selectImage'),
       regenerate: async () => unconfigured('production.regenerate'),

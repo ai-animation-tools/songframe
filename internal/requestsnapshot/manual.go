@@ -14,12 +14,14 @@ type ManualInput struct {
 }
 
 // ManualSpec — пакет ручной генерации: план, провайдер видео проекта, длительность запроса,
-// текст утверждённого видеопромпта и входы.
+// текст утверждённого видеопромпта и входы. OwnVideo — своё видео плана без описания, опор и
+// промпта: prompt.txt пуст, входов и длительности нет, request.json получает own_video: true.
 type ManualSpec struct {
 	Shot, Provider string
 	Seconds        int64
 	Prompt         string
 	Inputs         []ManualInput
+	OwnVideo       bool
 }
 
 // PrepareManual собирает в новой папке directory пакет для генерации вне приложения: prompt.txt,
@@ -32,7 +34,10 @@ func PrepareManual(directory string, spec ManualSpec) (*toolrt.Dict, error) {
 	if toolrt.Exists(directory) {
 		return nil, toolrt.New(toolrt.ValueError, textDirectoryExists)
 	}
-	if toolrt.Strip(spec.Prompt) == "" {
+	if spec.OwnVideo && (spec.Prompt != "" || len(spec.Inputs) > 0) {
+		return nil, toolrt.New(toolrt.ValueError, textOwnVideoInputs)
+	}
+	if !spec.OwnVideo && toolrt.Strip(spec.Prompt) == "" {
 		return nil, toolrt.New(toolrt.ValueError, textEmptyPrompt)
 	}
 	promptBytes, err := toolrt.EncodeUTF8(spec.Prompt)
@@ -48,7 +53,9 @@ func PrepareManual(directory string, spec ManualSpec) (*toolrt.Dict, error) {
 		inputs = append(inputs, entry)
 	}
 	parameters := toolrt.NewDict()
-	parameters.Set("duration", toolrt.NewInt(spec.Seconds))
+	if !spec.OwnVideo {
+		parameters.Set("duration", toolrt.NewInt(spec.Seconds))
+	}
 	frozenSpec := toolrt.NewDict()
 	frozenSpec.Set("shot", spec.Shot)
 	frozenSpec.Set("provider", spec.Provider)
@@ -60,6 +67,9 @@ func PrepareManual(directory string, spec ManualSpec) (*toolrt.Dict, error) {
 	frozenSpec.Set("inputs", inputs)
 	extra := toolrt.NewDict()
 	extra.Set("mode", "manual")
+	if spec.OwnVideo {
+		extra.Set("own_video", true)
+	}
 	parent := filepath.Dir(directory)
 	if err := os.MkdirAll(parent, 0o777); err != nil {
 		return nil, toolrt.OSErrorFrom(err, parent)

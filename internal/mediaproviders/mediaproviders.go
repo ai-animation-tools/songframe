@@ -147,3 +147,16 @@ func ManualVideo(provider any, lipsync bool) bool {
 	info, ok := Lookup(id)
 	return ok && (info.Manual || (lipsync && info.LipSync == nil))
 }
+
+// ManualID — id записи реестра со способом «вручную вне приложения» (Manual): им помечается
+// запрос попытки, видео которой пользователь сделал сам, без сервиса. Пустая строка — такой записи нет.
+func ManualID() string {
+	mu.RLock()
+	defer mu.RUnlock()
+	for _, id := range ids {
+		if providers[id].Manual {
+			return id
+		}
+	}
+	return ""
+}

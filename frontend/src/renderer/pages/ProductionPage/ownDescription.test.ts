@@ -45,7 +45,7 @@ describe('своё описание плана', () => {
     expect(draftProblem(draft(['', '', '']), 2)).toBe(texts.limit({ limit: 2 }));
     expect(draftProblem(draft(['', '7', '']), 20)).toBe(texts.frameTimeInvalid({ id: 'K02' }));
     expect(draftProblem(draft(['', '3', '2', '']), 20)).toBe(texts.frameTimeInvalid({ id: 'K03' }));
-    expect(draftProblem({ ...draft(['', '']), frames: [{ time: '', prompt: '', referencePaths: [] }] }, 20)).toBe(texts.framePromptRequired({ id: 'K01' }));
+    expect(draftProblem({ ...draft(['', '']), frames: [{ time: '', prompt: '', referencePaths: [] }] }, 20)).toBeNull();
     expect(draftProblem(draft(['', '3', '']), 20)).toBeNull();
   });
 });

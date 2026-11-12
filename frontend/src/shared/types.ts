@@ -501,6 +501,8 @@ export interface AcceptedKit {
   generationId: string | null;
   /** Видео создано вне приложения: источник, стоимость, примечание. */
   manualGeneration?: ManualGeneration;
+  /** Своё видео плана: описания, опор и видеопромпта у комплекта нет. */
+  ownVideo?: boolean;
   prompt: string | null;
   /** Изображения, переданные в генерацию (опоры). */
   images: string[];
@@ -651,6 +653,8 @@ export interface PackageView {
     mode?: 'manual';
     /** Сведения о видео, загруженном в пакет ручной генерации. */
     manualGeneration?: ManualGeneration;
+    /** Своё видео плана: попытка без описания, опор и промпта, видео пользователь сделал сам. */
+    ownVideo?: boolean;
     /** Абсолютные пути скачанных оригиналов. */
     downloads: string[];
   } | null;

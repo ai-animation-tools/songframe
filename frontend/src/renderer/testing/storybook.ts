@@ -296,6 +296,7 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
       resume: guardedAsync(merged.production.resume),
       attachResult: guardedAsync(merged.production.attachResult),
       attachManual: guardedAsync(merged.production.attachManual),
+      attachOwnVideo: guardedAsync(merged.production.attachOwnVideo),
       markNotCreated: guardedAsync(merged.production.markNotCreated),
       selectImage: guardedAsync(merged.production.selectImage),
       regenerate: guardedAsync(merged.production.regenerate),

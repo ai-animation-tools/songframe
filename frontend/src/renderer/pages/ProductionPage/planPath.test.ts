@@ -70,6 +70,21 @@ describe('путь плана', () => {
     expect(planPath(shot({ lipsync: true }), pkg({ ...built, stage: 'submitted' }), manual, false, true)).toMatchObject({ current: 'request', tone: 'wait' });
   });
 
+  it('попытка своего видео — только «Своё видео» и «Результат»', () => {
+    const request = (attemptStatus: string) =>
+      ({ mode: 'manual', ownVideo: true, attemptStatus, inputs: [], downloads: [] }) as unknown as PackageView['request'];
+    const pending = planPath(shot({ lipsync: true }), pkg({ stage: 'request_choice', request: request('manual_pending') }), view());
+    expect(pending.steps.map((step) => [step.key, step.title])).toEqual([
+      ['request', 'Своё видео'],
+      ['result', 'Результат']
+    ]);
+    expect(pending).toMatchObject({ current: 'request', tone: 'action' });
+    expect(pending.now).toContain('загрузите своё видео');
+    const downloaded = planPath(shot({ lipsync: true }), pkg({ stage: 'downloaded', request: request('downloaded') }), view());
+    expect(downloaded.current).toBe('result');
+    expect(downloaded.steps[0]).toMatchObject({ status: 'done', summary: 'Видео загружено' });
+  });
+
   it('идущий агент — ожидание, готовое предложение — ход пользователя', () => {
     expect(planPath(shot(), null, view({ proposal: proposal('description', 'running') }))).toMatchObject({ current: 'description', tone: 'wait' });
     expect(planPath(shot(), pkg(), view({ proposal: proposal('prompt', 'ready') }))).toMatchObject({ current: 'prompt', tone: 'action' });

@@ -132,6 +132,7 @@ func (w *Workflow) checkApply(project, shot, packageDir, id string) (*applyPlan,
 		}
 	}
 	rules := stored.Rules()
+	rules.Own = stored.Proposal().Value("own") == true
 	after, err := ParseProposal(raw, rules)
 	if err != nil {
 		return nil, err

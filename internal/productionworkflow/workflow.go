@@ -590,6 +590,11 @@ func (w *Workflow) prepare(input StartInput) (*preparedStart, error) {
 	if stage, _ := c.workflowValue("stage").(string); strings.HasPrefix(stage, "image_") {
 		return nil, errors.New(textCurrentImageUnresolved)
 	}
+	// У попытки своего видео нет описания, опор и промпта: дорабатывать в ней нечего, план с агентом
+	// начинается новой попыткой.
+	if input.Action != "prepare" && c.workflowValue("own_video") == true {
+		return nil, errors.New(textOwnVideoNoAgent)
+	}
 	if view.Busy {
 		return nil, errors.New(textWaitForJob)
 	}

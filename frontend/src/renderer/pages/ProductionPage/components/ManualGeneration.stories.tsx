@@ -168,10 +168,18 @@ export const Upload: Story = {
     await expect(canvas.queryByRole('button', { name: new RegExp(texts.zone) })).not.toBeInTheDocument();
     await expect(upload()).toBeDisabled();
     await userEvent.type(canvas.getByRole('textbox', { name: new RegExp(texts.source) }), 'Тестовый сервис на сайте');
-    await userEvent.type(canvas.getByRole('textbox', { name: texts.cost }), '-1');
+    await userEvent.type(canvas.getByRole('spinbutton', { name: texts.cost }), '-1');
     await expect(upload()).toBeDisabled();
-    await userEvent.clear(canvas.getByRole('textbox', { name: texts.cost }));
-    await userEvent.type(canvas.getByRole('textbox', { name: texts.cost }), '75');
+    // Стоимость только целая: дробная тоже не загружается и объясняется под полем.
+    await userEvent.clear(canvas.getByRole('spinbutton', { name: texts.cost }));
+    await userEvent.type(canvas.getByRole('spinbutton', { name: texts.cost }), '7.5');
+    await expect(upload()).toBeDisabled();
+    await expect(canvas.getByText(texts.costInvalid)).toBeVisible();
+    await userEvent.clear(canvas.getByRole('spinbutton', { name: texts.cost }));
+    // Поле числовое: буквы в него не попадают.
+    await userEvent.type(canvas.getByRole('spinbutton', { name: texts.cost }), 'abc');
+    await expect(canvas.getByRole('spinbutton', { name: texts.cost })).toHaveValue(null);
+    await userEvent.type(canvas.getByRole('spinbutton', { name: texts.cost }), '75');
     await userEvent.type(canvas.getByRole('textbox', { name: texts.note }), 'Вторая попытка');
     await waitFor(() => expect(upload()).toBeEnabled());
     await userEvent.click(upload());
@@ -184,6 +192,35 @@ export const Upload: Story = {
         note: 'Вторая попытка'
       })
     );
+  }
+};
+
+/** Попытка своего видео, загрузка которой не состоялась: пакета нет, шаг принимает только видео. */
+const ownVideo: PackageView = {
+  ...base,
+  stage: 'request_choice',
+  pendingDecision: null,
+  decision: null,
+  keyframes: [],
+  prompt: null,
+  speech: null,
+  request: { ...built.request!, provider: 'manual', ownVideo: true, inputs: [], parameters: {}, promptText: '' }
+};
+
+export const OwnVideoPending: Story = {
+  name: 'Своё видео не загружено · только форма видео, без пакета и инструкции',
+  args: { pkg: ownVideo, view: view({ stage: 'request_choice', canBuildManual: false }) },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await canvas.findByText(texts.ownVideoPending);
+    await expect(canvas.queryByText(texts.built)).not.toBeInTheDocument();
+    await expect(canvas.queryByRole('button', { name: texts.copy })).not.toBeInTheDocument();
+    await expect(canvas.queryByText(texts.genericInstruction)).not.toBeInTheDocument();
+    await userEvent.click(canvas.getByRole('button', { name: new RegExp(texts.zone) }));
+    await canvas.findByText(texts.chosen({ name: 'story-video.mp4' }));
+    await userEvent.type(canvas.getByRole('textbox', { name: new RegExp(texts.source) }), 'Снято на телефон');
+    await userEvent.click(canvas.getByRole('button', { name: texts.upload }));
+    await waitFor(() => expect(args.onAttach).toHaveBeenCalledWith(expect.objectContaining({ file: STORY_VIDEO_PATH, source: 'Снято на телефон' })));
   }
 };
 

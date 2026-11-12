@@ -3,6 +3,9 @@
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as jobs$0 from "../jobs/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as project$0 from "../project/models.js";
 
 /**
@@ -61,6 +64,15 @@ export interface NativeCheckResult {
 export interface NotificationTarget {
     "project": string;
     "route": string;
+}
+
+/**
+ * OwnVideoStart — запущенная загрузка своего видео: папка новой попытки (страница сразу открывает
+ * её) и задание загрузки.
+ */
+export interface OwnVideoStart {
+    "packageDir": string;
+    "job": jobs$0.Info;
 }
 
 /**

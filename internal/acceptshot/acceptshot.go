@@ -745,7 +745,13 @@ func Accept(ctx context.Context, root, shot string, options Options) (*toolrt.Di
 	if !toolrt.IsFile(original) {
 		return nil, valueError("Скачанный оригинал не найден в попытке.")
 	}
-	lipsync := toolrt.Truthy(scene.Value("lipsync"))
+	// Своё видео плана сделано вне приложения без среза речи: даже у речевого плана в комплекте нет
+	// speech.wav, а generation.lipsync говорит, что видео не получено липсинком по срезу.
+	ownVideo := toolrt.Equal(request.Value("own_video"), true)
+	lipsync := toolrt.Truthy(scene.Value("lipsync")) && !ownVideo
+	if ownVideo {
+		options.Audio, options.AudioRecipe = "", ""
+	}
 	if lipsync && options.Audio == "" {
 		return nil, valueError(shot + ": речевой план требует --audio с точным WAV липсинка.")
 	}
@@ -1105,6 +1111,10 @@ func buildKit(ctx context.Context, root, shot string, frames toolrt.Int, fps int
 			"fps_conversion", conversion,
 		),
 	)
+	// Своё видео плана: входов и промпта у генерации нет, комплект отмечает это явно.
+	if toolrt.Equal(request.Value("own_video"), true) {
+		manifest.Value("generation").(*toolrt.Dict).Set("own_video", true)
+	}
 	if err := writeJSON(toolrt.JoinPath(staging, "manifest.json"), manifest); err != nil {
 		return nil, "", err
 	}

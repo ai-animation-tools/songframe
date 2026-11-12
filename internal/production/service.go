@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"math"
 	"os"
 	"path/filepath"
@@ -1245,6 +1246,40 @@ type ManualResult struct {
 	Note       string   `json:"note"`
 }
 
+// CheckManualResult — проверка видео, созданного вне приложения, до любых записей: обычный файл по
+// абсолютному пути, контейнер MP4 (QuickTime MOV с той же структурой — нет: его перекодирует
+// пользователь), непустой источник и стоимость — целое неотрицательное число, если указана. Своё видео плана проверяется ею до создания попытки.
+func CheckManualResult(result ManualResult) error {
+	info, statErr := os.Stat(result.File)
+	if !filepath.IsAbs(result.File) || statErr != nil || !info.Mode().IsRegular() {
+		return errors.New(textResultFileMissing)
+	}
+	if !isMP4(result.File) {
+		return errors.New(textManualVideoFormat)
+	}
+	if dynvalue.Trim(result.Source) == "" {
+		return errors.New(textManualSourceMissing)
+	}
+	if amount := result.CostAmount; amount != nil && (*amount < 0 || *amount != math.Trunc(*amount)) {
+		return errors.New(textManualCostInvalid)
+	}
+	return nil
+}
+
+// isMP4 — сигнатура контейнера MP4: блок ftyp в начале файла с основным брендом не QuickTime.
+func isMP4(path string) bool {
+	file, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer file.Close()
+	header := make([]byte, 12)
+	if count, _ := io.ReadFull(file, header); count < 12 {
+		return false
+	}
+	return string(header[4:8]) == "ftyp" && string(header[8:12]) != "qt  "
+}
+
 // AttachManual — видео пакета ручной генерации становится оригиналом попытки (media_request
 // attach-manual), затем — этапы «отправлено» и «получено», вопрос просмотра и техническая сводка,
 // как у обычного результата. Отправки сервису нет.
@@ -1262,12 +1297,8 @@ func (s *Service) AttachManual(project, packageDir string, result ManualResult) 
 	if view == nil || view.Request == nil || view.Request.Mode != "manual" || view.attemptStatus() != "manual_pending" {
 		return jobs.Info{}, errors.New(textManualPackageOnly)
 	}
-	info, statErr := os.Stat(result.File)
-	if !filepath.IsAbs(result.File) || statErr != nil || !info.Mode().IsRegular() {
-		return jobs.Info{}, errors.New(textResultFileMissing)
-	}
-	if dynvalue.Trim(result.Source) == "" {
-		return jobs.Info{}, errors.New(textManualSourceMissing)
+	if err := CheckManualResult(result); err != nil {
+		return jobs.Info{}, err
 	}
 	args := []string{"attach-manual", "--work-dir", view.Request.Dir, "--file", result.File, "--source", result.Source}
 	if result.CostAmount != nil {
@@ -1474,6 +1505,10 @@ func (s *Service) Accept(project, shot, packageDir string, options AcceptOptions
 				break
 			}
 		}
+	}
+	// Своё видео плана сделано без среза речи: accept_shot сам не требует его у такой попытки.
+	if view.Request != nil && view.Request.OwnVideo {
+		lipsync = false
 	}
 	if lipsync && view.Speech == nil {
 		return jobs.Info{}, errors.New(textAcceptSpeechRequired)

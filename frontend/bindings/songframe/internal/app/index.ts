@@ -71,6 +71,7 @@ export type {
     NativeCheckItem,
     NativeCheckResult,
     NotificationTarget,
+    OwnVideoStart,
     PickFilter,
     PickOptions,
     PreviewInput,

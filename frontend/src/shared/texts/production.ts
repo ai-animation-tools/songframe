@@ -455,6 +455,7 @@ export const productionTexts = {
       speech: 'Срез речи',
       request: 'Запрос',
       manual: 'Ручная генерация',
+      ownVideo: 'Своё видео',
       generation: 'Генерация',
       result: 'Результат'
     },
@@ -476,6 +477,7 @@ export const productionTexts = {
     requestSummary: ({ credits }: { credits: number | null | undefined }) => `Отправлен${credits ? `, списано кредитов: ${credits}` : ''}`,
     generationSummary: 'Видео получено',
     manualSummary: 'Видео загружено',
+    uploadOwnVideo: 'загрузите своё видео MP4',
     buildManual: 'соберите пакет для ручной генерации',
     uploadManual: 'создайте видео по пакету и загрузите его',
     manualUploading: 'видео загружается в попытку',
@@ -504,6 +506,7 @@ export const productionTexts = {
     resultQuestion: 'Что делаем с результатом?',
     moreActions: 'Другие действия',
     newAttempt: 'Новая попытка с описания',
+    ownVideo: 'Загрузить своё видео',
     retryFromRequest: 'Повторить по сохранённому запросу',
     deleteAttempt: 'Удалить попытку',
     attempt: ({ number }: { number: string }) => `Попытка ${number}`
@@ -797,7 +800,8 @@ export const productionTexts = {
     other: 'Другой файл',
     instructionOpen: 'Добавить указание',
     instruction: 'Указание агенту',
-    instructionHint: 'Необязательно. Сохранится в замечаниях к опорам; у платного провайдера войдёт в промпт, который вы подтверждаете перед отправкой.'
+    instructionHint: 'Необязательно. Сохранится в замечаниях к опорам; у платного провайдера войдёт в промпт, который вы подтверждаете перед отправкой.',
+    noPrompt: ({ id }: { id: string }) => `У опоры ${id} нет промпта: загрузите её своим файлом или добавьте промпт в описании`
   },
   videoPlayer: {
     fullscreen: 'На весь экран'
@@ -933,6 +937,7 @@ export const productionTexts = {
     source: 'Как получено видео',
     provider: ({ provider, id }: { provider: string; id: string | null }) => `Сервис: ${provider}${id ? ` · генерация ${id}` : ''}`,
     noSource: 'Сведений об источнике в комплекте нет.',
+    ownVideo: 'Своё видео плана: снято или сделано вне приложения, без описания, опор и видеопромпта.',
     images: 'Опоры',
     image: ({ index }: { index: number }) => `Опора ${index}`,
     prompt: 'Видеопромпт',
@@ -1010,7 +1015,7 @@ export const productionTexts = {
     upload: 'Загрузить видео',
     fileRequired: 'Перетащите или выберите видео результата.',
     sourceRequired: 'Укажите источник видео.',
-    costInvalid: 'Стоимость — неотрицательное число.',
+    costInvalid: 'Стоимость — целое неотрицательное число.',
     started: 'Загрузка видео запущена',
     record: ({ source, cost, at, name }: { source: string; cost: string | null; at: string; name: string }) =>
       `Источник: ${source}${cost ? ` · Стоимость: ${cost}` : ''} · Загружено ${at} из ${name}`,
@@ -1019,7 +1024,18 @@ export const productionTexts = {
       const number = String(amount).replace('.', ',');
       return unit === 'credits' ? `${number} ${plural(amount, 'кредит', 'кредита', 'кредитов')}` : `${number} ${unit === 'RUB' ? '₽' : '$'}`;
     },
-    builtSpeech: 'Пакет для ручной генерации уже собран: WAV этой попытки менять нельзя.'
+    builtSpeech: 'Пакет для ручной генерации уже собран: WAV этой попытки менять нельзя.',
+    ownVideoPending: 'Видео этой попытки ещё не загружено. Выберите файл MP4 и укажите источник.'
+  },
+  ownVideo: {
+    open: 'Загрузить своё видео',
+    openHint: 'Готовое видео MP4, снятое или сделанное вне приложения, сразу станет результатом новой попытки: описание, опоры и видеопромпт не нужны',
+    title: ({ shot }: { shot: string }) => `Своё видео ${shot}`,
+    intro:
+      'Видео станет результатом новой попытки этого плана: описание, опоры и видеопромпт не нужны. Дальше — обычный просмотр и приёмка: участок под окно плана выбирается при приёмке.',
+    format: 'Принимается только MP4. Видео другого формата, например MOV с телефона, сначала перекодируйте в MP4.',
+    sourceHint: 'Например: снято на телефон, сделано в видеоредакторе',
+    started: 'Загрузка своего видео запущена'
   },
   productionToolbar: {
     heading: navigationTexts.pages.production,
@@ -1033,7 +1049,7 @@ export const productionTexts = {
   },
   ownDescriptionDialog: {
     writeOwn: 'Написать самому',
-    writeOwnHint: 'Описание и опоры без агента: текст, длительность запроса и промпты опор задаёте вы',
+    writeOwnHint: 'Описание и опоры без агента: текст, длительность запроса и план опор задаёте вы',
     edit: 'Изменить',
     editHint: 'Исправить описание и план опор вручную. Сохранение сразу принимает их; изменённые опоры придётся создать заново',
     title: ({ shot }: { shot: string }) => `Описание ${shot}`,
@@ -1047,6 +1063,7 @@ export const productionTexts = {
       `${id} · ${role === 'first' ? 'начало' : role === 'last' ? 'конец' : 'промежуточная'}`,
     time: 'Время, с',
     prompt: 'Промпт изображения',
+    promptHint: 'Необязательно: без промпта опору не создать, её загружают своим файлом',
     references: 'Референсы',
     addFrame: 'Добавить опору',
     removeFrame: ({ id }: { id: string }) => `Удалить ${id}`,
@@ -1056,7 +1073,6 @@ export const productionTexts = {
     limit: ({ limit }: { limit: number }) => `Провайдер видео принимает не больше ${countLabel(limit, 'опоры', 'опор', 'опор')}`,
     descriptionRequired: 'Напишите описание плана.',
     secondsInvalid: 'Укажите длительность запроса целым числом секунд больше нуля.',
-    framePromptRequired: ({ id }: { id: string }) => `Напишите промпт опоры ${id}.`,
     frameTimeInvalid: ({ id }: { id: string }) => `Время ${id} должно лежать строго между соседними опорами.`
   },
   generationMethod: {

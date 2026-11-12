@@ -183,6 +183,7 @@ export function apiSkeleton(): Api {
       resume: stub('production.resume'),
       attachResult: stub('production.attachResult'),
       attachManual: stub('production.attachManual'),
+      attachOwnVideo: stub('production.attachOwnVideo'),
       markNotCreated: stub('production.markNotCreated'),
       selectImage: stub('production.selectImage'),
       regenerate: stub('production.regenerate'),

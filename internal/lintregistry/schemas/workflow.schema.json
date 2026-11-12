@@ -8,6 +8,8 @@
     "stage": {"enum": ["description_review", "keyframes_review", "prompt_review", "request_choice", "ready", "submitted", "downloaded",
                        "edit_review", "accepted", "needs_revision",
                        "image_request_choice", "image_submitted", "image_downloaded"]},
+    "own_video": {"const": true},
+    "generation_method": {"const": "manual"},
     "mode": {"enum": ["shot", "frame", null]},
     "wait_reason": {"enum": ["user_saved", "insufficient_balance", "cost_or_balance_unknown", null]},
     "request_dir": {"type": ["string", "null"]},

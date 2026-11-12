@@ -17,6 +17,7 @@ import (
 // Тексты ошибок маршрутов производства.
 const (
 	textPackageBusy            = "Для этого пакета уже выполняется задание. Дождитесь завершения."
+	textOwnVideoUnavailable    = "Своё видео плана недоступно: проход производства не подключён."
 	textShotBusy               = "Для этого кадра уже выполняется задание. Дождитесь завершения."
 	textScenarioReviewRequired = "Кастинг, трактовка или исходники изменились: проверьте и утвердите актуальный сценарий на странице «Сценарий»."
 )
@@ -33,6 +34,8 @@ type ProductionFlow interface {
 	Busy(project, shot, packageDir string) bool
 	// Proposals — непринятые предложения агента по планам и подпись «Ждут вашего действия».
 	Proposals(project string) map[string]Proposal
+	// CreateOwnVideo — новая попытка своего видео плана без описания, опор и промпта; возвращает её папку.
+	CreateOwnVideo(ctx context.Context, project, shot string) (string, error)
 }
 
 // Proposal — непринятое предложение агента для плана: сам документ и его подпись внимания.
@@ -214,6 +217,35 @@ func (s *ProductionService) AttachManual(project, packageDir string, result prod
 		return jobs.Info{}, err
 	}
 	return wire.Done(s.production.AttachManual(project, packageDir, result))
+}
+
+// OwnVideoStart — запущенная загрузка своего видео: папка новой попытки (страница сразу открывает
+// её) и задание загрузки.
+type OwnVideoStart struct {
+	PackageDir string    `json:"packageDir"`
+	Job        jobs.Info `json:"job"`
+}
+
+// AttachOwnVideo — своё видео плана: файл и источник проверяются до записей, затем проход создаёт
+// попытку без описания, опор и промпта, а видео загружается в неё тем же заданием, что результат
+// ручной генерации. Сервис провайдера не участвует, вход в него не нужен. Если задание не
+// запустилось, попытка остаётся ждать видео: загрузить его можно на её шаге «Своё видео».
+func (s *ProductionService) AttachOwnVideo(ctx context.Context, project, shot string, result production.ManualResult) (OwnVideoStart, error) {
+	if s.flow == nil {
+		return OwnVideoStart{}, errors.New(textOwnVideoUnavailable)
+	}
+	if err := production.CheckManualResult(result); err != nil {
+		return OwnVideoStart{}, err
+	}
+	directory, err := s.flow.CreateOwnVideo(ctx, project, shot)
+	if err != nil {
+		return OwnVideoStart{}, err
+	}
+	job, err := s.production.AttachManual(project, directory, result)
+	if err != nil {
+		return OwnVideoStart{}, err
+	}
+	return wire.Done(OwnVideoStart{PackageDir: directory, Job: job}, nil)
 }
 
 // MarkNotCreated — неизвестный исход: генерации нет, попытка снова ждёт подтверждения.

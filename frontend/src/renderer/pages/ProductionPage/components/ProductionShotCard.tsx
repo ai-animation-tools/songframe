@@ -7,6 +7,7 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import ReplayIcon from '@mui/icons-material/Replay';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import MusicVideoIcon from '@mui/icons-material/MusicVideo';
+import VideoFileOutlinedIcon from '@mui/icons-material/VideoFileOutlined';
 import type { BrokenPackage, JobInfo, PackageView, ShotProduction } from '@shared/types';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
@@ -35,6 +36,7 @@ export function ProductionShotCard({
   onDiscardBroken,
   now,
   onNewAttempt,
+  onOwnVideo,
   onDiscardAttempt,
   onFragment,
   project
@@ -52,6 +54,8 @@ export function ProductionShotCard({
   /** Фраза пути плана: что происходит и чей ход. */
   now?: { text: string; tone: PlanTone } | null;
   onNewAttempt?(): void;
+  /** Загрузить своё видео плана новой попыткой без описания, опор и промпта. */
+  onOwnVideo?(): void;
   /** Удалить попытку целиком; доступно вне незавершённой отправки. */
   onDiscardAttempt?(pkg: PackageView): void;
   /** Открыть фрагмент под музыку, начиная с этого плана. */
@@ -92,7 +96,7 @@ export function ProductionShotCard({
             {productionTexts.fragmentPreview.open}
           </Button>
         ) : null}
-        {canRetry || onNewAttempt || canDiscard ? (
+        {canRetry || onNewAttempt || onOwnVideo || canDiscard ? (
           <Tooltip title={productionTexts.planPath.moreActions}>
             <IconButton size="small" aria-label={productionTexts.planPath.moreActions} onClick={(event) => setMenu(event.currentTarget)}>
               <MoreVertIcon fontSize="small" />
@@ -112,6 +116,21 @@ export function ProductionShotCard({
               <AddIcon fontSize="small" />
             </ListItemIcon>
             {productionTexts.planPath.newAttempt}
+          </MenuItem>
+        ) : null}
+        {onOwnVideo ? (
+          <MenuItem
+            disabled={busy}
+            title={productionTexts.ownVideo.openHint}
+            onClick={() => {
+              setMenu(null);
+              onOwnVideo();
+            }}
+          >
+            <ListItemIcon>
+              <VideoFileOutlinedIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText primary={productionTexts.planPath.ownVideo} secondary={busy ? BUSY_REASON : null} />
           </MenuItem>
         ) : null}
         {canRetry ? (

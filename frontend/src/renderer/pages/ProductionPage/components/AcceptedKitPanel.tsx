@@ -77,6 +77,7 @@ export function AcceptedKitPanel({ project, shot }: { project: string; shot: Sho
           <>
             <Stack spacing={0.5}>
               <Typography variant="subtitle2">{texts.source}</Typography>
+              {kit.ownVideo ? <Typography variant="body2">{texts.ownVideo}</Typography> : null}
               <KitSource kit={kit} />
             </Stack>
             {kit.images.length ? (

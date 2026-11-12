@@ -548,13 +548,73 @@ export const ManualGeneration: Story = {
     await userEvent.click(step.getByRole('button', { name: new RegExp(manual.zone) }));
     await step.findByText(manual.chosen({ name: STORY_VIDEO_PATH.split('/').pop()! }));
     await userEvent.type(step.getByRole('textbox', { name: new RegExp(manual.source) }), 'Тестовый сервис на сайте');
-    await userEvent.type(step.getByRole('textbox', { name: manual.cost }), '75');
+    await userEvent.type(step.getByRole('spinbutton', { name: manual.cost }), '75');
     await userEvent.click(step.getByRole('button', { name: manual.upload }));
     // После загрузки — обычный вопрос о результате, сведения о видео остаются у результата.
     await expect(await screen.findByText(steps.now({ text: steps.reviewResult }), {}, POLL_TIMEOUT)).toBeInTheDocument();
     await expect(await within(planStep(context, 'result')).findByText(/Источник: Тестовый сервис на сайте · Стоимость: 75 кредитов/)).toBeInTheDocument();
     await expect(counts(context)).toHaveTextContent('Отправок генерации: 0.');
     await expect(counts(context)).toHaveTextContent('Пакетов ручной генерации: 1. Загрузок видео: 1.');
+  }
+};
+
+export const OwnVideo: Story = {
+  tags: ['ci'],
+  name: 'Своё видео · новая попытка без описания, опор и промпта сразу получает результат',
+  parameters: { songframe: options({}, '/project/production?shot=M04') },
+  play: async (context) => {
+    const screen = screenOf(context);
+    const own = texts.ownVideo;
+    const manual = texts.manualGeneration;
+    await shotHeading(context, 'M04');
+    await userEvent.click(await screen.findByRole('button', { name: own.open }, POLL_TIMEOUT));
+    const dialog = within(await screen.findByRole('dialog', { name: own.title({ shot: 'M04' }) }));
+    await expect(dialog.getByText(own.format)).toBeVisible();
+    // Без файла и источника загрузить нечего: причина видна на кнопке.
+    const upload = dialog.getByRole('button', { name: manual.upload });
+    await expect(upload).toBeDisabled();
+    await userEvent.hover(upload.parentElement!);
+    await expect(await screen.findByRole('tooltip')).toHaveTextContent(manual.fileRequired);
+    await userEvent.click(dialog.getByRole('button', { name: new RegExp(manual.zone) }));
+    await dialog.findByText(manual.chosen({ name: STORY_VIDEO_PATH.split('/').pop()! }));
+    await userEvent.type(dialog.getByRole('textbox', { name: new RegExp(manual.source) }), 'Снято на телефон');
+    await userEvent.type(dialog.getByRole('spinbutton', { name: manual.cost }), '300');
+    await waitFor(() => expect(dialog.getByRole('button', { name: manual.upload })).toBeEnabled());
+    await userEvent.click(dialog.getByRole('button', { name: manual.upload }));
+    await waitFor(() => expect(counts(context)).toHaveTextContent('Своих видео: 1.'), POLL_TIMEOUT);
+    await expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    // Путь короткий: «Своё видео» и «Результат»; описания, опор и промпта нет.
+    await expect(await screen.findByText(steps.now({ text: steps.reviewResult }), {}, POLL_TIMEOUT)).toBeInTheDocument();
+    await expect(planStep(context, 'description')).toBeNull();
+    await expect(planStep(context, 'frames')).toBeNull();
+    await expect(planStep(context, 'prompt')).toBeNull();
+    await expect(within(planStep(context, 'request')).getByText(steps.titles.ownVideo)).toBeInTheDocument();
+    const result = within(planStep(context, 'result'));
+    await expect(await result.findByText(/Источник: Снято на телефон · Стоимость: 300 кредитов/)).toBeInTheDocument();
+    // Своё видео не повторяется по запросу и не дорабатывается агентом.
+    await expect(result.getByRole('button', { name: texts.verdictLabels.accept })).toBeEnabled();
+    await expect(result.getByRole('button', { name: texts.verdictLabels.review })).toBeEnabled();
+    await expect(result.queryByRole('button', { name: texts.verdictLabels.retry })).not.toBeInTheDocument();
+    await expect(result.queryByRole('button', { name: texts.verdictLabels.revise })).not.toBeInTheDocument();
+    await expect(counts(context)).toHaveTextContent('Отправок генерации: 0.');
+  }
+};
+
+export const OwnVideoMenu: Story = {
+  name: 'Своё видео · из меню плана с попытками, окно закрывается только отменой',
+  parameters: { songframe: options({ manual: true, shots: manualShots }) },
+  play: async (context) => {
+    const screen = screenOf(context);
+    const own = texts.ownVideo;
+    await expect(await screen.findByText(steps.now({ text: steps.buildManual }), {}, POLL_TIMEOUT)).toBeInTheDocument();
+    const menu = await openMenu(context);
+    await userEvent.click(menu.getByRole('menuitem', { name: steps.ownVideo }));
+    const dialog = await screen.findByRole('dialog', { name: own.title({ shot: 'M02' }) });
+    // Окно закрывается только кнопкой отмены: черновик видео не теряется случайным щелчком.
+    await expectImplicitCloseBlocked(dialog);
+    await userEvent.click(screen.getByRole('button', { name: commonTexts.cancel }));
+    await expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await expect(counts(context)).toHaveTextContent('Своих видео: 0.');
   }
 };
 
@@ -698,6 +758,33 @@ export const AcceptedProviderPlan: Story = {
     await expect(await screen.findByText(spend.sends({ attempts: 2, videos: 2, images: 0 }))).toBeInTheDocument();
     await expect(screen.getByText(spend.accepted({ seconds: '5,00', rejected: 1 }))).toBeInTheDocument();
     await expect(screen.getByText(`${spend.perSecond}: 5,2 кредита (${testProviderInfo.title})`)).toBeInTheDocument();
+  }
+};
+export const AcceptedOwnVideo: Story = {
+  name: 'Принятый план · своё видео без опор, промпта и среза речи',
+  parameters: {
+    songframe: acceptedOptions({
+      acceptedKit: () => ({
+        provider: 'manual',
+        generationId: null,
+        ownVideo: true,
+        manualGeneration: { source: 'Снято на телефон', original_name: 'phone.mp4', attached_at: '2026-11-12T19:00:00Z', cost: null, description: null },
+        prompt: '',
+        images: [],
+        speech: null
+      })
+    })
+  },
+  play: async (context) => {
+    const screen = screenOf(context);
+    const kit = texts.acceptedKit;
+    await expect(await screen.findByText(kit.heading, {}, POLL_TIMEOUT)).toBeInTheDocument();
+    await expect(await screen.findByText(kit.ownVideo)).toBeInTheDocument();
+    await expect(screen.getByText(/^Источник: Снято на телефон · Загружено .* из phone\.mp4$/)).toBeInTheDocument();
+    // Пустые разделы не показываются: опор, промпта и среза у своего видео нет.
+    await expect(screen.queryByText(kit.images)).not.toBeInTheDocument();
+    await expect(screen.queryByText(kit.prompt)).not.toBeInTheDocument();
+    await expect(screen.queryByRole('button', { name: kit.copy })).not.toBeInTheDocument();
   }
 };
 export const Empty: Story = {
@@ -1018,9 +1105,8 @@ export const OwnDescription: Story = {
     await userEvent.click(await screen.findByRole('button', { name: own.writeOwn }, POLL_TIMEOUT));
     const dialog = within(await screen.findByRole('dialog', { name: own.title({ shot: 'M04' }) }));
     await userEvent.type(dialog.getByLabelText(own.description), 'Свет в окне загорается, герой поднимает голову.');
-    const prompts = dialog.getAllByLabelText(own.prompt);
-    await userEvent.type(prompts[0], 'Тёмное окно дома.');
-    await userEvent.type(prompts[1], 'Окно светится, герой смотрит вверх.');
+    // Промпт K01 не обязателен: эту опору пользователь загрузит своим файлом.
+    await userEvent.type(dialog.getAllByLabelText(own.prompt)[1], 'Окно светится, герой смотрит вверх.');
     await userEvent.click(dialog.getByRole('button', { name: own.save }));
     await waitFor(() => expect(counts(context)).toHaveTextContent('Своих описаний: Свет в окне загорается, герой поднимает голову. (2).'), POLL_TIMEOUT);
     // Принятие — тот же ответ approve на вопрос описания, что и после принятого предложения агента.
@@ -1031,5 +1117,14 @@ export const OwnDescription: Story = {
     // Принятое описание можно исправить вручную: пройденный шаг раскрывается и показывает «Изменить».
     await userEvent.click(description.getByRole('button', { name: new RegExp(steps.titles.description) }));
     await expect(await description.findByRole('button', { name: own.edit })).toBeEnabled();
+    // Опору без промпта создать нечем: кнопка создания недоступна с причиной, свой файл доступен.
+    const frames = within(planStep(context, 'frames'));
+    const create = await frames.findByRole('button', { name: /изображения K01/ }, POLL_TIMEOUT);
+    await expect(create).toBeDisabled();
+    await userEvent.hover(create.parentElement!);
+    await expect(await screen.findByRole('tooltip')).toHaveTextContent(texts.frameActions.noPrompt({ id: 'K01' }));
+    await expect(frames.queryByRole('button', { name: texts.frameActions.instructionOpen })).not.toBeInTheDocument();
+    // «Свой файл» есть у каждой несозданной опоры, первая — у K01.
+    await expect(frames.getAllByRole('button', { name: texts.frameActions.own })[0]).toBeEnabled();
   }
 };

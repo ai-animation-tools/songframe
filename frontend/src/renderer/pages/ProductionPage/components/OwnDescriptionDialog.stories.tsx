@@ -103,7 +103,7 @@ const dialog = (context: Context) => screenOf(context).findByRole('dialog', { na
 const save = (context: Context) => screenOf(context).getByRole('button', { name: texts.save });
 
 export const NewDescription: Story = {
-  name: 'Новое описание · проверки, промежуточная опора и референсы',
+  name: 'Новое описание · проверки, промежуточная опора без промпта и референсы',
   tags: ['ci'],
   play: async (context) => {
     const screen = screenOf(context);
@@ -126,8 +126,9 @@ export const NewDescription: Story = {
     await expect(body.getByText(texts.frameTitle({ id: 'K02', role: 'middle' }))).toBeVisible();
     await expect(body.getByText(texts.frameTitle({ id: 'K03', role: 'last' }))).toBeVisible();
     await expect(body.getByLabelText(texts.time)).toHaveValue(3);
-    await expect(save(context)).toBeDisabled();
-    await userEvent.type(body.getAllByLabelText(texts.prompt)[1], 'Герой поворачивается к окну.');
+    // Промпт опоры необязателен: опору без промпта загружают своим файлом.
+    await expect(body.getAllByText(texts.promptHint)).toHaveLength(3);
+    await expect(save(context)).toBeEnabled();
     await userEvent.clear(body.getByLabelText(texts.time));
     await userEvent.type(body.getByLabelText(texts.time), '7');
     await userEvent.hover(save(context).parentElement!);

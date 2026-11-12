@@ -104,6 +104,7 @@ func (w *Workflow) prepareOwn(input OwnInput) (string, string, error) {
 		return "", "", errors.New(textStageUnavailable)
 	}
 	rules := c.RulesFor(input.Stage)
+	rules.Own = true
 	if input.Stage == "description" {
 		// Число опор своего плана выбрал сам пользователь: применение соблюдает его точно, а одна
 		// опора допустима и вне ручного режима.

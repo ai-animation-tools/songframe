@@ -316,3 +316,107 @@ func TestProjectManualVideo(t *testing.T) {
 		t.Fatalf("пакет ручной генерации проекта без сервиса: %s", dynvalue.Stringify(request))
 	}
 }
+
+// TestOwnDescriptionFrameWithoutPrompt — в своём описании промпт опоры может быть пустым: такую
+// опору нельзя создать, только загрузить своим файлом. Ответ агента с пустым промптом по-прежнему
+// отклоняется.
+func TestOwnDescriptionFrameWithoutPrompt(t *testing.T) {
+	run := ownRun(t)
+	c, err := ReadContext(run.project, "M01", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	seconds := math.Floor(c.Window) + 1
+	frames := ownFrames(2, seconds)
+	frames[0].Prompt = ""
+	agent := `{"schemaVersion":1,"stage":"description","description":"Герой.","requestSeconds":` + dynvalue.NumberToString(seconds) +
+		`,"keyframes":[{"id":"K01","role":"first","timeSeconds":0,"prompt":"","referencePaths":[]},{"id":"K02","role":"last","timeSeconds":` +
+		dynvalue.NumberToString(seconds) + `,"prompt":"Кадр","referencePaths":[]}]}`
+	if _, err := ParseProposal(agent, c.RulesFor("description")); err == nil || err.Error() != textFramePlanInvalid {
+		t.Fatalf("ответ агента с пустым промптом опоры: %v", err)
+	}
+	view, err := run.workflow.SaveOwn(context.Background(), OwnInput{Project: run.project, Shot: "M01", Stage: "description",
+		Description: "Герой идёт к воротам.", RequestSeconds: seconds, Keyframes: frames})
+	if err != nil {
+		t.Fatalf("своё описание с опорой без промпта: %v", err)
+	}
+	dir := *view.PackageDir
+	if result, err := tools.Run(run.project, "shot_workflow", []string{"decide", "--dir", dir, "--verdict", "approve"}); err != nil || result.Code == nil || *result.Code != 0 {
+		t.Fatalf("принятие описания: %+v %v", result, err)
+	}
+	if _, err := run.workflow.GenerateFrames(context.Background(), run.project, "M01", dir); err == nil || err.Error() != textFramePromptMissing("K01") {
+		t.Fatalf("создание опоры без промпта: %v", err)
+	}
+	image := filepath.Join(t.TempDir(), "k01.png")
+	source, err := os.ReadFile(filepath.Join(run.project, "source", "heroes", "mira.png"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(image, source, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	view, err = run.workflow.ImportFrames(run.project, "M01", dir, []FrameCandidate{{ID: "K01", Path: image}})
+	if err != nil {
+		t.Fatalf("своя опора без промпта: %v", err)
+	}
+	stored := run.workflow.store.Read(run.project, "M01")
+	if _, err := run.workflow.Apply(context.Background(), run.project, "M01", dir, dynvalue.ToString(stored.Proposal().Value("id"))); err != nil {
+		t.Fatalf("применение своей опоры без промпта: %v", err)
+	}
+}
+
+// TestCreateOwnVideo — попытка своего видео без агента: новая папка с отметкой own_video на этапе
+// request_choice и пакетом без промпта и входов с провайдером способа «вручную»; следующая
+// попытка получает следующий номер.
+func TestCreateOwnVideo(t *testing.T) {
+	run := ownRun(t)
+	dir, err := run.workflow.CreateOwnVideo(context.Background(), run.project, "M01")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if filepath.Base(dir) != "M01-attempt-01" || len(run.agents.starts) != 0 {
+		t.Fatalf("попытка своего видео: %s, запусков агента %d", dir, len(run.agents.starts))
+	}
+	workflow, err := readJSON(filepath.Join(dir, "workflow.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if dynvalue.Get(workflow, "own_video") != true || dynvalue.Get(workflow, "stage") != "request_choice" || dynvalue.Get(workflow, "request_dir") != "request-01" ||
+		!dynvalue.Truthy(dynvalue.Get(workflow, "scene_sha256")) {
+		t.Fatalf("workflow.json своего видео: %s", dynvalue.Stringify(workflow))
+	}
+	request, err := readJSON(filepath.Join(dir, "request-01", "request.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	inputs, _ := dynvalue.AsArray(dynvalue.Get(request, "inputs"))
+	if dynvalue.Get(request, "own_video") != true || dynvalue.Get(request, "mode") != "manual" || len(inputs) != 0 ||
+		dynvalue.Get(request, "provider") != mediaproviders.ManualID() {
+		t.Fatalf("request.json своего видео: %s", dynvalue.Stringify(request))
+	}
+	prompt, _ := os.ReadFile(filepath.Join(dir, "request-01", "prompt.txt"))
+	if len(prompt) != 0 {
+		t.Fatalf("промпт своего видео: %q", prompt)
+	}
+	again, err := run.workflow.CreateOwnVideo(context.Background(), run.project, "M01")
+	if err != nil || filepath.Base(again) != "M01-attempt-02" {
+		t.Fatalf("вторая попытка своего видео: %s %v", again, err)
+	}
+}
+
+// TestOwnVideoNoAgent — в попытку своего видео нельзя ни запустить агента, ни записать своё описание.
+func TestOwnVideoNoAgent(t *testing.T) {
+	run := ownRun(t)
+	dir, err := run.workflow.CreateOwnVideo(context.Background(), run.project, "M01")
+	if err != nil {
+		t.Fatal(err)
+	}
+	stage, note := "description", "Короче"
+	if _, err := run.workflow.Start(context.Background(), StartInput{Project: run.project, Shot: "M01", PackageDir: dir, Action: "revise", Stage: &stage, Note: &note}); err == nil || err.Error() != textOwnVideoNoAgent {
+		t.Fatalf("агент в попытке своего видео: %v", err)
+	}
+	if _, err := run.workflow.SaveOwn(context.Background(), OwnInput{Project: run.project, Shot: "M01", PackageDir: dir, Stage: "description",
+		Description: "Герой.", RequestSeconds: 6, Keyframes: ownFrames(2, 6)}); err == nil || err.Error() != textOwnVideoNoAgent {
+		t.Fatalf("своё описание в попытке своего видео: %v", err)
+	}
+}

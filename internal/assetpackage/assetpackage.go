@@ -260,7 +260,8 @@ func ValidatePackage(path, shotID, root string) (*toolrt.Dict, error) {
 	if err != nil {
 		return nil, err
 	}
-	if !toolrt.Truthy(inputs) {
+	// Своё видео плана сделано вне приложения без входов генерации.
+	if !toolrt.Truthy(inputs) && !toolrt.Equal(generationValue.(*toolrt.Dict).Value("own_video"), true) {
 		return nil, toolrt.New(toolrt.ValueError, textNoInputs)
 	}
 	prompt, err := item(generationValue, "prompt")

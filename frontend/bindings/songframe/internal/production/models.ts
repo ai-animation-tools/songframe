@@ -46,6 +46,11 @@ export interface AcceptedKit {
     "manualGeneration"?: json$0.RawMessage;
 
     /**
+     * OwnVideo — своё видео плана (generation.own_video): описания, опор и промпта у комплекта нет.
+     */
+    "ownVideo"?: boolean;
+
+    /**
      * Prompt — текст видеопромпта, переданного в генерацию.
      */
     "prompt": string | null;
@@ -231,6 +236,12 @@ export interface Request {
      */
     "mode"?: string;
     "manualGeneration"?: json$0.RawMessage;
+
+    /**
+     * OwnVideo — своё видео плана (request.json own_video): попытка без описания, опор и промпта,
+     * видео пользователь сделал сам; поле опускается у остальных запросов.
+     */
+    "ownVideo"?: boolean;
 
     /**
      * Downloads — абсолютные пути существующих скачанных оригиналов.

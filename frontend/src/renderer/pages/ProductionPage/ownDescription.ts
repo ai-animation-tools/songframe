@@ -1,6 +1,7 @@
 /**
  * Черновик своего описания плана: текст, длительность запроса и план опор. Роли и ID опор выводятся из их порядка (K01 — начало,
- * последняя — конец запроса), поэтому пользователь задаёт только время промежуточных опор, промпты и референсы. Окончательную
+ * последняя — конец запроса), поэтому пользователь задаёт только время промежуточных опор, промпты и референсы. Промпт
+ * опоры необязателен: опору без промпта нельзя создать, её загружают своим файлом. Окончательную
  * проверку выполняет Go теми же правилами, что ответ агента; здесь — только то, что объясняет недоступность «Сохранить и принять».
  */
 import type { ProductionFramePrompt, ProductionOwnText } from '@shared/production-workflow';
@@ -78,7 +79,6 @@ export function draftProblem(draft: OwnDescriptionDraft, limit: number): string 
   if (draft.frames.length < 1 || draft.frames.length > limit) return texts.limit({ limit });
   for (let index = 0; index < draft.frames.length; index++) {
     const id = frameId(index);
-    if (!draft.frames[index].prompt.trim()) return texts.framePromptRequired({ id });
     if (frameRole(index, draft.frames.length) === 'middle') {
       const time = frameTime(draft, index);
       if (!Number.isFinite(time) || time <= frameTime(draft, index - 1) || time >= seconds) return texts.frameTimeInvalid({ id });

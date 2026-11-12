@@ -111,6 +111,11 @@ func (f productionFlow) Busy(project, shot, packageDir string) bool {
 	return f.workflow.Busy(project, shot, packageDir)
 }
 
+// CreateOwnVideo — попытка своего видео плана (productionworkflow.Workflow.CreateOwnVideo).
+func (f productionFlow) CreateOwnVideo(ctx context.Context, project, shot string) (string, error) {
+	return f.workflow.CreateOwnVideo(ctx, project, shot)
+}
+
 // Proposals — непринятые предложения агента по планам с подписью proposalAttention.
 func (f productionFlow) Proposals(project string) map[string]Proposal {
 	result := map[string]Proposal{}

@@ -661,10 +661,28 @@ export const AcceptedPlan: Story = {
 
 export const AcceptedProviderPlan: Story = {
   tags: ['ci'],
-  name: 'Принятый план · сгенерирован сервисом, комплект без среза речи',
+  name: 'Принятый план · сгенерирован сервисом, расход с отклонённым вариантом',
   parameters: {
     songframe: acceptedOptions({
-      acceptedKit: () => ({ provider: TEST_PROVIDER, generationId: 'gen-42', prompt: 'Камера плавно приближается к старым воротам.', images: [], speech: null })
+      acceptedKit: () => ({
+        provider: TEST_PROVIDER,
+        generationId: 'gen-42',
+        prompt: 'Камера плавно приближается к старым воротам.',
+        images: [],
+        speech: null
+      }),
+      // Две отправки видео по 13 кредитов, принята вторая: 26 кредитов на 5 с материала.
+      spend: () => ({
+        attempts: 2,
+        images: 0,
+        videos: 2,
+        rejected: 1,
+        unknown: 0,
+        manual: 0,
+        totals: [{ provider: TEST_PROVIDER, unit: 'credits', amount: 26 }],
+        acceptedSeconds: 5,
+        perSecond: [{ provider: TEST_PROVIDER, unit: 'credits', amount: 5.2 }]
+      })
     })
   },
   play: async (context) => {
@@ -675,6 +693,11 @@ export const AcceptedProviderPlan: Story = {
     await expect(screen.getByText('Камера плавно приближается к старым воротам.')).toBeInTheDocument();
     await expect(screen.queryByText(kit.images)).not.toBeInTheDocument();
     await expect(screen.queryByText(/^Срез речи/)).not.toBeInTheDocument();
+    // Расход плана в его карточке: попытки удалены приёмкой, но отправки учтены журналом.
+    const spend = texts.shotSpend;
+    await expect(await screen.findByText(spend.sends({ attempts: 2, videos: 2, images: 0 }))).toBeInTheDocument();
+    await expect(screen.getByText(spend.accepted({ seconds: '5,00', rejected: 1 }))).toBeInTheDocument();
+    await expect(screen.getByText(`${spend.perSecond}: 5,2 кредита (${testProviderInfo.title})`)).toBeInTheDocument();
   }
 };
 export const Empty: Story = {

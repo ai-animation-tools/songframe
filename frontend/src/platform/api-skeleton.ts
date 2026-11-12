@@ -188,6 +188,7 @@ export function apiSkeleton(): Api {
       park: stub('production.park'),
       speechPlan: stub('production.speechPlan'),
       acceptedKit: stub('production.acceptedKit'),
+      spend: stub('production.spend'),
       prepareSpeech: stub('production.prepareSpeech'),
       reopenQuestion: stub('production.reopenQuestion'),
       discardAttempt: stub('production.discardAttempt'),

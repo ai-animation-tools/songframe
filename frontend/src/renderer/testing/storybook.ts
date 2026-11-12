@@ -300,6 +300,7 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
       park: guardedAsync(merged.production.park),
       speechPlan: guardedAsync(merged.production.speechPlan),
       acceptedKit: guardedAsync(merged.production.acceptedKit),
+      spend: guardedAsync(merged.production.spend),
       prepareSpeech: guardedAsync(merged.production.prepareSpeech),
       reopenQuestion: guardedAsync(merged.production.reopenQuestion),
       discardAttempt: guardedAsync(merged.production.discardAttempt),

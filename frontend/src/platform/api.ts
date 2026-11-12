@@ -8,6 +8,7 @@
 import type { Api } from '@shared/api';
 import type {
   AcceptedKit,
+  ShotSpend,
   AnimaticView,
   AppState,
   BriefResult,
@@ -791,6 +792,7 @@ export function createApi(b: Bindings): Api {
       false
     );
   api.production.park = (project, packageDir) => call('production.park', async () => (await production()).Park(project, packageDir));
+  api.production.spend = (project, shot) => call('production.spend', async () => (await (await production()).Spend(project, shot)) as ShotSpend);
   api.production.acceptedKit = (project, shot) =>
     call('production.acceptedKit', async () => ((await (await production()).AcceptedKit(project, shot)) ?? null) as unknown as AcceptedKit | null);
   api.production.speechPlan = (project, shot, packageDir) =>

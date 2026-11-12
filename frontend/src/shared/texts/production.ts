@@ -801,6 +801,30 @@ export const productionTexts = {
   videoPlayer: {
     fullscreen: 'На весь экран'
   },
+  shotSpend: {
+    heading: 'Расход',
+    sends: ({ attempts, videos, images }: { attempts: number; videos: number; images: number }) =>
+      `${countLabel(attempts, 'попытка', 'попытки', 'попыток')} · отправлено видео: ${videos}${images ? `, изображений: ${images}` : ''}`,
+    /** Сумма в исходной единице: «24,5 кредита», «120 ₽», «3 ед.». */
+    amount: ({ amount, unit }: { amount: number; unit: string | null }) => {
+      const rounded = Math.round(amount * 100) / 100;
+      const number = String(rounded).replace('.', ',');
+      if (unit === 'credits') return `${number} ${plural(rounded, 'кредит', 'кредита', 'кредитов')}`;
+      if (unit === 'RUB') return `${number} ₽`;
+      if (unit === 'USD') return `${number} $`;
+      return `${number} ${unit ?? 'ед.'}`;
+    },
+    manualSource: 'ручная генерация',
+    spent: 'Известный расход',
+    noKnown: 'Сумма неизвестна',
+    unknown: ({ count }: { count: number }) =>
+      `Расход неизвестен у ${count} ${plural(count, 'отправки', 'отправок', 'отправок')}: фактический расход больше указанного`,
+    unknownHint: 'Исход отправки неизвестен, сервис не сообщил списание или у ручной генерации не указана стоимость. Такой расход не считается нулём.',
+    accepted: ({ seconds, rejected }: { seconds: string; rejected: number }) =>
+      `Принято ${seconds} с материала · ${rejected ? `отклонено вариантов: ${rejected}` : 'без отклонённых вариантов'}`,
+    perSecond: 'Секунда принятого материала',
+    loadFailed: ({ reason }: { reason: string }) => `Не удалось прочитать расход плана: ${reason}`
+  },
   fragmentPreview: {
     open: 'Фрагмент под музыку',
     openHint: 'Собрать подряд идущие планы под их участок песни, без генерации и без изменения приёмки',

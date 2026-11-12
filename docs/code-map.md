@@ -130,6 +130,7 @@
 | [`internal/regenerateshot`](../internal/regenerateshot) | Повторяет генерацию плана по сохранённому запросу без нового согласования (инструмент regenerate_shot). |
 | [`internal/requestsnapshot`](../internal/requestsnapshot) | Готовит неизменяемый запрос генерации локально, без отправки: снимок спецификации, промпта и входов в новой папке попытки и атомарная запись его JSON. |
 | [`internal/costcheck`](../internal/costcheck) | Оценивает стоимость запроса генерации и сверяет её с остатком кредитов до таблицы согласования (check), а после отправки записывает фактический расход наблюдением (learn); это инструмент cost_check. |
+| [`internal/spend`](../internal/spend) | Ведёт журнал платных отправок проекта plan/spend.json и считает расход плана. |
 | [`internal/acceptance`](../internal/acceptance) | Определяет, какие комплекты assets/shots/Mxx приняты по текущей постановке. |
 | [`internal/acceptshot`](../internal/acceptshot) | Принимает генерацию плана: инструмент accept_shot собирает комплект assets/shots/Mxx по контракту assets. |
 | [`internal/assetpackage`](../internal/assetpackage) | Проверяет комплект принятого ассета и разрешает его файлы. |

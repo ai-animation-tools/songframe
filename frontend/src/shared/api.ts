@@ -23,6 +23,7 @@ import type {
   PackageView,
   SpeechPlan,
   AcceptedKit,
+  ShotSpend,
   AnimaticView,
   AppState,
   BriefResult,
@@ -216,6 +217,8 @@ export interface Api {
     speechPlan(project: string, shot: string, packageDir?: string): Promise<SpeechPlan>;
     /** Источник генерации, опоры, промпт и срез речи принятого плана по его комплекту; null — комплекта из генерации нет. */
     acceptedKit(project: string, shot: string): Promise<AcceptedKit | null>;
+    /** Расход плана: попытки, отправки, суммы в исходных единицах, неизвестный расход и стоимость секунды принятого материала. */
+    spend(project: string, shot: string): Promise<ShotSpend>;
     /** Режет точный WAV липсинка в audio/ пакета; без границ — по разметке «Таймингов». */
     prepareSpeech(project: string, packageDir: string, bounds?: { start: number; end: number }): Promise<PackageView>;
     /** Снова задать вопрос о полученном результате пакета приложения, если ответ уже записан. */

@@ -23,6 +23,9 @@ import * as production$0 from "../production/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as speech$0 from "../speech/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as spend$0 from "../spend/models.js";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -198,6 +201,14 @@ export function SetKeyframeNote(project: string, packageDir: string, id: number,
  */
 export function SpeechPlan(project: string, shot: string, packageDir: string): $CancellablePromise<speech$0.Plan> {
     return $Call.ByID(2064141014, project, shot, packageDir);
+}
+
+/**
+ * Spend — production:spend: расход плана по журналу отправок и живым попыткам — число попыток и
+ * отправок, суммы в исходных единицах, неизвестный расход и стоимость секунды принятого материала.
+ */
+export function Spend(project: string, shot: string): $CancellablePromise<spend$0.Summary> {
+    return $Call.ByID(1370488017, project, shot);
 }
 
 /**

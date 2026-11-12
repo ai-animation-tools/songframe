@@ -90,7 +90,7 @@ var Areas = []Area{
 		Packages: []string{
 			"internal/production", "internal/productionworkflow", "internal/shotworkflow",
 			"internal/shotstatus", "internal/regenerateshot", "internal/requestsnapshot",
-			"internal/costcheck", "internal/acceptance", "internal/acceptshot",
+			"internal/costcheck", "internal/spend", "internal/acceptance", "internal/acceptshot",
 			"internal/assetpackage", "internal/verifyassetreplay", "internal/videoreview",
 			"internal/contactsheet", "internal/dashboard", "internal/checks", "internal/checkassets",
 			"internal/checkworkspace", "internal/tools",

@@ -18,6 +18,7 @@ import { isQueuedPackage } from '../decisions';
 import { attemptLabel, REQUEST_IN_FLIGHT, type PlanTone } from '../planPath';
 import { AcceptedAsset } from './AcceptedAsset';
 import { DerivedShotNotice } from './DerivedShotNotice';
+import { ShotSpendSummary } from './ShotSpendSummary';
 import { LinkedText } from '../../../components/LinkedText';
 import { ShotPageButton } from '../../../components/ShotPageButton';
 
@@ -35,7 +36,8 @@ export function ProductionShotCard({
   now,
   onNewAttempt,
   onDiscardAttempt,
-  onFragment
+  onFragment,
+  project
 }: {
   shot: ShotProduction;
   busy: boolean;
@@ -54,6 +56,8 @@ export function ProductionShotCard({
   onDiscardAttempt?(pkg: PackageView): void;
   /** Открыть фрагмент под музыку, начиная с этого плана. */
   onFragment?(): void;
+  /** Проект плана: с ним карточка показывает расход плана (production.spend). */
+  project?: string;
 }): ReactElement {
   const [menu, setMenu] = useState<HTMLElement | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
@@ -190,6 +194,7 @@ export function ProductionShotCard({
       <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
         {shot.original}
       </Typography>
+      {project && !shot.derivedFrom ? <ShotSpendSummary project={project} shot={shot} /> : null}
       {shot.derivedFrom ? (
         <Box sx={{ mt: 1.5 }}>
           <DerivedShotNotice source={shot.derivedFrom} />

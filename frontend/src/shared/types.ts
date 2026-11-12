@@ -504,6 +504,38 @@ export interface AcceptedKit {
   speech: { path: string; start: number | null; end: number | null } | null;
 }
 
+/**
+ * Известный расход одного источника в одной единице. Кредиты разных сервисов не складываются:
+ * provider — id провайдера отправок, null — ручные генерации (единицы credits, RUB, USD); unit null — единица неизвестна.
+ */
+export interface SpendTotal {
+  provider: string | null;
+  unit: string | null;
+  amount: number;
+}
+
+/**
+ * Расход плана по журналу plan/spend.json и живым попыткам, в исходных единицах.
+ * Неизвестный расход в суммы не входит: при unknown > 0 суммы и стоимость секунды — нижняя граница.
+ */
+export interface ShotSpend {
+  /** Попытки с хотя бы одной отправкой. */
+  attempts: number;
+  images: number;
+  videos: number;
+  /** Отправки видео, не ставшие принятым результатом; 0, пока план не принят. */
+  rejected: number;
+  /** Отправки с неизвестным расходом (исход неизвестен, сервис не сообщил, у ручной генерации нет стоимости). */
+  unknown: number;
+  /** Ручные генерации видео. */
+  manual: number;
+  totals: SpendTotal[];
+  /** Длина принятого материала, с; null — план не принят. */
+  acceptedSeconds: number | null;
+  /** Суммы на секунду принятого материала. */
+  perSecond: SpendTotal[];
+}
+
 /** Точный срез песни речевого плана в пакете: audio/speech.wav и audio/audio-recipe.json. */
 export interface PackageSpeech {
   path: string;

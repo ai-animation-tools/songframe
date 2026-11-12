@@ -160,6 +160,7 @@ export function ProductionPage(): ReactElement {
                 onNewAttempt={shot.derivedFrom || (!shot.packages.length && !shot.asset) ? undefined : () => selectPackage('__new__')}
                 onDiscardAttempt={discardPackage}
                 onFragment={() => setFragmentOpen(true)}
+                project={project}
               />
 
               {shot.derivedFrom ? (

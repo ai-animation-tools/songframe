@@ -144,6 +144,11 @@ func TestPaidCycleWithRealRender(t *testing.T) {
 	if _, err := os.Stat(e.pkg); !os.IsNotExist(err) {
 		t.Fatalf("пакет не очищен: %v", err)
 	}
+	// Очистка удалила попытку, но её отправка в журнале расходов: принятый дубль, 4 с материала.
+	summary, err := production.SpendFor(e.project, "M03")
+	if err != nil || summary.Videos != 1 || summary.Rejected != 0 || summary.AcceptedSeconds == nil || *summary.AcceptedSeconds != 4 {
+		t.Fatalf("расход принятого плана: %+v %v", summary, err)
+	}
 	productionView, err := production.ViewProduction(e.project)
 	if err != nil {
 		t.Fatal(err)

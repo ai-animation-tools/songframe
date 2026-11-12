@@ -10,6 +10,7 @@ import (
 	"songframe/internal/production"
 	"songframe/internal/scenarioworkflow"
 	"songframe/internal/speech"
+	"songframe/internal/spend"
 	"songframe/internal/wire"
 )
 
@@ -290,6 +291,12 @@ func (s *ProductionService) SpeechPlan(project, shot, packageDir string) (speech
 // nil — комплекта из генерации нет. Рабочий пакет попытки к этому моменту уже удалён приёмкой.
 func (s *ProductionService) AcceptedKit(project, shot string) (*production.AcceptedKit, error) {
 	return wire.Done(production.AcceptedKitFor(project, shot))
+}
+
+// Spend — production:spend: расход плана по журналу отправок и живым попыткам — число попыток и
+// отправок, суммы в исходных единицах, неизвестный расход и стоимость секунды принятого материала.
+func (s *ProductionService) Spend(project, shot string) (spend.Summary, error) {
+	return wire.Done(production.SpendFor(project, shot))
 }
 
 // PrepareSpeech — точный срез WAV липсинка инструментом cut_speech; прежний срез пакета заменяется.

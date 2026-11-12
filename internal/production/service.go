@@ -24,6 +24,7 @@ import (
 	"songframe/internal/projectfs"
 	"songframe/internal/providers"
 	"songframe/internal/shotworkflow"
+	"songframe/internal/spend"
 	"songframe/internal/tools"
 )
 
@@ -680,6 +681,10 @@ func (s *Service) DiscardAttempt(project, packageDir string) error {
 	if err != nil {
 		return err
 	}
+	// Отправки удаляемой попытки остаются в журнале расходов: без него удаление не выполняется.
+	if err := spend.Sync(project); err != nil {
+		return err
+	}
 	if view == nil {
 		// Недописанная папка без workflow.json: удаляется, если в ней нет следов незавершённой
 		// отправки.
@@ -970,7 +975,10 @@ func (s *Service) Submit(project, packageDir, expectedSha, decisionToken, quoteT
 			s.toolStep(project, "shot_workflow", []string{"check", "--dir", directory}, textVerifyMaterialsStep, false, nil),
 			s.toolStep(project, "media_request", []string{"submit", "--work-dir", requestDir, "--confirm", expectedSha}, textSubmitStep, false, nil),
 			s.toolStep(project, "cost_check", append([]string{"learn", "--work-dir", requestDir}, s.pricingArgs()...), textRecordChargeStep, true, nil),
-			s.toolStep(project, "shot_workflow", []string{"set-stage", "--dir", directory, submitted}, textSubmittedStep, false, nil),
+			// Журнал расходов получает отправку сразу: сбой его записи не отменяет оплаченную отправку,
+			// живая попытка всё равно учитывается, а журнал дополнится при следующей синхронизации.
+			s.toolStep(project, "shot_workflow", []string{"set-stage", "--dir", directory, submitted}, textSubmittedStep, false,
+				func(context.Context) error { _ = spend.Sync(project); return nil }),
 		}
 		info, err := s.start(jobs.KindSubmit, title, project, append(steps, s.resumeSteps(project, directory, requestDir, image)...))
 		if err != nil {
@@ -1465,7 +1473,9 @@ func (s *Service) Accept(project, shot, packageDir string, options AcceptOptions
 		label = textReplaceAssetsStep
 	}
 	args = append(args, "--clean")
-	info, err := s.start(jobs.KindAccept, textAcceptJob(shot), project, []jobs.Step{s.toolStep(project, "accept_shot", args, label, false, nil)})
+	// Приёмка с очисткой удаляет попытки плана: их отправки сначала переносятся в журнал расходов.
+	syncSpend := func(context.Context) error { return spend.Sync(project) }
+	info, err := s.start(jobs.KindAccept, textAcceptJob(shot), project, []jobs.Step{s.toolStep(project, "accept_shot", args, label, false, syncSpend)})
 	if err != nil {
 		return jobs.Info{}, err
 	}

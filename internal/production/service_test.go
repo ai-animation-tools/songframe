@@ -523,6 +523,10 @@ func TestDiscardAndPark(t *testing.T) {
 	if _, err := os.Stat(e.pkg); !os.IsNotExist(err) {
 		t.Fatalf("пакет не удалён: %v", err)
 	}
+	// Отправка удалённой попытки осталась в журнале расходов плана.
+	if summary, err := production.SpendFor(e.project, "M03"); err != nil || summary.Videos != 1 || summary.Attempts != 1 || summary.Rejected != 0 {
+		t.Fatalf("расход после удаления: %+v %v", summary, err)
+	}
 	e = newEnv(t, "test-video")
 	if err := e.prod.DiscardAttempt(e.project, e.pkg); err != nil {
 		t.Fatal(err)

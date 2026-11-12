@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import type { VideoReviewView } from '@shared/video-review';
 import { videoReviewTexts } from '@shared/texts/video-review';
 import type { Api } from '@shared/api';
-import type { AcceptedKit, AppState, BrokenPackage, JobInfo, PackageView, ProductionView, ShotProduction } from '@shared/types';
+import type { AcceptedKit, AppState, ShotSpend, BrokenPackage, JobInfo, PackageView, ProductionView, ShotProduction } from '@shared/types';
 import type { ProductionProposal } from '@shared/production-workflow';
 import { registerMediaProviderForTests } from '@shared/media-providers';
 import { productionTexts } from '@shared/texts/production';
@@ -77,6 +77,8 @@ export interface ProductionPageModelOptions {
   promptMaxChars?: number;
   /** Сведения принятого комплекта плана (production.acceptedKit); без модели — комплект без сведений генерации. */
   acceptedKit?: (shot: string) => AcceptedKit | null;
+  /** Расход плана (production.spend); без модели — отправок нет и блок «Расход» не показывается. */
+  spend?: (shot: string) => ShotSpend | null;
 }
 
 interface PageModel {
@@ -257,6 +259,20 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
         animatic: fragment.overrides.animatic,
         production: {
           acceptedKit: async (_project, shot) => structuredClone(options.acceptedKit?.(shot) ?? null),
+          spend: async (_project, shot) =>
+            structuredClone(
+              options.spend?.(shot) ?? {
+                attempts: 0,
+                images: 0,
+                videos: 0,
+                rejected: 0,
+                unknown: 0,
+                manual: 0,
+                totals: [],
+                acceptedSeconds: null,
+                perSecond: []
+              }
+            ),
           addKeyframeNote: async (project, dir, frame, note, scope) => {
             find(project, dir);
             model.frameNotes = [...model.frameNotes, `${frame}/${scope}: ${note}`];

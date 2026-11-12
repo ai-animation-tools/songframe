@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import type { LyricsLine } from '@shared/types';
+import type { LyricsLine, TimingLine } from '@shared/types';
+import { buildSections } from '@shared/timing-sections';
 import {
   canVerifyEditorLine,
   collectEditorLines,
   editorLineOrder,
+  editorSectionLayout,
   editorTimingRows,
   moveEditorLine,
   stableTimingLines,
@@ -75,5 +77,52 @@ describe('редактор исходных строк', () => {
     expect(collected.problems).toEqual(['Строка текста 3: границы должны быть числами.', 'Строка текста 5: заполните начало и конец либо очистите оба поля.']);
     expect(drafts[3].start).toBe('не время');
     expect(drafts[5].start).toBe('-2');
+  });
+});
+
+describe('editorSectionLayout', () => {
+  const song: LyricsLine[] = [
+    { number: 1, text: '[Куплет 1]', header: true },
+    { number: 2, text: 'Первая', header: false },
+    { number: 3, text: '[Припев]', header: true },
+    { number: 4, text: 'Вторая', header: false },
+    { number: 5, text: '[Припев]', header: true },
+    { number: 6, text: 'Третья', header: false }
+  ];
+  const timed = (source_line: number, start: number, end: number): TimingLine => ({ id: source_line, source_line, start, end, verified: true });
+
+  it('показывает все секции карты с границами, имена частей — без скобок', () => {
+    const rows = [timed(2, 5, 10), timed(4, 10, 15), timed(6, 25, 30)];
+    const layout = editorSectionLayout(song, buildSections(song, rows, 40), rows, rows);
+    const names = (id: number) => layout.before.get(id)?.map((header) => [header.name, header.start, header.end, header.gap]);
+    expect(names(2)).toEqual([
+      ['Вступление', 0, 5, true],
+      ['Куплет 1', 5, 10, false]
+    ]);
+    expect(names(4)).toEqual([['Припев', 10, 15, false]]);
+    // Одинаковые припевы получают свои границы по перекрытию строк, проигрыш встаёт перед вторым.
+    expect(names(6)).toEqual([
+      ['Проигрыш после «Припев»', 15, 25, true],
+      ['Припев', 25, 30, false]
+    ]);
+    expect(layout.after.map((header) => [header.name, header.start, header.end, header.note])).toEqual([['Финал без вокала', 30, 40, 'до конца трека']]);
+  });
+
+  it('границы следуют за правкой строки, а часть без разметки остаётся с названием', () => {
+    const rows = [timed(2, 0, 8), { id: 4, source_line: 4, start: Number.NaN, end: Number.NaN, verified: false }, timed(6, 8, 12)];
+    const layout = editorSectionLayout(
+      song,
+      buildSections(
+        song,
+        rows.filter((row) => Number.isFinite(row.start)),
+        12
+      ),
+      rows,
+      rows
+    );
+    expect(layout.before.get(2)?.map((header) => [header.name, header.end])).toEqual([['Куплет 1', 8]]);
+    expect(layout.before.get(4)).toEqual([{ key: 'part:1', name: 'Припев', gap: false }]);
+    expect(layout.before.get(6)?.map((header) => [header.name, header.start, header.end])).toEqual([['Припев', 8, 12]]);
+    expect(layout.after).toEqual([]);
   });
 });

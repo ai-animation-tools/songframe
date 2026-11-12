@@ -18,18 +18,27 @@ import {
 import { visuallyHidden } from '@mui/utils';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import SortIcon from '@mui/icons-material/Sort';
-import type { LyricsLine, TimingLine } from '@shared/types';
+import type { LyricsLine, TimingLine, TimingSection } from '@shared/types';
 import { timingEditorTexts as texts } from '@shared/texts/timing-editor';
 import { ActionButton } from '../../../components/ActionButton';
 import { TimingWorkingLine } from './TimingWorkingLine';
 import type { TimingBoundaryDrafts } from '../manualTiming';
-import { moveEditorLine, visibleEditorRows, type TimingCandidate, type TimingEditorFilter } from '../timingEditor';
+import {
+  editorSectionLayout,
+  moveEditorLine,
+  visibleEditorRows,
+  type EditorSectionHeader,
+  type TimingCandidate,
+  type TimingEditorFilter
+} from '../timingEditor';
 
 export interface TimingLyricsEditorProps {
   lyrics: LyricsLine[];
   filter?: TimingEditorFilter;
   onFilterChange?(filter: TimingEditorFilter): void;
   rows: TimingLine[];
+  /** Текущая музыкальная карта: пересчитывается при каждой правке границ строк. */
+  sections?: TimingSection[];
   candidates: TimingCandidate[];
   selected: number | null;
   selectedIds?: number[];
@@ -56,6 +65,7 @@ export function TimingLyricsEditor({
   filter: controlledFilter,
   onFilterChange,
   rows,
+  sections = [],
   candidates,
   selected,
   selectedIds = [],
@@ -106,14 +116,7 @@ export function TimingLyricsEditor({
     if (id !== selected) onStop();
     onSelect(id);
   };
-  const header = (number: number): string | undefined => {
-    const index = lyrics.findIndex((line) => line.number === number);
-    const previous = lyrics
-      .slice(0, index)
-      .reverse()
-      .find((line) => !!line.text.trim());
-    return previous?.header ? previous.text : undefined;
-  };
+  const layout = editorSectionLayout(lyrics, sections, rows, visible);
   return (
     <Stack spacing={1.5}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
@@ -151,7 +154,7 @@ export function TimingLyricsEditor({
           {visible.map((line, index) => {
             const candidate = proposed.get(line.source_line);
             const title = source.get(line.source_line)?.text ?? '';
-            const section = header(line.source_line);
+            const headers = layout.before.get(line.id) ?? [];
             const timed = Number.isFinite(line.start) && Number.isFinite(line.end);
             const active = selected === line.id;
             const highlighted = active || selectedIds.includes(line.id);
@@ -196,11 +199,9 @@ export function TimingLyricsEditor({
                   endDrag();
                 }}
               >
-                {section && (
-                  <Typography component="h3" variant="subtitle2" sx={{ px: 2, py: 1, bgcolor: 'action.hover' }}>
-                    {section}
-                  </Typography>
-                )}
+                {headers.map((header) => (
+                  <SectionHeader key={header.key} header={header} />
+                ))}
                 <Box sx={{ bgcolor: highlighted ? 'action.selected' : undefined, borderLeft: 3, borderColor: highlighted ? 'primary.main' : 'transparent' }}>
                   <ListItem disablePadding component="div">
                     {filter === 'all' && (
@@ -286,6 +287,13 @@ export function TimingLyricsEditor({
               </Box>
             );
           })}
+          {visible.length > 0 &&
+            layout.after.map((header) => (
+              <Box component="li" key={header.key} sx={{ listStyle: 'none' }}>
+                <Divider />
+                <SectionHeader header={header} />
+              </Box>
+            ))}
         </List>
         {!visible.length && (
           <Typography role="status" color="text.secondary" sx={{ p: 3 }}>
@@ -294,5 +302,28 @@ export function TimingLyricsEditor({
         )}
       </Paper>
     </Stack>
+  );
+}
+
+/** Заголовок секции над её строками: название без скобок, начало – конец и длительность по текущей карте. */
+function SectionHeader({ header }: { header: EditorSectionHeader }): ReactElement {
+  const timed = header.start !== undefined && header.end !== undefined;
+  return (
+    <Box data-section={header.name} sx={{ px: 2, py: 1, bgcolor: 'action.hover', display: 'flex', alignItems: 'baseline', gap: 1.5, flexWrap: 'wrap' }}>
+      <Typography component="h3" variant="subtitle2">
+        {header.name}
+      </Typography>
+      {header.note && (
+        <Typography variant="caption" color="text.secondary">
+          {header.note}
+        </Typography>
+      )}
+      <Box sx={{ flex: 1 }} />
+      {timed && (
+        <Typography variant="body2" sx={{ fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+          {texts.sectionRange({ start: header.start as number, end: header.end as number })}
+        </Typography>
+      )}
+    </Box>
   );
 }

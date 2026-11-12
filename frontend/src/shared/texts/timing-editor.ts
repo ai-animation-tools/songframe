@@ -21,6 +21,7 @@ export const timingEditorTexts = {
   candidateReason: ({ reason }: { reason: string }) => `Причина сомнения: ${reason}`,
   sourcePrefix: 'Строка текста',
   sourceNumber: ({ number }: { number: number }) => `Строка текста ${number}`,
+  sectionRange: ({ start, end }: { start: number; end: number }) => `${start.toFixed(2)} – ${end.toFixed(2)} · ${(end - start).toFixed(2)} с`,
   count: ({ visible, total }: { visible: number; total: number }) => `Показано ${visible} из ${total}`,
   start: 'Начало, с',
   end: 'Конец, с',

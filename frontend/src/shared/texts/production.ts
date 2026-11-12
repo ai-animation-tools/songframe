@@ -808,8 +808,17 @@ export const productionTexts = {
   },
   shotSpend: {
     heading: 'Расход',
-    sends: ({ attempts, videos, images }: { attempts: number; videos: number; images: number }) =>
-      `${countLabel(attempts, 'попытка', 'попытки', 'попыток')} · отправлено видео: ${videos}${images ? `, изображений: ${images}` : ''}`,
+    /** Попытки (удалённые отдельно), отправки сервису и ручные генерации: ручная — не отправка, её загрузил пользователь. */
+    sends: ({ attempts, removed, videos, images, manual }: { attempts: number; removed: number; videos: number; images: number; manual: number }) => {
+      const sent = [videos - manual ? `видео: ${videos - manual}` : '', images ? `изображений: ${images}` : ''].filter(Boolean).join(', ');
+      return [
+        `${countLabel(attempts, 'попытка', 'попытки', 'попыток')}${removed ? `, удалено: ${removed}` : ''}`,
+        sent ? `отправлено ${sent}` : '',
+        manual ? `загружено вручную: ${manual}` : ''
+      ]
+        .filter(Boolean)
+        .join(' · ');
+    },
     /** Сумма в исходной единице: «24,5 кредита», «120 ₽», «3 ед.». */
     amount: ({ amount, unit }: { amount: number; unit: string | null }) => {
       const rounded = Math.round(amount * 100) / 100;

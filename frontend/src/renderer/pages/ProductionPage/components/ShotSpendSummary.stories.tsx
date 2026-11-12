@@ -11,11 +11,23 @@ import { registerMediaProviderForTests } from '@shared/media-providers';
 import { ShotSpendSummary } from './ShotSpendSummary';
 
 const texts = productionTexts.shotSpend;
-const EMPTY: ShotSpend = { attempts: 0, images: 0, videos: 0, rejected: 0, unknown: 0, manual: 0, totals: [], acceptedSeconds: null, perSecond: [] };
+const EMPTY: ShotSpend = {
+  attempts: 0,
+  removed: 0,
+  images: 0,
+  videos: 0,
+  rejected: 0,
+  unknown: 0,
+  manual: 0,
+  totals: [],
+  acceptedSeconds: null,
+  perSecond: []
+};
 
 /** Принятый план: две попытки, опора и три видео, одно из них ручная генерация в рублях. */
 const ACCEPTED: ShotSpend = {
   attempts: 2,
+  removed: 0,
   images: 1,
   videos: 3,
   rejected: 2,
@@ -31,6 +43,9 @@ const ACCEPTED: ShotSpend = {
     { provider: null, unit: 'RUB', amount: 24 }
   ]
 };
+
+/** План в работе: одна попытка удалена, её отправка сервису осталась в расходе. */
+const REMOVED: ShotSpend = { ...EMPTY, attempts: 2, removed: 1, videos: 2, totals: [{ provider: TEST_PROVIDER, unit: 'credits', amount: 26 }] };
 
 /** План в работе: одна отправка с известным расходом, у второй исход неизвестен. */
 const UNKNOWN: ShotSpend = { ...EMPTY, attempts: 2, videos: 2, unknown: 1, totals: [{ provider: TEST_PROVIDER, unit: 'credits', amount: 13 }] };
@@ -62,7 +77,8 @@ export const Accepted: Story = {
   tags: ['ci'],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await canvas.findByText(texts.sends({ attempts: 2, videos: 3, images: 1 }));
+    // Ручная генерация — не отправка: отдельный счёт загруженных вручную видео.
+    await canvas.findByText('2 попытки · отправлено видео: 2, изображений: 1 · загружено вручную: 1');
     // Кредиты сервиса и рубли ручной генерации — отдельные суммы.
     await expect(canvas.getByText(`${texts.spent}: 24,5 кредита (${provider}) · 120 ₽ (${texts.manualSource})`)).toBeInTheDocument();
     await expect(canvas.getByText(texts.accepted({ seconds: '5,00', rejected: 2 }))).toBeInTheDocument();
@@ -81,6 +97,17 @@ export const Unknown: Story = {
     await expect(canvas.getByText(`${texts.spent}: 13 кредитов (${provider})`)).toBeInTheDocument();
     // До приёмки нет ни отклонённых вариантов, ни стоимости секунды.
     await expect(canvas.queryByText(texts.perSecond, { exact: false })).not.toBeInTheDocument();
+  }
+};
+
+export const Removed: Story = {
+  name: 'План в работе · удалённая попытка названа удалённой',
+  tags: ['ci'],
+  parameters: { songframe: options(REMOVED) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await canvas.findByText('2 попытки, удалено: 1 · отправлено видео: 2');
+    await expect(canvas.getByText(`${texts.spent}: 26 кредитов (${provider})`)).toBeInTheDocument();
   }
 };
 

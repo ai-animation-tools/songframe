@@ -136,3 +136,48 @@ func TestOwnVideoCycle(t *testing.T) {
 		t.Fatalf("расход своего видео: %+v %v", summary, err)
 	}
 }
+
+// TestDiscardManualAttemptForgetsCost — «Удалить попытку» с загруженным своим видео и указанной
+// стоимостью убирает и папку, и запись расхода: журнал не хранит цифру, от которой отказался
+// пользователь, а расход плана снова пуст.
+func TestDiscardManualAttemptForgetsCost(t *testing.T) {
+	ffmpeg, _ := realMedia(t)
+	e := newEnv(t, "test-video")
+	original := filepath.Join(t.TempDir(), "phone.mp4")
+	command := exec.Command(ffmpeg, "-v", "error", "-f", "lavfi", "-i", "testsrc2=size=640x360:rate=30:duration=2",
+		"-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p", original)
+	if output, err := command.CombinedOutput(); err != nil {
+		t.Fatalf("своё видео: %v %s", err, output)
+	}
+	dir := filepath.Join(e.project, "plan", "batches", "M04-attempt-01")
+	e.tool("shot_workflow", "init", "M04", "--dir", dir, "--mode", "shot")
+	if _, err := requestsnapshot.PrepareManual(filepath.Join(dir, "request-01"), requestsnapshot.ManualSpec{
+		Shot: "M04", Provider: mediaproviders.ManualID(), OwnVideo: true,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := shotworkflow.StartOwnVideo(dir, "request-01"); err != nil {
+		t.Fatal(err)
+	}
+	amount := 180.0
+	info, err := e.prod.AttachManual(e.project, dir, production.ManualResult{File: original, Source: "Проба", CostAmount: &amount, CostUnit: "RUB"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if finished := e.wait(info); finished.Status != jobs.StatusDone {
+		t.Fatalf("загрузка своего видео: %s", finished.Log)
+	}
+	if summary, err := production.SpendFor(e.project, "M04"); err != nil || summary.Manual != 1 {
+		t.Fatalf("расход до удаления: %+v %v", summary, err)
+	}
+	if err := e.prod.DiscardAttempt(e.project, dir); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(dir); !os.IsNotExist(err) {
+		t.Fatalf("папка попытки осталась: %v", err)
+	}
+	summary, err := production.SpendFor(e.project, "M04")
+	if err != nil || summary.Videos != 0 || summary.Attempts != 0 || len(summary.Totals) != 0 {
+		t.Fatalf("расход после удаления: %+v %v", summary, err)
+	}
+}

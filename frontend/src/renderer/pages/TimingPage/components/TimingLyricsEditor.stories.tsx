@@ -6,6 +6,7 @@ import { Stack, Typography } from '@mui/material';
 import type { LyricsLine, TimingLine } from '@shared/types';
 import { timingEditorTexts as texts } from '@shared/texts/timing-editor';
 import { TimingLyricsEditor } from './TimingLyricsEditor';
+import { buildSections } from '@shared/timing-sections';
 import { editorTimingRows, type TimingCandidate } from '../timingEditor';
 import { parseTimingBoundary, type TimingBoundaryDrafts } from '../manualTiming';
 
@@ -18,9 +19,10 @@ const lyrics: LyricsLine[] = [
   { number: 6, text: 'И снова зовёт нас знакомая дорога', header: false }
 ];
 
-function EditorStory({ candidate = false }: { candidate?: boolean }) {
+function EditorStory({ candidate = false, complete = false }: { candidate?: boolean; complete?: boolean }) {
   const [lines, setLines] = useState<TimingLine[]>([
     { id: 2, source_line: 2, start: 0, end: 2, verified: false },
+    ...(complete ? [{ id: 3, source_line: 3, start: 3, end: 5, verified: false }] : []),
     { id: 4, source_line: 4, start: 8, end: 10, verified: true },
     { id: 6, source_line: 6, start: 12, end: 14, verified: false }
   ]);
@@ -32,6 +34,8 @@ function EditorStory({ candidate = false }: { candidate?: boolean }) {
   const [drafts, setDrafts] = useState<TimingBoundaryDrafts>({});
   const [stops, setStops] = useState(0);
   const rows = editorTimingRows(lyrics, lines, candidates, order);
+  // Карта пересчитывается из текущих строк, как useTimingPlayer на странице.
+  const sections = buildSections(lyrics, lines, 30, candidates);
   const update = (id: number, patch: Partial<TimingLine>) => {
     const row = rows.find((line) => line.id === id)!;
     setLines((current) => [...current.filter((line) => line.id !== id), { ...row, ...patch }]);
@@ -42,6 +46,7 @@ function EditorStory({ candidate = false }: { candidate?: boolean }) {
       <TimingLyricsEditor
         lyrics={lyrics}
         rows={rows}
+        sections={sections}
         candidates={candidates}
         selected={selected}
         order={order}
@@ -86,6 +91,26 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const FullSource: Story = { name: 'Пропуск в середине и одинаковые припевы' };
+export const SectionMap: Story = {
+  tags: ['ci'],
+  name: 'Все секции карты в списке: имена без скобок, границы пересчитываются при правке',
+  args: { complete: true },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const headings = () => canvas.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent);
+    await expect(headings()).toEqual(['Куплет', 'Проигрыш после «Куплет»', 'Припев', 'Финал без вокала']);
+    const section = (name: string) => canvasElement.querySelector(`[data-section="${name}"]`)!;
+    await expect(section('Куплет')).toHaveTextContent(texts.sectionRange({ start: 0, end: 10 }));
+    await expect(section('Проигрыш после «Куплет»')).toHaveTextContent('без вокала');
+    await expect(section('Финал без вокала')).toHaveTextContent(texts.sectionRange({ start: 14, end: 30 }));
+    await userEvent.click(canvas.getByRole('button', { name: /^Строка текста 6 / }));
+    const end = canvas.getByRole('textbox', { name: 'Конец строки 6' });
+    await userEvent.clear(end);
+    await userEvent.type(end, '20');
+    await waitFor(() => expect(section('Припев')).toHaveTextContent(texts.sectionRange({ start: 12, end: 20 })));
+    await expect(section('Финал без вокала')).toHaveTextContent(texts.sectionRange({ start: 20, end: 30 }));
+  }
+};
 export const Candidate: Story = {
   name: 'Кандидат с границами и причиной сомнения',
   args: { candidate: true },

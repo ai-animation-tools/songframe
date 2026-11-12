@@ -172,3 +172,42 @@ func TestDamagedJournal(t *testing.T) {
 
 func ptr(value string) *string        { return &value }
 func ptrFloat(value float64) *float64 { return &value }
+
+// TestSyncDiscardingManual — удаление попытки с ручной генерацией убирает её стоимость из журнала,
+// а удаление попытки с отправкой провайдеру расход сохраняет и показывает попытку удалённой.
+func TestSyncDiscardingManual(t *testing.T) {
+	root := t.TempDir()
+	manual := map[string]any{"status": "downloaded", "request_sha256": "m1",
+		"manual_generation": map[string]any{"cost": map[string]any{"amount": 180, "unit": "RUB"}}}
+	request(t, root, "plan/batches/M02-attempt-01/request", "M02", "video", manual)
+	request(t, root, "plan/batches/M02-attempt-02/request", "M02", "video", sent("v2", "gen-2", 10))
+	if err := Sync(root); err != nil {
+		t.Fatal(err)
+	}
+	if got := Summarize(entries(t, root), "M02", nil); got.Attempts != 2 || got.Removed != 0 || got.Manual != 1 {
+		t.Fatalf("сводка до удаления %+v", got)
+	}
+	remove := func(attempt string) {
+		t.Helper()
+		if err := SyncDiscarding(root, attempt); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.RemoveAll(filepath.Join(root, filepath.FromSlash(attempt))); err != nil {
+			t.Fatal(err)
+		}
+	}
+	remove("plan/batches/M02-attempt-01")
+	remove("plan/batches/M02-attempt-02")
+	journal, err := readJournal(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(journal) != 1 || journal[0].Status != StatusSent || journal[0].Attempt != "plan/batches/M02-attempt-02" {
+		t.Fatalf("журнал после удаления попыток %+v", journal)
+	}
+	provider := ptr("нет-такого")
+	want := Summary{Attempts: 1, Removed: 1, Videos: 1, Totals: []Total{{Provider: provider, Amount: 10}}, PerSecond: []Total{}}
+	if got := Summarize(entries(t, root), "M02", nil); !reflect.DeepEqual(got, want) {
+		t.Fatalf("сводка после удаления %+v", got)
+	}
+}

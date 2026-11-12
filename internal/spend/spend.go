@@ -4,6 +4,7 @@
 // plan/awaiting), а приёмка и «Удалить попытку» эти папки удаляют. Журнал сохраняет отправки до
 // удаления: Sync переносит в него текущее состояние всех живых запросов и вызывается после
 // отправки, перед приёмкой с очисткой, перед удалением попытки и после «генерация не создана».
+// Удаление попытки убирает из журнала её ручные генерации (SyncDiscarding), отправки остаются.
 // Расход плана — журнал, дополненный живыми запросами (живое состояние новее).
 //
 // Одна генерация учитывается один раз: запись с номером генерации совпадает с другой по
@@ -63,6 +64,8 @@ type Entry struct {
 	// Unit — единица расхода: currency таблицы цен провайдера или единица стоимости ручной
 	// генерации (credits, RUB, USD); null — неизвестна.
 	Unit *string `json:"unit"`
+	// live — запись взята из живой папки попытки (Entries), а не только из журнала; в файл не пишется.
+	live bool
 }
 
 // journal — содержимое plan/spend.json.
@@ -116,7 +119,9 @@ func merge(entries []Entry, current []live) []Entry {
 			continue
 		}
 		result = slices.DeleteFunc(result, func(entry Entry) bool { return same(entry, item.entry) })
-		result = append(result, item.entry)
+		entry := item.entry
+		entry.live = true
+		result = append(result, entry)
 	}
 	sort.SliceStable(result, func(i, j int) bool {
 		if result[i].Shot != result[j].Shot {
@@ -130,6 +135,14 @@ func merge(entries []Entry, current []live) []Entry {
 // Sync переносит в журнал текущее состояние всех живых запросов проекта. Файл пишется атомарно и
 // только при изменении; новый проект без отправок файла не получает.
 func Sync(root string) error {
+	return SyncDiscarding(root, "")
+}
+
+// SyncDiscarding — Sync перед удалением попытки attempt (папка от корня проекта через «/»).
+// Отправки провайдеру остаются в журнале: деньги потрачены, кредиты не возвращаются. Ручные
+// генерации этой попытки из журнала убираются: их стоимость вписал сам пользователь, и удаление
+// попытки — его решение отказаться от этой записи вместе с видео.
+func SyncDiscarding(root, attempt string) error {
 	entries, err := readJournal(root)
 	if err != nil {
 		return err
@@ -139,6 +152,9 @@ func Sync(root string) error {
 		return err
 	}
 	next := merge(entries, current)
+	if attempt != "" {
+		next = slices.DeleteFunc(next, func(entry Entry) bool { return entry.Status == StatusManual && entry.Attempt == attempt })
+	}
 	if slices.EqualFunc(entries, next, equal) {
 		return nil
 	}

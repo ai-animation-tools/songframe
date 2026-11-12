@@ -24,6 +24,9 @@ type Accepted struct {
 type Summary struct {
 	// Attempts — попытки (папки) с хотя бы одной отправкой.
 	Attempts int `json:"attempts"`
+	// Removed — из них попытки, папок которых уже нет (удалены): их отправки известны только по
+	// журналу. 0 у принятого плана: приёмка с очисткой убирает папки всех его попыток.
+	Removed int `json:"removed"`
 	// Images, Videos — отправки запросов изображений и видео, включая ручные генерации видео.
 	Images int `json:"images"`
 	Videos int `json:"videos"`
@@ -46,13 +49,14 @@ type Summary struct {
 // Summarize — расход плана shot по записям entries (Entries проекта). accepted nil — план не принят.
 func Summarize(entries []Entry, shot string, accepted *Accepted) Summary {
 	summary := Summary{Totals: []Total{}, PerSecond: []Total{}}
+	// attempts — попытка плана и есть ли у неё живая папка.
 	attempts := map[string]bool{}
 	acceptedFound := false
 	for _, entry := range entries {
 		if entry.Shot != shot {
 			continue
 		}
-		attempts[entry.Attempt] = true
+		attempts[entry.Attempt] = attempts[entry.Attempt] || entry.live
 		if entry.Kind == "image" {
 			summary.Images++
 		} else {
@@ -74,6 +78,13 @@ func Summarize(entries []Entry, shot string, accepted *Accepted) Summary {
 		}
 	}
 	summary.Attempts = len(attempts)
+	if accepted == nil {
+		for _, live := range attempts {
+			if !live {
+				summary.Removed++
+			}
+		}
+	}
 	if accepted != nil {
 		summary.Rejected = summary.Videos
 		if acceptedFound {

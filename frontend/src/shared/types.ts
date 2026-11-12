@@ -527,6 +527,8 @@ export interface SpendTotal {
 export interface ShotSpend {
   /** Попытки с хотя бы одной отправкой. */
   attempts: number;
+  /** Из них попытки, папки которых удалены; 0 у принятого плана. */
+  removed: number;
   images: number;
   videos: number;
   /** Отправки видео, не ставшие принятым результатом; 0, пока план не принят. */

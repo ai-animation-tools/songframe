@@ -684,7 +684,8 @@ func (s *Service) DiscardAttempt(project, packageDir string) error {
 		return err
 	}
 	// Отправки удаляемой попытки остаются в журнале расходов: без него удаление не выполняется.
-	if err := spend.Sync(project); err != nil {
+	// Ручные генерации попытки уходят вместе с ней: их стоимость указал сам пользователь.
+	if err := spend.SyncDiscarding(project, strings.ReplaceAll(dynvalue.Relative(root, directory), `\`, "/")); err != nil {
 		return err
 	}
 	if view == nil {

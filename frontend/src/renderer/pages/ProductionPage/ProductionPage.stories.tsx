@@ -734,6 +734,7 @@ export const AcceptedProviderPlan: Story = {
       // Две отправки видео по 13 кредитов, принята вторая: 26 кредитов на 5 с материала.
       spend: () => ({
         attempts: 2,
+        removed: 0,
         images: 0,
         videos: 2,
         rejected: 1,
@@ -755,7 +756,7 @@ export const AcceptedProviderPlan: Story = {
     await expect(screen.queryByText(/^Срез речи/)).not.toBeInTheDocument();
     // Расход плана в его карточке: попытки удалены приёмкой, но отправки учтены журналом.
     const spend = texts.shotSpend;
-    await expect(await screen.findByText(spend.sends({ attempts: 2, videos: 2, images: 0 }))).toBeInTheDocument();
+    await expect(await screen.findByText(spend.sends({ attempts: 2, removed: 0, videos: 2, images: 0, manual: 0 }))).toBeInTheDocument();
     await expect(screen.getByText(spend.accepted({ seconds: '5,00', rejected: 1 }))).toBeInTheDocument();
     await expect(screen.getByText(`${spend.perSecond}: 5,2 кредита (${testProviderInfo.title})`)).toBeInTheDocument();
   }

@@ -48,6 +48,10 @@ export const Regular: Story = {
     // Плашка о связи разметки со сценарием видна сразу, до любых правок.
     const notice = await within(canvasElement).findByRole('alert', { name: timingTexts.scenarioNotice.title });
     await expect(notice).toHaveTextContent(timingTexts.scenarioNotice.text);
+    // Список строк показывает всю карту секций: часть текста без скобок и финал без строк, с границами.
+    const list = within(within(canvasElement).getByRole('region', { name: editorTexts.list }));
+    await expect(list.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)).toEqual(['Куплет', 'Финал без вокала']);
+    await expect(canvasElement.querySelector('[data-section="Финал без вокала"]')).toHaveTextContent(/до конца трека.* – 30\.00 · /);
   }
 };
 

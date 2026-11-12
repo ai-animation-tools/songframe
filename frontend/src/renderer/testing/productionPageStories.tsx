@@ -287,6 +287,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
             structuredClone(
               options.spend?.(shot) ?? {
                 attempts: 0,
+                removed: 0,
                 images: 0,
                 videos: 0,
                 rejected: 0,

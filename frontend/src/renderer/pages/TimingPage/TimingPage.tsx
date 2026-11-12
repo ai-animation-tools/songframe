@@ -579,6 +579,7 @@ export function TimingPage(): ReactElement {
         filter={editorFilter}
         onFilterChange={setEditorFilter}
         rows={editorRows}
+        sections={player.sections}
         candidates={candidates}
         order={lineOrder}
         drafts={boundaryDrafts}

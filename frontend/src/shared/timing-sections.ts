@@ -92,23 +92,39 @@ export function buildSections(lyrics: LyricsLine[], lines: TimingLine[], duratio
 /** Части с текстом сохраняются и без найденных границ: их имена нужны для распознавания старой автоматики. */
 function groupParts(lyrics: LyricsLine[], byNumber: Map<number, SectionMember>): SectionPart[] {
   const parts: SectionPart[] = [];
-  let current: SectionPart | null = null;
+  for (const [number, part] of lyricParts(lyrics)) {
+    const current = (parts[part.index] ??= { name: part.name, members: [], hasSource: true });
+    const line = byNumber.get(number);
+    if (line) current.members.push(line);
+  }
+  return parts.filter(Boolean);
+}
+
+/** Часть текста строки песни: порядковый номер части, её название и признак заголовка `[Название]` в тексте. */
+export interface LyricPart {
+  index: number;
+  name: string;
+  titled: boolean;
+}
+
+/**
+ * Часть текста для каждой исполняемой строки по физическому номеру. Строки до первого заголовка образуют часть
+ * «Без названия»; заголовок без строк части не создаёт. Общая основа автоматических секций и заголовков редактора.
+ */
+export function lyricParts(lyrics: LyricsLine[]): Map<number, LyricPart> {
+  const result = new Map<number, LyricPart>();
+  let index = -1;
+  let current: LyricPart | null = null;
   for (const lyric of lyrics) {
     if (lyric.header) {
-      current = { name: lyric.text.slice(1, -1).trim(), members: [], hasSource: false };
-      parts.push(current);
+      current = { index: ++index, name: lyric.text.slice(1, -1).trim(), titled: true };
     } else if (lyric.text) {
-      if (!current) {
-        // eslint-disable-next-line no-restricted-syntax -- Имя секции сохраняется в timing.json, это значение данных музыкальной карты.
-        current = { name: 'Без названия', members: [], hasSource: false };
-        parts.push(current);
-      }
-      current.hasSource = true;
-      const line = byNumber.get(lyric.number);
-      if (line) current.members.push(line);
+      // eslint-disable-next-line no-restricted-syntax -- Имя секции сохраняется в timing.json, это значение данных музыкальной карты.
+      current ??= { index: ++index, name: 'Без названия', titled: false };
+      result.set(lyric.number, current);
     }
   }
-  return parts.filter((part) => part.hasSource);
+  return result;
 }
 
 function round(value: number): number {

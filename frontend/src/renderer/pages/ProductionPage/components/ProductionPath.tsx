@@ -27,7 +27,7 @@ import { PromptReopenDialog } from './PromptReopenDialog';
 import { ActionButton } from '../../../components/ActionButton';
 import { promptOverLimit } from '../promptLimit';
 import ReplayIcon from '@mui/icons-material/Replay';
-import { ProductionSpeechPanel } from './ProductionSpeechPanel';
+import { ProductionSpeechPanel, SpeechSlice } from './ProductionSpeechPanel';
 import { ProductionWorkflowPanel } from './ProductionWorkflowPanel';
 
 /** Вопросы результата на случай, когда прежний ответ уже записан: решение доступно всегда. */
@@ -371,6 +371,8 @@ export function ProductionPath({
           </>
         ) : (
           <>
+            {/* Шаг «Речь» уже свёрнут: срез повторяется здесь, чтобы прослушать его перед отправкой. */}
+            {pkg?.speech && pkg.request?.kind !== 'image' ? <SpeechSlice speech={pkg.speech} /> : null}
             {pkg?.request?.kind !== 'image' ? request : null}
             {current ? panel(asked) : null}
             {current ? decision(key) : null}

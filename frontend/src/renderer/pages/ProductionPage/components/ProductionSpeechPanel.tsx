@@ -1,10 +1,12 @@
 import { productionTexts } from '@shared/texts/production';
 /** Речь речевого плана: точный срез песни для липсинка готовится в пакете до запроса и сохраняется при приёмке. */
-import { useEffect, useState, type ReactElement } from 'react';
+import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { Alert, Box, Paper, Stack, TextField, Typography } from '@mui/material';
 import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
 import ContentCutIcon from '@mui/icons-material/ContentCut';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import HeadphonesIcon from '@mui/icons-material/Headphones';
+import StopIcon from '@mui/icons-material/Stop';
 import type { PackageSpeech, PackageView, SpeechPlan } from '@shared/types';
 import { useApp } from '../../../state';
 import { formatClock } from '../../../format';
@@ -34,6 +36,55 @@ export function SpeechSlice({ speech }: { speech: PackageSpeech }): ReactElement
       </Stack>
     </Alert>
   );
+}
+
+/**
+ * Прослушивание участка песни по введённым границам, без записи файлов: скрытый audio трека играет от начала
+ * и останавливается на конце. Конец проверяется каждый кадр, а не по timeupdate (раз в ~250 мс), чтобы
+ * после границы не звучало лишнее. position — текущее время песни, null — участок не играет.
+ */
+function useSegmentPlayback(track: string | null, onError: (reason: unknown) => void) {
+  const audio = useRef<HTMLAudioElement | null>(null);
+  const frame = useRef<number | null>(null);
+  const [position, setPosition] = useState<number | null>(null);
+
+  const stop = (): void => {
+    if (frame.current !== null) cancelAnimationFrame(frame.current);
+    frame.current = null;
+    audio.current?.pause();
+    setPosition(null);
+  };
+
+  // Смена трека и уход со страницы останавливают звук.
+  useEffect(() => stop, [track]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const play = (start: number, end: number): void => {
+    const element = audio.current;
+    if (!element) return;
+    stop();
+    element.currentTime = start;
+    setPosition(start);
+    const tick = (): void => {
+      if (element.paused || element.ended || element.currentTime >= end) {
+        stop();
+        return;
+      }
+      setPosition(element.currentTime);
+      frame.current = requestAnimationFrame(tick);
+    };
+    element
+      .play()
+      .then(() => {
+        frame.current = requestAnimationFrame(tick);
+      })
+      .catch((reason: unknown) => {
+        stop();
+        onError(reason);
+      });
+  };
+
+  const element = track ? <Box component="audio" ref={audio} preload="metadata" src={window.api.shell.fileUrl(track)} hidden /> : null;
+  return { element, position, play, stop };
 }
 
 export function ProductionSpeechPanel({
@@ -85,12 +136,20 @@ export function ProductionSpeechPanel({
   const manual = pkg.request?.mode === 'manual';
   const startValue = Number(start.replace(',', '.'));
   const endValue = Number(end.replace(',', '.'));
-  const boundsProblem =
-    start.trim() === '' || end.trim() === '' || !Number.isFinite(startValue) || !Number.isFinite(endValue) || startValue < 0 || endValue <= startValue
-      ? productionTexts.productionSpeechPanel.invalidRange
-      : plan?.lipSync && (endValue - startValue < plan.lipSync.min - 1e-6 || endValue - startValue > plan.lipSync.max + 1e-6)
-        ? productionTexts.productionSpeechPanel.duration({ min: plan.lipSync.min, max: plan.lipSync.max })
-        : null;
+  const rangeProblem =
+    start.trim() === '' || end.trim() === '' || !Number.isFinite(startValue) || !Number.isFinite(endValue) || startValue < 0 || endValue <= startValue;
+  const boundsProblem = rangeProblem
+    ? productionTexts.productionSpeechPanel.invalidRange
+    : plan?.lipSync && (endValue - startValue < plan.lipSync.min - 1e-6 || endValue - startValue > plan.lipSync.max + 1e-6)
+      ? productionTexts.productionSpeechPanel.duration({ min: plan.lipSync.min, max: plan.lipSync.max })
+      : null;
+  // Прослушивание не пишет файлов: ему мешают только неверные границы и отсутствие трека.
+  const listenReason = !plan?.track ? productionTexts.productionSpeechPanel.noTrack : rangeProblem ? productionTexts.productionSpeechPanel.invalidRange : null;
+  const playback = useSegmentPlayback(plan?.track ?? null, (reasonError) => {
+    const text = productionTexts.productionSpeechPanel.listenFailed({ reason: describeError(reasonError) });
+    setError(text);
+    notify(text, 'error');
+  });
   const sentReason = manual ? productionTexts.manualGeneration.builtSpeech : productionTexts.productionSpeechPanel.sent;
   const reason = sent ? sentReason : working ? BUSY_REASON : busy ? busyReason : boundsProblem;
   const lines = speech?.lines.length ? speech.lines : (plan?.lines ?? []);
@@ -166,6 +225,30 @@ export function ProductionSpeechPanel({
           <ActionButton variant="contained" startIcon={<ContentCutIcon />} disabled={!!reason} disabledReason={reason} onClick={() => void prepare()}>
             {speech ? productionTexts.productionSpeechPanel.recut : productionTexts.productionSpeechPanel.prepare}
           </ActionButton>
+          {playback.position !== null ? (
+            <ActionButton startIcon={<StopIcon />} onClick={playback.stop}>
+              {productionTexts.productionSpeechPanel.stop}
+            </ActionButton>
+          ) : (
+            <ActionButton
+              startIcon={<HeadphonesIcon />}
+              disabled={!!listenReason}
+              disabledReason={listenReason}
+              onClick={() => playback.play(startValue, endValue)}
+            >
+              {productionTexts.productionSpeechPanel.listen}
+            </ActionButton>
+          )}
+          {playback.position !== null ? (
+            <Typography
+              variant="body2"
+              role="timer"
+              aria-label={productionTexts.productionSpeechPanel.position}
+              sx={{ alignSelf: 'center', fontVariantNumeric: 'tabular-nums' }}
+            >
+              {formatClock(playback.position)}
+            </Typography>
+          ) : null}
           {plan?.proposed ? (
             <ActionButton
               startIcon={<RestartAltIcon />}
@@ -180,6 +263,7 @@ export function ProductionSpeechPanel({
             </ActionButton>
           ) : null}
         </Stack>
+        {playback.element}
       </Stack>
     </Paper>
   );

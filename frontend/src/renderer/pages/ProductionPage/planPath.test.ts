@@ -57,6 +57,8 @@ describe('путь плана', () => {
     const before = planPath(shot({ lipsync: true }), approved, manual);
     expect(before.current).toBe('request');
     expect(before.steps[4].title).toBe('Ручная генерация');
+    // Свёрнутый шаг среза называет его границы в песне и длину.
+    expect(before.steps[3].summary).toBe('Срез готов: 0:00.00–0:05.00 (5,00 с)');
     expect(before.now).toContain('соберите пакет');
     const built = pkg({
       ...approved,

@@ -6,7 +6,7 @@ import { productionTexts } from '@shared/texts/production';
 import type { PackageView, SpeechPlan } from '@shared/types';
 import { formatClock } from '../../../format';
 import { DELIVERY_PROJECT, deliveryPackage } from '../../../testing/deliveryStories';
-import type { StoryOptions } from '../../../testing/storybook';
+import { STORY_TRACK_PATH, type StoryOptions } from '../../../testing/storybook';
 import { ProductionSpeechPanel } from './ProductionSpeechPanel';
 
 const texts = productionTexts.productionSpeechPanel;
@@ -16,7 +16,8 @@ const plan: SpeechPlan = {
   window: { start: 12, end: 17 },
   lines: [{ start: 12.4, end: 15.1, text: 'У старых ворот' }],
   proposed: { start: 12, end: 17 },
-  lipSync: { min: 2, max: 10 }
+  lipSync: { min: 2, max: 10 },
+  track: STORY_TRACK_PATH
 };
 
 interface SpeechInspection {
@@ -33,14 +34,14 @@ function speechInspection(): SpeechInspection {
 }
 
 /** Модель speechPlan/prepareSpeech: вырезка записывает срез в audio/ пакета и возвращает пакет со speech. */
-function speechOptions(): StoryOptions {
+function speechOptions(overrides: Partial<SpeechPlan> = {}): StoryOptions {
   return {
     createApi: () => {
       const inspection: SpeechInspection = { prepared: [], pkg: structuredClone(pkg) };
       activeInspection = inspection;
       return {
         production: {
-          speechPlan: async () => structuredClone(plan),
+          speechPlan: async () => structuredClone({ ...plan, ...overrides }),
           prepareSpeech: async (_project, dir, bounds) => {
             inspection.prepared.push(bounds);
             const range = bounds ?? plan.proposed!;
@@ -130,5 +131,74 @@ export const PreparedCut: Story = {
       ])
     );
     await canvas.findByText(texts.ready({ start: formatClock(12), end: formatClock(17), seconds: texts.seconds(5) }));
+  }
+};
+
+/** Скрытый плеер трека песни: прослушивание участка идёт через него, без записи файлов. */
+const trackAudio = (canvasElement: HTMLElement): HTMLAudioElement => {
+  const audio = canvasElement.querySelector<HTMLAudioElement>('audio[hidden]');
+  if (!audio) throw new Error('Нет плеера трека песни.');
+  return audio;
+};
+
+export const ListenSegment: Story = {
+  name: 'Слушать участок · играет от начала, останавливается на конце и по кнопке',
+  tags: ['ci'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await canvas.findByText(/У старых ворот/);
+    const audio = trackAudio(canvasElement);
+    await expect(audio).toHaveAttribute('src', expect.stringContaining('media/story-track.mp3'));
+    // Короткий участок: проигрывание само останавливается на введённом конце.
+    const end = canvas.getByRole('textbox', { name: texts.cutEnd });
+    await userEvent.clear(end);
+    await userEvent.type(end, '12,6');
+    await userEvent.click(await canvas.findByRole('button', { name: texts.listen }));
+    await expect(await canvas.findByRole('button', { name: texts.stop })).toBeInTheDocument();
+    await expect(canvas.getByRole('timer', { name: texts.position })).toHaveTextContent(/^0:12/);
+    await waitFor(() => expect(canvas.getByRole('button', { name: texts.listen })).toBeInTheDocument(), { timeout: 4000 });
+    await expect(audio.paused).toBe(true);
+    await expect(audio.currentTime).toBeGreaterThanOrEqual(12.6);
+    await expect(audio.currentTime).toBeLessThan(12.9);
+    await expect(canvas.queryByRole('timer')).toBeNull();
+
+    // Каждое нажатие играет текущие значения полей; «Остановить» прерывает сразу.
+    await userEvent.clear(end);
+    await userEvent.type(end, '17');
+    await userEvent.click(canvas.getByRole('button', { name: texts.listen }));
+    await userEvent.click(await canvas.findByRole('button', { name: texts.stop }));
+    await expect(await canvas.findByRole('button', { name: texts.listen })).toBeInTheDocument();
+    await expect(audio.paused).toBe(true);
+    await expect(audio.currentTime).toBeLessThan(14);
+    // Прослушивание ничего не режет.
+    await expect(speechInspection().prepared).toEqual([]);
+  }
+};
+
+export const ListenUnavailable: Story = {
+  name: 'Слушать участок · нет трека песни, неверные границы',
+  tags: ['ci'],
+  parameters: { songframe: speechOptions({ track: null }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await canvas.findByText(/У старых ворот/);
+    const listen = canvas.getByRole('button', { name: texts.listen });
+    await expect(listen).toBeDisabled();
+    await expect(listen).toHaveAttribute('title', expect.stringContaining(texts.noTrack));
+    await expect(canvasElement.querySelector('audio')).toBeNull();
+  }
+};
+
+export const ListenInvalidRange: Story = {
+  name: 'Слушать участок · конец раньше начала',
+  tags: ['ci'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await canvas.findByText(/У старых ворот/);
+    const end = canvas.getByRole('textbox', { name: texts.cutEnd });
+    await userEvent.clear(end);
+    await userEvent.type(end, '11');
+    await waitFor(() => expect(canvas.getByRole('button', { name: texts.listen })).toBeDisabled());
+    await expect(canvas.getByRole('button', { name: texts.listen })).toHaveAttribute('title', expect.stringContaining(texts.invalidRange));
   }
 };

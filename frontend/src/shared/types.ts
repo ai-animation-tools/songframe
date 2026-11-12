@@ -503,6 +503,8 @@ export interface SpeechPlan {
   proposed: { start: number; end: number } | null;
   /** Допустимая длина звукового входа у провайдера видео проекта (поле lipSync реестра); null — липсинк не поддерживается. */
   lipSync: { min: number; max: number } | null;
+  /** Абсолютный путь песни из реестра сцен для прослушивания границ; null — файл не найден. */
+  track: string | null;
 }
 
 export interface PackageView {

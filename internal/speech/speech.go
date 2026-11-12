@@ -59,6 +59,10 @@ type Plan struct {
 	Lines    []Line    `json:"lines"`
 	Proposed *Interval `json:"proposed"`
 	LipSync  *Range    `json:"lipSync"`
+	// Track — абсолютный путь песни из реестра сцен (audio.path), из которой режется срез; null,
+	// если путь не задан, выходит за проект или файла нет. По нему страница даёт прослушать
+	// границы среза до нарезки, ничего не записывая.
+	Track *string `json:"track"`
 }
 
 // Package — PackageSpeech: подготовленный срез пакета.
@@ -151,7 +155,24 @@ func PlanFor(project, shot string, limits Limits) (Plan, error) {
 		length = math.Max(length, 0)
 	}
 	proposed := Interval{Start: round3(window.Start), End: round3(window.Start + length)}
-	return Plan{Shot: shot, Window: window, Lines: lines, Proposed: &proposed, LipSync: limits.LipSync}, nil
+	return Plan{Shot: shot, Window: window, Lines: lines, Proposed: &proposed, LipSync: limits.LipSync, Track: songTrack(project, scenes)}, nil
+}
+
+// songTrack — песня реестра сцен, тот же источник, что у инструмента cut_speech; путь отсчитывается
+// от проекта и не выходит за него.
+func songTrack(project string, scenes any) *string {
+	name, ok := dynvalue.Get(dynvalue.Get(scenes, "audio"), "path").(string)
+	if !ok || name == "" || filepath.IsAbs(name) {
+		return nil
+	}
+	path := filepath.Join(project, filepath.FromSlash(name))
+	if relative, err := filepath.Rel(project, path); err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		return nil
+	}
+	if !dynvalue.Exists(path) {
+		return nil
+	}
+	return &path
 }
 
 // ReadPackage — readPackageSpeech(packageDir): подготовленный срез пакета или nil. Без рецепта,

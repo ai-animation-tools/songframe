@@ -5,6 +5,7 @@ import { productionTexts } from '@shared/texts/production';
  */
 import type { ProductionPass, ProductionWorkflowView } from '@shared/production-workflow';
 import type { PackageView, ShotProduction } from '@shared/types';
+import { formatClock } from '../../format';
 
 export type PlanStepKey = 'description' | 'frames' | 'prompt' | 'speech' | 'request' | 'generation' | 'result';
 export type PlanStepStatus = 'done' | 'current' | 'future';
@@ -102,7 +103,13 @@ function stepSummary(key: PlanStepKey, pkg: PackageView | null, manual: boolean)
     case 'prompt':
       return texts.promptSummary({ characters: pkg?.prompt?.text.length ?? 0 });
     case 'speech':
-      return texts.speechSummary;
+      return pkg?.speech
+        ? texts.speechSummary({
+            start: formatClock(pkg.speech.start),
+            end: formatClock(pkg.speech.end),
+            seconds: productionTexts.productionSpeechPanel.seconds(pkg.speech.end - pkg.speech.start)
+          })
+        : null;
     case 'request':
       return manual ? texts.manualSummary : texts.requestSummary({ credits: pkg?.request?.creditsConsumed });
     case 'generation':

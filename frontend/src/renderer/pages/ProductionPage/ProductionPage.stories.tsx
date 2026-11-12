@@ -9,6 +9,7 @@ import { videoReviewTexts } from '@shared/texts/video-review';
 import { productionTexts } from '@shared/texts/production';
 import type { ShotProduction } from '@shared/types';
 import { ANCHORS } from '../../components/linkTargets';
+import { formatClock } from '../../format';
 import { keyframePackage } from '../../testing/keyframeStories';
 import { STORY_VIDEO_PATH } from '../../testing/storybook';
 import { preparedPackage, queuedPackage } from '../../testing/productionQueueStories';
@@ -506,6 +507,12 @@ export const ManualGeneration: Story = {
     await expect(await screen.findByText(steps.now({ text: steps.buildManual }), {}, POLL_TIMEOUT)).toBeInTheDocument();
     // Вместо запроса и генерации — один шаг ручной генерации; платной отправки нет.
     await expect(planStep(context, 'generation')).toBeNull();
+    // Свёрнутый шаг «Речь» называет границы готового среза.
+    await expect(
+      within(planStep(context, 'speech')).getByText(
+        steps.speechSummary({ start: formatClock(12), end: formatClock(17), seconds: texts.productionSpeechPanel.seconds(5) })
+      )
+    ).toBeInTheDocument();
     const step = within(planStep(context, 'request'));
     await expect(step.getByText(steps.titles.manual)).toBeInTheDocument();
     await userEvent.click(await step.findByRole('button', { name: manual.build }));
@@ -522,6 +529,22 @@ export const ManualGeneration: Story = {
     await expect(await within(planStep(context, 'result')).findByText(/Источник: Тестовый сервис на сайте · Стоимость: 75 кредитов/)).toBeInTheDocument();
     await expect(counts(context)).toHaveTextContent('Отправок генерации: 0.');
     await expect(counts(context)).toHaveTextContent('Пакетов ручной генерации: 1. Загрузок видео: 1.');
+  }
+};
+
+export const SpeechRequest: Story = {
+  tags: ['ci'],
+  name: 'Речевой план · срез речи повторяется в шаге запроса',
+  parameters: { songframe: options({ shots: manualShots }) },
+  play: async (context) => {
+    const screen = screenOf(context);
+    await expect(await screen.findByText(steps.now({ text: steps.prepareRequest }), {}, POLL_TIMEOUT)).toBeInTheDocument();
+    const slice = texts.productionSpeechPanel.ready({ start: formatClock(12), end: formatClock(17), seconds: texts.productionSpeechPanel.seconds(5) });
+    await expect(within(planStep(context, 'speech')).getByText(/^Срез готов: /)).toBeInTheDocument();
+    // Шаг «Речь» свёрнут: тот же срез с плеером виден в запросе, чтобы прослушать его перед отправкой.
+    const request = within(planStep(context, 'request'));
+    await expect(request.getByText(slice)).toBeInTheDocument();
+    await expect(planStep(context, 'request').querySelector('audio')).toHaveAttribute('src', expect.stringContaining('media/'));
   }
 };
 

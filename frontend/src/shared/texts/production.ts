@@ -472,7 +472,7 @@ export const productionTexts = {
     descriptionSummary: ({ frames, seconds }: { frames: number; seconds: number | null | undefined }) =>
       `Принято: опор ${frames}${seconds ? `, запрос на ${seconds} с` : ''}`,
     promptSummary: ({ characters }: { characters: number }) => `Утверждён, символов: ${characters}`,
-    speechSummary: 'Срез готов',
+    speechSummary: ({ start, end, seconds }: { start: string; end: string; seconds: string }) => `Срез готов: ${start}–${end} (${seconds})`,
     requestSummary: ({ credits }: { credits: number | null | undefined }) => `Отправлен${credits ? `, списано кредитов: ${credits}` : ''}`,
     generationSummary: 'Видео получено',
     manualSummary: 'Видео загружено',
@@ -912,7 +912,12 @@ export const productionTexts = {
     cutEnd: labels.endSeconds,
     recut: 'Обрезать заново',
     prepare: 'Подготовить WAV',
-    timing: `Границы по разметке`
+    timing: `Границы по разметке`,
+    listen: 'Слушать участок',
+    stop: 'Остановить',
+    position: 'Время песни',
+    noTrack: 'Трек песни не найден: добавьте его на странице «Исходники».',
+    listenFailed: ({ reason }: { reason: string }) => `Не удалось воспроизвести трек песни: ${reason}`
   },
   manualGeneration: {
     heading: 'Ручная генерация',

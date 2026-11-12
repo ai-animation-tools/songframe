@@ -11,8 +11,8 @@ import (
 )
 
 // manualReason — почему пакет ручной генерации нельзя собрать; "" — можно. Пакет собирается из
-// утверждённых опоры и видеопромпта и подготовленного среза речи, один раз на пакет: новый —
-// только после доработки промпта или новой попытки.
+// утверждённых опор и видеопромпта, у речевого плана — и из подготовленного среза речи, один раз
+// на пакет: новый — только после доработки промпта или новой попытки.
 func manualReason(c *Context, derived, common string, imagePhase bool) (string, error) {
 	if !c.Manual {
 		return "", nil
@@ -42,14 +42,15 @@ func manualReason(c *Context, derived, common string, imagePhase bool) (string, 
 	if !prompt {
 		return textManualPromptRequired, nil
 	}
-	if c.Speech == nil {
+	if c.Speech == nil && c.Scene.Value("lipsync") == true {
 		return textManualSpeechRequired, nil
 	}
 	return "", nil
 }
 
 // BuildManual собирает пакет ручной генерации плана без агента: в новой папке request-NN пакета —
-// утверждённая опора K01, срез речи и утверждённый видеопромпт с SHA (requestsnapshot.PrepareManual),
+// утверждённые опоры по порядку, у речевого плана срез речи, и утверждённый видеопромпт с SHA
+// (requestsnapshot.PrepareManual),
 // затем этап request_choice с этой папкой. Отправки сервису у такой попытки нет: видео загружает
 // пользователь (production.Service.AttachManual).
 func (w *Workflow) BuildManual(ctx context.Context, project, shot, packageDir string) (View, error) {
@@ -88,16 +89,24 @@ func (w *Workflow) BuildManual(ctx context.Context, project, shot, packageDir st
 // buildManual — запись пакета ручной генерации для проверенного контекста c (без мьютекса).
 func (w *Workflow) buildManual(ctx context.Context, c *Context) error {
 	frames := keyframes(c.Workflow)
-	if len(frames) != 1 {
+	if c.SingleFrame && len(frames) != 1 {
 		return errors.New(textManualSingleFrame)
 	}
-	frame, err := packageFile(c, dynvalue.Get(frames[0], "path"))
-	if err != nil {
-		return err
+	// Входы — опоры в порядке плана (слот image: форма сайта принимает изображения), затем звук.
+	inputs := []requestsnapshot.ManualInput{}
+	for _, frame := range frames {
+		path, err := packageFile(c, dynvalue.Get(frame, "path"))
+		if err != nil {
+			return err
+		}
+		inputs = append(inputs, requestsnapshot.ManualInput{Path: path, Slot: "image", Role: textManualFrameRole(dynvalue.ToString(dynvalue.Get(frame, "id")))})
 	}
-	prepared := speech.ReadPackage(c.PackageDir)
-	if prepared == nil {
-		return errors.New(textManualSpeechRequired)
+	if c.Scene.Value("lipsync") == true {
+		prepared := speech.ReadPackage(c.PackageDir)
+		if prepared == nil {
+			return errors.New(textManualSpeechRequired)
+		}
+		inputs = append(inputs, requestsnapshot.ManualInput{Path: prepared.Path, Slot: "audio", Role: textManualSpeechRole})
 	}
 	promptPath, err := packageFile(c, dynvalue.Get(c.workflowValue("prompt"), "path"))
 	if err != nil {
@@ -115,11 +124,7 @@ func (w *Workflow) buildManual(ctx context.Context, c *Context) error {
 	requestName := "request-" + twoDigits(number)
 	provider := dynvalue.ToString(c.Settings.Value("provider"))
 	if _, err := requestsnapshot.PrepareManual(filepath.Join(c.PackageDir, requestName), requestsnapshot.ManualSpec{
-		Shot: c.Shot, Provider: provider, Seconds: seconds, Prompt: prompt,
-		Inputs: []requestsnapshot.ManualInput{
-			{Path: frame, Slot: "image", Role: textManualFrameRole(dynvalue.ToString(dynvalue.Get(frames[0], "id")))},
-			{Path: prepared.Path, Slot: "audio", Role: textManualSpeechRole},
-		},
+		Shot: c.Shot, Provider: provider, Seconds: seconds, Prompt: prompt, Inputs: inputs,
 	}); err != nil {
 		return err
 	}

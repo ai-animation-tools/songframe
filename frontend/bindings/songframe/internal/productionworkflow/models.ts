@@ -113,11 +113,15 @@ export interface View {
     "canGenerateFrames": boolean;
 
     /**
-     * Manual — речевой план у провайдера без липсинка: видео создаётся вне приложения по пакету
-     * ручной генерации. CanBuildManual — пакет можно собрать сейчас.
+     * Manual — видео плана создаётся вне приложения по пакету ручной генерации (Context.Manual).
+     * CanBuildManual — пакет можно собрать сейчас. SingleFrame — речевой план у провайдера без
+     * липсинка: всегда вручную и по одной опоре. GenerationMethod — способ, выбранный для
+     * попытки: "manual"; поле опускается, пока видео делает провайдер проекта.
      */
     "manual"?: boolean;
     "canBuildManual"?: boolean;
+    "singleFrame"?: boolean;
+    "generationMethod"?: string;
 
     /**
      * PromptMaxChars — предел длины видеопромпта провайдера (Context.PromptLimit): длиннее него

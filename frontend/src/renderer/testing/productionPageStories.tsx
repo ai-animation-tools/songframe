@@ -100,6 +100,8 @@ interface PageModel {
   promptReopens: string[];
   /** Свои описания, сохранённые без агента: описание и число опор каждого. */
   ownSaves: string[];
+  /** Выбранные способы генерации попыток по порядку. */
+  methodChanges: string[];
   subscribe(listener: () => void): () => void;
   revision(): number;
 }
@@ -154,6 +156,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
         manualUploads: 0,
         promptReopens: [],
         ownSaves: [],
+        methodChanges: [],
         subscribe(listener) {
           listeners.add(listener);
           return () => {
@@ -219,6 +222,8 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
           entry.timer = null;
         }
       };
+      // Попытки со способом «Вручную вне приложения» (productionWorkflow.setGenerationMethod).
+      const manualMethods = new Set<string>();
       // Свой файл опоры становится предложением только на время между импортом и применением.
       const frameImports = new Map<string, ProductionProposal>();
       const workflowSnapshot = (project: string, shot: string, packageDir: string | undefined) => {
@@ -226,17 +231,24 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
         const pkg = model.view.shots.flatMap((item) => item.packages).find((item) => item.dir === packageDir);
         // Как в Go: следующая опора доступна, пока к попытке нет открытого вопроса.
         const nextFrame = pkg && !pkg.pendingDecision ? (pkg.keyframes.find((frame) => !frame.approved && !frame.imagePath)?.id ?? null) : null;
-        // Как Go: пакет ручной генерации собирается после утверждённого промпта и готового среза, один раз на попытку.
+        // Как Go: пакет ручной генерации собирается после утверждённого промпта и, у речевого плана, готового среза, один раз на попытку.
+        const chosen = !!packageDir && manualMethods.has(packageDir);
         const manualReason = !pkg
           ? null
           : pkg.request
             ? 'Пакет для ручной генерации уже собран.'
-            : !pkg.speech
-              ? 'Сначала подготовьте WAV в блоке «Речь».'
-              : null;
+            : chosen && !pkg.prompt?.approved
+              ? 'Сначала утвердите видеопромпт.'
+              : options.manual && !pkg.speech
+                ? 'Сначала подготовьте WAV в блоке «Речь».'
+                : null;
+        const manual = !!options.manual || chosen;
         return workflowView({
-          ...(options.manual ? { manual: true, canBuildManual: !!pkg && !manualReason, videoProvider: TEST_PROVIDER } : {}),
-          ...(options.promptMaxChars ? { promptMaxChars: options.promptMaxChars, videoProvider: TEST_PROVIDER } : {}),
+          ...(manual ? { manual: true, canBuildManual: !!pkg && !manualReason, videoProvider: TEST_PROVIDER } : {}),
+          ...(options.manual ? { singleFrame: true } : {}),
+          ...(chosen ? { generationMethod: 'manual' as const } : {}),
+          // У ручной генерации предела промпта нет: у формы сервиса свои правила.
+          ...(options.promptMaxChars && !manual ? { promptMaxChars: options.promptMaxChars, videoProvider: TEST_PROVIDER } : {}),
           project: PAGE_PROJECT,
           shot,
           packageDir: packageDir ?? null,
@@ -250,7 +262,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
                 prepare: null,
                 continue: 'Сначала ответьте на вопрос пакета.',
                 frames: nextFrame ? null : 'Сначала ответьте на вопрос пакета.',
-                ...(options.manual ? { manual: manualReason } : {})
+                ...(manual ? { manual: manualReason } : {})
               }
             : workflowView().reasons
         });
@@ -322,9 +334,9 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
               throw new Error(PAGE_ACTION_ERROR);
             }
             // Как Go: принятое описание переводит попытку к опорам, первая из них становится следующей.
-            // Как approve-prompt: утверждённый промпт ведёт к запросу; предел провайдера Go проверяет и здесь.
+            // Как approve-prompt: утверждённый промпт ведёт к запросу; предел провайдера Go проверяет и здесь, кроме ручной попытки.
             if (pending.stage === 'prompt_review' && verdict === 'approve' && pkg.prompt) {
-              if (options.promptMaxChars && Array.from(pkg.prompt.text).length > options.promptMaxChars)
+              if (options.promptMaxChars && !manualMethods.has(pkg.dir) && Array.from(pkg.prompt.text).length > options.promptMaxChars)
                 throw new Error('Промпт длиннее предела провайдера: верните его на доработку.');
               pkg.decision = { stage: pending.stage, verdict, note, at: DATE };
               pkg.prompt = { ...pkg.prompt, approved: true };
@@ -487,9 +499,22 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
             publish();
             return workflowSnapshot(project, shot, dir);
           },
+          // Как Go: способ попытки записывается до утверждения промпта, пока запрос не подготовлен.
+          setGenerationMethod: async (project, shot, dir, method) => {
+            const { pkg } = find(project, dir);
+            if (options.manual || pkg.prompt?.approved || pkg.request) throw new Error('Способ генерации этой попытки сменить нельзя.');
+            if (method === 'manual') manualMethods.add(dir);
+            else manualMethods.delete(dir);
+            model.methodChanges = [...model.methodChanges, method];
+            touch(pkg);
+            publish();
+            return workflowSnapshot(project, shot, dir);
+          },
           buildManual: async (project, shot, dir) => {
             const { pkg } = find(project, dir);
-            if (!options.manual || pkg.request || !pkg.speech) throw new Error('Пакет для ручной генерации сейчас собрать нельзя.');
+            const chosen = manualMethods.has(dir);
+            if ((!options.manual && !chosen) || pkg.request || (options.manual && !pkg.speech) || (chosen && !pkg.prompt?.approved))
+              throw new Error('Пакет для ручной генерации сейчас собрать нельзя.');
             const requestDir = `${pkg.dir}/request-01`;
             model.manualBuilds++;
             pkg.stage = 'request_choice';
@@ -502,9 +527,15 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
               sha256: 'b'.repeat(64),
               model: '',
               parameters: { duration: pkg.timing?.request_seconds ?? 5 },
+              // Входы — утверждённые опоры по порядку, у речевого плана затем срез речи.
               inputs: [
-                { slot: 'image', role: 'Опора K01', path: 'inputs/01.png', imagePath: `${requestDir}/inputs/01.png` },
-                { slot: 'audio', role: 'Срез речи', path: 'inputs/02.wav', imagePath: `${requestDir}/inputs/02.wav` }
+                ...(options.manual ? pkg.keyframes.slice(0, 1) : pkg.keyframes).map((frame, index) => ({
+                  slot: 'image',
+                  role: `Опора ${frame.id}`,
+                  path: `inputs/0${index + 1}.png`,
+                  imagePath: `${requestDir}/inputs/0${index + 1}.png`
+                })),
+                ...(options.manual ? [{ slot: 'audio', role: 'Срез речи', path: 'inputs/02.wav', imagePath: `${requestDir}/inputs/02.wav` }] : [])
               ],
               attemptStatus: 'manual_pending',
               promptText: pkg.prompt?.text ?? null,
@@ -593,7 +624,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
             return workflowSnapshot(project, shotId, pkg.dir);
           }
         },
-        dialog: { pickFiles: async () => [options.manual ? STORY_VIDEO_PATH : STORY_IMAGE_PATH] },
+        dialog: { pickFiles: async () => [options.manual || manualMethods.size ? STORY_VIDEO_PATH : STORY_IMAGE_PATH] },
         shell: { openPath: async () => undefined, fileUrl: fragment.overrides.shell.fileUrl },
         derivedShots: derived.api.derivedShots
       });
@@ -660,7 +691,7 @@ export function ProductionPageStory({ links = [] }: { links?: StoryLink[] }): Re
             комплекта: {model.accepts}. Отправок генерации: {model.submissions}. Своих файлов опор: {model.frameImports}. Указаний к опорам:{' '}
             {model.frameNotes.join(', ') || 'нет'}. Созданий опор: {model.frameRuns}. Удалений попыток: {model.discards}. Пакетов ручной генерации:{' '}
             {model.manualBuilds}. Загрузок видео: {model.manualUploads}. Возвратов промпта: {model.promptReopens.join(', ') || 'нет'}. Своих описаний:{' '}
-            {model.ownSaves.join(', ') || 'нет'}.
+            {model.ownSaves.join(', ') || 'нет'}. Способов генерации: {model.methodChanges.join(', ') || 'нет'}.
           </Typography>
           <Typography variant="caption" color="text.secondary" data-testid="production-review-model">
             Проверок видео: {model.reviewStarts}. Отмен проверок: {model.reviewCancels}.

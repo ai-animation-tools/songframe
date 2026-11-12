@@ -211,6 +211,7 @@ func regenerateProblem(project, shot string, packages []*PackageView, selected s
 		modified int64
 		path     string
 		provider any
+		manual   bool
 	}
 	var requests []candidate
 	for _, pkg := range packages {
@@ -225,11 +226,12 @@ func regenerateProblem(project, shot string, packages []*PackageView, selected s
 		if err != nil || !info.Mode().IsRegular() {
 			continue
 		}
+		request := readJSON(path)
 		var provider any = dynvalue.Undefined
-		if text, ok := dynvalue.Get(readJSON(path), "provider").(string); ok {
+		if text, ok := dynvalue.Get(request, "provider").(string); ok {
 			provider = text
 		}
-		requests = append(requests, candidate{modified: info.ModTime().UnixNano(), path: path, provider: provider})
+		requests = append(requests, candidate{modified: info.ModTime().UnixNano(), path: path, provider: provider, manual: dynvalue.Get(request, "mode") == "manual"})
 	}
 	sort.SliceStable(requests, func(i, j int) bool {
 		if requests[i].modified != requests[j].modified {
@@ -237,7 +239,11 @@ func regenerateProblem(project, shot string, packages []*PackageView, selected s
 		}
 		return dynvalue.LessUTF16(requests[i].path, requests[j].path)
 	})
+	// Видео ручной попытки создано вне приложения: сохранённый пакет сервису не отправляется.
 	if len(requests) > 0 {
+		if requests[len(requests)-1].manual {
+			return textRetryManualAttempt(shot)
+		}
 		return compare(requests[len(requests)-1].provider)
 	}
 	snapshotPath := filepath.Join(project, "assets", "shots", shot, "generation-request.json")
@@ -247,6 +253,9 @@ func regenerateProblem(project, shot string, packages []*PackageView, selected s
 	snapshot := readJSON(snapshotPath)
 	if !dynvalue.Truthy(snapshot) || !(dynvalue.IsRecord(snapshot) || dynvalue.IsArray(snapshot)) {
 		return textRetrySnapshotUnreadable(shot)
+	}
+	if dynvalue.Get(snapshot, "mode") == "manual" {
+		return textRetryManualAttempt(shot)
 	}
 	return compare(dynvalue.Get(snapshot, "provider"))
 }

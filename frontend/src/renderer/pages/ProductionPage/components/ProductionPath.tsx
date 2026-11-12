@@ -5,7 +5,7 @@ import { productionTexts } from '@shared/texts/production';
  * решения остаются у useProductionPage и useProductionWorkflow, файлы и согласования — у Go.
  */
 import { useEffect, useRef, useState, type ReactElement, type ReactNode } from 'react';
-import { Box, LinearProgress, Paper, Stack, Step, StepButton, StepContent, StepLabel, Stepper, Typography } from '@mui/material';
+import { Box, Chip, LinearProgress, Paper, Stack, Step, StepButton, StepContent, StepLabel, Stepper, Typography } from '@mui/material';
 import { keyframeLimit, normalizeMediaProvider } from '@shared/media-providers';
 import type { KeyframeNoteScope, ManualVideo, PackageView, ShotProduction } from '@shared/types';
 import { BUSY_REASON } from '../constants';
@@ -32,6 +32,7 @@ import EditNoteIcon from '@mui/icons-material/EditNote';
 import { initialDraft, ownText, type OwnDescriptionDraft } from '../ownDescription';
 import { OwnDescriptionDialog } from './OwnDescriptionDialog';
 import { OwnPromptDialog } from './OwnPromptDialog';
+import { GenerationMethodChoice } from './GenerationMethodChoice';
 import { ProductionSpeechPanel, SpeechSlice } from './ProductionSpeechPanel';
 import { ProductionWorkflowPanel } from './ProductionWorkflowPanel';
 
@@ -173,7 +174,7 @@ export function ProductionPath({
         requestSeconds: pkg?.timing?.request_seconds,
         framePrompts: pkg ? (view?.framePrompts ?? []) : [],
         window: pkg?.timing?.window_seconds ?? shot.end - shot.start,
-        manual: !!view?.manual
+        manual: !!view?.singleFrame
       })
     );
   };
@@ -216,6 +217,9 @@ export function ProductionPath({
           : null;
   const ownReason = ownReasonFor('description');
   const promptReason = ownReasonFor('prompt');
+  // Способ генерации выбирается до утверждения промпта, пока запрос не подготовлен; речевой план без липсинка — всегда вручную.
+  const methodShown = !!pkg && !!view && !view.singleFrame && !view.paid && !pkg.prompt?.approved && !pkg.request;
+  const methodReason = view?.derivedFrom ? view.reasons.continue : promptReason;
 
   /** Указание записывается замечанием к опоре до запуска: так агент получит его обычным путём. */
   const createFrame = async (frame: string, instruction?: FrameInstruction): Promise<void> => {
@@ -382,6 +386,16 @@ export function ProductionPath({
       case 'prompt':
         return (
           <>
+            {current && methodShown ? (
+              <GenerationMethodChoice
+                method={view?.generationMethod ?? 'provider'}
+                disabledReason={methodReason}
+                onChange={(method) => void workflow.setGenerationMethod(method)}
+              />
+            ) : null}
+            {view?.generationMethod === 'manual' && !methodShown ? (
+              <Chip color="info" label={productionTexts.generationMethod.chosenManual} sx={{ alignSelf: 'flex-start' }} />
+            ) : null}
             {overLimit ? <PromptLimitAlert over={overLimit} videoProvider={view?.videoProvider} /> : null}
             {pkg?.prompt ? (
               <PackageTextSection
@@ -496,7 +510,7 @@ export function ProductionPath({
           windowSeconds={pkg?.timing?.window_seconds ?? shot.end - shot.start}
           initial={ownDescription}
           limit={keyframeLimit(view?.videoProvider)}
-          manual={!!view?.manual}
+          manual={!!view?.singleFrame}
           busy={workflow.busy}
           error={ownError}
           onClose={() => setOwnDescription(null)}

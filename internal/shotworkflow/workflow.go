@@ -680,7 +680,7 @@ func (t *workflowTool) approvePromptData(directory string, data *toolrt.Dict, fi
 	}
 	relative, _ := toolrt.RelativeTo(path, directory)
 	chars := toolrt.Len(text)
-	if limit := t.promptLimit(data.Value("shot")); limit > 0 && chars > limit {
+	if limit := t.promptLimit(data); limit > 0 && chars > limit {
 		return nil, valueError(textPromptOverLimit(chars, limit))
 	}
 	data.Set("prompt", record("path", relative, "approved", true, "chars", toolrt.NewInt(int64(chars))))
@@ -691,16 +691,20 @@ func (t *workflowTool) approvePromptData(directory string, data *toolrt.Dict, fi
 	return save(directory, data)
 }
 
-// promptLimit — предел длины видеопромпта провайдера generation.video для плана shot; 0 — предела
+// promptLimit — предел длины видеопромпта провайдера generation.video для пакета data; 0 — предела
 // нет: провайдер неизвестен или его не объявил, либо план делается ручной генерацией вне
 // приложения (у формы сервиса свои правила, приложение их не знает).
-func (t *workflowTool) promptLimit(shot any) int {
+func (t *workflowTool) promptLimit(data *toolrt.Dict) int {
+	// Для попытки выбран способ «Вручную вне приложения»: у формы сервиса свои правила.
+	if is(data.Value("generation_method"), "manual") {
+		return 0
+	}
 	settings, err := sceneregistry.GenerationSettings(t.readProject(), "video")
 	if err != nil {
 		return 0
 	}
 	provider := settings.Value("provider")
-	if mediaproviders.ManualVideo(provider, t.lipsync(shot)) {
+	if mediaproviders.ManualVideo(provider, t.lipsync(data.Value("shot"))) {
 		return 0
 	}
 	return mediaadapters.PromptLimit(provider)

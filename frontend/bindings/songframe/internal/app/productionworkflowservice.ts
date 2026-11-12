@@ -77,6 +77,14 @@ export function SaveOwn(input: productionworkflow$0.OwnInput): $CancellablePromi
 }
 
 /**
+ * SetGenerationMethod — productionWorkflow.setGenerationMethod: способ генерации видео попытки
+ * («Провайдер проекта» или «Вручную вне приложения»); доступ к ИИ не нужен.
+ */
+export function SetGenerationMethod(project: string, shot: string, packageDir: string, method: string): $CancellablePromise<productionworkflow$0.View> {
+    return $Call.ByID(2904139113, project, shot, packageDir, method);
+}
+
+/**
  * Start — productionWorkflow.start: сначала проверка доступа KindAgent — сохранённый агент,
  * найденная программа и вход, затем запуск подготовки.
  */

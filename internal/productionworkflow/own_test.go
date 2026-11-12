@@ -191,3 +191,72 @@ func TestSaveOwnPrompt(t *testing.T) {
 		t.Fatalf("свой промпт не утверждён: %s", dynvalue.Stringify(workflow))
 	}
 }
+
+// TestManualAttempt — попытка обычного плана со способом «Вручную вне приложения»: промпт без
+// предела провайдера, пакет ручной генерации из всех утверждённых опор без звука; после
+// утверждения промпта способ не меняется.
+func TestManualAttempt(t *testing.T) {
+	run := ownRun(t)
+	t.Cleanup(mediaadapters.Register(mediatest.ID, limitedRules{testRules{Service: &mediatest.Service{Dir: t.TempDir()}}}))
+	c, err := ReadContext(run.project, "M01", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	seconds := math.Floor(c.Window) + 1
+	view, err := run.workflow.SaveOwn(context.Background(), OwnInput{Project: run.project, Shot: "M01", Stage: "description",
+		Description: "Герой идёт к воротам.", RequestSeconds: seconds, Keyframes: ownFrames(2, seconds)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := *view.PackageDir
+	shot := func(args ...string) {
+		t.Helper()
+		if result, err := tools.Run(run.project, "shot_workflow", append(args, "--dir", dir)); err != nil || result.Code == nil || *result.Code != 0 {
+			t.Fatalf("shot_workflow %v: %+v %v", args, result, err)
+		}
+	}
+	shot("decide", "--verdict", "approve")
+	if _, err := run.workflow.SetGenerationMethod(run.project, "M01", dir, "вручную"); err == nil {
+		t.Fatal("неизвестный способ принят")
+	}
+	view, err = run.workflow.SetGenerationMethod(run.project, "M01", dir, "manual")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !view.Manual || view.SingleFrame || view.GenerationMethod != "manual" || view.PromptMaxChars != 0 {
+		t.Fatalf("ручная попытка: manual %v, singleFrame %v, method %q, предел %d", view.Manual, view.SingleFrame, view.GenerationMethod, view.PromptMaxChars)
+	}
+	image := filepath.Join(run.project, "source", "locations", "pier.png")
+	shot("approve", "K01", image)
+	shot("approve", "K02", image)
+	// Предела провайдера у ручной попытки нет: длинный промпт сохраняется и утверждается.
+	long := strings.Repeat("Камера приближается. ", 3)
+	if _, err := run.workflow.SaveOwn(context.Background(), OwnInput{Project: run.project, Shot: "M01", PackageDir: dir, Stage: "prompt", Prompt: long}); err != nil {
+		t.Fatal(err)
+	}
+	shot("decide", "--verdict", "approve")
+	if _, err := run.workflow.SetGenerationMethod(run.project, "M01", dir, "provider"); err == nil || err.Error() != textMethodPromptApproved {
+		t.Fatalf("смена способа после утверждения промпта: %v", err)
+	}
+	view, err = run.workflow.View(run.project, "M01", dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !view.CanBuildManual || view.NextStage != nil && *view.NextStage == "request" {
+		t.Fatalf("пакет ручной генерации без звука: %v, следующий этап %v", view.CanBuildManual, view.NextStage)
+	}
+	if _, err := run.workflow.BuildManual(context.Background(), run.project, "M01", dir); err != nil {
+		t.Fatal(err)
+	}
+	request, err := readJSON(filepath.Join(dir, "request-01", "request.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	inputs, _ := dynvalue.AsArray(dynvalue.Get(request, "inputs"))
+	if dynvalue.Get(request, "mode") != "manual" || len(inputs) != 2 || dynvalue.Get(inputs[1], "role") != "Опора K02" {
+		t.Fatalf("пакет ручной генерации: %s", dynvalue.Stringify(request))
+	}
+	if len(run.agents.starts) != 0 {
+		t.Fatalf("ручная попытка запускала агента: %d", len(run.agents.starts))
+	}
+}

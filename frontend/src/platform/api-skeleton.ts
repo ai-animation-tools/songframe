@@ -97,6 +97,7 @@ export function apiSkeleton(): Api {
       generateFrames: stub('productionWorkflow.generateFrames'),
       importFrames: stub('productionWorkflow.importFrames'),
       buildManual: stub('productionWorkflow.buildManual'),
+      setGenerationMethod: stub('productionWorkflow.setGenerationMethod'),
       saveOwn: stub('productionWorkflow.saveOwn'),
       referenceImages: stub('productionWorkflow.referenceImages')
     },

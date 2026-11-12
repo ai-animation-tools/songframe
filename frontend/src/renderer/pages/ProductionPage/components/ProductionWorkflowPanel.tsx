@@ -93,7 +93,7 @@ export function ProductionWorkflowPanel({
     await workflow.start(
       action,
       action === 'revise' ? note.trim() : instructionText || undefined,
-      action === 'prepare' && !view?.manual ? Math.min(keyframes, limit) : undefined
+      action === 'prepare' && !view?.singleFrame ? Math.min(keyframes, limit) : undefined
     );
   };
   const proposal = view?.proposal;
@@ -192,14 +192,14 @@ export function ProductionWorkflowPanel({
                 sx={{ width: 120 }}
                 label={productionTexts.productionWorkflowPanel.keyframes}
                 // Речевой план ручной генерации делается по одной опоре: выбор заблокирован, причина — в подсказке.
-                value={view?.manual ? 1 : Math.min(keyframes, limit)}
-                disabled={busy || !!view?.manual}
+                value={view?.singleFrame ? 1 : Math.min(keyframes, limit)}
+                disabled={busy || !!view?.singleFrame}
                 title={
-                  view?.manual ? productionTexts.productionWorkflowPanel.keyframesManual : productionTexts.productionWorkflowPanel.keyframesHint({ limit })
+                  view?.singleFrame ? productionTexts.productionWorkflowPanel.keyframesManual : productionTexts.productionWorkflowPanel.keyframesHint({ limit })
                 }
                 onChange={(event) => setKeyframes(Number(event.target.value))}
               >
-                {view?.manual ? null : <MenuItem value={0}>{productionTexts.productionWorkflowPanel.keyframesAuto}</MenuItem>}
+                {view?.singleFrame ? null : <MenuItem value={0}>{productionTexts.productionWorkflowPanel.keyframesAuto}</MenuItem>}
                 {Array.from({ length: limit }, (_, index) => index + 1).map((count) => (
                   <MenuItem key={count} value={count}>
                     {count}

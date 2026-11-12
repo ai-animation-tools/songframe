@@ -60,6 +60,9 @@ export interface ProductionWorkflowStart {
   /** Число опор описания, выбранное пользователем (1…keyframeLimit); 0 — «авто», без поля при доработке — прежний выбор попытки. */
   keyframes?: number;
 }
+/** Способ генерации видео попытки: провайдер проекта или вручную вне приложения. */
+export type ProductionGenerationMethod = 'provider' | 'manual';
+
 export interface ProductionWorkflowView {
   project: string;
   shot: string;
@@ -78,8 +81,12 @@ export interface ProductionWorkflowView {
   paid: boolean;
   /** Почему действие подготовки недоступно; пусто, когда оно доступно. */
   reasons: { prepare: string | null; continue: string | null; frames: string | null; manual?: string | null };
-  /** Речевой план у провайдера без липсинка: видео создаётся вне приложения по пакету ручной генерации. */
+  /** Видео создаётся вне приложения по пакету ручной генерации: речевой план без липсинка (singleFrame) или выбранный способ попытки. */
   manual?: boolean;
+  /** Речевой план у провайдера без липсинка: всегда вручную и по одной опоре K01. */
+  singleFrame?: boolean;
+  /** Способ генерации, выбранный для попытки; нет — видео делает провайдер проекта. */
+  generationMethod?: 'manual';
   /** Пакет ручной генерации можно собрать сейчас; причина недоступности — reasons.manual. */
   canBuildManual?: boolean;
   /** Предел длины видеопромпта провайдера в символах: длиннее него промпт не утверждается; нет — предела нет (в том числе у ручной генерации). */

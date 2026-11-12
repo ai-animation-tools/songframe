@@ -1,7 +1,13 @@
 import { productionTexts } from '@shared/texts/production';
 /** Опрос выбранного пакета не переносит ответы агента между планами и не перекрывает применение предложения. */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ProductionFrameCandidate, ProductionOwnText, ProductionWorkflowStart, ProductionWorkflowView } from '@shared/production-workflow';
+import type {
+  ProductionFrameCandidate,
+  ProductionGenerationMethod,
+  ProductionOwnText,
+  ProductionWorkflowStart,
+  ProductionWorkflowView
+} from '@shared/production-workflow';
 import { useApp } from '../../state';
 import { PRODUCTION_PASS_LABELS } from './constants';
 
@@ -169,6 +175,11 @@ export function useProductionWorkflow(project: string, shot: string, packageDir:
     generateFrames: () => (packageDir ? execute(() => window.api.productionWorkflow.generateFrames(project, shot, packageDir)) : Promise.resolve(false)),
     /** Пакет ручной генерации собирается без агента: после записи попытка перечитывается, как после применения. */
     buildManual: () => (packageDir ? execute(() => window.api.productionWorkflow.buildManual(project, shot, packageDir), true) : Promise.resolve(false)),
+    /** Способ генерации попытки; страница перечитывает попытку, как после применения. */
+    setGenerationMethod: (method: ProductionGenerationMethod) =>
+      packageDir
+        ? execute(() => window.api.productionWorkflow.setGenerationMethod(project, shot, packageDir, method), true, productionTexts.generationMethod.saved)
+        : Promise.resolve(false),
     /** Свой файл сразу становится кандидатом: вопрос об утверждении откроется у опоры, отдельного просмотра нет. */
     importFrames: (images: ProductionFrameCandidate[]) =>
       packageDir

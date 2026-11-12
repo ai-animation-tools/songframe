@@ -210,6 +210,7 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
       generateFrames: guardedAsync(merged.productionWorkflow.generateFrames),
       importFrames: guardedAsync(merged.productionWorkflow.importFrames),
       buildManual: guardedAsync(merged.productionWorkflow.buildManual),
+      setGenerationMethod: guardedAsync(merged.productionWorkflow.setGenerationMethod),
       saveOwn: guardedAsync(merged.productionWorkflow.saveOwn),
       referenceImages: guardedAsync(merged.productionWorkflow.referenceImages)
     },

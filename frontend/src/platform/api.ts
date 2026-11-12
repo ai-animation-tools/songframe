@@ -255,6 +255,7 @@ function toProductionWorkflowView({
   imageProvider,
   videoProvider,
   nextStage,
+  generationMethod,
   framePrompts,
   nextFrame,
   approvedFrameIds,
@@ -265,6 +266,7 @@ function toProductionWorkflowView({
   return {
     ...view,
     ...(nextStage ? { nextStage: nextStage as ProductionPass } : {}),
+    ...(generationMethod === 'manual' ? { generationMethod } : {}),
     ...(imageProvider === undefined ? {} : { imageProvider: imageProvider as string }),
     ...(videoProvider === undefined ? {} : { videoProvider: videoProvider as string }),
     framePrompts: framePrompts as ProductionFramePrompt[],
@@ -832,6 +834,10 @@ export function createApi(b: Bindings): Api {
     call('productionWorkflow.importFrames', async () => productionWorkflow((await b.productionWorkflow()).ImportFrames(project, shot, packageDir, images)));
   api.productionWorkflow.buildManual = (project, shot, packageDir) =>
     call('productionWorkflow.buildManual', async () => productionWorkflow((await b.productionWorkflow()).BuildManual(project, shot, packageDir)));
+  api.productionWorkflow.setGenerationMethod = (project, shot, packageDir, method) =>
+    call('productionWorkflow.setGenerationMethod', async () =>
+      productionWorkflow((await b.productionWorkflow()).SetGenerationMethod(project, shot, packageDir, method))
+    );
   api.productionWorkflow.saveOwn = (input) =>
     call('productionWorkflow.saveOwn', async () => productionWorkflow((await b.productionWorkflow()).SaveOwn(input)), false);
   api.productionWorkflow.referenceImages = (project, shot) =>

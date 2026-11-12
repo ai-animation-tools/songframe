@@ -79,9 +79,14 @@ type Context struct {
 	Paid bool
 	// Problems — что мешает подготовке: настройки видео, липсинк провайдера.
 	Problems []string
-	// Manual — речевой план у провайдера без липсинка: видео создаёт пользователь вне приложения
-	// по одной опоре, срезу речи и видеопромпту; агентского этапа request и отправки нет.
+	// Manual — видео плана создаёт пользователь вне приложения по пакету ручной генерации:
+	// речевой план у провайдера без липсинка (SingleFrame) или попытка, для которой выбран способ
+	// «Вручную вне приложения» (workflow generation_method manual). Агентского этапа request,
+	// предела промпта провайдера и отправки нет.
 	Manual bool
+	// SingleFrame — речевой план у провайдера без липсинка: видео всегда создаётся вручную по
+	// одной опоре K01, срезу речи и видеопромпту; число опор не выбирается.
+	SingleFrame bool
 	// DerivedFrom — план-источник производного плана; "" — план обычный.
 	DerivedFrom string
 	// SceneChanged — постановка плана изменилась после подготовки пакета.
@@ -147,7 +152,7 @@ func ReadContext(path, shot, requested string) (*Context, error) {
 		problems = append(problems, textSpeechWindowTooLong(dynvalue.ToFixed(window, 2), provider.Title, provider.LipSync.Max))
 	}
 	context := &Context{
-		Project: project, Shot: shot, Settings: settings, Window: window, DurationRule: durationRule, Problems: problems, Manual: manual,
+		Project: project, Shot: shot, Settings: settings, Window: window, DurationRule: durationRule, Problems: problems, Manual: manual, SingleFrame: manual,
 		FramePrompts: &dynvalue.Array{Items: []any{}}, References: dynvalue.NewObject(),
 	}
 	if requested != "" {
@@ -166,6 +171,10 @@ func ReadContext(path, shot, requested string) (*Context, error) {
 			return nil, errors.New(textPackageMissingOrWrongShot)
 		}
 		context.Workflow = workflow
+		// Способ «Вручную вне приложения», выбранный для попытки, действует до её конца.
+		if workflow.Value("generation_method") == "manual" {
+			context.Manual = true
+		}
 	}
 	// Тот же отпечаток, что пишет shot_workflow init: пакет, подготовленный по прежней постановке,
 	// дальше не продолжается молча.
@@ -371,7 +380,7 @@ func (c *Context) FramesApproved() (bool, error) {
 		return *c.framesApproved, nil
 	}
 	frames := keyframes(c.Workflow)
-	result := len(frames) >= 2 || (len(frames) == 1 && (c.Manual || c.workflowValue("keyframe_count") == float64(1)))
+	result := len(frames) >= 2 || (len(frames) == 1 && (c.SingleFrame || c.workflowValue("keyframe_count") == float64(1)))
 	for _, frame := range frames {
 		if !result {
 			break
@@ -550,7 +559,7 @@ func (c *Context) RulesFor(stage string) Rules {
 		RequestSeconds: orNull(dynvalue.Get(c.workflowValue("timing"), "request_seconds")), AllowedPaths: c.AllowedPaths,
 		FramePrompts: c.FramePrompts,
 	}
-	rules.Manual = c.Manual
+	rules.Manual = c.SingleFrame
 	if c.Scene.Value("lipsync") == true {
 		if provider, ok := videoProvider(c.Settings); ok && provider.LipSync != nil {
 			limits := *provider.LipSync
@@ -558,4 +567,13 @@ func (c *Context) RulesFor(stage string) Rules {
 		}
 	}
 	return rules
+}
+
+// generationMethod — View.GenerationMethod: "manual", если для попытки выбран способ «Вручную вне
+// приложения»; иначе пусто (видео делает провайдер проекта, речевой план без липсинка — SingleFrame).
+func generationMethod(c *Context) string {
+	if c.workflowValue("generation_method") == "manual" {
+		return "manual"
+	}
+	return ""
 }

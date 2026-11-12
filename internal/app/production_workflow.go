@@ -67,6 +67,12 @@ func (s *ProductionWorkflowService) BuildManual(ctx context.Context, project, sh
 	return wire.Done(s.workflow.BuildManual(ctx, project, shot, packageDir))
 }
 
+// SetGenerationMethod — productionWorkflow.setGenerationMethod: способ генерации видео попытки
+// («Провайдер проекта» или «Вручную вне приложения»); доступ к ИИ не нужен.
+func (s *ProductionWorkflowService) SetGenerationMethod(project, shot, packageDir, method string) (productionworkflow.View, error) {
+	return wire.Done(s.workflow.SetGenerationMethod(project, shot, packageDir, method))
+}
+
 // Discard — productionWorkflow.discard: отклонение непринятого предложения.
 func (s *ProductionWorkflowService) Discard(project, shot, packageDir, id string) (productionworkflow.View, error) {
 	return wire.Done(s.workflow.Discard(project, shot, packageDir, id))

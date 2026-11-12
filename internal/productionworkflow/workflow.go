@@ -174,10 +174,14 @@ type View struct {
 	CanContinue       bool    `json:"canContinue"`
 	CanRevise         bool    `json:"canRevise"`
 	CanGenerateFrames bool    `json:"canGenerateFrames"`
-	// Manual — речевой план у провайдера без липсинка: видео создаётся вне приложения по пакету
-	// ручной генерации. CanBuildManual — пакет можно собрать сейчас.
-	Manual         bool `json:"manual,omitempty"`
-	CanBuildManual bool `json:"canBuildManual,omitempty"`
+	// Manual — видео плана создаётся вне приложения по пакету ручной генерации (Context.Manual).
+	// CanBuildManual — пакет можно собрать сейчас. SingleFrame — речевой план у провайдера без
+	// липсинка: всегда вручную и по одной опоре. GenerationMethod — способ, выбранный для
+	// попытки: "manual"; поле опускается, пока видео делает провайдер проекта.
+	Manual           bool   `json:"manual,omitempty"`
+	CanBuildManual   bool   `json:"canBuildManual,omitempty"`
+	SingleFrame      bool   `json:"singleFrame,omitempty"`
+	GenerationMethod string `json:"generationMethod,omitempty"`
 	// PromptMaxChars — предел длины видеопромпта провайдера (Context.PromptLimit): длиннее него
 	// промпт не утверждается; 0 — предела нет.
 	PromptMaxChars int `json:"promptMaxChars,omitempty"`
@@ -307,7 +311,7 @@ func (w *Workflow) view(project, shot, packageDir string) (View, error) {
 			Frames:   optional(framesReason(c, derived, common, imagePhase, framesApproved, descriptionApproved || frameRevision, undecided)),
 			Manual:   optional(manual),
 		},
-		Manual: c.Manual, CanBuildManual: c.Manual && manual == "" && !pending && !proposalPending && !busy, PromptMaxChars: c.PromptLimit(),
+		Manual: c.Manual, SingleFrame: c.SingleFrame, GenerationMethod: generationMethod(c), CanBuildManual: c.Manual && manual == "" && !pending && !proposalPending && !busy, PromptMaxChars: c.PromptLimit(),
 		CanPrepare: derived == "" && !busy && !imagePhase && scenarioApproved && len(c.Problems) == 0,
 		CanContinue: derived == "" && !c.SceneChanged && enabled && !imagePhase && nextStage != "" && nextStage != "description" &&
 			!(nextStage == "request" && speechMismatch != ""),
@@ -623,7 +627,7 @@ func keyframeChoice(c *Context, stage string, chosen *int, inherit bool) (int, e
 		return 0, nil
 	}
 	if chosen == nil {
-		if c.Manual || !inherit {
+		if c.SingleFrame || !inherit {
 			return 0, nil
 		}
 		previous, ok := c.workflowValue("keyframe_count").(float64)
@@ -632,7 +636,7 @@ func keyframeChoice(c *Context, stage string, chosen *int, inherit bool) (int, e
 		}
 		return int(previous), nil
 	}
-	if c.Manual {
+	if c.SingleFrame {
 		if *chosen != 1 {
 			return 0, errors.New(textManualKeyframeCount)
 		}
@@ -770,7 +774,8 @@ func (w *Workflow) launch(ctx context.Context, input StartInput, prepared *prepa
 		return err
 	}
 	prompt := agentPrompt(stage, c.Settings.Value("provider"), dynvalue.Get(dynvalue.Get(generation, "image"), "provider"))
-	contextInput := contextInput{stage: stage, briefs: briefs, description: nil, prompt: nil, lipSync: rules.LipSync, manual: rules.Manual, capabilities: capabilities,
+	contextInput := contextInput{stage: stage, briefs: briefs, description: nil, prompt: nil, lipSync: rules.LipSync, manual: rules.Manual,
+		manualVideo: c.Manual && !c.SingleFrame, capabilities: capabilities,
 		capabilitiesProblem: capabilitiesProblem, inputFlags: []string{}}
 	if stage == "prompt" {
 		contextInput.promptMaxChars = c.PromptLimit()

@@ -108,13 +108,13 @@ func (w *Workflow) prepareOwn(input OwnInput) (string, string, error) {
 		// Число опор своего плана выбрал сам пользователь: применение соблюдает его точно, а одна
 		// опора допустима и вне ручного режима.
 		count := len(input.Keyframes)
-		if c.Manual && count != 1 {
+		if c.SingleFrame && count != 1 {
 			return "", "", errors.New(textManualSingleFrame)
 		}
 		if limit := mediaproviders.KeyframeLimit(c.Settings.Value("provider")); count < 1 || count > limit {
 			return "", "", errors.New(textKeyframeCountRange(limit))
 		}
-		if !c.Manual {
+		if !c.SingleFrame {
 			rules.Keyframes = count
 		}
 	}

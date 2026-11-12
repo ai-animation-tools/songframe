@@ -78,7 +78,7 @@ func TestKeyframeChoice(t *testing.T) {
 	if got, _ := keyframeChoice(c, "prompt", value(3), false); got != 0 {
 		t.Fatalf("выбор относится только к описанию: %d", got)
 	}
-	c.Manual = true
+	c.Manual, c.SingleFrame = true, true
 	if _, err := keyframeChoice(c, "description", value(2), false); err == nil || err.Error() != textManualKeyframeCount {
 		t.Fatalf("ручной план с двумя опорами: %v", err)
 	}

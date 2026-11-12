@@ -162,7 +162,7 @@ export function workflowPanelOptions(mode: WorkflowPanelMode = 'empty'): StoryOp
           );
           view.job = workflowAgentJob({ status: 'completed', exitCode: 0 });
         }
-        if (mode === 'manual') view.manual = true;
+        if (mode === 'manual') Object.assign(view, { manual: true, singleFrame: true });
         if (mode === 'failedJob') view.job = workflowAgentJob({ status: 'failed', exitCode: 1, message: 'Программа завершилась до ответа.' });
         if (mode === 'revision') Object.assign(view, { canRevise: true, canPrepare: false, stage: 'needs_revision' });
         // Как в Go: отправленная попытка не продолжается, но возврат с замечанием остаётся.

@@ -931,6 +931,47 @@ export const OwnPromptOverLimit: Story = {
   }
 };
 
+/** Способ «Вручную вне приложения» для обычного плана: предела промпта нет, пакет из всех опор без звука, видео загружается в попытку. */
+export const ManualMethod: Story = {
+  tags: ['ci'],
+  name: 'Вручную вне приложения · способ попытки, пакет из опор и загрузка видео',
+  parameters: { songframe: options({ shots: overLimitShots, promptMaxChars: STORY_PROMPT_LIMIT }) },
+  play: async (context) => {
+    const screen = screenOf(context);
+    const manual = texts.manualGeneration;
+    const method = texts.generationMethod;
+    await expect(await screen.findByText(texts.promptLimit.title, {}, POLL_TIMEOUT)).toBeInTheDocument();
+    const prompt = within(planStep(context, 'prompt'));
+    const group = within(prompt.getByRole('radiogroup'));
+    await expect(group.getByRole('radio', { name: new RegExp(method.provider) })).toBeChecked();
+    await userEvent.click(group.getByRole('radio', { name: new RegExp(method.manual) }));
+    await waitFor(() => expect(counts(context)).toHaveTextContent('Способов генерации: manual.'), POLL_TIMEOUT);
+    // У формы сервиса свои правила: предел провайдера к ручной попытке не относится, промпт утверждается.
+    await waitFor(() => expect(screen.queryByText(texts.promptLimit.title)).not.toBeInTheDocument(), POLL_TIMEOUT);
+    await waitFor(() => expect(prompt.getByRole('button', { name: texts.verdictLabels.approve })).toBeEnabled(), POLL_TIMEOUT);
+    await userEvent.click(prompt.getByRole('button', { name: texts.verdictLabels.approve }));
+    await waitFor(() => expect(counts(context)).toHaveTextContent('Ответов: 1.'), POLL_TIMEOUT);
+    // Вместо запроса — ручная генерация: пакет из всех утверждённых опор, без звука и без платной отправки.
+    const step = within(planStep(context, 'request'));
+    await expect(await step.findByText(steps.titles.manual, {}, POLL_TIMEOUT)).toBeInTheDocument();
+    await expect(step.getByText(manual.descriptionChosen)).toBeInTheDocument();
+    // Пакет доступен, когда вид попытки перечитан после утверждения промпта.
+    await waitFor(() => expect(step.getByRole('button', { name: manual.build })).toBeEnabled(), POLL_TIMEOUT);
+    await userEvent.click(step.getByRole('button', { name: manual.build }));
+    await expect(await step.findByText(manual.built, {}, POLL_TIMEOUT)).toBeInTheDocument();
+    await expect(step.getByText(manual.genericInstruction)).toBeInTheDocument();
+    await expect(step.getByText(manual.input({ role: 'Опора K04', name: '04.png' }))).toBeInTheDocument();
+    await expect(step.queryByText(/Срез речи/)).not.toBeInTheDocument();
+    await userEvent.click(step.getByRole('button', { name: new RegExp(manual.zone) }));
+    await step.findByText(manual.chosen({ name: STORY_VIDEO_PATH.split('/').pop()! }));
+    await userEvent.type(step.getByRole('textbox', { name: new RegExp(manual.source) }), 'Свой сервис');
+    await userEvent.click(step.getByRole('button', { name: manual.upload }));
+    await expect(await screen.findByText(steps.now({ text: steps.reviewResult }), {}, POLL_TIMEOUT)).toBeInTheDocument();
+    await expect(counts(context)).toHaveTextContent('Отправок генерации: 0.');
+    await expect(counts(context)).toHaveTextContent('Пакетов ручной генерации: 1. Загрузок видео: 1.');
+  }
+};
+
 export const PromptReopenFromRequest: Story = {
   tags: ['ci'],
   name: 'Возврат видеопромпта с этапа запроса · описание и опоры остаются',

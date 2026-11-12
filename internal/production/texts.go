@@ -208,6 +208,9 @@ func textRetryProviderMismatch(shot, provider, selected string) string {
 func textRetryManual(shot string) string {
 	return shot + ": видео речевого плана создаётся вне приложения, повтор запроса недоступен. Начните новую попытку."
 }
+func textRetryManualAttempt(shot string) string {
+	return shot + ": видео последней попытки создано вне приложения, повтор запроса недоступен. Начните новую попытку."
+}
 func textRetryRequestMissing(shot string) string {
 	return shot + ": нет сохранённого запроса для повтора. Подготовьте новый пакет."
 }

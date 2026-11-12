@@ -76,6 +76,7 @@ const view = (overrides: Partial<ProductionWorkflowView> = {}): ProductionWorkfl
     proposal: null,
     job: null,
     manual: true,
+    singleFrame: true,
     canBuildManual: true,
     ...overrides
   }) as ProductionWorkflowView;

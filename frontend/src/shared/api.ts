@@ -3,7 +3,13 @@ import type { VocalModelId, VocalPreparationView } from './vocals';
 
 import type { SongModelSetup } from './song-models';
 import type { AgentAccountResult, AgentCheckResult, AgentEvent, AgentJob, AgentModelsResult, AgentSettings, AgentStartInput } from './agents';
-import type { ProductionFrameCandidate, ProductionOwnInput, ProductionWorkflowStart, ProductionWorkflowView } from './production-workflow';
+import type {
+  ProductionFrameCandidate,
+  ProductionGenerationMethod,
+  ProductionOwnInput,
+  ProductionWorkflowStart,
+  ProductionWorkflowView
+} from './production-workflow';
 import type { MediaCapabilities, MediaKind, ProviderAuth } from './media-providers';
 import type { ScenarioWorkflowStart, ScenarioWorkflowView } from './scenario-workflow';
 import type { NotificationTarget } from './notifications';
@@ -92,8 +98,10 @@ export interface Api {
     discard(project: string, shot: string, packageDir: string | undefined, id: string): Promise<ProductionWorkflowView>;
     generateFrames(project: string, shot: string, packageDir: string): Promise<ProductionWorkflowView>;
     importFrames(project: string, shot: string, packageDir: string, images: ProductionFrameCandidate[]): Promise<ProductionWorkflowView>;
-    /** Речевой план у провайдера без липсинка: собирает без агента пакет для генерации вне приложения (опора, срез речи, промпт). */
+    /** Ручная попытка: собирает без агента пакет для генерации вне приложения (опоры, у речевого плана срез речи, промпт). */
     buildManual(project: string, shot: string, packageDir: string): Promise<ProductionWorkflowView>;
+    /** Способ генерации видео попытки: провайдер проекта или вручную вне приложения; до утверждения видеопромпта. */
+    setGenerationMethod(project: string, shot: string, packageDir: string, method: ProductionGenerationMethod): Promise<ProductionWorkflowView>;
     /** Своё описание с планом опор или свой видеопромпт без агента; принимает их интерфейс сразу после применения. */
     saveOwn(input: ProductionOwnInput): Promise<ProductionWorkflowView>;
     /** Изображения, которые может назвать опора своего плана (разрешённые входы плана). */

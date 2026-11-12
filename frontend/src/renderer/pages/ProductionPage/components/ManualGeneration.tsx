@@ -2,8 +2,9 @@ import { productionTexts } from '@shared/texts/production';
 import { commonTexts } from '@shared/texts/common';
 import { componentsTexts } from '@shared/texts/components';
 /**
- * Ручная генерация речевого плана у провайдера без липсинка: приложение без агента собирает пакет (опора, срез речи,
- * видеопромпт), показывает его и пошаговую инструкцию провайдера из реестра, а созданное вне приложения видео
+ * Ручная генерация: речевой план у провайдера без липсинка или попытка со способом «Вручную вне приложения». Приложение
+ * без агента собирает пакет (утверждённые опоры, у речевого плана срез речи, видеопромпт), показывает его и инструкцию —
+ * пошаговую провайдера из реестра для речевого плана или общую для выбранного способа, а созданное вне приложения видео
  * загружается в попытку с источником и необязательными стоимостью и примечанием. Файлы и проверки — у Go.
  */
 import { Fragment, useState, type ReactElement, type ReactNode } from 'react';
@@ -91,20 +92,22 @@ export function ManualGeneration({
   const [note, setNote] = useState('');
   const request = pkg.request?.mode === 'manual' ? pkg.request : null;
   const provider = mediaProviderInfo(view?.videoProvider ?? request?.provider, 'video');
-  const instruction = provider?.manualLipSync ?? null;
+  // Инструкция провайдера описывает липсинк по одной опоре и звуку: она относится только к речевому плану без липсинка.
+  const instruction = view?.singleFrame ? (provider?.manualLipSync ?? null) : null;
+  const chosen = view?.generationMethod === 'manual';
 
   if (!request) {
     const reason = busy ? busyReason : view ? (view.reasons.manual ?? null) : productionTexts.productionWorkflowPanel.loadingReason;
     return (
       <Stack spacing={1} sx={{ alignItems: 'flex-start' }}>
         <Typography variant="body2" color="text.secondary">
-          {texts.description}
+          {chosen ? texts.descriptionChosen : texts.description}
         </Typography>
         {pkg.speech ? <SpeechSlice speech={pkg.speech} /> : null}
         <ActionButton
           variant="contained"
           startIcon={<Inventory2OutlinedIcon />}
-          title={texts.buildHint}
+          title={chosen ? texts.buildHintChosen : texts.buildHint}
           disabled={busy || !view?.canBuildManual}
           disabledReason={reason}
           onClick={onBuild}
@@ -115,7 +118,8 @@ export function ManualGeneration({
     );
   }
 
-  const image = request.inputs.find((input) => input.slot === 'image');
+  const images = request.inputs.filter((input) => input.slot === 'image');
+  const image = images[0];
   const audio = request.inputs.find((input) => input.slot === 'audio');
   const files = { image: fileName(image?.path ?? ''), audio: fileName(audio?.path ?? '') };
   const speech = pkg.speech;
@@ -143,11 +147,11 @@ export function ManualGeneration({
       <Stack spacing={0.5}>
         <Typography variant="body2">{texts.built}</Typography>
         <Stack component="ul" spacing={0.25} sx={{ m: 0, pl: 2.5 }}>
-          {image ? (
-            <Typography component="li" variant="body2">
-              {texts.input({ role: image.role ?? '', name: files.image })}
+          {images.map((input) => (
+            <Typography component="li" variant="body2" key={input.path}>
+              {texts.input({ role: input.role ?? '', name: fileName(input.path) })}
             </Typography>
-          ) : null}
+          ))}
           {audio ? (
             <Typography component="li" variant="body2">
               {speech
@@ -174,6 +178,18 @@ export function ManualGeneration({
         </Button>
       </Stack>
       {request.promptText ? <PackageTextSection title={texts.prompt} text={request.promptText} maxHeight={220} /> : null}
+      {!instruction ? (
+        <Stack spacing={0.5}>
+          <Typography variant="subtitle2">{texts.genericInstruction}</Typography>
+          <Stack component="ol" spacing={0.25} sx={{ m: 0, pl: 2.5 }}>
+            {texts.genericSteps.map((step) => (
+              <Typography component="li" variant="body2" key={step}>
+                {step}
+              </Typography>
+            ))}
+          </Stack>
+        </Stack>
+      ) : null}
       {instruction && provider ? (
         <Stack spacing={0.5}>
           <Typography variant="subtitle2">{texts.instruction({ provider: provider.title })}</Typography>

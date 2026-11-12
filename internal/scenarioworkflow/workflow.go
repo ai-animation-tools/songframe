@@ -473,6 +473,7 @@ func (w *Workflow) start(input StartInput) (string, error) {
 		Task:    "ai-clip-scenario:" + input.Pass,
 		Prompt:  agentPrompt(skill, input.Pass),
 		Context: context,
+		Place:   &AgentPlace{Page: "scenario"},
 	})
 	if err != nil {
 		return "", err

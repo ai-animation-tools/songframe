@@ -13,6 +13,7 @@ export const navigationTexts = {
     montage: 'Монтаж пробы',
     checks: 'Проверки',
     animatic: 'Аниматик',
+    prompts: 'Отправки',
     jobs: 'Журнал заданий',
     environment: 'Среда',
     settings: 'Настройки',

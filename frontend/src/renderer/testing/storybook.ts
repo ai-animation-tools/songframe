@@ -129,6 +129,7 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
     production: { ...defaults.production, ...overrides.production },
     dashboard: { ...defaults.dashboard, ...overrides.dashboard },
     animatic: { ...defaults.animatic, ...overrides.animatic },
+    promptLog: { ...defaults.promptLog, ...overrides.promptLog },
     checks: { ...defaults.checks, ...overrides.checks },
     jobs: { ...defaults.jobs, ...overrides.jobs },
     diagnostics: { ...defaults.diagnostics, ...overrides.diagnostics },
@@ -310,6 +311,10 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
     },
     dashboard: {
       view: guardedAsync(merged.dashboard.view)
+    },
+    promptLog: {
+      list: guardedAsync(merged.promptLog.list),
+      get: guardedAsync(merged.promptLog.get)
     },
     animatic: {
       view: guardedAsync(merged.animatic.view),

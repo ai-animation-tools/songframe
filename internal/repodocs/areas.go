@@ -116,13 +116,13 @@ var Areas = []Area{
 			"resources/providers/README.md", "resources/skills/README.md",
 		},
 		Packages: []string{
-			"internal/agents", "internal/providers", "internal/providers/agentexec",
+			"internal/agents", "internal/promptlog", "internal/providers", "internal/providers/agentexec",
 			"internal/providers/codex", "internal/providers/kling", "internal/providers/kling/mcp",
 			"internal/mediaproviders", "internal/mediaadapters", "internal/mediaapi",
 			"internal/mediarequest", "internal/mediatest", "internal/mediatest/scenario",
 			"internal/mediafile", "internal/mediacmd",
 		},
-		Pages: []string{"SettingsPage", "EnvironmentPage"},
+		Pages: []string{"SettingsPage", "EnvironmentPage", "PromptLogPage"},
 		Paths: []string{
 			"frontend/src/shared/agent-providers.ts", "frontend/src/shared/media-providers.ts",
 			"resources/providers",

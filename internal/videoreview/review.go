@@ -652,7 +652,10 @@ func (s *Service) prepare(material *reviewContext, record stored, ctx context.Co
 	if ctx.Err() != nil {
 		return errCancelled
 	}
-	job, err := s.options.Agents.Start(agents.StartInput{Project: project, Task: textHeading, Prompt: prompt, Images: images, Context: dynvalue.Stringify(payload)})
+	job, err := s.options.Agents.Start(agents.StartInput{
+		Project: project, Task: textHeading, Prompt: prompt, Images: images, Context: dynvalue.Stringify(payload),
+		Place: &agents.Place{Page: "production", Shot: material.shot},
+	})
 	if err != nil {
 		return err
 	}

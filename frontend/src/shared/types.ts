@@ -536,6 +536,54 @@ export interface ShotSpend {
   perSecond: SpendTotal[];
 }
 
+/** Вид отправки журнала plan/prompt-log: задание агента, изображения агентом, платный запрос изображения или видео. */
+export type PromptLogKind = 'agent' | 'agent_images' | 'image' | 'video';
+/** Итог отправки; running без выполняющегося задания приложение показывает как interrupted. */
+export type PromptLogStatus = 'running' | 'completed' | 'failed' | 'cancelled' | 'interrupted';
+/** Страница проекта и план, к которым относится отправка. */
+export interface PromptLogPlace {
+  page: string;
+  shot?: string;
+}
+
+/** Строка списка страницы «Отправки»: без полных текстов. */
+export interface PromptLogSummary {
+  id: string;
+  kind: PromptLogKind;
+  title: string;
+  /** id агента (agent, agent_images) или провайдера медиа (image, video). */
+  executor: string;
+  model: string;
+  place: PromptLogPlace | null;
+  startedAt: string;
+  finishedAt: string | null;
+  status: PromptLogStatus;
+  error: string;
+  paid: boolean;
+}
+
+/** Полная запись отправки: тексты очищены от секретов и ограничены по длине (truncated). */
+export interface PromptLogRecord {
+  id: string;
+  kind: PromptLogKind;
+  title: string;
+  executor: string;
+  model?: string;
+  place: PromptLogPlace | null;
+  started_at: string;
+  finished_at: string | null;
+  status: PromptLogStatus;
+  prompt: string;
+  /** Контекст агента или параметры платного запроса (JSON). */
+  context: string;
+  /** Пути от проекта (вне проекта — имя файла) и SHA-256 вложений. */
+  attachments: { path: string; sha256: string }[];
+  response: string;
+  error: string;
+  paid: { request_sha256: string; parameters?: unknown; generation_id: string | null; amount: number | null; unit: string | null } | null;
+  truncated: boolean;
+}
+
 /** Точный срез песни речевого плана в пакете: audio/speech.wav и audio/audio-recipe.json. */
 export interface PackageSpeech {
   path: string;

@@ -844,7 +844,10 @@ func runScenario(t *testing.T, scenario goldenScenario) []byte {
 		if lastRoot != "" && !scenario.Reference {
 			rootTree = treeJSON(t, tree(t, lastRoot, nil))
 		}
-		projectTree := treeJSON(t, tree(t, project, func(path string) bool { return path == "plan/project.json" }))
+		// Записи журнала отправок несут время и случайный номер; их содержание проверяет promptlog.
+		projectTree := treeJSON(t, tree(t, project, func(path string) bool {
+			return path == "plan/project.json" || path == "plan/prompt-log" || strings.HasPrefix(path, "plan/prompt-log/")
+		}))
 		for _, pair := range [][3]string{{"rootTree", rootTree, previousRoot}, {"projectTree", projectTree, previousProject}} {
 			if pair[1] == pair[2] {
 				entry.add(t, pair[0], `"unchanged"`)

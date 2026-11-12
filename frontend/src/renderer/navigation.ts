@@ -19,6 +19,8 @@ export const NAV_PAGES: readonly NavPage[] = [
   { to: '/project/montage', label: navigationTexts.pages.montage, needsProject: true },
   { to: '/project/checks', label: navigationTexts.pages.checks, needsProject: true },
   { to: '/project/animatic', label: navigationTexts.pages.animatic, needsProject: true },
+  // Журнал отправок агенту и сервисам генерации: только чтение, без повторной отправки.
+  { to: '/project/prompts', label: navigationTexts.pages.prompts, needsProject: true },
   { to: '/jobs', label: navigationTexts.pages.jobs },
   { to: '/environment', label: navigationTexts.pages.environment },
   // Менеджер компонентов: FFmpeg/ffprobe, ONNX Runtime и модели, которые не входят в поставку.

@@ -184,6 +184,7 @@ func (k *KeyframeImages) Start(input mediaapi.ImagesInput, request agentexec.Ima
 		Task:    textImagesJobTitle(input.Shot, strings.Join(ids, ", "), providers.Title(request.Provider, generationProviderFallback)),
 		Prompt:  textImagesPrompt(len(approved) > 0, len(notes) > 0),
 		Context: dynvalue.Stringify(context),
+		Place:   &agents.Place{Page: "production", Shot: input.Shot},
 	}, directory, request.Agent)
 	if err != nil {
 		return agents.Job{}, err

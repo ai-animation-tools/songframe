@@ -70,6 +70,22 @@ type StartInput struct {
 	// Images — абсолютные пути PNG/JPEG; передаются модели вложениями только в заданиях без записи.
 	Images  []string `json:"images,omitempty"`
 	RetryOf string   `json:"retryOf,omitempty"`
+	// Place — место в проекте для журнала отправок (страница и план); задают Go-потребители.
+	Place *Place `json:"-"`
+}
+
+// Place — страница проекта и план, к которым относится задание.
+type Place struct {
+	Page string `json:"page"`
+	Shot string `json:"shot,omitempty"`
+}
+
+// Journal — журнал отправок проекта (internal/promptlog): задание с полным промптом, контекстом
+// и вложениями при запуске и его итог с ответом при завершении, включая прерванные прошлым
+// запуском. Вызывается под блокировкой менеджера; ошибки записи журнал обрабатывает сам.
+type Journal interface {
+	Begin(job Job, prompt, context string, images []string, place *Place)
+	End(job Job)
 }
 
 // Event — AgentEvent контракта: приращение (text_delta, tool_*) или снимок задания (started,
@@ -106,6 +122,8 @@ type Options struct {
 	Check CheckOptions
 	// Adapter — адаптер на запуск; nil — NewAdapterOptions(provider, Check).
 	Adapter func(provider string) Adapter
+	// Journal — журнал отправок проекта; nil — не ведётся.
+	Journal Journal
 }
 
 // running — состояние выполняющегося задания. Все поля, как и *Job, меняются только под Manager.mu.
@@ -184,6 +202,9 @@ func NewManager(settings *SettingsStore, options Options) *Manager {
 			job.Sequence++
 			if err := m.history.Write(job); err != nil {
 				log.Printf("Не удалось сохранить прерванное задание агента %s: %v", job.ID, err)
+			}
+			if m.options.Journal != nil {
+				m.options.Journal.End(job)
 			}
 		}
 		if _, seen := m.jobs[job.ID]; !seen {
@@ -352,6 +373,9 @@ func (m *Manager) begin(input StartInput, workDir string, imageConfig *Settings)
 	}
 	if err := m.history.Write(*job); err != nil {
 		return Job{}, err
+	}
+	if m.options.Journal != nil {
+		m.options.Journal.Begin(*job, composePrompt(workDir != "", instructions, input.Prompt, ""), input.Context, input.Images, input.Place)
 	}
 	m.jobs[job.ID] = job
 	m.order = append(m.order, job.ID)
@@ -737,6 +761,9 @@ func (m *Manager) finish(run *running, status string, err *Error) {
 	m.publish(run, kind, nil, "")
 	if err := m.history.Write(*run.job); err != nil {
 		log.Print("Не удалось сохранить итог задания агента. Проверьте каталог состояния.")
+	}
+	if m.options.Journal != nil {
+		m.options.Journal.End(*run.job)
 	}
 }
 

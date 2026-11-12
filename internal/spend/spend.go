@@ -254,7 +254,7 @@ func readRequest(directory, attempt string) (live, bool) {
 		return live{entry: entry}, true
 	}
 	if !manual {
-		entry.Unit = unitOf(entry.Provider)
+		entry.Unit = UnitOf(entry.Provider)
 	}
 	return live{entry: entry, sent: true}, true
 }
@@ -265,8 +265,8 @@ func readFile(path string, value any) bool {
 	return err == nil && json.Unmarshal(data, value) == nil
 }
 
-// unitOf — единица расхода провайдера (currency его таблицы цен); nil, если таблицы нет.
-func unitOf(provider string) *string {
+// UnitOf — единица расхода провайдера (currency его таблицы цен); nil, если таблицы нет.
+func UnitOf(provider string) *string {
 	adapter, ok := mediaadapters.Get(provider)
 	if !ok {
 		return nil

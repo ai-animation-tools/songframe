@@ -758,7 +758,10 @@ func (w *Workflow) launch(ctx context.Context, input StartInput, prepared *prepa
 		}
 	}
 	contextInput.note = noteFor(c, input.Note)
-	task := agents.StartInput{Project: c.Project, Task: "ai-clip-scene:" + input.Shot + ":" + stage, Prompt: prompt, Context: agentContext(c, contextInput)}
+	task := agents.StartInput{
+		Project: c.Project, Task: "ai-clip-scene:" + input.Shot + ":" + stage, Prompt: prompt, Context: agentContext(c, contextInput),
+		Place: &agents.Place{Page: "production", Shot: input.Shot},
+	}
 	stored := &Stored{Tree: dynvalue.NewObject()}
 	stored.Tree.Set("proposal", proposalTree("", "", stage, ""))
 	if c.PackageDir == "" {

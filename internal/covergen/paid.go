@@ -13,6 +13,7 @@ import (
 	"songframe/internal/mediaapi"
 	"songframe/internal/mediafile"
 	"songframe/internal/mediaproviders"
+	"songframe/internal/promptlog"
 	"songframe/internal/providers"
 	"songframe/internal/providers/agentexec"
 	"songframe/internal/tools"
@@ -54,6 +55,8 @@ type paidAttempt struct {
 	prepared providers.PreparedRequest
 	quote    Quote
 	used     bool
+	// place — страница проекта для журнала отправок: обложка — «Проект», референс — «Кастинг».
+	place *promptlog.Place
 }
 
 // stopped — отказ после отмены: до отправки — «отправка не выполнялась», после начала отправки —
@@ -181,7 +184,10 @@ func PreparePaid(ctx context.Context, input CandidateInput, options PaidOptions)
 	reference := input.Purpose == agentexec.PurposeReference
 	paid := options.Media.Paid
 	info, _ := mediaproviders.Lookup(paid.ID)
-	attempt := &paidAttempt{options: options, texts: textsFor(reference), title: info.Title, project: input.Project}
+	attempt := &paidAttempt{options: options, texts: textsFor(reference), title: info.Title, project: input.Project, place: &promptlog.Place{Page: "project"}}
+	if reference {
+		attempt.place = &promptlog.Place{Page: "cast"}
+	}
 	t := attempt.texts
 	if err := attempt.stopped(ctx, false); err != nil {
 		return nil, err
@@ -356,7 +362,15 @@ func (p *paidAttempt) generate(ctx context.Context, allowUnknownCost bool) (stri
 			}
 			// После старта submit исход может быть неизвестен: отмена не разрешает повторный платный запрос.
 			submitted = true
-			result, err := p.options.Run(ctx, p.project, "media_request", []string{"submit", "--work-dir", reference.RequestDir, "--confirm", reference.RequestSha})
+			var result tools.Result
+			err := promptlog.PaidSubmit(ctx, p.project, reference.RequestDir, p.place, func() error {
+				var runErr error
+				result, runErr = p.options.Run(ctx, p.project, "media_request", []string{"submit", "--work-dir", reference.RequestDir, "--confirm", reference.RequestSha})
+				if runErr == nil && (result.Code == nil || *result.Code != 0) {
+					return failure(result.Stderr, t.submitFailed)
+				}
+				return runErr
+			})
 			if err != nil {
 				return err
 			}

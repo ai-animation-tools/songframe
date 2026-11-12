@@ -23,6 +23,8 @@ import type {
   PackageView,
   SpeechPlan,
   AcceptedKit,
+  PromptLogRecord,
+  PromptLogSummary,
   ShotSpend,
   AnimaticView,
   AppState,
@@ -233,6 +235,12 @@ export interface Api {
   };
   dashboard: {
     view(project: string): Promise<DashboardView>;
+  };
+  promptLog: {
+    /** Отправки проекта агенту и сервисам генерации, от новых к старым (plan/prompt-log). */
+    list(project: string): Promise<PromptLogSummary[]>;
+    /** Полная запись отправки: промпт, контекст, вложения, ответ; null — записи нет. */
+    get(project: string, id: string): Promise<PromptLogRecord | null>;
   };
   animatic: {
     view(project: string): Promise<AnimaticView>;

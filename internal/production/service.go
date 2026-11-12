@@ -22,6 +22,7 @@ import (
 	"songframe/internal/mediaproviders"
 	"songframe/internal/projectfile"
 	"songframe/internal/projectfs"
+	"songframe/internal/promptlog"
 	"songframe/internal/providers"
 	"songframe/internal/shotworkflow"
 	"songframe/internal/spend"
@@ -867,6 +868,16 @@ func (s *Service) toolStep(project, tool string, args []string, label string, op
 	}
 }
 
+// paidStep — шаг платной отправки, записанный в журнал отправок проекта (internal/promptlog):
+// промпт, параметры и входы запроса до отправки, ответ сервиса или причина сбоя после.
+func paidStep(project, requestDir string, place *promptlog.Place, step jobs.Step) jobs.Step {
+	run := step.Run
+	step.Run = func(ctx context.Context, stepContext *jobs.StepContext) error {
+		return promptlog.PaidSubmit(ctx, project, requestDir, place, func() error { return run(ctx, stepContext) })
+	}
+	return step
+}
+
 // start — задание сервиса; ошибка менеджера — отказ вызова.
 func (s *Service) start(kind jobs.Kind, title, project string, steps []jobs.Step) (jobs.Info, error) {
 	if s.options.Jobs == nil {
@@ -973,7 +984,8 @@ func (s *Service) Submit(project, packageDir, expectedSha, decisionToken, quoteT
 		}
 		steps := []jobs.Step{
 			s.toolStep(project, "shot_workflow", []string{"check", "--dir", directory}, textVerifyMaterialsStep, false, nil),
-			s.toolStep(project, "media_request", []string{"submit", "--work-dir", requestDir, "--confirm", expectedSha}, textSubmitStep, false, nil),
+			paidStep(project, requestDir, &promptlog.Place{Page: "production", Shot: fresh.Shot},
+				s.toolStep(project, "media_request", []string{"submit", "--work-dir", requestDir, "--confirm", expectedSha}, textSubmitStep, false, nil)),
 			s.toolStep(project, "cost_check", append([]string{"learn", "--work-dir", requestDir}, s.pricingArgs()...), textRecordChargeStep, true, nil),
 			// Журнал расходов получает отправку сразу: сбой его записи не отменяет оплаченную отправку,
 			// живая попытка всё равно учитывается, а журнал дополнится при следующей синхронизации.

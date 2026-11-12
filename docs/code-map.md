@@ -182,6 +182,7 @@
 | Пакет | Назначение |
 | --- | --- |
 | [`internal/agents`](../internal/agents) | Ведёт внешних текстовых агентов SongFrame (Codex и Claude Code): реестр исполнителей, глобальный выбор агента в settings.json, диагностику программы (поиск, версия, вход), сведения аккаунта и каталог моделей, аргументы и потоковые протоколы обоих CLI, задания с историей, отменой дерева процессов и вложениями изображений, а также явный выбор исполнителей ИИ (ai.access). |
+| [`internal/promptlog`](../internal/promptlog) | Ведёт журнал отправок проекта plan/prompt-log: что приложение отправило агенту или платному сервису генерации и что получило в ответ, включая ошибки, отмену и прерывание. |
 | [`internal/providers`](../internal/providers) | Слой провайдеров медиа приложения: адаптеры, каталог моделей, вход и строки страницы «Среда». |
 | [`internal/providers/agentexec`](../internal/providers/agentexec) | Задаёт контракт исполнителя опор провайдера-агента: провайдер, генерацию которого исполняет программа-агент из реестра (MediaProviderInfo.executor). |
 | [`internal/providers/codex`](../internal/providers/codex) | Адаптер провайдера изображений Codex: опоры и обложки рисует программа-агент из реестра (internal/agents), отдельной программы провайдера нет. |
@@ -200,6 +201,7 @@
 | --- | --- |
 | [`SettingsPage`](../frontend/src/renderer/pages/SettingsPage/SettingsPage.tsx) | Настройки: выбор агента и его модели, переход к компонентам и обновление приложения. |
 | [`EnvironmentPage`](../frontend/src/renderer/pages/EnvironmentPage/EnvironmentPage.tsx) | Проверка среды: что найдено, чего не хватает и для чего это нужно; встроенные ресурсы приложения. |
+| [`PromptLogPage`](../frontend/src/renderer/pages/PromptLogPage/PromptLogPage.tsx) | «Отправки»: что приложение отправило агенту и сервисам генерации в этом проекте и что получило в ответ, включая ошибки, остановленные и прерванные отправки. |
 
 Ещё: [`frontend/src/shared/agent-providers.ts`](../frontend/src/shared/agent-providers.ts), [`frontend/src/shared/media-providers.ts`](../frontend/src/shared/media-providers.ts), [`resources/providers`](../resources/providers).
 

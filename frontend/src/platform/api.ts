@@ -8,6 +8,8 @@
 import type { Api } from '@shared/api';
 import type {
   AcceptedKit,
+  PromptLogRecord,
+  PromptLogSummary,
   ShotSpend,
   AnimaticView,
   AppState,
@@ -156,6 +158,7 @@ export interface Bindings {
   production: () => Promise<typeof import('../../bindings/songframe/internal/app/productionservice')>;
   dashboard: () => Promise<typeof import('../../bindings/songframe/internal/app/dashboardservice')>;
   animatic: () => Promise<typeof import('../../bindings/songframe/internal/app/animaticservice')>;
+  promptLog: () => Promise<typeof import('../../bindings/songframe/internal/app/promptlogservice')>;
   montage: () => Promise<typeof import('../../bindings/songframe/internal/app/montageservice')>;
   montageWindow: () => Promise<typeof import('../../bindings/songframe/internal/app/montagewindowservice')>;
   derivedShots: () => Promise<typeof import('../../bindings/songframe/internal/app/derivedshotservice')>;
@@ -188,6 +191,7 @@ export const nativeBindings: Bindings = {
   production: () => import('../../bindings/songframe/internal/app/productionservice'),
   dashboard: () => import('../../bindings/songframe/internal/app/dashboardservice'),
   animatic: () => import('../../bindings/songframe/internal/app/animaticservice'),
+  promptLog: () => import('../../bindings/songframe/internal/app/promptlogservice'),
   montage: () => import('../../bindings/songframe/internal/app/montageservice'),
   montageWindow: () => import('../../bindings/songframe/internal/app/montagewindowservice'),
   derivedShots: () => import('../../bindings/songframe/internal/app/derivedshotservice'),
@@ -561,6 +565,9 @@ export function createApi(b: Bindings): Api {
 
   // Аниматик: сборка — задание update_scene_views + build_animatic; статус и вид медиа плана Go
   // отдаёт строками контракта, адаптер только сужает тип.
+  // Журнал отправок: только чтение plan/prompt-log; Go отдаёт [] вместо null.
+  api.promptLog.list = (project) => call('promptLog.list', async () => (await (await b.promptLog()).List(project)) as PromptLogSummary[]);
+  api.promptLog.get = (project, id) => call('promptLog.get', async () => ((await (await b.promptLog()).Get(project, id)) ?? null) as PromptLogRecord | null);
   api.animatic.view = (project) => call('animatic.view', async () => (await (await b.animatic()).View(project)) as AnimaticView);
   api.animatic.build = (project, planOnly) => call('animatic.build', async () => toJob(await (await b.animatic()).Build(project, planOnly ?? false)));
   api.animatic.fragment = (project, from, to) => call('animatic.fragment', async () => toJob(await (await b.animatic()).Fragment(project, from, to)));

@@ -35,6 +35,7 @@ function bindings(cover: Record<string, unknown>, referenceImages: Record<string
     production: missing,
     dashboard: missing,
     animatic: missing,
+    promptLog: missing,
     montage: missing,
     montageWindow: missing,
     derivedShots: missing,

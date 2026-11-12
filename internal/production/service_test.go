@@ -17,6 +17,7 @@ import (
 	"songframe/internal/mediaproviders"
 	"songframe/internal/mediatest"
 	"songframe/internal/production"
+	"songframe/internal/promptlog"
 	"songframe/internal/toolrt"
 	"songframe/internal/tools"
 )
@@ -516,6 +517,14 @@ func TestDiscardAndPark(t *testing.T) {
 	e.wait(info)
 	if e.paid() != 1 {
 		t.Fatalf("отправок %d", e.paid())
+	}
+	// Платная отправка — ровно одна запись журнала отправок с промптом и номером генерации.
+	logged, err := promptlog.List(e.project)
+	if err != nil || len(logged) != 1 || !logged[0].Paid || logged[0].Status != promptlog.StatusCompleted || logged[0].Place == nil || logged[0].Place.Shot != "M03" {
+		t.Fatalf("журнал отправок %+v %v", logged, err)
+	}
+	if record, _ := promptlog.Get(e.project, logged[0].ID); record == nil || record.Prompt == "" || record.Paid == nil || record.Paid.GenerationID == nil {
+		t.Fatalf("запись отправки %+v", record)
 	}
 	if err := e.prod.DiscardAttempt(e.project, e.pkg); err != nil {
 		t.Fatal(err)

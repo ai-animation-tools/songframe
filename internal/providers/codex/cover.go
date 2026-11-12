@@ -13,6 +13,7 @@ import (
 	"songframe/internal/dynvalue"
 	"songframe/internal/mediaapi"
 	"songframe/internal/mediafile"
+	"songframe/internal/promptlog"
 	"songframe/internal/providers/agentexec"
 )
 
@@ -179,7 +180,7 @@ func (r CoverRunner) Run(ctx context.Context, input CoverInput) (string, error) 
 	if r.NewManager != nil {
 		manager = r.NewManager(settings)
 	} else {
-		manager = agents.NewManager(settings, agents.Options{})
+		manager = agents.NewManager(settings, agents.Options{Journal: promptlog.AgentJournal{}})
 	}
 	defer func() { _ = manager.ShutdownAndWait(context.Background()) }()
 	stop := context.AfterFunc(ctx, func() { _ = manager.ShutdownAndWait(context.Background()) })
@@ -203,8 +204,12 @@ func (r CoverRunner) Run(ctx context.Context, input CoverInput) (string, error) 
 	}
 	unsubscribe := manager.OnEvent(func(agents.Event) { check() })
 	defer unsubscribe()
+	place := &agents.Place{Page: "project"}
+	if input.Purpose == PurposeReference {
+		place = &agents.Place{Page: "cast"}
+	}
 	job, err := manager.StartImages(agents.StartInput{
-		Project: root, Task: texts.title, Prompt: Prompt(input.Purpose, len(images) > 0), Context: encoded,
+		Project: root, Task: texts.title, Prompt: Prompt(input.Purpose, len(images) > 0), Context: encoded, Place: place,
 	}, input.WorkDir, r.Config)
 	if err != nil {
 		return "", err

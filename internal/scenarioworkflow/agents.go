@@ -7,6 +7,9 @@ import "songframe/internal/agents"
 // Prompt и Context; Images и RetryOf не использует.
 type AgentStartInput = agents.StartInput
 
+// AgentPlace — место задания в проекте для журнала отправок.
+type AgentPlace = agents.Place
+
 // AgentInputHashes — хеши входа задания агента: SHA-256 промпта и контекста.
 type AgentInputHashes = agents.InputHashes
 

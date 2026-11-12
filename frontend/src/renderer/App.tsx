@@ -18,6 +18,7 @@ import {
   EnvironmentPage,
   HelpPage,
   JobsPage,
+  PromptLogPage,
   NewProjectPage,
   MontagePage,
   MontagePlayerPage,
@@ -158,6 +159,14 @@ export function App({ onReady }: { onReady?: () => Promise<void> }): ReactElemen
                   <RequireScenario title={navigationTexts.pages.animatic}>
                     <AnimaticPage />
                   </RequireScenario>
+                </RequireProject>
+              }
+            />
+            <Route
+              path="project/prompts"
+              element={
+                <RequireProject>
+                  <PromptLogPage />
                 </RequireProject>
               }
             />

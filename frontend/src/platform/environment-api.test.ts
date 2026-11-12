@@ -37,6 +37,7 @@ function bindings(services: { environment?: Record<string, unknown>; media?: Rec
     production: missing,
     dashboard: missing,
     animatic: missing,
+    promptLog: missing,
     montage: missing,
     montageWindow: missing,
     derivedShots: missing,

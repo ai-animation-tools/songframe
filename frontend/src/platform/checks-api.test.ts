@@ -36,6 +36,7 @@ function bindings(checks: Record<string, unknown>): Bindings {
     production: missing,
     dashboard: missing,
     animatic: missing,
+    promptLog: missing,
     montage: missing,
     montageWindow: missing,
     derivedShots: missing,

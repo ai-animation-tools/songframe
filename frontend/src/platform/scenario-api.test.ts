@@ -36,6 +36,7 @@ function bindings(scenario: Record<string, unknown>, cast: Record<string, unknow
     production: missing,
     dashboard: missing,
     animatic: missing,
+    promptLog: missing,
     montage: missing,
     montageWindow: missing,
     derivedShots: missing,

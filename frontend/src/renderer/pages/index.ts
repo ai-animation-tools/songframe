@@ -5,6 +5,7 @@ export { ChecksPage } from './ChecksPage';
 export { EnvironmentPage } from './EnvironmentPage';
 export { HelpPage } from './HelpPage';
 export { JobsPage } from './JobsPage';
+export { PromptLogPage } from './PromptLogPage';
 export { NewProjectPage } from './NewProjectPage';
 export { ProjectPage } from './ProjectPage';
 export { ProductionPage } from './ProductionPage';

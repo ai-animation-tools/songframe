@@ -199,6 +199,10 @@ export function apiSkeleton(): Api {
     dashboard: {
       view: stub('dashboard.view')
     },
+    promptLog: {
+      list: stub('promptLog.list'),
+      get: stub('promptLog.get')
+    },
     animatic: {
       view: stub('animatic.view'),
       build: stub('animatic.build'),

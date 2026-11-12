@@ -28,6 +28,7 @@ import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import GridViewIcon from '@mui/icons-material/GridView';
 import GroupsIcon from '@mui/icons-material/Groups';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import ForumOutlinedIcon from '@mui/icons-material/ForumOutlined';
 import HistoryIcon from '@mui/icons-material/History';
 import LibraryMusicIcon from '@mui/icons-material/LibraryMusic';
 import LightModeIcon from '@mui/icons-material/LightMode';
@@ -65,6 +66,7 @@ const ICONS: Record<string, ReactElement> = {
   '/project/montage': <MovieIcon />,
   '/project/checks': <FactCheckIcon />,
   '/project/animatic': <MovieIcon />,
+  '/project/prompts': <ForumOutlinedIcon />,
   '/jobs': <HistoryIcon />,
   '/environment': <SettingsSuggestIcon />,
   '/components': <ExtensionIcon />,

@@ -26,6 +26,7 @@ import (
 	"songframe/internal/production"
 	"songframe/internal/productionworkflow"
 	"songframe/internal/project"
+	"songframe/internal/promptlog"
 	"songframe/internal/providers"
 	"songframe/internal/providers/agentexec"
 	"songframe/internal/scenarioapply"
@@ -169,7 +170,8 @@ func run() error {
 	defer componentService.ServiceShutdown()
 	// Задания агента: история в каталоге состояния, при закрытии CLI останавливаются вместе с потомками.
 	agentSettings := agents.NewSettingsStore(profilePath)
-	agentManager := agents.NewManager(agentSettings, agents.Options{})
+	// Каждое задание агента попадает в журнал отправок своего проекта (страница «Отправки»).
+	agentManager := agents.NewManager(agentSettings, agents.Options{Journal: promptlog.AgentJournal{}})
 	defer func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
@@ -292,6 +294,7 @@ func run() error {
 		application.NewService(shell.NewProductionWorkflowService(productionWorkflow, aiAccess)),
 		application.NewService(shell.NewDashboardService(scenarioWorkflow)),
 		application.NewService(shell.NewAnimaticService(jobManager, scenarioWorkflow)),
+		application.NewService(shell.NewPromptLogService()),
 		application.NewService(shell.NewDerivedShotService(jobManager)),
 		// Второе окно плеера монтажа: одно окно у одного владельца, положение — в каталоге состояния.
 		application.NewService(montageWindow),

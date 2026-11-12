@@ -191,6 +191,10 @@ export function unconfiguredStoryApi(): Api {
     dashboard: {
       view: async () => unconfigured('dashboard.view')
     },
+    promptLog: {
+      list: async () => [],
+      get: async () => null
+    },
     animatic: {
       view: async () => unconfigured('animatic.view'),
       build: async () => unconfigured('animatic.build'),

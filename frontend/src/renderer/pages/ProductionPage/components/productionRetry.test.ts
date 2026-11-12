@@ -186,7 +186,7 @@ describe('Локальная подготовка повтора', () => {
     const html = renderCard({ operation: { job } });
     expect(html).toContain('role="alert"');
     expect(html).toContain(job.error);
-    expect(html).toContain('href="/jobs"');
+    expect(html).toContain('href="/jobs?job=repeat-m44"');
     expect(html).toContain('Открыть журнал');
     expect(html).not.toContain(job.log);
     expect(html).not.toContain('role="progressbar"');

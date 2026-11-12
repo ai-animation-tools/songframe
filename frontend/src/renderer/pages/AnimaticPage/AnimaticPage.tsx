@@ -7,6 +7,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 
 import type { ReactElement } from 'react';
 import { Alert, Box, Button, Paper, Stack, Typography } from '@mui/material';
+import { JobStatus } from '../../components';
 import { AnimaticAcceptance, AnimaticChapters, AnimaticConfirmDialog, AnimaticHeader, AnimaticPlayer, ShotCard } from './components';
 import { useAnimaticPage } from './useAnimaticPage';
 import { LinkedText } from '../../components/LinkedText';
@@ -39,11 +40,14 @@ export function AnimaticPage(): ReactElement {
           built={built}
           accepted={accepted}
           running={running}
+          runningJobId={page.runningJob?.id ?? null}
           blockedReason={view.blockedReason}
           onRefresh={() => Promise.all([load(), loadJobs()])}
           onBuild={page.build}
         />
       </PageActionBar>
+      {/* Сбой последней сборки виден и после уведомления: причина и переход к её журналу. */}
+      {page.failedJob && !running ? <JobStatus job={page.failedJob} /> : null}
       {view.problems.length ? (
         <Alert severity={built ? 'warning' : 'info'}>
           <ul style={{ margin: 0, paddingLeft: 18 }}>
@@ -77,6 +81,7 @@ export function AnimaticPage(): ReactElement {
             duration={page.duration}
             time={page.time}
             onOpenFolder={page.openFolder}
+            onEngage={page.engage}
           />
           <Paper variant="outlined" sx={{ p: 2 }}>
             {current ? <ShotCard shot={current} /> : <Typography color="text.secondary">{animaticTexts.chooseShot}</Typography>}

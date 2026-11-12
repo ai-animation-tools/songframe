@@ -8,6 +8,9 @@ import { Box, Button, Chip, Tooltip, Typography } from '@mui/material';
 import BuildIcon from '@mui/icons-material/Build';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
+import ListAltIcon from '@mui/icons-material/ListAlt';
+import { Link } from 'react-router-dom';
+import { jobLogRoute } from '../../../components/JobStatus';
 import type { AnimaticView } from '@shared/types';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import { ActionButton, JobStatus } from '../../../components';
@@ -16,6 +19,7 @@ export function AnimaticHeader({
   built,
   accepted,
   running,
+  runningJobId = null,
   blockedReason,
   onRefresh,
   onBuild
@@ -23,6 +27,8 @@ export function AnimaticHeader({
   built: AnimaticView['built'];
   accepted: boolean;
   running: boolean;
+  /** Идущее задание сборки этого проекта: кнопка рядом с индикатором открывает его журнал. */
+  runningJobId?: string | null;
   /** Сборка недоступна до утверждения актуального сценария: причина видна в подсказке кнопок. */
   blockedReason?: string | null;
   onRefresh: () => unknown;
@@ -44,6 +50,11 @@ export function AnimaticHeader({
       )}
       {/* Индикатор сборки в закреплённой панели виден при любой прокрутке. */}
       <JobStatus running={running} />
+      {running && runningJobId ? (
+        <Button component={Link} to={jobLogRoute(runningJobId)} size="small" startIcon={<ListAltIcon />}>
+          {commonTexts.job.openLog}
+        </Button>
+      ) : null}
       <Box sx={{ flex: 1 }} />
       <Button startIcon={<RefreshIcon />} onClick={onRefresh}>
         {commonTexts.refresh}

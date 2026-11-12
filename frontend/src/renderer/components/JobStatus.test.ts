@@ -47,7 +47,8 @@ describe('Результат операции у действия', () => {
     expect(html).toContain('role="alert"');
     expect(html).toContain('gptunnel');
     expect(html).toContain('для повтора требуется другой провайдер.');
-    expect(html).toContain('href="/jobs"');
+    // Ссылка ведёт к записи этого задания на странице «Задания».
+    expect(html).toContain('href="/jobs?job=repeat-m44"');
     expect(html).toContain('Открыть журнал');
     expect(html).not.toContain('Служебный полный журнал');
     expect(html).not.toContain('role="progressbar"');

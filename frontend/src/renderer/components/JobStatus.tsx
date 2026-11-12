@@ -6,6 +6,11 @@ import ListAltIcon from '@mui/icons-material/ListAlt';
 import { Link } from 'react-router-dom';
 import type { JobInfo } from '@shared/types';
 
+/** Адрес журнала задания: страница «Задания» выбирает и прокручивает к нему запись. */
+export function jobLogRoute(id?: string | null): string {
+  return id ? `/jobs?job=${encodeURIComponent(id)}` : '/jobs';
+}
+
 export function JobStatus({ running = false, label, job, error }: { running?: boolean; label?: string; job?: JobInfo; error?: string }): ReactElement | null {
   if (error || job?.status === 'failed' || job?.status === 'interrupted') {
     return (
@@ -14,7 +19,7 @@ export function JobStatus({ running = false, label, job, error }: { running?: bo
         <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
           {error ?? job?.error ?? commonTexts.job.failedWithCode({ code: job?.code })}
         </Typography>
-        <Button component={Link} to="/jobs" color="inherit" size="small" startIcon={<ListAltIcon />} sx={{ mt: 1 }}>
+        <Button component={Link} to={jobLogRoute(job?.id)} color="inherit" size="small" startIcon={<ListAltIcon />} sx={{ mt: 1 }}>
           {commonTexts.job.openLog}
         </Button>
       </Alert>

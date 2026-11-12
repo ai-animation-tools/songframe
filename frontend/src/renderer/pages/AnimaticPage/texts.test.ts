@@ -44,7 +44,8 @@ describe('тексты просмотра аниматика', () => {
         seek: () => {},
         duration: 2,
         time: 1,
-        onOpenFolder: () => {}
+        onOpenFolder: () => {},
+        onEngage: () => {}
       })
     );
     expect(markup).toContain('0:01.00 / 0:02.00 · 0 планов: анимация: 1, опоры: 2, карточки: 5 · собрано <time dateTime="2026-10-29T12:00:00.000Z">');

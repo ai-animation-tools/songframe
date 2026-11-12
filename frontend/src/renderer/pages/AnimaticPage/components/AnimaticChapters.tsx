@@ -1,8 +1,8 @@
 import { animaticTexts } from '@shared/texts/animatic';
-/** Список глав с переходом плеера на выбранный план. */
+/** Список глав с переходом плеера на выбранный план; главы — кнопки, план выбирается и с клавиатуры. */
 
 import type { ReactElement } from 'react';
-import { Box, Paper, Typography } from '@mui/material';
+import { Box, ListItemButton, Paper, Typography } from '@mui/material';
 import type { AnimaticShot } from '@shared/types';
 import { formatClock } from '../../../format';
 import { MEDIA_COLORS } from '../media';
@@ -21,21 +21,18 @@ export function AnimaticChapters({
       <Typography variant="subtitle1" fontWeight={600} gutterBottom>
         {animaticTexts.chapters}
       </Typography>
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr', xl: '1fr 1fr 1fr' }, gap: 1 }}>
+      <Box
+        role="group"
+        aria-label={animaticTexts.chapters}
+        sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr', xl: '1fr 1fr 1fr' }, gap: 1 }}
+      >
         {shots.map((shot) => (
-          <Box
+          <ListItemButton
             key={shot.id}
+            selected={current?.id === shot.id}
+            aria-current={current?.id === shot.id ? 'true' : undefined}
             onClick={() => seek(shot)}
-            sx={{
-              display: 'flex',
-              gap: 1,
-              alignItems: 'center',
-              p: 0.75,
-              borderRadius: 1,
-              cursor: 'pointer',
-              bgcolor: current?.id === shot.id ? 'action.selected' : undefined,
-              '&:hover': { bgcolor: 'action.hover' }
-            }}
+            sx={{ display: 'flex', gap: 1, alignItems: 'center', p: 0.75, borderRadius: 1 }}
           >
             <Box sx={{ width: 6, alignSelf: 'stretch', borderRadius: 1, bgcolor: MEDIA_COLORS[shot.media] }} />
             <Typography variant="body2" sx={{ fontFamily: 'monospace', minWidth: 44 }}>
@@ -47,7 +44,7 @@ export function AnimaticChapters({
             <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
               {formatClock(shot.start)}–{formatClock(shot.end)}
             </Typography>
-          </Box>
+          </ListItemButton>
         ))}
       </Box>
     </Paper>

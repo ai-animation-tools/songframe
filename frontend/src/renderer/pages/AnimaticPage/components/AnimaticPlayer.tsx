@@ -22,7 +22,8 @@ export function AnimaticPlayer({
   seek,
   duration,
   time,
-  onOpenFolder
+  onOpenFolder,
+  onEngage
 }: {
   built: NonNullable<AnimaticView['built']>;
   videoRef: RefObject<HTMLVideoElement | null>;
@@ -35,6 +36,8 @@ export function AnimaticPlayer({
   duration: number;
   time: number;
   onOpenFolder: () => void;
+  /** Запуск или перемотка во встроенных элементах видео: после этого карточка показывает текущий план. */
+  onEngage: () => void;
 }): ReactElement {
   return (
     <Paper variant="outlined" sx={{ p: 1.5 }}>
@@ -44,10 +47,16 @@ export function AnimaticPlayer({
         key={videoUrl}
         src={videoUrl}
         onLoadedMetadata={seekRequested}
+        onPlay={onEngage}
+        onSeeking={onEngage}
         style={{ width: '100%', borderRadius: 4, background: '#000' }}
         onTimeUpdate={(e) => setTime(e.currentTarget.currentTime)}
       />
-      <Box sx={{ display: 'flex', height: 22, mt: 1, borderRadius: 1, overflow: 'hidden', border: 1, borderColor: 'divider', position: 'relative' }}>
+      {/* Полоса — быстрый выбор мышью; с клавиатуры и для скринридера тот же выбор дают кнопки глав. */}
+      <Box
+        aria-hidden
+        sx={{ display: 'flex', height: 22, mt: 1, borderRadius: 1, overflow: 'hidden', border: 1, borderColor: 'divider', position: 'relative' }}
+      >
         {shots.map((shot) => (
           // describeChild: подпись описывает сегмент, а не становится aria-label у div без роли (aria-prohibited-attr).
           <Tooltip key={shot.id} title={`${shot.id} · ${shot.title} · ${MEDIA_LABELS[shot.media]}`} placement="top" describeChild>

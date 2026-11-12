@@ -17,6 +17,10 @@ export function useAnimaticPage() {
   const [params, setParams] = useSearchParams();
   const videoRef = useRef<HTMLVideoElement>(null);
   const requestedShot = params.get('shot');
+  // До запуска, перемотки или выбора плана карточка показывает подсказку: в момент 0
+  // первый план совпадал бы со временем, и подсказка не появлялась бы никогда.
+  const [engaged, setEngaged] = useState(false);
+  const engage = useCallback(() => setEngaged(true), []);
 
   const load = useCallback(async () => {
     setLoadError(null);
@@ -55,9 +59,16 @@ export function useAnimaticPage() {
 
   const shots = useMemo(() => view?.shots ?? [], [view]);
   const current = useMemo(
-    () => shots.find((s) => time >= s.start && time < s.end) ?? (shots.length > 0 && time >= shots[shots.length - 1].end ? shots[shots.length - 1] : null),
-    [shots, time]
+    () =>
+      !engaged
+        ? null
+        : (shots.find((s) => time >= s.start && time < s.end) ?? (shots.length > 0 && time >= shots[shots.length - 1].end ? shots[shots.length - 1] : null)),
+    [engaged, shots, time]
   );
+  // Журнал ведёт к сборке этого проекта: идущей или последней завершённой со сбоем.
+  const projectJobs = jobs.filter((job) => job.project === project).sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+  const runningJob = projectJobs.find((job) => job.status === 'running') ?? null;
+  const failedJob = projectJobs[0]?.status === 'failed' || projectJobs[0]?.status === 'interrupted' ? projectJobs[0] : null;
   const duration = view?.built?.duration ?? (shots.length ? shots[shots.length - 1].end : 0);
 
   const seek = (shot: AnimaticShot): void => {
@@ -65,6 +76,7 @@ export function useAnimaticPage() {
     if (!video) return;
     video.currentTime = shot.start + 0.001;
     setTime(shot.start + 0.001);
+    setEngaged(true);
     setParams({ shot: shot.id }, { replace: true });
   };
 
@@ -75,6 +87,7 @@ export function useAnimaticPage() {
     if (!shot || !video || video.readyState < 1) return;
     video.currentTime = shot.start + 0.001;
     setTime(shot.start + 0.001);
+    setEngaged(true);
   }, [requestedShot, shots]);
   useEffect(() => {
     seekRequested();
@@ -122,6 +135,9 @@ export function useAnimaticPage() {
     running,
     shots,
     current,
+    engage,
+    runningJob,
+    failedJob,
     duration,
     seek,
     seekRequested,

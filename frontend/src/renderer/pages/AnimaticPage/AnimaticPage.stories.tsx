@@ -6,6 +6,7 @@ import { commonTexts } from '@shared/texts/common';
 import { notificationsTexts } from '@shared/texts/notifications';
 import {
   ANIMATIC_BLOCKED_REASON,
+  ANIMATIC_JOB_ERROR,
   ANIMATIC_PAGE_PROJECT,
   ANIMATIC_STALE_PROBLEMS,
   animaticPageInspection,
@@ -86,9 +87,18 @@ export const FreshReview: Story = {
     await expect(video).toBeInTheDocument();
     await expect(video).toHaveAttribute('src', expect.stringContaining('media/story-video.mp4?v='));
     await waitFor(() => expect(video?.duration).toBe(8));
-    // В начале видео карточка показывает первый план с речью и постановкой.
+    // До запуска и выбора карточка подсказывает, как выбрать план, хотя первый план начинается с 0.
+    await expect(canvas.getByText(animaticTexts.chooseShot)).toBeVisible();
+    await expect(canvas.queryByText(animaticTexts.shot.speech)).toBeNull();
+    // Главы — кнопки: план выбирается с клавиатуры, текущая глава отмечена aria-current.
+    const first = canvas.getByRole('button', { name: /^M01/ });
+    first.focus();
+    await userEvent.keyboard('{Enter}');
     await expect(canvas.getByText(animaticTexts.shot.speech)).toBeVisible();
     await expect(canvas.getByText('Средний план, медленный наезд.')).toBeVisible();
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^M01/ })).toHaveAttribute('aria-current', 'true'));
+    await userEvent.keyboard('{Tab}');
+    await expect(canvas.getByRole('button', { name: /^M02/ })).toHaveFocus();
 
     // Глава переводит плеер на начало плана и показывает его карточку с опорами и постановкой;
     // переход роутера идёт в transition и может отстать от перемотки, поэтому адрес ждём.
@@ -202,7 +212,13 @@ export const BuildFailure: Story = {
     const src = canvasElement.querySelector('video')?.getAttribute('src');
     await userEvent.click(canvas.getByRole('button', { name: commonTexts.rebuild }));
     await confirmDialog(canvasElement, `${commonTexts.rebuild}?`, commonTexts.rebuild);
+    // Пока сборка идёт, рядом с индикатором — переход к её журналу.
+    await waitFor(() => expect(canvas.getByRole('link', { name: commonTexts.job.openLog })).toHaveAttribute('href', '/jobs?job=animatic-1'));
     await screen.findByText(animaticTexts.jobFailed({ title: animaticTexts.main.buildTitle }), undefined, JOB_TIMEOUT);
+    // После сбоя причина и журнал остаются на странице, а не только в уведомлении.
+    const failure = (await canvas.findByText(ANIMATIC_JOB_ERROR, undefined, JOB_TIMEOUT)).closest<HTMLElement>('[role="alert"]')!;
+    await expect(failure).toBeVisible();
+    await expect(within(failure).getByRole('link', { name: commonTexts.job.openLog })).toHaveAttribute('href', '/jobs?job=animatic-1');
     // Неудачное задание не заменяет latest: видео и решение о приёмке остаются прежними.
     await expect(canvasElement.querySelector('video')).toHaveAttribute('src', src);
     await waitFor(() => expect(canvas.getByRole('button', { name: commonTexts.rebuild })).toBeEnabled());

@@ -170,6 +170,16 @@ var yarnBuiltins = map[string]bool{
 // эталонах текст описывает то, что есть сейчас.
 var historyMarker = regexp.MustCompile(`Electron|634fd94|Python|python3|\.py\b|__pycache__|songframe-go|SONGFRAME_GO_|Go-верси|src/main/`)
 
+// planMarker находит ссылки на ход разработки из приватного плана: решения, задачи бэклога и
+// вопросы (D-NNN, B-NNN, Q-NNN), шаги плана с дробным номером («шага 41.2») и этапы с номером
+// («этап 63»). Правило AGENTS.md: текст описывает то, что есть сейчас, и почему, без ссылок на
+// план, которого в репозитории нет. Номер шага сценария эталона («шаг 27») — не план: шаблон
+// требует у шага дробный номер.
+var planMarker = regexp.MustCompile(`\b[DBQ]-[0-9]{3}\b|шаг[а-яё]*\s+[0-9]{1,3}\.[0-9]|этап[а-яё]*\s+[0-9]{2,3}\b`)
+
+// textPlanMarker — описание нарушения planMarker.
+const textPlanMarker = "ссылка на приватный план разработки: опишите причину без номера решения, задачи или шага"
+
 // historySection — заголовок раздела README, где история разрешена.
 const historySection = "## История"
 
@@ -377,6 +387,9 @@ func Check(root string) ([]Problem, error) {
 			if !inHistory && historyMarker.MatchString(l.text) {
 				add("упоминание прежней версии: история — только в разделе «История» README")
 			}
+			if planMarker.MatchString(l.text) {
+				add(textPlanMarker)
+			}
 			var targets []string
 			plain := stripCode(l.text)
 			if l.fence {
@@ -470,8 +483,8 @@ var sourceExts = map[string]bool{
 	".json": true, ".txt": true,
 }
 
-// CheckSources находит следы прежней версии в исходниках, рецептах и эталонах репозитория, а
-// также файлы на языке прежних инструментов (*.py). Сгенерированные bindings и сам пакет
+// CheckSources находит следы прежней версии и ссылки на приватный план в исходниках, рецептах и
+// эталонах репозитория, а также файлы на языке прежних инструментов (*.py). Сгенерированные bindings и сам пакет
 // repodocs, где задано правило, не проверяются.
 func CheckSources(root string) ([]Problem, error) {
 	var problems []Problem
@@ -504,6 +517,9 @@ func CheckSources(root string) ([]Problem, error) {
 		for n, line := range strings.Split(string(data), "\n") {
 			if historyMarker.MatchString(line) {
 				problems = append(problems, Problem{rel, n + 1, "упоминание прежней версии: история — только в разделе «История» README"})
+			}
+			if planMarker.MatchString(line) {
+				problems = append(problems, Problem{rel, n + 1, textPlanMarker})
 			}
 		}
 		return nil

@@ -75,7 +75,9 @@ func TestCheckFindsDrift(t *testing.T) {
 	write("resources/skills/s/SKILL.md", "`plan/scenes.json` `internal/q/q.go` [нет](missing.md)\n")
 	write("resources/skills/README.md", "[нет](missing.md)\n")
 	write("README.md", "# R\n\nСтек Electron.\n\n## История\n\nПрежде был Electron.\n")
+	write("docs/plan.md", "Причина — решение D-001.\n\nСценарий эталона, шаг 27.\n\nСделано на этапе 63.\n")
 	write("internal/x/old.go", "package x\n\n// Как в Electron-версии.\n")
+	write("internal/x/plan.go", "package x\n\n// Раскладка шага 41.2; шаг 10 сетки — не план.\n")
 	write("scripts/tool.py", "print(1)\n")
 	write("testdata/golden/d/expected.json", "{\"stderr\": \"Traceback: x.py\"}\n")
 
@@ -96,6 +98,8 @@ func TestCheckFindsDrift(t *testing.T) {
 		"docs/b.md:4: задачи `wails3 task check:gone` нет в Taskfile.yml",
 		"docs/b.md:5: скрипта `yarn release` нет в frontend/package.json",
 		"docs/b.md:7: задачи `wails3 task gone:in-fence` нет в Taskfile.yml",
+		"docs/plan.md:1: ссылка на приватный план разработки: опишите причину без номера решения, задачи или шага",
+		"docs/plan.md:5: ссылка на приватный план разработки: опишите причину без номера решения, задачи или шага",
 		"resources/skills/README.md:1: ссылка на несуществующий resources/skills/missing.md",
 	}
 	src, err := CheckSources(root)
@@ -107,6 +111,7 @@ func TestCheckFindsDrift(t *testing.T) {
 	}
 	want = append(want,
 		"internal/x/old.go:3: упоминание прежней версии: история — только в разделе «История» README",
+		"internal/x/plan.go:3: ссылка на приватный план разработки: опишите причину без номера решения, задачи или шага",
 		"scripts/tool.py:0: файл прежних инструментов: сборка и проверки пишутся на Go",
 		"testdata/golden/d/expected.json:1: упоминание прежней версии: история — только в разделе «История» README",
 	)

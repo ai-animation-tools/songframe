@@ -50,9 +50,20 @@ const (
 	montageVideoName       = "Монтажная проба.mp4"
 )
 
-// View — montage:view: каталог сцен, источников, строк песни и сохранённых черновиков.
+// View — montage:view: каталог сцен, источников, строк песни и сохранённых черновиков. При
+// неутверждённом сценарии (reviewProblem) проблема добавляется к виду и становится blockedReason:
+// страница заранее выключает применение, в котором Apply откажет, а правка, сохранение и проба
+// остаются доступны.
 func (s *MontageService) View(project string) (*montage.View, error) {
-	return wire.Done(montage.ViewProject(project))
+	view, err := montage.ViewProject(project)
+	if err != nil {
+		return wire.Done(view, err)
+	}
+	if problem := reviewProblem(s.workflow, project); problem != "" {
+		view.Problems = append(view.Problems, problem)
+		view.BlockedReason = &problem
+	}
+	return wire.Done(view, nil)
 }
 
 // Load — montage:load: сохранённый черновик plan/montage/<id>.json после проверки.

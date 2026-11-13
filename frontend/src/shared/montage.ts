@@ -76,6 +76,8 @@ export interface MontageView {
   manifestSha256: Record<string, string>;
   saved: MontageSaved[];
   problems: string[];
+  /** Причина недоступности применения к планам: сценарий нужно утвердить заново. Та же строка есть в problems со ссылкой на «Сценарий». */
+  blockedReason?: string | null;
 }
 
 export interface MontageExport {

@@ -35,8 +35,8 @@ export function MontageApplyDialog({
       confirmLabel={montageTexts.applyToScenes}
       confirmIcon={<Check />}
       confirmColor="error"
-      confirmDisabled={busy}
-      confirmDisabledReason={commonTexts.operationPending}
+      confirmDisabled={busy || !!view.blockedReason}
+      confirmDisabledReason={busy ? commonTexts.operationPending : view.blockedReason}
       cancelDisabled={busy}
       cancelDisabledReason={commonTexts.operationPending}
       closeDisabled={busy}

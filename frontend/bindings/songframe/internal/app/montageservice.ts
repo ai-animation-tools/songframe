@@ -71,7 +71,10 @@ export function SaveVideo(project: string, video: string): $CancellablePromise<s
 }
 
 /**
- * View — montage:view: каталог сцен, источников, строк песни и сохранённых черновиков.
+ * View — montage:view: каталог сцен, источников, строк песни и сохранённых черновиков. При
+ * неутверждённом сценарии (reviewProblem) проблема добавляется к виду и становится blockedReason:
+ * страница заранее выключает применение, в котором Apply откажет, а правка, сохранение и проба
+ * остаются доступны.
  */
 export function View(project: string): $CancellablePromise<montage$0.View | null> {
     return $Call.ByID(1797392826, project);

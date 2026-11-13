@@ -2,6 +2,7 @@
 import { useCallback, useState } from 'react';
 import { Box, Button, Paper, Slider, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import type { MontageClip, MontageDraft, MontageScene, MontageSource, MontageView } from '@shared/montage';
+import { applicationTexts } from '@shared/texts/application';
 import { MontageClipEditor } from '../pages/MontagePage/components/MontageClipEditor';
 import { MontageRemoveDialog } from '../pages/MontagePage/components/MontageRemoveDialog';
 import { MontagePreview } from '../pages/MontagePage/components/MontagePreview';
@@ -14,6 +15,8 @@ import { STORY_IMAGE_PATH, STORY_TRACK_PATH } from './storybook';
 export const MONTAGE_PROJECT = '/mock/Музыкальный клип/Материалы режиссёрской версии с очень длинным названием';
 export const MONTAGE_SOURCE = 'assets/shots/M01/полный оригинал для проверки длинных путей/story-derived-source-150.mp4';
 export const MONTAGE_LOCKED_REASON = 'Дождитесь завершения экспорта пробы.';
+/** Причина из MontageService.View при неутверждённом сценарии: та же строка, с которой отказывает Apply. */
+export const MONTAGE_BLOCKED_REASON = applicationTexts.scenarioReviewRequired;
 export const MONTAGE_SCENES: MontageScene[] = [
   { id: 'M01', title: 'Возвращение к воротам после долгой поездки по дачному товариществу', startFrame: 0, endFrame: 45 },
   { id: 'M02', title: 'Встреча у старого сарая', startFrame: 45, endFrame: 90 },
@@ -96,6 +99,11 @@ export function montageView(): MontageView {
     saved: [],
     problems: []
   };
+}
+
+/** Вид монтажа, пока сценарий требует пересмотра: причина в проблемах и в blockedReason, как отдаёт Go. */
+export function montageReviewView(): MontageView {
+  return { ...montageView(), problems: [MONTAGE_BLOCKED_REASON], blockedReason: MONTAGE_BLOCKED_REASON };
 }
 
 /** Таблица показывает обе стороны стыка и исходники: проверка видит результат правки, а не число вызовов. */

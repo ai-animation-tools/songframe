@@ -4,14 +4,18 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 
+	"songframe/internal/golden"
 	"songframe/internal/montage"
+	"songframe/internal/scenarioworkflow"
 	"songframe/internal/store"
 )
 
@@ -119,5 +123,50 @@ func TestSaveVideoChecksProbeBeforeDialog(t *testing.T) {
 	}
 	if data, _ := os.ReadFile(*path); string(data) != "ролик" {
 		t.Fatalf("содержимое копии: %s", data)
+	}
+}
+
+// TestMontageViewScenarioReview — пока сценарий требует пересмотра, вид монтажа несёт ту же
+// причину, с которой Apply отказывает (blockedReason и строка проблем со ссылкой на «Сценарий»);
+// утверждённый сценарий причины не даёт.
+func TestMontageViewScenarioReview(t *testing.T) {
+	root, err := golden.Root()
+	if err != nil {
+		t.Fatal(err)
+	}
+	project := filepath.Join(t.TempDir(), "Клип")
+	if err := os.CopyFS(project, os.DirFS(filepath.Join(root, "checks-base", "project"))); err != nil {
+		t.Fatal(err)
+	}
+	workflow := scenarioworkflow.New(scenarioworkflow.Options{LocalDir: t.TempDir(), Agents: noAgents{}})
+	service := NewMontageService(nil, workflow)
+	if _, err := workflow.ApproveCurrent(project); err != nil {
+		t.Fatal(err)
+	}
+	approved, err := service.View(project)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if approved.BlockedReason != nil || slices.Contains(approved.Problems, textScenarioReviewRequired) {
+		t.Fatalf("утверждённый сценарий не блокирует применение: %v %v", approved.BlockedReason, approved.Problems)
+	}
+
+	cast := filepath.Join(project, "plan", "cast.json")
+	data, err := os.ReadFile(cast)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(cast, append(data, '\n'), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	changed, err := service.View(project)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if changed.BlockedReason == nil || *changed.BlockedReason != textScenarioReviewRequired || !slices.Contains(changed.Problems, textScenarioReviewRequired) {
+		t.Fatalf("после правки кастинга: %v %v", changed.BlockedReason, changed.Problems)
+	}
+	if _, err := service.Apply(project, json.RawMessage(`{}`)); err == nil || err.Error() != *changed.BlockedReason {
+		t.Fatalf("Apply отказывает с той же причиной: %v", err)
 	}
 }

@@ -5,7 +5,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { montageTexts } from '@shared/texts/montage';
 import { draftDialogOptions } from '../../testing/dialogDraftStories';
-import { montageDraft, montageView, MONTAGE_PROJECT } from '../../testing/montageStories';
+import { MONTAGE_BLOCKED_REASON, montageDraft, montageReviewView, montageView, MONTAGE_PROJECT } from '../../testing/montageStories';
 import { MontagePage } from './MontagePage';
 const options = draftDialogOptions(true);
 const meta = {
@@ -163,5 +163,28 @@ export const DiscardWarning: Story = {
     await userEvent.click(within(reopened).getByRole('button', { name: montageTexts.replace }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     await expect(canvas.getByRole('textbox', { name: montageTexts.draftName })).toHaveValue(montageTexts.defaultName);
+  }
+};
+export const ScenarioReviewBlocksApply: Story = {
+  name: 'Сценарий требует пересмотра · применение выключено с причиной, правка и проба доступны',
+  tags: ['ci'],
+  parameters: { songframe: { createApi: () => ({ montage: { view: async () => structuredClone(montageReviewView()) } }) } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const screen = within(canvasElement.ownerDocument.body);
+    await canvas.findByRole('textbox', { name: montageTexts.draftName });
+    // Причина видна на странице со ссылкой на «Сценарий», где сценарий утверждают заново.
+    const alert = canvas.getAllByRole('alert').find((item) => item.textContent?.includes(MONTAGE_BLOCKED_REASON));
+    await expect(alert).toBeDefined();
+    await expect(within(alert!).getByRole('link', { name: /Сценарий/ })).toHaveAttribute('href', '/project/scenario');
+    // Сохранение и проба не зависят от утверждения сценария.
+    await expect(canvas.getByRole('button', { name: montageTexts.saveDraft })).toBeEnabled();
+    await expect(canvas.getByRole('button', { name: montageTexts.exportVideo })).toBeEnabled();
+    await userEvent.click(canvas.getByRole('button', { name: montageTexts.more }));
+    const apply = await screen.findByRole('menuitem', { name: new RegExp(montageTexts.applyToScenes) });
+    await expect(apply).toHaveAttribute('aria-disabled', 'true');
+    await expect(apply).toHaveTextContent(MONTAGE_BLOCKED_REASON);
+    await expect(screen.getByRole('menuitem', { name: montageTexts.reopenMaterials })).not.toHaveAttribute('aria-disabled');
+    await userEvent.keyboard('{Escape}');
   }
 };

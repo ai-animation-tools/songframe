@@ -31,6 +31,8 @@ interface Props {
   exportProblem: string | null;
   exportProblemLabel: string | null;
   stale: boolean;
+  /** Применение к планам недоступно до утверждения актуального сценария; правка, сохранение и проба доступны. */
+  applyBlockedReason: string | null;
   onUndo: () => void;
   onRedo: () => void;
   onSave: () => void;
@@ -50,7 +52,7 @@ interface Props {
  */
 export function MontageActionBar(props: Props): ReactElement {
   const fps = useProjectFps();
-  const { locked, running, exportProblem, stale } = props;
+  const { locked, running, exportProblem, stale, applyBlockedReason } = props;
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const closeMenu = (): void => setMenuAnchor(null);
   const fromMenu = (action: () => void) => (): void => {
@@ -59,7 +61,7 @@ export function MontageActionBar(props: Props): ReactElement {
   };
   // Причина блокировки панели: задание экспорта/применения или короткая операция (чтение, сохранение).
   const lockedReason = running ? montageTexts.jobPending : locked ? commonTexts.operationPending : null;
-  const applyHint = running ? montageTexts.jobPendingHint : exportProblem ? exportProblem : stale ? montageTexts.staleApply : montageTexts.applyHint;
+  const applyHint = running ? montageTexts.jobPendingHint : (applyBlockedReason ?? exportProblem ?? (stale ? montageTexts.staleApply : montageTexts.applyHint));
   return (
     <PageActionBar barRef={props.barRef}>
       <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap sx={{ minWidth: 0 }}>
@@ -173,7 +175,7 @@ export function MontageActionBar(props: Props): ReactElement {
         ) : null}
         <Divider />
         {/* Применение меняет принятые сцены, поэтому открывает прежнее подтверждение с новыми границами. */}
-        <MenuItem disabled={locked || !!exportProblem || stale} onClick={fromMenu(props.onApply)} sx={{ color: 'error.main' }}>
+        <MenuItem disabled={locked || !!applyBlockedReason || !!exportProblem || stale} onClick={fromMenu(props.onApply)} sx={{ color: 'error.main' }}>
           <ListItemIcon sx={{ color: 'inherit' }}>
             <WarningAmber fontSize="small" />
           </ListItemIcon>

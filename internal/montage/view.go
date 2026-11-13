@@ -58,7 +58,8 @@ type LyricLine struct {
 }
 
 // View — MontageView: всё, что нужно странице монтажа. ManifestSha256 — объект «сцена → SHA-256
-// манифеста» в порядке сцен реестра, поэтому отдаётся сырым JSON.
+// манифеста» в порядке сцен реестра, поэтому отдаётся сырым JSON. BlockedReason заполняет сервис
+// приложения, когда сценарий нужно утвердить заново: применение к планам до этого недоступно.
 type View struct {
 	ScenarioStatus string `json:"scenarioStatus"`
 	// FPS — частота кадров реестра и проекта: шкала кадров всех полей вида; 0, пока реестр не
@@ -75,6 +76,7 @@ type View struct {
 	ManifestSha256 json.RawMessage `json:"manifestSha256"`
 	Saved          []Saved         `json:"saved"`
 	Problems       []string        `json:"problems"`
+	BlockedReason  *string         `json:"blockedReason,omitempty"`
 
 	// manifests — те же снимки для проверок Apply.
 	manifests map[string]string

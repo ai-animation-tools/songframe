@@ -201,6 +201,7 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
         exportProblem={exportProblem}
         exportProblemLabel={exportProblemLabel}
         stale={page.stale}
+        applyBlockedReason={view.blockedReason ?? null}
         onUndo={() => page.dispatch({ type: 'undo' })}
         onRedo={() => page.dispatch({ type: 'redo' })}
         onSave={() => void page.save()}

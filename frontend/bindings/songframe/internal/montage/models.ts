@@ -69,7 +69,8 @@ export interface Source {
 
 /**
  * View — MontageView: всё, что нужно странице монтажа. ManifestSha256 — объект «сцена → SHA-256
- * манифеста» в порядке сцен реестра, поэтому отдаётся сырым JSON.
+ * манифеста» в порядке сцен реестра, поэтому отдаётся сырым JSON. BlockedReason заполняет сервис
+ * приложения, когда сценарий нужно утвердить заново: применение к планам до этого недоступно.
  */
 export interface View {
     "scenarioStatus": string;
@@ -90,4 +91,5 @@ export interface View {
     "manifestSha256": json$0.RawMessage;
     "saved": Saved[];
     "problems": string[];
+    "blockedReason"?: string | null;
 }

@@ -32,8 +32,7 @@ export function TimingPlayer({ player, stickyTop, history }: TimingPlayerProps):
     playLine,
     onMouseDown,
     onMouseMove,
-    onMouseUp,
-    onWheel
+    onMouseUp
   } = player;
   return (
     <Paper
@@ -54,7 +53,6 @@ export function TimingPlayer({ player, stickyTop, history }: TimingPlayerProps):
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
         onMouseLeave={onMouseUp}
-        onWheel={onWheel}
         onDoubleClick={(e) => {
           const hit = hitLine(e.clientX, e.clientY);
           if (hit) playLine(hit.line);

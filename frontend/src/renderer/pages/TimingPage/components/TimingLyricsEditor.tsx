@@ -17,10 +17,8 @@ import {
 } from '@mui/material';
 import { visuallyHidden } from '@mui/utils';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
-import SortIcon from '@mui/icons-material/Sort';
 import type { LyricsLine, TimingLine, TimingSection } from '@shared/types';
 import { timingEditorTexts as texts } from '@shared/texts/timing-editor';
-import { ActionButton } from '../../../components/ActionButton';
 import { TimingWorkingLine } from './TimingWorkingLine';
 import type { TimingBoundaryDrafts } from '../manualTiming';
 import {
@@ -139,10 +137,6 @@ export function TimingLyricsEditor({
         <Typography variant="body2" color="text.secondary">
           {texts.count({ visible: visible.length, total: rows.length })}
         </Typography>
-        <Box sx={{ flex: 1 }} />
-        <ActionButton startIcon={<SortIcon />} onClick={() => onOrder(lyrics.filter((line) => !line.header && !!line.text.trim()).map((line) => line.number))}>
-          {texts.sourceOrder}
-        </ActionButton>
       </Box>
       {filter === 'all' && (
         <Typography variant="caption" color="text.secondary">

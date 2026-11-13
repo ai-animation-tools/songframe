@@ -222,7 +222,7 @@ export const CandidateBoundaries: Story = {
 
 export const ReorderRepeatedChorus: Story = {
   tags: ['ci'],
-  name: 'Одинаковые припевы · клавиатурная перестановка · Save · порядок текста',
+  name: 'Одинаковые припевы · клавиатурная перестановка · Save',
   parameters: { songframe: timingPageOptions({ editor: 'gaps' }) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -239,10 +239,6 @@ export const ReorderRepeatedChorus: Story = {
     await expect(
       canvas.getAllByRole('button', { name: /^Строка текста/ }).map((button) => button.closest('[data-source-line]')?.getAttribute('data-source-line'))
     ).toEqual(['2', '3', '6', '4']);
-    await userEvent.click(canvas.getByRole('button', { name: editorTexts.sourceOrder }));
-    await expect(
-      canvas.getAllByRole('button', { name: /^Строка текста/ }).map((button) => button.closest('[data-source-line]')?.getAttribute('data-source-line'))
-    ).toEqual(['2', '3', '4', '6']);
   }
 };
 
@@ -1023,6 +1019,56 @@ export const PairPlaybackAndClearing: Story = {
   }
 };
 
+export const ClickOutsideKeepsSelection: Story = {
+  tags: ['ci'],
+  name: 'Клик мимо строк · пара остаётся для «Свести стык здесь» · воспроизведение с плейхеда · Esc снимает выделение',
+  parameters: { songframe: timingPageOptions({ selection: 'gapped-pair' }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const selection = await readySelectionWave(canvasElement);
+    const pairLabel = selectionTexts.pair({ first: 2, second: 3 });
+    await selection.pair();
+    await expect(canvas.getByRole('button', { name: selectionTexts.playSelection })).toBeVisible();
+    // Клик в промежуток пары ставит плейхед, не снимая выделения: стык сводится в этой точке.
+    await selection.click(1);
+    await expect(canvas.getByText(pairLabel)).toBeVisible();
+    await expect(canvas.getByRole('button', { name: selectionTexts.play })).toBeVisible();
+    await userEvent.click(canvas.getByRole('button', { name: selectionTexts.joinAtPlayhead }));
+    await expect(await canvas.findByRole('button', { name: selectionTexts.listenJoin })).toBeVisible();
+    await expect(canvas.getByText(pairLabel)).toBeVisible();
+    // Кнопка воспроизведения играет трек с плейхеда, а не пару с её начала.
+    await userEvent.click(canvas.getByRole('button', { name: selectionTexts.play }));
+    await waitFor(() => expect(selection.audio.paused).toBe(false));
+    await expect(selection.audio.currentTime).toBeGreaterThan(0.9);
+    await userEvent.click(canvas.getByRole('button', { name: selectionTexts.pause }));
+    await waitFor(() => expect(selection.audio.paused).toBe(true));
+    // Повторный выбор строки возвращает воспроизведение выделения, Esc снимает выделение.
+    await selection.click(0.6);
+    await expect(canvas.getByRole('button', { name: selectionTexts.playSelection })).toBeVisible();
+    selection.wave.focus();
+    await userEvent.keyboard('{Escape}');
+    await expect(canvas.getByText(selectionTexts.noSelection)).toBeVisible();
+  }
+};
+
+export const CtrlWheelZoomsInPlace: Story = {
+  tags: ['ci'],
+  name: 'Ctrl+колесо над волной · масштаб без прокрутки страницы',
+  parameters: { songframe: timingPageOptions({ selection: 'joined-pair' }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const selection = await readySelectionWave(canvasElement);
+    const scale = canvas.getByRole('slider', { name: selectionTexts.timelineScale });
+    const before = Number(scale.getAttribute('aria-valuenow'));
+    const { clientX, clientY } = selection.point(1);
+    const event = new WheelEvent('wheel', { deltaY: -100, ctrlKey: true, clientX, clientY, bubbles: true, cancelable: true });
+    selection.wave.dispatchEvent(event);
+    // Отменённое событие не прокручивает страницу: масштаб меняется на месте.
+    await expect(event.defaultPrevented).toBe(true);
+    await waitFor(() => expect(Number(scale.getAttribute('aria-valuenow'))).toBeGreaterThan(before));
+  }
+};
+
 export const SelectionZoomKeepsTime: Story = {
   tags: ['ci'],
   name: 'Выделение и масштаб · время и разметка сохраняются · панель доступна после прокрутки',
@@ -1106,11 +1152,12 @@ export const PairDraftAndSeekRegressions: Story = {
     await userEvent.click(canvas.getByRole('button', { name: selectionTexts.stopLoop }));
     await waitFor(() => expect(audio.paused).toBe(true));
 
-    // Перемотка за выделение снимает ограниченный интервал; последующая пауза сохраняет выбранную позицию.
+    // Клик мимо строк ставит плейхед без снятия пары: звук продолжается с новой позиции, пауза сохраняет её.
     await userEvent.click(canvas.getByRole('button', { name: selectionTexts.playSelection }));
     await waitFor(() => expect(audio.paused).toBe(false));
     await selection.click(4);
     await waitFor(() => expect(audio.currentTime).toBeGreaterThanOrEqual(4));
+    await expect(audio.paused).toBe(false);
     await userEvent.click(canvas.getByRole('button', { name: selectionTexts.pause }));
     await waitFor(() => expect(audio.paused).toBe(true));
     await expect(audio.currentTime).toBeGreaterThanOrEqual(4);

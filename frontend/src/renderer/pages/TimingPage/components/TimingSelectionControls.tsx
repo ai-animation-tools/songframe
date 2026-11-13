@@ -64,10 +64,13 @@ export function TimingSelectionControls({ player, history }: TimingSelectionCont
     setFollow,
     snap,
     setSnap,
-    interactionDisabled
+    interactionDisabled,
+    fromPlayhead
   } = player;
   const selected = selectionKind !== 'none';
-  const playLabel = playing ? texts.pause : selected ? (selectionPreview === 'join' ? texts.playJoin : texts.playSelection) : texts.play;
+  // После клика мимо строк кнопка играет трек с плейхеда, а не выделение: подпись говорит об этом.
+  const playsSelection = selected && !fromPlayhead;
+  const playLabel = playing ? texts.pause : playsSelection ? (selectionPreview === 'join' ? texts.playJoin : texts.playSelection) : texts.play;
   const blockedReason = !trackUrl ? texts.trackRequired : interactionDisabled ? texts.operationPending : null;
   const boundsReason = blockedReason ?? (!selectionBounds ? (selected ? texts.validBoundsRequired : texts.selectionRequired) : null);
   const label = pair
@@ -88,7 +91,7 @@ export function TimingSelectionControls({ player, history }: TimingSelectionCont
           color="primary"
           aria-label={playLabel}
           title={playLabel}
-          disabled={!!blockedReason || (selected && !selectionBounds && !playing)}
+          disabled={!!blockedReason || (playsSelection && !selectionBounds && !playing)}
           disabledReason={blockedReason ?? texts.validBoundsRequired}
           onClick={toggleSelectionPlayback}
           sx={{ border: 1, borderColor: 'divider' }}

@@ -39,7 +39,6 @@ export const timingEditorTexts = {
   next: 'Следующая строка',
   reorder: ({ number }: { number: number }) => `Переместить строку текста ${number}`,
   reorderHint: 'Перетащите за ручку. С клавиатуры: Alt + ↑ / ↓.',
-  sourceOrder: 'Порядок текста',
   orderChanged: 'Порядок строк изменён',
   partial: ({ number }: { number: number }) => `Строка текста ${number}: заполните начало и конец либо очистите оба поля.`,
   invalid: ({ number }: { number: number }) => `Строка текста ${number}: границы должны быть числами.`,

@@ -597,6 +597,8 @@ export function TimingPage(): ReactElement {
         onLoop={player.toggleLoop}
         onRemove={removeLine}
         onOrder={(order) => {
+          // Тот же порядок (строка возвращена на своё место) не создаёт несохранённых правок.
+          if (order.length === lineOrder.length && order.every((number, index) => number === lineOrder[index])) return;
           record();
           setLineOrder(order);
           setDirty(true);

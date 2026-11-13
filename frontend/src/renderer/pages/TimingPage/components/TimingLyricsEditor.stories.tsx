@@ -153,8 +153,6 @@ export const NativeDragAndKeyboard: Story = {
     await expect(numbers()).toEqual(['6', '2', '3', '4']);
     await userEvent.click(canvas.getByRole('button', { name: /^Строка текста 6 / }));
     await expect(canvas.getByRole('textbox', { name: 'Начало строки 6' })).toHaveValue('12');
-    await userEvent.click(canvas.getByRole('button', { name: texts.sourceOrder }));
-    await expect(numbers()).toEqual(['2', '3', '4', '6']);
   }
 };
 export const DraftAndConfirmation: Story = {

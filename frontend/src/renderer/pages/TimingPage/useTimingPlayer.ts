@@ -1,4 +1,4 @@
-import { type MouseEvent, type WheelEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTheme } from '@mui/material';
 import { timingTexts } from '@shared/texts/timing';
 import { resolveTimingSections } from '@shared/timing-sections';
@@ -90,6 +90,9 @@ export function useTimingPlayer({
   const [rangeSelection, setRangeSelection] = useState<(TimingBounds & { key: number }) | null>(null);
   const [selectionError, setSelectionError] = useState<string | null>(null);
   const [selectionPreview, setPreview] = useState<Preview>('selection');
+  // Плейхед поставлен кликом мимо строк: «Воспроизвести» играет трек с него, а выделение остаётся
+  // для «Свести стык здесь» и «Начало/Конец здесь». Сбрасывается любым явным выбором и запуском выделения.
+  const [fromPlayhead, setFromPlayhead] = useState(false);
   const [joinPadding, setPadding] = useState(0.7);
   // Слежение прокручивает волну за плейхедом во время воспроизведения; на звук не влияет.
   const [follow, setFollowState] = useState(() => readFlag(FOLLOW_KEY, true));
@@ -142,6 +145,9 @@ export function useTimingPlayer({
     : timingSelectionBounds(lines, selectionIds, duration);
   const selectionKey = rangeSelection ? `range:${rangeSelection.key}` : [...selectionIds].sort((a, b) => a - b).join(',');
   const selectionRef = useRef({ key: selectionKey, bounds: selectionBounds, pair, padding: joinPadding });
+  useEffect(() => {
+    setFromPlayhead(false);
+  }, [selectionKey]);
   selectionRef.current = { key: selectionKey, bounds: selectionBounds, pair, padding: joinPadding };
   const interactionDisabled = busy || generating || generateOpen;
   const layout = useMemo(() => timingWaveLayout(lines, pps, manualMode), [lines, pps, manualMode]);
@@ -331,6 +337,7 @@ export function useTimingPlayer({
   /** Выделение не меняет документ. Ctrl выбирает пару, Shift задаёт произвольное окно звука. */
   const selectLine = (id: number | null, additive = false): void => {
     if (interactionDisabled) return;
+    setFromPlayhead(false);
     setSelectionError(null);
     if (!additive || id === null) {
       if (selectionKind !== 'line' || selectionIds[0] !== id) stopLine();
@@ -397,7 +404,12 @@ export function useTimingPlayer({
       if (hit.line.verified) return;
       const boundary = hit.mode === 'end' ? hit.line.end : hit.line.start;
       dragRef.current = { id: hit.line.id, mode: hit.mode, offset: t - boundary, original: { ...hit.line }, step: `drag:${++stepSequence.current}` };
-    } else seek(t);
+    } else {
+      // Клик мимо строк ставит плейхед, не снимая выделения: дальше играет трек с плейхеда.
+      // Звук не останавливается: seek снимает границы выделения, и трек играет дальше.
+      if (selectionKind !== 'none') setFromPlayhead(true);
+      seek(t);
+    }
   };
 
   const onMouseMove = (event: MouseEvent): void => {
@@ -457,6 +469,8 @@ export function useTimingPlayer({
 
   const onWheel = (event: WheelEvent): void => {
     if (event.ctrlKey || event.metaKey) {
+      // Масштаб меняется на месте: страница под шкалой не прокручивается.
+      event.preventDefault();
       const t = timeAt(event.clientX);
       const next = Math.max(0.001, Math.min(400, pps * (event.deltaY < 0 ? 1.2 : 1 / 1.2)));
       const container = scrollRef.current!;
@@ -469,6 +483,18 @@ export function useTimingPlayer({
       scrollRef.current!.scrollLeft += event.deltaY;
     }
   };
+
+  // Колесо слушается нативно и не пассивно: обработчик React пассивный, его preventDefault не
+  // срабатывает, и Ctrl+колесо сначала прокручивало страницу, пока шкала не прилипнет к верху.
+  const wheelRef = useRef(onWheel);
+  wheelRef.current = onWheel;
+  useEffect(() => {
+    const handler = (event: WheelEvent): void => {
+      if (scrollRef.current && event.target instanceof Node && scrollRef.current.contains(event.target)) wheelRef.current(event);
+    };
+    document.addEventListener('wheel', handler, { passive: false });
+    return () => document.removeEventListener('wheel', handler);
+  }, []);
 
   const seek = (t: number): void => {
     const audio = audioRef.current;
@@ -532,6 +558,7 @@ export function useTimingPlayer({
       return;
     }
     pausedByUser.current = false;
+    setFromPlayhead(false);
     setPreview(preview);
     const next: Range = { id: selectionIds[0] ?? -1, loop, selection: { key: state.key, preview } };
     rangeRef.current = next;
@@ -545,7 +572,7 @@ export function useTimingPlayer({
     if (interactionDisabled) return;
     const audio = audioRef.current;
     if (!audio) return;
-    if (selectionKind === 'none') {
+    if (selectionKind === 'none' || fromPlayhead) {
       togglePlay();
       return;
     }
@@ -641,7 +668,7 @@ export function useTimingPlayer({
       container.scrollLeft = Math.max(0, x - container.clientWidth * 0.3);
   };
 
-  // Клавиши: пробел, Enter, скобки, стрелки, V. В полях ввода не перехватываются.
+  // Клавиши: пробел, Enter, Esc, скобки, стрелки, V. В полях ввода не перехватываются.
   useEffect(() => {
     const handler = (event: KeyboardEvent): void => {
       const target = event.target as HTMLElement | null;
@@ -663,6 +690,9 @@ export function useTimingPlayer({
       if (event.code === 'Space') {
         event.preventDefault();
         toggleSelectionPlayback();
+      } else if (event.key === 'Escape' && selectionKind !== 'none') {
+        event.preventDefault();
+        selectLine(null);
       } else if (event.key === 'Enter' && (current || selectionKind === 'range')) {
         if (selectionKind === 'pair' || selectionKind === 'range') toggleSelectionPlayback();
         else if (current) toggleSelectionPlayback();
@@ -727,7 +757,8 @@ export function useTimingPlayer({
       playing &&
       (activeRange?.selection?.key === selectionKey ||
         (selectionKind === 'line' && activeRange?.id === selected && !activeRange.selection) ||
-        (selectionKind === 'none' && !activeRange)),
+        ((selectionKind === 'none' || fromPlayhead) && !activeRange)),
+    fromPlayhead,
     selectionLooping: !!activeRange?.selection && activeRange.loop,
     selectionPreview,
     setSelectionPreview,
@@ -776,8 +807,7 @@ export function useTimingPlayer({
     timeAt,
     onMouseDown,
     onMouseMove,
-    onMouseUp,
-    onWheel
+    onMouseUp
   };
 }
 

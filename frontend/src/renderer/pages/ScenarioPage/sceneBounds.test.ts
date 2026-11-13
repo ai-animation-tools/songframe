@@ -110,14 +110,21 @@ describe('recalculateSceneBounds', () => {
         was: 2,
         now: 1,
         cause: notice.boundsCause.trailPause({ seconds: '3.5', line: 1 }),
-        fix: notice.boundsFix.moveEnd({ at: '2.5' }) + notice.boundsFix.neighbourGrows({ title: 'Припев' })
+        // «Припев» без строк вырастет до 9.5 с и разделится на 2 плана вместо 1: совет сразу называет шаг 7 с.
+        fix: notice.boundsFix.moveEnd({ at: '2.5' }) + notice.boundsFix.keepCount({ part: 'Припев', value: '7', count: 1 })
       })
     );
   });
 
   it('часть без строк делится по «Макс. план»', () => {
     expect(problem(source([line(3, 6.1, 11.8)], 3))).toBe(
-      notice.boundsCountChanged({ part: 'Начало', was: 2, now: 1, cause: notice.boundsCause.noLines({ length: '6', max: '3' }), fix: notice.boundsFix.maxShot })
+      notice.boundsCountChanged({
+        part: 'Начало',
+        was: 2,
+        now: 1,
+        cause: notice.boundsCause.noLines({ length: '6', max: '3' }),
+        fix: notice.boundsFix.maxShotValue({ value: '3', count: 2 })
+      })
     );
   });
 
@@ -163,6 +170,29 @@ describe('recalculateSceneBounds', () => {
         to: 'Начало',
         from: 'Припев',
         fix: notice.boundsFix.movePartStart({ part: 'Припев', at: '5.2' })
+      })
+    });
+    // Строка ушла в часть без других строк: после совета та сожмётся до 4.8 с и при шаге 6 с дала бы 1 план вместо 2,
+    // поэтому совет сразу называет её «Макс. план, с».
+    const instrumental = registry([
+      shot('M01', 'S01', 0, 90, 'Инструментал: Начало'),
+      shot('M02', 'S01', 90, 180, 'Инструментал: Начало'),
+      shot('M03', 'S02', 180, 360, 'Два')
+    ]);
+    const intoIntro = registry([
+      shot('M01', 'S01', 0, 90, 'Инструментал: Начало'),
+      shot('M02', 'S01', 90, 180, 'Два'),
+      shot('M03', 'S02', 180, 360, 'Инструментал: Припев')
+    ]);
+    expect(recalculateSceneBounds(instrumental, intoIntro, { ...source([line(2, 4.8, 7)]), lyrics })).toEqual({
+      problem: notice.boundsLineMoved({
+        line: 2,
+        text: 'Два',
+        start: '4.8',
+        end: '7',
+        to: 'Начало',
+        from: 'Припев',
+        fix: notice.boundsFix.movePartStart({ part: 'Припев', at: '4.8' }) + notice.boundsFix.keepCount({ part: 'Начало', value: '2', count: 2 })
       })
     });
     // Подпись плана без строк песни и повторы текста в той же части проверку не задевают.

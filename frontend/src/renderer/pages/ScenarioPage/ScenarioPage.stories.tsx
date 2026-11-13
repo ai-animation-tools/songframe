@@ -167,7 +167,7 @@ export const TabDrafts: Story = {
     await expect(unsavedChip(screen)).not.toBeInTheDocument();
     // Утверждение пары включает трактовку: после её записи пару нужно утвердить заново.
     await screen.findByText(scenarioTexts.workflow.treatmentUnapproved, { exact: true }, { timeout: 3000 });
-    await expect(screen.getByText(scenarioTexts.workflow.scenesNeedReview(['treatment']))).toBeInTheDocument();
+    await expect(screen.getByText(scenarioTexts.workflow.scenesNeedReview(['treatment'], 'pair'))).toBeInTheDocument();
     await userEvent.click(scenesTab(screen));
     await expect(field(screen, scenarioTexts.fields.action).value).toContain('Первая правка. Вторая правка.');
     await expect(unsavedChip(screen)).toBeInTheDocument();

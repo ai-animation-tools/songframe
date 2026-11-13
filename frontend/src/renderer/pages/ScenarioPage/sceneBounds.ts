@@ -29,51 +29,96 @@ const DEFAULT_MAX_SHOT = 6;
 const seconds = (value: number, digits = 2): string => String(Number(value.toFixed(digits)));
 
 /**
- * Причина и совет для части partId, где каркас дал другое число планов. Повторяет нарезку каркаса: в часть попадают
- * строки, середина которых внутри неё; пауза до первой или после последней строки от 2,5 с становится отдельным
- * планом; часть без строк делится по «Макс. план». Если у края пауз нет, причина — сами строки части.
+ * Нарезка каркаса по сохранённым трактовке и разметке, нужная для объяснения отказа: какие строки попадают в часть
+ * (по середине строки на сетке кадров) и на сколько планов каркас делит часть без строк. Повторяет правила
+ * `internal/scenescaffold`; второй шаг каркаса (деление куска длиннее полутора шагов) части без строк не меняет числа
+ * планов, потому что куски и так не длиннее шага с округлением.
  */
-function countCause(partId: string, source: SceneBoundsSource, fps: number): { cause?: string; fix: string } | null {
+function slicing(source: SceneBoundsSource, fps: number) {
   const parts = [...(source.treatment?.sequences ?? [])].sort((a, b) => a.start - b.start);
-  const index = parts.findIndex((part) => part.id === partId);
-  if (index < 0) return null;
-  const part = parts[index];
   const frame = (value: number) => Math.round(value * fps);
   const within = (line: TimingLine, from: number, to: number) => {
     const middle = frame((line.start + line.end) / 2);
     return frame(from) <= middle && middle < frame(to);
   };
-  const hasLines = (from: number, to: number) => source.lines.some((line) => within(line, from, to));
-  const end = parts[index + 1]?.start ?? source.duration ?? part.end;
-  const inside = [...source.lines].sort((a, b) => a.start - b.start).filter((line) => within(line, part.start, end));
+  const lines = [...source.lines].sort((a, b) => a.start - b.start);
+  const step = (index: number) => parts[index].max_shot_seconds ?? DEFAULT_MAX_SHOT;
+  return {
+    parts,
+    frame,
+    end: (index: number) => parts[index + 1]?.start ?? source.duration ?? parts[index].end,
+    inside: (from: number, to: number) => lines.filter((line) => within(line, from, to)),
+    /** Число планов части index без строк на отрезке from–to: длина на сетке кадров, делённая на «Макс. план». */
+    emptyCount: (index: number, from: number, to: number) => Math.max(1, Math.round((frame(to) - frame(from)) / fps / step(index))),
+    length: (from: number, to: number) => (frame(to) - frame(from)) / fps
+  };
+}
+
+/**
+ * «Макс. план, с», при котором часть без строк длиной length делится ровно на count планов: значение строго внутри
+ * интервала length/(count+½)…length/(count−½), чтобы округление каркаса дало count. Берётся целое не меньше 2 (как у
+ * поля трактовки), иначе — десятые. null — подходящего значения нет.
+ */
+function keepStep(length: number, count: number): number | null {
+  const lower = length / (count + 0.5);
+  const upper = count > 1 ? length / (count - 0.5) : Infinity;
+  const whole = Math.max(2, Math.floor(lower) + 1);
+  if (whole < upper) return whole;
+  const tenth = Math.floor(lower * 10 + 1) / 10;
+  return tenth < upper && tenth >= 2 ? tenth : null;
+}
+
+/**
+ * Совет сохранить число планов части index без строк, если её отрезок станет from–to (после сдвига общей границы):
+ * каркас разделит её на другое число планов, чем в реестре (was), и пересчёт снова откажет. Пусто — часть со строками,
+ * число планов не меняется или значения нет.
+ */
+function keepAdvice(cut: ReturnType<typeof slicing>, index: number, from: number, to: number, was: number | undefined): string {
+  const part = cut.parts[index];
+  if (!part || was === undefined || cut.inside(from, to).length || cut.emptyCount(index, from, to) === was) return '';
+  const value = keepStep(cut.length(from, to), was);
+  return value === null ? '' : scenarioTexts.notice.boundsFix.keepCount({ part: part.title || part.id, value: seconds(value, 1), count: was });
+}
+
+/**
+ * Причина и совет для части partId, где каркас дал другое число планов. Повторяет нарезку каркаса: в часть попадают
+ * строки, середина которых внутри неё; пауза до первой или после последней строки от 2,5 с становится отдельным
+ * планом; часть без строк делится по «Макс. план». Если у края пауз нет, причина — сами строки части. Совет называет
+ * конкретное значение «Макс. план, с», когда от него зависит число планов этой или соседней части без строк.
+ */
+function countCause(partId: string, source: SceneBoundsSource, fps: number, was: Map<string, number>): { cause?: string; fix: string } | null {
+  const cut = slicing(source, fps);
+  const index = cut.parts.findIndex((part) => part.id === partId);
+  if (index < 0) return null;
+  const part = cut.parts[index];
+  const end = cut.end(index);
+  const inside = cut.inside(part.start, end);
   const texts = scenarioTexts.notice;
   if (!inside.length) {
+    const value = keepStep(cut.length(part.start, end), was.get(partId) ?? 0);
     return {
       cause: texts.boundsCause.noLines({ length: seconds(end - part.start, 1), max: seconds(part.max_shot_seconds ?? DEFAULT_MAX_SHOT) }),
-      fix: texts.boundsFix.maxShot
+      fix: value === null ? texts.boundsFix.maxShot : texts.boundsFix.maxShotValue({ value: seconds(value, 1), count: was.get(partId) ?? 0 })
     };
   }
   const first = inside[0];
   const last = inside[inside.length - 1];
-  const gap = frame(GAP_SECONDS);
-  if (frame(first.start) - frame(part.start) >= gap) {
+  const gap = cut.frame(GAP_SECONDS);
+  if (cut.frame(first.start) - cut.frame(part.start) >= gap) {
     // Сдвиг начала удлиняет предыдущую часть: без строк она может разделиться на другое число планов.
-    const previous = parts[index - 1];
-    const previousEmpty = previous && !hasLines(previous.start, part.start);
+    const previous = cut.parts[index - 1];
     return {
       cause: texts.boundsCause.leadPause({ seconds: seconds(first.start - part.start, 1), line: first.source_line }),
       fix:
         texts.boundsFix.moveStart({ at: seconds(first.start) }) +
-        (previousEmpty ? texts.boundsFix.neighbourGrows({ title: previous.title || previous.id }) : '')
+        (previous ? keepAdvice(cut, index - 1, previous.start, first.start, was.get(previous.id)) : '')
     };
   }
-  if (frame(end) - frame(last.end) >= gap && index + 1 < parts.length) {
-    const next = parts[index + 1];
-    const nextEnd = parts[index + 2]?.start ?? source.duration ?? next.end;
-    const nextEmpty = !hasLines(next.start, nextEnd);
+  if (cut.frame(end) - cut.frame(last.end) >= gap && index + 1 < cut.parts.length) {
+    const next = cut.parts[index + 1];
     return {
       cause: texts.boundsCause.trailPause({ seconds: seconds(end - last.end, 1), line: last.source_line }),
-      fix: texts.boundsFix.moveEnd({ at: seconds(last.end) }) + (nextEmpty ? texts.boundsFix.neighbourGrows({ title: next.title || next.id }) : '')
+      fix: texts.boundsFix.moveEnd({ at: seconds(last.end) }) + keepAdvice(cut, index + 1, last.end, cut.end(index + 1), was.get(next.id))
     };
   }
   return { cause: texts.boundsCause.lines({ count: inside.length, first: first.source_line, last: last.source_line }), fix: texts.boundsFix.lines };
@@ -136,6 +181,16 @@ function movedLine(current: ScenesFile, scaffold: ScenesFile, source: SceneBound
       if (!line) continue;
       const earlier = order.indexOf(to) < order.indexOf(from);
       const notice = scenarioTexts.notice;
+      // После совета строка вернётся в часть from, а часть to сожмётся до строки: без строк она может разделиться на
+      // другое число планов, и пересчёт отказал бы снова. Значение «Макс. план, с» для неё называется сразу.
+      const cut = slicing(source, scaffold.fps);
+      const toIndex = cut.parts.findIndex((part) => part.id === to);
+      const keep =
+        toIndex < 0
+          ? ''
+          : earlier
+            ? keepAdvice(cut, toIndex, cut.parts[toIndex].start, line.start, partCounts(current.scenes).get(to))
+            : keepAdvice(cut, toIndex, line.end, cut.end(toIndex), partCounts(current.scenes).get(to));
       return notice.boundsLineMoved({
         line: line.source_line,
         text,
@@ -143,9 +198,10 @@ function movedLine(current: ScenesFile, scaffold: ScenesFile, source: SceneBound
         end: seconds(line.end),
         to: title(to),
         from: title(from),
-        fix: earlier
-          ? notice.boundsFix.movePartStart({ part: title(from), at: seconds(line.start) })
-          : notice.boundsFix.movePartEnd({ part: title(from), at: seconds(line.end) })
+        fix:
+          (earlier
+            ? notice.boundsFix.movePartStart({ part: title(from), at: seconds(line.start) })
+            : notice.boundsFix.movePartEnd({ part: title(from), at: seconds(line.end) })) + keep
       });
     }
   }
@@ -175,7 +231,7 @@ export function recalculateSceneBounds(current: ScenesFile, scaffold: ScenesFile
     const differing = sameParts ? [...parts].find((part) => was.get(part) !== now.get(part)) : undefined;
     if (!differing) return { problem: scenarioTexts.notice.boundsPartsChanged };
     const title = scaffold.sequences.find((sequence) => sequence.id === differing)?.title || differing;
-    const explained = countCause(differing, source, scaffold.fps) ?? { fix: scenarioTexts.notice.boundsFix.lines };
+    const explained = countCause(differing, source, scaffold.fps, was) ?? { fix: scenarioTexts.notice.boundsFix.lines };
     return {
       problem: scenarioTexts.notice.boundsCountChanged({ part: title, was: was.get(differing) ?? 0, now: now.get(differing) ?? 0, ...explained })
     };

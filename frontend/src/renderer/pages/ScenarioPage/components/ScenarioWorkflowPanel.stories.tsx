@@ -191,16 +191,18 @@ export const ManualApproval: Story = {
   parameters: { songframe: scenarioWorkflowOptions('manual') },
   play: async (context) => {
     const screen = await ready(context);
-    // Предупреждение называет фактическую причину и держится до утверждения сценария; пока пара не утверждена, кнопки утверждения сценария нет и шаг не называется.
-    const warning = scenarioTexts.workflow.scenesNeedReview(['timing']);
+    // Предупреждение называет фактическую причину и держится до утверждения сценария. Правка разметки сняла и утверждение
+    // пары: предупреждение называет оба шага по порядку — пару, затем сценарий.
+    const warning = scenarioTexts.workflow.scenesNeedReview(['timing'], 'pair');
     await expect(screen.getByText(warning)).toBeVisible();
     await expect(warning).toContain('разметка песни');
+    await expect(warning).toContain(`«${scenarioTexts.workflow.approveTreatment}», затем «${scenarioTexts.workflow.approveScenes}»`);
     await expect(screen.getByRole('button', { name: scenarioTexts.workflow.createScenes })).toBeDisabled();
     await userEvent.click(screen.getByRole('button', { name: scenarioTexts.workflow.approveTreatment }));
     await waitFor(() => expect(screen.getByRole('button', { name: scenarioTexts.workflow.approveScenes })).toBeEnabled());
     await expect(screen.getByTestId('scenario-counts')).toHaveTextContent('Согласований: 1.');
     // Кнопка утверждения доступна: предупреждение называет шаг, который его снимает.
-    const withApprove = scenarioTexts.workflow.scenesNeedReview(['timing'], true);
+    const withApprove = scenarioTexts.workflow.scenesNeedReview(['timing'], 'scenes');
     await expect(withApprove).toContain(`«${scenarioTexts.workflow.approveScenes}»`);
     await expect(screen.getByText(withApprove)).toBeVisible();
     await userEvent.click(screen.getByRole('button', { name: scenarioTexts.workflow.approveScenes }));

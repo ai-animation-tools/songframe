@@ -5,8 +5,9 @@ import type { ScenarioInput } from '../scenario-workflow';
 /** Подпись поля длины плана части трактовки: на неё ссылаются и советы при отказе пересчёта границ. */
 const maxShotLabel = 'Макс. план, с';
 
-/** Кнопка утверждения текущего реестра: на неё ссылается и предупреждение о пересмотре сценария. */
+/** Кнопки утверждения пары и реестра: на них ссылается и предупреждение о пересмотре сценария. */
 const approveScenesLabel = 'Утвердить текущий сценарий';
+const approveTreatmentLabel = 'Утвердить текущие кастинг и трактовку';
 
 /** Входы утверждения в предупреждении о пересмотре сценария. */
 const scenarioInputLabels: Record<ScenarioInput, string> = {
@@ -362,11 +363,17 @@ export const scenarioTexts = {
     treatmentUnapproved: 'Кастинг и трактовка не утверждены',
     description: 'Агент готовит предложение. Сначала просмотрите сравнение, затем отдельно примените результат. Ручные редакторы доступны без агента.',
     /**
-     * Предупреждение о пересмотре сценария называет изменившиеся входы; без них — прежняя общая причина. canApprove —
-     * кнопка утверждения доступна: тогда предупреждение называет последний шаг, который его снимает.
+     * Предупреждение о пересмотре сценария называет изменившиеся входы; без них — прежняя общая причина. next —
+     * доступное сейчас действие, которое снимает предупреждение: «scenes» — утвердить сценарий; «pair» — сначала
+     * утвердить пару (правка разметки, кастинга или трактовки снимает и её утверждение), затем сценарий.
      */
-    scenesNeedReview: (changed: readonly ScenarioInput[], canApprove = false): string => {
-      const approve = canApprove ? ` Когда планы проверены и реестр сохранён, нажмите «${approveScenesLabel}»: предупреждение исчезнет.` : '';
+    scenesNeedReview: (changed: readonly ScenarioInput[], next: 'scenes' | 'pair' | null = null): string => {
+      const approve =
+        next === 'scenes'
+          ? ` Когда планы проверены и реестр сохранён, нажмите «${approveScenesLabel}»: предупреждение исчезнет.`
+          : next === 'pair'
+            ? ` Когда планы проверены и реестр сохранён, нажмите «${approveTreatmentLabel}», затем «${approveScenesLabel}»: предупреждение исчезнет.`
+            : '';
       if (!changed.length) return `Кастинг или трактовка изменились. Существующий сценарий требует пересмотра.${approve}`;
       const list = changed.map((input) => scenarioInputLabels[input]).join(', ');
       const bounds = changed.includes('timing')
@@ -384,7 +391,7 @@ export const scenarioTexts = {
     approveTreatmentReason: 'Сначала утвердите текущие кастинг и трактовку.',
     selectShot: 'Выберите план в реестре планов.',
     fixRegistry: 'Сначала исправьте ошибки реестра планов.',
-    approveTreatment: 'Утвердить текущие кастинг и трактовку',
+    approveTreatment: approveTreatmentLabel,
     approveScenes: approveScenesLabel,
     refreshStatus: 'Обновить статус',
     collapseProblems: 'Свернуть',
@@ -518,8 +525,11 @@ export const scenarioTexts = {
       movePartStart: ({ part, at }: { part: string; at: string }) => `сдвиньте начало части «${part}» к ${at} с`,
       movePartEnd: ({ part, at }: { part: string; at: string }) => `сдвиньте конец части «${part}» к ${at} с`,
       maxShot: `поправьте «${maxShotLabel}» части`,
-      lines: 'сверьте границы части с её строками на странице «Тайминги»',
-      neighbourGrows: ({ title }: { title: string }) => ` (часть «${title}» без строк станет длиннее — проверьте её «${maxShotLabel}»)`
+      maxShotValue: ({ value, count }: { value: string; count: number }) =>
+        `поставьте части «${maxShotLabel}» ${value}, чтобы планов в ней было ${count}, как в реестре`,
+      keepCount: ({ part, value, count }: { part: string; value: string; count: number }) =>
+        `, а части «${part}» поставьте «${maxShotLabel}» ${value}, чтобы планов в ней было ${count}, как в реестре`,
+      lines: 'сверьте границы части с её строками на странице «Тайминги»'
     },
     boundsPartsChanged: 'Части трактовки не совпадают с реестром планов: пересчитать только границы нельзя. Пересоберите каркас на вкладке «Трактовка».',
     scenesSavedKeep: 'Реестр планов сохранён без нового производства',

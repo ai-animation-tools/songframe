@@ -3,7 +3,6 @@ import { commonTexts } from '@shared/texts/common';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { DestructiveButton } from '../../../components/DestructiveButton';
-import RefreshIcon from '@mui/icons-material/Refresh';
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { Alert, Button, Chip, Paper, Stack, Typography } from '@mui/material';
 import { ActionButton } from '../../../components/ActionButton';
@@ -22,6 +21,7 @@ export function ScenarioWorkflowPanel({
   project,
   workflow,
   selected,
+  registryOpen,
   treatmentDirty,
   scenesDirty,
   editorBusy,
@@ -31,6 +31,8 @@ export function ScenarioWorkflowPanel({
   project: string;
   workflow: ReturnType<typeof useScenarioWorkflow>;
   selected: string | null;
+  /** Открыт реестр планов: только там выбирается план, который дорабатывает агент. */
+  registryOpen: boolean;
   treatmentDirty: boolean;
   scenesDirty: boolean;
   editorBusy: boolean;
@@ -198,21 +200,23 @@ export function ScenarioWorkflowPanel({
             >
               {scenarioTexts.workflow.createScenes}
             </AgentButton>
-            <AgentButton
-              variant="outlined"
-              disabled={disabled || !view?.canRevise || !selected}
-              disabledReason={
-                busyReason ??
-                (!view?.treatmentApproved
-                  ? scenarioTexts.workflow.approveTreatmentReason
-                  : !selected
-                    ? scenarioTexts.workflow.selectShot
-                    : scenarioTexts.workflow.fixRegistry)
-              }
-              onClick={() => begin('revise')}
-            >
-              {scenarioTexts.revise.title}
-            </AgentButton>
+            {registryOpen && (
+              <AgentButton
+                variant="outlined"
+                disabled={disabled || !view?.canRevise || !selected}
+                disabledReason={
+                  busyReason ??
+                  (!view?.treatmentApproved
+                    ? scenarioTexts.workflow.approveTreatmentReason
+                    : !selected
+                      ? scenarioTexts.workflow.selectShot
+                      : scenarioTexts.workflow.fixRegistry)
+                }
+                onClick={() => begin('revise')}
+              >
+                {scenarioTexts.revise.title}
+              </AgentButton>
+            )}
           </Stack>
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
             {view?.canApproveCurrent && (
@@ -225,9 +229,6 @@ export function ScenarioWorkflowPanel({
                 {scenarioTexts.workflow.approveScenes}
               </ActionButton>
             )}
-            <ActionButton startIcon={<RefreshIcon />} disabled={disabled} disabledReason={operationReason} onClick={() => guard(workflow.refresh)}>
-              {scenarioTexts.workflow.refreshStatus}
-            </ActionButton>
           </Stack>
         </Stack>
         <ScenarioDraftConflictDialog

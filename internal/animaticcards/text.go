@@ -48,10 +48,14 @@ func fits(f *face, text string, width int) bool {
 	return f.length(text) <= width*64
 }
 
-// wrapped — жадный перенос по словам. Слово шире поля — AssertionError с самим словом: текст,
-// который нельзя разбить, не рисуется.
-func wrapped(f *face, text string, width int) ([]string, error) {
-	lines := []string{""}
+// minPoint — наименьший кегль текстового поля карточки.
+const minPoint = 16
+
+// wrapped — жадный перенос по словам. Слово шире поля переносом не разбить: без cut раскладка
+// при этом кегле не удалась (ok = false, нужен кегль меньше), с cut слово обрезается по буквам
+// с «…» (cutWord). Карточка — иллюстрация плана: длинная подпись не должна мешать её построению.
+func wrapped(f *face, text string, width int, cut bool) (lines []string, ok bool) {
+	lines = []string{""}
 	for _, word := range splitWords(text) {
 		candidate := toolrt.Strip(lines[len(lines)-1] + " " + word)
 		if fits(f, candidate, width) {
@@ -59,11 +63,30 @@ func wrapped(f *face, text string, width int) ([]string, error) {
 			continue
 		}
 		if !fits(f, word, width) {
-			return nil, toolrt.New("AssertionError", word)
+			if !cut {
+				return nil, false
+			}
+			word = cutWord(f, word, width)
+			// Обрезанное первое слово занимает первую строку, а не оставляет её пустой.
+			if lines[len(lines)-1] == "" {
+				lines[len(lines)-1] = word
+				continue
+			}
 		}
 		lines = append(lines, word)
 	}
-	return lines, nil
+	return lines, true
+}
+
+// cutWord — самое длинное начало слова с «…», которое помещается в ширину (может остаться одно «…»).
+func cutWord(f *face, word string, width int) string {
+	letters := []rune(word)
+	for count := len(letters) - 1; count > 0; count-- {
+		if candidate := string(letters[:count]) + "…"; fits(f, candidate, width) {
+			return candidate
+		}
+	}
+	return "…"
 }
 
 // shortened — первые count строк; последняя завершается «…», слова с конца убираются, пока
@@ -78,36 +101,30 @@ func shortened(f *face, lines []string, width, count int) []string {
 	return kept
 }
 
-// layoutTextBox — раскладка textBox без рисования: кегль от size вниз до 16, пока строки с
-// интерлиньяжем point+7 не войдут по высоте; если не вошли и при 16 — сокращение многоточием
-// до height/23 строк с округлением вниз (не меньше одной). Возвращает кегль, строки и шрифт для рисования.
+// layoutTextBox — раскладка textBox без рисования: кегль от size вниз до 16, пока все слова не
+// войдут по ширине, а строки с интерлиньяжем point+7 — по высоте. Если не вошли и при 16, слова
+// шире поля обрезаются многоточием, а строки сокращаются многоточием до height/23 (не меньше
+// одной). Текст поля никогда не делает карточку ошибочной. Возвращает кегль, строки и шрифт.
 func layoutTextBox(text string, width, height, size int, isBold bool) (int, []string, *face, error) {
-	var (
-		f       *face
-		lines   []string
-		leading int
-		point   int
-		err     error
-	)
-	for point = size; point > 15; point-- {
-		if f, err = newFace(isBold, point); err != nil {
+	for point := size; point > minPoint; point-- {
+		f, err := newFace(isBold, point)
+		if err != nil {
 			return 0, nil, nil, err
 		}
-		if lines, err = wrapped(f, text, width); err != nil {
-			return 0, nil, nil, err
-		}
-		leading = point + 7
-		if len(lines)*leading <= height {
+		if lines, ok := wrapped(f, text, width, false); ok && len(lines)*(point+7) <= height {
 			return point, lines, f, nil
 		}
 	}
-	// Если ни один кегль не подошёл, point остаётся последним значением диапазона (16).
-	point++
-	count := height / leading
-	if count < 1 {
-		count = 1
+	f, err := newFace(isBold, minPoint)
+	if err != nil {
+		return 0, nil, nil, err
 	}
-	return point, shortened(f, lines, width, count), f, nil
+	lines, _ := wrapped(f, text, width, true)
+	if len(lines)*(minPoint+7) <= height {
+		return minPoint, lines, f, nil
+	}
+	count := max(1, height/(minPoint+7))
+	return minPoint, shortened(f, lines, width, count), f, nil
 }
 
 // textBox рисует текстовое поле с подбором кегля и возвращает

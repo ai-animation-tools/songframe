@@ -446,7 +446,7 @@ function SavedScenarioSnapshot({ model }: { model: ScenarioModel }) {
   );
 }
 
-function ScenarioPanelContent({ model }: { model: ScenarioModel }) {
+function ScenarioPanelContent({ model, registryOpen }: { model: ScenarioModel; registryOpen: boolean }) {
   const onApplied = useCallback(
     async (_pass: ScenarioPass) => {
       model.callbacks++;
@@ -460,6 +460,7 @@ function ScenarioPanelContent({ model }: { model: ScenarioModel }) {
       project={SCENARIO_STORY_PROJECT}
       workflow={workflow}
       selected="M01"
+      registryOpen={registryOpen}
       treatmentDirty={model.dirty}
       scenesDirty={model.dirty}
       editorBusy={false}
@@ -474,12 +475,13 @@ function ScenarioPanelContent({ model }: { model: ScenarioModel }) {
   );
 }
 
-export function ScenarioWorkflowStory() {
+/** registryOpen — открыт реестр планов; на вкладке трактовки доработки выбранного плана нет. */
+export function ScenarioWorkflowStory({ registryOpen = true }: { registryOpen?: boolean }) {
   const model = useModel();
   const [epoch, setEpoch] = useState(0);
   return (
     <Stack spacing={2}>
-      <ScenarioPanelContent key={epoch} model={model} />
+      <ScenarioPanelContent key={epoch} model={model} registryOpen={registryOpen} />
       <Typography data-testid="scenario-counts">
         Запусков: {model.starts}. Применений: {model.applies}. Отклонений: {model.discards}. Согласований: {model.approvals}. Обновлений редакторов:{' '}
         {model.callbacks}.

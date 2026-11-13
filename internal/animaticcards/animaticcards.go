@@ -71,7 +71,8 @@ type cardResult struct {
 //
 // Ошибки — исключения toolrt с типом и текстом, зафиксированными эталоном: KeyError
 // отсутствующего поля, TypeError/AttributeError неверного типа, FileNotFoundError и
-// нераспознанный формат референса (unidentifiedImage), AssertionError слова шире поля.
+// нераспознанный формат референса (unidentifiedImage). Длина текстов к ошибкам не приводит:
+// не поместившееся сокращается многоточием (layoutTextBox).
 func RenderCard(shot, project, references *toolrt.Dict, root string) ([]byte, error) {
 	c, _, err := renderCard(shot, project, references, root, nil)
 	if err != nil {

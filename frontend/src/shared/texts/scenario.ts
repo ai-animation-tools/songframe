@@ -393,7 +393,6 @@ export const scenarioTexts = {
     fixRegistry: 'Сначала исправьте ошибки реестра планов.',
     approveTreatment: approveTreatmentLabel,
     approveScenes: approveScenesLabel,
-    refreshStatus: 'Обновить статус',
     collapseProblems: 'Свернуть',
     showAllProblems: ({ count }: { count: number }) => `Показать все (${count})`,
     scenesApproved: 'Сценарий утверждён'

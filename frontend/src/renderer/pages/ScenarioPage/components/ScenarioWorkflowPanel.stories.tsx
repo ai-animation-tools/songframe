@@ -96,6 +96,17 @@ export const Ready: Story = {
     await expect(screen.getByRole('button', { name: scenarioTexts.workflow.approveScenes })).toBeEnabled();
   }
 };
+export const TreatmentTab: Story = {
+  name: 'Вкладка трактовки · без доработки выбранного плана',
+  args: { registryOpen: false },
+  play: async (context) => {
+    const screen = await ready(context);
+    // План выбирается только в реестре; статус обновляет опрос, отдельной кнопки нет.
+    await expect(screen.queryByRole('button', { name: scenarioTexts.revise.title })).not.toBeInTheDocument();
+    await expect(screen.queryByRole('button', { name: 'Обновить статус' })).not.toBeInTheDocument();
+    await expect(screen.getByRole('button', { name: scenarioTexts.workflow.createScenes })).toBeInTheDocument();
+  }
+};
 export const SequentialPasses: Story = {
   name: 'Трактовка → сценарий · второй проход сохраняет новую пару',
   parameters: { songframe: scenarioWorkflowOptions('ready') },
@@ -166,7 +177,10 @@ export const ApplyFailure: Story = {
     await preview(context);
     await confirmApply(context);
     const dialog = within(screen.getByRole('dialog', { name: /Предложение для сценария/ }));
-    await expect(await dialog.findByText(SCENARIO_APPLY_FAILURE)).toBeVisible();
+    const failure = await dialog.findByText(SCENARIO_APPLY_FAILURE);
+    await expect(failure).toBeVisible();
+    // Ошибка стоит над кнопками вне прокручиваемого сравнения: её видно при любой прокрутке.
+    await expect(failure.closest('.MuiDialogContent-root')).toBeNull();
     await expect(screen.getByTestId('scenario-saved')).toHaveTextContent('Герой возвращается к старым воротам.');
     await expect(screen.getByTestId('scenario-counts')).toHaveTextContent('Обновлений редакторов: 0.');
     await confirmApply(context);

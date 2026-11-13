@@ -91,7 +91,6 @@ export function useScenarioWorkflow(project: string, onApplied: (pass: ScenarioP
     error: error ?? pollError,
     pending,
     busy: pending || !!view?.busy,
-    refresh: () => execute(() => window.api.scenarioWorkflow.view(project)),
     start: (pass: ScenarioPass, note?: string, selectedIds?: string[]) =>
       execute(() => window.api.scenarioWorkflow.start({ project, pass, note, selectedIds })),
     approve: () => execute(() => window.api.scenarioWorkflow.approveCurrent(project), undefined, scenarioTexts.workflow.treatmentApproved),

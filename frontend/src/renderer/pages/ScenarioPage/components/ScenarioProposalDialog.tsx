@@ -63,7 +63,6 @@ export function ScenarioProposalDialog({
             <Typography fontWeight={600}>{scenarioTexts.proposal.agentTitle({ pass: PASS_LABELS[proposal.pass] })}</Typography>
           </Stack>
           <Alert severity="info">{scenarioTexts.proposal.notApplied}</Alert>
-          {error && <Alert severity="error">{error}</Alert>}
           {proposal.stale && <Alert severity="warning">{scenarioTexts.proposal.sourcesChanged}</Alert>}
           {proposal.warnings.map((warning) => (
             <Alert key={warning} severity="warning">
@@ -96,6 +95,14 @@ export function ScenarioProposalDialog({
           )}
         </Stack>
       </DialogContent>
+      {/* Ошибка применения — над кнопками, вне прокрутки: сравнение длинное, и вверху её не видно. */}
+      {error ? (
+        <Box sx={{ px: 3, pt: 2 }}>
+          <Alert severity="error" sx={{ maxHeight: 160, overflowY: 'auto' }}>
+            {error}
+          </Alert>
+        </Box>
+      ) : null}
       {/* Порядок как в подтверждениях: закрытие без действия слева, применение последним справа. */}
       <DialogActions sx={{ gap: 1, flexWrap: 'wrap' }}>
         <ActionButton startIcon={<CancelOutlinedIcon />} disabled={busy} disabledReason={commonTexts.operationPending} onClick={onClose}>

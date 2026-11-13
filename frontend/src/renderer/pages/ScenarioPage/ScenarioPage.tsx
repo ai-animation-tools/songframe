@@ -114,6 +114,7 @@ export function ScenarioPage(): ReactElement {
         project={scenario.project}
         workflow={workflow}
         selected={selected}
+        registryOpen={tab !== 'treatment'}
         treatmentDirty={treatmentDirty}
         scenesDirty={scenesDirty}
         editorBusy={busy}

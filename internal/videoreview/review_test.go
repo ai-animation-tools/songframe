@@ -22,7 +22,7 @@ import (
 )
 
 // promptDigest — закреплённый SHA-256 встроенного скилла проверки видео.
-const promptDigest = "e9e9f75bd43d04c8e7e8897619932492ca23e4f45ebea655036bb9792574f884"
+const promptDigest = "c0e4dcc0a3b561ebd15aa5ca2e604598b106d812d69a6fa86828a7726da47833"
 
 // TestPromptDigest фиксирует байты промпта: правка встроенного SKILL.md меняет вход агента и
 // должна быть осознанной.

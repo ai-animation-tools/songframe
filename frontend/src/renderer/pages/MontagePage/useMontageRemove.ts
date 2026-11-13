@@ -39,13 +39,7 @@ export function useMontageRemove({ project, clip, locked, blocked, onRemove }: O
         event.target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="combobox"], [role="slider"]')
       )
         return;
-      // MUI выводит диалоги и меню через portal: проверяем весь документ, а не только предков цели события.
-      if (
-        Array.from(document.querySelectorAll('[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]')).some(
-          (element) => !element.closest('[aria-hidden="true"], [hidden]')
-        )
-      )
-        return;
+      if (overlayOpen()) return;
       event.preventDefault();
       request();
     };
@@ -62,4 +56,16 @@ export function useMontageRemove({ project, clip, locked, blocked, onRemove }: O
       if (target) onRemove(target.id);
     }
   };
+}
+
+/**
+ * Открыт ли диалог, меню или список поверх страницы: тогда клавиши страницы (Delete, Ctrl+Z) не
+ * действуют. MUI выводит их через portal, поэтому проверяется весь документ. Скрытые не считаются:
+ * панель «Материалы сцен» остаётся смонтированной и закрытой (aria-hidden), иначе она навсегда
+ * отключала бы клавиши страницы.
+ */
+export function overlayOpen(): boolean {
+  return Array.from(document.querySelectorAll('[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]')).some(
+    (element) => !element.closest('[aria-hidden="true"], [hidden]')
+  );
 }

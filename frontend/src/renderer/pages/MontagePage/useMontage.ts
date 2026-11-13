@@ -4,6 +4,7 @@ import type { MontageApi, MontageDraft, MontageSource, MontageView } from '@shar
 import type { JobInfo } from '@shared/types';
 import { useApp } from '../../state';
 import { addClip, clipLength, historyReducer, initialDraft, montageLength, sourceClip } from './model';
+import { overlayOpen } from './useMontageRemove';
 
 const EMPTY: MontageDraft = {
   schema_version: 1,
@@ -241,16 +242,13 @@ export function useMontage(project: string, shots: string[], preferred: Record<s
     if (view?.scenarioStatus !== 'ready') return;
     const handler = (event: KeyboardEvent): void => {
       if (event.defaultPrevented || applyOpen || busy || !(event.ctrlKey || event.metaKey) || event.altKey) return;
-      if (document.querySelector('[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]')) return;
+      if (overlayOpen()) return;
       if ((event.target as HTMLElement)?.closest('input, textarea, select, [contenteditable="true"]')) return;
-      if (event.key.toLowerCase() === 'z') {
-        event.preventDefault();
-        dispatch({ type: event.shiftKey ? 'redo' : 'undo' });
-      }
-      if (event.key.toLowerCase() === 'y') {
-        event.preventDefault();
-        dispatch({ type: 'redo' });
-      }
+      // Физическая клавиша, а не символ: в русской раскладке Ctrl+Z приходит как «я», Ctrl+Y — как «н».
+      const redo = event.code === 'KeyY' || (event.code === 'KeyZ' && event.shiftKey);
+      if (event.code !== 'KeyZ' && !redo) return;
+      event.preventDefault();
+      dispatch({ type: redo ? 'redo' : 'undo' });
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);

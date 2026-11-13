@@ -113,6 +113,30 @@ export const StatusRefreshKeepsDraft: Story = {
     await expect(canvas.getByText(montageTexts.unsavedChanges)).toBeInTheDocument();
   }
 };
+/** Ctrl+Z в русской раскладке: символ «я», физическая клавиша KeyZ. */
+function pressHistoryKey(code: 'KeyZ' | 'KeyY', key: string, shiftKey = false): void {
+  document.body.dispatchEvent(new KeyboardEvent('keydown', { code, key, ctrlKey: true, shiftKey, bubbles: true, cancelable: true }));
+}
+export const HistoryKeysAnyLayout: Story = {
+  name: 'Отмена и повтор · Ctrl+Z, Ctrl+Shift+Z и Ctrl+Y работают и в русской раскладке',
+  tags: ['ci'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const name = await canvas.findByRole('textbox', { name: montageTexts.draftName });
+    await userEvent.clear(name);
+    await userEvent.type(name, 'Проба с отменой');
+    await userEvent.tab();
+    (document.activeElement as HTMLElement | null)?.blur();
+    pressHistoryKey('KeyZ', 'я');
+    await waitFor(() => expect(canvas.getByRole('textbox', { name: montageTexts.draftName })).toHaveValue(montageTexts.defaultName));
+    pressHistoryKey('KeyY', 'н');
+    await waitFor(() => expect(canvas.getByRole('textbox', { name: montageTexts.draftName })).toHaveValue('Проба с отменой'));
+    pressHistoryKey('KeyZ', 'я');
+    await waitFor(() => expect(canvas.getByRole('textbox', { name: montageTexts.draftName })).toHaveValue(montageTexts.defaultName));
+    pressHistoryKey('KeyZ', 'Я', true);
+    await waitFor(() => expect(canvas.getByRole('textbox', { name: montageTexts.draftName })).toHaveValue('Проба с отменой'));
+  }
+};
 export const DiscardWarning: Story = {
   name: 'Несохранённая проба · предупреждение перед переоткрытием материалов',
   tags: ['ci'],

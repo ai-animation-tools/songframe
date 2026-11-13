@@ -10,7 +10,7 @@ wails3 task package:windows
 
 Нужны Go/Wails CLI 3.0.0 и frontend-зависимости проекта, Docker с существующим `wails-cross:latest` (Go 1.26+, Zig cc с MinGW ABI), `makensis`, `7z`, `objdump` и curl. Образ сборщика фиксируется в receipt. Веса и runtime моделей в образ не устанавливаются. Используются локальные Go modules и отдельные build/zig caches; read-only Docker config при необходимости задаётся через `DOCKER_CONFIG`.
 
-[package-windows.sh](../../scripts/package-windows.sh) заново собирает frontend, создаёт временный PE syso с иконкой/отдельным app ID/asInvoker/DPI, собирает основной exe с **CGO_ENABLED=1** и Windows GUI subsystem, затем NSIS. Ресурс удаляется trap. Версия — из `packaging/VERSION`, числовой PE version — её основной номер плюс четвёртая часть.
+[package-windows.sh](../../scripts/package-windows.sh) заново собирает frontend, создаёт временный PE syso с иконкой/отдельным app ID/asInvoker/DPI, собирает основной exe с **CGO_ENABLED=1** и Windows GUI subsystem, затем NSIS. Ресурс удаляется trap. Версия — из `packaging/VERSION`, числовой PE version — `X.Y.Z.0` из её номера без суффикса.
 
 Для Zig передаётся `-extldflags=-Wl,--subsystem,windows` вместе с Go `-H windowsgui`. Одного Go-флага в проверенном toolchain оказалось недостаточно: предварительный PE оставался консольным. Проверка заголовка не позволяет такому exe попасть в комплект. Чужая обёртка компилятора не используется.
 

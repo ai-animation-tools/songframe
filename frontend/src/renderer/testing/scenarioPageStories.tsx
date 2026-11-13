@@ -54,6 +54,17 @@ export interface ScenarioPageOptions {
   gappedTiming?: boolean;
   /** Кастинг получил референс после сохранения реестра: карта references устарела, обновит её только запись реестра. */
   referencesStale?: boolean;
+  /**
+   * Новая разметка сдвинула первую строку второй части (строка 3) с 8 на 10.6 с, а граница части осталась 8: пауза
+   * 2.6 с стала в каркасе отдельным планом, и «Пересчитать границы» отказывает с причиной.
+   */
+  leadPause?: boolean;
+  /**
+   * Новая разметка сдвинула строку 3 «Скрипит знакомая калитка» на 7–8.8 с: её середина раньше границы частей (8 с),
+   * поэтому каркас отдаёт строку плану M02 первой части, а M03 становится инструменталом. Число планов то же, но
+   * «Пересчитать границы» отказывает: строка ушла бы в чужой план.
+   */
+  lineMoved?: boolean;
 }
 
 /** Секции карты для gappedTiming: промежутки короче порога разметки и перекрытие последних двух частей. */
@@ -89,6 +100,8 @@ function storyTreatmentProblems(treatment: TreatmentFile, duration: number | nul
 }
 
 const SHOT_SECONDS = 4;
+/** Начало строки 3 в разметке истории с паузой перед первой строкой второй части (leadPause). */
+const LEAD_PAUSE_LINE_START = 10.6;
 const LONG_SHOT_SECONDS = 3;
 const LONG_COUNT = 40;
 
@@ -427,7 +440,9 @@ export function scenarioPageOptions({
   links = ['M02', 'M05'],
   failScenesSaveOnce = false,
   gappedTiming = false,
-  referencesStale = false
+  referencesStale = false,
+  leadPause = false,
+  lineMoved = false
 }: ScenarioPageOptions = {}): StoryOptions {
   const state: AppState = {
     packaged: false,
@@ -448,6 +463,10 @@ export function scenarioPageOptions({
       const produced = new Set(variant === 'produced' ? ['M01', 'M02'] : []);
       const saved = pageView(variant, gappedTiming);
       if (referencesStale) Object.assign(saved, { referencesStale: true, problems: [scenarioTexts.main.referencesRefresh] });
+      const pausedLine = leadPause ? saved.timing?.lines.find((line) => line.source_line === 3) : undefined;
+      if (pausedLine) pausedLine.start = LEAD_PAUSE_LINE_START;
+      const movedLine = lineMoved ? saved.timing?.lines.find((line) => line.source_line === 3) : undefined;
+      if (movedLine) Object.assign(movedLine, { start: 7, end: 8.8 });
       const approved = variant !== 'noRegistry' && variant !== 'noTreatment';
       const workflow: ScenarioWorkflowView = {
         project: SCENARIO_PAGE_PROJECT,
@@ -598,6 +617,18 @@ export function scenarioPageOptions({
               const shifted = structuredClone(model.saved.scenes);
               shifted.scenes.forEach((shot) => Object.assign(shot, { camera: 'ЗАПОЛНИТЬ', action: 'ЗАПОЛНИТЬ' }));
               shifted.scenes[0].end_frame_exclusive = shifted.scenes[1].start_frame = SHOT_SECONDS * DEFAULT_FPS + DEFAULT_FPS / 2;
+              if (lineMoved) {
+                // Строка M03 по середине уже в первой части: её текст переходит в последний план первой части.
+                shifted.scenes[1].original = `${shifted.scenes[1].original} / ${shifted.scenes[2].original}`;
+                shifted.scenes[2].original = `Инструментал: ${shifted.sequences[1].title}`;
+              }
+              if (leadPause) {
+                // Пауза перед сдвинутой строкой 3 — отдельный план в начале второй части; коды следующих планов сдвигаются.
+                const split = Math.round(LEAD_PAUSE_LINE_START * DEFAULT_FPS);
+                const third = shifted.scenes[2];
+                shifted.scenes.splice(2, 1, { ...third, end_frame_exclusive: split }, { ...third, start_frame: split });
+                shifted.scenes.forEach((shot, index) => Object.assign(shot, { id: id(index) }));
+              }
               // Сохранённое не меняется: публикация только обновляет счётчик построений в панели модели.
               model.publish();
               return { code: 0, stdout: JSON.stringify(shifted), stderr: '', command: `scene_scaffold ${args.join(' ')}` };

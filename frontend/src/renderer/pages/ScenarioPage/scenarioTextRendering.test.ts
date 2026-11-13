@@ -62,8 +62,8 @@ describe('Видимые тексты и границы JSX сценария', (
   it.each([
     [false, false, 'Изменены: .'],
     [true, false, 'Изменены: трактовка.'],
-    [false, true, 'Изменены: реестр сцен.'],
-    [true, true, 'Изменены: трактовка, реестр сцен.']
+    [false, true, 'Изменены: реестр планов.'],
+    [true, true, 'Изменены: трактовка, реестр планов.']
   ])('сохраняет целую JSX-фразу конфликта черновиков %s / %s', (treatmentDirty, scenesDirty, expected) => {
     const dialog = ScenarioDraftConflictDialog({ open: true, treatmentDirty, scenesDirty, busy: false, onResolve: noop, onClose: noop });
     const props = dialog.props as { children: ReactElement; title: string; confirmLabel: string; cancelLabel: string };
@@ -81,7 +81,7 @@ describe('Видимые тексты и границы JSX сценария', (
       'ТрактовкаЛоглайнбез измененийПолеСейчас в проектеПредложениеО чём клип——'
     );
     expect(text(render(createElement(ScenarioScenesComparison, { before: null, after: null, selectedIds: [], changedIds: [] })))).toBe(
-      'Реестр сценОбщие правила и шкалабез измененийПолеСейчас в проектеПредложениеВизуальные правила——Части——Референсы——Аудио——Частота кадров——'
+      'Реестр плановОбщие правила и шкалабез измененийПолеСейчас в проектеПредложениеВизуальные правила——Части——Референсы——Аудио——Частота кадров——'
     );
   });
 

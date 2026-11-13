@@ -2,7 +2,7 @@
 // и трактовки, реестра сцен или доработки выбранных планов, хранение предложения вне проекта,
 // его разбор и проверка, утверждения пары и сцен и применение одной транзакцией.
 //
-// Владение: локальная запись (state.go) и множество «готовится» принадлежат Workflow; задания
+// Владение: запись прохода (state.go) и множество «готовится» принадлежат Workflow; задания
 // агента — менеджеру агентов (интерфейс Agents); файлы проекта меняются только публикацией
 // (publish.go) через журнал scenarioapply.Store. Отказ агента, недопустимый ответ или отмена
 // ничего не пишут в проект.
@@ -74,7 +74,7 @@ type View struct {
 
 // Options — зависимости Workflow.
 type Options struct {
-	// LocalDir — каталог состояния приложения (локальные записи и журнал применения).
+	// LocalDir — каталог состояния приложения: журнал применения предложения на время записи.
 	LocalDir string
 	// Agents — менеджер внешних агентов; обязателен: без него сценарный проход не создаётся.
 	Agents Agents
@@ -88,7 +88,7 @@ type Options struct {
 }
 
 // Workflow — сценарный проход проектов. Методы безопасны для конкурентного вызова из сервиса
-// Wails: mu защищает локальные записи и множество preparing; подготовка каркаса и публикация идут
+// Wails: mu защищает записи прохода и множество preparing; подготовка каркаса и публикация идут
 // без блокировки, а вид в это время сообщает busy.
 type Workflow struct {
 	options   Options
@@ -214,7 +214,7 @@ func (w *Workflow) refresh(input *inputs, state *dynvalue.Object) (*AgentJob, er
 			proposal.Set("message", err.Error())
 		}
 	}
-	if err := writeState(w.options.LocalDir, input.project, state); err != nil {
+	if err := writeState(input.project, state); err != nil {
 		return nil, err
 	}
 	return job, nil
@@ -293,7 +293,7 @@ func (w *Workflow) view(project string) (View, *inputs, error) {
 	if err != nil {
 		return View{}, nil, err
 	}
-	state := readState(w.options.LocalDir, input.project)
+	state := readState(input.project)
 	job, err := w.refresh(input, state)
 	if err != nil {
 		return View{}, nil, err
@@ -341,7 +341,7 @@ func (w *Workflow) view(project string) (View, *inputs, error) {
 	return view, input, nil
 }
 
-// proposalView — DTO предложения из локальной записи.
+// proposalView — DTO предложения из записи прохода.
 func proposalView(proposal *dynvalue.Object) *Proposal {
 	message, _ := proposal.Value("message").(string)
 	stale, _ := proposal.Value("stale").(bool)
@@ -495,9 +495,9 @@ func (w *Workflow) start(input StartInput) (string, error) {
 	stored.Set("expectedHashes", initial.hashes.object())
 	stored.Set("scaffold", scaffold)
 	stored.Set("duration", *initial.duration)
-	state := readState(w.options.LocalDir, initial.project)
+	state := readState(initial.project)
 	state.Set("pending", stored)
-	return initial.project, writeState(w.options.LocalDir, initial.project, state)
+	return initial.project, writeState(initial.project, state)
 }
 
 // agentContext — контекст задания: JSON без отступов; байты входят в хеш задания и эталоны.
@@ -591,7 +591,7 @@ func (w *Workflow) apply(project, id string) (string, error) {
 		w.mu.Unlock()
 		return "", err
 	}
-	state := readState(w.options.LocalDir, view.Project)
+	state := readState(view.Project)
 	stored, proposal := pendingProposal(state)
 	if view.Busy || proposal == nil || !dynvalue.StrictEqual(proposal.Value("id"), id) || !dynvalue.StrictEqual(proposal.Value("status"), "ready") ||
 		(view.Proposal != nil && view.Proposal.Stale) {
@@ -669,7 +669,7 @@ func (w *Workflow) apply(project, id string) (string, error) {
 	}
 	proposal.Set("status", "applied")
 	proposal.Set("after", after.object())
-	return view.Project, writeState(w.options.LocalDir, view.Project, state)
+	return view.Project, writeState(view.Project, state)
 }
 
 // markScenesReview — новое утверждение пары при существующем сценарии: сцены требуют пересмотра,
@@ -723,12 +723,12 @@ func (w *Workflow) ApproveCurrent(project string) (View, error) {
 	if err != nil {
 		return View{}, err
 	}
-	state := readState(w.options.LocalDir, view.Project)
+	state := readState(view.Project)
 	if approval, ok := dynvalue.AsObject(state.Value("approval")); input.documents.Scenes != nil && ok && !hashesFrom(approval).matches(input.approval) {
 		markScenesReview(state, input.approval, hashesFrom(approval))
 	}
 	state.Set("approval", input.approval.object())
-	if err := writeState(w.options.LocalDir, view.Project, state); err != nil {
+	if err := writeState(view.Project, state); err != nil {
 		return View{}, err
 	}
 	view, _, err = w.view(view.Project)
@@ -751,17 +751,17 @@ func (w *Workflow) ApproveScenes(project string) (View, error) {
 	if err != nil {
 		return View{}, err
 	}
-	state := readState(w.options.LocalDir, view.Project)
+	state := readState(view.Project)
 	state.Set("scenesApproval", scenesApproval(input))
 	clearScenesReview(state)
-	if err := writeState(w.options.LocalDir, view.Project, state); err != nil {
+	if err := writeState(view.Project, state); err != nil {
 		return View{}, err
 	}
 	view, _, err = w.view(view.Project)
 	return view, err
 }
 
-// Discard — scenarioWorkflow.discard: удаление ожидающего предложения из локальной записи.
+// Discard — scenarioWorkflow.discard: удаление ожидающего предложения из записи прохода.
 func (w *Workflow) Discard(project, id string) (View, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -769,12 +769,12 @@ func (w *Workflow) Discard(project, id string) (View, error) {
 	if err != nil {
 		return View{}, err
 	}
-	state := readState(w.options.LocalDir, input.project)
+	state := readState(input.project)
 	if _, proposal := pendingProposal(state); proposal == nil || !dynvalue.StrictEqual(proposal.Value("id"), id) {
 		return View{}, errors.New(textProposalMissing)
 	}
 	state.Delete("pending")
-	if err := writeState(w.options.LocalDir, input.project, state); err != nil {
+	if err := writeState(input.project, state); err != nil {
 		return View{}, err
 	}
 	view, _, err := w.view(input.project)

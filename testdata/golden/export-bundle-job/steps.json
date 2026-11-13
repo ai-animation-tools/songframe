@@ -372,7 +372,7 @@
         }
       },
       "remove": "<tmp>/project/plan/batches/pack",
-      "error": "Нельзя удалить рабочий пакет сцены как пакет для монтажёра.",
+      "error": "Нельзя удалить рабочий пакет плана как пакет для монтажёра.",
       "exists": {
         "<tmp>/project/plan/batches/pack": true
       }
@@ -386,7 +386,7 @@
         }
       },
       "remove": "<tmp>/project/plan/batches/pack2",
-      "error": "Нельзя удалить рабочий пакет сцены как пакет для монтажёра.",
+      "error": "Нельзя удалить рабочий пакет плана как пакет для монтажёра.",
       "exists": {
         "<tmp>/project/plan/batches/pack2": true
       }

@@ -165,8 +165,8 @@ func TestAgentRefusalStoresNothing(t *testing.T) {
 	if _, err := workflow.Start(StartInput{Project: project, Pass: "treatment"}); err == nil || err.Error() != "Проект занят другим заданием." {
 		t.Fatalf("отказ менеджера: %v", err)
 	}
-	if _, err := os.Stat(statePath(localDir, project)); !os.IsNotExist(err) {
-		t.Fatalf("после отказа появилась локальная запись: %v", err)
+	if _, err := os.Stat(statePath(project)); !os.IsNotExist(err) {
+		t.Fatalf("после отказа появилась запись сценарного прохода: %v", err)
 	}
 	access := errors.New("Выберите агента в настройках.")
 	workflow = New(Options{LocalDir: localDir, Agents: &fakeAgents{}, RequireAgentAccess: func(string) error { return access }})
@@ -351,14 +351,11 @@ func TestBusyWhilePreparing(t *testing.T) {
 	}
 }
 
-// TestCorruptStateIgnored — повреждённая локальная запись не даёт утверждения и не мешает виду.
+// TestCorruptStateIgnored — повреждённая запись сценарного прохода не даёт утверждения и не мешает виду.
 func TestCorruptStateIgnored(t *testing.T) {
 	project := sampleProject(t)
 	localDir := t.TempDir()
-	path := statePath(localDir, project)
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		t.Fatal(err)
-	}
+	path := statePath(project)
 	for _, text := range []string{"{", `{"schemaVersion":1,"approval":{"/abs":null}}`, `{"schemaVersion":1,"pending":{"duration":0}}`} {
 		if err := os.WriteFile(path, []byte(text), 0o600); err != nil {
 			t.Fatal(err)
@@ -413,4 +410,43 @@ func TestChangedInputs(t *testing.T) {
 	check("ещё одно утверждение пары", view, err, true, "timing", "cast")
 	view, err = workflow.ApproveScenes(project)
 	check("утверждение сцен", view, err, false)
+}
+
+// TestApprovalTravelsWithProject — утверждение лежит в папке проекта: копия папки в другом месте с
+// пустым каталогом состояния (другой компьютер, переименование) видит ту же пару утверждённой, а
+// возврат разметки к утверждённым байтам (откат через Git) снимает пересмотр.
+func TestApprovalTravelsWithProject(t *testing.T) {
+	project := sampleProject(t)
+	if _, err := New(Options{LocalDir: t.TempDir(), Agents: &fakeAgents{}}).ApproveCurrent(project); err != nil {
+		t.Fatal(err)
+	}
+	copied, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.CopyFS(copied, os.DirFS(project)); err != nil {
+		t.Fatal(err)
+	}
+	workflow := New(Options{LocalDir: t.TempDir(), Agents: &fakeAgents{}})
+	view, err := workflow.View(copied)
+	if err != nil || !view.TreatmentApproved || view.CanApproveCurrent {
+		t.Fatalf("копия проекта: %v %+v", err, view)
+	}
+	timing := filepath.Join(copied, "plan", "audio", "timing.json")
+	original, err := os.ReadFile(timing)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(timing, append(append([]byte{}, original...), '\n'), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if view, err = workflow.View(copied); err != nil || view.TreatmentApproved {
+		t.Fatalf("правка разметки после утверждения: %v %+v", err, view)
+	}
+	if err := os.WriteFile(timing, original, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if view, err = workflow.View(copied); err != nil || !view.TreatmentApproved {
+		t.Fatalf("возврат разметки: %v %+v", err, view)
+	}
 }

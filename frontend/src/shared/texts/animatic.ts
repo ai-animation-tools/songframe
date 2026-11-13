@@ -7,7 +7,7 @@ export const animaticTexts = {
   main: {
     videoMissing: ({ filename }: { filename: string | null | undefined }) =>
       `MP4 сборки не найден: ${filename ?? 'имя не записано'}. Соберите аниматик заново.`,
-    registryChanged: 'Реестр сцен изменился после сборки: аниматик устарел, нужна пересборка.',
+    registryChanged: 'Реестр планов изменился после сборки: аниматик устарел, нужна пересборка.',
     manifestCorrupt: 'plan/animatic/latest/manifest.json повреждён.',
     updateViewsStep: commonTexts.runtime.updateViewsStep,
     checkInputsStep: 'проверка входов',

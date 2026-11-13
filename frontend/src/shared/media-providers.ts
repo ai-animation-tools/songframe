@@ -144,7 +144,7 @@ export const MEDIA_PROVIDERS: Record<MediaProviderId, MediaProviderInfo> = {
       imageCount: 'Сколько вариантов получить',
       image_count: 'Сколько вариантов получить',
       enable_audio: 'Звук от сервиса',
-      prefer_multi_shots: 'Несколько сцен в одном видео',
+      prefer_multi_shots: 'Несколько планов в одном видео',
       quality: 'Качество'
     }
     /* eslint-enable no-restricted-syntax */

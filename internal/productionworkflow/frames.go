@@ -221,8 +221,9 @@ func CheckImportImages(images []FrameCandidate, validate func(string) bool) erro
 // ImportFrames вместе с проверкой входа: свои изображения для
 // любых неутверждённых опор пакета (утверждённую сначала возвращают на доработку) становятся
 // готовым предложением опор без задания агента. Кандидаты — в порядке плана, без повторов, по
-// абсолютным путям; запоминаются SHA-256 их байтов, изменение файла делает предложение устаревшим.
-// Файлы пакета не меняются: кандидатов регистрирует Apply.
+// абсолютным путям. Выбранные файлы копируются в папку предложений проекта (Store.pinCandidates):
+// предложение ссылается на копии и запоминает SHA-256 их байтов, изменение копии делает его
+// устаревшим. Файлы пакета не меняются: кандидатов регистрирует Apply.
 func (w *Workflow) ImportFrames(project, shot, packageDir string, images []FrameCandidate) (View, error) {
 	if err := CheckImportImages(images, w.options.ValidateImage); err != nil {
 		return View{}, err
@@ -250,18 +251,14 @@ func (w *Workflow) ImportFrames(project, shot, packageDir string, images []Frame
 	if err != nil {
 		return View{}, err
 	}
-	imageHashes := dynvalue.NewObject()
-	for _, image := range checked {
-		hash, err := requiredFileDigest(image.Path)
-		if err != nil {
-			return View{}, err
-		}
-		imageHashes.Set(image.Path, hash)
+	pinned, imageHashes, err := w.store.pinCandidates(c.Project, shot, checked)
+	if err != nil {
+		return View{}, err
 	}
 	after := dynvalue.NewObject()
 	after.Set("schemaVersion", float64(1))
 	after.Set("stage", "frames")
-	after.Set("images", candidatesTree(checked))
+	after.Set("images", candidatesTree(pinned))
 	proposal := proposalTree(randomUUID(), "", "frames", keyframesBefore(c))
 	proposal.Set("status", "ready")
 	proposal.Set("after", after)

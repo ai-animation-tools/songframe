@@ -37,8 +37,8 @@ const (
 	timingLinesMissing  = "plan/audio/timing.json не содержит строк разметки."
 	damagedCast         = "plan/cast.json повреждён."
 	damagedTreatment    = "plan/treatment.json повреждён или пуст."
-	damagedScenes       = "plan/scenes.json повреждён или не содержит сцен."
-	animaticNotBuilt    = "Все сцены приняты, но полный аниматик ещё не собран."
+	damagedScenes       = "plan/scenes.json повреждён или не содержит планов."
+	animaticNotBuilt    = "Все планы приняты, но полный аниматик ещё не собран."
 	staleAnimatic       = "Аниматик собран по устаревшему реестру или входам: нужна пересборка."
 	animaticNotApproved = "Аниматик собран, но не принят в plan/production-status.json."
 )
@@ -50,7 +50,7 @@ func derivedShotsNeedReview(ids []string) string {
 	return "Не подтверждена актуальность производных планов: " + strings.Join(ids, ", ") + ". Проверьте версию источника и приёмку этих планов."
 }
 func orphanKits(ids []string) string {
-	return "Комплекты без сцены в реестре: " + strings.Join(ids, ", ") + "."
+	return "Комплекты без плана в реестре: " + strings.Join(ids, ", ") + "."
 }
 
 // Checks — признаки, из которых выведено состояние; показываются на странице проекта.

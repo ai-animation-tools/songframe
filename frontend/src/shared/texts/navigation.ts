@@ -9,7 +9,7 @@ export const navigationTexts = {
     cast: 'Кастинг',
     scenario: 'Сценарий',
     production: 'Производство',
-    scenes: 'Сцены',
+    scenes: 'Планы',
     montage: 'Монтаж пробы',
     checks: 'Проверки',
     animatic: 'Аниматик',

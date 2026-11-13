@@ -63,3 +63,17 @@ export function partsFromSections(sections: TimingSection[], duration: number | 
     };
   });
 }
+
+/**
+ * Правка одной части трактовки с сохранением стыка: части идут встык, поэтому новое начало части становится и концом
+ * предыдущей, а новый конец — началом следующей. Соседи берутся по порядку в списке: в нём части показаны и в нём их
+ * строят «Части из разметки». Начало первой части и конец последней соседей не имеют и меняются только сами.
+ */
+export function patchTreatmentPart(sequences: TreatmentSequence[], index: number, patch: Partial<TreatmentSequence>): TreatmentSequence[] {
+  return sequences.map((part, position) => {
+    if (position === index) return { ...part, ...patch };
+    if (patch.start !== undefined && position === index - 1) return { ...part, end: patch.start };
+    if (patch.end !== undefined && position === index + 1) return { ...part, start: patch.end };
+    return part;
+  });
+}

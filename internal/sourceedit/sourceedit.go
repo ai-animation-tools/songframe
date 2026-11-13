@@ -132,7 +132,7 @@ type View struct {
 
 // Тексты sourcesTexts.main (frontend/src/shared/texts/sources.ts).
 const (
-	kindReserved          = "Тип world зарезервирован для общих условий сцены."
+	kindReserved          = "Тип world зарезервирован для общих условий планов."
 	unnamedReference      = "(без имени)"
 	trackLabel            = "Трек"
 	lyricsLabel           = "Текст песни"

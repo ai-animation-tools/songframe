@@ -24,7 +24,7 @@ import (
 // предложение устаревшим.
 
 // hashes — путь файла проекта → SHA-256 (nil — файла нет). Порядок ключей — порядок добавления
-// путей: он сохраняется в локальной записи и зафиксирован эталонами.
+// путей: он сохраняется в записи прохода и зафиксирован эталонами.
 type hashes struct {
 	keys   []string
 	values map[string]*string
@@ -130,7 +130,7 @@ func mergeCategories(lists ...[]string) []string {
 	return orderedCategories(found)
 }
 
-// hashesFrom — снимок из проверенной локальной записи (checkHashes).
+// hashesFrom — снимок из проверенной записи прохода (checkHashes).
 func hashesFrom(value any) *hashes {
 	result := newHashes()
 	record, _ := dynvalue.AsObject(value)

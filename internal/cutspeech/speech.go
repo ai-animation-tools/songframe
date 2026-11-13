@@ -56,7 +56,7 @@ func speechLines(root, shot string) (speech, error) {
 		}
 	}
 	if scene == nil {
-		return speech{}, toolrt.New(toolrt.ValueError, shot+": план отсутствует в реестре сцен.")
+		return speech{}, toolrt.New(toolrt.ValueError, shot+": план отсутствует в реестре планов.")
 	}
 	var window [2]float64
 	for index, key := range []string{"start_frame", "end_frame_exclusive"} {

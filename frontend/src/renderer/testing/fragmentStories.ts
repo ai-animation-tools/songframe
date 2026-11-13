@@ -8,7 +8,7 @@ import type { JobInfo } from '@shared/types';
 import { deliveryJob } from './deliveryStories';
 import { storyFileUrl, STORY_VIDEO_PATH } from './storybook';
 
-export const FRAGMENT_FAILURE = 'Карточки устарели; обновите представления реестра сцен.';
+export const FRAGMENT_FAILURE = 'Карточки устарели; обновите представления реестра планов.';
 
 export interface FragmentModel {
   calls: { from: string; to: string }[];

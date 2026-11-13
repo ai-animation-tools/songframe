@@ -23,8 +23,8 @@ describe('unsavedDraftsReason', () => {
   });
 
   it('называет каждый несохранённый черновик', () => {
-    expect(unsavedDraftsReason(false, true)).toContain('реестр сцен');
+    expect(unsavedDraftsReason(false, true)).toContain('реестр планов');
     expect(unsavedDraftsReason(true, false)).toContain('трактовку');
-    expect(unsavedDraftsReason(true, true)).toContain('трактовку и реестр сцен');
+    expect(unsavedDraftsReason(true, true)).toContain('трактовку и реестр планов');
   });
 });

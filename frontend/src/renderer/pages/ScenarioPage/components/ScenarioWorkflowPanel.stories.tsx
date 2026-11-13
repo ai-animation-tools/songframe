@@ -191,7 +191,7 @@ export const ManualApproval: Story = {
   parameters: { songframe: scenarioWorkflowOptions('manual') },
   play: async (context) => {
     const screen = await ready(context);
-    // Предупреждение называет фактическую причину и держится до утверждения сценария.
+    // Предупреждение называет фактическую причину и держится до утверждения сценария; пока пара не утверждена, кнопки утверждения сценария нет и шаг не называется.
     const warning = scenarioTexts.workflow.scenesNeedReview(['timing']);
     await expect(screen.getByText(warning)).toBeVisible();
     await expect(warning).toContain('разметка песни');
@@ -199,10 +199,13 @@ export const ManualApproval: Story = {
     await userEvent.click(screen.getByRole('button', { name: scenarioTexts.workflow.approveTreatment }));
     await waitFor(() => expect(screen.getByRole('button', { name: scenarioTexts.workflow.approveScenes })).toBeEnabled());
     await expect(screen.getByTestId('scenario-counts')).toHaveTextContent('Согласований: 1.');
-    await expect(screen.getByText(warning)).toBeVisible();
+    // Кнопка утверждения доступна: предупреждение называет шаг, который его снимает.
+    const withApprove = scenarioTexts.workflow.scenesNeedReview(['timing'], true);
+    await expect(withApprove).toContain(`«${scenarioTexts.workflow.approveScenes}»`);
+    await expect(screen.getByText(withApprove)).toBeVisible();
     await userEvent.click(screen.getByRole('button', { name: scenarioTexts.workflow.approveScenes }));
     await waitFor(() => expect(screen.queryByRole('button', { name: scenarioTexts.workflow.approveScenes })).not.toBeInTheDocument());
-    await expect(screen.queryByText(warning)).not.toBeInTheDocument();
+    await expect(screen.queryByText(withApprove)).not.toBeInTheDocument();
     await expect(screen.getByTestId('scenario-counts')).toHaveTextContent('Согласований: 2. Обновлений редакторов: 0.');
     await expect(screen.getByTestId('scenario-counts')).toHaveTextContent('Запусков: 0. Применений: 0.');
   }

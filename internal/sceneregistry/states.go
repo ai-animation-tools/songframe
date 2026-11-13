@@ -208,7 +208,7 @@ func SceneState(data any, sid string, initial *toolrt.Dict) (*toolrt.Dict, error
 	}
 	state, ok := states.Get(sid)
 	if !ok {
-		return nil, valueError("%s: сцена отсутствует в реестре.", sid)
+		return nil, valueError("%s: план отсутствует в реестре.", sid)
 	}
 	return toolrt.DeepCopy(state).(*toolrt.Dict), nil
 }

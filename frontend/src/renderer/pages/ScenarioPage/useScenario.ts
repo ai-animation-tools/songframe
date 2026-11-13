@@ -7,7 +7,7 @@ import { useApp } from '../../state';
 import { KEEP_NOTHING_REASON, type ScenarioBrief, type ScenarioTab, type ScenesSaveRequest, type ShotReveal, type OpenShotState } from './types';
 import { scenesSavedView, workflowUpdatedView } from './workflowDrafts';
 import { requestedShot } from './shotNavigation';
-import { partsFromSections } from './treatmentParts';
+import { partsFromSections, patchTreatmentPart } from './treatmentParts';
 import { recalculateSceneBounds } from './sceneBounds';
 import { SHOT_PARAM } from '../../components/shotRoutes';
 
@@ -225,7 +225,7 @@ export function useScenario() {
     setTreatment({ schema_version: 1, logline: treatment?.logline ?? '', sequences: partsFromSections(view.timing.sections, view.duration) });
   };
   const updatePart = (index: number, patch: Partial<TreatmentSequence>): void =>
-    setTreatment((t) => t && { ...t, sequences: t.sequences.map((s, i) => (i === index ? { ...s, ...patch } : s)) });
+    setTreatment((t) => t && { ...t, sequences: patchTreatmentPart(t.sequences, index, patch) });
   const saveTreatment = async (): Promise<void> => {
     if (!treatment) return;
     setBusy(true);
@@ -276,7 +276,12 @@ export function useScenario() {
     try {
       const result = await window.api.tools.run(project, 'scene_scaffold', ['--dry-run', '--json']);
       if (result.code !== 0) throw new Error((result.stderr || result.stdout).trim().split('\n').slice(-2).join(' '));
-      const outcome = recalculateSceneBounds(scenes, JSON.parse(result.stdout) as ScenesFile);
+      const outcome = recalculateSceneBounds(scenes, JSON.parse(result.stdout) as ScenesFile, {
+        treatment: view?.treatment ?? null,
+        lines: view?.timing?.lines ?? [],
+        lyrics: view?.lyrics ?? [],
+        duration: view?.duration ?? null
+      });
       if ('problem' in outcome) notify(outcome.problem, 'warning');
       else if (outcome.scenes === scenes) notify(scenarioTexts.notice.boundsUnchanged, 'info');
       else {

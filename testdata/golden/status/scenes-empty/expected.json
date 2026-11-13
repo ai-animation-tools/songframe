@@ -18,6 +18,6 @@
     "animaticApproved": false
   },
   "problems": [
-    "plan/scenes.json повреждён или не содержит сцен."
+    "plan/scenes.json повреждён или не содержит планов."
   ]
 }

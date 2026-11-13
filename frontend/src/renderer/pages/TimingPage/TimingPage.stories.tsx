@@ -52,6 +52,8 @@ export const Regular: Story = {
     const list = within(within(canvasElement).getByRole('region', { name: editorTexts.list }));
     await expect(list.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)).toEqual(['Куплет', 'Финал без вокала']);
     await expect(canvasElement.querySelector('[data-section="Финал без вокала"]')).toHaveTextContent(/до конца трека.* – 30\.00 · /);
+    // Подпись считает те же секции, что видны заголовками, и не обещает ручных секций.
+    await expect(within(canvasElement).getByText(timingTexts.sectionsHelp({ count: 2 }))).toBeInTheDocument();
   }
 };
 

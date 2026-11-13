@@ -3,8 +3,8 @@
  * оставляют короткие промежутки и перекрываются.
  */
 import { describe, expect, it } from 'vitest';
-import type { TimingSection } from '@shared/types';
-import { partsFromSections } from './treatmentParts';
+import type { TimingSection, TreatmentSequence } from '@shared/types';
+import { partsFromSections, patchTreatmentPart } from './treatmentParts';
 
 const bounds = (sections: TimingSection[], duration: number | null) => partsFromSections(sections, duration).map(({ id, start, end }) => ({ id, start, end }));
 
@@ -63,5 +63,42 @@ describe('partsFromSections', () => {
 
   it('пустая карта даёт пустой список частей', () => {
     expect(partsFromSections([], 30)).toEqual([]);
+  });
+});
+
+describe('patchTreatmentPart', () => {
+  const parts: TreatmentSequence[] = [
+    { id: 'intro', title: 'Вступление', direction: '', start: 0, end: 10, entities: [] },
+    { id: 'verse', title: 'Куплет', direction: '', start: 10, end: 40, entities: [] },
+    { id: 'final', title: 'Финал', direction: '', start: 40, end: 60, entities: [] }
+  ];
+  const edges = (list: TreatmentSequence[]) => list.map(({ start, end }) => [start, end]);
+
+  it('начало части двигает конец предыдущей, конец — начало следующей', () => {
+    expect(edges(patchTreatmentPart(parts, 1, { start: 12.5 }))).toEqual([
+      [0, 12.5],
+      [12.5, 40],
+      [40, 60]
+    ]);
+    expect(edges(patchTreatmentPart(parts, 1, { end: 38 }))).toEqual([
+      [0, 10],
+      [10, 38],
+      [38, 60]
+    ]);
+  });
+
+  it('начало первой и конец последней части меняются без соседей, прочие поля не трогают границ', () => {
+    expect(edges(patchTreatmentPart(parts, 0, { start: 1 }))).toEqual([
+      [1, 10],
+      [10, 40],
+      [40, 60]
+    ]);
+    expect(edges(patchTreatmentPart(parts, 2, { end: 61 }))).toEqual([
+      [0, 10],
+      [10, 40],
+      [40, 61]
+    ]);
+    expect(patchTreatmentPart(parts, 1, { title: 'Куплет 1' })[1].title).toBe('Куплет 1');
+    expect(edges(patchTreatmentPart(parts, 1, { title: 'Куплет 1' }))).toEqual(edges(parts));
   });
 });

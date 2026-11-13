@@ -46,9 +46,9 @@ func waiter(t *testing.T, manager *jobs.Manager) func(jobs.Info, error) jobs.Inf
 func TestListMatchesGolden(t *testing.T) {
 	list := checks.List()
 	want := []struct{ id, label, tool string }{
-		{"lint", "Данные сцен", "lint_registry"},
+		{"lint", "Данные планов", "lint_registry"},
 		{"views", "Карточки и списки", "update_scene_views"},
-		{"assets", "Комплекты сцен", "check_assets"},
+		{"assets", "Комплекты планов", "check_assets"},
 		{"workspace", "Порядок в папке проекта", "check_workspace"},
 		{"status", "Статусы планов", "shot_status"},
 	}
@@ -79,7 +79,7 @@ func TestRunAllJournal(t *testing.T) {
 
 	finish := waiter(t, manager)
 	done := finish(service.RunAll(project, checks.Options{}))
-	wantLog := "\n$ Данные сцен \n" + lint + "\n$ Карточки и списки --check\n" + views + "\n$ Комплекты сцен \n" + assets + "\n$ Порядок в папке проекта \n" + workspace + "\n$ Статусы планов \n" + status
+	wantLog := "\n$ Данные планов \n" + lint + "\n$ Карточки и списки --check\n" + views + "\n$ Комплекты планов \n" + assets + "\n$ Порядок в папке проекта \n" + workspace + "\n$ Статусы планов \n" + status
 	if done.Status != jobs.StatusDone || done.Title != "Все проверки" || done.Kind != jobs.KindCheck || done.Log != wantLog {
 		t.Fatalf("задание %+v\n--- журнал\n%s", done, done.Log)
 	}
@@ -91,7 +91,7 @@ func TestRunAllJournal(t *testing.T) {
 	if done.Status != jobs.StatusFailed || done.Code == nil || *done.Code != 1 || done.Error == nil || *done.Error != strings.TrimSpace(lint) {
 		t.Fatalf("strict: %+v", done)
 	}
-	if !strings.HasPrefix(done.Log, "\n$ Данные сцен --strict\n"+lint+"\nШаг «Данные сцен» завершился с кодом 1.\n") ||
+	if !strings.HasPrefix(done.Log, "\n$ Данные планов --strict\n"+lint+"\nШаг «Данные планов» завершился с кодом 1.\n") ||
 		!strings.HasSuffix(done.Log, "\n$ Статусы планов --next\n"+next) {
 		t.Fatalf("журнал strict:\n%s", done.Log)
 	}

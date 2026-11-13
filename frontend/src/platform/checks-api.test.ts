@@ -55,12 +55,12 @@ const job = {
   finishedAt: null,
   log: '',
   code: null,
-  steps: [{ label: 'Данные сцен', tool: 'lint_registry', status: 'pending', code: null }]
+  steps: [{ label: 'Данные планов', tool: 'lint_registry', status: 'pending', code: null }]
 };
 
 describe('window.api.checks', () => {
   it('list возвращает CHECKS Go', async () => {
-    const list: CheckInfo[] = [{ id: 'lint', label: 'Данные сцен', description: 'Проверить формат', tool: 'lint_registry', needsScenes: true }];
+    const list: CheckInfo[] = [{ id: 'lint', label: 'Данные планов', description: 'Проверить формат', tool: 'lint_registry', needsScenes: true }];
     const api = createApi(bindings({ List: async () => list }));
     await expect(api.checks.list()).resolves.toEqual(list);
   });

@@ -25,7 +25,7 @@ var sha256Pattern = regexp.MustCompile(`^[a-f0-9]{64}$`)
 // будущей странице аниматика.
 const (
 	scenarioRequired     = "Сначала нужен сценарий. Создайте его на странице «Сценарий»."
-	registryChanged      = "Реестр сцен изменился после сборки: аниматик устарел, нужна пересборка."
+	registryChanged      = "Реестр планов изменился после сборки: аниматик устарел, нужна пересборка."
 	manifestCorrupt      = "plan/animatic/latest/manifest.json повреждён."
 	projectInputsMissing = "В манифесте аниматика отсутствует обязательное поле project_inputs; пересоберите аниматик."
 	projectInputsChanged = "Значимые поля plan/project.json изменены или snapshot project_inputs повреждён; нужна пересборка аниматика."

@@ -21,6 +21,6 @@ export const generationTexts = {
   durationRules: {
     min_supported_strictly_greater_than_window: 'Ближайшая поддерживаемая длительность строго больше окна',
     min_supported_not_less_than_window: 'Ближайшая поддерживаемая длительность не меньше окна',
-    exact_window: 'Ровно окно сцены'
+    exact_window: 'Ровно окно плана'
   }
 } as const;

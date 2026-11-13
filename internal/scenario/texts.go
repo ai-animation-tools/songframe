@@ -15,7 +15,7 @@ const (
 	textBriefTitleBefore        = "Состояние на первый кадр"
 	textBriefTitleAfter         = "Состояние на последний кадр"
 	textBriefChecklistTitle     = "Проверить по кадру:"
-	textBriefStateUnsetSentence = ": в кастинге нет начального состояния, а в сценах нет изменений."
+	textBriefStateUnsetSentence = ": в кастинге нет начального состояния, а в планах нет изменений."
 )
 
 func textDamagedDocument(label string) string { return label + " повреждён." }
@@ -70,7 +70,7 @@ func textRegistryRequiresScenes(fps float64) string {
 	if fps != 0 {
 		rate = dynvalue.ToString(fps)
 	}
-	return "Реестр: нужны schema_version 1, fps " + rate + " и хотя бы одна сцена."
+	return "Реестр: нужны schema_version 1, fps " + rate + " и хотя бы один план."
 }
 
 func textRegistryDurationMismatch(end, duration string) string {
@@ -89,5 +89,5 @@ func textDerivedChainedSource(shot, source string) string {
 	return shot + ": источник " + source + " сам собирается из другого плана; укажите исходный план."
 }
 func textBriefShotMissing(shot string) string {
-	return shot + ": сцена отсутствует в реестре."
+	return shot + ": план отсутствует в реестре."
 }

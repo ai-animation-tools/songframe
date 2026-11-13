@@ -26,7 +26,7 @@ import (
 // Эталон testdata/golden/production-workflow/cases.json: шаги
 // сценариев над копией checks-base/project с поддельным менеджером агентов, настоящим
 // continuity_brief и подставным каталогом моделей тестового провайдера. Go-тест повторяет те же
-// шаги и сверяет результат, ошибки, локальные записи, запуски агента и вызовы инструментов.
+// шаги и сверяет результат, ошибки, записи предложений проекта, запуски агента и вызовы инструментов.
 
 // goldenFile — cases.json: тексты по SHA-256 и сценарии.
 type goldenFile struct {
@@ -193,7 +193,7 @@ func canonical(t *testing.T, data []byte) string {
 	return dynvalue.Stringify(notJSONDeviation(value))
 }
 
-// canonicalText — запись каталога состояния эталона: файл JSON с отступом в два пробела и
+// canonicalText — запись предложения эталона: файл JSON с отступом в два пробела и
 // переводом строки в конце или компактный JSON записи шага writeLocal.
 func canonicalText(t *testing.T, text string) string {
 	t.Helper()
@@ -323,9 +323,9 @@ func (r *goldenRun) packagePath(path string) string {
 	return filepath.Join(r.project, path)
 }
 
-// recordPath — запись предложения плана.
+// recordPath — запись предложения плана в папке проекта.
 func (r *goldenRun) recordPath(shot string) string {
-	return filepath.Join(r.local, StoreFolder, FileName(r.project, shot))
+	return Store{}.Path(r.project, shot)
 }
 
 // step исполняет шаг и сверяет его исход с эталоном.
@@ -398,7 +398,7 @@ func (r *goldenRun) compareResult(t *testing.T, label string, want json.RawMessa
 	}
 	gotText := canonical(t, []byte(r.normalize(dynvalue.Stringify(mustParse(t, data)))))
 	if summaries, ok := got.(map[string]Summary); ok {
-		// Порядок ключей сводки в эталоне — порядок файлов каталога состояния; план ищется по ID.
+		// Порядок ключей сводки в эталоне не сравнивается; план ищется по ID.
 		expected := mustParse(t, want).(*dynvalue.Object)
 		if len(expected.Keys()) != len(summaries) {
 			t.Fatalf("%s: сводка %s, ожидалась %s", label, gotText, want)
@@ -425,7 +425,8 @@ func mustParse(t *testing.T, data []byte) any {
 	return value
 }
 
-// compareLocal сверяет записи каталога состояния (имя `<план>.json` вместо SHA).
+// compareLocal сверяет файлы записей предложений в папке проекта plan/batches/proposals (копии
+// кандидатов в подпапках планов сверяются через imageHashes записей и отдельными тестами).
 func (r *goldenRun) compareLocal(t *testing.T, label string, want json.RawMessage) {
 	t.Helper()
 	if string(want) != `"unchanged"` {
@@ -438,25 +439,21 @@ func (r *goldenRun) compareLocal(t *testing.T, label string, want json.RawMessag
 			r.expectedLocal[name] = canonicalText(t, r.blobs[sha])
 		}
 	}
-	names := map[string]string{}
-	for _, shot := range []string{"M01", "M02", "M03", "M04", "M05", "M06"} {
-		names[FileName(r.project, shot)] = shot + ".json"
-	}
 	got := map[string]string{}
-	entries, _ := os.ReadDir(filepath.Join(r.local, StoreFolder))
+	folder := Store{}.Folder(r.project)
+	entries, _ := os.ReadDir(folder)
 	for _, entry := range entries {
-		data, err := os.ReadFile(filepath.Join(r.local, StoreFolder, entry.Name()))
+		if entry.IsDir() {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(folder, entry.Name()))
 		if err != nil {
 			t.Fatal(err)
 		}
-		name := entry.Name()
-		if mapped, ok := names[name]; ok {
-			name = mapped
-		}
-		got[name] = r.normalize(string(data))
+		got[entry.Name()] = r.normalize(string(data))
 	}
 	if len(got) != len(r.expectedLocal) {
-		t.Fatalf("%s: записи каталога состояния %v, ожидались %v", label, keysOf(got), keysOf(r.expectedLocal))
+		t.Fatalf("%s: записи предложений %v, ожидались %v", label, keysOf(got), keysOf(r.expectedLocal))
 	}
 	for name, text := range r.expectedLocal {
 		if got[name] != text {
@@ -593,7 +590,7 @@ func (r *goldenRun) execute(t *testing.T, step goldenStep) (any, error) {
 		r.workflow = r.create()
 		return nil, nil
 	case "writeLocal":
-		folder := filepath.Join(r.local, StoreFolder)
+		folder := Store{}.Folder(r.project)
 		if err := os.MkdirAll(folder, 0o755); err != nil {
 			t.Fatal(err)
 		}
@@ -612,7 +609,7 @@ func (r *goldenRun) execute(t *testing.T, step goldenStep) (any, error) {
 			value.(*dynvalue.Object).Value("proposal").(*dynvalue.Object).Set("status", step.Status)
 		}
 		if step.Target != "" {
-			value.(*dynvalue.Object).Set("target", filepath.Join(r.project, step.Target))
+			value.(*dynvalue.Object).Set("target", step.Target)
 		}
 		if err := os.WriteFile(path, []byte(dynvalue.StringifyIndent(value, "  ")+"\n"), 0o644); err != nil {
 			t.Fatal(err)

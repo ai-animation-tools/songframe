@@ -312,7 +312,7 @@ func Brief(data *toolrt.Dict, castData *toolrt.Dict, sid, phase string, initial 
 	if len(description) > 0 {
 		text = append(text, description...)
 	} else {
-		text = append(text, "Состояние не задано: в кастинге нет начального состояния, а в сценах нет изменений.")
+		text = append(text, "Состояние не задано: в кастинге нет начального состояния, а в планах нет изменений.")
 	}
 	if len(questions) > 0 {
 		text = append(text, "", "Проверить по кадру:")
@@ -391,7 +391,7 @@ func build(root, shot, phase string) (*toolrt.Dict, error) {
 		}
 	}
 	if !found {
-		return nil, toolrt.Raise(toolrt.ValueError, "%s: сцена отсутствует в реестре.", shot)
+		return nil, toolrt.Raise(toolrt.ValueError, "%s: план отсутствует в реестре.", shot)
 	}
 	// Начальное состояние сущностей берётся из кастинга проекта.
 	initial, err := sceneregistry.InitialStatesFor(root)

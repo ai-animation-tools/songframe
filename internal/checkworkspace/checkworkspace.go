@@ -419,7 +419,8 @@ func Collect(root string) (Result, error) {
 		}
 		toolrt.SortPaths(folders)
 		for _, folder := range folders {
-			if !toolrt.IsDir(folder) || retained[toolrt.ResolvePath(folder)] {
+			// Записи предложений производства — не пакет и не проба: у них свой владелец и порядок уборки.
+			if !toolrt.IsDir(folder) || retained[toolrt.ResolvePath(folder)] || filepath.ToSlash(relative(folder)) == sceneregistry.ProposalsDir {
 				continue
 			}
 			entries, err := toolrt.IterDir(folder)

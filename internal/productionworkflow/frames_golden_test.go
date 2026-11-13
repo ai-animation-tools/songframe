@@ -32,7 +32,7 @@ import (
 // платный test через общий платный адаптер, инструменты media_request и shot_workflow и
 // тестовый сервис mediatest. Менеджер
 // агентов подставной: задание опор не запускает программу, файлы кандидатов и итог задают шаги.
-// Сверяются результат или ошибка, записи каталога состояния, дерево plan/batches, рабочие папки
+// Сверяются результат или ошибка, записи предложений проекта, дерево plan/batches, рабочие папки
 // image-jobs, запуски заданий опор, вызовы инструментов и вызовы тестового сервиса.
 
 // framesStep — шаг сценария эталона: вход (op и параметры) и ожидаемый исход.
@@ -347,7 +347,7 @@ func (r *framesRun) execute(t *testing.T, step framesStep) (any, error) {
 		id := step.ID
 		if id == "current" {
 			id = ""
-			if value, ok := dynvalue.ReadJSONFile(filepath.Join(r.local, StoreFolder, FileName(r.project, step.Shot))); ok {
+			if value, ok := dynvalue.ReadJSONFile(Store{}.Path(r.project, step.Shot)); ok {
 				id, _ = dynvalue.GetPath(value, "proposal", "id").(string)
 			}
 		}
@@ -384,7 +384,7 @@ func (r *framesRun) step(t *testing.T, index int, step framesStep) {
 		r.compareResult(t, label, step.Result, result)
 	}
 	r.compareState(t, label, "local", step.Local, r.localFiles(t))
-	r.compareState(t, label, "packages", step.Packages, r.tree(t, filepath.Join(r.project, "plan", "batches")))
+	r.compareState(t, label, "packages", step.Packages, r.packages(t))
 	r.compareState(t, label, "jobs", step.Jobs, jobs)
 
 	starts := []any{}
@@ -483,7 +483,7 @@ func (r *framesRun) compareState(t *testing.T, label, name string, want json.Raw
 	t.Fatalf("%s: %s отличается\n got %s\nwant %s", label, name, dynvalue.Stringify(gotValue), dynvalue.Stringify(expected))
 }
 
-// textOf — текст эталона записи {text: sha} либо SHA записи каталога состояния.
+// textOf — текст эталона записи {text: sha} либо SHA записи предложения.
 func (r *framesRun) textOf(value any) string {
 	if sha, ok := value.(string); ok {
 		return r.blobs[sha]
@@ -497,7 +497,7 @@ func (r *framesRun) textOf(value any) string {
 // pendingTexts — тексты Go-состояния по SHA для показа расхождения.
 var pendingTexts = map[string]string{}
 
-// pendingText — текст Go-состояния записи {text: sha} либо SHA записи каталога состояния.
+// pendingText — текст Go-состояния записи {text: sha} либо SHA записи предложения.
 func (r *framesRun) pendingText(value any) string {
 	if sha, ok := value.(string); ok {
 		return pendingTexts[sha]
@@ -543,25 +543,34 @@ func sortDeep(value any) any {
 	return mapObject(values)
 }
 
-// localFiles — записи production-workflow каталога состояния: имя `<план>.json`, SHA нормализованного текста.
+// localFiles — записи предложений в папке проекта plan/batches/proposals: имя `<план>.json`, SHA
+// нормализованного текста. Копии кандидатов в подпапках планов сверяются через imageHashes записей.
 func (r *framesRun) localFiles(t *testing.T) map[string]any {
 	t.Helper()
-	names := map[string]string{}
-	for _, shot := range []string{"M01", "M02", "M03", "M04", "M05", "M06"} {
-		names[FileName(r.project, shot)] = shot + ".json"
-	}
 	result := map[string]any{}
-	entries, _ := os.ReadDir(filepath.Join(r.local, StoreFolder))
+	folder := Store{}.Folder(r.project)
+	entries, _ := os.ReadDir(folder)
 	for _, entry := range entries {
-		data, err := os.ReadFile(filepath.Join(r.local, StoreFolder, entry.Name()))
+		if entry.IsDir() {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(folder, entry.Name()))
 		if err != nil {
 			t.Fatal(err)
 		}
-		name := entry.Name()
-		if mapped, ok := names[name]; ok {
-			name = mapped
+		result[entry.Name()] = remember(r.normalize(string(data)))
+	}
+	return result
+}
+
+// packages — дерево рабочих пакетов plan/batches без папки записей предложений (её сверяет local).
+func (r *framesRun) packages(t *testing.T) map[string]any {
+	t.Helper()
+	result := r.tree(t, filepath.Join(r.project, "plan", "batches"))
+	for key := range result {
+		if key == "proposals/" || strings.HasPrefix(key, "proposals/") {
+			delete(result, key)
 		}
-		result[name] = remember(r.normalize(string(data)))
 	}
 	return result
 }

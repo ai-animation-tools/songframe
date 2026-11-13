@@ -129,7 +129,7 @@ func Validate(data any, initial *toolrt.Dict) (*toolrt.Dict, error) {
 	}
 	document := data.(*toolrt.Dict)
 	if !toolrt.Equal(schema, toolrt.NewInt(1)) || !RegistryFPS(document.Value("fps")) || !toolrt.Truthy(document.Value("scenes")) {
-		return nil, valueError("Неизвестная схема или пустой реестр сцен.")
+		return nil, valueError("Неизвестная схема или пустой реестр планов.")
 	}
 	seen := map[string]bool{}
 	end := toolrt.NewInt(0)
@@ -187,7 +187,7 @@ func validateWindow(document *toolrt.Dict, scene any, seen, groups map[string]bo
 		return err
 	}
 	broken := func() error {
-		return valueError("%s: повтор, разрыв или неверная граница сцены.", toolrt.Str(sid))
+		return valueError("%s: повтор, разрыв или неверная граница плана.", toolrt.Str(sid))
 	}
 	if !matched || seen[sid.(string)] {
 		return broken()

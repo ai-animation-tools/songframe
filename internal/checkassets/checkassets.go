@@ -41,7 +41,7 @@ func LoadMotion(root string) (map[string]Motion, error) {
 	for _, path := range manifests {
 		sid := toolrt.PathName(filepath.Dir(path))
 		if !scenes.Contains(sid) {
-			return nil, toolrt.New(toolrt.ValueError, sid+": ассет отсутствует в реестре сцен.")
+			return nil, toolrt.New(toolrt.ValueError, sid+": ассет отсутствует в реестре планов.")
 		}
 		document, err := assetpackage.ValidatePackage(path, sid, root)
 		if err != nil {
@@ -73,7 +73,7 @@ func Run(root string, _ []string) toolcli.Output {
 	if err != nil {
 		return printer.Crash(err)
 	}
-	if err := printer.Print("Проверены все файлы " + toolrt.NewInt(int64(len(motion))).String() + " выбранных сцен; хеши и монтажные длительности совпадают."); err != nil {
+	if err := printer.Print("Проверены все файлы " + toolrt.NewInt(int64(len(motion))).String() + " выбранных планов; хеши и монтажные длительности совпадают."); err != nil {
 		return printer.Crash(err)
 	}
 	return printer.Exit(0)

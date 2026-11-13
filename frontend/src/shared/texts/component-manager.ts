@@ -119,7 +119,7 @@ export const componentTexts = {
     'video-frames': 'Кадры и метаданные видео',
     'montage-export': 'Монтаж и экспорт',
     'development-smoke': 'Проверка медиавозможностей',
-    'scene-clip': 'Подготовка сцен',
+    'scene-clip': 'Подготовка планов',
     animatic: 'Аниматик',
     montage: 'Монтаж',
     review: 'Видео для проверки',

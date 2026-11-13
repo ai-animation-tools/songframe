@@ -8,7 +8,7 @@ export const montageTexts = {
   audioPastEnd: 'Выделение музыки выходит за конец трека. Уменьшите конец участка.',
   pastEndLabel: 'За концом трека',
   staleDraft:
-    'Реестр или материалы сцен изменились после создания черновика. Его можно просматривать и сохранять. Перед применением переоткройте актуальные материалы и соберите монтаж заново.',
+    'Реестр или материалы планов изменились после создания черновика. Его можно просматривать и сохранять. Перед применением переоткройте актуальные материалы и соберите монтаж заново.',
   detachPlayer: 'Открыть плеер в отдельном окне',
   playerDetached: 'Плеер открыт в отдельном окне.',
   returnPlayer: 'Вернуть плеер',
@@ -16,12 +16,12 @@ export const montageTexts = {
   // Имя подставляется только для новой пробы или очищенного поля; сохранённые пользовательские имена не меняются.
   defaultName: 'Монтажная проба',
   openDraft: 'Открыть черновик',
-  sceneMaterials: 'Материалы сцен',
+  sceneMaterials: 'Материалы планов',
   differentTrack: 'Черновик использует другой трек; строки текущей песни недоступны.',
   draftSaved: 'Монтажный черновик сохранён',
   jobDetails: 'Подробности в журнале заданий.',
   exportReady: 'Проба MP4 готова',
-  applied: 'Монтаж применён. Переоткройте материалы перед следующими изменениями сцен.',
+  applied: 'Монтаж применён. Переоткройте материалы перед следующими изменениями планов.',
   jobMissing: 'Задание монтажа больше не найдено в истории.',
   addClipRequired: 'Добавьте хотя бы один фрагмент.',
   noTrack: 'В проекте нет музыкальной дорожки.',
@@ -32,11 +32,11 @@ export const montageTexts = {
   lengthsDiffer: 'Длины не совпадают',
   jobPendingHint: 'Дождитесь завершения задания',
   staleApply: 'Материалы изменились после создания черновика: переоткройте их и соберите монтаж заново.',
-  applyHint: 'Изменит принятые монтажные версии сцен; перед применением покажем новые границы.',
+  applyHint: 'Изменит принятые монтажные версии планов; перед применением покажем новые границы.',
   unsavedChanges: commonTexts.unsavedChanges,
   savedDraftStatus: 'Черновик сохранён',
   newDraft: 'Новая проба',
-  applying: 'Применение к сценам…',
+  applying: 'Применение к планам…',
   exporting: 'Экспорт MP4…',
   openJobs: 'Открыть журнал заданий',
   jobFailed: 'Задание не выполнено',
@@ -54,17 +54,17 @@ export const montageTexts = {
   removeDraft: 'Удалить черновик',
   removeDraftTitle: 'Удалить черновик?',
   removeDraftDescription: ({ name }: { name: string }) =>
-    `Черновик «${name}» будет удалён без возможности восстановления. Сцены, к которым он применён, и история применений не изменятся.`,
+    `Черновик «${name}» будет удалён без возможности восстановления. Планы, к которым он применён, и история применений не изменятся.`,
   removeDraftConfirm: 'Удалить',
   draftRemoved: 'Черновик удалён',
   watchExport: 'Просмотреть пробу MP4',
   saveVideoAs: 'Сохранить MP4 как',
-  applyToScenes: 'Применить к сценам',
-  applyTitle: 'Применить монтаж к принятым сценам?',
+  applyToScenes: 'Применить к планам',
+  applyTitle: 'Применить монтаж к принятым планам?',
   applyConsequences:
-    'Это действие изменит принятые монтажные версии сцен и внутренние границы в реестре. Оригиналы и прежние версии сохранятся. Исходная песня и её разметка не меняются.',
+    'Это действие изменит принятые монтажные версии планов и внутренние границы в реестре. Оригиналы и прежние версии сохранятся. Исходная песня и её разметка не меняются.',
   applyRequirements:
-    'Нужны принятые комплекты соседних сцен в исходном порядке и сохранение внешних границ участка. Сдвиг стыка изменит оба соседних комплекта. Приложение проверит эти условия и актуальность материалов перед применением.',
+    'Нужны принятые комплекты соседних планов в исходном порядке и сохранение внешних границ участка. Сдвиг стыка изменит оба соседних комплекта. Приложение проверит эти условия и актуальность материалов перед применением.',
   audioStart: 'Музыка: начало, кадр',
   audioEnd: 'Музыка: конец, кадр',
   addClipsToTrack: 'Добавьте фрагменты на видеодорожку.',
@@ -113,7 +113,7 @@ export const montageTexts = {
   nextFrame: '+1 кадр',
   nextFrameHint: '+1 кадр (стрелка вправо)',
   previewCutHint: 'Две секунды до и после стыка выбранного фрагмента',
-  selectCut: 'Выберите фрагмент со следующей сценой внутри музыкального участка.',
+  selectCut: 'Выберите фрагмент со следующим планом внутри музыкального участка.',
   previewCut: 'Проверить склейку',
   loop: 'Повторять',
   volume: commonTexts.player.volume,
@@ -131,10 +131,10 @@ export const montageTexts = {
   previewLoading: 'Загрузка превью…',
   enlarge: 'Увеличить',
   sourcesHint: 'Добавьте материал на дорожку или замените выбранный вариант кнопкой. Полный оригинал даёт запас за границами принятого монтажа.',
-  searchScene: 'Поиск сцены',
+  searchScene: 'Поиск плана',
   searchPlaceholder: 'Код, название или материал: M13, квадроцикл',
-  nothingFound: 'Ничего не найдено. Попробуйте код сцены или часть названия.',
-  closeSources: 'Закрыть материалы сцен',
+  nothingFound: 'Ничего не найдено. Попробуйте код плана или часть названия.',
+  closeSources: 'Закрыть материалы планов',
   splitHeight: 'Высота плеера и шкалы',
   splitHint: 'Перетащите разделитель или используйте стрелки вверх и вниз',
   trimStart: 'Обрезать начало',
@@ -150,11 +150,11 @@ export const montageTexts = {
   waitingDraft: 'Ожидание монтажной пробы…',
   detachedSuspended: 'Просмотр приостановлен в основном окне монтажа: закройте открытое там окно или дождитесь завершения операции.',
   attemptOnTrack: ({ scene, label }: { scene: string; label: string }) =>
-    `На дорожке ${scene} стоит «${label}»: этот ролик ещё не принят в assets. Принятый клип сцены доступен в материалах справа.`,
+    `На дорожке ${scene} стоит «${label}»: этот ролик ещё не принят в assets. Принятый клип плана доступен в материалах справа.`,
   lengthsMatch: (frames: number) => `Музыкальный участок и видео совпадают: ${countLabel(frames, 'кадр', 'кадра', 'кадров')}.`,
   audioRange: ({ start, end }: { start: string; end: string }) =>
     `Участок песни: ${start} — ${end}. Положение на обеих дорожках считается от начала исходной песни.`,
-  selectedScene: (scene: string) => `Выбранная сцена · ${scene}`,
+  selectedScene: (scene: string) => `Выбранный план · ${scene}`,
   sourceRange: ({ start, end, frames }: { start: string; end: string; frames: number }) =>
     `В исходнике: ${start} — ${end} · ${countLabel(frames, 'кадр', 'кадра', 'кадров')}`,
   sharedCut: ({ scene, next }: { scene: string; next: string }) =>
@@ -163,8 +163,8 @@ export const montageTexts = {
   materialImageFailed: 'Не удалось открыть изображение материала. Проверьте, что файл доступен в папке проекта.',
   materialVideoFailed: 'Не удалось воспроизвести видео материала. Проверьте, что файл доступен в папке проекта.',
   scenarioDuration: (duration: string) => `По сценарию: ${duration}`,
-  availableScenes: ({ available, total }: { available: number; total: number }) => `Доступно сцен: ${available} из ${total}`,
-  foundScenes: ({ found, total }: { found: number; total: number }) => `Найдено сцен: ${found} из ${total}`,
+  availableScenes: ({ available, total }: { available: number; total: number }) => `Доступно планов: ${available} из ${total}`,
+  foundScenes: ({ found, total }: { found: number; total: number }) => `Найдено планов: ${found} из ${total}`,
   cardClipLength: (frames: number) => `${frames} к · опора`,
   videoClipLength: (frames: number) => `${frames} к · видео`,
   scaleValue: (scale: number) => `${scale} px/с`,
@@ -173,15 +173,15 @@ export const montageTexts = {
     `Музыка: ${countLabel(audioLength, 'кадр', 'кадра', 'кадров')}, видео: ${countLabel(length, 'кадр', 'кадра', 'кадров')}. Разница ${length - audioLength > 0 ? '+' : ''}${countLabel(length - audioLength, 'кадр', 'кадра', 'кадров')}. Выровняйте выделение музыки или обрежьте видео.`,
   playerWindowFailed: (reason: string) => `Не удалось открыть или закрыть окно плеера: ${reason}`,
   exportFailed: (reason: string) => `Экспорт MP4 не выполнен. ${reason}`,
-  applyFailed: (reason: string) => `Применение к сценам не выполнено. ${reason}`,
+  applyFailed: (reason: string) => `Применение к планам не выполнено. ${reason}`,
   videoSaved: (path: string) => `Проба сохранена: ${path}`,
   draftStatus: ({ name, fps }: { name: string; fps: number }) => `Проба «${name}» · ${countLabel(fps, 'кадр', 'кадра', 'кадров')}/с`,
   showExportProblem: (reason: string) => `${reason} Нажмите, чтобы показать сведения под дорожкой.`,
   videoOpenFailed: ({ scene, path }: { scene: string; path: string }) => `Не удалось открыть видео ${scene}: ${path}`,
-  removeDescription: (scene: string | undefined) => `Фрагмент сцены «${scene}» будет удалён из монтажа. Исходный файл сохранится.`,
-  selectScene: (scene: string) => `Выбрать сцену ${scene}`,
+  removeDescription: (scene: string | undefined) => `Фрагмент плана «${scene}» будет удалён из монтажа. Исходный файл сохранится.`,
+  selectScene: (scene: string) => `Выбрать план ${scene}`,
   replaceDescription: ({ scene, label }: { scene: string; label: string }) =>
-    `На дорожке сцены ${scene} текущий вариант будет заменён на «${label}». Обрезка начнётся заново с начала выбранного материала; если он короче, фрагмент на дорожке станет короче. Исходные файлы сохранятся, замену можно отменить.`,
+    `На дорожке плана ${scene} текущий вариант будет заменён на «${label}». Обрезка начнётся заново с начала выбранного материала; если он короче, фрагмент на дорожке станет короче. Исходные файлы сохранятся, замену можно отменить.`,
   // Имя кнопки превью начинается с её видимого текста: состояния превью и подсказки действия.
   openMaterial: ({ status, action, label }: { status?: string; action: string; label: string }) => `${status ? `${status} — ` : ''}${action}: ${label}`,
   panelHeight: (height: number) => `Высота верхней панели ${countLabel(height, 'пиксель', 'пикселя', 'пикселей')}`,
@@ -192,7 +192,7 @@ export const montageTexts = {
   playbackPosition: ({ position, length, scene }: { position: string; length: string; scene: string | null | undefined }) =>
     `${position} / ${length} · ${scene ?? '—'}`,
   lyricTitle: ({ time, text }: { time: string; text: string }) => `${time} — ${text}`,
-  // Предыдущие границы передаёт только изменённая сцена; вызывающий код сохраняет проверку наличия canonical.
+  // Предыдущие границы передаёт только изменённый план; вызывающий код сохраняет проверку наличия canonical.
   applyRange: ({ scene, start, end, previous }: { scene: string; start: string; end: string; previous?: { start: string; end: string } }) =>
     `${scene}: ${start} — ${end}${previous ? ` (было ${previous.start} — ${previous.end})` : ''}`
 } as const;

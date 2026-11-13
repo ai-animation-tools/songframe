@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"songframe/internal/dynvalue"
+	"songframe/internal/sceneregistry"
 )
 
 // packageFolder — отдельный пакет plan/batches/<имя> или plan/awaiting/<имя> относительно проекта.
@@ -79,13 +80,14 @@ func ProductionPath(root, value string) (string, error) {
 }
 
 // PackagePath — ProductionPath, который указывает ровно на отдельный пакет
-// plan/batches/<имя> или plan/awaiting/<имя>. Иначе — packageFolderRequired.
+// plan/batches/<имя> или plan/awaiting/<имя>. Папка записей предложений plan/batches/proposals
+// пакетом не бывает. Иначе — packageFolderRequired.
 func PackagePath(project, path string) (string, error) {
 	target, err := ProductionPath(project, path)
 	if err != nil {
 		return "", err
 	}
-	if !packageFolder.MatchString(rel(project, target)) {
+	if local := rel(project, target); !packageFolder.MatchString(local) || local == sceneregistry.ProposalsDir {
 		return "", errors.New(textPackageFolderRequired)
 	}
 	return target, nil

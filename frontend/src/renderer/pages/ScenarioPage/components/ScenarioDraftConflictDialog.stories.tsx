@@ -38,7 +38,7 @@ export const Scenes: Story = {
     const canvas = within(canvasElement);
     const screen = within(canvasElement.ownerDocument.body);
     const dialog = await screen.findByRole('dialog');
-    await expect(within(dialog).getByText('Изменены: реестр сцен.')).toBeInTheDocument();
+    await expect(within(dialog).getByText('Изменены: реестр планов.')).toBeInTheDocument();
     await userEvent.click(within(dialog).getByRole('button', { name: scenarioTexts.drafts.discardAndContinue }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     await expect(canvas.getByRole('textbox', { name: 'Черновик реестра' })).toHaveValue('Олег открывает калитку.');
@@ -55,7 +55,7 @@ export const Both: Story = {
     const canvas = within(canvasElement);
     const screen = within(canvasElement.ownerDocument.body);
     const dialog = await screen.findByRole('dialog');
-    await expect(within(dialog).getByText('Изменены: трактовка, реестр сцен.')).toBeInTheDocument();
+    await expect(within(dialog).getByText('Изменены: трактовка, реестр планов.')).toBeInTheDocument();
     await userEvent.click(within(dialog).getByRole('button', { name: scenarioTexts.drafts.saveAndContinue }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     await expect(canvas.getByTestId('saved-treatment')).toHaveTextContent('и слышит подозрительный скрип');

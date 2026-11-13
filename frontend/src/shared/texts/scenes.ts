@@ -2,13 +2,13 @@ import { commonTexts } from './common';
 
 import { countLabel } from '../plural';
 
-/** Тексты обзора сцен и принятого монтажа; правила текстов описаны в @link ../../../docs/ui/texts.md. */
+/** Тексты страницы «Планы» и принятого монтажа; правила текстов описаны в @link ../../../docs/ui/texts.md. */
 export const scenesTexts = {
   montageSelected: ({ count }: { count: number }) => `Монтаж выбранных (${count})`,
-  selectForMontage: 'Отметьте сцены флажком «В монтажную пробу».',
-  noVisibleScenes: 'Нет видимых сцен: измените фильтр или поиск.',
+  selectForMontage: 'Отметьте планы флажком «В монтажную пробу».',
+  noVisibleScenes: 'Нет видимых планов: измените фильтр или поиск.',
   markVisible: 'Отметить видимые',
-  noMarkedScenes: 'Нет отмеченных сцен.',
+  noMarkedScenes: 'Нет отмеченных планов.',
   unmarkAll: 'Снять отметки',
   forMontage: 'В монтажную пробу',
   nothingFound: 'Ничего не найдено.',

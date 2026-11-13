@@ -1,4 +1,4 @@
-/** Страница «Сцены»: сетка сцен слева, выбранная сцена справа, ширина списка меняется разделителем. */
+/** Страница «Планы»: сетка планов слева, выбранный план справа, ширина списка меняется разделителем. */
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { commonTexts } from '@shared/texts/common';
@@ -12,13 +12,13 @@ const PROJECT = '/mock/project';
 const appState: AppState = { packaged: false, problems: [], localDir: '/mock/state', current: PROJECT, history: [], platform: 'linux' };
 const app: StoryOptions['app'] = { state: appState, online: true, aiAccess: storyAccess };
 
-/** Сцена плана без принятого комплекта и пакета: карточка с миниатюрой, подробности — постановка. */
+/** План без принятого комплекта и пакета: карточка с миниатюрой, подробности — постановка. */
 function sceneShot(index: number): DashboardShot {
   const id = `M${String(index + 1).padStart(2, '0')}`;
   return {
     derivedFrom: null,
     id,
-    title: `Сцена ${index + 1}`,
+    title: `План ${index + 1}`,
     sequenceTitle: 'Куплет',
     original: 'Деревня работает, обед готовится',
     start: index * 5,
@@ -44,7 +44,7 @@ function sceneShot(index: number): DashboardShot {
   };
 }
 
-/** Принятая сцена: оригинал генерации и принятый участок рядом, с бейджами. */
+/** Принятый план: в карточке только постановка и переход на «Производство». */
 function acceptedShot(index: number): DashboardShot {
   return {
     ...sceneShot(index),
@@ -82,7 +82,7 @@ function options(route: string, workspaceWidth?: number): StoryOptions {
 }
 
 const meta = {
-  title: 'Страницы/Сцены',
+  title: 'Страницы/Планы',
   component: ScenesPage,
   tags: ['!autodocs'],
   parameters: { songframe: options('/project/scenes?shot=M02', 1600) }
@@ -90,7 +90,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Число колонок сетки сцен: ближайшая сетка, в которой по элементу на каждую сцену. */
+/** Число колонок сетки планов: ближайшая сетка, в которой по элементу на каждый план. */
 function sceneColumns(canvasElement: HTMLElement): number {
   const view = canvasElement.ownerDocument.defaultView!;
   const card = within(canvasElement).getByText('M01', { selector: 'p' });
@@ -100,7 +100,7 @@ function sceneColumns(canvasElement: HTMLElement): number {
 }
 
 export const SelectedScene: Story = {
-  name: 'Выбранная сцена справа · ширина списка меняется разделителем',
+  name: 'Выбранный план справа · ширина списка меняется разделителем',
   tags: ['ci'],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -119,12 +119,12 @@ export const SelectedScene: Story = {
 };
 
 export const DefaultScene: Story = {
-  name: 'Открытие без ?shot= · сцена в работе, как на «Производстве»; закрытая карточка не возвращается',
+  name: 'Открытие без ?shot= · план в работе, как на «Производстве»; закрытая карточка не возвращается',
   tags: ['ci'],
   parameters: { songframe: options('/project/scenes', 1600) },
   play: async ({ canvasElement }) => {
     const screen = within(canvasElement.ownerDocument.body);
-    // Первая сцена в работе — M01.
+    // Первый план в работе — M01.
     await expect(await screen.findByRole('heading', { name: 'M01', level: 6 })).toBeVisible();
     await waitFor(() => expect(screen.getByTestId('story-route')).toHaveTextContent('/project/scenes?shot=M01'));
     await userEvent.click(screen.getByRole('button', { name: commonTexts.close }));
@@ -137,13 +137,13 @@ export const DefaultScene: Story = {
 };
 
 export const AcceptedScene: Story = {
-  name: 'Принятая сцена · без видео и промпта, переход на «Производство»',
+  name: 'Принятый план · без видео и промпта, переход на «Производство»',
   tags: ['ci'],
   parameters: { songframe: options('/project/scenes?shot=M08', 1600) },
   play: async ({ canvasElement }) => {
     const screen = within(canvasElement.ownerDocument.body);
     const heading = await screen.findByRole('heading', { name: 'M08', level: 6 });
-    // Видео, опоры и промпт принятого плана показывает «Производство»: в карточке сцены их нет.
+    // Видео, опоры и промпт принятого плана показывает «Производство»: в карточке плана их нет.
     const card = heading.closest<HTMLElement>('.MuiPaper-root')!;
     await expect(card.querySelector('video')).toBeNull();
     await userEvent.click(within(card).getByRole('button', { name: componentsTexts.shot.pages.production.label }));
@@ -152,7 +152,7 @@ export const AcceptedScene: Story = {
 };
 
 export const Narrow: Story = {
-  name: 'Узкая рабочая область · сцена под сеткой',
+  name: 'Узкая рабочая область · план под сеткой',
   parameters: { songframe: options('/project/scenes?shot=M02', 1000) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);

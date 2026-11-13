@@ -45,7 +45,7 @@ export const componentsTexts = {
     states: { planned: 'не начат', progress: commonTexts.shot.progress, completed: 'принят', stale: commonTexts.shot.stale, unknown: 'проблема' },
     pages: {
       production: { label: 'В производстве', title: 'на странице «Производство»' },
-      scenario: { label: 'В сценарии', title: 'в реестре сцен на странице «Сценарий»' }
+      scenario: { label: 'В сценарии', title: 'в реестре планов на странице «Сценарий»' }
     },
     openPlan: ({ shot, title }: { shot: string; title: string }) => `Открыть план ${shot} ${title}`
   },
@@ -77,7 +77,7 @@ export const componentsTexts = {
     undoProperty: ({ label }: { label: string }) => `Убрать изменение «${label}»`,
     undo: 'Убрать изменение',
     undoDescription:
-      'Изменение этого свойства будет отменено: вернётся унаследованное значение, если оно есть. Само свойство не будет снято со сцены. Запись в проект произойдёт после сохранения.',
+      'Изменение этого свойства будет отменено: вернётся унаследованное значение, если оно есть. Само свойство не будет снято с плана. Запись в проект произойдёт после сохранения.',
 
     removed: 'снято',
     inherited: ({ value }: { value: string }) => `унаследовано: ${value}`,
@@ -85,7 +85,7 @@ export const componentsTexts = {
     restore: 'Отменить снятие свойства',
     restoreProperty: ({ label }: { label: string }) => `Отменить снятие свойства «${label}»`,
     removeProperty: ({ label }: { label: string }) => `Снять свойство «${label}»`,
-    removeDescription: 'Свойство будет снято из состояния сущности в этой сцене, включая унаследованное значение.',
+    removeDescription: 'Свойство будет снято из состояния сущности в этом плане, включая унаследованное значение.',
     remove: 'Снять',
     customKey: 'Своё свойство (код)',
     customKeyExample: commonTexts.stateProperty.codeExample,

@@ -31,7 +31,7 @@ type Documents struct {
 	Scenes    any
 }
 
-// object — документы как объект { cast, treatment, scenes } для локальной записи и ответа renderer.
+// object — документы как объект { cast, treatment, scenes } для записи прохода и ответа renderer.
 func (d Documents) object() *dynvalue.Object {
 	result := dynvalue.NewObject()
 	result.Set("cast", d.Cast)

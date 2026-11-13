@@ -24,7 +24,7 @@ const (
 	textProposalPatchesMissing     = "Нужен непустой список patches выбранных планов."
 	textProposalPatchesInvalid     = "patches может менять только постановку выбранных неповторяющихся ID."
 	textSnapshotInvalidDocuments   = "Неверный снимок документов."
-	textWorkflowInvalidState       = "Неверная локальная запись сценария."
+	textWorkflowInvalidState       = "Неверная запись утверждения сценария plan/scenario-workflow.json."
 	textWorkflowInvalidProposal    = "Неверная запись предложения."
 	textWorkflowInvalidMetadata    = "Неверные метаданные предложения."
 	textSourcePathUnreadable       = "Не удалось прочитать путь исходного файла. Загрузите его заново на странице «Исходники»."
@@ -56,7 +56,7 @@ const (
 	textShotsDirectoryRequired     = "assets/shots: нужна обычная папка."
 	textSnapshotMissing            = "Нет исходного снимка файлов сценарного предложения. Повторите подготовку."
 	textApplyPairRequired          = "Для применения нужны кастинг и трактовка."
-	textProposedRegistryMissing    = "Нет предложенного реестра сцен."
+	textProposedRegistryMissing    = "Нет предложенного реестра планов."
 	textStaleMaterials             = "Предложение устарело: изменился состав материалов или производных файлов проекта. Подготовьте новое предложение."
 	textRecoveryPending            = "Не завершено восстановление прошлого применения сценария. Перезапустите приложение."
 )

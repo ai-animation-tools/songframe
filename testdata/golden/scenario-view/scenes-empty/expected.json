@@ -458,7 +458,7 @@
   "duration": 30,
   "trackPath": "<project>/source/track.mp3",
   "problems": [
-    "Реестр: нужны schema_version 1, fps 30 и хотя бы одна сцена."
+    "Реестр: нужны schema_version 1, fps 30 и хотя бы один план."
   ],
   "referencesStale": false
 }

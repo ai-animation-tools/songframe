@@ -33,6 +33,10 @@ const (
 	ProjectPath      = "plan/project.json"
 	ScenesPath       = "plan/scenes.json"
 	ProductionStatus = "plan/production-status.json"
+	// ProposalsDir — записи предложений производства и копии их кандидатов опор
+	// (productionworkflow.Store). Папка лежит среди рабочих пакетов plan/batches и разделяет их
+	// жизненный цикл (вне Git, рядом с попытками), но сама не пакет: обходы пакетов её пропускают.
+	ProposalsDir = "plan/batches/proposals"
 )
 
 // Регулярные выражения проверок. Цифры кодов — любые десятичные цифры Unicode, поэтому \p{Nd}.

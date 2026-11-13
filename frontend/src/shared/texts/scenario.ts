@@ -2,6 +2,12 @@ import { commonTexts } from './common';
 import { countLabel } from '../plural';
 import type { ScenarioInput } from '../scenario-workflow';
 
+/** Подпись поля длины плана части трактовки: на неё ссылаются и советы при отказе пересчёта границ. */
+const maxShotLabel = 'Макс. план, с';
+
+/** Кнопка утверждения текущего реестра: на неё ссылается и предупреждение о пересмотре сценария. */
+const approveScenesLabel = 'Утвердить текущий сценарий';
+
 /** Входы утверждения в предупреждении о пересмотре сценария. */
 const scenarioInputLabels: Record<ScenarioInput, string> = {
   sources: 'исходники',
@@ -27,7 +33,7 @@ export const scenarioTexts = {
     treatmentDurationMismatch: ({ end, duration }: { end: string; duration: string }) => `Части заканчиваются на ${end}, а трек длится ${duration}.`,
     treatmentInvalidDocument: 'Трактовка: нужны schema_version 1, logline и sequences.',
     treatmentInvalidPart: 'Трактовка: неверная структура части песни.',
-    registryRequiresScenes: ({ fps }: { fps: number }) => `Реестр: нужны schema_version 1, fps ${fps} и хотя бы одна сцена.`,
+    registryRequiresScenes: ({ fps }: { fps: number }) => `Реестр: нужны schema_version 1, fps ${fps} и хотя бы один план.`,
     shotCodeInvalid: ({ shot }: { shot: string }) => `${shot}: код плана вида M01 или M23.5.`,
     duplicateShotCode: ({ shot }: { shot: string }) => `${shot}: код повторяется.`,
     shotFramesInteger: ({ shot }: { shot: string }) => `${shot}: границы в кадрах должны быть целыми.`,
@@ -54,7 +60,7 @@ export const scenarioTexts = {
     stateUnknownSource: ({ shot }: { shot: string }) => `${shot}: неизвестный источник state_from.`,
     stateInvalidPhase: ({ shot }: { shot: string }) => `${shot}: неверная фаза state_from.`,
     stateSameHasChanges: ({ shot }: { shot: string }) => `${shot}: повтор same не допускает своих state_changes.`,
-    briefShotMissing: ({ shot }: { shot: string }) => `${shot}: сцена отсутствует в реестре.`,
+    briefShotMissing: ({ shot }: { shot: string }) => `${shot}: план отсутствует в реестре.`,
     invalidRelativePath: ({ path }: { path: string }) => `Недопустимый относительный путь сценария: ${path}`,
     ordinaryPathRequired: ({ name, directory }: { name: string; directory: boolean }) =>
       `${name}: для применения сценария нужен обычный ${directory ? 'каталог' : 'файл'}, без ссылки.`,
@@ -74,7 +80,7 @@ export const scenarioTexts = {
     snapshotMissing: 'Нет исходного снимка файлов сценарного предложения. Повторите подготовку.',
     staleAddedFile: ({ path }: { path: string }) => `Предложение устарело: появился производный файл ${path}. Подготовьте новое предложение.`,
     applyPairRequired: 'Для применения нужны кастинг и трактовка.',
-    proposedRegistryMissing: 'Нет предложенного реестра сцен.',
+    proposedRegistryMissing: 'Нет предложенного реестра планов.',
     staleStagingFile: ({ path }: { path: string }) => `Предложение устарело: изменился ${path} при подготовке проверки.`,
     validationFailed: ({ name, details }: { name: string; details: string }) => `Не пройдена проверка ${name}: ${details}`,
     validationExitCode: ({ code }: { code: number | null }) => `код ${code}`,
@@ -117,7 +123,7 @@ export const scenarioTexts = {
     impactDerivedSource: ({ source }: { source: string }) => `собирается из материала ${source}`,
     invalidSaveMode: 'Неизвестный режим сохранения реестра.',
     snapshotInvalidDocuments: 'Неверный снимок документов.',
-    workflowInvalidState: 'Неверная локальная запись сценария.',
+    workflowInvalidState: 'Неверная запись утверждения сценария plan/scenario-workflow.json.',
     workflowInvalidProposal: 'Неверная запись предложения.',
     workflowInvalidProposalMetadata: 'Неверные метаданные предложения.',
     sourcePathUnreadable: 'Не удалось прочитать путь исходного файла. Загрузите его заново на странице «Исходники».',
@@ -159,7 +165,7 @@ export const scenarioTexts = {
     castMissing: 'Сначала создайте кастинг: без сущностей нет референсов для планов и состояния героев.',
     proposalEditingPaused: 'Предложение агента ждёт решения. Редактирование приостановлено, пока вы не примените или не отклоните его.',
     agentEditingPaused: 'Агент работает с сохранёнными данными. Редактирование приостановлено до завершения или остановки задания.',
-    registryMissing: 'Реестра сцен нет. Сохраните трактовку и постройте каркас.'
+    registryMissing: 'Реестра планов нет. Сохраните трактовку и постройте каркас.'
   },
   brief: {
     planSource: ({ shot, phase }: { shot: string; phase: 'before' | 'after' }) => `${shot} · ${phase === 'before' ? 'первый кадр' : 'итог'}`,
@@ -214,7 +220,7 @@ export const scenarioTexts = {
     stateChanges: 'Изменения состояния',
     derivedFrom: 'Собирается из плана',
     notes: 'Примечания',
-    registry: 'Реестр сцен',
+    registry: 'Реестр планов',
     visualRules: 'Визуальные правила',
     parts: 'Части',
     audio: commonTexts.media.audio,
@@ -229,7 +235,7 @@ export const scenarioTexts = {
     globalVisualRules: 'Общие визуальные правила',
     code: commonTexts.code,
     partDirection: 'Направление части',
-    maxShotShortSeconds: 'Макс. план, с'
+    maxShotShortSeconds: maxShotLabel
   },
   comparison: {
     changed: 'изменено',
@@ -282,7 +288,7 @@ export const scenarioTexts = {
     saveAndContinue: 'Сохранить и продолжить',
     discardAndContinue: 'Отменить правки и продолжить',
     changed: ({ treatment, scenes }: { treatment: boolean; scenes: boolean }) =>
-      `Изменены: ${[treatment ? 'трактовка' : '', scenes ? 'реестр сцен' : ''].filter(Boolean).join(', ')}.`,
+      `Изменены: ${[treatment ? 'трактовка' : '', scenes ? 'реестр планов' : ''].filter(Boolean).join(', ')}.`,
     resolveBeforeAgent: 'Сначала сохраните правки или явно отмените их. Агент получает только сохранённые данные проекта.',
     applyNeedsSaved:
       'Предложение подготовлено по сохранённым документам: после записи правок оно устареет и не применится. Отмените правки, чтобы применить его, или вернитесь к редактору.'
@@ -318,7 +324,7 @@ export const scenarioTexts = {
     fixRegistry: ({ count }: { count: number }) => `Исправьте проблемы реестра: ${count}.`,
     noChanges: commonTexts.noChangesToSave,
     treatmentTab: ({ count }: { count: number | null }) => `Трактовка${count === null ? '' : ` · ${count}`}`,
-    scenesTab: ({ count }: { count: number | null }) => `Реестр сцен${count === null ? '' : ` · ${count}`}`,
+    scenesTab: ({ count }: { count: number | null }) => `Реестр планов${count === null ? '' : ` · ${count}`}`,
     problems: ({ count }: { count: number }) => `Проблем: ${count}`,
     replaceParts: 'Заменить части трактовки по разметке',
     replacePartsDescription:
@@ -345,7 +351,7 @@ export const scenarioTexts = {
     reference: 'На странице «Кастинг» добавьте изображение хотя бы одному герою или объекту.',
     duration: 'На странице «Тайминги» заново разметьте трек, чтобы определить его длительность.',
     treatment: 'Заполните и сохраните трактовку перед построением каркаса.',
-    savedDrafts: 'Сохраните изменения трактовки и реестра сцен перед построением каркаса.',
+    savedDrafts: 'Сохраните изменения трактовки и реестра планов перед построением каркаса.',
     treatmentProblems: 'Исправьте проблемы трактовки перед построением каркаса: их список показан над частями.'
   },
   workflow: {
@@ -355,14 +361,18 @@ export const scenarioTexts = {
     treatmentApproved: 'Кастинг и трактовка утверждены',
     treatmentUnapproved: 'Кастинг и трактовка не утверждены',
     description: 'Агент готовит предложение. Сначала просмотрите сравнение, затем отдельно примените результат. Ручные редакторы доступны без агента.',
-    /** Предупреждение о пересмотре сценария называет изменившиеся входы; без них — прежняя общая причина. */
-    scenesNeedReview: (changed: readonly ScenarioInput[]): string => {
-      if (!changed.length) return 'Кастинг или трактовка изменились. Существующий сценарий требует пересмотра.';
+    /**
+     * Предупреждение о пересмотре сценария называет изменившиеся входы; без них — прежняя общая причина. canApprove —
+     * кнопка утверждения доступна: тогда предупреждение называет последний шаг, который его снимает.
+     */
+    scenesNeedReview: (changed: readonly ScenarioInput[], canApprove = false): string => {
+      const approve = canApprove ? ` Когда планы проверены и реестр сохранён, нажмите «${approveScenesLabel}»: предупреждение исчезнет.` : '';
+      if (!changed.length) return `Кастинг или трактовка изменились. Существующий сценарий требует пересмотра.${approve}`;
       const list = changed.map((input) => scenarioInputLabels[input]).join(', ');
       const bounds = changed.includes('timing')
-        ? ' Границы планов в сценарии могут не совпадать с новыми участками песни: пересчитайте их кнопкой «Пересчитать границы» на вкладке «Сцены» и сохраните реестр. Принятые планы со сдвинутыми границами потребуют нового производства.'
+        ? ' Границы планов в сценарии могут не совпадать с новыми участками песни: пересчитайте их кнопкой «Пересчитать границы» на вкладке «Реестр планов» и сохраните реестр. Принятые планы со сдвинутыми границами потребуют нового производства.'
         : '';
-      return `После утверждения изменились: ${list}.${bounds} Существующий сценарий требует пересмотра.`;
+      return `После утверждения изменились: ${list}.${bounds} Существующий сценарий требует пересмотра.${approve}`;
     },
     proposalAppliedSentence: commonTexts.proposal.appliedSentence,
     proposalStale: 'Предложение устарело. Исходные файлы изменились; нужен новый запуск.',
@@ -372,10 +382,10 @@ export const scenarioTexts = {
     approveTreatmentHint: 'Сначала утвердите текущие кастинг и трактовку: готовую ручную пару можно утвердить без повторной генерации.',
     createScenes: 'Создать сценарий',
     approveTreatmentReason: 'Сначала утвердите текущие кастинг и трактовку.',
-    selectShot: 'Выберите план в реестре сцен.',
-    fixRegistry: 'Сначала исправьте ошибки реестра сцен.',
+    selectShot: 'Выберите план в реестре планов.',
+    fixRegistry: 'Сначала исправьте ошибки реестра планов.',
     approveTreatment: 'Утвердить текущие кастинг и трактовку',
-    approveScenes: 'Утвердить текущий сценарий',
+    approveScenes: approveScenesLabel,
     refreshStatus: 'Обновить статус',
     collapseProblems: 'Свернуть',
     showAllProblems: ({ count }: { count: number }) => `Показать все (${count})`,
@@ -459,27 +469,61 @@ export const scenarioTexts = {
     deleteDescription: 'Часть трактовки будет удалена вместе с её описанием, участниками и временными границами.',
     direction: 'Что происходит и зачем',
     singing: 'Поют в кадре (липсинк)',
-    problemsTitle: 'Трактовка ещё не готова к построению сцен',
+    problemsTitle: 'Трактовка ещё не готова к построению планов',
     problemsHint:
       'Части должны идти встык — конец одной части совпадает с началом следующей, первая начинается с 0, последняя заканчивается в конце трека. Черновик можно сохранять и с этими проблемами.'
   },
   leave: {
-    bothDirty: 'Сохраните трактовку и реестр сцен: при уходе со страницы несохранённые правки пропадут.',
-    scenesDirty: 'Сохраните реестр сцен: при уходе со страницы несохранённые правки пропадут.',
+    bothDirty: 'Сохраните трактовку и реестр планов: при уходе со страницы несохранённые правки пропадут.',
+    scenesDirty: 'Сохраните реестр планов: при уходе со страницы несохранённые правки пропадут.',
     treatmentDirty: 'Сохраните трактовку: при уходе со страницы несохранённые правки пропадут.'
   },
   notice: {
     treatmentSaved: 'Трактовка сохранена',
     treatmentSavedDraft: 'Трактовка сохранена как черновик: исправьте проблемы, перечисленные над частями.',
-    scaffoldCreated: 'Каркас реестра сцен построен',
+    scaffoldCreated: 'Каркас реестра планов построен',
     boundsRecalculated: ({ count }: { count: number }) =>
       `Границы пересчитаны: ${count ? `сдвинуто ${countLabel(count, 'план', 'плана', 'планов')}` : 'изменилась длина трека'}. Проверьте шкалу и сохраните реестр.`,
     boundsUnchanged: 'Границы планов уже совпадают с разметкой песни.',
-    boundsCountChanged: ({ part, was, now }: { part: string; was: number; now: number }) =>
-      `В части «${part}» по разметке получается ${countLabel(now, 'план', 'плана', 'планов')} вместо ${was}: пересчитать только границы нельзя. Поправьте границы вручную или пересоберите каркас на вкладке «Трактовка».`,
-    boundsPartsChanged: 'Части трактовки не совпадают с реестром сцен: пересчитать только границы нельзя. Пересоберите каркас на вкладке «Трактовка».',
-    scenesSavedKeep: 'Реестр сцен сохранён без нового производства',
-    scenesSaved: 'Реестр сцен сохранён',
+    boundsCountChanged: ({ part, was, now, cause, fix }: { part: string; was: number; now: number; cause?: string; fix: string }) =>
+      `В части «${part}» по разметке получается ${countLabel(now, 'план', 'плана', 'планов')} вместо ${was}${cause ? `: ${cause}` : ''}. Пересчитать только границы нельзя. На вкладке «Трактовка» ${fix}, сохраните трактовку и пересчитайте границы снова. Или пересоберите каркас: постановка планов заполнится заново.`,
+    boundsLineMoved: ({
+      line,
+      text,
+      start,
+      end,
+      to,
+      from,
+      fix
+    }: {
+      line: number;
+      text: string;
+      start: string;
+      end: string;
+      to: string;
+      from: string;
+      fix: string;
+    }) =>
+      `Строка ${line} «${text}» (${start}–${end} с) по разметке попадает в часть «${to}», а в реестре она в части «${from}»: при пересчёте строка ушла бы в чужой план. Пересчитать только границы нельзя. На вкладке «Трактовка» ${fix}, сохраните трактовку и пересчитайте границы снова.`,
+    boundsCause: {
+      leadPause: ({ seconds, line }: { seconds: string; line: number }) => `пауза ${seconds} с перед первой строкой (строка ${line}) стала отдельным планом`,
+      trailPause: ({ seconds, line }: { seconds: string; line: number }) => `пауза ${seconds} с после последней строки (строка ${line}) стала отдельным планом`,
+      noLines: ({ length, max }: { length: string; max: string }) => `в части нет строк песни, и её ${length} с делятся на планы не длиннее ${max} с`,
+      lines: ({ count, first, last }: { count: number; first: number; last: number }) =>
+        `в часть попадает ${countLabel(count, 'строка', 'строки', 'строк')} песни (${first === last ? `строка ${first}` : `строки ${first}–${last}`}), каждая начинает свой план`
+    },
+    boundsFix: {
+      moveStart: ({ at }: { at: string }) => `сдвиньте начало части к ${at} с`,
+      moveEnd: ({ at }: { at: string }) => `сдвиньте конец части к ${at} с`,
+      movePartStart: ({ part, at }: { part: string; at: string }) => `сдвиньте начало части «${part}» к ${at} с`,
+      movePartEnd: ({ part, at }: { part: string; at: string }) => `сдвиньте конец части «${part}» к ${at} с`,
+      maxShot: `поправьте «${maxShotLabel}» части`,
+      lines: 'сверьте границы части с её строками на странице «Тайминги»',
+      neighbourGrows: ({ title }: { title: string }) => ` (часть «${title}» без строк станет длиннее — проверьте её «${maxShotLabel}»)`
+    },
+    boundsPartsChanged: 'Части трактовки не совпадают с реестром планов: пересчитать только границы нельзя. Пересоберите каркас на вкладке «Трактовка».',
+    scenesSavedKeep: 'Реестр планов сохранён без нового производства',
+    scenesSaved: 'Реестр планов сохранён',
     proposalApplied: commonTexts.proposal.applied,
     proposalDiscarded: 'Предложение отклонено',
     shotTooShort: 'План слишком короткий для деления.',

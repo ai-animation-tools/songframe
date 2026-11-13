@@ -1,8 +1,6 @@
 package scenarioworkflow
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"os"
 	"path/filepath"
@@ -16,10 +14,12 @@ import (
 	"songframe/internal/scenario"
 )
 
-// Локальная запись сценарного прохода хранится вне проекта, в каталоге
-// состояния приложения: scenario-workflow/<sha256 пути проекта>.json. В ней утверждение пары
-// (approval), утверждение сцен (scenesApproval), признак needsScenesReview с видами изменившихся
-// входов reviewInputs и ожидающее предложение (pending: proposal, expectedHashes, scaffold, duration).
+// Запись сценарного прохода — файл проекта StatePath. В ней утверждение пары (approval),
+// утверждение сцен (scenesApproval), признак needsScenesReview с видами изменившихся входов
+// reviewInputs и ожидающее предложение (pending: proposal, expectedHashes, scaffold, duration).
+// Пути в отпечатках отсчитываются от проекта, поэтому запись переезжает вместе с клипом: копия
+// папки, `git pull` на другом компьютере и откат через Git видят те же утверждения, что и файлы.
+// Сама запись в отпечатки и снимки предложений не входит.
 //
 // Запись держится деревом dynvalue и меняется на месте: порядок ключей (в том числе message,
 // добавленного после status) и форма JSON зафиксированы эталоном testdata/golden/scenario-workflow.
@@ -34,10 +34,12 @@ var proposalStatuses = []string{"running", "ready", "invalid", "failed", "cancel
 // passes — сценарные проходы.
 var passes = []string{"treatment", "scenes", "revise"}
 
-// statePath — путь локальной записи проекта (project — реальный путь).
-func statePath(localDir, project string) string {
-	sum := sha256.Sum256([]byte(project))
-	return filepath.Join(localDir, "scenario-workflow", hex.EncodeToString(sum[:])+".json")
+// StatePath — запись сценарного прохода относительно папки проекта.
+const StatePath = "plan/scenario-workflow.json"
+
+// statePath — путь записи проекта (project — реальный путь).
+func statePath(project string) string {
+	return filepath.Join(project, filepath.FromSlash(StatePath))
 }
 
 // emptyState — {schemaVersion: 1}.
@@ -48,8 +50,8 @@ func emptyState() *dynvalue.Object {
 }
 
 // readState — проверенная запись или пустая при любой ошибке чтения и формы.
-func readState(localDir, project string) *dynvalue.Object {
-	data, err := os.ReadFile(statePath(localDir, project))
+func readState(project string) *dynvalue.Object {
+	data, err := os.ReadFile(statePath(project))
 	if err != nil {
 		return emptyState()
 	}
@@ -64,13 +66,14 @@ func readState(localDir, project string) *dynvalue.Object {
 	return state
 }
 
-// writeState — JSON с отступом в два пробела и переводом строки, атомарная замена.
-func writeState(localDir, project string, state *dynvalue.Object) error {
-	path := statePath(localDir, project)
-	if err := os.MkdirAll(filepath.Dir(path), 0o777); err != nil {
+// writeState — JSON с отступом в два пробела и переводом строки, атомарная замена; папка plan/
+// у проекта уже есть. Запись лежит в проекте, поэтому проходит шлюз записи projectfs.CheckWrite,
+// как и остальные файлы: поверх незавершённой многофайловой операции она не пишется.
+func writeState(project string, state *dynvalue.Object) error {
+	if err := projectfs.CheckWrite(project); err != nil {
 		return err
 	}
-	return projectfs.WriteFile(path, []byte(dynvalue.StringifyIndent(state, "  ")+"\n"), 0o666)
+	return projectfs.WriteFile(statePath(project), []byte(dynvalue.StringifyIndent(state, "  ")+"\n"), 0o666)
 }
 
 // validHashes — hashes() из checkStoredState: объект путь → SHA-256 или null; путь непустой,
@@ -131,7 +134,7 @@ func stringsArray(value any) bool {
 	return true
 }
 
-// checkStoredState — проверка формы локальной записи и снимков документов.
+// checkStoredState — проверка формы записи прохода и снимков документов.
 func checkStoredState(value any) error {
 	state, ok := dynvalue.AsObject(value)
 	invalid := !ok || !dynvalue.StrictEqual(state.Value("schemaVersion"), 1.0)

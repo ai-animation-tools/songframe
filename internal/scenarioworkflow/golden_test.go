@@ -208,7 +208,8 @@ func replaceParseMessages(t *testing.T, data []byte) []byte {
 	return []byte(dynvalue.StringifyIndent(value, "  ") + "\n")
 }
 
-// treeFiles — файлы проекта без .git: путь → байты.
+// treeFiles — файлы проекта без .git и без записи сценарного прохода StatePath: путь → байты.
+// Запись сверяется отдельно (compareState), а здесь сравниваются документы, которые меняет проход.
 func treeFiles(t *testing.T, root string) map[string][]byte {
 	t.Helper()
 	result := map[string][]byte{}
@@ -225,6 +226,9 @@ func treeFiles(t *testing.T, root string) map[string][]byte {
 				return err
 			}
 			relative, _ := filepath.Rel(root, path)
+			if filepath.ToSlash(relative) == StatePath {
+				return nil
+			}
 			result[filepath.ToSlash(relative)] = data
 		}
 		return nil
@@ -276,7 +280,7 @@ func TestGoldenWorkflow(t *testing.T) {
 			names := &normalizer{project: project, state: localDir}
 			before := treeFiles(t, project)
 			current := func() string {
-				_, proposal := pendingProposal(readState(localDir, project))
+				_, proposal := pendingProposal(readState(project))
 				return dynvalue.ToString(proposal.Value("id"))
 			}
 			for index, step := range spec.Steps {
@@ -514,14 +518,14 @@ func checkCardHashes(t *testing.T, project string, manifest []byte) {
 	}
 }
 
-// compareState — локальная запись сценария побайтно после замены путей и ID.
+// compareState — запись сценарного прохода в проекте побайтно после замены путей и ID.
 func compareState(t *testing.T, item golden.Case, localDir, project string, names *normalizer) {
 	t.Helper()
 	want := replaceParseMessages(t, item.Read(t, "state.json"))
-	data, err := os.ReadFile(statePath(localDir, project))
+	data, err := os.ReadFile(statePath(project))
 	if os.IsNotExist(err) {
 		if strings.TrimSpace(string(want)) != "null" {
-			t.Fatal("нет локальной записи, в эталоне есть")
+			t.Fatal("нет записи сценарного прохода, в эталоне есть")
 		}
 		return
 	}
@@ -535,6 +539,6 @@ func compareState(t *testing.T, item golden.Case, localDir, project string, name
 	got := dynvalue.StringifyIndent(names.tree(value), "  ") + "\n"
 	if got != string(want) {
 		golden.AssertJSON(t, want, []byte(got))
-		t.Fatalf("локальная запись отличается порядком ключей или форматом:\n%s", got)
+		t.Fatalf("запись сценарного прохода отличается порядком ключей или форматом:\n%s", got)
 	}
 }

@@ -160,7 +160,7 @@ const (
 	textBundleViewsStep              = "карточки и представления"
 	textBundleBusy                   = "Пакет ещё собирается. Дождитесь завершения задания."
 	textBundleMissing                = "Собранный пакет не найден. Обновите список."
-	textScenePackageNotBundle        = "Нельзя удалить рабочий пакет сцены как пакет для монтажёра."
+	textScenePackageNotBundle        = "Нельзя удалить рабочий пакет плана как пакет для монтажёра."
 	textContactSheetStep             = "контактный лист"
 	// textSavedRequestRequired и textMediaProviderChanged — productionTexts.main.access.
 	textSavedRequestRequired = "В пакете нет сохранённого запроса."
@@ -203,10 +203,10 @@ func textRetryProviderRequired(shot string) string {
 	return shot + ": сначала выберите провайдера видео в настройках проекта."
 }
 func textRetryOriginalProviderMissing(shot string) string {
-	return shot + ": провайдер сцены не указан. Подготовьте новый пакет."
+	return shot + ": провайдер плана не указан. Подготовьте новый пакет."
 }
 func textRetryProviderMismatch(shot, provider, selected string) string {
-	return shot + ": провайдер сцены — " + provider + ", текущий выбранный — " + selected + ". Для подготовки повтора провайдеры должны совпадать."
+	return shot + ": провайдер плана — " + provider + ", текущий выбранный — " + selected + ". Для подготовки повтора провайдеры должны совпадать."
 }
 func textRetryManual(shot string) string {
 	return shot + ": видео речевого плана создаётся вне приложения, повтор запроса недоступен. Начните новую попытку."

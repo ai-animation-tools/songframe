@@ -27,7 +27,7 @@ const (
 	textResolveProposalFirst        = "сначала примените или отклоните текущее предложение"
 	textResolvePackageQuestionFirst = "сначала ответьте на вопрос согласования на шаге плана"
 	textResolveImageFirst           = "сначала завершите согласование или получение изображения"
-	textApproveScenarioFirst        = "сценарий не утверждён в приложении: утвердите кастинг, трактовку и сцены на странице «Сценарий»"
+	textApproveScenarioFirst        = "сценарий не утверждён в приложении: утвердите кастинг, трактовку и планы на странице «Сценарий»"
 	textAcceptedDescriptionFrames   = "нужна выбранная попытка с принятым описанием и опорами"
 	textSentAttemptNeedsRetry       = "попытка уже отправлена: дальше только повтор или возврат с замечанием"
 	textSpeechRequiredHint          = "речевой план: сначала подготовьте WAV речи в блоке «Речь»"
@@ -120,7 +120,6 @@ const (
 // (productionTexts.main.apply).
 const (
 	textScenarioApprovalStale          = "Утверждение сценария устарело."
-	textAgentResultMissing             = "Нет успешного результата агента."
 	textProposalImagesChanged          = "Изображения предложения изменились."
 	textProposalStale                  = "Предложение устарело: изменились материалы или пакет."
 	textWorkflowNotCreated             = "Инструмент не создал workflow.json."

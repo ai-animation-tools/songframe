@@ -44,7 +44,7 @@ func rawValue(value any) json.RawMessage {
 // AssetMedia — параметры пары видео принятого комплекта по его manifest.json: подпись оригинала
 // (nil, если манифест их не хранит) и рецепт принятого участка. fps — сетка проекта: по ней
 // считается длительность, когда манифест хранит только число кадров. Общая для «Производства» и
-// «Сцен», чтобы обе страницы показывали одно и то же.
+// «Планов», чтобы обе страницы показывали одно и то же.
 func AssetMedia(manifest any, fps float64) (*string, AssetEdit) {
 	generation := dynvalue.Coalesce(dynvalue.Get(manifest, "generation"), dynvalue.NewObject())
 	edit := dynvalue.Coalesce(dynvalue.Get(manifest, "accepted_edit"), dynvalue.NewObject())

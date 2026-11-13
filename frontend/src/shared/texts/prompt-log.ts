@@ -4,7 +4,7 @@ import { navigationTexts } from './navigation';
 import { productionTexts } from './production';
 
 /** Проходы сценария в заголовках заданий ai-clip-scenario:<проход>. */
-const SCENARIO_PASSES: Record<string, string> = { treatment: 'трактовка', scenes: 'сцены', revise: 'доработка' };
+const SCENARIO_PASSES: Record<string, string> = { treatment: 'трактовка', scenes: 'планы', revise: 'доработка' };
 const STAGE_TITLES: Record<string, string> = productionTexts.planPath.titles;
 
 export const promptLogTexts = {

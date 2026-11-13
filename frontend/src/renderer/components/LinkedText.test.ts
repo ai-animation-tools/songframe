@@ -36,7 +36,7 @@ describe('LinkedText', () => {
     ['Кастинг', '/project/cast'],
     ['Сценарий', '/project/scenario'],
     ['Производство', '/project/production'],
-    ['Сцены', '/project/scenes'],
+    ['Планы', '/project/scenes'],
     ['Монтаж пробы', '/project/montage'],
     ['Проверки', '/project/checks'],
     ['Аниматик', '/project/animatic'],
@@ -119,8 +119,8 @@ describe('LinkedText', () => {
   });
 
   it('оформляет части текста и ссылки переданной функцией', () => {
-    const html = render('Откройте «Сцены» сейчас', '/project', (value) => value.toUpperCase());
-    expect(links(html)).toEqual([{ href: '/project/scenes', text: '«СЦЕНЫ»' }]);
+    const html = render('Откройте «Планы» сейчас', '/project', (value) => value.toUpperCase());
+    expect(links(html)).toEqual([{ href: '/project/scenes', text: '«ПЛАНЫ»' }]);
     expect(html).toContain('ОТКРОЙТЕ ');
   });
 });

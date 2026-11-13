@@ -25,7 +25,7 @@ describe('Тексты сценария с числами', () => {
     expect(scenarioTexts.comparison.changedFields({ count })).toBe(`изменено полей: ${count}`);
     expect(scenarioTexts.toolbar.fixRegistry({ count })).toBe(`Исправьте проблемы реестра: ${count}.`);
     expect(scenarioTexts.toolbar.treatmentTab({ count })).toBe(`Трактовка · ${count}`);
-    expect(scenarioTexts.toolbar.scenesTab({ count })).toBe(`Реестр сцен · ${count}`);
+    expect(scenarioTexts.toolbar.scenesTab({ count })).toBe(`Реестр планов · ${count}`);
     expect(scenarioTexts.toolbar.problems({ count })).toBe(`Проблем: ${count}`);
     expect(scenarioTexts.workflow.showAllProblems({ count })).toBe(`Показать все (${count})`);
     expect(scenarioTexts.list.foundShots({ shown: count, total: 21 })).toBe(`Найдено планов: ${count} из 21`);
@@ -40,7 +40,7 @@ describe('Тексты сценария с числами', () => {
 
   it('различает отсутствие реестра, нулевой счётчик и строковое undefined', () => {
     expect(scenarioTexts.toolbar.treatmentTab({ count: null })).toBe('Трактовка');
-    expect(scenarioTexts.toolbar.scenesTab({ count: null })).toBe('Реестр сцен');
+    expect(scenarioTexts.toolbar.scenesTab({ count: null })).toBe('Реестр планов');
     expect(scenarioTexts.timeline.statusCount({ label: 'Запланирован', count: undefined })).toBe('Запланирован: undefined');
     expect(scenarioTexts.brief.entityChanges({ changes: 0, hidden: 2 })).toBe('без изменений за план · скрыто без изменений: 2 свойства');
   });
@@ -50,8 +50,8 @@ describe('Параметры, ветвления и полные фразы сц
   it.each([
     [false, false, 'Изменены: .'],
     [true, false, 'Изменены: трактовка.'],
-    [false, true, 'Изменены: реестр сцен.'],
-    [true, true, 'Изменены: трактовка, реестр сцен.']
+    [false, true, 'Изменены: реестр планов.'],
+    [true, true, 'Изменены: трактовка, реестр планов.']
   ])('сохраняет флаги черновиков %s / %s', (treatment, scenes, expected) => {
     expect(scenarioTexts.drafts.changed({ treatment, scenes })).toBe(expected);
   });

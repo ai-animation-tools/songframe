@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"songframe/internal/agents"
 	"songframe/internal/dynvalue"
 	"songframe/internal/mediaproviders"
 	"songframe/internal/production"
@@ -33,10 +32,10 @@ type applyPlan struct {
 }
 
 // Apply применяет готовое актуальное предложение id плана shot к его целевому
-// пакету (новому attempt-NN для описания, иначе выбранному пакету packageDir). Ответ агента
-// разбирается и сверяется с объявлениями моделей заново, входы — со снимком подготовки. Ошибка
-// записи откатывает пакет к резерву, а предложение остаётся готовым; успех отмечает его applied и
-// возвращает вид целевого пакета.
+// пакету (новому attempt-NN для описания, иначе выбранному пакету packageDir). Предложение
+// (after записи) разбирается и сверяется с объявлениями моделей заново, входы — со снимком
+// подготовки. Ошибка записи откатывает пакет к резерву, а предложение остаётся готовым; успех
+// отмечает его applied (копии кандидатов опор при этом удаляются) и возвращает вид целевого пакета.
 func (w *Workflow) Apply(ctx context.Context, project, shot, packageDir, id string) (View, error) {
 	w.mu.Lock()
 	plan, err := w.checkApply(project, shot, packageDir, id)
@@ -80,7 +79,10 @@ func replacesAskedText(c *Context, proposal *dynvalue.Object) bool {
 
 // checkApply — синхронная часть Apply до занятия плана: предложение готово, относится
 // к выбранному пакету и не устарело, вопрос пакета решён, сценарий утверждён (для нового пакета),
-// задание агента успешно, ответ проходит проверку, изображения и входы не изменились.
+// предложение проходит проверку, изображения и входы не изменились. Источник — after записи, а не
+// задание агента: ответ задания разобран и проверен, когда предложение стало готовым, а кандидаты
+// опор скопированы в проект. Поэтому применение не зависит от истории заданий и рабочих папок
+// машины и работает в перенесённой папке проекта.
 func (w *Workflow) checkApply(project, shot, packageDir, id string) (*applyPlan, error) {
 	view, err := w.view(project, shot, packageDir)
 	if err != nil {
@@ -108,29 +110,7 @@ func (w *Workflow) checkApply(project, shot, packageDir, id string) (*applyPlan,
 	if !samePackage && !w.options.IsScenarioApproved(view.Project) {
 		return nil, errors.New(textScenarioApprovalStale)
 	}
-	var job *agents.Job
-	if jobID := stored.JobID(); jobID != "" {
-		found, ok := w.options.Agents.Get(jobID)
-		if !ok || found.Status != "completed" || found.ExitCode == nil || *found.ExitCode != 0 {
-			return nil, errors.New(textAgentResultMissing)
-		}
-		job = &found
-	}
 	raw := dynvalue.Stringify(stored.Proposal().Value("after"))
-	if job != nil {
-		raw = job.Result
-		if stored.ImageJob() {
-			images, err := w.collectImages(*job)
-			if err != nil {
-				return nil, err
-			}
-			document := dynvalue.NewObject()
-			document.Set("schemaVersion", float64(1))
-			document.Set("stage", "frames")
-			document.Set("images", candidatesTree(images))
-			raw = dynvalue.Stringify(document)
-		}
-	}
 	rules := stored.Rules()
 	rules.Own = stored.Proposal().Value("own") == true
 	after, err := ParseProposal(raw, rules)
@@ -330,7 +310,7 @@ var audioSlot = regexp.MustCompile(`(?i)^audio`)
 // applyRequest — этап запроса: проверка утверждений и речевого входа, затем подготовка нового
 // request-NN платным адаптером видео проекта (неизменяемый request.json без отправки). Возвращает
 // имя папки запроса. Запрос готовит только адаптер провайдера (Options.VideoMedia); отдельная
-// спецификация запроса в каталоге состояния не пишется, чтобы там не копились файлы.
+// спецификация запроса рядом с записью предложения не пишется, чтобы там не копились файлы.
 func (w *Workflow) applyRequest(ctx context.Context, plan *applyPlan) (string, error) {
 	c, target := plan.context, plan.stored.Target()
 	if c.Manual {

@@ -35,6 +35,7 @@
 | Общие изображения персонажей, транспорта, локаций и их исходные промпты | Только [source](source/README.md); в assets ссылки с `root: "source"` и SHA-256 |
 | Оригинал, принятый монтаж, кадры, промпт, WAV и рецепт обработки сцены | `assets/shots/Mxx/manifest.json` по [контракту assets](assets/README.md#локальный-манифест-и-воспроизведение) |
 | Незавершённая работа над планом | `workflow.json` его пакета в `plan/batches` или [plan/awaiting/Mxx](plan/awaiting/README.md) |
+| Утверждение кастинга, трактовки и сценария и причины его пересмотра | `plan/scenario-workflow.json` |
 | Состояние просмотра и принятия полной сборки; отпечаток постановки, по которой принят каждый комплект (`shots`), и явное подтверждение существующего производного ролика (`shots.Mxx.source_review`) | [plan/production-status.json](plan/production-status.json) |
 | Речевые и музыкальные оценки | `plan/audio/timing.json`; монтажные окна они не задают |
 | Отложенные запросы и рабочие пакеты | [plan/awaiting/Mxx](plan/awaiting/README.md) и `plan/batches` |
@@ -53,11 +54,13 @@ plan/cast.json                Кастинг: сущности, изображе
 plan/treatment.json           Трактовка первого прохода сценария
 plan/scenes.json              Постановка и единая монтажная шкала
 plan/production-status.json   Принятие полной сборки и отпечатки постановки принятых планов
+plan/scenario-workflow.json    Утверждение сценария и ожидающее предложение агента
 plan/animatic/latest/         Единственная последняя полная сборка
 plan/animatic/cards/          Производные карточки незавершённых сцен
 plan/animatic/.cache/         Необязательный кэш сборки, вне Git
 plan/context/                 Визуальный справочник (производный)
 plan/batches/                 Рабочие пакеты, партии и пробы
+plan/batches/proposals/       Неприменённые предложения агента по планам и копии кандидатов опор
 plan/awaiting/Mxx/            Подготовленные отложенные платные запросы
 plan/audio/                   Речевые и музыкальные оценки
 plan/montage/                 Черновики ручного монтажа

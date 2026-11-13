@@ -196,7 +196,7 @@ func (t *workflowTool) sceneOf(shot any) (*toolrt.Dict, *toolrt.Dict, error) {
 			return registry, scene.(*toolrt.Dict), nil
 		}
 	}
-	return nil, nil, valueError(toolrt.Str(shot) + ": план отсутствует в реестре сцен.")
+	return nil, nil, valueError(toolrt.Str(shot) + ": план отсутствует в реестре планов.")
 }
 
 // fingerprint — отпечаток постановки плана с начальным состоянием кастинга проекта.

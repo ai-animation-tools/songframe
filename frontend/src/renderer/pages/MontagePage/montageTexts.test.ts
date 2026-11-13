@@ -63,8 +63,8 @@ describe('Тексты ручного монтажа', () => {
     expect(montageTexts.volumeValue(value)).toBe(`${value}%`);
     expect(montageTexts.panelHeight(value)).toBe(`Высота верхней панели ${pixels}`);
     expect(montageTexts.materialPosition({ position: value, total: 21 })).toBe(`Материал ${value} из 21`);
-    expect(montageTexts.availableScenes({ available: value, total: 21 })).toBe(`Доступно сцен: ${value} из 21`);
-    expect(montageTexts.foundScenes({ found: value, total: 21 })).toBe(`Найдено сцен: ${value} из 21`);
+    expect(montageTexts.availableScenes({ available: value, total: 21 })).toBe(`Доступно планов: ${value} из 21`);
+    expect(montageTexts.foundScenes({ found: value, total: 21 })).toBe(`Найдено планов: ${value} из 21`);
     expect(montageTexts.draftStatus({ name: '«<>&»', fps: value })).toBe(`Проба ««<>&»» · ${expected}/с`);
   });
 
@@ -82,13 +82,13 @@ describe('Тексты ручного монтажа', () => {
   });
 
   it('сохраняет специальные символы, пути и необязательные значения без нового fallback', () => {
-    expect(montageTexts.removeDescription(undefined)).toBe('Фрагмент сцены «undefined» будет удалён из монтажа. Исходный файл сохранится.');
-    expect(montageTexts.removeDescription('M<&>')).toBe('Фрагмент сцены «M<&>» будет удалён из монтажа. Исходный файл сохранится.');
+    expect(montageTexts.removeDescription(undefined)).toBe('Фрагмент плана «undefined» будет удалён из монтажа. Исходный файл сохранится.');
+    expect(montageTexts.removeDescription('M<&>')).toBe('Фрагмент плана «M<&>» будет удалён из монтажа. Исходный файл сохранится.');
     expect(montageTexts.videoSaved('C:\\Проект\\<>&".mp4')).toBe('Проба сохранена: C:\\Проект\\<>&".mp4');
     expect(montageTexts.videoOpenFailed({ scene: 'M<&>', path: 'assets/<>&.mp4' })).toBe('Не удалось открыть видео M<&>: assets/<>&.mp4');
     expect(montageTexts.playerWindowFailed('<>&')).toBe('Не удалось открыть или закрыть окно плеера: <>&');
     expect(montageTexts.exportFailed('<>&')).toBe('Экспорт MP4 не выполнен. <>&');
-    expect(montageTexts.applyFailed('<>&')).toBe('Применение к сценам не выполнено. <>&');
+    expect(montageTexts.applyFailed('<>&')).toBe('Применение к планам не выполнено. <>&');
     expect(montageTexts.waveFailed('<>&')).toBe('Волна недоступна: <>&');
     expect(montageTexts.waveWarning('Волна недоступна: <>&')).toBe('Волна недоступна: <>& Выделение и прослушивание остаются доступны.');
     expect(montageTexts.sceneTitle({ scene: 'M<&>', title: '«Опора»' })).toBe('M<&> — «Опора»');
@@ -96,8 +96,8 @@ describe('Тексты ручного монтажа', () => {
     expect(montageTexts.openMaterial({ action: 'Смотреть', label: '<>&' })).toBe('Смотреть: <>&');
     expect(montageTexts.openMaterial({ status: 'Превью недоступно', action: 'Смотреть', label: '<>&' })).toBe('Превью недоступно — Смотреть: <>&');
     expect(montageTexts.lyricTitle({ time: '00:03:00', text: '<>&' })).toBe('00:03:00 — <>&');
-    expect(montageTexts.selectedScene('M<&>')).toBe('Выбранная сцена · M<&>');
-    expect(montageTexts.selectScene('M<&>')).toBe('Выбрать сцену M<&>');
+    expect(montageTexts.selectedScene('M<&>')).toBe('Выбранный план · M<&>');
+    expect(montageTexts.selectScene('M<&>')).toBe('Выбрать план M<&>');
     expect(montageTexts.scenarioDuration('00:03:00')).toBe('По сценарию: 00:03:00');
     expect(montageTexts.audioRange({ start: '00:03:00', end: '00:04:00' })).toBe(
       'Участок песни: 00:03:00 — 00:04:00. Положение на обеих дорожках считается от начала исходной песни.'
@@ -110,10 +110,10 @@ describe('Тексты ручного монтажа', () => {
     expect(montageTexts.playbackPosition({ position: '00:03:00', length: '00:04:00', scene: null })).toBe('00:03:00 / 00:04:00 · —');
     expect(montageTexts.playbackPosition({ position: '00:03:00', length: '00:04:00', scene: '' })).toBe('00:03:00 / 00:04:00 · ');
     expect(montageTexts.attemptOnTrack({ scene: 'M<&>', label: '«Новый»' })).toBe(
-      'На дорожке M<&> стоит ««Новый»»: этот ролик ещё не принят в assets. Принятый клип сцены доступен в материалах справа.'
+      'На дорожке M<&> стоит ««Новый»»: этот ролик ещё не принят в assets. Принятый клип плана доступен в материалах справа.'
     );
     expect(montageTexts.replaceDescription({ scene: 'M<&>', label: '«Новый»' })).toBe(
-      'На дорожке сцены M<&> текущий вариант будет заменён на ««Новый»». Обрезка начнётся заново с начала выбранного материала; если он короче, фрагмент на дорожке станет короче. Исходные файлы сохранятся, замену можно отменить.'
+      'На дорожке плана M<&> текущий вариант будет заменён на ««Новый»». Обрезка начнётся заново с начала выбранного материала; если он короче, фрагмент на дорожке станет короче. Исходные файлы сохранятся, замену можно отменить.'
     );
   });
 
@@ -143,7 +143,7 @@ describe('Тексты ручного монтажа', () => {
     );
     const html = renderToStaticMarkup(createElement(MontageClipEditor, { ...props, clip }));
     const text = textContent(html);
-    expect(text).toContain('Выбранная сцена · M1');
+    expect(text).toContain('Выбранный план · M1');
     expect(text).toContain('В исходнике: 00:03:00 — 00:04:00 · 30 кадров');
     expect(text).toContain('Ожидаем метаданные длины исходника. Расширение конца станет доступно после загрузки видео.');
     expect(text).not.toContain('Общий стык');

@@ -22,6 +22,7 @@ import (
 	"songframe/internal/mediaproviders"
 	"songframe/internal/mediatest"
 	"songframe/internal/providers"
+	"songframe/internal/sceneregistry"
 	"songframe/internal/shotworkflow"
 	"songframe/internal/tools"
 )
@@ -30,7 +31,8 @@ import (
 // эталонов): сценарии прохода с операциями Apply, обрыва процесса на границе вызова инструмента,
 // восстановления при старте и прямого журнала замены пакета. shot_workflow, continuity_brief и
 // media_request prepare — настоящие инструменты, каталог моделей тестового провайдера подставной.
-// После шагов, меняющих проект, сверяются все файлы plan/ (права и содержимое) и каталог журнала.
+// После шагов, меняющих проект, сверяются файлы plan/ (права и содержимое) без папки записей
+// предложений (её сверяет local) и каталог журнала.
 
 // applyStep — шаг эталона Apply: операции эталона production-workflow и поля Apply.
 type applyStep struct {
@@ -286,6 +288,10 @@ func (r *applyRun) walk(t *testing.T, folder, prefix string, result, texts map[s
 		} else {
 			name = rename(name)
 		}
+		// Записи предложений и копии кандидатов сверяет local, а не дерево пакетов.
+		if name == sceneregistry.ProposalsDir {
+			continue
+		}
 		result[name] = r.entry(t, path, texts)
 		if item.IsDir() {
 			r.walk(t, path, name, result, texts, rename)
@@ -528,11 +534,12 @@ func (r *applyRun) execute(t *testing.T, step applyStep) (any, error) {
 		}
 		return nil, nil
 	case "candidate":
+		// Кандидат импорта — копия в папке предложений проекта, как её оставляет ImportFrames.
 		data, err := os.ReadFile(filepath.Join(r.project, "source/vehicles/boat.png"))
 		if err != nil {
 			t.Fatal(err)
 		}
-		folder := filepath.Join(r.local, "candidates")
+		folder := Store{}.CopiesDir(r.project, step.Shot)
 		if err := os.MkdirAll(folder, 0o777); err != nil {
 			t.Fatal(err)
 		}

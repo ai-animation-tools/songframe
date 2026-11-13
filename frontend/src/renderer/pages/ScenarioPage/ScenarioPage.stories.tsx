@@ -245,6 +245,54 @@ export const RecalculateBounds: Story = {
   }
 };
 
+export const RecalculateBoundsLeadPause: Story = {
+  name: 'Пересчёт границ · отказ называет паузу перед строкой и совет для трактовки',
+  tags: ['ci'],
+  parameters: { songframe: scenarioPageOptions({ leadPause: true }) },
+  play: async (context) => {
+    const screen = await ready(context);
+    await userEvent.click(screen.getByRole('button', { name: scenarioTexts.toolbar.recalculateBounds }));
+    const notice = scenarioTexts.notice;
+    await screen.findByText(
+      notice.boundsCountChanged({
+        part: 'Куплет у калитки',
+        was: 2,
+        now: 3,
+        cause: notice.boundsCause.leadPause({ seconds: '2.6', line: 3 }),
+        fix: notice.boundsFix.moveStart({ at: '10.6' })
+      })
+    );
+    // Отказ ничего не меняет: черновик реестра прежний, сохранять нечего.
+    await expect(unsavedChip(screen)).not.toBeInTheDocument();
+    await expect(screen.getByTestId('page-model-scaffold')).toHaveTextContent('Построений каркаса: 1 (--dry-run --json).');
+  }
+};
+
+export const RecalculateBoundsLineMoved: Story = {
+  name: 'Пересчёт границ · строка ушла в соседнюю часть · отказ при том же числе планов',
+  tags: ['ci'],
+  parameters: { songframe: scenarioPageOptions({ lineMoved: true }) },
+  play: async (context) => {
+    const screen = await ready(context);
+    await userEvent.click(screen.getByRole('button', { name: scenarioTexts.toolbar.recalculateBounds }));
+    const notice = scenarioTexts.notice;
+    await screen.findByText(
+      notice.boundsLineMoved({
+        line: 3,
+        text: 'Скрипит знакомая калитка',
+        start: '7',
+        end: '8.8',
+        to: 'Возвращение',
+        from: 'Куплет у калитки',
+        fix: notice.boundsFix.movePartStart({ part: 'Куплет у калитки', at: '7' })
+      })
+    );
+    // Реестр не тронут: строка осталась в своём плане, сохранять нечего.
+    await expect(unsavedChip(screen)).not.toBeInTheDocument();
+    await expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений реестра: 0.');
+  }
+};
+
 export const WorkflowWithManualEditing: Story = {
   name: 'Процесс с агентом · панель рядом с ручной правкой и сохранением',
   tags: ['!autodocs', 'ci'],
@@ -509,7 +557,7 @@ export const NoRegistry: Story = {
 };
 
 export const TreatmentDraftWithProblems: Story = {
-  name: 'Черновик трактовки · сохраняется с проблемами, список виден, каркас недоступен',
+  name: 'Черновик трактовки · общая граница частей · сохраняется с проблемами, каркас недоступен',
   tags: ['!autodocs', 'ci'],
   parameters: { songframe: scenarioPageOptions({ variant: 'noRegistry' }) },
   play: async (context) => {
@@ -517,10 +565,20 @@ export const TreatmentDraftWithProblems: Story = {
     const scaffold = () => screen.getByRole('button', { name: scenarioTexts.toolbar.buildScaffold });
     await expect(scaffold()).toBeEnabled();
     await expect(screen.queryByText(scenarioTexts.treatment.problemsTitle)).not.toBeInTheDocument();
-    // Конец первой части раньше начала второй: части больше не идут встык.
-    const end = screen.getAllByRole('spinbutton', { name: scenarioTexts.fields.endSeconds })[0];
+    // Общая граница соседних частей правится одним полем: конец первой части сдвигает начало второй, стык не рвётся.
+    const values = (name: string) => screen.getAllByRole('spinbutton', { name }).map((input: HTMLElement) => (input as HTMLInputElement).value);
+    const firstEnd = screen.getAllByRole('spinbutton', { name: scenarioTexts.fields.endSeconds })[0];
+    await userEvent.clear(firstEnd);
+    await userEvent.type(firstEnd, '7.5');
+    await expect(values(scenarioTexts.fields.startSeconds)).toEqual(['0', '7.5', '16']);
+    const secondStart = screen.getAllByRole('spinbutton', { name: scenarioTexts.fields.startSeconds })[1];
+    await userEvent.clear(secondStart);
+    await userEvent.type(secondStart, '8');
+    await expect(values(scenarioTexts.fields.endSeconds)).toEqual(['8', '16', '24']);
+    // Конец последней части раньше конца трека: соседа нет, черновик получает проблему.
+    const end = screen.getAllByRole('spinbutton', { name: scenarioTexts.fields.endSeconds })[2];
     await userEvent.clear(end);
-    await userEvent.type(end, '7.5');
+    await userEvent.type(end, '23');
     const title = await screen.findByText(scenarioTexts.treatment.problemsTitle, {}, { timeout: 3000 });
     const alert = (title as HTMLElement).closest('[role="alert"]') as HTMLElement;
     await expect(within(alert).getByText(scenarioTexts.treatment.problemsHint)).toBeVisible();
@@ -529,7 +587,7 @@ export const TreatmentDraftWithProblems: Story = {
         within(alert)
           .getAllByRole('listitem')
           .map((item) => item.textContent)
-      ).toEqual([scenarioTexts.main.partStartMismatch({ id: 'verse', start: 8, previousEnd: '7.50' })])
+      ).toEqual([scenarioTexts.main.treatmentDurationMismatch({ end: '23.00', duration: '24.00' })])
     );
     await expect(saveButton(screen)).toBeEnabled();
     await userEvent.click(saveButton(screen));
@@ -542,9 +600,9 @@ export const TreatmentDraftWithProblems: Story = {
     await expect(scaffold()).toBeDisabled();
     await expect(scaffold()).toHaveAttribute('title', expect.stringContaining(scenarioTexts.prerequisites.treatmentProblems));
     await expect(screen.getByTestId('page-model-scaffold')).toHaveTextContent('Построений каркаса: 0.');
-    // Исправленный стык снимает список и открывает каркас после сохранения.
+    // Конец последней части снова совпадает с концом трека: список снимается, каркас открывается после сохранения.
     await userEvent.clear(end);
-    await userEvent.type(end, '8');
+    await userEvent.type(end, '24');
     await waitFor(() => expect(screen.queryByText(scenarioTexts.treatment.problemsTitle)).not.toBeInTheDocument(), { timeout: 3000 });
     await userEvent.click(saveButton(screen));
     await screen.findByText(scenarioTexts.notice.treatmentSaved, { exact: true }, { timeout: 3000 });

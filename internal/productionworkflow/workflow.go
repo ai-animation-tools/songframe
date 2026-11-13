@@ -9,10 +9,11 @@
 // Общие части: чтение контекста плана (context.go), записи предложений (store.go), снимок входов
 // (snapshot.go), проверка ответа (proposal.go) и распознавание оплаты пакета (paid.go).
 //
-// Владение: локальные записи предложений и множество «готовится» принадлежат Workflow; задания
-// агента — менеджеру агентов (Agents), рабочие папки заданий опор — KeyframeImages. Файлы
-// проекта пишет Apply; исключение — платная опора: папку запроса пакета создаёт
-// media_request prepare, вопрос согласования в workflow.json — shot_workflow set-image-request.
+// Владение: записи предложений в папке проекта plan/batches/proposals (Store) и множество
+// «готовится» принадлежат Workflow; задания агента — менеджеру агентов (Agents), рабочие папки
+// заданий опор в каталоге состояния — KeyframeImages. Остальные файлы проекта пишет Apply;
+// исключение — платная опора: папку запроса пакета создаёт media_request prepare, вопрос
+// согласования в workflow.json — shot_workflow set-image-request.
 package productionworkflow
 
 import (
@@ -58,7 +59,8 @@ type CatalogReader interface {
 
 // Options — зависимости Workflow.
 type Options struct {
-	// LocalDir — каталог состояния приложения (записи production-workflow).
+	// LocalDir — каталог состояния приложения: журналы применения (production-apply) и процессы этой
+	// машины. Записи предложений лежат в проекте (Store), а не здесь.
 	LocalDir string
 	// Agents — менеджер агентов; nil — заданий нет, запуск отклоняется.
 	Agents Agents
@@ -112,7 +114,7 @@ func New(options Options) *Workflow {
 	if options.ValidateImage == nil {
 		options.ValidateImage = mediafile.Decodes
 	}
-	return &Workflow{options: options, store: Store{LocalDir: options.LocalDir}, busy: map[string]bool{}}
+	return &Workflow{options: options, store: Store{}, busy: map[string]bool{}}
 }
 
 // Store — записи предложений этого прохода (для Apply и восстановления после перезапуска).
@@ -478,8 +480,10 @@ func (w *Workflow) refresh(c *Context, stored *Stored) (*agents.Job, error) {
 }
 
 // accept разбирает результат завершённого задания: предложение записывается в after до
-// проверки возможностей (неподходящий запрос остаётся виден вместе с причиной), у опор
-// запоминаются SHA-256 изображений.
+// проверки возможностей (неподходящий запрос остаётся виден вместе с причиной). Кандидаты опор
+// копируются из рабочей папки задания в проект (Store.pinCandidates): after ссылается на копии, и
+// запоминаются SHA-256 их байтов. Дальше предложение не зависит ни от рабочей папки, ни от истории
+// заданий этой машины.
 func (w *Workflow) accept(c *Context, stored *Stored, job agents.Job) error {
 	raw := job.Result
 	if stored.ImageJob() {
@@ -498,24 +502,22 @@ func (w *Workflow) accept(c *Context, stored *Stored, job agents.Job) error {
 	if err != nil {
 		return err
 	}
-	stored.Proposal().Set("after", after)
-	if err := CheckCapabilities(after, rules, stored.Capabilities(), c.Settings); err != nil {
-		return err
-	}
 	if after.Value("stage") == "frames" {
-		hashes := dynvalue.NewObject()
 		images, _ := dynvalue.AsArray(after.Value("images"))
-		for _, image := range images {
-			path, _ := dynvalue.Get(image, "path").(string)
-			hash, err := requiredFileDigest(path)
-			if err != nil {
-				return err
-			}
-			hashes.Set(path, hash)
+		candidates := make([]FrameCandidate, len(images))
+		for index, image := range images {
+			candidates[index].ID, _ = dynvalue.Get(image, "id").(string)
+			candidates[index].Path, _ = dynvalue.Get(image, "path").(string)
 		}
+		pinned, hashes, err := w.store.pinCandidates(c.Project, c.Shot, candidates)
+		if err != nil {
+			return err
+		}
+		after.Set("images", candidatesTree(pinned))
 		stored.Tree.Set("imageHashes", hashes)
 	}
-	return nil
+	stored.Proposal().Set("after", after)
+	return CheckCapabilities(after, rules, stored.Capabilities(), c.Settings)
 }
 
 // StartInput — ProductionWorkflowStart: действие prepare (новый пакет), revise (доработка с
@@ -954,9 +956,10 @@ func attention(status string, stale bool) string {
 }
 
 // PendingProposals возвращает непринятые предложения (ready, invalid, failed)
-// по планам проекта path. Записи выполнявшихся заданий сначала обновляются видом плана; записи,
-// которые уже нельзя показать (план убран из реестра или стал производным, пакет удалён,
-// применённый пакет пропал), удаляются. Записи других проектов не трогаются. Ошибки чтения —
+// по планам проекта path из его папки записей (Store). Записи выполнявшихся заданий сначала
+// обновляются видом плана; записи, которые уже нельзя показать (план убран из реестра или стал
+// производным, пакет удалён, применённый пакет пропал), удаляются вместе с копиями кандидатов.
+// Файлы *-request.json и всё, что не похоже на запись предложения, не трогаются. Ошибки чтения —
 // пустая сводка.
 func (w *Workflow) PendingProposals(path string) map[string]Summary {
 	w.mu.Lock()
@@ -971,37 +974,43 @@ func (w *Workflow) PendingProposals(path string) map[string]Summary {
 	if err != nil || !dynvalue.IsRecord(registry) || !ok {
 		return result
 	}
-	byFile := map[string]*dynvalue.Object{}
+	byID := map[string]*dynvalue.Object{}
 	for _, item := range scenes {
 		if scene, isObject := item.(*dynvalue.Object); isObject {
 			if id, isString := scene.Value("id").(string); isString {
-				byFile[FileName(project, id)] = scene
+				byID[id] = scene
 			}
 		}
 	}
-	folder := w.store.Folder()
-	entries, _ := os.ReadDir(folder)
+	// Путь записи на диске — от проекта; сводка и проверки работают с абсолютным.
+	absolute := func(value any) (string, bool) {
+		local, ok := value.(string)
+		if !ok || local == "" {
+			return "", ok
+		}
+		return filepath.Join(project, filepath.FromSlash(local)), true
+	}
+	entries, _ := os.ReadDir(w.store.Folder(project))
 	for _, entry := range entries {
 		name := entry.Name()
-		if !strings.HasSuffix(name, ".json") || strings.HasSuffix(name, "-request.json") {
+		if entry.IsDir() || !strings.HasSuffix(name, ".json") || strings.HasSuffix(name, "-request.json") {
 			continue
 		}
-		file := filepath.Join(folder, name)
+		shot := strings.TrimSuffix(name, ".json")
+		file := w.store.Path(project, shot)
 		value, err := readJSON(file)
 		if err != nil {
 			continue
 		}
-		// Записи других проектов не трогаем: проект указан в правилах предложения.
-		if !dynvalue.IsRecord(value) || !dynvalue.IsRecord(dynvalue.Get(value, "rules")) || dynvalue.GetPath(value, "rules", "project") != project ||
-			!dynvalue.IsRecord(dynvalue.Get(value, "proposal")) {
+		if !dynvalue.IsRecord(value) || !dynvalue.IsRecord(dynvalue.Get(value, "rules")) || !dynvalue.IsRecord(dynvalue.Get(value, "proposal")) {
 			continue
 		}
-		scene := byFile[name]
+		scene := byID[shot]
 		// Завершённое задание переводит предложение в итоговый статус только при чтении вида плана:
 		// иначе ответ агента по плану, на который пользователь не возвращался, не попал бы в сводку.
 		if scene != nil && dynvalue.GetPath(value, "proposal", "status") == "running" {
-			packageDir, _ := dynvalue.Get(value, "packageDir").(string)
-			if _, err := w.view(project, scene.Value("id").(string), packageDir); err == nil {
+			packageDir, _ := absolute(dynvalue.Get(value, "packageDir"))
+			if _, err := w.view(project, shot, packageDir); err == nil {
 				// Ошибка повторного чтения оставляет прежнее значение.
 				if updated, err := readJSON(file); err == nil {
 					value = updated
@@ -1013,13 +1022,13 @@ func (w *Workflow) PendingProposals(path string) map[string]Summary {
 		}
 		proposal := dynvalue.Get(value, "proposal")
 		status := dynvalue.ToString(dynvalue.Get(proposal, "status"))
-		packageDir, hasPackage := dynvalue.Get(value, "packageDir").(string)
-		target, _ := dynvalue.Get(value, "target").(string)
+		packageDir, hasPackage := absolute(dynvalue.Get(value, "packageDir"))
+		target, hasTarget := absolute(dynvalue.Get(value, "target"))
 		orphan := scene == nil || derivedshot.Source(scene) != "" || (hasPackage && !dynvalue.Exists(packageDir)) ||
-			(status == "applied" && (target == "" || !dynvalue.Exists(target)))
+			(status == "applied" && (!hasTarget || !dynvalue.Exists(target)))
 		if orphan {
 			if status != "running" {
-				_ = os.Remove(file)
+				w.store.Remove(project, shot)
 			}
 			continue
 		}
@@ -1034,7 +1043,7 @@ func (w *Workflow) PendingProposals(path string) map[string]Summary {
 			} else {
 				summary.Set("packageDir", nil)
 			}
-			result[scene.Value("id").(string)] = Summary{Value: dynvalue.Raw(summary), Attention: attention(status, stale)}
+			result[shot] = Summary{Value: dynvalue.Raw(summary), Attention: attention(status, stale)}
 		}
 	}
 	return result

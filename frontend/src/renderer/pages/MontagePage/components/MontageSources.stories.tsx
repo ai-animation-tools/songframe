@@ -7,7 +7,7 @@ import { MONTAGE_SOURCE, MontageSourcesStory } from '../../../testing/montageSto
 import type { StoryOptions } from '../../../testing/storybook';
 
 const meta = {
-  title: 'Монтаж/Материалы сцен',
+  title: 'Монтаж/Материалы планов',
   component: MontageSourcesStory,
   tags: ['!autodocs'],
   parameters: { controls: { disable: true } }
@@ -19,7 +19,7 @@ type Story = StoryObj<typeof meta>;
 const OPEN_MATERIAL = new RegExp(`(?:${commonTexts.watch}|${montageTexts.enlarge}): `);
 
 export const SearchAndAdd: Story = {
-  name: 'Поиск, пустая выдача и добавление одной сцены',
+  name: 'Поиск, пустая выдача и добавление одного плана',
   args: { initiallyEmpty: true },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);

@@ -26,7 +26,7 @@ describe('Числа в текстах обзора проекта', () => {
   ])('сохраняет фразы и согласование числа для %s', (count, shots) => {
     expect(projectTexts.checks.shots(count)).toBe(shots);
     expect(projectTexts.checks.acceptedCount({ done: count, total: 21 })).toBe(`${count} из 21`);
-    expect(projectTexts.nextStep.scenes({ done: count, total: 21 })).toBe(`Сцены: ${count} из 21`);
+    expect(projectTexts.nextStep.scenes({ done: count, total: 21 })).toBe(`Планы: ${count} из 21`);
     expect(projectTexts.capabilities.models({ provider: 'Новый сервис', count })).toBe(`Новый сервис доступен. Моделей для выбора: ${count}.`);
     expect(projectTexts.bundle.summary({ shots: count, videos: count, copied: count })).toBe(
       `Планов ${count}, из них видео ${count}, скопировано файлов ${count}.`

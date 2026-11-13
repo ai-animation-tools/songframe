@@ -183,7 +183,7 @@ FFmpeg/ffprobe, ONNX Runtime CPU и модели (выделение вокал�
 | `wails3 task check:ui` | `storybook`, затем `check:storybook` |
 | `wails3 task check:docs` | Ссылки, пути, переменные и задачи документации, актуальность карты кода (`internal/repodocs`) |
 | `wails3 task docs:map` | Перегенерировать [карту кода](code-map.md) из `internal/repodocs/areas.go` и комментариев пакетов |
-| `wails3 task check:all` | Все проверки перед коммитом с пониженным приоритетом (`nice`, `ionice`): bindings, затем параллельно Go-ветвь (`gofmt`, `go vet`, `check:go:outside`, `check:race`) и frontend-ветвь (типы, Vitest, Prettier, сборка и обход витрины) |
+| `wails3 task check:all` | Все проверки перед коммитом с пониженным приоритетом (`nice`, `ionice`) на половине физических ядер (`taskset`): bindings, затем параллельно Go-ветвь (`gofmt`, `go vet`, `check:go:outside`, `check:race`) и frontend-ветвь (типы, Vitest, Prettier, сборка и обход витрины) |
 | `wails3 task check:all:steps` | Те же шаги без понижения приоритета |
 
 Из `frontend/` (`frontend/package.json`): `yarn typecheck`, `yarn test [файл]`, `yarn build-storybook`, `yarn test:storybook [--grep группа]`, `yarn storybook` (dev-сервер на порту 6106, в приёмку не входит), `yarn format` (переформатирование — только отдельным поручением).
@@ -192,7 +192,7 @@ FFmpeg/ffprobe, ONNX Runtime CPU и модели (выделение вокал�
 
 - Во время работы гонять тесты изменённой области: `go test ./internal/<пакет> -run Имя`, `yarn test src/platform/<файл>.test.ts`, `yarn test:storybook --grep "<группа>"` после `yarn build-storybook`. После сбоя исправить и перезапустить только упавшее.
 - После правки только документации достаточно `wails3 task check:docs`; новый пакет или страница требуют строки в `internal/repodocs/areas.go` и `wails3 task docs:map`.
-- Перед коммитом — один полный `wails3 task check:all`. Он сам понижает приоритет процессора и диска (`scripts/low-priority.sh`), чтобы не мешать остальной работе машины. Тесты `internal/` в нём идут один раз, под детектором гонок: он выполняет те же тесты, что обычный `go test`.
+- Перед коммитом — один полный `wails3 task check:all`. Он сам понижает приоритет процессора и диска и занимает только половину физических ядер (`scripts/low-priority.sh`): вторая половина остаётся открытому приложению и остальной работе машины. Go и Playwright берут число потоков из доступных ядер, поэтому прогон идёт дольше, чем на всех ядрах. Тесты `internal/` в нём идут один раз, под детектором гонок: он выполняет те же тесты, что обычный `go test`.
 
 - `go test ./...` в корне компилирует и `main.go`, которому нужен `frontend/dist`: в чистом checkout сначала `wails3 task bindings` или `build`. Пакеты `./internal/...` этого не требуют.
 - На ограниченном окружении кэш Go можно задать явно, например `GOCACHE=/tmp/songframe-build-cache`; профиль приложения от этого не меняется.

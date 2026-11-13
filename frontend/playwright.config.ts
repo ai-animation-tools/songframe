@@ -4,6 +4,7 @@
  * отчёты пишутся в test-results/ и playwright-report/ рядом с frontend, витрина — storybook-static.
  */
 import { readFileSync } from 'node:fs';
+import { availableParallelism } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from '@playwright/test';
@@ -15,14 +16,21 @@ const port = Number(process.env.STORYBOOK_TEST_PORT ?? 6107);
 const basePath = '/songframe/storybook/';
 const baseURL = `http://127.0.0.1:${port}${basePath}`;
 
-/** Половина квоты CPU контейнера (cgroup v2), как Playwright по умолчанию делит ядра; без квоты — его обычный выбор. */
-function containerWorkers(): number | undefined {
+/**
+ * Половина доступных процессов, как Playwright делит ядра по умолчанию, но от доступных, а не от всех:
+ * квота CPU контейнера (cgroup v2) или привязка к ядрам (`availableParallelism`), которую ставит
+ * check:all через scripts/low-priority.sh. Сам Playwright считает все ядра машины и запустил бы вдвое
+ * больше браузеров, чем ядер у прогона.
+ */
+function workerCount(): number {
+  let available = availableParallelism();
   try {
     const [quota, period] = readFileSync('/sys/fs/cgroup/cpu.max', 'utf8').trim().split(' ');
-    return quota === 'max' ? undefined : Math.max(1, Math.floor(Number(quota) / Number(period) / 2));
+    if (quota !== 'max') available = Math.min(available, Number(quota) / Number(period));
   } catch {
-    return undefined;
+    // Без cgroup v2 квоты нет.
   }
+  return Math.max(1, Math.floor(available / 2));
 }
 
 export default defineConfig({
@@ -30,7 +38,7 @@ export default defineConfig({
   testMatch: 'stories.spec.ts',
   outputDir: resolve(root, 'test-results'),
   fullyParallel: true,
-  workers: containerWorkers(),
+  workers: workerCount(),
   forbidOnly: ci,
   // Повтор отделяет нестабильную историю от сломанной в отчёте, но обе роняют job: прохождение «через раз» не принимается.
   retries: ci ? 1 : 0,

@@ -391,8 +391,10 @@ func (m *Manager) installProgress(completed, total int64) {
 	m.mu.Unlock()
 }
 
-// managedArtifactDirectory разрешает только относительный непосредственный payload собственного артефакта.
-// Без указателя active.json текущей версии payload берётся из каталога <id>/<version>.
+// managedArtifactDirectory — каталог установленного payload артефакта по указателю active.json: только
+// непосредственный подкаталог папки компонента для текущей версии. Без действительного указателя
+// установленного payload нет: возвращается сама папка компонента, где лежат лишь active.json и
+// каталоги версий, поэтому файлы компонента там не находятся и он считается отсутствующим.
 func managedArtifactDirectory(root string, a Artifact) string {
 	base := filepath.Join(root, a.ID)
 	data, err := os.ReadFile(filepath.Join(base, "active.json"))
@@ -400,7 +402,7 @@ func managedArtifactDirectory(root string, a Artifact) string {
 	if err == nil && json.Unmarshal(data, &active) == nil && active.Version == a.Version && active.Directory != "" && filepath.Base(active.Directory) == active.Directory && active.Directory != "." && active.Directory != ".." && !strings.ContainsAny(active.Directory, `\/:`) {
 		return filepath.Join(base, active.Directory)
 	}
-	return filepath.Join(base, a.Version)
+	return base
 }
 
 // atomicJSON публикует настройки только после Sync; временный файл лежит на том же диске.

@@ -242,7 +242,7 @@ func TestInstallInterruptedStateAndPointer(t *testing.T) {
 	os.MkdirAll(base, 0700)
 	data, _ := json.Marshal(activeInstallation{Version: a.Version, Directory: "../../чужой каталог"})
 	os.WriteFile(filepath.Join(base, "active.json"), data, 0600)
-	if got := managedArtifactDirectory(filepath.Join(m.profile, "components"), a); got != filepath.Join(base, a.Version) {
+	if got := managedArtifactDirectory(filepath.Join(m.profile, "components"), a); got != base {
 		t.Fatalf("небезопасный pointer: %s", got)
 	}
 }

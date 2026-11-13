@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { JobInfo } from '@shared/types';
-import type { VocalModelId, VocalPreparationView } from '@shared/vocals';
+import { VOCAL_MODELS, type VocalModelId, type VocalPreparationView } from '@shared/vocals';
 import { songTimingTexts as texts } from '@shared/texts/song-timing';
 import { useApp } from '../../../state';
 
@@ -62,7 +62,7 @@ export function useVocalPreparation({ project, onReady, onJob, onBusy }: Props) 
             (item) =>
               item.status === 'running' &&
               ((item.project === project && item.steps.some((step) => step.tool === 'separate_vocals')) ||
-                ['voc-ft', 'kim-vocal-1', 'kim-vocal-2'].includes(item.modelDownload?.model ?? ''))
+                VOCAL_MODELS.some((model) => model.id === item.modelDownload?.model))
           ) ?? null;
         setJob(current);
         onJob(current);

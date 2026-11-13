@@ -118,6 +118,11 @@ func installSynthetic(t *testing.T, m *Manager, id string) string {
 				t.Fatal(err)
 			}
 		}
+		// Payload установлен в текущей раскладке: указатель active.json на каталог версии.
+		pointer, _ := json.Marshal(activeInstallation{Version: a.Version, Directory: a.Version})
+		if err := os.WriteFile(filepath.Join(m.profile, "components", a.ID, "active.json"), pointer, 0o600); err != nil {
+			t.Fatal(err)
+		}
 		return root
 	}
 	t.Fatalf("нет артефакта %s", id)

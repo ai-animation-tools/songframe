@@ -279,7 +279,7 @@ function toProductionWorkflowView({
   };
 }
 
-/** ID моделей вокала — закрытый набор KNOWN_VOCAL_MODELS; Go хранит их строкой. */
+/** ID моделей вокала — закрытый набор VOCAL_MODELS; Go хранит их строкой. */
 const toVocals = (view: songtiming.VocalPreparationView): VocalPreparationView => ({
   ...view,
   models: view.models.map((model) => ({ ...model, id: model.id as VocalModelId })),

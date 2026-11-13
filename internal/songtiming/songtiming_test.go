@@ -268,8 +268,8 @@ func TestSeparationCancelRemovesAttempt(t *testing.T) {
 	if len(entries) != 1 || entries[0].Name() != f.id {
 		t.Fatalf("остались попытки: %v", entries)
 	}
-	if _, err := f.service.SeparateVocals(f.project, "kim-vocal-1"); err == nil || err.Error() != textModelUnknown {
-		t.Fatalf("новая Kim-модель: %v", err)
+	if _, err := f.service.SeparateVocals(f.project, "unknown-model"); err == nil || err.Error() != textModelUnknown {
+		t.Fatalf("неизвестная модель: %v", err)
 	}
 }
 
@@ -304,7 +304,7 @@ func TestDownloadsMissingComponents(t *testing.T) {
 	if setup := f.service.SongModelSetup(); !setup.Installed || setup.TotalBytes != 71 {
 		t.Fatalf("%+v", setup)
 	}
-	if _, err := f.service.DownloadVocalModel("kim-vocal-2"); err == nil {
+	if _, err := f.service.DownloadVocalModel("unknown-model"); err == nil {
 		t.Fatal("загрузка только Voc FT")
 	}
 }

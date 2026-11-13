@@ -159,15 +159,15 @@ export const CachedSelectionReopen: Story = {
     let modal = within(await screen.findByRole('dialog'));
     await waitFor(() => expect(modal.getByRole('button', { name: commonTexts.run })).toBeEnabled());
     await userEvent.click(modal.getByRole('combobox', { name: texts.vocalResult }));
-    await userEvent.click(await screen.findByRole('option', { name: 'Kim Vocal 1 · 2' }));
-    await userEvent.click(modal.getByRole('button', { name: `${texts.vocalSelect}: Kim Vocal 1` }));
+    await userEvent.click(await screen.findByRole('option', { name: 'Voc FT · 2' }));
+    await userEvent.click(modal.getByRole('button', { name: `${texts.vocalSelect}: Voc FT` }));
     await waitFor(() => expect(modal.getByRole('button', { name: commonTexts.cancel })).toBeEnabled());
     await userEvent.click(modal.getByRole('button', { name: commonTexts.cancel }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     await userEvent.click(within(canvasElement).getByRole('button', { name: 'Открыть окно разметки' }));
     modal = within(await screen.findByRole('dialog'));
     await waitFor(() => expect(modal.getByRole('button', { name: commonTexts.run })).toBeEnabled());
-    await expect(modal.getByRole('button', { name: `${texts.vocalSelect}: Kim Vocal 1` })).toBeDisabled();
+    await expect(modal.getByRole('button', { name: `${texts.vocalSelect}: Voc FT` })).toBeDisabled();
     await expect(modal.getByRole('combobox', { name: texts.vocalResult })).toBeEnabled();
     await expect(timingLocalInspection().starts).toHaveLength(0);
     await expect(timingLocalInspection().separations).toHaveLength(0);

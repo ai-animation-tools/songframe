@@ -228,7 +228,7 @@ export const DeleteSelected: Story = {
     await userEvent.click(dialog.getByRole('button', { name: 'Удалить' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     await expect(canvas.getByText('Разметка заблокирована')).toBeVisible();
-    await expect(await canvas.findByRole('button', { name: `${texts.vocalPreview}: Kim Vocal 1` })).toBeVisible();
+    await expect(await canvas.findByRole('button', { name: `${texts.vocalPreview}: Voc FT` })).toBeVisible();
     await expect(timingLocalInspection().deletions).toHaveLength(1);
     await userEvent.click(canvas.getByRole('button', { name: texts.separateAgain }));
     await waitFor(() => expect(canvas.getByRole('combobox', { name: texts.vocalResult })).toBeEnabled(), { timeout: 5000 });
@@ -238,15 +238,15 @@ export const DeleteSelected: Story = {
 };
 
 export const DeleteOther: Story = {
-  name: 'Удаление исторического WAV сохраняет выбранный Voc FT',
+  name: 'Удаление второго варианта сохраняет выбранный',
   tags: ['ci'],
   parameters: { songframe: timingPageOptions({ local: 'vocal-cached' }) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement),
       screen = within(canvasElement.ownerDocument.body);
     await userEvent.click(await canvas.findByRole('combobox', { name: texts.vocalResult }));
-    await userEvent.click(await screen.findByRole('option', { name: 'Kim Vocal 1 · 2' }));
-    await userEvent.click(canvas.getByRole('button', { name: 'Удалить: Kim Vocal 1' }));
+    await userEvent.click(await screen.findByRole('option', { name: 'Voc FT · 2' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Удалить: Voc FT' }));
     await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Удалить' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     await expect(canvas.getByText('Разметка разрешена')).toBeVisible();

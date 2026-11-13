@@ -1,6 +1,6 @@
 /** Синтетические сигналы витрины: одна шкала времени и разные частоты без реальных исходников. */
 import type { VocalModelId, VocalPreparationView } from '@shared/vocals';
-import { VOCAL_MODELS, KNOWN_VOCAL_MODELS } from '@shared/vocals';
+import { VOCAL_MODELS } from '@shared/vocals';
 
 export function syntheticVocalAudio(vocal: boolean): string {
   const rate = 8000,
@@ -44,7 +44,7 @@ export function makeVocalStoryView(installed: boolean, cached = false): VocalPre
   };
   if (cached) {
     addVocalStoryResult(view, 'voc-ft');
-    addVocalStoryResult(view, 'kim-vocal-1');
+    addVocalStoryResult(view, 'voc-ft');
     view.selectedId = view.results[0].id;
   }
   return view;
@@ -56,7 +56,7 @@ export function addVocalStoryResult(view: VocalPreparationView, modelId: VocalMo
   view.results.push({
     id,
     modelId,
-    modelLabel: KNOWN_VOCAL_MODELS.find((model) => model.id === modelId)!.label,
+    modelLabel: VOCAL_MODELS.find((model) => model.id === modelId)!.label,
     path: `/mock/${id}.wav`,
     sha256: id,
     createdAt: '2026-11-02T11:20:30Z',

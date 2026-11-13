@@ -51,6 +51,31 @@ describe('поиск по справке', () => {
     }
   });
 
+  it('находит статьи о возможностях, появившихся после первого выпуска', () => {
+    const queries: Record<string, string> = {
+      'сколько потрачено': 'spend',
+      'списание неизвестно': 'spend',
+      'что ушло агенту': 'prompt-log',
+      'частота кадров': 'frame-rate',
+      'написать самому': 'own-materials',
+      'загрузить своё видео': 'own-materials',
+      'вручную вне приложения': 'own-materials',
+      'проверить видео': 'video-review',
+      'фрагмент под музыку': 'fragment-preview',
+      'сценарий требует пересмотра': 'scenario-agent',
+      'пересчитать границы': 'recalculate-bounds',
+      'снять выделение': 'timing-editing',
+      'свести стык здесь': 'timing-editing',
+      'срез речи': 'lipsync'
+    };
+    for (const [query, id] of Object.entries(queries)) {
+      expect(
+        searchGlossary(GLOSSARY, query).entries.map((entry) => entry.id),
+        query
+      ).toContain(id);
+    }
+  });
+
   it('находит нужные инструкции по естественным вопросам о монтаже', () => {
     const queries: Record<string, string> = {
       'переход между сценами': 'montage-cut-preview',

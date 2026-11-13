@@ -26,7 +26,7 @@ type Scene struct {
 }
 
 // Source — MontageSource: видео или карточка сцены, которые можно положить на дорожку. Path —
-// от корня проекта; Frames — известная длина в кадрах 30 к/с или null.
+// от корня проекта; Frames — известная длина в кадрах частоты проекта или null.
 type Source struct {
 	ID       string   `json:"id"`
 	Scene    string   `json:"scene"`
@@ -457,7 +457,7 @@ func attemptSources(project string, view *View, name, dir string, addSource func
 }
 
 // viewLyrics заполняет музыку и строки песни: трек и проблемы viewTiming, затем строки разметки,
-// которые соответствуют тексту, на кадровой оси 30 к/с, либо причину недоступности строк.
+// которые соответствуют тексту, на кадровой оси частоты проекта, либо причину недоступности строк.
 func viewLyrics(project string, view *View) error {
 	timingView, err := timing.ViewProject(project)
 	if err != nil {

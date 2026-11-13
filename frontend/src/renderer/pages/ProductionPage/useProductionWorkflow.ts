@@ -191,7 +191,7 @@ export function useProductionWorkflow(project: string, shot: string, packageDir:
           }, true)
         : Promise.resolve(false),
     apply,
-    /** Свой текст без агента применяется как предложение; follow принимает его в той же операции (D-045). */
+    /** Свой текст без агента применяется как предложение; follow принимает его в той же операции: автор своего текста — сам пользователь. */
     saveOwn: (text: ProductionOwnText, follow?: (applied: ProductionWorkflowView) => Promise<void>): Promise<boolean> =>
       execute(
         async () => {

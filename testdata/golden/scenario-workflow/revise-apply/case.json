@@ -1113,8 +1113,8 @@
           "task": "ai-clip-scenario:revise",
           "permissions": "read-only",
           "inputHashes": {
-            "prompt": "bc0364c6540215e1b65cfe00bb45674f87e913b555598d9399b2cd2092d63e14",
-            "context": "4d59b8adcabdcd571bf793ba7fba958770d0b7bbdca23cb1d740f230a0f5d799"
+            "prompt": "04288657d0cbbf9534b3543346ea2603d47e0741a3dedcddb6599bceca078002",
+            "context": "bea339cedf83bca779d92d47906a8e0178254f2e4cb3778cd20734d31cae57f9"
           },
           "status": "running",
           "phase": "работает",
@@ -2226,8 +2226,8 @@
           "task": "ai-clip-scenario:revise",
           "permissions": "read-only",
           "inputHashes": {
-            "prompt": "bc0364c6540215e1b65cfe00bb45674f87e913b555598d9399b2cd2092d63e14",
-            "context": "4d59b8adcabdcd571bf793ba7fba958770d0b7bbdca23cb1d740f230a0f5d799"
+            "prompt": "04288657d0cbbf9534b3543346ea2603d47e0741a3dedcddb6599bceca078002",
+            "context": "bea339cedf83bca779d92d47906a8e0178254f2e4cb3778cd20734d31cae57f9"
           },
           "status": "completed",
           "phase": "работает",
@@ -3326,8 +3326,8 @@
           "task": "ai-clip-scenario:revise",
           "permissions": "read-only",
           "inputHashes": {
-            "prompt": "bc0364c6540215e1b65cfe00bb45674f87e913b555598d9399b2cd2092d63e14",
-            "context": "4d59b8adcabdcd571bf793ba7fba958770d0b7bbdca23cb1d740f230a0f5d799"
+            "prompt": "04288657d0cbbf9534b3543346ea2603d47e0741a3dedcddb6599bceca078002",
+            "context": "bea339cedf83bca779d92d47906a8e0178254f2e4cb3778cd20734d31cae57f9"
           },
           "status": "completed",
           "phase": "работает",
@@ -4426,8 +4426,8 @@
           "task": "ai-clip-scenario:revise",
           "permissions": "read-only",
           "inputHashes": {
-            "prompt": "bc0364c6540215e1b65cfe00bb45674f87e913b555598d9399b2cd2092d63e14",
-            "context": "4d59b8adcabdcd571bf793ba7fba958770d0b7bbdca23cb1d740f230a0f5d799"
+            "prompt": "04288657d0cbbf9534b3543346ea2603d47e0741a3dedcddb6599bceca078002",
+            "context": "bea339cedf83bca779d92d47906a8e0178254f2e4cb3778cd20734d31cae57f9"
           },
           "status": "completed",
           "phase": "работает",

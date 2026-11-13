@@ -30,7 +30,7 @@ type ProjectHistoryEntry struct {
 	Exists     bool   `json:"exists"`
 }
 
-// AppState — совместимый снимок оболочки для window.api.app.state. Nullable-поля
+// AppState — снимок состояния приложения для window.api.app.state. Nullable-поля
 // явно сериализуются как null, пустые коллекции — как [], а не как null.
 type AppState struct {
 	Packaged bool                  `json:"packaged"`
@@ -46,8 +46,8 @@ type RootAllower interface {
 	AllowRoot(directory string) error
 }
 
-// AppService обслуживает только реализованные операции оболочки. Здесь нет
-// поиска компонентов вроде ONNX Runtime и автоматического открытия клипа.
+// AppService отдаёт снимок состояния приложения (State) и принимает сигнал готовности интерфейса.
+// Поиском компонентов вроде ONNX Runtime владеет internal/components, клип сам не открывается.
 // Callback готовности принадлежит smoke-проверке main, а не пользовательскому workflow.
 type AppService struct {
 	profile   ProfileStore

@@ -1137,8 +1137,8 @@
           "task": "ai-clip-scenario:revise",
           "permissions": "read-only",
           "inputHashes": {
-            "prompt": "bc0364c6540215e1b65cfe00bb45674f87e913b555598d9399b2cd2092d63e14",
-            "context": "24f244f61b31b320400b8924d2cd00dd4405031e62ed317509dda1f54a337383"
+            "prompt": "04288657d0cbbf9534b3543346ea2603d47e0741a3dedcddb6599bceca078002",
+            "context": "070e35e3ee9eeea5d2989aee4c520de211244df1ed7a95268bdcffbb26c2fc97"
           },
           "status": "running",
           "phase": "работает",
@@ -2249,8 +2249,8 @@
           "task": "ai-clip-scenario:revise",
           "permissions": "read-only",
           "inputHashes": {
-            "prompt": "bc0364c6540215e1b65cfe00bb45674f87e913b555598d9399b2cd2092d63e14",
-            "context": "24f244f61b31b320400b8924d2cd00dd4405031e62ed317509dda1f54a337383"
+            "prompt": "04288657d0cbbf9534b3543346ea2603d47e0741a3dedcddb6599bceca078002",
+            "context": "070e35e3ee9eeea5d2989aee4c520de211244df1ed7a95268bdcffbb26c2fc97"
           },
           "status": "completed",
           "phase": "работает",

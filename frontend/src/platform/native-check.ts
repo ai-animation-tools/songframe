@@ -1,10 +1,30 @@
+/**
+ * Служебный адаптер нативной проверки (--native-check): страницы /native-check и /preview не входят
+ * в контракт window.api, потому что существуют только в этом режиме, и получают доступ к Go отсюда.
+ * Так renderer, как и для window.api, обращается к bindings только через frontend/src/platform.
+ */
+
 import { Events } from '@wailsio/runtime';
 import * as checkService from '../../bindings/songframe/internal/app/nativecheckservice';
 import * as native from '../../bindings/songframe/internal/app/nativeservice';
+import type { PreviewInput } from '../../bindings/songframe/internal/app/models';
 import * as montageWindow from '../../bindings/songframe/internal/app/montagewindowservice';
 import type { MontageWindowMessage, MontageWindowState } from '@shared/montage-window';
 import * as projects from '../../bindings/songframe/internal/app/projectservice';
 import * as timingService from '../../bindings/songframe/internal/app/timingservice';
+
+/** Медиа и заголовок второго окна, которые Go выдаёт по session. */
+export type NativePreviewInput = PreviewInput;
+
+/**
+ * Связь второго окна (/preview) с NativeService: load получает медиа сеанса (null — сеанс не найден),
+ * ready сообщает loadedmetadata (Go отправляет preview:ready владельцу), close закрывает окно через Go.
+ */
+export const nativePreview = {
+  load: (session: string): Promise<NativePreviewInput | null> => native.Preview(session),
+  ready: (session: string): Promise<void> => native.PreviewReady(session),
+  close: (session: string): Promise<void> => native.ClosePreview(session)
+};
 
 /** Результат одного независимого наблюдения WebView, без вывода о физическом звуке. */
 export interface NativeObservation {

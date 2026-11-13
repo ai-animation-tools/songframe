@@ -70,8 +70,8 @@ type Options struct {
 	PausePolicy string  `json:"pause_policy"`
 }
 
-// DefaultOptions — пороги принятого опыта в режиме margin без prior пауз (историческая сверка off).
-// Рабочий путь приложения использует AcceptedOptions.
+// DefaultOptions — базовые пороги режима margin без prior пауз (pause_policy off); на них строится
+// AcceptedOptions рабочего пути приложения, тесты пауз сравнивают с ними регуляризацию.
 func DefaultOptions(duration float64) Options {
 	return Options{Scoring: "margin", Duration: duration, MeanPeak: .45, MinimumPeak: .1, Similarity: .8, PausePolicy: "off"}
 }

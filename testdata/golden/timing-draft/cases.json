@@ -135,6 +135,82 @@
     }
   },
   {
+    "name": "reset-keeps-notes",
+    "description": "Пересчёт всех строк: подтверждённая строка, очередь и ручная часть не переносятся, ручные заметки строк и кандидата сохраняются.",
+    "input": {
+      "text": "[Куплет]\nПервая строка песни\nВторая строка, «ёлка»!\n\n[Припев]\nОгни над водой\nОгни над водой\nПоследняя строка\n",
+      "duration": 60.0,
+      "decodedDuration": 60.0,
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "segments": [
+        {
+          "sourceLine": 2,
+          "start": 3.0,
+          "end": 6.0
+        },
+        {
+          "sourceLine": 3,
+          "start": 6.5,
+          "end": 9.0
+        },
+        {
+          "sourceLine": 6,
+          "start": 20.0,
+          "end": 23.0
+        },
+        {
+          "sourceLine": 7,
+          "start": 23.5,
+          "end": 26.0
+        }
+      ],
+      "candidates": [
+        {
+          "sourceLine": 8,
+          "start": 30.0,
+          "end": 31.0,
+          "reason": "Сходство свободного CTC-декодирования 0.500 ниже 0.800.",
+          "acousticScore": 0.6
+        }
+      ],
+      "previous": "{\n  \"version\": 2,\n  \"lines\": [\n    {\"id\": 9, \"source_line\": 3, \"start\": 7, \"end\": 10.25, \"verified\": true, \"note\": \"Подтверждено вручную\", \"extra\": [1, 2.0]},\n    {\"id\": 2, \"source_line\": 6, \"start\": 1, \"end\": 2, \"verified\": false, \"note\": \"Моя заметка\"},\n    {\"id\": 3, \"source_line\": 7, \"start\": 1, \"end\": 2, \"verified\": false, \"note\": \"Границы уточнены по выделенному вокалу и исходному тексту; сверка на слух не выполнена.\"}\n  ],\n  \"candidates\": [{\"source_line\": 8, \"start\": 1, \"end\": 2, \"reason\": \"x\", \"note\": \"Заметка кандидата\"}, {\"source_line\": 2.0, \"start\": 1, \"end\": 2, \"reason\": \"x\", \"note\": \"Заметка по float-ключу\"}],\n  \"line_order\": [8, 2, true, 3, 99, 2],\n  \"sections\": [\n    {\"name\": \"Моя часть\", \"start\": 0, \"end\": 2, \"note\": \"ручная\"},\n    {\"name\": \"Куплет\", \"start\": 1, \"end\": 2, \"note\": \"строки 1–2\"},\n    {\"name\": \"Припев\", \"start\": 5, \"end\": 6, \"note\": \"x\", \"origin\": \"auto\"}\n  ]\n}\n",
+      "reset": true
+    },
+    "expected": {
+      "error": null,
+      "timing": "{\n  \"version\": 2,\n  \"status\": \"Автоматическая разметка по локальному распознаванию (wav2vec2-large-xlsr-53-russian ONNX CTC); подтверждено на слух 0 из 5 строк. Предложений для ручной проверки: 1.\",\n  \"source\": \"source/track.mp3\",\n  \"sha256\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"duration_decoded\": 60.0,\n  \"duration_container\": 60.0,\n  \"clock\": \"Секунды от начала декодированного звука, не SMPTE\",\n  \"lines\": [\n    {\n      \"id\": 1,\n      \"source_line\": 2,\n      \"start\": 3.0,\n      \"end\": 6.0,\n      \"verified\": false,\n      \"note\": \"Заметка по float-ключу\"\n    },\n    {\n      \"id\": 2,\n      \"source_line\": 3,\n      \"start\": 6.5,\n      \"end\": 9.0,\n      \"verified\": false,\n      \"note\": \"Подтверждено вручную\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 6,\n      \"start\": 20.0,\n      \"end\": 23.0,\n      \"verified\": false,\n      \"note\": \"Моя заметка\"\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 7,\n      \"start\": 23.5,\n      \"end\": 26.0,\n      \"verified\": false,\n      \"note\": \"Границы уточнены по выделенному вокалу и исходному тексту; сверка на слух не выполнена.\"\n    }\n  ],\n  \"candidates\": [\n    {\n      \"source_line\": 8,\n      \"start\": 30.0,\n      \"end\": 31.0,\n      \"reason\": \"Сходство свободного CTC-декодирования 0.500 ниже 0.800.\",\n      \"acoustic_score\": 0.6,\n      \"note\": \"Заметка кандидата\"\n    }\n  ],\n  \"line_order\": [\n    2,\n    3,\n    6,\n    7,\n    8\n  ],\n  \"sections\": [\n    {\n      \"name\": \"Не размечено\",\n      \"start\": 0.0,\n      \"end\": 3.0,\n      \"note\": \"границы вокала не подтверждены\",\n      \"origin\": \"auto\"\n    },\n    {\n      \"name\": \"Куплет\",\n      \"start\": 3.0,\n      \"end\": 9.0,\n      \"note\": \"строки 1–2\",\n      \"origin\": \"auto\"\n    },\n    {\n      \"name\": \"Не размечено\",\n      \"start\": 9.0,\n      \"end\": 20.0,\n      \"note\": \"границы вокала не подтверждены\",\n      \"origin\": \"auto\"\n    },\n    {\n      \"name\": \"Припев\",\n      \"start\": 20.0,\n      \"end\": 31.0,\n      \"note\": \"строки 3–5\",\n      \"origin\": \"auto\"\n    },\n    {\n      \"name\": \"Не размечено\",\n      \"start\": 31.0,\n      \"end\": 60.0,\n      \"note\": \"границы вокала не подтверждены\",\n      \"origin\": \"auto\"\n    }\n  ]\n}\n"
+    }
+  },
+  {
+    "name": "reset-bad-previous",
+    "description": "Пересчёт всех строк при прежнем файле с неожиданной структурой: разметка записывается без переноса заметок.",
+    "input": {
+      "text": "[Куплет]\nПервая строка песни\nВторая строка, «ёлка»!\n",
+      "duration": 60.0,
+      "decodedDuration": 60.0,
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "segments": [
+        {
+          "sourceLine": 2,
+          "start": 3.0,
+          "end": 6.0
+        },
+        {
+          "sourceLine": 3,
+          "start": 6.5,
+          "end": 9.0
+        }
+      ],
+      "candidates": [],
+      "previous": "{\"version\": 2, \"lines\": 5, \"candidates\": [{\"source_line\": 2, \"note\": \"Заметка\"}]}\n",
+      "reset": true
+    },
+    "expected": {
+      "error": null,
+      "timing": "{\n  \"version\": 2,\n  \"status\": \"Автоматическая разметка по локальному распознаванию (wav2vec2-large-xlsr-53-russian ONNX CTC); подтверждено на слух 0 из 2 строк.\",\n  \"source\": \"source/track.mp3\",\n  \"sha256\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"duration_decoded\": 60.0,\n  \"duration_container\": 60.0,\n  \"clock\": \"Секунды от начала декодированного звука, не SMPTE\",\n  \"lines\": [\n    {\n      \"id\": 1,\n      \"source_line\": 2,\n      \"start\": 3.0,\n      \"end\": 6.0,\n      \"verified\": false,\n      \"note\": \"Границы уточнены по выделенному вокалу и исходному тексту; сверка на слух не выполнена.\"\n    },\n    {\n      \"id\": 2,\n      \"source_line\": 3,\n      \"start\": 6.5,\n      \"end\": 9.0,\n      \"verified\": false,\n      \"note\": \"Границы уточнены по выделенному вокалу и исходному тексту; сверка на слух не выполнена.\"\n    }\n  ],\n  \"candidates\": [],\n  \"line_order\": [\n    2,\n    3\n  ],\n  \"sections\": [\n    {\n      \"name\": \"Вступление\",\n      \"start\": 0.0,\n      \"end\": 3.0,\n      \"note\": \"без вокала\",\n      \"origin\": \"auto\"\n    },\n    {\n      \"name\": \"Куплет\",\n      \"start\": 3.0,\n      \"end\": 9.0,\n      \"note\": \"строки 1–2\",\n      \"origin\": \"auto\"\n    },\n    {\n      \"name\": \"Финал без вокала\",\n      \"start\": 9.0,\n      \"end\": 60.0,\n      \"note\": \"до конца трека\",\n      \"origin\": \"auto\"\n    }\n  ]\n}\n"
+    }
+  },
+  {
     "name": "manual-sections",
     "description": "Полностью ручная карта остаётся как есть.",
     "input": {

@@ -46,7 +46,7 @@ describe('палитры приложения', () => {
         expect(contrast(color.main, hovered), `${color.main} под наведением на ${page}`).toBeGreaterThanOrEqual(4.5);
       }
     }
-    // Подсветка найденного текста в справке. @link src/renderer/src/pages/HelpPage/components/HighlightedText.tsx
+    // Подсветка найденного текста в справке. @link ./pages/HelpPage/components/HighlightedText.tsx
     expect(contrast(palette.getContrastText(palette.warning.light), palette.warning.light)).toBeGreaterThanOrEqual(4.5);
   });
 });

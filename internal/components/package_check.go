@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 )
 
-// PackageCheckRequest задаёт отдельный новый профиль и полный офлайн-комплект smoke-проверки.
+// PackageCheckRequest задаёт отдельный чистый каталог состояния и полный офлайн-комплект smoke-проверки.
 // LocalFiles содержит готовую программу ffmpeg либо его архив, архив ort-cpu и файлы ctc-ru/ctc-vocab.
 // Рядом с готовым ffmpeg нужен ffprobe; исходники только читаются, внешняя пара не копируется.
 type PackageCheckRequest struct {
@@ -25,7 +25,7 @@ type PackageCheckReport struct {
 }
 
 // PackageCheck устанавливает компоненты тем же Manager, которым пользуется приложение, и проверяет CTC.
-// Новый профиль исключает пользовательские настройки; полный набор LocalFiles исключает скачивание.
+// Отдельный каталог состояния исключает пользовательские настройки; полный набор LocalFiles исключает скачивание.
 // Check запускает существующий CPU probe: секунду синтетического звука, проверку logits и FFmpeg recipes.
 // Профиль остаётся после успеха или отказа для осмотра отчёта; удалением владеет вызывающий smoke-сценарий.
 // Вызывать следует в отдельном процессе до иных ORT-проверок: binding закрепляет первую загруженную библиотеку.
@@ -49,7 +49,7 @@ func packageCheck(ctx context.Context, request PackageCheckRequest, createManage
 		return report, err
 	}
 	if !filepath.IsAbs(request.ProfileDirectory) {
-		return report, fmt.Errorf("smoke: нужен абсолютный путь нового профиля")
+		return report, fmt.Errorf("smoke: нужен абсолютный путь отдельного каталога состояния")
 	}
 	ids := []string{"ffmpeg", "ort-cpu", "ctc-ru", "ctc-vocab"}
 	if len(request.LocalFiles) != len(ids) {

@@ -156,8 +156,8 @@ export function TimingGenerateDialog({
                 </Stack>
               </AccordionDetails>
             </Accordion>
-            {resetAll && <Alert severity="warning">{texts.resetWarning}</Alert>}
-            <Alert severity="warning">{texts.recalculateHint}</Alert>
+            {/* Одно предупреждение о пересчёте: при сбросе подтверждённые строки не сохраняются. */}
+            <Alert severity="warning">{resetAll ? texts.resetWarning : texts.recalculateHint}</Alert>
           </Stack>
           {processing && <Alert severity="info">{texts.cancelHint}</Alert>}
         </Stack>

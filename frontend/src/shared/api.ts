@@ -1,6 +1,4 @@
 import type { VocalModelId, VocalPreparationView } from './vocals';
-/** Совместимый контракт UI: реализация Wails принадлежит platform/api, файлы и процессы остаются в Go. */
-
 import type { SongModelSetup } from './song-models';
 import type { AgentAccountResult, AgentCheckResult, AgentEvent, AgentJob, AgentModelsResult, AgentSettings, AgentStartInput } from './agents';
 import type {
@@ -73,6 +71,10 @@ import type {
   TreatmentFile
 } from './types';
 
+/**
+ * Контракт window.api — единственный путь интерфейса к Go: каждый метод отображается на сгенерированный binding Wails
+ * в адаптере platform/api, а файлы, процессы и задания остаются в Go. Соответствие типов ответам Go проверяет typecheck.
+ */
 export interface Api {
   ai: {
     /** Явный выбор и проверенная доступность исполнителей; значения по умолчанию не дают разрешение запуска. */

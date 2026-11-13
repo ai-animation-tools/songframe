@@ -9,19 +9,19 @@ frontend/src/renderer/         App, темы, страницы, общие ко�
     useExample.ts             локальные hooks при необходимости
   components/                 действительно общие компоненты
   testing/                    независимые модели историй, не импортируются рабочим кодом
-frontend/src/platform/        тонкий адаптер window.api над bindings: доступность методов и ошибки
+frontend/src/platform/        тонкий адаптер window.api и служебный адаптер нативной проверки над bindings
 frontend/src/shared/          чистые типы/правила и доменные тексты
 frontend/bindings/            generated Wails bindings, не редактируются вручную
 internal/app/                 Wails-сервисы и граница пользовательских операций
-internal/project/             текущее чтение проектных данных
+internal/project/             общие сведения о папке проекта и тексты файловых ошибок
 internal/components/          обнаружение, установка и probes компонентов
-internal/store/               отдельный профиль приложения
+internal/store/               каталог состояния приложения
 ```
 
 Страницы экспортируются через `pages/{PageName}/index.ts` и `pages/index.ts`; публичный index страницы экспортирует саму страницу. Локальные типы, hooks, функции и тесты остаются в её папке, пока не появились реальные общие потребители. Не переносите монолит страницы в одну обёртку и не создавайте общую абстракцию ради одного экрана. Доменные UI-тексты в `frontend/src/shared/texts/` — намеренное исключение из локальности.
 
 Используйте существующие [Layout](../../frontend/src/renderer/components/Layout.tsx), [PageActionBar](../../frontend/src/renderer/components/PageActionBar.tsx), [ActionButton](../../frontend/src/renderer/components/ActionButton.tsx), [DisabledHint](../../frontend/src/renderer/components/DisabledHint.tsx), [FileDropZone](../../frontend/src/renderer/components/FileDropZone.tsx) и [AudioPlayer](../../frontend/src/renderer/components/AudioPlayer.tsx) по их фактическому контракту. Ссылки на веб-страницы вне приложения — только [ExternalLink](../../frontend/src/renderer/components/ExternalLink.tsx): окно Wails переход по `target="_blank"` в браузер ОС не передаёт, и ссылка открывается через `window.api.shell.openExternal`. Перед новой композицией ищите готовую в `frontend/src/renderer/components` и на соседних страницах; новое решайте через MUI и текущие общие компоненты.
 
-Renderer не читает файловую систему и не запускает процессы. Операции выполняет Go, frontend обращается к ним через adapters `frontend/src/platform/` и generated bindings. Новое поведение согласованно меняет Go-сервис/DTO, adapter и потребителя. После изменения экспортируемого API выполните `wails3 task bindings`; ручная правка generated файла не заменяет изменение владельца. Не добавляйте второй обходной мост мимо `window.api`.
+Renderer не читает файловую систему и не запускает процессы. Операции выполняет Go, frontend обращается к ним через adapters `frontend/src/platform/` и generated bindings. Новое поведение согласованно меняет Go-сервис/DTO, adapter и потребителя. После изменения экспортируемого API выполните `wails3 task bindings`; ручная правка generated файла не заменяет изменение владельца. Не добавляйте второй обходной мост мимо `window.api`: страницы и компоненты не импортируют bindings, единственное исключение — служебные страницы нативной проверки окна, которые работают через адаптер `frontend/src/platform/native-check.ts` ([разработка](../development.md#контракт-windowapi)).
 
 Истории `*.stories.tsx` лежат рядом с компонентами и не экспортируются публичными index. Общие decorators находятся в `frontend/.storybook/`; рабочее приложение не импортирует Storybook и синтетические модели. [Проверка историй](storybook.md) отдельно проверяет компоненты и их работу на родительской странице.

@@ -23,7 +23,8 @@ import (
 // shotID — один явный ID плана Mxx или Mxx.N.
 var shotID = regexp.MustCompile(`^M\d{2}(?:\.\d+)?$`)
 
-// durationRules — DURATION_RULES контракта.
+// durationRules — допустимые duration_rule настроек генерации видео (тот же список у интерфейса в
+// frontend/src/shared/types.ts).
 var durationRules = []string{"min_supported_strictly_greater_than_window", "min_supported_not_less_than_window", "exact_window"}
 
 // Speech — подготовленный точный WAV речевого плана в пакете: путь от проекта и интервал трека.

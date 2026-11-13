@@ -32,6 +32,7 @@ type draftCase struct {
 			AcousticScore float64 `json:"acousticScore"`
 		} `json:"candidates"`
 		Previous *string `json:"previous"`
+		Reset    bool    `json:"reset"`
 	} `json:"input"`
 	Expected struct {
 		Error  *string `json:"error"`
@@ -70,7 +71,7 @@ func TestBuildDraftMatchesGolden(t *testing.T) {
 			if item.Input.Previous != nil {
 				previous = ParsePrevious([]byte(*item.Input.Previous))
 			}
-			draft, err := BuildDraft(item.Input.Text, recognition, item.Input.Duration, previous, item.Input.SHA256)
+			draft, err := BuildDraft(item.Input.Text, recognition, item.Input.Duration, previous, item.Input.SHA256, item.Input.Reset)
 			if item.Expected.Error != nil {
 				if err == nil || err.Error() != *item.Expected.Error {
 					t.Fatalf("ошибка %v, ожидалась %q", err, *item.Expected.Error)

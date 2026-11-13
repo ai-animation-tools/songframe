@@ -1,13 +1,14 @@
 ---
 name: songframe-build
-description: "Собрать и проверить локальный Linux AppImage или Windows amd64 NSIS-установщик или deb-пакет SongFrame: минимальная оболочка, prerequisites и отдельная CPU-проверка компонентов."
+description: "Собрать и проверить локальный Linux AppImage, deb-пакет или Windows amd64 NSIS-установщик SongFrame: минимальная оболочка, prerequisites и отдельная CPU-проверка компонентов."
+argument-hint: "[appimage|deb|windows]"
 ---
 
 # Сборка SongFrame
 
 Работай в корне репозитория. Перед сборкой прочитай `AGENTS.md` и `packaging/README.md`: актуальные зависимости сборщика, состав пакета и детали smoke принадлежат этому руководству.
 
-Скилл собирает Linux AppImage x86_64 или Windows amd64 NSIS по явно выбранной платформе. Для deb-пакета выполни `wails3 task package:deb` и проверь его `wails3 task smoke:deb` по разделу deb в `packaging/README.md`; AppImage его не заменяет. Для Windows прочитай [локальный Windows-рецепт](../../packaging/windows/README.md), выполни `wails3 task package:windows` и проверь `.sha256`/`.build.json` готового setup. CGO=1, GUI subsystem, встроенные ресурсы и payload проверяются автоматически; это не native Windows-тест. Если пользователь проверяет VM сам, не запускай её. При поручении положить комплект в общую папку VirtualBox найди настроенный путь через VBoxManage, положи только setup и краткую инструкцию и выполни явно запрошенную очистку старых тестовых файлов. Windows prerequisites и ручная проверка описаны в указанном рецепте; команды Linux ниже при Windows-сборке не запускать. Linux-проверки готовность Windows не подтверждают. Сборка не разрешает commit, push, изменение версии, создание тегов или публикацию.
+Скилл собирает Linux AppImage x86_64, deb-пакет или Windows amd64 NSIS по явно выбранной поставке. Для deb-пакета выполни сборку и проверку из раздела «deb-пакет» в `packaging/README.md`; проверка AppImage его не заменяет. Для Windows прочитай [локальный Windows-рецепт](../../packaging/windows/README.md), выполни `wails3 task package:windows` и проверь `.sha256`/`.build.json` готового setup. CGO=1, GUI subsystem, встроенные ресурсы и payload проверяются автоматически; это не native Windows-тест. Если пользователь проверяет VM сам, не запускай её. При поручении положить комплект в общую папку VirtualBox найди настроенный путь через VBoxManage, положи только setup и краткую инструкцию и выполни явно запрошенную очистку старых тестовых файлов. Windows prerequisites и ручная проверка описаны в указанном рецепте; команды Linux ниже при Windows-сборке не запускать. Linux-проверки готовность Windows не подтверждают. Сборка не разрешает commit, push, изменение версии, создание тегов или публикацию.
 
 Рецепт адаптирован по [forktopus-release](https://github.com/forktopus/forktopus/blob/main/.agents/skills/forktopus-release/SKILL.md) и [AppArmor bootstrap Forktopus](https://github.com/forktopus/forktopus/blob/main/scripts/appimage/main_linux.go), с [обёрткой AppRun](https://github.com/forktopus/forktopus/blob/main/build/linux/appimage/AppRun). Здесь используются местные задачи Wails и локальные артефакты: release/bump и получение файлов исключительно из CI к этой сборке не относятся. Атрибуция MIT исходного bootstrap должна сохраняться в исходниках и составе лицензий поставки.
 
@@ -15,9 +16,9 @@ description: "Собрать и проверить локальный Linux AppI
 
 Изменение рецепта не разрешает пересборку или запуск артефакта. Не добавлять дорогую сборку, Docker или полную матрицу по собственной инициативе; проверять изменённую область адресно. SHA/receipt использовать внутри инструментов, пользователю без запроса их не перечислять и в общую папку не копировать.
 
-## Сборка
+## Сборка AppImage
 
-- Версию ранней поставки прочитай из `packaging/VERSION`; без поручения не увеличивай её. Учитывай незакоммиченные изменения и не выдавай их пакет за чистый снимок HEAD.
+- Версию поставки прочитай из `packaging/VERSION`; без поручения не увеличивай её. Учитывай незакоммиченные изменения и не выдавай их пакет за чистый снимок HEAD.
 - Выполни из корня репозитория:
 
   ```sh
@@ -25,11 +26,20 @@ description: "Собрать и проверить локальный Linux AppI
   ```
 
 - Готовые AppImage, метаданные `*.build.json` и контрольные суммы `*.sha256` лежат в `build/release/`. Используй фактически созданное имя файла. Сверь метаданные с текущей версией, исходниками и файлом, а SHA-256 — с контрольной суммой.
-- Не копируй AppImage за пределы штатного `build/release/` без поручения. Разовые запросы, отчёты и тестовые профили создавай в `/tmp`, вне Git; прежние результаты не перезаписывай.
+- Не копируй пакеты за пределы штатного `build/release/` без поручения. Разовые запросы, отчёты и тестовые профили создавай в `/tmp`, вне Git; прежние результаты не перезаписывай.
 
 Минимальная Linux-система — Ubuntu 24.04 / glibc 2.39, архитектура x86_64. В AppImage включены GTK4 и WebKit6; FFmpeg/ffprobe, ORT и модели устанавливаются отдельно через компоненты приложения. Модели, runtime компонентов, Node и Git не должны случайно попасть внутрь минимальной поставки. Требования сборщика и зависимости пользователя различаются: Node может требоваться для сборки frontend, но не для запуска готового AppImage.
 
-## Обычная локальная проверка
+## deb-пакет
+
+```sh
+wails3 task package:deb
+wails3 task smoke:deb DEB=/absolute/build/release/songframe-<VERSION>-linux-amd64.deb OUTPUT=/tmp/new-deb-check
+```
+
+`DEB` и `OUTPUT` обязательны: абсолютный путь фактически собранного пакета и новая папка отчётов. `smoke:deb` ставит пакет в чистую Ubuntu 24.04 в Docker и запускает GUI smoke; установку на настольную систему и загрузку профиля AppArmor он не подтверждает — их проверяют вручную по `packaging/README.md`.
+
+## Обычная локальная проверка AppImage
 
 Сначала запускай конечный AppImage на хосте с отдельным новым профилем:
 
@@ -83,4 +93,17 @@ wails3 task smoke:appimage APPIMAGE=/absolute/file.AppImage OUTPUT=/tmp/new-dir
 
 В ответе сообщи путь готового артефакта, версию, результат фактически выполненных проверок и существенные ограничения. Служебные SHA/receipt пользователю без запроса не перечислять. Укажи существенные непроверенные ограничения; Linux-результат не переносится на Windows или более старую glibc.
 
-Linux-рецепт обязательно вызывает `go run ./scripts/packtool runtime-policy prune` после Wails generator, а перед упаковкой — `runtime-policy check`. GTK3/WebKit4.x и ссылки на них в ELF делают финализацию ошибочной; вложенные `libgst*-1.0` удаляются, GStreamer берётся из системы вместе с плагинами. Медиа WebView в готовом AppImage проверять `--native-check-dir` (12 наблюдений): GUI smoke `<audio>` не создаёт. Защиту проверять малым синтетическим набором из packaging/README; не пересобирать AppImage ради одной правки правила без поручения пользователя.
+Linux-рецепт обязательно вызывает `go run ./scripts/packtool runtime-policy prune` после Wails generator, а перед упаковкой — `runtime-policy check`. GTK3/WebKit4.x и ссылки на них в ELF делают финализацию ошибочной; вложенные `libgst*-1.0` удаляются, GStreamer берётся из системы вместе с плагинами. Защиту проверять малым синтетическим набором из packaging/README; не пересобирать AppImage ради одной правки правила без поручения пользователя.
+
+## Медиа WebView в готовой поставке
+
+GUI smoke `<audio>` не создаёт, поэтому кодеки, Range-запросы и второе окно проверяет отдельный режим `--native-check-dir`. Он требует `--native-check-report` и положительный `--smoke-timeout` и не совмещается с `--smoke` (`main.go`). Синтетические файлы готовит FFmpeg разработчика; каталог фикстур, профиль и отчёт — новые:
+
+```sh
+sh scripts/make-media-fixtures.sh /tmp/new-media-fixtures
+SONGFRAME_LOCAL_DIR=/tmp/new-native-profile ./file.AppImage \
+  --native-check-dir /tmp/new-media-fixtures \
+  --native-check-report /tmp/new-native-report.json --smoke-timeout 90s
+```
+
+Успех — `"passed": true` и пустой `error` в отчёте: приложение само сверяет полноту набора проверок. Подробности режима и `--native-check-project` — в [руководстве разработчика](../../docs/development.md#нативные-проверки-окна).

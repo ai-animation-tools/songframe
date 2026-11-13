@@ -71,6 +71,23 @@ func supportedMinor(version string, major, minor float64) bool {
 	return ok && a == major && b >= minor
 }
 
+// versionAtLeast — версия X.Y.Z не ниже major.minor.patch. Части сравниваются по старшинству:
+// старшая версия выше любой младшей (3.0.0 выше 2.1.273), иначе решает minor, затем patch.
+// Нераспознанная версия требования не выполняет.
+func versionAtLeast(version string, major, minor, patch float64) bool {
+	a, b, c, ok := numbers(version)
+	switch {
+	case !ok:
+		return false
+	case a != major:
+		return a > major
+	case b != minor:
+		return b > minor
+	default:
+		return c >= patch
+	}
+}
+
 // prepareAccount — пустой снимок с диагностикой; поля заполняются только подтверждёнными данными.
 func prepareAccount(ctx context.Context, config Settings, options CheckOptions) (AccountResult, ProcessOptions, error) {
 	diagnostic, err := CheckAgent(ctx, config, options)
@@ -124,8 +141,7 @@ func claudeAccount(ctx context.Context, config Settings, options CheckOptions) (
 		}
 	}
 	// get_usage — экспериментальный метод SDK, появился в 2.1.273.
-	_, minor, patch, _ := numbers(result.Diagnostic.Version)
-	if canReadUsage && (minor > 1 || patch >= 273) {
+	if canReadUsage && versionAtLeast(result.Diagnostic.Version, 2, 1, 273) {
 		if usage := readClaudeUsage(ctx, path, process); usage != nil {
 			result.Limits = claudeLimits(usage)
 		} else {

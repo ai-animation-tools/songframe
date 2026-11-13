@@ -47,7 +47,7 @@ const (
 	textModelsUnavailable = "Каталог моделей агента Codex сейчас недоступен. Повторите проверку возможностей."
 )
 
-// Images, ImagesRequest, Prepared, Reference и Permit — общий контракт исполнителя-агента.
+// Images, ImagesRequest, Prepared и Permit — общий контракт исполнителя-агента.
 type (
 	Images        = agentexec.Images
 	ImagesRequest = agentexec.ImagesRequest

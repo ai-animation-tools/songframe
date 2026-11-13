@@ -522,8 +522,9 @@ func EstimateCost(pricing, request *toolrt.Dict) (Estimate, error) {
 	return Estimate{Missing: []string{"цена " + toolrt.Str(model) + " при " + *resolution + " не задана и не наблюдалась"}}, nil
 }
 
-// Check — отчёт с
-// вердиктом. balance — остаток вручную (nil — спросить адаптер, если useAccount).
+// Check — отчёт проверки стоимости запроса: оценка по pricing, остаток и вердикт (ok,
+// insufficient_balance или cost_or_balance_unknown) с причинами. balance — остаток вручную (nil —
+// спросить адаптер провайдера, если useAccount); других обращений к сервису нет.
 func Check(ctx context.Context, request, pricing *toolrt.Dict, balance *float64, useAccount bool, timeout float64) (*toolrt.Dict, error) {
 	estimated, err := EstimateCost(pricing, request)
 	if err != nil {

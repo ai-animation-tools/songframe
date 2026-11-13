@@ -4,7 +4,7 @@
 
 | Скилл | Когда применять |
 | --- | --- |
-| [songframe-build](songframe-build/SKILL.md) | Локальные Linux AppImage / Windows NSIS, prerequisites, GUI smoke и отдельный CPU smoke |
+| [songframe-build](songframe-build/SKILL.md) | Локальные Linux AppImage и deb, Windows NSIS, prerequisites, GUI smoke и отдельный CPU smoke |
 | [songframe-ui](songframe-ui/SKILL.md) | Страницы, компоненты, тексты, Wails API, влияющий на UI, и Storybook |
 | [songframe-project-contract](songframe-project-contract/SKILL.md) | JSON проектов, доменные данные, DTO и общие Go/TS fixtures |
 | [songframe-release](songframe-release/SKILL.md) | План и выпуск версий в публичном songframe |

@@ -212,7 +212,8 @@ func ReadSettings(project string) (Settings, error) {
 	return settings, nil
 }
 
-// durationRules — DURATION_RULES контракта в порядке сообщения.
+// durationRules — допустимые duration_rule настроек генерации видео в порядке сообщения (тот же
+// список у интерфейса в frontend/src/shared/types.ts).
 var durationRules = []string{"min_supported_strictly_greater_than_window", "min_supported_not_less_than_window", "exact_window"}
 
 // Шаблоны проверки: имя MP4 аниматика из ASCII-букв, цифр, «_», «.» и «-» и соотношение сторон

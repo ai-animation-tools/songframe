@@ -22,11 +22,11 @@ tasks:
       - task: bindings
       - task: frontend
       - mkdir -p build/bin
-      # Исходный архив не обязан содержать .git; версия раннего пакета задаётся в packaging/VERSION.
-      # Версия из packaging/VERSION попадает в бинарник: по ней обновление сравнивает выпуски.
+      # Исходный архив не обязан содержать .git: версия поставки задаётся в packaging/VERSION.
+      # Она попадает в бинарник, и по ней обновление из приложения сравнивает выпуски.
       - go build -buildvcs=false -tags production -trimpath -ldflags "-s -w -X songframe/internal/appversion.Version=$(cat packaging/VERSION)" -o build/bin/songframe .
   package:linux:
-    desc: Собрать ранний Linux AppImage с GTK/WebKit, bootstrap и метаданными
+    desc: Собрать Linux AppImage с GTK/WebKit, bootstrap AppArmor и метаданными
     cmds:
       - bash scripts/package-linux.sh
   package:deb:

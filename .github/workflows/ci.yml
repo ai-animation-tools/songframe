@@ -1,6 +1,6 @@
 # Проверки исходников: то же, что `wails3 task check:all`, разбитое на два независимых job.
 # Go-часть требует CGO с GTK4/WebKitGTK 6.0, frontend-часть — только Node/Yarn и Chromium.
-# Поставки (AppImage, NSIS) здесь не собираются: их собирают и проверяют локально (packaging/README.md).
+# Поставки (AppImage, deb, NSIS) здесь не собираются: их собирают и проверяют локально (packaging/README.md).
 name: CI
 
 # `*` в фильтре путей не проходит через `/`: `!*.md` исключает только корневые документы.
@@ -251,9 +251,9 @@ jobs:
           yarn playwright install --only-shell chromium
           node -e "require('@playwright/test').chromium.launch().then((browser) => browser.close())" || yarn playwright install-deps chromium
       # Полный обход витрины, как в check:ui (STORYBOOK_TEST_CI не задаётся), поделённый на части.
-      # Раннер приватного репозитория имеет 2 ядра, и Playwright по умолчанию берёт половину:
-      # один поток проходил 1184 истории дольше 40 минут. Истории ждут браузер, а не CPU,
-      # поэтому потоков столько, сколько ядер.
+      # Playwright по умолчанию берёт половину ядер, и на раннере с двумя ядрами один поток
+      # проходил витрину дольше 40 минут. Истории ждут браузер, а не CPU, поэтому потоков
+      # столько, сколько ядер раннера.
       - name: Браузерный набор витрины
         id: storybook-browser
         run: yarn test:storybook --shard=${{ matrix.shard }}/${{ strategy.job-total }} --workers="$(nproc)"

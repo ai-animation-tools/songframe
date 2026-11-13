@@ -53,7 +53,7 @@ export function ThemeModeValueProvider({ value, children }: { value: ThemeModeCo
   return <ThemeModeContext.Provider value={value}>{children}</ThemeModeContext.Provider>;
 }
 
-/** Читает только настройку новой оболочки; недоступное хранилище не препятствует старту. */
+/** Читает сохранённую тему по ключу STORAGE_KEY; недоступное хранилище не препятствует старту. */
 function readStoredMode(): ThemeMode {
   try {
     const value = localStorage.getItem(STORAGE_KEY);

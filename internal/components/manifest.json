@@ -6,7 +6,7 @@
       "os": "linux",
       "arch": "amd64",
       "status": "pending_native",
-      "reason": "FFmpeg и standalone ORT CPU probes проверены на Linux; installed smoke ранней поставки ещё не принят."
+      "reason": "FFmpeg и standalone ORT CPU probes проверены на Linux; smoke установленной поставки ещё не принят."
     },
     {
       "os": "windows",

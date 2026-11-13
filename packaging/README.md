@@ -33,7 +33,7 @@ wails3 task check
 wails3 task package:linux
 ```
 
-`package:linux` заново генерирует bindings, проверяет TypeScript, собирает frontend и Go, упаковывает системные библиотеки через Wails, добавляет bootstrap, лицензии и значок в теме hicolor образа, финализирует AppImage. В GTK4 значок окна задаётся только именем из темы: приложение при старте назначает окнам значок `songframe`, и AppImage находит его в своей теме (AppRun добавляет `$APPDIR/usr/share` в `XDG_DATA_DIRS`), поэтому док показывает значок и без интеграции AppImage в систему; deb — из системной темы. Финализация использует appimagetool из того же закреплённого linuxdeploy и runtime уже созданного Wails-образа; повторного обхода всех системных библиотек нет. Артефакты в `build/release`:
+`package:linux` заново генерирует bindings, проверяет TypeScript, собирает frontend и Go, упаковывает системные библиотеки через Wails, добавляет bootstrap, лицензии и значок в теме hicolor образа, финализирует AppImage. В GTK4 значок окна задаётся только именем из темы: приложение при старте назначает окнам значок `songframe`, и AppImage находит его в своей теме (созданный Wails `AppRun.wails`, которому передаёт управление [AppRun](linux/AppRun), добавляет `$APPDIR/usr/share` в `XDG_DATA_DIRS`), поэтому док показывает значок и без интеграции AppImage в систему; deb — из системной темы. Финализация использует appimagetool из того же закреплённого linuxdeploy и runtime уже созданного Wails-образа; повторного обхода всех системных библиотек нет. Артефакты в `build/release`:
 
 - `songframe-<VERSION>-linux-x86_64.AppImage`;
 - рядом `<имя>.sha256` и `<имя>.build.json`: версия, исходный commit и dirty, SHA/размер, распакованный объём, минимум ОС и версия упаковщика.
@@ -124,7 +124,7 @@ wails3 task smoke:update APPIMAGE=/absolute/file.AppImage OUTPUT=/tmp/new-update
 
 ## Границы приёмки
 
-Раздельно записывать build, чистый GUI startup, установку/CPU inference, WebView audio/video, desktop AppArmor/FUSE и физическое аудио. Docker не подтверждает доступ к реальной звуковой карте. Windows amd64 и WebView2/VC++ prerequisites — отдельная работа; Linux не закрывает её.
+Раздельно записывать build, чистый GUI startup, установку/CPU inference, WebView audio/video, desktop AppArmor/FUSE и физическое аудио. Docker не подтверждает доступ к реальной звуковой карте. Windows amd64 и WebView2/VC++ prerequisites проверяются по [рецепту Windows](windows/README.md); Linux-проверки их не подтверждают.
 
 ## Защита Linux-рецепта от второго GTK/WebKit
 
@@ -140,4 +140,4 @@ Wails 3.0.0 может захватить helpers обеих установле�
 go test ./scripts/packtool -run 'Policy|Finalizer' -v
 ```
 
-Тесты покрывают 10 синтетических сценариев, включая отказ финализатора до обращения к runtime/toolchain; им нужны `gcc` и `readelf`, без них тесты пропускаются. Существующий AppImage по поручению пользователя не пересобирался и не запускался; новый размер и runtime этого рецепта пока не измерены.
+Тесты покрывают 10 синтетических сценариев, включая отказ финализатора до обращения к runtime/toolchain; им нужны `gcc` и `readelf`, без них тесты пропускаются.

@@ -1088,8 +1088,8 @@
           "task": "ai-clip-scenario:treatment",
           "permissions": "read-only",
           "inputHashes": {
-            "prompt": "e4fa2c1b8e48dc176a600e9af7245a31240a55c49020acb5a8e9acfdb880eae1",
-            "context": "0dffd4a89d7a26b97f2c3c245369f282d9aa81380eb1b8106cd3396462ab2ed3"
+            "prompt": "5bd3958e4564e7e977dbf3313e9bf4a21439193c50479567709bd6fb570def48",
+            "context": "5a42aa369867d8ed4e324694600b39a23bf491b5c16ac6841539976c95264672"
           },
           "status": "running",
           "phase": "работает",
@@ -2207,8 +2207,8 @@
           "task": "ai-clip-scenario:treatment",
           "permissions": "read-only",
           "inputHashes": {
-            "prompt": "e4fa2c1b8e48dc176a600e9af7245a31240a55c49020acb5a8e9acfdb880eae1",
-            "context": "0dffd4a89d7a26b97f2c3c245369f282d9aa81380eb1b8106cd3396462ab2ed3"
+            "prompt": "5bd3958e4564e7e977dbf3313e9bf4a21439193c50479567709bd6fb570def48",
+            "context": "5a42aa369867d8ed4e324694600b39a23bf491b5c16ac6841539976c95264672"
           },
           "status": "completed",
           "phase": "работает",

@@ -450,3 +450,41 @@ func TestApprovalTravelsWithProject(t *testing.T) {
 		t.Fatalf("возврат разметки: %v %+v", err, view)
 	}
 }
+
+// TestContextCarriesProjectFrameRate — контекст задания называет частоту кадров проекта из
+// plan/project.json: проект на 24 кадрах/с без реестра сцен получает "fps":24 в контексте
+// прохода трактовки, а промпт не требует фиксированной частоты.
+func TestContextCarriesProjectFrameRate(t *testing.T) {
+	project := sampleProject(t)
+	marker := filepath.Join(project, "plan", "project.json")
+	data, err := os.ReadFile(marker)
+	if err != nil {
+		t.Fatal(err)
+	}
+	changed := strings.Replace(string(data), `"fps": 30`, `"fps": 24`, 1)
+	if changed == string(data) {
+		t.Fatal("в маркере образца нет fps 30")
+	}
+	if err := os.WriteFile(marker, []byte(changed), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// Реестр образца построен на 30 кадрах/с; трактовка новой частоты начинается без него.
+	if err := os.Remove(filepath.Join(project, "plan", "scenes.json")); err != nil {
+		t.Fatal(err)
+	}
+	agents := &fakeAgents{}
+	workflow := New(Options{LocalDir: filepath.Join(t.TempDir(), "state"), Agents: agents})
+	if _, err := workflow.Start(StartInput{Project: project, Pass: "treatment"}); err != nil {
+		t.Fatal(err)
+	}
+	if len(agents.inputs) != 1 {
+		t.Fatalf("запусков агента: %d", len(agents.inputs))
+	}
+	input := agents.inputs[0]
+	if !strings.Contains(input.Context, `"fps":24,"timing":`) {
+		t.Fatalf("в контексте нет частоты проекта: %.300s", input.Context)
+	}
+	if strings.Contains(input.Prompt, "30 fps") {
+		t.Fatal("промпт называет фиксированную частоту 30 fps")
+	}
+}

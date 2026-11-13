@@ -23,7 +23,7 @@ interface Props {
   onBusy?(busy: boolean): void;
 }
 
-/** Новая подготовка использует Voc FT; сохранённые исторические WAV доступны без повторного выделения. */
+/** Новая подготовка использует Voc FT; сохранённые WAV других известных моделей доступны без повторного выделения. */
 export function VocalPreparation(props: Props): ReactElement {
   const { online } = useApp();
   const preparation = useVocalPreparation(props);

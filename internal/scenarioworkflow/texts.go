@@ -3,6 +3,8 @@ package scenarioworkflow
 import (
 	"strconv"
 	"strings"
+
+	"songframe/internal/plural"
 )
 
 // Сообщения scenarioTexts.main и commonTexts.proposal (frontend/src/shared/texts/scenario.ts и
@@ -115,26 +117,8 @@ func textUnfilledShots(ids []string) string {
 	if count > 6 {
 		more = " и другие"
 	}
-	return "Осталась незаполненная постановка: " + strconv.Itoa(count) + " " + plural(count, "план", "плана", "планов") +
+	return "Осталась незаполненная постановка: " + strconv.Itoa(count) + " " + plural.Word(count, "план", "плана", "планов") +
 		" (" + strings.Join(shown, ", ") + more + ")."
-}
-
-// plural — склонение по числу, как plural из frontend/src/shared/plural.ts: 1 план, 2 плана, 5 планов.
-func plural(count int, one, few, many string) string {
-	n := count % 100
-	if n < 0 {
-		n = -n
-	}
-	last := n % 10
-	switch {
-	case n >= 11 && n <= 14:
-		return many
-	case last == 1:
-		return one
-	case last >= 2 && last <= 4:
-		return few
-	}
-	return many
 }
 
 func textProposalShotWindowChanged(shot string) string {

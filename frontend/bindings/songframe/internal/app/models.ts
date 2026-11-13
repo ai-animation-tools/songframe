@@ -9,7 +9,7 @@ import * as jobs$0 from "../jobs/models.js";
 import * as project$0 from "../project/models.js";
 
 /**
- * AppState — совместимый снимок оболочки для window.api.app.state. Nullable-поля
+ * AppState — снимок состояния приложения для window.api.app.state. Nullable-поля
  * явно сериализуются как null, пустые коллекции — как [], а не как null.
  */
 export interface AppState {

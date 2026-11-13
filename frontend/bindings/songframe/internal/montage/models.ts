@@ -48,7 +48,7 @@ export interface Scene {
 
 /**
  * Source — MontageSource: видео или карточка сцены, которые можно положить на дорожку. Path —
- * от корня проекта; Frames — известная длина в кадрах 30 к/с или null.
+ * от корня проекта; Frames — известная длина в кадрах частоты проекта или null.
  */
 export interface Source {
     "id": string;

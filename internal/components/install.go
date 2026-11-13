@@ -392,7 +392,7 @@ func (m *Manager) installProgress(completed, total int64) {
 }
 
 // managedArtifactDirectory разрешает только относительный непосредственный payload собственного артефакта.
-// Отсутствие pointer сохраняет совместимость с ранее подключённой управляемой раскладкой 41.2.
+// Без указателя active.json текущей версии payload берётся из каталога <id>/<version>.
 func managedArtifactDirectory(root string, a Artifact) string {
 	base := filepath.Join(root, a.ID)
 	data, err := os.ReadFile(filepath.Join(base, "active.json"))

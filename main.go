@@ -56,12 +56,12 @@ func main() {
 // Smoke подтверждает настоящий путь React → Wails binding → State и имеет ограниченный срок.
 func run() error {
 	smoke := flag.Bool("smoke", false, "Проверить запуск интерфейса и завершить приложение")
-	report := flag.String("smoke-report", "", "Файл JSON-отчёта запуска оболочки")
+	report := flag.String("smoke-report", "", "Файл JSON-отчёта проверки запуска интерфейса")
 	timeout := flag.Duration("smoke-timeout", 30*time.Second, "Предельное ожидание готовности интерфейса")
 	checkDir := flag.String("native-check-dir", "", "Каталог синтетических WAV/MP3/MP4/WebM для проверки WebView")
 	checkProject := flag.String("native-check-project", "", "Копия проекта для нативной проверки чтения")
 	checkReport := flag.String("native-check-report", "", "JSON-отчёт нативной проверки медиа и bridge")
-	componentInput := flag.String("component-smoke-input", "", "JSON с новым профилем и четырьмя офлайн-компонентами")
+	componentInput := flag.String("component-smoke-input", "", "JSON с отдельным каталогом состояния и четырьмя офлайн-компонентами")
 	componentReport := flag.String("component-smoke-report", "", "JSON-отчёт установки и короткого CPU inference")
 	updateInput := flag.String("update-smoke-input", "", "JSON с пакетом подставного выпуска для проверки обновления AppImage")
 	updateReport := flag.String("update-smoke-report", "", "JSON-отчёт проверки обновления до перезапуска")
@@ -372,7 +372,7 @@ func run() error {
 		if err := result.Complete(nil, "окно закрыто до готовности интерфейса"); err != nil {
 			return err
 		}
-		return fmt.Errorf("проверка запуска оболочки не пройдена")
+		return fmt.Errorf("проверка запуска интерфейса не пройдена")
 	}
 	return nil
 }

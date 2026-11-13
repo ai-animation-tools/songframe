@@ -4,7 +4,7 @@
 // Один разбор (inspect) даёт и вид страницы «Аниматик», и признаки built/fresh/approved статуса
 // проекта; порядок проверок и ошибки (например, нестроковый путь в манифесте) зафиксированы
 // эталоном testdata/golden/animatic-view, потому что такая ошибка прерывает и страницу, и
-// computeStatus. Чтение не меняет файлов; хеши входов берутся из кэша filedigest. Запись —
+// status.Compute. Чтение не меняет файлов; хеши входов берутся из кэша filedigest. Запись —
 // только SetStatus в plan/production-status.json; задание сборки — Service.Build.
 package animatic
 
@@ -21,8 +21,8 @@ import (
 
 var sha256Pattern = regexp.MustCompile(`^[a-f0-9]{64}$`)
 
-// Тексты animaticTexts.main и commonTexts.scenario: сейчас входят только в Problems и нужны
-// будущей странице аниматика.
+// Тексты animaticTexts.main и commonTexts.scenario: проблемы вида страницы «Аниматик» (Problems);
+// scenarioRequired — и отказ задания сборки без реестра.
 const (
 	scenarioRequired     = "Сначала нужен сценарий. Создайте его на странице «Сценарий»."
 	registryChanged      = "Реестр планов изменился после сборки: аниматик устарел, нужна пересборка."

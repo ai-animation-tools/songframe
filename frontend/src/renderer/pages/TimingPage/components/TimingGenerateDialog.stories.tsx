@@ -135,6 +135,8 @@ export const ReopenKeepsChoices: Story = {
     await userEvent.click(modal.getByRole('button', { name: texts.recognitionSettings }));
     await userEvent.click(modal.getByRole('checkbox', { name: timingTexts.resetAll }));
     await expect(modal.getByText(texts.resetWarning)).toBeVisible();
+    // При сбросе обещание сохранить подтверждённые строки не показывается.
+    await expect(modal.queryByText(texts.recalculateHint)).not.toBeInTheDocument();
     await userEvent.keyboard('{Escape}');
     await expect(screen.getByRole('dialog')).toBeVisible();
     await userEvent.click(modal.getByRole('button', { name: commonTexts.cancel }));
@@ -224,6 +226,8 @@ export const CompactInitial: Story = {
     await expect(modal.getByText(texts.vocalPreparation)).toBeVisible();
     await expect(modal.getByRole('button', { name: 'Настройки распознавания' })).toHaveAttribute('aria-expanded', 'false');
     await expect(modal.queryByRole('checkbox', { name: timingTexts.resetAll })).not.toBeInTheDocument();
+    await expect(modal.getByText(texts.recalculateHint)).toBeVisible();
+    await expect(modal.queryByText(texts.resetWarning)).not.toBeInTheDocument();
     await waitFor(() => expect(modal.getByRole('button', { name: 'Запустить' })).toBeEnabled());
   }
 };

@@ -1474,18 +1474,19 @@ type AcceptOptions struct {
 }
 
 // cutFrame — UI задаёт секунды, accept_shot принимает кадры частоты проекта fps; неточные границы
-// не округляются молча.
+// не округляются молча. Неизвестная частота (fps = 0) проверяется первой: без неё нельзя ни
+// пересчитать границы, ни назвать сетку в отказе.
 func cutFrame(seconds *float64, fps float64) (int, error) {
-	if seconds == nil || math.IsInf(*seconds, 0) || math.IsNaN(*seconds) || *seconds < 0 {
-		return 0, errors.New(textAcceptBoundsInvalid)
-	}
 	if fps == 0 {
 		return 0, errors.New(projectfile.FrameRateInvalid)
+	}
+	if seconds == nil || math.IsInf(*seconds, 0) || math.IsNaN(*seconds) || *seconds < 0 {
+		return 0, errors.New(textAcceptBoundsInvalid(int(fps)))
 	}
 	frames := *seconds * fps
 	rounded := math.Floor(frames + 0.5)
 	if rounded > 1<<53-1 || math.Abs(frames-rounded) > 1e-6 {
-		return 0, errors.New(textAcceptBoundsInvalid)
+		return 0, errors.New(textAcceptBoundsInvalid(int(fps)))
 	}
 	return int(rounded), nil
 }

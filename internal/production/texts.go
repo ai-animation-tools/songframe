@@ -3,6 +3,8 @@ package production
 import (
 	"fmt"
 	"strconv"
+
+	"songframe/internal/plural"
 )
 
 // Тексты производства, которые формирует Go: проблемы пакета, подписи попыток и этапов, причины
@@ -149,7 +151,6 @@ const (
 	textAcceptResultChanged          = "Результат изменился. Обновите пакет и просмотрите его перед приёмкой."
 	textCompleteResultRequired       = "Сначала получите полный результат задания."
 	textReplacementConsentRequired   = "У плана уже есть принятый комплект. Подтвердите замену в диалоге приёмки."
-	textAcceptBoundsInvalid          = "Границы участка должны быть конечными неотрицательными секундами на сетке 30 кадров/с."
 	textAcceptEndInvalid             = "Конец участка должен быть позже начала."
 	textAcceptSpeechRequired         = "Речевой план: сначала подготовьте WAV речи в блоке «Речь» этой попытки."
 	textReplaceAssetsStep            = "замена комплекта в assets"
@@ -166,6 +167,13 @@ const (
 	textSavedRequestRequired = "В пакете нет сохранённого запроса."
 	textMediaProviderChanged = "Провайдер медиа изменился. Подготовьте новый запрос для выбранного провайдера."
 )
+
+// textAcceptBoundsInvalid — productionTexts.main.package.acceptBoundsInvalid: границы участка
+// приёмки должны попадать на кадровую сетку частоты проекта fps (24, 25 или 30 кадров/с).
+func textAcceptBoundsInvalid(fps int) string {
+	return "Границы участка должны быть конечными неотрицательными секундами на сетке " +
+		strconv.Itoa(fps) + " " + plural.Word(fps, "кадр", "кадра", "кадров") + "/с."
+}
 
 // textBundleFolderNotEmpty — productionTexts.main.bundleFolderNotEmpty.
 func textBundleFolderNotEmpty(path string) string { return "Папка не пуста: " + path }

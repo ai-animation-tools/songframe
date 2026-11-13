@@ -123,7 +123,7 @@ export function PackageResult({
               {productionTexts.packageResult.createSummary}
             </ActionButton>
           )}
-          {/* Проверке нужны утверждённые опоры и описание: у своего видео их нет (D-048). */}
+          {/* Проверке нужны утверждённые опоры и описание: у своего видео их нет. */}
           {!image && !pkg.request?.ownVideo && ['downloaded', 'edit_review', 'accepted'].includes(pkg.stage) ? (
             <VideoReviewPanel
               key={pkg.dir}

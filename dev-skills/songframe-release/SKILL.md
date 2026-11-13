@@ -24,7 +24,7 @@ argument-hint: "[version=X.Y.Z]"
 1. **Имена файлов.** Скрипты выпускают `songframe-<VERSION>-linux-x86_64.AppImage`, `songframe-<VERSION>-linux-amd64.deb` и `songframe-<VERSION>-win-x64-setup.exe` — имена, которые ищут обновление из приложения и сайт.
 2. **Идентификаторы продукта:** имя «SongFrame», бинарник `songframe`, app ID `tools.songframe.desktop`, профиль `songframe-desktop`, папка Windows `%LOCALAPPDATA%\Programs\SongFrame Desktop`, ключ удаления `SongFrameDesktop`. Без решения пользователя не меняются.
 3. **Версия.** `packaging/VERSION` — единственный источник версии поставки; выпуск требует `X.Y.Z` без prerelease-суффикса, тег — `vX.Y.Z`. Числовая версия PE для Windows выводится из того же файла. `frontend/package.json` версией поставки не является.
-4. **Обновление из приложения** (`internal/updates`): последний выпуск, вложение своей поставки по точному имени из условия 1, digest SHA-256 и размер. Каждый выпуск обязан содержать все три пакета; пропущенный пакет пользователи этой поставки увидят как «В выпуске нет пакета для этой системы». Проверка — `smoke:update` для AppImage и сценарий Windows из packaging/windows/README.
+4. **Обновление из приложения** (`internal/updates`): последний выпуск, вложение своей поставки по точному имени из условия 1, digest SHA-256 и размер. Каждый выпуск обязан содержать все три пакета; пропущенный пакет пользователи этой поставки увидят как «В выпуске нет пакета для этой системы». Проверка — `wails3 task smoke:update APPIMAGE=/absolute/file.AppImage OUTPUT=/tmp/new-update-check` для AppImage (после `smoke:host` для этого пути, `packaging/README.md`) и сценарий Windows из packaging/windows/README.
 5. **Нативная Windows-проверка.** Сборка установщика на Linux не доказывает работу в Windows. Прогон в VM — только по явному поручению; без него Windows в описании указывается как проверенный только по составу установщика.
 6. **Лицензии комплекта.** Состав уведомлений каждой поставки сверяй по подкоманде `notices` инструмента `scripts/packtool` и проверкам комплекта. Компоненты, устанавливаемые кнопкой, приносят свои уведомления сами.
 
@@ -55,9 +55,9 @@ argument-hint: "[version=X.Y.Z]"
 
 ### 4. Сборка поставок
 
-- Linux: `wails3 task package:linux`, затем проверки по `songframe-build` (`smoke:host`, по задаче `smoke:appimage` и CPU smoke компонентов).
+- Linux AppImage: `wails3 task package:linux`, затем проверки по `songframe-build` (`smoke:host`, по задаче `smoke:appimage`, CPU smoke компонентов и медиа WebView); команды с обязательными `APPIMAGE` и `OUTPUT` — там же.
 - Windows: `wails3 task package:windows`. Проверка состава встроена в рецепт и не исполняет Windows-код.
-- deb: `wails3 task package:deb`, затем `smoke:deb`.
+- deb: `wails3 task package:deb`, затем `wails3 task smoke:deb DEB=/absolute/build/release/songframe-<VERSION>-linux-amd64.deb OUTPUT=/tmp/new-deb-check` (абсолютный путь собранного пакета и новая папка отчётов, как в разделе «deb-пакет» `packaging/README.md`).
 - Результат в `build/release/`: пакеты, `<имя>.sha256` и `<имя>.build.json`. Сверь по receipt версию, исходный SHA, `dirty: false`, размер и SHA-256 каждого файла. Receipt — внутренняя проверка: в выпуск и в общую папку VM он не прикладывается, без запроса пользователю не выводится.
 - Сборки долгие: запускай их в фоне с журналом и не опрашивай без нужды. Опубликованный комплект под тем же номером не пересобирай.
 

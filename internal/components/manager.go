@@ -17,7 +17,7 @@ import (
 	"sync"
 )
 
-// Selection хранит только явно выбранные пути нового профиля; пустое поле разрешает обнаружение.
+// Selection хранит в каталоге состояния только явно выбранные пути; пустое поле разрешает обнаружение.
 // FFmpegDirectory содержит пару программ, ORTDirectory — корень внешнего runtime с библиотекой в lib/.
 // ORTLibraryFile и отдельные CTC-файлы имеют приоритет над общими папками; выбор одного файла не меняет соседа.
 type Selection struct {
@@ -86,7 +86,7 @@ type managerOptions struct {
 	ort      func(context.Context, string, []ModelFile) (ORTReport, error)
 }
 
-// Manager владеет настройками компонентов нового профиля и проверками по запросу.
+// Manager владеет настройками компонентов в каталоге состояния и проверками по запросу.
 // Создание/State не загружают ORT и не скачивают пакеты; установка имеет отдельное состояние и отмену.
 type Manager struct {
 	mu              sync.Mutex
@@ -107,7 +107,7 @@ type Manager struct {
 	installOptions  installOptions
 }
 
-// NewManager читает только настройки компонентов из отдельного профиля оболочки.
+// NewManager читает только настройки компонентов из каталога состояния profile.
 // Повреждённая настройка остаётся диагностикой, а не причиной отказа запуска окна.
 func NewManager(profile string) (*Manager, error) {
 	manifest, err := Load()

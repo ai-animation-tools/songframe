@@ -14,8 +14,9 @@ import (
 
 // Сборка черновика plan/audio/timing.json после автоматической разметки (результат
 // зафиксирован эталоном testdata/golden/timing-draft): подтверждённые строки прежней разметки
-// переносятся без изменений, ручные заметки сохраняются, сомнительные пути становятся кандидатами,
-// части песни пересчитываются только в автоматической части карты. Новые границы не публикуются,
+// переносятся без изменений, если не выбран пересчёт всех строк; ручные заметки сохраняются
+// всегда; сомнительные пути становятся кандидатами; части песни пересчитываются только в
+// автоматической части карты. Новые границы не публикуются,
 // если они пересекаются между собой или с подтверждёнными строками.
 //
 // Акустику (выделение вокала и CTC) выполняет internal/songml; сюда приходит готовый Recognition.
@@ -233,9 +234,14 @@ func previousList(previous *draftObject, key string) ([]any, error) {
 }
 
 // BuildDraft собирает черновик разметки по акустическому выравниванию. previous — прежний
-// timing.json в модели draftjson.go (nil — нет файла, повреждён или выбран сброс). duration —
-// длительность контейнера по ffprobe, округлённая до миллисекунд. sha256 — SHA исходного трека.
-func BuildDraft(text string, recognition Recognition, duration float64, previous any, sha256 string) (*draftObject, error) {
+// timing.json в модели draftjson.go (nil — нет файла или он повреждён). duration — длительность
+// контейнера по ffprobe, округлённая до миллисекунд. sha256 — SHA исходного трека.
+//
+// reset — пересчёт всех строк: подтверждённые строки, очередь строк и ручные части прежнего
+// файла не переносятся, а ручные заметки строк и кандидатов сохраняются так же, как без сброса.
+// Сброс — выход из прежнего файла с неожиданной структурой (errPrevious предлагает именно его),
+// поэтому при сбросе такая структура не останавливает разметку: заметки тогда не переносятся.
+func BuildDraft(text string, recognition Recognition, duration float64, previous any, sha256 string, reset bool) (*draftObject, error) {
 	decoded := recognition.DecodedDuration
 	for _, value := range []float64{duration, decoded} {
 		if math.IsNaN(value) || math.IsInf(value, 0) || value <= 0 {
@@ -255,52 +261,21 @@ func BuildDraft(text string, recognition Recognition, duration float64, previous
 		segments[segment.SourceLine] = segment
 	}
 
-	previousLines, err := previousList(old, "lines")
-	if err != nil {
-		return nil, err
-	}
+	// carried — прежний файл для переноса подтверждённых строк, очереди и ручных частей.
+	carried := old
 	kept := map[string]*draftObject{}
-	for _, value := range previousLines {
-		line, err := asObject(value)
-		if err != nil {
+	var retained map[string]string
+	if reset {
+		carried = nil
+		if retained, err = retainedNotes(old); err != nil {
+			retained = map[string]string{}
+		}
+	} else {
+		if kept, err = verifiedLines(old); err != nil {
 			return nil, err
 		}
-		verified, _ := line.get("verified")
-		number, _ := line.get("source_line")
-		if truthy(verified) && isIntegerValue(number) {
-			key, _ := valueKey(number)
-			kept[key] = line
-		}
-	}
-	// Заметка кандидата — ручная правка текста; ручная заметка прежней строки важнее.
-	retained := map[string]string{}
-	previousCandidates, err := previousList(old, "candidates")
-	if err != nil {
-		return nil, err
-	}
-	for _, value := range previousCandidates {
-		item, err := asObject(value)
-		if err != nil {
+		if retained, err = retainedNotes(old); err != nil {
 			return nil, err
-		}
-		if note, ok := item.values["note"].(string); ok {
-			number, exists := item.get("source_line")
-			key, hashable := valueKey(number)
-			if !exists || !hashable {
-				return nil, errPrevious
-			}
-			retained[key] = note
-		}
-	}
-	for _, value := range previousLines {
-		item, _ := value.(*draftObject)
-		if note, ok := item.values["note"].(string); ok && stripDraft(note) != "" && !draftAutoNote.MatchString(note) {
-			number, exists := item.get("source_line")
-			key, hashable := valueKey(number)
-			if !exists || !hashable {
-				return nil, errPrevious
-			}
-			retained[key] = note
 		}
 	}
 
@@ -383,7 +358,7 @@ func BuildDraft(text string, recognition Recognition, duration float64, previous
 		member.set("id", newExactInt(numbers[number]))
 		members[lineKey(number)] = member
 	}
-	previousSections, err := sectionsOf(old)
+	previousSections, err := sectionsOf(carried)
 	if err != nil {
 		return nil, err
 	}
@@ -412,7 +387,7 @@ func BuildDraft(text string, recognition Recognition, duration float64, previous
 	if missing != 0 {
 		status += fmt.Sprintf(" Не найдено строк: %d; укажите их границы вручную.", missing)
 	}
-	order, err := lineOrder(lines, old)
+	order, err := lineOrder(lines, carried)
 	if err != nil {
 		return nil, err
 	}
@@ -433,6 +408,73 @@ func BuildDraft(text string, recognition Recognition, duration float64, previous
 		return nil, errNotNumeric
 	}
 	return result, nil
+}
+
+// verifiedLines — подтверждённые строки прежнего файла по номеру строки текста; они переносятся
+// в черновик без изменений.
+func verifiedLines(previous *draftObject) (map[string]*draftObject, error) {
+	previousLines, err := previousList(previous, "lines")
+	if err != nil {
+		return nil, err
+	}
+	kept := map[string]*draftObject{}
+	for _, value := range previousLines {
+		line, err := asObject(value)
+		if err != nil {
+			return nil, err
+		}
+		verified, _ := line.get("verified")
+		number, _ := line.get("source_line")
+		if truthy(verified) && isIntegerValue(number) {
+			key, _ := valueKey(number)
+			kept[key] = line
+		}
+	}
+	return kept, nil
+}
+
+// retainedNotes — ручные заметки прежнего файла по номеру строки текста. Заметка кандидата —
+// ручная правка текста; непустая заметка прежней строки важнее, а автоматическая (draftAutoNote)
+// не переносится: новая строка получает свежую автоматическую заметку.
+func retainedNotes(previous *draftObject) (map[string]string, error) {
+	retained := map[string]string{}
+	previousCandidates, err := previousList(previous, "candidates")
+	if err != nil {
+		return nil, err
+	}
+	for _, value := range previousCandidates {
+		item, err := asObject(value)
+		if err != nil {
+			return nil, err
+		}
+		if note, ok := item.values["note"].(string); ok {
+			number, exists := item.get("source_line")
+			key, hashable := valueKey(number)
+			if !exists || !hashable {
+				return nil, errPrevious
+			}
+			retained[key] = note
+		}
+	}
+	previousLines, err := previousList(previous, "lines")
+	if err != nil {
+		return nil, err
+	}
+	for _, value := range previousLines {
+		item, err := asObject(value)
+		if err != nil {
+			return nil, err
+		}
+		if note, ok := item.values["note"].(string); ok && stripDraft(note) != "" && !draftAutoNote.MatchString(note) {
+			number, exists := item.get("source_line")
+			key, hashable := valueKey(number)
+			if !exists || !hashable {
+				return nil, errPrevious
+			}
+			retained[key] = note
+		}
+	}
+	return retained, nil
 }
 
 func finite(value float64) bool { return !math.IsNaN(value) && !math.IsInf(value, 0) }

@@ -9,7 +9,8 @@
 | Область | Где |
 | --- | --- |
 | Страница, путь плана, диалоги | [ProductionPage](../frontend/src/renderer/pages/ProductionPage/ProductionPage.tsx), [planPath.ts](../frontend/src/renderer/pages/ProductionPage/planPath.ts), [ProductionPath.tsx](../frontend/src/renderer/pages/ProductionPage/components/ProductionPath.tsx) |
-| Тексты интерфейса и сообщения Go | [texts/production.ts](../frontend/src/shared/texts/production.ts) |
+| Тексты интерфейса | [texts/production.ts](../frontend/src/shared/texts/production.ts) |
+| Сообщения Go | [internal/production/texts.go](../internal/production/texts.go), [internal/productionworkflow/texts.go](../internal/productionworkflow/texts.go) |
 | Контракт `window.api` | [api.ts](../frontend/src/shared/api.ts), предложения — [production-workflow.ts](../frontend/src/shared/production-workflow.ts) |
 | Wails-сервисы | [internal/app/production.go](../internal/app/production.go) (`production.*`), [production_workflow.go](../internal/app/production_workflow.go) (`productionWorkflow.*`), [videoreview.go](../internal/app/videoreview.go), [derived.go](../internal/app/derived.go) |
 | Вид планов, вопросы, оценка, отправка, получение, повтор, приёмка, срез речи, очередь | [internal/production](../internal/production/service.go) |
@@ -237,8 +238,11 @@ WAV передаётся агенту на этапе запроса как ед
 | `productionWorkflow.view` / `start` | Вид плана и попытки; запуск подготовки (`prepare`, `continue`, `revise`, необязательный `note`) |
 | `productionWorkflow.apply` / `discard` | Применить актуальное предложение или отклонить его |
 | `productionWorkflow.generateFrames` / `importFrames` | Создать следующую опору (задание исполнителя или замороженный image-запрос без отправки); поставить свои файлы кандидатами |
+| `productionWorkflow.saveOwn` | Своё описание с планом опор или свой видеопромпт без агента |
+| `productionWorkflow.referenceImages` | Изображения, которые может назвать опора плана (разрешённые входы плана) |
+| `productionWorkflow.setGenerationMethod` / `buildManual` | Способ генерации попытки (провайдер проекта или вручную); пакет ручной генерации без агента |
 | `production.view` | Планы, попытки, повреждённые папки, проблемы |
-| `production.decide`, `reopenFrame`, `keepPackageForScene` | Ответ на вопрос попытки, возврат опоры, сохранение попытки для текущей постановки |
+| `production.decide`, `reopenQuestion`, `reopenFrame`, `reopenPrompt`, `keepPackageForScene` | Ответ на вопрос попытки и повтор вопроса о результате, возврат опоры или видеопромпта на доработку, сохранение попытки для текущей постановки |
 | `production.addKeyframeNote` / `setKeyframeNote` | Указание к опоре до создания; снятие и возврат замечания |
 | `production.quote` / `submit` | Стоимость и отдельная отправка точного запроса с одноразовым подтверждением |
 | `production.resume`, `attachResult`, `markNotCreated` | Получение по ID; разбор неизвестного исхода без ID |
@@ -253,6 +257,7 @@ WAV передаётся агенту на этапе запроса как ед
 | `production.setSpendAmount` / `priceAccepted` | Указать или исправить цену записи, которую не сообщил сервис; цена принятого плана без записи |
 | `animatic.fragment` | Фрагмент под музыку: задание сборки подряд идущих планов под участок песни |
 | `production.regenerate`, `accept`, `contactSheet` | Повтор по сохранённому запросу, приёмка, техническая сводка |
+| `production.resultMedia` | Длина, кадр и частота показанного оригинала попытки |
 | `media.capabilities` | Актуальные возможности выбранного провайдера без генерации |
 | `videoReview.*`, `derivedShots.*` | Проверка видео агентом; производный план |
 

@@ -52,6 +52,7 @@ var Areas = []Area{
 			"internal/store", "internal/diagnostics", "internal/process", "internal/jobs",
 			"internal/projectfs", "internal/filedigest", "internal/media", "internal/desktop",
 			"internal/trash", "internal/components", "internal/appversion", "internal/updates",
+			"internal/plural",
 		},
 		Pages: []string{"JobsPage", "ComponentsPage"},
 	},
@@ -100,7 +101,7 @@ var Areas = []Area{
 	},
 	{
 		Title: "Аниматик и монтаж",
-		Docs:  []string{"docs/montage.md"},
+		Docs:  []string{"docs/montage.md", "resources/templates/project/plan/animatic/README.md"},
 		Packages: []string{
 			"internal/animatic", "internal/animaticcards", "internal/buildanimatic",
 			"internal/buildreview", "internal/montage", "internal/applymontage",

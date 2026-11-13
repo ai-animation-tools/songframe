@@ -3,6 +3,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
+import { songTimingTexts } from '@shared/texts/song-timing';
 import { timingTexts } from '@shared/texts/timing';
 import { LinkedText } from '../../components/LinkedText';
 import { TimingLinesTable } from './components/TimingLinesTable';
@@ -65,6 +66,26 @@ describe('целые фразы разметки', () => {
       lines: [],
       sections: []
     });
+  });
+});
+
+describe('окно автоматической разметки описывает фактический пересчёт', () => {
+  it('не обещает распознавания слов и потери заметок', () => {
+    expect(songTimingTexts.recognitionNotice).toBe(
+      'SongFrame находит в выделенном вокале, где звучит каждая строка вашего текста песни. Это делает модель на вашем компьютере. Она может ошибаться, поэтому проверьте границы на слух и при необходимости поправьте.'
+    );
+    expect(songTimingTexts.running).toBe('Уточняем границы строк по вокалу…');
+    // Обычный пересчёт: подтверждённые строки и все заметки переносятся.
+    expect(songTimingTexts.recalculateHint).toBe(
+      'Границы неподтверждённых строк будут пересчитаны, даже если вы их правили. Подтверждённые строки и заметки сохранятся.'
+    );
+    // Пересчёт всех строк: подтверждения сбрасываются, заметки переносятся, порядок и части строятся заново.
+    expect(songTimingTexts.resetWarning).toBe(
+      'После успешного завершения будут пересчитаны границы всех строк, включая подтверждённые: их придётся снова проверить на слух. Заметки строк сохранятся, а порядок строк и части песни будут построены заново.'
+    );
+    for (const text of [songTimingTexts.recognitionNotice, songTimingTexts.running, songTimingTexts.recalculateHint, songTimingTexts.resetWarning]) {
+      expect(text).not.toMatch(/распозна[её]т слова|Распознаём/);
+    }
   });
 });
 

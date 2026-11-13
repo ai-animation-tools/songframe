@@ -48,16 +48,17 @@ func textVocalDownload(model string) string {
 	return "Загрузка модели вокала · " + model
 }
 
-// VocalModel — известная модель выделения вокала: ID, подпись и SHA-256 закреплённых весов
-// Результаты прежних Kim-моделей читаются и удаляются, но новое
-// выделение выполняется только Voc FT.
+// VocalModel — известная модель выделения вокала: ID, подпись и SHA-256 закреплённых весов.
+// Сохранённые результаты любой известной модели (Voc FT, Kim Vocal 1 и 2) читаются и удаляются,
+// а новое выделение выполняется только Voc FT.
 type VocalModel struct {
 	ID     string
 	Label  string
 	SHA256 string
 }
 
-// knownModels — KNOWN_VOCAL_MODELS; первая — единственная модель нового выделения (VOCAL_MODELS).
+// knownModels — известные модели (как KNOWN_VOCAL_MODELS интерфейса); первая — единственная модель
+// нового выделения (VOCAL_MODELS).
 var knownModels = []VocalModel{
 	{"voc-ft", "Voc FT", "534b2070fcc7df514b13ef660dc8cbb328679c2374d04354a5c42bb14ecce111"},
 	{"kim-vocal-1", "Kim Vocal 1", "f313140ef8fecc3041881b60ecb993d985a0281a138b2fb634aa8901aebc38cb"},

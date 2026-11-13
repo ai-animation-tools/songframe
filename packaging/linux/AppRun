@@ -1,7 +1,10 @@
 #!/bin/sh
 # Основано на Forktopus build/linux/appimage/AppRun (MIT), атрибуция в scripts/appimage-bootstrap/main_linux.go.
 # Проверка идёт до окружения bundled GTK: системные zenity/pkexec должны
-# использовать свои библиотеки. AppRun.wails сохраняет рабочий каталог WebKit.
+# использовать свои библиотеки. Окружение образа (PATH, LD_LIBRARY_PATH, XDG_DATA_DIRS
+# и рабочий каталог WebKit) задаёт следующий за ним AppRun.wails, созданный Wails generator.
+# Код 20 — договор с bootstrap (константа restart): профиль установлен, AppImage
+# запускается заново, а SONGFRAME_APPIMAGE_SETUP_RETRY не даёт повторить запрос пароля.
 set -eu
 appdir="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 status=0

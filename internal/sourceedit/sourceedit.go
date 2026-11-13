@@ -54,7 +54,8 @@ type Kind struct {
 	Dir   string `json:"dir"`
 }
 
-// DefaultKinds — DEFAULT_SOURCE_KINDS: подписи сохраняются в описи и принадлежат формату данных.
+// DefaultKinds — виды референсов по умолчанию (тот же список у интерфейса в
+// frontend/src/shared/types.ts): подписи сохраняются в описи и принадлежат формату данных.
 var DefaultKinds = []Kind{
 	{ID: "character", Label: "Персонаж", Dir: "heroes"},
 	{ID: "vehicle", Label: "Транспорт", Dir: "vehicles"},
@@ -929,7 +930,7 @@ func (s *saver) references(inputs []ReferenceInput, previous any, dirOf map[stri
 			}
 			s.keep[relative] = true
 			previousPrompt := promptOf(file)
-			// Старый клиент не знает поле prompt и не должен удалять уже сохранённый промпт изображения.
+			// Запрос без поля prompt не удаляет уже сохранённый промпт изображения.
 			unchanged := previousPrompt != "" && (file.Prompt == nil ||
 				(dynvalue.Trim(*file.Prompt) != "" && normalizeText(*file.Prompt) == normalizeText(previousFilePrompts[previousPrompt])))
 			var prompt any

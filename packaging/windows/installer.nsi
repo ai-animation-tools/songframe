@@ -109,7 +109,7 @@ FunctionEnd
 !insertmacro CheckExecutableUnlocked "un."
 
 # UI и silent-установка используют одну архитектурную границу. Путь фиксирован в профиле пользователя,
-# поэтому /D не превращает ранний uninstaller в очистку произвольной выбранной папки.
+# поэтому /D не превращает uninstaller в очистку произвольной выбранной папки.
 Function .onInit
   SetShellVarContext current
   StrCpy $INSTDIR "$LOCALAPPDATA\Programs\${INSTALL_NAME}"
@@ -117,7 +117,7 @@ Function .onInit
     !insertmacro Fail 64 "SongFrame поддерживает только Windows 10 и Windows 11 (x64)."
   ${EndIf}
   ${If} ${IsServerOS}
-    !insertmacro Fail 64 "Эта ранняя поставка предназначена для Windows 10 и Windows 11; Windows Server не поддерживается."
+    !insertmacro Fail 64 "SongFrame поддерживает только Windows 10 и Windows 11; Windows Server не поддерживается."
   ${EndIf}
   ${IfNot} ${IsNativeAMD64}
     !insertmacro Fail 65 "Для этой поставки SongFrame требуется Windows x64 на процессоре AMD64/Intel 64."

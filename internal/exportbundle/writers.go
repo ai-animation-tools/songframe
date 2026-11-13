@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"songframe/internal/plural"
 	"songframe/internal/toolrt"
 )
 
@@ -179,8 +180,8 @@ func repeatEvents(row *toolrt.Dict, number int, fps int64) ([]string, int, error
 		return nil, 0, err
 	}
 	var cursor any = toolrt.IntFromBig(frames)
-	lines := []string{"* REPEAT " + shot + ": полных циклов " + toolrt.Str(count) + ", хвост " + toolrt.Str(tail) +
-		" кадров, цикл " + toolrt.Str(cycle) + " кадров"}
+	lines := []string{"* REPEAT " + shot + ": полных циклов " + toolrt.Str(count) + ", хвост " + frameCount(tail) +
+		", цикл " + frameCount(cycle)}
 	frameRate := toolrt.NewInt(fps)
 	sourceIn := row.Value("source_in_s")
 	r := reader{fps: fps}
@@ -429,9 +430,26 @@ func writeFCPXML(bundle *toolrt.Dict, path string, place mediaPlace) error {
 	return writeText(path, strings.Join(document, "\n")+"\n")
 }
 
+// frameRateLabel — частота кадров пакета для текста README с согласованным словом: «24 кадра/с»,
+// «25 кадров/с», «30 кадров/с».
+func frameRateLabel(fps int64) string {
+	return strconv.FormatInt(fps, 10) + " " + plural.Word(int(fps), "кадр", "кадра", "кадров") + "/с"
+}
+
+// frameCount — число кадров EDL со склонением: «3 кадра», «29 кадров». value — целое toolrt
+// (хвост и цикл повтора); нецелое значение выводится как есть со словом «кадров».
+func frameCount(value any) string {
+	text := toolrt.Str(value)
+	count, err := strconv.ParseInt(text, 10, 64)
+	if err != nil {
+		return text + " кадров"
+	}
+	return text + " " + plural.Word(int(count%1000), "кадр", "кадра", "кадров")
+}
+
 // readme — README.md пакета: пояснение полей и оговорки для монтажёра.
 func readme(bundle *toolrt.Dict, copied int) string {
-	rate := strconv.FormatInt(bundleFPS(bundle), 10)
+	rate := frameRateLabel(bundleFPS(bundle))
 	rows := rowsOf(bundle)
 	videos := videoCount(rows)
 	files := "- Пути в таблицах относительны к корню папки проекта; файлы не копировались."
@@ -447,7 +465,7 @@ func readme(bundle *toolrt.Dict, copied int) string {
 		"",
 		"Планов " + strconv.Itoa(len(rows)) + ", с видео " + strconv.Itoa(videos) + ", карточек " + strconv.Itoa(len(rows)-videos) + ". " +
 			"Песня целиком: `" + toolrt.Str(bundle.Value("song")) + "`, длительность " + toolrt.FormatFixed(bundle.Value("song_end_s").(float64), 4) + " с. " +
-			"Шкала аниматика — " + rate + " кадров/с, таймкоды non-drop от начала песни. " +
+			"Шкала аниматика — " + rate + ", таймкоды non-drop от начала песни. " +
 			"Аниматик — демо: все монтажные решения в нём предварительные.",
 		"",
 		"## Файлы",
@@ -455,13 +473,13 @@ func readme(bundle *toolrt.Dict, copied int) string {
 		"- `shots.csv` — одна строка на план: таймкоды песни, оригинал " +
 			"генерации, выбранный участок, скорость, удержания, кадры-опоры, " +
 			"промпт, WAV липсинка.",
-		"- `timeline.edl` — CMX3600 на " + rate + " кадров/с: события указывают на " +
+		"- `timeline.edl` — CMX3600 на " + rate + ": события указывают на " +
 			"вход рецепта (`rebuild_input`), source in/out даны на сетке " + rate + " " +
-			"кадров/с после конвертации, как в `shots.csv`; строки `M2` " +
+			"после конвертации, как в `shots.csv`; строки `M2` " +
 			"отмечают изменение скорости, комментарии — удержания и " +
 			"стоп-кадры. Карточки — комментарии без событий.",
 		"- `timeline.fcpxml` — точная шкала аниматика из принятых клипов " +
-			rate + " кадров/с и карточек, песня связанным клипом; открывается в " +
+			rate + " и карточек, песня связанным клипом; открывается в " +
 			"Final Cut Pro, DaVinci Resolve, Premiere Pro.",
 		"- `lyrics.csv` — строки песни с оценками времени из разметки проекта; границы не подтверждены на слух.",
 		"- `bundle.json` — те же данные для скриптов.",
@@ -471,7 +489,7 @@ func readme(bundle *toolrt.Dict, copied int) string {
 		"",
 		"- Оригиналы генерации сохраняют собственную частоту кадров (`original_fps`, например 24 кадра/с). " +
 			"Поля `source_in_s`/`source_out_s` — секунды выбранного участка " +
-			"на сетке `source_grid_fps` после конвертации в " + rate + " кадров/с; " +
+			"на сетке `source_grid_fps` после конвертации в " + rate + "; " +
 			"`source_in_frame_native`/`source_out_frame_native` — те же " +
 			"границы в кадрах исходной частоты (начало включительно, конец " +
 			"исключительно).",

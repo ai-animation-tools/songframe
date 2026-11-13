@@ -226,7 +226,7 @@ func Attach(project, entityID string, result Result) error {
 	return nil
 }
 
-// defaultKinds — копия DEFAULT_SOURCE_KINDS в виде значений описи.
+// defaultKinds — виды по умолчанию sourceedit.DefaultKinds в виде значений описи.
 func defaultKinds() *dynvalue.Array {
 	items := make([]any, len(sourceedit.DefaultKinds))
 	for index, kind := range sourceedit.DefaultKinds {

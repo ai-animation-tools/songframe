@@ -1,6 +1,6 @@
 // Package acceptshot принимает генерацию плана: инструмент accept_shot собирает комплект
 // assets/shots/Mxx по контракту assets. Режим --full копирует скачанный оригинал, уже
-// совпадающий с окном плана и шкалой 30 кадров/с, побайтово; --cut НАЧАЛО:КОНЕЦ и --review
+// совпадающий с окном плана и частотой кадров проекта, побайтово; --cut НАЧАЛО:КОНЕЦ и --review
 // (рецепт пробы build_review) с --speed, --hold-first и --hold-last рендерят участок FFmpeg по
 // фильтру, который считает buildreview.Prepare для одного плана. Рядом сохраняются входы, промпт,
 // снимок запроса, индекс подготовки и манифест с параметрами обработки; затем записывается
@@ -28,6 +28,7 @@ import (
 	"songframe/internal/checkworkspace"
 	"songframe/internal/costcheck"
 	"songframe/internal/mediacmd"
+	"songframe/internal/plural"
 	"songframe/internal/sceneregistry"
 	"songframe/internal/sceneviews"
 	"songframe/internal/toolcli"
@@ -45,10 +46,15 @@ const (
 		"но не обещает побайтово одинаковое перекодирование."
 	textHidden     = "Ошибка файлов попытки или медиа; сырой вывод скрыт."
 	textSourceMiss = "Укажите пакет (--package) или папку попытки (--work-dir)."
-	textCutMissing = "Укажите участок: --review или --cut НАЧАЛО:КОНЕЦ на сетке 30 кадров/с."
 	textCutFormat  = "Участок задаётся как НАЧАЛО:КОНЕЦ."
 	textBadEdit    = "Принятый монтаж имеет неверный формат или число кадров."
 )
+
+// textCutMissing — отказ без участка: --cut задаётся кадрами сетки частоты проекта fps.
+func textCutMissing(fps int64) string {
+	return "Укажите участок: --review или --cut НАЧАЛО:КОНЕЦ на сетке " +
+		strconv.FormatInt(fps, 10) + " " + plural.Word(int(fps), "кадр", "кадра", "кадров") + "/с."
+}
 
 // roleLabels — подписи ролей опорных кадров в манифесте комплекта.
 var roleLabels = map[string]string{"first": "Первый кадр", "last": "Последний кадр", "middle": "Промежуточный кадр"}
@@ -64,7 +70,7 @@ var Parser = toolrt.ArgParser{
 		{Name: "--package", Value: true, Help: "Папка пакета shot_workflow с workflow.json"},
 		{Name: "--work-dir", Value: true, Help: "Папка попытки media_request с request.json и attempt.json"},
 		{Name: "--review", Value: true, Help: "JSON рецепта пробы build_review с этим планом"},
-		{Name: "--cut", Value: true, Metavar: "НАЧАЛО:КОНЕЦ", Help: "Участок оригинала на сетке 30 кадров/с, конец исключительно"},
+		{Name: "--cut", Value: true, Metavar: "НАЧАЛО:КОНЕЦ", Help: "Участок оригинала на кадровой сетке проекта, конец исключительно"},
 		{Name: "--full", Help: "Оригинал уже совпадает с окном и FPS: побайтовая копия"},
 		{Name: "--speed", Value: true},
 		{Name: "--hold-first", Value: true},
@@ -103,7 +109,7 @@ const help = usage + `
   --work-dir WORK_DIR   Папка попытки media_request с request.json и
                         attempt.json
   --review REVIEW       JSON рецепта пробы build_review с этим планом
-  --cut НАЧАЛО:КОНЕЦ    Участок оригинала на сетке 30 кадров/с, конец
+  --cut НАЧАЛО:КОНЕЦ    Участок оригинала на кадровой сетке проекта, конец
                         исключительно
   --full                Оригинал уже совпадает с окном и FPS: побайтовая копия
   --speed SPEED
@@ -311,7 +317,7 @@ func frozenRequestFiles(request *toolrt.Dict, workDir string) (string, []string,
 }
 
 // Options — параметры Accept. Режим — Full либо участок: Review (путь рецепта пробы) или Cut
-// (НАЧАЛО и КОНЕЦ на сетке 30 кадров/с) со Speed (десятичная строка, как --speed; «1» — без
+// (НАЧАЛО и КОНЕЦ — кадры сетки частоты проекта) со Speed (десятичная строка, как --speed; «1» — без
 // изменения скорости) и удержаниями.
 type Options struct {
 	Package, WorkDir   string
@@ -393,7 +399,7 @@ func toInt(value any) (*big.Int, error) {
 // planEdit — параметры обрезки из рецепта пробы (того же оригинала) или аргументов; фильтр и длительности
 // считает buildreview.Prepare по спецификации из одного плана с явным path оригинала. Участок с
 // удержаниями обязан дать ровно окно плана.
-func planEdit(ctx context.Context, shot, original string, frames toolrt.Int, root string, options Options) (editPlan, error) {
+func planEdit(ctx context.Context, shot, original string, frames toolrt.Int, fps int64, root string, options Options) (editPlan, error) {
 	var cut [2]any
 	var speed, holdFirst, holdLast any = options.Speed, options.HoldFirst, options.HoldLast
 	if options.Cut != nil {
@@ -459,7 +465,7 @@ func planEdit(ctx context.Context, shot, original string, frames toolrt.Int, roo
 		holdFirst, _ = toolrt.DictGet(item, "hold_first_frames", toolrt.NewInt(0))
 		holdLast, _ = toolrt.DictGet(item, "hold_last_frames", toolrt.NewInt(0))
 	} else if options.Cut == nil {
-		return editPlan{}, valueError(textCutMissing)
+		return editPlan{}, valueError(textCutMissing(fps))
 	}
 	values := make([]*big.Int, 4)
 	for index, raw := range []any{cut[0], cut[1], holdFirst, holdLast} {
@@ -939,7 +945,7 @@ func buildKit(ctx context.Context, root, shot string, frames toolrt.Int, fps int
 		}
 		plan = fullPlan(frames, fps)
 	} else {
-		if plan, err = planEdit(ctx, shot, toolrt.JoinPath(staging, "original.mp4"), frames, root, options); err != nil {
+		if plan, err = planEdit(ctx, shot, toolrt.JoinPath(staging, "original.mp4"), frames, fps, root, options); err != nil {
 			return nil, "", err
 		}
 		if err := renderEdit(ctx, toolrt.JoinPath(staging, "original.mp4"), plan.filter, frames, toolrt.JoinPath(staging, "video.mp4"), fps); err != nil {

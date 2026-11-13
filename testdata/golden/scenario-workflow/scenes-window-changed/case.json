@@ -1106,8 +1106,8 @@
           "task": "ai-clip-scenario:scenes",
           "permissions": "read-only",
           "inputHashes": {
-            "prompt": "9e360f0255eddd02cbc0881a76507ed781bb287274c08fd4591f20bdd9b39741",
-            "context": "1f1fbc0af83a24a3d7d6612aa37f9e6df2d3421fbbc9c279b2e1f79073094256"
+            "prompt": "f50e7e782888ddd922cec8001318dcdf676051d7e2595f7628e16d33df505bae",
+            "context": "3a8406e45d99cb1dae5aa72424beb5651059ab385e8220f802201df4b8740973"
           },
           "status": "running",
           "phase": "работает",
@@ -2216,8 +2216,8 @@
           "task": "ai-clip-scenario:scenes",
           "permissions": "read-only",
           "inputHashes": {
-            "prompt": "9e360f0255eddd02cbc0881a76507ed781bb287274c08fd4591f20bdd9b39741",
-            "context": "1f1fbc0af83a24a3d7d6612aa37f9e6df2d3421fbbc9c279b2e1f79073094256"
+            "prompt": "f50e7e782888ddd922cec8001318dcdf676051d7e2595f7628e16d33df505bae",
+            "context": "3a8406e45d99cb1dae5aa72424beb5651059ab385e8220f802201df4b8740973"
           },
           "status": "completed",
           "phase": "работает",

@@ -1,23 +1,22 @@
 import { useEffect, useState } from 'react';
 import { Alert, Button, Stack, Typography } from '@mui/material';
 import { useLocation } from 'react-router-dom';
-import * as native from '../../../../bindings/songframe/internal/app/nativeservice';
-import type { PreviewInput } from '../../../../bindings/songframe/internal/app/models';
+import { nativePreview, type NativePreviewInput } from '@platform/native-check';
 
 /** Служебное второе окно нативной проверки (--native-check): получает медиа из Go по session,
  * сообщает loadedmetadata (preview:ready) и закрывается через Go. Служебное окно не входит
- * в контракт window.api, поэтому страница обращается к bindings NativeService напрямую.
+ * в контракт window.api и работает через служебный адаптер nativePreview из frontend/src/platform.
  * Видео не приглушается: окно его не воспроизводит, а mute запомнился бы звуковым сервером для роли Movie.
  */
 export function NativePreviewPage() {
   const { search } = useLocation();
   const session = new URLSearchParams(search).get('session') ?? '';
-  const [input, setInput] = useState<PreviewInput | null>(null);
+  const [input, setInput] = useState<NativePreviewInput | null>(null);
   const [error, setError] = useState('');
   const fail = (reason: unknown) => setError(reason instanceof Error ? reason.message : String(reason));
   useEffect(() => {
     let disposed = false;
-    void native.Preview(session).then((value) => {
+    void nativePreview.load(session).then((value) => {
       if (disposed) return;
       if (value) setInput(value);
       else setError('Сеанс второго окна не найден');
@@ -39,10 +38,10 @@ export function NativePreviewPage() {
           controls
           preload="metadata"
           style={{ maxWidth: '100%' }}
-          onLoadedMetadata={() => void native.PreviewReady(session).catch(fail)}
+          onLoadedMetadata={() => void nativePreview.ready(session).catch(fail)}
         />
       )}
-      <Button variant="outlined" onClick={() => void native.ClosePreview(session).catch(fail)}>
+      <Button variant="outlined" onClick={() => void nativePreview.close(session).catch(fail)}>
         Закрыть
       </Button>
     </Stack>

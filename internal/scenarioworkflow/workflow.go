@@ -1,6 +1,7 @@
 // Package scenarioworkflow ведёт сценарный проход агента: подготовка предложения кастинга
-// и трактовки, реестра сцен или доработки выбранных планов, хранение предложения вне проекта,
-// его разбор и проверка, утверждения пары и сцен и применение одной транзакцией.
+// и трактовки, реестра сцен или доработки выбранных планов, хранение ожидающего предложения в
+// записи прохода plan/scenario-workflow.json, его разбор и проверка, утверждения пары и сцен и
+// применение одной транзакцией.
 //
 // Владение: запись прохода (state.go) и множество «готовится» принадлежат Workflow; задания
 // агента — менеджеру агентов (интерфейс Agents); файлы проекта меняются только публикацией
@@ -21,6 +22,7 @@ import (
 
 	"songframe/internal/cast"
 	"songframe/internal/dynvalue"
+	"songframe/internal/projectfile"
 	"songframe/internal/scenario"
 	"songframe/internal/scenarioapply"
 	"songframe/internal/tools"
@@ -501,7 +503,14 @@ func (w *Workflow) start(input StartInput) (string, error) {
 }
 
 // agentContext — контекст задания: JSON без отступов; байты входят в хеш задания и эталоны.
+// Поле fps — частота кадров проекта из plan/project.json: на ней построены кадровые окна каркаса,
+// и промпт ссылается на неё вместо фиксированной частоты. Без допустимой частоты задание не
+// запускается.
 func agentContext(initial *inputs, pass string, selected []string, note string, scaffold any) (string, error) {
+	fps, err := projectfile.FrameRate(initial.project)
+	if err != nil {
+		return "", err
+	}
 	idea, err := readText(initial.project, "source", dynvalue.ToString(dynvalue.GetPath(initial.manifest, "idea", "path")))
 	if err != nil {
 		return "", err
@@ -531,6 +540,7 @@ func agentContext(initial *inputs, pass string, selected []string, note string, 
 	context.Set("idea", idea)
 	context.Set("lyrics", lyrics)
 	context.Set("manifest", manifest)
+	context.Set("fps", float64(fps))
 	context.Set("timing", initial.timing)
 	if pass == "treatment" {
 		context.Set("cast", seed)

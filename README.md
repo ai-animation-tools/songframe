@@ -36,17 +36,25 @@ wails3 task check:all
 
 | Путь | Что там |
 | --- | --- |
-| `main.go` | Точка входа: каталог состояния, восстановление прерванных операций, сервисы, окно |
+| `main.go` | Точка входа: каталог состояния, восстановление прерванных операций, сервисы, окно, флаги проверок поставки |
+| `component_smoke.go`, `update_smoke.go` | Проверки поставки без окна: установка компонентов с CPU inference и обновление из подставного выпуска |
+| `go.mod`, `Taskfile.yml` | Go-модуль и задачи `wails3 task`: сборка, поставки, проверки |
 | `internal/app/` | Wails-сервисы — граница между интерфейсом и логикой |
-| `internal/<область>/` | Логика областей: проекты, разметка, сценарий, производство, монтаж, агенты, провайдеры, компоненты |
+| `internal/<область>/` | Логика областей: проекты, разметка, сценарий, производство, монтаж, агенты, провайдеры, компоненты, обновление |
 | `frontend/src/shared/` | Контракт `window.api`, типы, реестры агентов и провайдеров, словари текстов |
 | `frontend/src/platform/` | Реализация `window.api` поверх generated bindings |
 | `frontend/src/renderer/` | Страницы, общие компоненты, тема, модели для Storybook |
 | `frontend/bindings/` | Сгенерированные bindings Wails (вручную не править) |
+| `frontend/.storybook/`, `frontend/tests/` | Настройка Storybook и браузерный обход витрины |
 | `resources/` | Встраиваемые шаблон проекта, промпты агента, документы провайдеров, шрифты |
 | `testdata/` | Эталоны поведения, контракты Go/TS, проект-образец |
-| `packaging/`, `scripts/` | Рецепты и скрипты поставок |
-| `dev-skills/` | Скиллы разработки для агентов |
+| `docs/` | Руководства разработчика, процессы областей, правила UI и генерируемая карта кода |
+| `packaging/` | Рецепты поставок: AppImage, deb, установщик NSIS, `VERSION` |
+| `scripts/` | Скрипты сборки, поставок и проверок; `scripts/packtool` — инструмент комплекта, `scripts/appimage-bootstrap` — подготовка AppArmor для AppImage |
+| `www/` | Лэндинг на GitHub Pages |
+| `.github/` | CI исходников и документации, публикация лэндинга, шаблоны issues и PR |
+| `dev-skills/` | Скиллы разработки для агентов; `.agents/skills/` и `.claude/skills/` — ссылки на них |
+| `AGENTS.md`, `CLAUDE.md` | Правила работы в репозитории для агентов |
 
 ## Документация
 
@@ -57,7 +65,7 @@ wails3 task check:all
 | [docs/production-workflow.md](docs/production-workflow.md) | Производство плана: попытки, опоры, запрос, платная отправка, приёмка |
 | [docs/scenario-workflow.md](docs/scenario-workflow.md) | Сценарный проход и применение предложений |
 | [docs/timing.md](docs/timing.md) | Разметка песни: текст, автоматическая разметка, редактор таймингов |
-| [docs/montage.md](docs/montage.md) | Монтаж, производные планы, экспорт для монтажёра |
+| [docs/montage.md](docs/montage.md) | Аниматик, монтаж, производные планы, экспорт для монтажёра |
 | [docs/agents.md](docs/agents.md), [docs/agent-image-limits.md](docs/agent-image-limits.md) | Запуск агентов и ограничения изображений |
 | [docs/ui/](docs/ui/README.md) | Правила интерфейса, текстов и Storybook |
 | [resources/README.md](resources/README.md) | Встроенные шаблон проекта, промпты, документы провайдеров, шрифты |

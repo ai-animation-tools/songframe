@@ -127,11 +127,12 @@ func (s *Service) align(ctx context.Context, step *jobs.StepContext, request ali
 		return err
 	}
 	recognition := timing.FromAlignment(aligned, decoded)
+	// Прежняя разметка читается и при сбросе: из неё переносятся ручные заметки строк.
 	var previous any
-	if previousExists && !request.reset {
+	if previousExists {
 		previous = timing.ParsePrevious(previousBytes)
 	}
-	draft, err := timing.BuildDraft(text, recognition, duration, previous, sourceSHA)
+	draft, err := timing.BuildDraft(text, recognition, duration, previous, sourceSHA, request.reset)
 	if err != nil {
 		return err
 	}

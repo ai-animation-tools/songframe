@@ -191,7 +191,7 @@ export function ProductionPath({
       })
     );
   };
-  // Сохранение сразу принимает описание (D-045): автор своего текста — сам пользователь.
+  // Сохранение сразу принимает описание: автор своего текста — сам пользователь.
   const saveOwnDescription = async (draft: OwnDescriptionDraft): Promise<void> => {
     setOwnError(null);
     const saved = await workflow.saveOwn(ownText(draft), async (applied) => {

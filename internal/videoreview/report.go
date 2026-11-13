@@ -35,8 +35,29 @@ type Report struct {
 	Limitations   []string  `json:"limitations"`
 }
 
-// errInvalidReport — единственный отказ проверки ответа: подробности не показываются, чтобы
-// пользователь получил понятный текст, а не перечень полей.
+// Пределы отчёта агента. ParseReport отклоняет ответ за их пределами, а промпт получает те же
+// числа подстановкой (renderPrompt), поэтому агент видит ровно те правила, по которым проверяется
+// его ответ. Длины считаются в кодовых единицах UTF-16 (utf16Len).
+const (
+	// summaryMaxLength — наибольшая длина итога summary.
+	summaryMaxLength = 4000
+	// findingsMin, findingsMax — допустимое число наблюдений findings.
+	findingsMin, findingsMax = 1, 40
+	// descriptionMaxLength — наибольшая длина description одного наблюдения.
+	descriptionMaxLength = 2000
+	// limitationsMin, limitationsMax — допустимое число пунктов limitations.
+	limitationsMin, limitationsMax = 1, 20
+	// limitationMaxLength — наибольшая длина одного пункта limitations.
+	limitationMaxLength = 1000
+	// frameIdsMin, frameIdsMax — допустимое число разных кадров-свидетельств frameIds наблюдения.
+	frameIdsMin, frameIdsMax = 1, 8
+	// timeToleranceSeconds — допуск совпадения timeSeconds наблюдения со временем его кадра (1 мс).
+	timeToleranceSeconds = 0.001
+)
+
+// errInvalidReport — отказ чтения сохранённой проверки (повреждённый latest.json): подробности
+// не показываются, чтобы пользователь получил понятный текст, а не перечень полей. Ответ агента
+// отклоняется ParseReport с причиной, названной текстами textReport*.
 var errInvalidReport = errors.New(textInvalidReport)
 
 // utf16Len — длина в кодовых единицах UTF-16 (так считаются пределы полей отчёта).
@@ -46,6 +67,19 @@ func utf16Len(text string) int { return len(utf16.Encode([]rune(text))) }
 func nonempty(value any, limit int) bool {
 	text, ok := value.(string)
 	return ok && dynvalue.Trim(text) != "" && utf16Len(text) <= limit
+}
+
+// checkText — причина отказа для текстового поля отчёта where (в предложном падеже: «в summary»)
+// или nil, если значение — непустая строка не длиннее limit.
+func checkText(value any, where string, limit int) error {
+	text, ok := value.(string)
+	if !ok || dynvalue.Trim(text) == "" {
+		return errors.New(textReportEmptyText(where, limit))
+	}
+	if length := utf16Len(text); length > limit {
+		return errors.New(textReportLongText(where, length, limit))
+	}
+	return nil
 }
 
 // exactKeys — у объекта нет ключей вне expected (отсутствующие ключи проверяются отдельно).
@@ -71,32 +105,47 @@ func number(value any) (float64, bool) {
 // ParseReport — разбор отчёта проверки: ответ агента (строка JSON или уже разобранное
 // значение) принимается, только если каждое наблюдение ссылается на реально показанные кадры, а
 // его таймкод совпадает (±1 мс) со временем хотя бы одного из них. Так модель не может приписать
-// вывод непросмотренному моменту. Лишние поля, пустые списки и превышение пределов — отказ.
+// вывод непросмотренному моменту. Лишние поля, пустые списки и выход за пределы (константы выше) —
+// отказ, текст которого называет первое нарушенное правило и номер наблюдения или пункта.
 // Результат — нормализованный объект с порядком ключей latest.json, готовый к записи.
 func ParseReport(value any, frames []Frame, duration float64) (*dynvalue.Object, error) {
 	if text, ok := value.(string); ok {
 		parsed, err := dynvalue.Parse([]byte(text))
 		if err != nil {
-			return nil, errInvalidReport
+			return nil, errors.New(textReportNotObject())
 		}
 		value = parsed
 	}
 	object, ok := value.(*dynvalue.Object)
-	if !ok || !exactKeys(object, "schemaVersion", "summary", "findings", "limitations") ||
-		!dynvalue.StrictEqual(object.Value("schemaVersion"), 1.0) || !nonempty(object.Value("summary"), 4000) {
-		return nil, errInvalidReport
+	if !ok {
+		return nil, errors.New(textReportNotObject())
+	}
+	if !exactKeys(object, "schemaVersion", "summary", "findings", "limitations") {
+		return nil, errors.New(textReportExtraKeys())
+	}
+	if !dynvalue.StrictEqual(object.Value("schemaVersion"), 1.0) {
+		return nil, errors.New(textReportSchemaVersion())
+	}
+	if err := checkText(object.Value("summary"), "summary", summaryMaxLength); err != nil {
+		return nil, err
 	}
 	findings, ok := dynvalue.AsArray(object.Value("findings"))
-	if !ok || len(findings) == 0 || len(findings) > 40 {
-		return nil, errInvalidReport
+	if !ok {
+		return nil, errors.New(textReportFindingsList())
+	}
+	if len(findings) < findingsMin || len(findings) > findingsMax {
+		return nil, errors.New(textReportFindingsCount(len(findings)))
 	}
 	limitations, ok := dynvalue.AsArray(object.Value("limitations"))
-	if !ok || len(limitations) == 0 || len(limitations) > 20 {
-		return nil, errInvalidReport
+	if !ok {
+		return nil, errors.New(textReportLimitationsList())
 	}
-	for _, item := range limitations {
-		if !nonempty(item, 1000) {
-			return nil, errInvalidReport
+	if len(limitations) < limitationsMin || len(limitations) > limitationsMax {
+		return nil, errors.New(textReportLimitationsCount(len(limitations)))
+	}
+	for index, item := range limitations {
+		if err := checkText(item, textReportLimitationPlace(index+1), limitationMaxLength); err != nil {
+			return nil, err
 		}
 	}
 	byID := map[string]Frame{}
@@ -104,37 +153,50 @@ func ParseReport(value any, frames []Frame, duration float64) (*dynvalue.Object,
 		byID[frame.ID] = frame
 	}
 	normalized := &dynvalue.Array{}
-	for _, raw := range findings {
+	for index, raw := range findings {
+		position := index + 1
 		item, ok := raw.(*dynvalue.Object)
 		if !ok || !exactKeys(item, "verdict", "timeSeconds", "description", "frameIds") {
-			return nil, errInvalidReport
+			return nil, errors.New(textReportFindingShape(position))
 		}
 		// Сравнивается строковое представление значения (dynvalue.ToString).
 		switch dynvalue.ToString(item.Value("verdict")) {
 		case "match", "mismatch", "uncertain":
 		default:
-			return nil, errInvalidReport
+			return nil, errors.New(textReportVerdict(position))
 		}
 		time, finite := number(item.Value("timeSeconds"))
-		if !nonempty(item.Value("description"), 2000) || !finite || time < 0 || time >= duration {
-			return nil, errInvalidReport
+		if !finite {
+			return nil, errors.New(textReportTimeNumber(position))
+		}
+		if time < 0 || time >= duration {
+			return nil, errors.New(textReportTimeRange(position, time, duration))
+		}
+		if err := checkText(item.Value("description"), textReportDescriptionPlace(position), descriptionMaxLength); err != nil {
+			return nil, err
 		}
 		ids, ok := dynvalue.AsArray(item.Value("frameIds"))
-		if !ok || len(ids) == 0 || len(ids) > 8 {
-			return nil, errInvalidReport
+		if !ok {
+			return nil, errors.New(textReportFrameList(position))
+		}
+		if len(ids) < frameIdsMin || len(ids) > frameIdsMax {
+			return nil, errors.New(textReportFrameCount(position, len(ids)))
 		}
 		seen, witnessed := map[string]bool{}, false
 		for _, rawID := range ids {
 			id, isString := rawID.(string)
 			frame, known := byID[id]
-			if !isString || !known || seen[id] {
-				return nil, errInvalidReport
+			if !isString || !known {
+				return nil, errors.New(textReportUnknownFrame(position))
+			}
+			if seen[id] {
+				return nil, errors.New(textReportDuplicateFrame(position))
 			}
 			seen[id] = true
-			witnessed = witnessed || math.Abs(frame.TimeSeconds-time) <= 0.001
+			witnessed = witnessed || math.Abs(frame.TimeSeconds-time) <= timeToleranceSeconds
 		}
 		if !witnessed {
-			return nil, errInvalidReport
+			return nil, errors.New(textReportTimeWitness(position, time))
 		}
 		finding := dynvalue.NewObject()
 		finding.Set("verdict", item.Value("verdict"))

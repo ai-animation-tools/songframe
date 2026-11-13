@@ -169,7 +169,7 @@
 
 - `video-review-frames/cases.json` — `{ffmpegVersion, cases}`; случай — `{inputs, references?, budget?, outExists?, outFile?, relativeVideo?, videoName?, stderrPrefix?, inputSha256, expected}`. `inputs` — аргументы FFmpeg или байты и EXIF-ориентация; `expected` — код, stderr, точный `manifest.json`, по изображениям размеры, байты, SHA-256 и сетка 4×4, папка результата. Побайтно — только кадры FFmpeg при той же версии; копии опор и JPEG — по размерам и сетке с допуском; у битого видео — префикс stderr. Тексты отказов — `video-review-frames/texts.json`.
 - `contact-sheet/cases.json` — `{ffmpegVersion, cases}`; случай — `{inputs, fakeProbe, args, inputSha256, expected}`: `inputs` — аргументы FFmpeg, текст, `hex` или папка; `fakeProbe` — JSON поддельного ffprobe первым в PATH; `args` — после `--project <root>`. `expected` — вывод, файлы проекта, у PNG — размеры и сетка 4×4, у превью — поля ffprobe, неизменность входов, пустой TMPDIR. stdout — побайтно (при другой версии FFmpeg — без размера файла), граничные кадры — точно; байты PNG и превью H.264 не сверяются.
-- `video-review/cases.json` — `{frames, parse, scenarios}`: `parse` — разбор отчёта (`input`, `duration`, `result`); сценарий — `{steps, toolCalls, agentStarts}` над копией `project/` с поддельными агентом, подготовкой кадров и `continuity_brief`; шаг — `{op, view, latest}` (точные байты `latest.json`).
+- `video-review/cases.json` — `{frames, parse, scenarios}`: `parse` — разбор отчёта (`input`, `duration`, `result` или `throws` — текст отказа с причиной); сценарий — `{steps, toolCalls, agentStarts}` над копией `project/` с поддельными агентом, подготовкой кадров и `continuity_brief`; шаг — `{op, view, latest}` (точные байты `latest.json`).
 
 ### Платная попытка и провайдеры
 

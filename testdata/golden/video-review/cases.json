@@ -92,7 +92,7 @@
         ]
       },
       "duration": 1,
-      "throws": "Ответ агента не соответствует формату отчёта проверки видео."
+      "throws": "Ответ агента отклонён: в наблюдении 1 указан кадр, которого нет в выборке."
     },
     {
       "name": "time-between-frames",
@@ -114,7 +114,7 @@
         ]
       },
       "duration": 1,
-      "throws": "Ответ агента не соответствует формату отчёта проверки видео."
+      "throws": "Ответ агента отклонён: в наблюдении 1 время 0,25 с не совпадает со временем ни одного из его кадров."
     },
     {
       "name": "time-at-duration",
@@ -136,7 +136,7 @@
         ]
       },
       "duration": 1,
-      "throws": "Ответ агента не соответствует формату отчёта проверки видео."
+      "throws": "Ответ агента отклонён: в наблюдении 1 время 1 с вне видео длительностью 1 с."
     },
     {
       "name": "time-within-millisecond",
@@ -196,7 +196,7 @@
         ]
       },
       "duration": 1,
-      "throws": "Ответ агента не соответствует формату отчёта проверки видео."
+      "throws": "Ответ агента отклонён: в наблюдении 1 время 0,5011 с не совпадает со временем ни одного из его кадров."
     },
     {
       "name": "negative-time",
@@ -218,7 +218,7 @@
         ]
       },
       "duration": 1,
-      "throws": "Ответ агента не соответствует формату отчёта проверки видео."
+      "throws": "Ответ агента отклонён: в наблюдении 1 время -0,1 с вне видео длительностью 1 с."
     },
     {
       "name": "empty-frame-ids",
@@ -238,7 +238,7 @@
         ]
       },
       "duration": 1,
-      "throws": "Ответ агента не соответствует формату отчёта проверки видео."
+      "throws": "Ответ агента отклонён: в наблюдении 1 указано 0 кадров, допускается от 1 до 8."
     },
     {
       "name": "duplicate-frame-ids",
@@ -261,7 +261,7 @@
         ]
       },
       "duration": 1,
-      "throws": "Ответ агента не соответствует формату отчёта проверки видео."
+      "throws": "Ответ агента отклонён: в наблюдении 1 один кадр указан дважды."
     },
     {
       "name": "second-frame-witness",
@@ -331,7 +331,7 @@
         ]
       },
       "duration": 1,
-      "throws": "Ответ агента не соответствует формату отчёта проверки видео."
+      "throws": "Ответ агента отклонён: в наблюдении 1 указано 9 кадров, допускается от 1 до 8."
     },
     {
       "name": "extra-finding-key",
@@ -354,7 +354,7 @@
         ]
       },
       "duration": 1,
-      "throws": "Ответ агента не соответствует формату отчёта проверки видео."
+      "throws": "Ответ агента отклонён: наблюдение 1 должно быть объектом только с полями verdict, timeSeconds, description и frameIds."
     },
     {
       "name": "extra-report-key",
@@ -377,7 +377,7 @@
         "accept": true
       },
       "duration": 1,
-      "throws": "Ответ агента не соответствует формату отчёта проверки видео."
+      "throws": "Ответ агента отклонён: в отчёте есть лишние поля, допускаются только schemaVersion, summary, findings и limitations."
     },
     {
       "name": "missing-limitations",
@@ -396,7 +396,7 @@
         ]
       },
       "duration": 1,
-      "throws": "Ответ агента не соответствует формату отчёта проверки видео."
+      "throws": "Ответ агента отклонён: limitations должен быть списком от 1 до 20 пунктов."
     },
     {
       "name": "empty-limitations",
@@ -416,7 +416,7 @@
         "limitations": []
       },
       "duration": 1,
-      "throws": "Ответ агента не соответствует формату отчёта проверки видео."
+      "throws": "Ответ агента отклонён: в limitations — 0 пунктов, допускается от 1 до 20."
     },
     {
       "name": "blank-limitation",
@@ -438,7 +438,7 @@
         ]
       },
       "duration": 1,
-      "throws": "Ответ агента не соответствует формату отчёта проверки видео."
+      "throws": "Ответ агента отклонён: в пункте 1 limitations нет текста, нужен текст до 1000 знаков."
     },
     {
       "name": "long-limitation",
@@ -460,7 +460,7 @@
         ]
       },
       "duration": 1,
-      "throws": "Ответ агента не соответствует формату отчёта проверки видео."
+      "throws": "Ответ агента отклонён: в пункте 1 limitations — 1001 знак, допускается до 1000."
     },
     {
       "name": "limitation-1000",
@@ -540,7 +540,7 @@
         ]
       },
       "duration": 1,
-      "throws": "Ответ агента не соответствует формату отчёта проверки видео."
+      "throws": "Ответ агента отклонён: в limitations — 21 пункт, допускается от 1 до 20."
     },
     {
       "name": "empty-findings",
@@ -553,7 +553,7 @@
         ]
       },
       "duration": 1,
-      "throws": "Ответ агента не соответствует формату отчёта проверки видео."
+      "throws": "Ответ агента отклонён: в findings — 0 наблюдений, допускается от 1 до 40."
     },
     {
       "name": "forty-one-findings",
@@ -895,7 +895,7 @@
         ]
       },
       "duration": 1,
-      "throws": "Ответ агента не соответствует формату отчёта проверки видео."
+      "throws": "Ответ агента отклонён: в findings — 41 наблюдение, допускается от 1 до 40."
     },
     {
       "name": "forty-findings",
@@ -1579,7 +1579,7 @@
         ]
       },
       "duration": 1,
-      "throws": "Ответ агента не соответствует формату отчёта проверки видео."
+      "throws": "Ответ агента отклонён: schemaVersion должен быть равен 1."
     },
     {
       "name": "blank-summary",
@@ -1601,7 +1601,7 @@
         ]
       },
       "duration": 1,
-      "throws": "Ответ агента не соответствует формату отчёта проверки видео."
+      "throws": "Ответ агента отклонён: в summary нет текста, нужен текст до 4000 знаков."
     },
     {
       "name": "summary-4001",
@@ -1623,7 +1623,7 @@
         ]
       },
       "duration": 1,
-      "throws": "Ответ агента не соответствует формату отчёта проверки видео."
+      "throws": "Ответ агента отклонён: в summary — 4001 знак, допускается до 4000."
     },
     {
       "name": "emoji-summary",
@@ -1683,7 +1683,7 @@
         ]
       },
       "duration": 1,
-      "throws": "Ответ агента не соответствует формату отчёта проверки видео."
+      "throws": "Ответ агента отклонён: в summary — 4002 знака, допускается до 4000."
     },
     {
       "name": "bad-verdict",
@@ -1705,7 +1705,7 @@
         ]
       },
       "duration": 1,
-      "throws": "Ответ агента не соответствует формату отчёта проверки видео."
+      "throws": "Ответ агента отклонён: в наблюдении 1 verdict должен быть match, mismatch или uncertain."
     },
     {
       "name": "array-verdict",
@@ -1769,7 +1769,7 @@
         ]
       },
       "duration": 1,
-      "throws": "Ответ агента не соответствует формату отчёта проверки видео."
+      "throws": "Ответ агента отклонён: в наблюдении 1 timeSeconds не является числом."
     },
     {
       "name": "description-2001",
@@ -1791,31 +1791,31 @@
         ]
       },
       "duration": 1,
-      "throws": "Ответ агента не соответствует формату отчёта проверки видео."
+      "throws": "Ответ агента отклонён: в description наблюдения 1 — 2001 знак, допускается до 2000."
     },
     {
       "name": "not-json",
       "input": "Ответ без JSON",
       "duration": 1,
-      "throws": "Ответ агента не соответствует формату отчёта проверки видео."
+      "throws": "Ответ агента отклонён: ответ не является JSON-объектом отчёта."
     },
     {
       "name": "array",
       "input": "[1]",
       "duration": 1,
-      "throws": "Ответ агента не соответствует формату отчёта проверки видео."
+      "throws": "Ответ агента отклонён: ответ не является JSON-объектом отчёта."
     },
     {
       "name": "null",
       "input": null,
       "duration": 1,
-      "throws": "Ответ агента не соответствует формату отчёта проверки видео."
+      "throws": "Ответ агента отклонён: ответ не является JSON-объектом отчёта."
     },
     {
       "name": "number-string",
       "input": "1",
       "duration": 1,
-      "throws": "Ответ агента не соответствует формату отчёта проверки видео."
+      "throws": "Ответ агента отклонён: ответ не является JSON-объектом отчёта."
     },
     {
       "name": "integer-time",
@@ -1859,7 +1859,7 @@
       "name": "zero-duration",
       "input": "{\"schemaVersion\":1,\"summary\":\"Лодка видна у причала.\",\"findings\":[{\"verdict\":\"match\",\"timeSeconds\":0.5,\"description\":\"Лодка остаётся у причала.\",\"frameIds\":[\"F002\"]}],\"limitations\":[\"Проверена выборка кадров; звук и движение между ними не оценены.\"]}",
       "duration": 0,
-      "throws": "Ответ агента не соответствует формату отчёта проверки видео."
+      "throws": "Ответ агента отклонён: в наблюдении 1 время 0,5 с вне видео длительностью 0 с."
     }
   ],
   "scenarios": [
@@ -3965,7 +3965,7 @@
       "steps": [
         {
           "op": "view",
-          "latest": "{\n  \"schemaVersion\": 1,\n  \"id\": \"<id>\",\n  \"shot\": \"M01\",\n  \"sourceHash\": \"21e5910aaab5b7160a4c1bcc8c66fbb38ebf4ff9659b86efd888407f17c335e6\",\n  \"status\": \"failed\",\n  \"durationSeconds\": 1,\n  \"frames\": [\n    {\n      \"id\": \"F001\",\n      \"timeSeconds\": 0,\n      \"path\": \"video-review/<id>/F001.png\"\n    },\n    {\n      \"id\": \"F002\",\n      \"timeSeconds\": 0.5,\n      \"path\": \"video-review/<id>/F002.png\"\n    },\n    {\n      \"id\": \"F003\",\n      \"timeSeconds\": 0.9,\n      \"path\": \"video-review/<id>/F003.png\"\n    }\n  ],\n  \"imageHashes\": {\n    \"video-review/<id>/F001.png\": \"6ed0526f3afebbde67ff2d97b7db873b48cfc16c566d9a5bbfdc3693805f463f\",\n    \"video-review/<id>/F002.png\": \"54ebc89dcd5a38814bbda090a14832a057f37d04553f8b2c1c632ce2fcfa5cda\",\n    \"video-review/<id>/F003.png\": \"5c0e8366bb2ef7c57f3e3a976c64b2414b2f3aea7ce852bb24fa6e449c6a12ab\",\n    \"video-review/<id>/R001.png\": \"427f51b1d868b311ef7a4efff05ef54b1304529c68618a0c54b3500ffad558ff\",\n    \"video-review/<id>/R002.png\": \"427f51b1d868b311ef7a4efff05ef54b1304529c68618a0c54b3500ffad558ff\"\n  },\n  \"jobId\": \"job-1\",\n  \"report\": null,\n  \"error\": \"Ответ агента не соответствует формату отчёта проверки видео.\"\n}\n",
+          "latest": "{\n  \"schemaVersion\": 1,\n  \"id\": \"<id>\",\n  \"shot\": \"M01\",\n  \"sourceHash\": \"21e5910aaab5b7160a4c1bcc8c66fbb38ebf4ff9659b86efd888407f17c335e6\",\n  \"status\": \"failed\",\n  \"durationSeconds\": 1,\n  \"frames\": [\n    {\n      \"id\": \"F001\",\n      \"timeSeconds\": 0,\n      \"path\": \"video-review/<id>/F001.png\"\n    },\n    {\n      \"id\": \"F002\",\n      \"timeSeconds\": 0.5,\n      \"path\": \"video-review/<id>/F002.png\"\n    },\n    {\n      \"id\": \"F003\",\n      \"timeSeconds\": 0.9,\n      \"path\": \"video-review/<id>/F003.png\"\n    }\n  ],\n  \"imageHashes\": {\n    \"video-review/<id>/F001.png\": \"6ed0526f3afebbde67ff2d97b7db873b48cfc16c566d9a5bbfdc3693805f463f\",\n    \"video-review/<id>/F002.png\": \"54ebc89dcd5a38814bbda090a14832a057f37d04553f8b2c1c632ce2fcfa5cda\",\n    \"video-review/<id>/F003.png\": \"5c0e8366bb2ef7c57f3e3a976c64b2414b2f3aea7ce852bb24fa6e449c6a12ab\",\n    \"video-review/<id>/R001.png\": \"427f51b1d868b311ef7a4efff05ef54b1304529c68618a0c54b3500ffad558ff\",\n    \"video-review/<id>/R002.png\": \"427f51b1d868b311ef7a4efff05ef54b1304529c68618a0c54b3500ffad558ff\"\n  },\n  \"jobId\": \"job-1\",\n  \"report\": null,\n  \"error\": \"Ответ агента отклонён: ответ не является JSON-объектом отчёта.\"\n}\n",
           "view": {
             "status": "failed",
             "job": {
@@ -3993,7 +3993,7 @@
             "stale": false,
             "canStart": true,
             "reason": null,
-            "error": "Ответ агента не соответствует формату отчёта проверки видео.",
+            "error": "Ответ агента отклонён: ответ не является JSON-объектом отчёта.",
             "durationSeconds": 1
           }
         },
@@ -4014,7 +4014,7 @@
         },
         {
           "op": "view",
-          "latest": "{\n  \"schemaVersion\": 1,\n  \"id\": \"<id>\",\n  \"shot\": \"M01\",\n  \"sourceHash\": \"21e5910aaab5b7160a4c1bcc8c66fbb38ebf4ff9659b86efd888407f17c335e6\",\n  \"status\": \"failed\",\n  \"durationSeconds\": 1,\n  \"frames\": [\n    {\n      \"id\": \"F001\",\n      \"timeSeconds\": 0,\n      \"path\": \"video-review/<id>/F001.png\"\n    },\n    {\n      \"id\": \"F002\",\n      \"timeSeconds\": 0.5,\n      \"path\": \"video-review/<id>/F002.png\"\n    },\n    {\n      \"id\": \"F003\",\n      \"timeSeconds\": 0.9,\n      \"path\": \"video-review/<id>/F003.png\"\n    }\n  ],\n  \"imageHashes\": {\n    \"video-review/<id>/F001.png\": \"6ed0526f3afebbde67ff2d97b7db873b48cfc16c566d9a5bbfdc3693805f463f\",\n    \"video-review/<id>/F002.png\": \"54ebc89dcd5a38814bbda090a14832a057f37d04553f8b2c1c632ce2fcfa5cda\",\n    \"video-review/<id>/F003.png\": \"5c0e8366bb2ef7c57f3e3a976c64b2414b2f3aea7ce852bb24fa6e449c6a12ab\",\n    \"video-review/<id>/R001.png\": \"427f51b1d868b311ef7a4efff05ef54b1304529c68618a0c54b3500ffad558ff\",\n    \"video-review/<id>/R002.png\": \"427f51b1d868b311ef7a4efff05ef54b1304529c68618a0c54b3500ffad558ff\"\n  },\n  \"jobId\": \"job-2\",\n  \"report\": null,\n  \"error\": \"Ответ агента не соответствует формату отчёта проверки видео.\"\n}\n",
+          "latest": "{\n  \"schemaVersion\": 1,\n  \"id\": \"<id>\",\n  \"shot\": \"M01\",\n  \"sourceHash\": \"21e5910aaab5b7160a4c1bcc8c66fbb38ebf4ff9659b86efd888407f17c335e6\",\n  \"status\": \"failed\",\n  \"durationSeconds\": 1,\n  \"frames\": [\n    {\n      \"id\": \"F001\",\n      \"timeSeconds\": 0,\n      \"path\": \"video-review/<id>/F001.png\"\n    },\n    {\n      \"id\": \"F002\",\n      \"timeSeconds\": 0.5,\n      \"path\": \"video-review/<id>/F002.png\"\n    },\n    {\n      \"id\": \"F003\",\n      \"timeSeconds\": 0.9,\n      \"path\": \"video-review/<id>/F003.png\"\n    }\n  ],\n  \"imageHashes\": {\n    \"video-review/<id>/F001.png\": \"6ed0526f3afebbde67ff2d97b7db873b48cfc16c566d9a5bbfdc3693805f463f\",\n    \"video-review/<id>/F002.png\": \"54ebc89dcd5a38814bbda090a14832a057f37d04553f8b2c1c632ce2fcfa5cda\",\n    \"video-review/<id>/F003.png\": \"5c0e8366bb2ef7c57f3e3a976c64b2414b2f3aea7ce852bb24fa6e449c6a12ab\",\n    \"video-review/<id>/R001.png\": \"427f51b1d868b311ef7a4efff05ef54b1304529c68618a0c54b3500ffad558ff\",\n    \"video-review/<id>/R002.png\": \"427f51b1d868b311ef7a4efff05ef54b1304529c68618a0c54b3500ffad558ff\"\n  },\n  \"jobId\": \"job-2\",\n  \"report\": null,\n  \"error\": \"Ответ агента отклонён: в наблюдении 1 время 0,25 с не совпадает со временем ни одного из его кадров.\"\n}\n",
           "view": {
             "status": "failed",
             "job": {
@@ -4042,7 +4042,7 @@
             "stale": false,
             "canStart": true,
             "reason": null,
-            "error": "Ответ агента не соответствует формату отчёта проверки видео.",
+            "error": "Ответ агента отклонён: в наблюдении 1 время 0,25 с не совпадает со временем ни одного из его кадров.",
             "durationSeconds": 1
           }
         }

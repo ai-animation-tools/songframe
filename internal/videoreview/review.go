@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -35,9 +36,31 @@ import (
 	"songframe/resources"
 )
 
-// prompt — инструкция агенту из встроенного скилла resources/skills (SkillVideoReview), как промпт
-// сценария; её SHA-256 закреплён тестом TestPromptDigest.
-var prompt = mustSkill(resources.SkillVideoReview)
+// prompt — инструкция агенту из встроенного скилла resources/skills (SkillVideoReview) с
+// подставленными пределами отчёта; её SHA-256 закреплён тестом TestPromptDigest.
+var prompt = renderPrompt(mustSkill(resources.SkillVideoReview))
+
+// renderPrompt заменяет плейсхолдеры {{имя}} скилла проверки видео числами из констант пределов
+// report.go. Числа не повторяются в тексте скилла, поэтому промпт и ParseReport не расходятся;
+// TestPromptLimits проверяет, что все плейсхолдеры подставлены.
+func renderPrompt(skill string) string {
+	limits := map[string]int{
+		"summaryMaxLength":     summaryMaxLength,
+		"findingsMin":          findingsMin,
+		"findingsMax":          findingsMax,
+		"descriptionMaxLength": descriptionMaxLength,
+		"limitationsMin":       limitationsMin,
+		"limitationsMax":       limitationsMax,
+		"limitationMaxLength":  limitationMaxLength,
+		"frameIdsMin":          frameIdsMin,
+		"frameIdsMax":          frameIdsMax,
+	}
+	pairs := make([]string, 0, 2*len(limits))
+	for name, value := range limits {
+		pairs = append(pairs, "{{"+name+"}}", strconv.Itoa(value))
+	}
+	return strings.NewReplacer(pairs...).Replace(skill)
+}
 
 // mustSkill читает встроенный скилл при старте: его отсутствие — ошибка сборки ресурсов, а не
 // пользовательская ситуация.
@@ -406,7 +429,8 @@ func (s *Service) view(root, directory string) (View, error) {
 				record.doc.Set("report", report)
 				record.doc.Set("status", StatusCompleted)
 			} else {
-				record.finish(StatusFailed, textInvalidReport)
+				// Причина отказа называет нарушенное правило: её видит пользователь в ошибке проверки.
+				record.finish(StatusFailed, err.Error())
 			}
 		} else {
 			status, message := StatusFailed, textInterrupted

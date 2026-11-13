@@ -4,7 +4,7 @@
 
 | Файл | Кто читает | Назначение |
 | --- | --- | --- |
-| [ai-clip-video-review/SKILL.md](ai-clip-video-review/SKILL.md) | `internal/videoreview` передаёт инструкцию, постановку и настоящие изображения кадров и опор | Отчёт о соответствии, расхождениях и неопределённостях с таймкодами; без принятия видео |
+| [ai-clip-video-review/SKILL.md](ai-clip-video-review/SKILL.md) | `internal/videoreview` подставляет в плейсхолдеры `{{…}}` пределы отчёта из констант разбора ответа и передаёт инструкцию, постановку и настоящие изображения кадров и опор | Отчёт о соответствии, расхождениях и неопределённостях с таймкодами; без принятия видео |
 | [ai-clip-scenario/SKILL.md](ai-clip-scenario/SKILL.md) | `internal/scenarioworkflow` вкладывает файл целиком в промпт прохода `treatment`, `scenes` или `revise` | Кастинг и трактовка, заполнение реестра сцен, доработка выбранных планов; правила состояния героев |
 | [ai-clip-scene/SKILL.md](ai-clip-scene/SKILL.md) | `internal/productionworkflow` склеивает три файла `ai-clip-scene` в промпт этапа `description`, `prompt` или `request` | Контекст задания, непрерывность, длительность и опоры, выбор модели и входов, речевые планы |
 | [ai-clip-scene/references/app-proposal.md](ai-clip-scene/references/app-proposal.md) | то же | JSON-контракт ответа каждого этапа |

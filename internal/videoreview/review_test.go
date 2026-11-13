@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -19,17 +20,81 @@ import (
 
 	"songframe/internal/agents"
 	"songframe/internal/dynvalue"
+	"songframe/resources"
 )
 
-// promptDigest — закреплённый SHA-256 встроенного скилла проверки видео.
+// promptDigest — закреплённый SHA-256 промпта проверки видео: встроенного скилла с подставленными
+// пределами отчёта.
 const promptDigest = "c0e4dcc0a3b561ebd15aa5ca2e604598b106d812d69a6fa86828a7726da47833"
 
-// TestPromptDigest фиксирует байты промпта: правка встроенного SKILL.md меняет вход агента и
-// должна быть осознанной.
+// TestPromptDigest фиксирует байты промпта: правка встроенного SKILL.md или пределов отчёта
+// меняет вход агента и должна быть осознанной.
 func TestPromptDigest(t *testing.T) {
 	sum := sha256.Sum256([]byte(prompt))
 	if got := hex.EncodeToString(sum[:]); got != promptDigest {
 		t.Fatalf("SHA-256 промпта %s, ожидался %s", got, promptDigest)
+	}
+}
+
+// TestPromptLimits — пределы отчёта попадают в промпт из констант: в собранном тексте нет
+// неподставленных плейсхолдеров, каждый плейсхолдер есть в скилле, а правила называют те же числа,
+// что проверяет ParseReport.
+func TestPromptLimits(t *testing.T) {
+	if strings.Contains(prompt, "{{") || strings.Contains(prompt, "}}") {
+		t.Fatal("в промпте остался неподставленный плейсхолдер")
+	}
+	skill := mustSkill(resources.SkillVideoReview)
+	for _, name := range []string{"summaryMaxLength", "findingsMin", "findingsMax", "descriptionMaxLength",
+		"limitationsMin", "limitationsMax", "limitationMaxLength", "frameIdsMin", "frameIdsMax"} {
+		if !strings.Contains(skill, "{{"+name+"}}") {
+			t.Errorf("в скилле нет плейсхолдера {{%s}}", name)
+		}
+	}
+	for _, phrase := range []string{
+		fmt.Sprintf("frameIds содержит от %d до %d разных ID", frameIdsMin, frameIdsMax),
+		fmt.Sprintf("От %d до %d содержательных наблюдений", findingsMin, findingsMax),
+		fmt.Sprintf("summary — непустой текст до %d знаков", summaryMaxLength),
+		fmt.Sprintf("findings — от %d до %d наблюдений, description каждого — непустой текст до %d знаков",
+			findingsMin, findingsMax, descriptionMaxLength),
+		fmt.Sprintf("limitations — от %d до %d непустых пунктов до %d знаков", limitationsMin, limitationsMax, limitationMaxLength),
+	} {
+		if !strings.Contains(prompt, phrase) {
+			t.Errorf("в промпте нет %q", phrase)
+		}
+	}
+}
+
+// TestParseReportReasons — отказ называет нарушенное правило с номером наблюдения или пункта
+// (случаи, которых нет в эталоне video-review), а формы слов согласуются с числом.
+func TestParseReportReasons(t *testing.T) {
+	frames := []Frame{{ID: "F001", TimeSeconds: 0}, {ID: "F002", TimeSeconds: 0.5}}
+	finding := `{"verdict":"match","timeSeconds":0.5,"description":"Лодка.","frameIds":["F002"]}`
+	report := func(findings, limitations string) string {
+		return `{"schemaVersion":1,"summary":"Итог.","findings":[` + findings + `],"limitations":[` + limitations + `]}`
+	}
+	nine := `["F001","F002","F001","F002","F001","F002","F001","F002","F001"]`
+	cases := []struct{ input, want string }{
+		{report(finding+","+finding+","+strings.Replace(finding, `["F002"]`, nine, 1), `"Выборка."`),
+			"Ответ агента отклонён: в наблюдении 3 указано 9 кадров, допускается от 1 до 8."},
+		{report(strings.Replace(finding, `["F002"]`, `"F002"`, 1), `"Выборка."`),
+			"Ответ агента отклонён: в наблюдении 1 frameIds должен быть списком ID кадров."},
+		{report(finding+`,"текст"`, `"Выборка."`),
+			"Ответ агента отклонён: наблюдение 2 должно быть объектом только с полями verdict, timeSeconds, description и frameIds."},
+		{report(finding, `"Выборка.",2`),
+			"Ответ агента отклонён: в пункте 2 limitations нет текста, нужен текст до 1000 знаков."},
+		{report(finding+","+strings.Replace(finding, `"Лодка."`, `" "`, 1), `"Выборка."`),
+			"Ответ агента отклонён: в description наблюдения 2 нет текста, нужен текст до 2000 знаков."},
+		{`{"schemaVersion":1,"summary":"Итог.","limitations":["Выборка."]}`,
+			"Ответ агента отклонён: findings должен быть списком от 1 до 40 наблюдений."},
+		{`{"schemaVersion":1,"findings":[` + finding + `],"limitations":["Выборка."]}`,
+			"Ответ агента отклонён: в summary нет текста, нужен текст до 4000 знаков."},
+		{`{"summary":"Итог.","findings":[` + finding + `],"limitations":["Выборка."]}`,
+			"Ответ агента отклонён: schemaVersion должен быть равен 1."},
+	}
+	for _, item := range cases {
+		if _, err := ParseReport(item.input, frames, 1); err == nil || err.Error() != item.want {
+			t.Errorf("%s: %v, ожидалось %q", item.input, err, item.want)
+		}
 	}
 }
 
@@ -132,7 +197,8 @@ func TestViewDoesNotStartAgent(t *testing.T) {
 }
 
 // TestInvalidAnswerKeepsReportEmpty — повреждённый ответ агента и ответ с непоказанным кадром не
-// становятся отчётом; повреждённый latest.json не отдаётся как отчёт и не переписывается просмотром.
+// становятся отчётом, а ошибка проверки называет причину отказа; повреждённый latest.json не
+// отдаётся как отчёт и не переписывается просмотром.
 func TestInvalidAnswerKeepsReportEmpty(t *testing.T) {
 	for _, answer := range []string{"", "{", `{"schemaVersion":1}`, strings.Replace(reportJSON(), `"F002"`, `"F009"`, 1), strings.Replace(reportJSON(), `"limitations"`, `"accept":true,"limitations"`, 1)} {
 		h := newHarness(t)
@@ -143,7 +209,7 @@ func TestInvalidAnswerKeepsReportEmpty(t *testing.T) {
 		h.wait(review, StatusRunning)
 		complete(h, 0, answer)
 		view, err := review.View(h.project, h.directory)
-		if err != nil || view.Status != StatusFailed || view.Report != nil || deref(view.Error) != textInvalidReport {
+		if err != nil || view.Status != StatusFailed || view.Report != nil || !strings.HasPrefix(deref(view.Error), "Ответ агента отклонён: ") {
 			t.Fatalf("%q: %+v %v", answer, view, err)
 		}
 		value, err := dynvalue.Parse(readFile(t, filepath.Join(h.directory, "video-review", "latest.json")))

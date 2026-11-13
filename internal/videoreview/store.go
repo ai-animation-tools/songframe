@@ -211,8 +211,10 @@ func read(directory string) (*stored, error) {
 	}
 	if report := doc.Value("report"); report != nil {
 		// durationSeconds приводится к числу: null даёт 0, и тогда любое наблюдение выходит за длительность.
+		// Причина отказа ParseReport обращена к ответу агента; для сохранённого файла это
+		// повреждение снимка.
 		if _, err := ParseReport(report, list, durationValue); err != nil {
-			return nil, err
+			return nil, errInvalidReport
 		}
 	}
 	return &stored{doc: doc}, nil

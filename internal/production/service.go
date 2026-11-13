@@ -360,9 +360,11 @@ func (s *Service) price(project, requestDir string) Quote {
 }
 
 // Quote — метод quote контракта window.api: актуальная стоимость показанного
-// запроса и одноразовый token согласия. Для тех же материалов действуют несколько последних
-// оценок (окно может запросить оценку повторно), оценки прежних материалов сгорают. Отправка всё
-// равно заново сверяет цену и остаток.
+// запроса и одноразовый token согласия. У пакета действует одна оценка — последняя по порядку
+// запуска: новая оценка сжигает прежние вместе с согласием на их неизвестную цену («Обновить
+// стоимость» требует нового согласия), а запоздавший ответ более ранней оценки не сохраняется и
+// не вытесняет новую (окно такой ответ отбрасывает). Отправка всё равно заново сверяет цену и
+// остаток.
 func (s *Service) Quote(project, packageDir, expectedSha, decisionToken string) (Quote, error) {
 	s.mu.Lock()
 	directory, err := s.availableLocked(project, packageDir)
@@ -394,21 +396,19 @@ func (s *Service) Quote(project, packageDir, expectedSha, decisionToken string) 
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	newer := false
 	for token, record := range s.quotes {
-		if record.directory == directory && (record.decisionToken != current.DecisionToken || record.quote.RequestSha != expectedSha) {
-			delete(s.quotes, token)
+		if record.directory != directory {
+			continue
 		}
-	}
-	s.quotes[quote.Token] = &quoteRecord{project: root, directory: directory, decisionToken: current.DecisionToken, quote: quote, issued: issued}
-	var same []*quoteRecord
-	for _, record := range s.quotes {
-		if record.directory == directory {
-			same = append(same, record)
+		if record.issued > issued && record.decisionToken == current.DecisionToken && record.quote.RequestSha == expectedSha {
+			newer = true
+			continue
 		}
+		delete(s.quotes, token)
 	}
-	slices.SortFunc(same, func(a, b *quoteRecord) int { return int(b.issued) - int(a.issued) })
-	for _, record := range same[min(len(same), 4):] {
-		delete(s.quotes, record.quote.Token)
+	if !newer {
+		s.quotes[quote.Token] = &quoteRecord{project: root, directory: directory, decisionToken: current.DecisionToken, quote: quote, issued: issued}
 	}
 	return quote, nil
 }
@@ -949,9 +949,12 @@ func (s *Service) Submit(project, packageDir, expectedSha, decisionToken, quoteT
 	if err != nil {
 		return jobs.Info{}, err
 	}
+	// Свежая проверка цены обязана совпасть с показанной оценкой. Согласие давалось на неизвестную
+	// цену: если перед отправкой цена стала известной, пользователь её не видел, и нужен новый просмотр
+	// оценки, даже когда средств хватает.
 	sameCredits := (price.Credits == nil && record.quote.Credits == nil) ||
 		(price.Credits != nil && record.quote.Credits != nil && *price.Credits == *record.quote.Credits)
-	if !priceAllowsGeneration(price, agreed) || (!agreed && !sameCredits) || fresh.DecisionToken != record.decisionToken {
+	if !priceAllowsGeneration(price, agreed) || !sameCredits || (agreed && !canAgreeToUnknownCost(price)) || fresh.DecisionToken != record.decisionToken {
 		return jobs.Info{}, errors.New(textQuoteExpired)
 	}
 	if fresh.Stage == "ready" {

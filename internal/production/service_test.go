@@ -34,6 +34,8 @@ type env struct {
 	t       *testing.T
 	project string
 	pkg     string
+	// pricing — таблица цен окружения: тест переписывает её, чтобы цена изменилась после оценки.
+	pricing string
 	service *mediatest.Service
 	jobs    *jobs.Manager
 	prod    *production.Service
@@ -110,7 +112,8 @@ func newEnv(t *testing.T, model string) *env {
 	}
 	manager := jobs.New(filepath.Join(root, "jobs-state"), jobs.Options{SkipRestore: true})
 	e := &env{t: t, project: project, service: service, jobs: manager}
-	e.prod = production.New(production.Options{Jobs: manager, PricingFile: filepath.Join(root, "pricing.json"), NewToken: func() string {
+	e.pricing = filepath.Join(root, "pricing.json")
+	e.prod = production.New(production.Options{Jobs: manager, PricingFile: e.pricing, NewToken: func() string {
 		e.tokens++
 		return "token-" + string(rune('a'+e.tokens-1))
 	}})
@@ -316,11 +319,71 @@ func TestUnknownPriceNeedsConsent(t *testing.T) {
 	}
 	first := e.quote()
 	second := e.quote()
+	// Новая оценка сжигает прежнюю вместе с согласием на её неизвестную цену. Отказ по неизвестной
+	// оценке не трогает действующую, поэтому следующий шаг проверяет её саму.
+	if _, err := e.submit(first, first.Token); err == nil {
+		t.Fatal("согласие прежней оценки после новой")
+	}
 	if _, err := e.submit(second, first.Token); err == nil {
 		t.Fatal("согласие другой оценки")
 	}
 	third := e.quote()
 	info, err := e.submit(third, third.Token)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.wait(info)
+	if e.paid() != 1 {
+		t.Fatalf("отправок %d", e.paid())
+	}
+}
+
+// TestUnknownPriceBecameKnown — согласие давалось на неизвестную цену: если перед отправкой цена стала
+// известной, отправка отказывает без оплаты даже при достаточном остатке; пользователь видит новую
+// оценку с ценой и подтверждает уже её.
+func TestUnknownPriceBecameKnown(t *testing.T) {
+	e := newEnv(t, "test-video-fast")
+	quote := e.quote()
+	if quote.Verdict != production.VerdictUnknown || quote.Credits != nil {
+		t.Fatalf("оценка %+v", quote)
+	}
+	known := strings.Replace(pricing, `"test-video-fast": {"base_credits": 0, "per_second": {"1080p": null}}`, `"test-video-fast": {"base_credits": 0, "per_second": {"1080p": 3}}`, 1)
+	if err := os.WriteFile(e.pricing, []byte(known), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.submit(quote, quote.Token); err == nil {
+		t.Fatal("согласие на неизвестную цену отправило по известной")
+	}
+	if e.paid() != 0 {
+		t.Fatalf("отправок %d", e.paid())
+	}
+	fresh := e.quote()
+	if fresh.Verdict != production.VerdictOK || fresh.Credits == nil {
+		t.Fatalf("новая оценка %+v", fresh)
+	}
+	info, err := e.submit(fresh, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.wait(info)
+	if e.paid() != 1 {
+		t.Fatalf("отправок %d", e.paid())
+	}
+}
+
+// TestNewQuoteBurnsPrevious — у пакета действует только последняя оценка: прежняя после «Обновить
+// стоимость» не отправляет (с согласием на неизвестную цену — TestUnknownPriceNeedsConsent).
+func TestNewQuoteBurnsPrevious(t *testing.T) {
+	e := newEnv(t, "test-video")
+	first := e.quote()
+	second := e.quote()
+	if _, err := e.submit(first, ""); err == nil {
+		t.Fatal("прежняя известная оценка после новой")
+	}
+	if e.paid() != 0 {
+		t.Fatalf("отправок %d", e.paid())
+	}
+	info, err := e.submit(second, "")
 	if err != nil {
 		t.Fatal(err)
 	}

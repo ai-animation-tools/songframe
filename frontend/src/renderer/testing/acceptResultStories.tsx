@@ -6,7 +6,8 @@ import type { AcceptOptions, JobInfo, PackageView } from '@shared/types';
 import { DEFAULT_FPS } from '@shared/video';
 import { ActionButton } from '../components/ActionButton';
 import { AcceptResultDialog } from '../pages/ProductionPage/components/AcceptResultDialog';
-import { acceptShownResult, acceptTargetFor, defaultAcceptOptions, type AcceptTarget } from '../pages/ProductionPage/decisions';
+import { acceptShownResult, acceptTargetFor, defaultAcceptOptions, withResultMedia, type AcceptTarget } from '../pages/ProductionPage/decisions';
+import type { ResultMedia } from '@shared/types';
 import { DELIVERY_PROJECT, DELIVERY_RESULT_TOKEN, deliveryJob, deliveryPackage, assertDeliveryAcceptOptions } from './deliveryStories';
 import { createStoryApi } from './storybook';
 
@@ -18,6 +19,8 @@ export interface AcceptResultStoryProps {
   changedAfterOpen?: boolean;
   failFirst?: boolean;
   delay?: number;
+  /** Настоящие параметры оригинала (production.resultMedia): своё видео другого кадра и частоты. */
+  media?: ResultMedia;
 }
 
 export function AcceptResultStory({
@@ -27,7 +30,8 @@ export function AcceptResultStory({
   speechMissing = false,
   changedAfterOpen = false,
   failFirst = false,
-  delay = 850
+  delay = 850,
+  media
 }: AcceptResultStoryProps) {
   const makePackage = (): PackageView => {
     const pkg = deliveryPackage();
@@ -75,7 +79,7 @@ export function AcceptResultStory({
 
   const open = (): void => {
     if (backend.current.running || accepted) return;
-    const next = acceptTargetFor(pkg, hasAsset, DEFAULT_FPS, speechMissing);
+    const next = withResultMedia(acceptTargetFor(pkg, hasAsset, DEFAULT_FPS, speechMissing), media ?? null);
     setOptions(defaultAcceptOptions(next));
     setTarget(next);
     setNotice(null);

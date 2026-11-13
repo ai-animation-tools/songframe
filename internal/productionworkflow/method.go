@@ -7,6 +7,7 @@ import (
 
 	"songframe/internal/derivedshot"
 	"songframe/internal/dynvalue"
+	"songframe/internal/mediaadapters"
 	"songframe/internal/mediaproviders"
 )
 
@@ -15,9 +16,12 @@ import (
 // видеопромпта, видео пользователь создаёт сам и загружает (как у речевого плана без липсинка).
 // Выбор хранится в workflow.json попытки ключом generation_method и делается до утверждения
 // видеопромпта: промпт пишется под выбранный способ (предел провайдера, обозначения входов).
+// Утверждённый промпт выбору не мешает, пока запрос не подготовлен: свой промпт утверждается
+// сразу при сохранении, и способ должен оставаться доступным после него. На провайдера
+// переводится только промпт в пределах его длины.
 
 // SetGenerationMethod записывает способ генерации попытки packageDir: "manual" или "provider".
-// Доступно, пока видеопромпт не утверждён, запрос не подготовлен и попытка не отправлена;
+// Доступно, пока запрос не подготовлен и попытка не отправлена;
 // открытый вопрос о видеопромпте не мешает (промпт сверх предела провайдера вручную утвердить
 // можно). Речевой план у провайдера без липсинка всегда делается вручную.
 func (w *Workflow) SetGenerationMethod(project, shot, packageDir, method string) (View, error) {
@@ -37,7 +41,7 @@ func (w *Workflow) SetGenerationMethod(project, shot, packageDir, method string)
 	if err != nil {
 		return View{}, err
 	}
-	if reason, err := methodReason(c, view); err != nil || reason != "" {
+	if reason, err := methodReason(c, view, method); err != nil || reason != "" {
 		if err == nil {
 			err = errors.New(reason)
 		}
@@ -58,8 +62,8 @@ func (w *Workflow) SetGenerationMethod(project, shot, packageDir, method string)
 	return w.view(c.Project, shot, c.PackageDir)
 }
 
-// methodReason — почему способ генерации попытки сейчас сменить нельзя; "" — можно.
-func methodReason(c *Context, view View) (string, error) {
+// methodReason — почему способ генерации попытки сейчас сменить на method нельзя; "" — можно.
+func methodReason(c *Context, view View, method string) (string, error) {
 	pending := c.workflowValue("pending_decision")
 	stage, _ := c.workflowValue("stage").(string)
 	switch {
@@ -83,10 +87,17 @@ func methodReason(c *Context, view View) (string, error) {
 		return textMethodRequestReady, nil
 	}
 	approved, err := c.PromptApproved()
-	if err != nil || !approved {
+	if err != nil || !approved || method != "provider" {
 		return "", err
 	}
-	return textMethodPromptApproved, nil
+	// Утверждённый промпт уходит провайдеру как есть: длиннее его предела он не пройдёт.
+	// Ручная попытка предела не знает (PromptLimit 0), поэтому предел берётся у провайдера проекта.
+	if limit := mediaadapters.PromptLimit(c.Settings.Value("provider")); limit > 0 {
+		if chars := int(dynvalue.ToNumber(dynvalue.Get(c.workflowValue("prompt"), "chars"))); chars > limit {
+			return textMethodPromptOverLimit(chars, limit), nil
+		}
+	}
+	return "", nil
 }
 
 // proposalOpen — у вида есть предложение, ещё не применённое: выбор способа ждёт его решения.

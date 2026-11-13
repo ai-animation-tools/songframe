@@ -520,6 +520,15 @@ export interface SpendTotal {
   amount: number;
 }
 
+/** Параметры показанного оригинала попытки по ffprobe; 0 и пустая строка — величина неизвестна. */
+export interface ResultMedia {
+  seconds: number;
+  width: number;
+  height: number;
+  /** r_frame_rate видеопотока как есть: «30/1», «30000/1001». */
+  frameRate: string;
+}
+
 /**
  * Расход плана по журналу plan/spend.json и живым попыткам, в исходных единицах.
  * Неизвестный расход в суммы не входит: при unknown > 0 суммы и стоимость секунды — нижняя граница.

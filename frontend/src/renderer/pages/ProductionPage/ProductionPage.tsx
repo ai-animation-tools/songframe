@@ -33,7 +33,8 @@ export function ProductionPage(): ReactElement {
   const [path, setPath] = useState<{ key: string; value: PlanPath } | null>(null);
   const [fragmentOpen, setFragmentOpen] = useState(false);
   // Окно своего видео плана: план, идёт ли запуск загрузки и отказ Go при последней попытке.
-  const [ownVideo, setOwnVideo] = useState<{ shot: string; busy: boolean; error: string | null } | null>(null);
+  // replaceDir — замена видео, загруженного вручную в эту попытку, а не новая попытка своего видео.
+  const [ownVideo, setOwnVideo] = useState<{ shot: string; busy: boolean; error: string | null; replaceDir?: string } | null>(null);
   const { describeError } = useApp();
   const {
     project,
@@ -91,14 +92,21 @@ export function ProductionPage(): ReactElement {
   const uploadOwnVideo = async (video: ManualVideo): Promise<void> => {
     if (!ownVideo) return;
     const target = ownVideo.shot;
-    setOwnVideo({ shot: target, busy: true, error: null });
+    const replaceDir = ownVideo.replaceDir;
+    setOwnVideo({ shot: target, busy: true, error: null, replaceDir });
     try {
+      if (replaceDir) {
+        const job = await window.api.production.replaceManual(project, replaceDir, video);
+        setOwnVideo(null);
+        await act(productionTexts.ownVideo.replaceStarted, async () => job, replaceDir, target);
+        return;
+      }
       const started = await window.api.production.attachOwnVideo(project, target, video);
       setOwnVideo(null);
       selectPackage(started.packageDir);
       await act(productionTexts.ownVideo.started, async () => started.job, started.packageDir, target);
     } catch (error) {
-      setOwnVideo({ shot: target, busy: false, error: describeError(error) });
+      setOwnVideo({ shot: target, busy: false, error: describeError(error), replaceDir });
     }
   };
 
@@ -255,6 +263,7 @@ export function ProductionPage(): ReactElement {
                     }
                     onSpeechPrepared={load}
                     onOwnVideo={() => setOwnVideo({ shot: shot.id, busy: false, error: null })}
+                    onReplaceVideo={() => selectedPackage && setOwnVideo({ shot: shot.id, busy: false, error: null, replaceDir: selectedPackage.dir })}
                   />
                 </Box>
               )}
@@ -271,6 +280,7 @@ export function ProductionPage(): ReactElement {
         <OwnVideoDialog
           key={`${project}:${ownVideo.shot}`}
           shot={ownVideo.shot}
+          replace={!!ownVideo.replaceDir}
           busy={ownVideo.busy}
           error={ownVideo.error}
           onClose={() => setOwnVideo(null)}

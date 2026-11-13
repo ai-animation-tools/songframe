@@ -235,8 +235,13 @@ func TestManualAttempt(t *testing.T) {
 		t.Fatal(err)
 	}
 	shot("decide", "--verdict", "approve")
-	if _, err := run.workflow.SetGenerationMethod(run.project, "M01", dir, "provider"); err == nil || err.Error() != textMethodPromptApproved {
-		t.Fatalf("смена способа после утверждения промпта: %v", err)
+	// Утверждённый промпт длиннее предела провайдера: перевести попытку на провайдера нельзя.
+	if _, err := run.workflow.SetGenerationMethod(run.project, "M01", dir, "provider"); err == nil || err.Error() != textMethodPromptOverLimit(len([]rune(long)), 40) {
+		t.Fatalf("смена способа с промптом сверх предела: %v", err)
+	}
+	// Утверждённый промпт не мешает вернуть ручной способ, пока пакет не собран.
+	if _, err := run.workflow.SetGenerationMethod(run.project, "M01", dir, "manual"); err != nil {
+		t.Fatalf("ручной способ после утверждения промпта: %v", err)
 	}
 	view, err = run.workflow.View(run.project, "M01", dir)
 	if err != nil {

@@ -84,7 +84,6 @@ const (
 	textMethodSingleFrame            = "Речевой план у провайдера без липсинка всегда создаётся вручную вне приложения."
 	textMethodProjectManual          = "Видео всех планов проекта создаётся вручную вне приложения: так выбрано в настройках проекта."
 	textMethodRequestReady           = "Запрос или пакет уже подготовлен: чтобы сменить способ, верните видеопромпт на доработку."
-	textMethodPromptApproved         = "Видеопромпт уже утверждён: чтобы сменить способ, верните его на доработку."
 	textManualKeyframeCount          = "Видео этого плана создаётся вне приложения по одной опоре: другое число опор выбрать нельзя."
 	textManualSingleFrame            = "Видео этого плана создаётся вне приложения: в описании должна быть ровно одна опора K01 на начале плана."
 	textFrameStructureInvalid        = "Неверная структура опоры."
@@ -293,3 +292,9 @@ func textInputFlagUnknown(flag, flags string) string {
 }
 
 func textManualFrameRole(id string) string { return "Опора " + id }
+
+// textMethodPromptOverLimit — утверждённый промпт длиннее предела провайдера: перевести попытку на
+// провайдера можно только после сокращения.
+func textMethodPromptOverLimit(chars, limit int) string {
+	return fmt.Sprintf("Видеопромпт длиннее предела провайдера (длина %d, предел %d): чтобы выбрать провайдера, верните промпт на доработку и сократите его.", chars, limit)
+}

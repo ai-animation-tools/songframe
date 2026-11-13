@@ -597,6 +597,23 @@ export const OwnVideo: Story = {
     await expect(result.queryByRole('button', { name: texts.verdictLabels.retry })).not.toBeInTheDocument();
     await expect(result.queryByRole('button', { name: texts.verdictLabels.revise })).not.toBeInTheDocument();
     await expect(counts(context)).toHaveTextContent('Отправок генерации: 0.');
+    // Не то видео: «Заменить видео» до приёмки загружает другое, источник берётся из новой формы.
+    await userEvent.click(result.getByRole('button', { name: own.replace }));
+    const replace = within(await screen.findByRole('dialog', { name: own.replaceTitle({ shot: 'M04' }) }));
+    await expect(replace.getByText(own.replaceIntro)).toBeVisible();
+    await userEvent.click(replace.getByRole('button', { name: new RegExp(manual.zone) }));
+    await replace.findByText(manual.chosen({ name: STORY_VIDEO_PATH.split('/').pop()! }));
+    await userEvent.type(replace.getByRole('textbox', { name: new RegExp(manual.source) }), 'Нужный дубль');
+    await waitFor(() => expect(replace.getByRole('button', { name: own.replace })).toBeEnabled());
+    await userEvent.click(replace.getByRole('button', { name: own.replace }));
+    await waitFor(() => expect(counts(context)).toHaveTextContent('Замен видео: 1.'), POLL_TIMEOUT);
+    await expect(await within(planStep(context, 'result')).findByText(/Источник: Нужный дубль/, {}, POLL_TIMEOUT)).toBeInTheDocument();
+    // Сводка заменённого видео пересобрана под тем же именем: адрес кадра несёт новый токен результата.
+    await waitFor(() => {
+      const sources = [...planStep(context, 'result').querySelectorAll('img')].map((image) => image.getAttribute('src') ?? '');
+      expect(sources.some((source) => source.includes('story-image.png?v='))).toBe(true);
+      expect(sources.every((source) => !source.includes('story-image.png') || /\?v=manual-result-\d+$/.test(source))).toBe(true);
+    }, POLL_TIMEOUT);
   }
 };
 
@@ -1016,6 +1033,42 @@ export const OwnPromptOverLimit: Story = {
     await waitFor(() => expect(counts(context)).toHaveTextContent('Ответов: 1.'), POLL_TIMEOUT);
     await expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     await waitFor(() => expect(screen.queryByText(texts.promptLimit.title)).not.toBeInTheDocument(), POLL_TIMEOUT);
+  }
+};
+
+/** Свой видеопромпт утверждён при сохранении, запрос не подготовлен: способ генерации выбирается на шаге «Запрос». */
+function approvedPromptShots(): ShotProduction[] {
+  return overLimitShots().map((shot) => {
+    const [review] = shot.packages;
+    if (!review?.prompt) return shot;
+    const approved = { ...review, stageLabel: texts.main.package.promptApproved, prompt: { ...review.prompt, approved: true }, pendingDecision: null };
+    return { ...shot, stageLabel: approved.stageLabel, attention: null, packages: [approved] };
+  });
+}
+
+export const MethodAfterApprovedPrompt: Story = {
+  tags: ['ci'],
+  name: 'Способ генерации после утверждённого промпта · выбор на шаге «Запрос», провайдер только в пределах длины',
+  parameters: { songframe: options({ shots: approvedPromptShots, promptMaxChars: STORY_PROMPT_LIMIT }) },
+  play: async (context) => {
+    const screen = screenOf(context);
+    const method = texts.generationMethod;
+    const step = within(
+      await waitFor(() => {
+        const found = planStep(context, 'request');
+        if (!found || !within(found).queryByRole('radiogroup')) throw new Error('Выбор способа на шаге «Запрос» ещё не показан.');
+        return found;
+      }, POLL_TIMEOUT)
+    );
+    // На шаге «Видеопромпт» выбора уже нет: промпт утверждён.
+    await expect(within(planStep(context, 'prompt')).queryByRole('radiogroup')).not.toBeInTheDocument();
+    await userEvent.click(step.getByRole('radio', { name: new RegExp(method.manual) }));
+    await waitFor(() => expect(counts(context)).toHaveTextContent('Способов генерации: manual.'), POLL_TIMEOUT);
+    await waitFor(() => expect(step.getByRole('button', { name: texts.manualGeneration.build })).toBeEnabled(), POLL_TIMEOUT);
+    // Промпт длиннее предела провайдера: вернуть провайдера нельзя, причина названа.
+    await userEvent.click(step.getByRole('radio', { name: new RegExp(method.provider) }));
+    await expect(await screen.findByText(/Видеопромпт длиннее предела провайдера/, {}, POLL_TIMEOUT)).toBeInTheDocument();
+    await expect(counts(context)).toHaveTextContent('Способов генерации: manual.');
   }
 };
 

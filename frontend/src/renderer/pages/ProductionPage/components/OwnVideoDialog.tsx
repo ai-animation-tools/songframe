@@ -16,12 +16,15 @@ const texts = productionTexts.ownVideo;
 
 export function OwnVideoDialog({
   shot,
+  replace = false,
   busy,
   error,
   onClose,
   onUpload
 }: {
   shot: string;
+  /** Замена уже загруженного вручную видео попытки, а не новая попытка своего видео. */
+  replace?: boolean;
   /** Загрузка запускается: окно ждёт ответа Go. */
   busy: boolean;
   /** Отказ Go при последней попытке загрузить. */
@@ -36,9 +39,9 @@ export function OwnVideoDialog({
       open
       maxWidth="sm"
       explicitCancelOnly
-      title={texts.title({ shot })}
-      contentLabel={texts.title({ shot })}
-      confirmLabel={productionTexts.manualGeneration.upload}
+      title={replace ? texts.replaceTitle({ shot }) : texts.title({ shot })}
+      contentLabel={replace ? texts.replaceTitle({ shot }) : texts.title({ shot })}
+      confirmLabel={replace ? texts.replace : productionTexts.manualGeneration.upload}
       confirmIcon={<UploadFileIcon />}
       confirmDisabled={busy || !state.video}
       confirmDisabledReason={reason}
@@ -50,7 +53,7 @@ export function OwnVideoDialog({
     >
       <Stack spacing={2} sx={{ pt: 1 }}>
         <Typography variant="body2" color="text.secondary">
-          {texts.intro}
+          {replace ? texts.replaceIntro : texts.intro}
         </Typography>
         <Alert severity="info">{texts.format}</Alert>
         {error ? (

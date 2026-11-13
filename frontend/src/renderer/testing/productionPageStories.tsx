@@ -100,6 +100,7 @@ interface PageModel {
   reviewCancels: number;
   manualBuilds: number;
   manualUploads: number;
+  manualReplacements: number;
   /** Загрузок своего видео плана (production.attachOwnVideo). */
   ownVideos: number;
   promptReopens: string[];
@@ -159,6 +160,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
         reviewCancels: 0,
         manualBuilds: 0,
         manualUploads: 0,
+        manualReplacements: 0,
         ownVideos: 0,
         promptReopens: [],
         ownSaves: [],
@@ -283,6 +285,11 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
         animatic: fragment.overrides.animatic,
         production: {
           acceptedKit: async (_project, shot) => structuredClone(options.acceptedKit?.(shot) ?? null),
+          // Своё видео с телефона: другой кадр и частота, окно приёмки предлагает только участок.
+          resultMedia: async (_project, dir) =>
+            model.view.shots.flatMap((item) => item.packages).find((item) => item.dir === dir)?.request?.ownVideo
+              ? { seconds: 4, width: 1080, height: 1920, frameRate: '30000/1001' }
+              : null,
           spend: async (_project, shot) =>
             structuredClone(
               options.spend?.(shot) ?? {
@@ -423,6 +430,17 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
             return structuredClone(job);
           },
           // Загрузка видео ручной генерации: оригинал и сведения записываются сразу, затем вопрос о результате.
+          // Как Go: замена загруженного вручную видео до приёмки снимает прежнее и загружает новое тем же путём.
+          replaceManual: async (project, dir, video) => {
+            const { pkg } = find(project, dir);
+            if (pkg.request?.mode !== 'manual' || !pkg.request.manualResult || pkg.stage === 'accepted')
+              throw new Error('Заменить можно только видео, загруженное вручную и ещё не принятое.');
+            pkg.request = { ...pkg.request, attemptStatus: 'manual_pending', manualResult: false, downloads: [], manualGeneration: undefined };
+            // Как Go: сводка прежнего видео удаляется и собирается заново под тем же именем.
+            pkg.preview = [];
+            model.manualReplacements++;
+            return session.api.production.attachManual(project, dir, video);
+          },
           attachManual: async (project, dir, video) => {
             const { shot, pkg } = find(project, dir);
             if (pkg.request?.mode !== 'manual' || pkg.request.attemptStatus !== 'manual_pending') throw new Error('Пакет ручной генерации не ждёт видео.');
@@ -444,6 +462,8 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
             pkg.stage = 'downloaded';
             pkg.stageLabel = 'Результат получен';
             pkg.resultToken = `manual-result-${model.manualUploads}`;
+            // Сводка нового видео лежит под прежним именем: адрес различается только токеном результата.
+            pkg.preview = [STORY_IMAGE_PATH];
             ask(shot, pkg, {
               stage: 'downloaded',
               question: 'Принять полученный результат?',
@@ -570,10 +590,15 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
             publish();
             return workflowSnapshot(project, shot, dir);
           },
-          // Как Go: способ попытки записывается до утверждения промпта, пока запрос не подготовлен.
+          // Как Go: способ попытки меняется, пока запрос не подготовлен; на провайдера — только промпт в пределах его длины.
           setGenerationMethod: async (project, shot, dir, method) => {
             const { pkg } = find(project, dir);
-            if (options.manual || pkg.prompt?.approved || pkg.request) throw new Error('Способ генерации этой попытки сменить нельзя.');
+            if (options.manual || pkg.request) throw new Error('Способ генерации этой попытки сменить нельзя.');
+            const chars = Array.from(pkg.prompt?.text ?? '').length;
+            if (method === 'provider' && pkg.prompt?.approved && options.promptMaxChars && chars > options.promptMaxChars)
+              throw new Error(
+                `Видеопромпт длиннее предела провайдера (длина ${chars}, предел ${options.promptMaxChars}): чтобы выбрать провайдера, верните промпт на доработку и сократите его.`
+              );
             if (method === 'manual') manualMethods.add(dir);
             else manualMethods.delete(dir);
             model.methodChanges = [...model.methodChanges, method];
@@ -767,8 +792,8 @@ export function ProductionPageStory({ links = [] }: { links?: StoryLink[] }): Re
             Чтений: {model.reads}. Ответов: {model.decisions}. Выборов оригинала: {model.selections}. Утверждено опор: {approved.join(', ') || 'нет'}. Приёмок
             комплекта: {model.accepts}. Отправок генерации: {model.submissions}. Своих файлов опор: {model.frameImports}. Указаний к опорам:{' '}
             {model.frameNotes.join(', ') || 'нет'}. Созданий опор: {model.frameRuns}. Удалений попыток: {model.discards}. Пакетов ручной генерации:{' '}
-            {model.manualBuilds}. Загрузок видео: {model.manualUploads}. Своих видео: {model.ownVideos}. Возвратов промпта:{' '}
-            {model.promptReopens.join(', ') || 'нет'}. Своих описаний: {model.ownSaves.join(', ') || 'нет'}. Способов генерации:{' '}
+            {model.manualBuilds}. Загрузок видео: {model.manualUploads}. Замен видео: {model.manualReplacements}. Своих видео: {model.ownVideos}. Возвратов
+            промпта: {model.promptReopens.join(', ') || 'нет'}. Своих описаний: {model.ownSaves.join(', ') || 'нет'}. Способов генерации:{' '}
             {model.methodChanges.join(', ') || 'нет'}.
           </Typography>
           <Typography variant="caption" color="text.secondary" data-testid="production-review-model">

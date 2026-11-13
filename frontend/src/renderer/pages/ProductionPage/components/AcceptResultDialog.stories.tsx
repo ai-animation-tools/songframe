@@ -63,6 +63,24 @@ export const FullDuration: Story = {
     await done(canvasElement);
   }
 };
+export const OwnVideoFrame: Story = {
+  tags: ['ci'],
+  name: 'Своё видео другого кадра и частоты · только участок, приведение к кадру проекта',
+  args: { media: { seconds: 4, width: 1080, height: 1920, frameRate: '30000/1001' } },
+  play: async ({ canvasElement }) => {
+    const dialog = await open(canvasElement);
+    await expect(dialog.getByText(texts.frameMismatch({ width: 1080, height: 1920, rate: '29,97', fps: 30 }))).toBeInTheDocument();
+    // Длина взята из видео: 4 с при окне 5 с — участок до конца видео и удержание последнего кадра.
+    await expect(dialog.getByRole('spinbutton', { name: texts.cutEnd })).toHaveValue(4);
+    await expect(dialog.getByRole('spinbutton', { name: texts.holdLast })).toHaveValue(30);
+    await userEvent.click(dialog.getByRole('combobox', { name: texts.section }));
+    await expect(within(canvasElement.ownerDocument.body).getByRole('option', { name: texts.full })).toHaveAttribute('aria-disabled', 'true');
+    await userEvent.keyboard('{Escape}');
+    await userEvent.click(dialog.getByRole('button', { name: texts.accept }));
+    await done(canvasElement);
+    await expect(within(canvasElement).getByText(/Переданные параметры:/)).toHaveTextContent('"holdLast":30');
+  }
+};
 export const HoldLast: Story = {
   name: 'Оригинал короче окна · удержать последний кадр',
   args: { windowFrames: 300 },

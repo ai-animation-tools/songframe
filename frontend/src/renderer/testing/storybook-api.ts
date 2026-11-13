@@ -174,6 +174,7 @@ export function unconfiguredStoryApi(): Api {
       resume: async () => unconfigured('production.resume'),
       attachResult: async () => unconfigured('production.attachResult'),
       attachManual: async () => unconfigured('production.attachManual'),
+      replaceManual: async () => unconfigured('production.replaceManual'),
       attachOwnVideo: async () => unconfigured('production.attachOwnVideo'),
       markNotCreated: async () => unconfigured('production.markNotCreated'),
       selectImage: async () => unconfigured('production.selectImage'),
@@ -184,6 +185,7 @@ export function unconfiguredStoryApi(): Api {
       speechPlan: async () => unconfigured('production.speechPlan'),
       // Комплект без сведений генерации: принятые планы историй показывают только видео, пока модель не задана.
       acceptedKit: async () => null,
+      resultMedia: async () => null,
       spend: async () => ({
         attempts: 0,
         removed: 0,

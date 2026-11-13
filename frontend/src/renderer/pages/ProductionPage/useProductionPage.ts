@@ -15,6 +15,7 @@ import {
   sendConfirmedRequest,
   acceptTargetFor,
   defaultAcceptOptions,
+  withResultMedia,
   type AcceptTarget
 } from './decisions';
 import { completeInScope, RequestScope } from '../../hooks/requestScope';
@@ -59,13 +60,33 @@ export function useProductionPage() {
   const [acceptDialog, setAcceptDialog] = useState<AcceptTarget | null>(null);
   const [acceptOptions, setAcceptOptions] = useState<AcceptOptions>({ mode: 'full', cutStart: 0, cutEnd: 0, speed: '1', holdFirst: 0, holdLast: 0 });
   // Приёмка открывается с участком под окно плана, если длина оригинала заведомо другая.
+  // Ключ открытого окна приёмки: поздний ответ ffprobe не открывает закрытое окно и не трогает другое.
+  const acceptOpened = useRef<string | null>(null);
+  useEffect(() => {
+    if (!acceptDialog) acceptOpened.current = null;
+  }, [acceptDialog]);
+  // Затем окно уточняется настоящими длиной, кадром и частотой оригинала: своё видео и ручная генерация
+  // запроса к сервису не имеют, и «целиком» для них обычно недоступно.
   const openAccept = useCallback(
     (pkg: PackageView, hasAsset: boolean, lipsync = false) => {
       const target = acceptTargetFor(pkg, hasAsset, fps, lipsync);
+      const key = `${target.dir}:${target.resultToken ?? ''}`;
+      acceptOpened.current = key;
       setAcceptOptions(defaultAcceptOptions(target));
       setAcceptDialog(target);
+      window.api.production
+        .resultMedia(project, pkg.dir)
+        .then((media) => {
+          // Окно уже закрыто или открыто для другого результата: уточнять нечего.
+          if (!media || acceptOpened.current !== key) return;
+          const exact = withResultMedia(target, media);
+          setAcceptDialog(exact);
+          setAcceptOptions(defaultAcceptOptions(exact));
+        })
+        // Без ffprobe окно остаётся при оценке по запросу; Go всё равно проверит оригинал при приёмке.
+        .catch(() => undefined);
     },
-    [fps]
+    [fps, project]
   );
   const [confirmSend, setConfirmSend] = useState<PackageView | null>(null);
   const [confirmRegenerate, setConfirmRegenerate] = useState<string | null>(null);

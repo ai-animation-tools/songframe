@@ -16,6 +16,7 @@ export type {
     Quote,
     Request,
     RequestInput,
+    ResultMedia,
     ShotProduction,
     Tools,
     View

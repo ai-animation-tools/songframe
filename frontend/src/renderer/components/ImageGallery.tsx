@@ -9,7 +9,8 @@ import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Typogra
 import { ActionButton } from './ActionButton';
 
 interface ImageGalleryProps {
-  images: { imagePath: string; label: string }[];
+  /** version — метка содержимого (например токен результата): файл по тому же пути пересобран, и WebView не покажет прежний. */
+  images: { imagePath: string; label: string; version?: string }[];
   initialIndex: number;
   /** Подпись вида изображений в заголовке, например «Входное изображение» или «Опора». */
   kind?: string;
@@ -64,7 +65,9 @@ export function ImageGallery({ images, initialIndex, kind = componentsTexts.gall
         >
           <Box
             component="img"
-            src={window.api.shell.fileUrl(image.imagePath)}
+            src={
+              image.version ? `${window.api.shell.fileUrl(image.imagePath)}?v=${encodeURIComponent(image.version)}` : window.api.shell.fileUrl(image.imagePath)
+            }
             alt={image.label}
             sx={{
               display: 'block',

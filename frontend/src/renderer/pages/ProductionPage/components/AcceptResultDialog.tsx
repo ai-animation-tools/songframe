@@ -21,7 +21,10 @@ export function AcceptResultDialog({
   onClose(): void;
   onConfirm(): void;
 }): ReactElement {
-  const mismatch = !!target?.windowFrames && !!target.originalFrames && target.windowFrames !== target.originalFrames;
+  const durationMismatch = !!target?.windowFrames && !!target.originalFrames && target.windowFrames !== target.originalFrames;
+  // Другой кадр или частота оригинала тоже закрывают «целиком»: видео приводится к кадру проекта участком.
+  const frameMismatch = target?.frameMismatch;
+  const mismatch = durationMismatch || !!frameMismatch;
   // Без открытого диалога (target null) шкала не используется; DEFAULT_FPS лишь держит расчёт определённым.
   const fps = target?.fps ?? DEFAULT_FPS;
   const seconds = (frames?: number): string => ((frames ?? 0) / fps).toFixed(2).replace('.', ',');
@@ -52,7 +55,16 @@ export function AcceptResultDialog({
             label={productionTexts.acceptResultDialog.replaceCheckbox}
           />
         ) : null}
-        {mismatch ? (
+        {frameMismatch ? (
+          <Alert severity="info">
+            {productionTexts.acceptResultDialog.frameMismatch({
+              width: frameMismatch.width,
+              height: frameMismatch.height,
+              rate: frameRateText(frameMismatch.frameRate),
+              fps
+            })}
+          </Alert>
+        ) : durationMismatch ? (
           <Alert severity="info">
             {productionTexts.acceptResultDialog.durationMismatch({
               originalSeconds: seconds(target?.originalFrames),
@@ -113,4 +125,11 @@ export function AcceptResultDialog({
       </Stack>
     </ConfirmationDialog>
   );
+}
+
+/** Частота ffprobe «30000/1001» — для человека «29,97»; неизвестная — «?». */
+function frameRateText(rate: string): string {
+  const [numerator, denominator = '1'] = rate.split('/');
+  const value = Number(numerator) / Number(denominator);
+  return Number.isFinite(value) && value > 0 ? String(Math.round(value * 100) / 100).replace('.', ',') : '?';
 }

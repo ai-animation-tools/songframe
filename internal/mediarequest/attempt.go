@@ -76,6 +76,7 @@ const (
 	textKind             = "Вид медиа должен быть image или video."
 	textManualRequest    = "Запрос ручной генерации не отправляется сервису: загрузите видео, созданное по пакету."
 	textNotManual        = "Действие доступно только пакету ручной генерации, ещё не получившему видео."
+	textNotManualResult  = "Заменить можно только видео, загруженное вручную в пакет ручной генерации."
 	textManualSource     = "Укажите источник видео."
 	textManualCost       = "Стоимость должна быть неотрицательным числом."
 	textManualCostUnit   = "Единица стоимости: credits, RUB или USD."
@@ -1162,6 +1163,46 @@ func AttachManual(root, directory, file string, meta ManualMeta) (*toolrt.Dict, 
 		return nil
 	})
 	return result, err
+}
+
+// DetachManual снимает с попытки ручной генерации загруженное видео, чтобы загрузить другое:
+// копии оригиналов в папке попытки удаляются, состояние возвращается в manual_pending без
+// downloads и manual_generation. Исходный файл пользователя вне попытки не трогается. Только для
+// mode=manual с загруженным вручную результатом; принятие и черновики монтажа проверяет вызывающий.
+func DetachManual(root, directory string) error {
+	workDir, err := WorkPath(root, directory)
+	if err != nil {
+		return err
+	}
+	return withLock(workDir, func() error {
+		request, state, err := LoadAttempt(workDir, false)
+		if err != nil {
+			return err
+		}
+		if !toolrt.Equal(request.Value("mode"), "manual") || !toolrt.Equal(state.Value("status"), "downloaded") || !toolrt.Truthy(state.Value("manual_result")) {
+			return valueError(textNotManualResult)
+		}
+		downloads, _ := state.Value("downloads").([]any)
+		for _, raw := range downloads {
+			entry, _ := raw.(*toolrt.Dict)
+			if entry == nil {
+				continue
+			}
+			name, _ := entry.Value("path").(string)
+			// Копия лежит в самой папке попытки (original*.ext): чужие пути не удаляются.
+			if name == "" || filepath.Base(name) != name || !strings.HasPrefix(name, "original") {
+				return valueError(textNotManualResult)
+			}
+			if err := os.Remove(filepath.Join(workDir, name)); err != nil && !errors.Is(err, os.ErrNotExist) {
+				return err
+			}
+		}
+		state.Set("status", "manual_pending")
+		state.Delete("downloads")
+		state.Delete("manual_result")
+		state.Delete("manual_generation")
+		return writeState(workDir, state)
+	})
 }
 
 // publishOriginals проверяет и публикует файлы результата в папке попытки: число файлов равно

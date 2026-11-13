@@ -364,6 +364,10 @@ func readPackage(project, dir string, fingerprint fingerprintFunc) (*PackageView
 	if stage == "description_review" && dynvalue.Get(workflow, "description_approved") == true {
 		stageLabel = textDescriptionAccepted
 	}
+	// Утверждённый промпт (свой утверждается при сохранении) остаётся на этапе prompt_review до запроса.
+	if stage == "prompt_review" && dynvalue.Get(dynvalue.Get(workflow, "prompt"), "approved") == true {
+		stageLabel = textPromptApproved
+	}
 	if stage == "submitted" && request != nil && request.AttemptStatus != nil && *request.AttemptStatus != "" {
 		label, ok := attemptLabels[*request.AttemptStatus]
 		if !ok {

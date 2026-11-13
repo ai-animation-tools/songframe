@@ -12,7 +12,8 @@ export function ImageThumbnail({
   fit = 'contain',
   highlight,
   dashed = false,
-  title
+  title,
+  version
 }: {
   /** Абсолютный путь файла изображения. */
   path: string;
@@ -29,6 +30,8 @@ export function ImageThumbnail({
   dashed?: boolean;
   /** Подсказка при наведении: технические сведения вроде пути файла, которые не нужны в подписи. */
   title?: string;
+  /** Метка содержимого в адресе: файл по тому же пути пересобран (например сводка заменённого видео), и WebView не покажет прежний. */
+  version?: string;
 }): ReactElement {
   const button = (
     <ButtonBase
@@ -49,7 +52,7 @@ export function ImageThumbnail({
     >
       <Box
         component="img"
-        src={window.api.shell.fileUrl(path)}
+        src={version ? `${window.api.shell.fileUrl(path)}?v=${encodeURIComponent(version)}` : window.api.shell.fileUrl(path)}
         alt={label}
         sx={{ display: 'block', width: '100%', aspectRatio: aspectRatio ?? undefined, objectFit: fit, cursor: 'zoom-in' }}
       />

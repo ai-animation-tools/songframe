@@ -1,7 +1,7 @@
 import { productionTexts } from '@shared/texts/production';
 /** Черновик замечания и платное подтверждение относятся к показанному вопросу, а не ко всему плану. */
 import type { Api } from '@shared/api';
-import type { AcceptOptions, JobInfo, PackageView, ProductionView } from '@shared/types';
+import type { AcceptOptions, JobInfo, PackageView, ProductionView, ResultMedia } from '@shared/types';
 
 export function decisionNoteKey(pkg: PackageView): string {
   return `${pkg.dir}\0${pkg.decisionToken ?? JSON.stringify(pkg.pendingDecision)}`;
@@ -38,6 +38,11 @@ export interface AcceptTarget {
   /** Длина окна плана и запрошенного оригинала в кадрах: при расхождении «целиком» заведомо не подходит. */
   windowFrames?: number;
   originalFrames?: number;
+  /**
+   * Настоящие кадр и частота оригинала (ffprobe), если они не совпадают с кадром 1920×1080 и частотой
+   * проекта: «целиком» без перекодирования недоступно, видео приводится к кадру проекта участком.
+   */
+  frameMismatch?: { width: number; height: number; frameRate: string };
   /** Речевой план без подготовленного WAV принять нельзя: accept_shot требует точный срез песни. */
   speechMissing?: boolean;
 }
@@ -59,10 +64,26 @@ export function acceptTargetFor(pkg: PackageView, hasAsset: boolean, fps: number
   };
 }
 
+/**
+ * Уточняет цель приёмки настоящими параметрами оригинала: длина берётся из видео, а не из запроса
+ * (у своего видео и ручной генерации запроса к сервису нет), несовпадающие кадр или частота закрывают «целиком».
+ */
+export function withResultMedia(target: AcceptTarget, media: ResultMedia | null): AcceptTarget {
+  if (!media) return target;
+  const originalFrames = media.seconds > 0 ? Math.round(media.seconds * target.fps) : target.originalFrames;
+  const sameFrame = media.width === 1920 && media.height === 1080 && media.frameRate === `${target.fps}/1`;
+  return { ...target, originalFrames, frameMismatch: sameFrame ? undefined : { width: media.width, height: media.height, frameRate: media.frameRate } };
+}
+
 /** Оригинал короче окна удерживает последний кадр, длиннее — обрезается по окну; совпадающий принимается целиком. */
 export function defaultAcceptOptions(target: AcceptTarget): AcceptOptions {
   const base: AcceptOptions = { mode: 'full', cutStart: 0, cutEnd: 0, speed: '1', holdFirst: 0, holdLast: 0 };
   const { windowFrames: window, originalFrames: original } = target;
+  if (target.frameMismatch && window) {
+    // Кадр или частота другие: участок по длине окна, недостающее удерживается последним кадром.
+    const length = original ?? window;
+    return { ...base, mode: 'cut', cutEnd: Math.min(window, length) / target.fps, holdLast: Math.max(0, window - length) };
+  }
   if (!window || !original || window === original) return base;
   return { ...base, mode: 'cut', cutEnd: Math.min(window, original) / target.fps, holdLast: Math.max(0, window - original) };
 }

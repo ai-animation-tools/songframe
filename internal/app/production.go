@@ -219,6 +219,15 @@ func (s *ProductionService) AttachManual(project, packageDir string, result prod
 	return wire.Done(s.production.AttachManual(project, packageDir, result))
 }
 
+// ReplaceManual — другое видео вместо загруженного вручную и ещё не принятого: новый файл
+// проверяется до записей, прежняя копия в попытке заменяется, сведения попытки остаются.
+func (s *ProductionService) ReplaceManual(project, packageDir string, result production.ManualResult) (jobs.Info, error) {
+	if err := s.idle(project, packageDir); err != nil {
+		return jobs.Info{}, err
+	}
+	return wire.Done(s.production.ReplaceManual(project, packageDir, result))
+}
+
 // OwnVideoStart — запущенная загрузка своего видео: папка новой попытки (страница сразу открывает
 // её) и задание загрузки.
 type OwnVideoStart struct {
@@ -329,6 +338,12 @@ func (s *ProductionService) AcceptedKit(project, shot string) (*production.Accep
 // отправок, суммы в исходных единицах, неизвестный расход и стоимость секунды принятого материала.
 func (s *ProductionService) Spend(project, shot string) (spend.Summary, error) {
 	return wire.Done(production.SpendFor(project, shot))
+}
+
+// ResultMedia — production:resultMedia: длина, кадр и частота показанного оригинала попытки по
+// ffprobe; окно приёмки по ним решает, можно ли принять видео целиком. null — оригинала нет.
+func (s *ProductionService) ResultMedia(ctx context.Context, project, packageDir string) (*production.ResultMedia, error) {
+	return wire.Done(production.ResultMediaFor(ctx, project, packageDir))
 }
 
 // PrepareSpeech — точный срез WAV липсинка инструментом cut_speech; прежний срез пакета заменяется.

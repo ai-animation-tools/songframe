@@ -108,7 +108,7 @@ wails3 task smoke:deb DEB=/absolute/build/release/songframe-<VERSION>-linux-amd6
 
 Профиль AppArmor разрешает user namespaces только `/usr/bin/songframe`, как профили браузеров в Ubuntu: песочница WebKit остаётся включённой, общая политика не ослабляется. `postinst` загружает его, `prerm` выгружает. Отдельная настройка `--setup-apparmor`, как у AppImage, для deb не нужна.
 
-`smoke:deb` ставит пакет `apt` в чистую Ubuntu 24.04 без Recommends и запускает GUI smoke без сети обычным пользователем: так проверяется достаточность Depends. Если хост запрещает uid mapping в контейнере, задать `SONGFRAME_SMOKE_APPARMOR_PROFILE`, как для `smoke:appimage`. Установка на настольную систему (`sudo apt install ./файл.deb`) и загрузка профиля AppArmor проверяются отдельно вручную.
+`smoke:deb` ставит пакет `apt` в чистую Ubuntu 24.04 без Recommends и запускает GUI smoke без сети обычным пользователем: так проверяется достаточность Depends. Если хост запрещает uid mapping в контейнере, задать `SONGFRAME_SMOKE_APPARMOR_PROFILE`, как для `smoke:appimage`. Установка на настольную систему (`sudo apt install ./файл.deb`) и загрузка профиля AppArmor проверяются отдельно вручную. Пересобранный пакет той же версии `apt` молча пропускает («уже установлен пакет самой новой версии»): для проверки локальной сборки ставить его с `--reinstall`.
 
 ## Обновление из приложения
 

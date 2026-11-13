@@ -801,7 +801,12 @@ func availableFrames(ctx context.Context, path string, fps int64) (*big.Int, err
 	for _, r := range text {
 		digits = digits && toolrt.DigitValue(r) >= 0
 	}
-	if toolrt.Equal(rate, strconv.FormatInt(fps, 10)+"/1") && digits {
+	// nb_frames совпадает с кадрами шкалы только у постоянной частоты. У переменной (запись экрана,
+	// телефон) r_frame_rate может быть 30/1 при средней 23 к/с: фильтр fps=… рендера дублирует кадры
+	// по времени, и доступная длина считается по длительности, как у другой частоты.
+	average, _ := get(video, "avg_frame_rate", nil)
+	constant := average == nil || toolrt.Equal(average, rate)
+	if toolrt.Equal(rate, strconv.FormatInt(fps, 10)+"/1") && digits && constant {
 		value, ok := toolrt.ParseIntText(text)
 		if !ok {
 			return nil, toolrt.Raise(toolrt.ValueError, "не целое число: %s", toolrt.Repr(text))

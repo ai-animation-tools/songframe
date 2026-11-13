@@ -45,8 +45,12 @@ export function PackageResult({
   const variants = image
     ? downloaded.map((path, index) => ({ imagePath: path, label: productionTexts.packageResult.candidateLabel({ frame, variant: index + 1 }) }))
     : [];
+  // Сводка и оригинал пересобираются под теми же именами (замена своего видео): токен результата
+  // в адресе не даёт WebView показать прежние кадры.
+  const version = pkg.resultToken;
   const previews = pkg.preview.map((path, index) => ({
     imagePath: path,
+    version,
     label: productionTexts.packageResult.summaryLabel({ filename: path.split(/[\\/]/).pop() ?? index + 1 })
   }));
   return (
@@ -84,7 +88,7 @@ export function PackageResult({
                   </ActionButton>
                 </Box>
               ) : (
-                <VideoPlayer key={path} path={path} videoRef={index === 0 ? originalVideo : undefined} />
+                <VideoPlayer key={path} path={path} version={version} videoRef={index === 0 ? originalVideo : undefined} />
               )
             )}
           </Box>
@@ -98,6 +102,7 @@ export function PackageResult({
                 <Box key={preview.imagePath} sx={{ width: 420, maxWidth: '100%' }}>
                   <ImageThumbnail
                     path={preview.imagePath}
+                    version={preview.version}
                     label={preview.label}
                     title={preview.imagePath}
                     aspectRatio={null}

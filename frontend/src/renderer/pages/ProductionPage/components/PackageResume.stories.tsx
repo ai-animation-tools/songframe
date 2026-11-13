@@ -55,15 +55,18 @@ export const PartialDownload: Story = {
     await expect(original).toBeInTheDocument();
     await expect(canvas.queryByRole('button', { name: 'Принять' })).not.toBeInTheDocument();
     await expect(canvas.getByTestId('delivery-state')).toHaveTextContent('оригиналов: 1');
-    const source = original?.getAttribute('src');
+    // Тот же файл оригинала; метка ?v= — токен результата, он меняется с составом полученных оригиналов.
+    const file = (): string | undefined => canvasElement.querySelector('video')?.getAttribute('src')?.split('?')[0];
+    const source = file();
+    await expect(source).toBeTruthy();
     await userEvent.click(canvas.getByRole('button', { name: 'Продолжить получение' }));
     await canvas.findByText(RECEIVE_ERROR);
-    await expect(canvasElement.querySelector('video')).toHaveAttribute('src', source);
+    await expect(file()).toBe(source);
     await expect(canvas.getByTestId('delivery-state')).toHaveTextContent('Статус: download_partial');
     await expect(canvas.queryByRole('button', { name: 'Принять' })).not.toBeInTheDocument();
     await userEvent.click(canvas.getByRole('button', { name: 'Продолжить получение' }));
     await waitFor(() => expect(canvas.getByTestId('delivery-state')).toHaveTextContent('Статус: downloaded'));
-    await expect(canvasElement.querySelector('video')).toHaveAttribute('src', source);
+    await expect(file()).toBe(source);
     await expect(canvas.getByTestId('delivery-state')).toHaveTextContent('оригиналов: 1');
   }
 };

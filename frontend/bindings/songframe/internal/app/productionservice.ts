@@ -186,6 +186,22 @@ export function ReopenQuestion(project: string, packageDir: string): $Cancellabl
 }
 
 /**
+ * ReplaceManual — другое видео вместо загруженного вручную и ещё не принятого: новый файл
+ * проверяется до записей, прежняя копия в попытке заменяется, сведения попытки остаются.
+ */
+export function ReplaceManual(project: string, packageDir: string, result: production$0.ManualResult): $CancellablePromise<jobs$0.Info> {
+    return $Call.ByID(3740010999, project, packageDir, result);
+}
+
+/**
+ * ResultMedia — production:resultMedia: длина, кадр и частота показанного оригинала попытки по
+ * ffprobe; окно приёмки по ним решает, можно ли принять видео целиком. null — оригинала нет.
+ */
+export function ResultMedia(project: string, packageDir: string): $CancellablePromise<production$0.ResultMedia | null> {
+    return $Call.ByID(3370253430, project, packageDir);
+}
+
+/**
  * Resume — получение по сохранённому ID задания без новой отправки.
  */
 export function Resume(project: string, packageDir: string): $CancellablePromise<jobs$0.Info> {

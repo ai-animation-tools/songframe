@@ -13,6 +13,9 @@ import (
 // textDescriptionAccepted — метка попытки с принятым описанием до первой опоры.
 const textDescriptionAccepted = "описание принято"
 
+// textPromptApproved — метка попытки с утверждённым видеопромптом до подготовки запроса.
+const textPromptApproved = "видеопромпт утверждён"
+
 var stageLabels = map[string]string{
 	"description_review":   "описание на согласовании",
 	"keyframes_review":     "опоры на согласовании",
@@ -301,6 +304,7 @@ func TextSpeechDuration(min, max float64) string {
 // Ручная генерация: видео создаётся вне приложения по пакету попытки.
 const (
 	textManualPackageOnly   = "Загрузить видео можно только в собранный пакет ручной генерации, ещё не получивший видео."
+	textManualReplaceOnly   = "Заменить можно только видео, загруженное вручную и ещё не принятое."
 	textManualSourceMissing = "Укажите источник видео."
 	textManualCostInvalid   = "Стоимость — целое неотрицательное число."
 	textManualVideoFormat   = "Нужно видео в формате MP4, а выбранный файл в другом формате. Перекодируйте его в MP4 и загрузите снова."

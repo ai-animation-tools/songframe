@@ -11,7 +11,8 @@ import {
   reviewMontageRoute,
   reviewShots,
   sendConfirmedRequest,
-  defaultAcceptOptions
+  defaultAcceptOptions,
+  withResultMedia
 } from './decisions';
 
 function fixture(overrides: Partial<PackageView> = {}): PackageView {
@@ -235,5 +236,22 @@ describe('участок приёмки по умолчанию', () => {
       cutEnd: 2,
       holdLast: 0
     });
+  });
+});
+
+describe('withResultMedia', () => {
+  const target = { shot: 'M03', dir: '/p', fps: 30, windowFrames: 175, originalFrames: 180 };
+  it('своё видео другого кадра принимается участком по окну, длина — из видео', () => {
+    const exact = withResultMedia(target, { seconds: 4, width: 1280, height: 720, frameRate: '30000/1001' });
+    expect(exact).toMatchObject({ originalFrames: 120, frameMismatch: { width: 1280, height: 720, frameRate: '30000/1001' } });
+    expect(defaultAcceptOptions(exact)).toMatchObject({ mode: 'cut', cutStart: 0, cutEnd: 4, holdLast: 55 });
+  });
+  it('видео в кадре и частоте проекта с длиной окна остаётся «целиком»', () => {
+    const exact = withResultMedia(target, { seconds: 175 / 30, width: 1920, height: 1080, frameRate: '30/1' });
+    expect(exact.frameMismatch).toBeUndefined();
+    expect(defaultAcceptOptions(exact).mode).toBe('full');
+  });
+  it('без сведений ffprobe цель не меняется', () => {
+    expect(withResultMedia(target, null)).toBe(target);
   });
 });

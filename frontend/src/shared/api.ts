@@ -32,6 +32,7 @@ import type {
   PromptLogRecord,
   PromptLogSummary,
   ShotSpend,
+  ResultMedia,
   AnimaticView,
   AppState,
   BriefResult,
@@ -221,6 +222,8 @@ export interface Api {
     markNotCreated(project: string, packageDir: string): Promise<void>;
     /** Видео, созданное вне приложения по пакету ручной генерации, становится оригиналом попытки с источником и примечаниями. */
     attachManual(project: string, packageDir: string, result: ManualVideo): Promise<JobInfo>;
+    /** Другое видео вместо загруженного вручную и ещё не принятого: прежняя копия в попытке заменяется. */
+    replaceManual(project: string, packageDir: string, result: ManualVideo): Promise<JobInfo>;
     /** Своё видео плана: новая попытка без описания, опор и промпта, видео MP4 сразу становится её результатом; packageDir — папка попытки. */
     attachOwnVideo(project: string, shot: string, result: ManualVideo): Promise<{ packageDir: string; job: JobInfo }>;
     /** Выбирает кандидат опоры; художественное утверждение кадра выполняется отдельно. */
@@ -235,6 +238,8 @@ export interface Api {
     acceptedKit(project: string, shot: string): Promise<AcceptedKit | null>;
     /** Расход плана: попытки, отправки, суммы в исходных единицах, неизвестный расход и стоимость секунды принятого материала. */
     spend(project: string, shot: string): Promise<ShotSpend>;
+    /** Длина, кадр и частота показанного оригинала попытки (ffprobe); null — оригинала нет. */
+    resultMedia(project: string, packageDir: string): Promise<ResultMedia | null>;
     /** Режет точный WAV липсинка в audio/ пакета; без границ — по разметке «Таймингов». */
     prepareSpeech(project: string, packageDir: string, bounds?: { start: number; end: number }): Promise<PackageView>;
     /** Снова задать вопрос о полученном результате пакета приложения, если ответ уже записан. */

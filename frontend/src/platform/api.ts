@@ -11,6 +11,7 @@ import type {
   PromptLogRecord,
   PromptLogSummary,
   ShotSpend,
+  ResultMedia,
   AnimaticView,
   AppState,
   BriefResult,
@@ -783,6 +784,8 @@ export function createApi(b: Bindings): Api {
     call('production.attachResult', async () => toJob(await (await production()).AttachResult(project, packageDir, files)), false);
   api.production.attachManual = (project, packageDir, result) =>
     call('production.attachManual', async () => toJob(await (await production()).AttachManual(project, packageDir, result)), false);
+  api.production.replaceManual = (project, packageDir, result) =>
+    call('production.replaceManual', async () => toJob(await (await production()).ReplaceManual(project, packageDir, result)), false);
   api.production.attachOwnVideo = (project, shot, result) =>
     call(
       'production.attachOwnVideo',
@@ -811,6 +814,8 @@ export function createApi(b: Bindings): Api {
     );
   api.production.park = (project, packageDir) => call('production.park', async () => (await production()).Park(project, packageDir));
   api.production.spend = (project, shot) => call('production.spend', async () => (await (await production()).Spend(project, shot)) as ShotSpend);
+  api.production.resultMedia = (project, packageDir) =>
+    call('production.resultMedia', async () => (await (await production()).ResultMedia(project, packageDir)) as ResultMedia | null);
   api.production.acceptedKit = (project, shot) =>
     call('production.acceptedKit', async () => ((await (await production()).AcceptedKit(project, shot)) ?? null) as unknown as AcceptedKit | null);
   api.production.speechPlan = (project, shot, packageDir) =>

@@ -21,6 +21,7 @@ import (
 	"songframe/internal/dynvalue"
 	"songframe/internal/jobs"
 	"songframe/internal/mediaproviders"
+	"songframe/internal/mediarequest"
 	"songframe/internal/projectfile"
 	"songframe/internal/projectfs"
 	"songframe/internal/promptlog"
@@ -1301,6 +1302,53 @@ func (s *Service) AttachManual(project, packageDir string, result ManualResult) 
 	if err := CheckManualResult(result); err != nil {
 		return jobs.Info{}, err
 	}
+	return s.startAttachLocked(project, directory, view, result, s.restoreSubmission(project, directory, view.Stage, false))
+}
+
+// ReplaceManual — другое видео вместо загруженного вручную, пока результат не принят: новый файл
+// проверяется до любых записей, затем прежняя копия в попытке снимается (mediarequest.DetachManual)
+// и новое видео загружается тем же путём, что AttachManual. Описание, опоры и промпт попытки
+// остаются; сводка preview/ прежнего видео удаляется и собирается заново, проверка видео агентом
+// и решение по результату относятся к новому видео.
+func (s *Service) ReplaceManual(project, packageDir string, result ManualResult) (jobs.Info, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	directory, err := s.availableLocked(project, packageDir)
+	if err != nil {
+		return jobs.Info{}, err
+	}
+	view, err := mustPackage(project, directory)
+	if err != nil {
+		return jobs.Info{}, err
+	}
+	if view == nil || view.Request == nil || view.Request.Mode != "manual" || !view.Request.ManualResult ||
+		view.attemptStatus() != "downloaded" || view.Stage == "accepted" {
+		return jobs.Info{}, errors.New(textManualReplaceOnly)
+	}
+	if drafts := montageDraftsUsing(project, strings.ReplaceAll(view.Relative, `\`, "/")); len(drafts) > 0 {
+		return jobs.Info{}, errors.New(textPackageUsedByMontageDraft(drafts[0]))
+	}
+	if err := CheckManualResult(result); err != nil {
+		return jobs.Info{}, err
+	}
+	if err := projectfs.CheckWrite(view.Request.Dir); err != nil {
+		return jobs.Info{}, err
+	}
+	if err := mediarequest.DetachManual(project, view.Request.Dir); err != nil {
+		return jobs.Info{}, err
+	}
+	// Сводка preview/ (контактный лист, первый и последний кадр, превью) снята с прежнего видео:
+	// без удаления она показывалась бы как сводка нового, пока задание не соберёт её заново,
+	// и оставалась бы при сбое сборки.
+	if err := os.RemoveAll(filepath.Join(view.Dir, "preview")); err != nil {
+		return jobs.Info{}, err
+	}
+	return s.startAttachLocked(project, directory, view, result, nil)
+}
+
+// startAttachLocked — задание загрузки видео ручной генерации в попытку (под s.mu): attach-manual,
+// затем те же шаги, что после получения результата сервиса (этап downloaded, вопрос, сводка).
+func (s *Service) startAttachLocked(project, directory string, view *PackageView, result ManualResult, before []jobs.Step) (jobs.Info, error) {
 	args := []string{"attach-manual", "--work-dir", view.Request.Dir, "--file", result.File, "--source", result.Source}
 	if result.CostAmount != nil {
 		args = append(args, "--cost-amount", strconv.FormatFloat(*result.CostAmount, 'f', -1, 64), "--cost-unit", result.CostUnit)
@@ -1308,8 +1356,7 @@ func (s *Service) AttachManual(project, packageDir string, result ManualResult) 
 	if note := dynvalue.Trim(result.Note); note != "" {
 		args = append(args, "--note", note)
 	}
-	steps := s.restoreSubmission(project, directory, view.Stage, false)
-	steps = append(steps, s.toolStep(project, "media_request", args, textAttachManualStep, false, nil))
+	steps := append(before, s.toolStep(project, "media_request", args, textAttachManualStep, false, nil))
 	steps = append(steps, s.resumeSteps(project, directory, view.Request.Dir, false)...)
 	job, err := s.start(jobs.KindSubmit, textManualResultJob(view.Shot), project, steps)
 	if err != nil {

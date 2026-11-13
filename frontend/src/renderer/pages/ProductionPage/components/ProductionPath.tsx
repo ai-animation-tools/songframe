@@ -15,6 +15,7 @@ import { AcceptedAsset } from './AcceptedAsset';
 import { AcceptedKitPanel } from './AcceptedKitPanel';
 import { useApp } from '../../../state';
 import { FrameActions, type FrameInstruction } from './FrameActions';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { ManualGeneration, ManualGenerationInfo } from './ManualGeneration';
 import { PackageDecision } from './PackageDecision';
 import { PackageKeyframes } from './PackageKeyframes';
@@ -88,7 +89,8 @@ export function ProductionPath({
   onKeepForScene,
   onSetKeyframeNote,
   onSpeechPrepared,
-  onOwnVideo
+  onOwnVideo,
+  onReplaceVideo
 }: {
   project: string;
   shot: ShotProduction;
@@ -130,6 +132,8 @@ export function ProductionPath({
   onSpeechPrepared(): Promise<void>;
   /** Открыть окно своего видео плана (новая попытка без описания, опор и промпта). */
   onOwnVideo?(): void;
+  /** Заменить видео, загруженное вручную в попытку, пока результат не принят. */
+  onReplaceVideo?(): void;
 }): ReactElement {
   const packageDir = pkg?.dir;
   const workflow: ProductionWorkflow = useProductionWorkflow(project, shot.id, packageDir, onApplied);
@@ -226,11 +230,19 @@ export function ProductionPath({
           : null;
   const ownReason = ownReasonFor('description');
   const promptReason = ownReasonFor('prompt');
-  // Способ генерации выбирается до утверждения промпта, пока запрос не подготовлен; речевой план без липсинка — всегда вручную.
+  // Способ генерации меняется, пока запрос не подготовлен: до утверждения промпта — на шаге «Видеопромпт», после — на шаге
+  // «Запрос» (свой промпт утверждается сразу при сохранении). Речевой план без липсинка — всегда вручную.
   // У способа видео проекта без сервиса все попытки ручные: выбирать нечего.
   const projectManual = !!mediaProviderInfo(view?.videoProvider, 'video')?.manual;
-  const methodShown = !!pkg && !!view && !view.singleFrame && !projectManual && !view.paid && !pkg.prompt?.approved && !pkg.request;
+  const methodShown = !!pkg && !!view && !view.singleFrame && !projectManual && !view.paid && !pkg.request;
   const methodReason = view?.derivedFrom ? view.reasons.continue : promptReason;
+  const methodChoice = (
+    <GenerationMethodChoice
+      method={view?.generationMethod ?? 'provider'}
+      disabledReason={methodReason}
+      onChange={(method) => void workflow.setGenerationMethod(method)}
+    />
+  );
 
   /** Указание записывается замечанием к опоре до запуска: так агент получит его обычным путём. */
   const createFrame = async (frame: string, instruction?: FrameInstruction): Promise<void> => {
@@ -399,14 +411,8 @@ export function ProductionPath({
       case 'prompt':
         return (
           <>
-            {current && methodShown ? (
-              <GenerationMethodChoice
-                method={view?.generationMethod ?? 'provider'}
-                disabledReason={methodReason}
-                onChange={(method) => void workflow.setGenerationMethod(method)}
-              />
-            ) : null}
-            {view?.generationMethod === 'manual' && !methodShown ? (
+            {current && methodShown && !pkg?.prompt?.approved ? methodChoice : null}
+            {view?.generationMethod === 'manual' && !(methodShown && current) ? (
               <Chip color="info" label={productionTexts.generationMethod.chosenManual} sx={{ alignSelf: 'flex-start' }} />
             ) : null}
             {overLimit ? <PromptLimitAlert over={overLimit} videoProvider={view?.videoProvider} /> : null}
@@ -473,6 +479,7 @@ export function ProductionPath({
       case 'request':
         return manual ? (
           <>
+            {current && methodShown && pkg?.prompt?.approved ? methodChoice : null}
             {pkg ? (
               <ManualGeneration
                 key={`manual:${pkg.dir}:${pkg.request?.dir ?? ''}`}
@@ -488,6 +495,7 @@ export function ProductionPath({
           </>
         ) : (
           <>
+            {current && methodShown && pkg?.prompt?.approved ? methodChoice : null}
             {/* Шаг «Речь» уже свёрнут: срез повторяется здесь, чтобы прослушать его перед отправкой. */}
             {pkg?.speech && pkg.request?.kind !== 'image' ? <SpeechSlice speech={pkg.speech} /> : null}
             {pkg?.request?.kind !== 'image' ? request : null}
@@ -507,6 +515,19 @@ export function ProductionPath({
           <>
             {pkg?.request?.kind !== 'image' ? result : null}
             {pkg?.request?.manualGeneration ? <ManualGenerationInfo record={pkg.request.manualGeneration} /> : null}
+            {pkg?.request?.manualResult && pkg.stage !== 'accepted' && onReplaceVideo ? (
+              <ActionButton
+                size="small"
+                startIcon={<UploadFileIcon />}
+                sx={{ alignSelf: 'flex-start' }}
+                title={productionTexts.ownVideo.replaceHint}
+                disabled={blocked}
+                disabledReason={busyReason}
+                onClick={onReplaceVideo}
+              >
+                {productionTexts.ownVideo.replace}
+              </ActionButton>
+            ) : null}
             {shot.asset ? <AcceptedAsset asset={shot.asset} /> : null}
             {current ? decision(key) : null}
           </>

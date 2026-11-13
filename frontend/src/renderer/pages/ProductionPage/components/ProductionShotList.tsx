@@ -10,22 +10,20 @@ import { ShotCard } from '../../../components/ShotCard';
 import { FILTER_EMPTY_HINTS, FILTER_LABELS, type ProductionFilter } from '../constants';
 import { shotPreview } from '../preview';
 import { LinkedText } from '../../../components/LinkedText';
+import { SpendChips } from '../../../components/SpendChips';
 
 export function ProductionShotList({
   shots,
   selected,
   onSelect,
   filter = 'all',
-  onResetFilter,
-  withDetails = false
+  onResetFilter
 }: {
   shots: ShotProduction[];
   selected: string | null;
   onSelect(id: string): void;
   filter?: ProductionFilter;
   onResetFilter?(): void;
-  /** Рядом открыт выбранный план: при широком окне он занимает правую колонку, а список — узкая колонка в одну карточку. */
-  withDetails?: boolean;
 }): ReactElement {
   // Пустой фильтр оформлен как пустая очередь: заголовок с числом, пояснение и путь назад к полному списку.
   if (!shots.length)
@@ -48,8 +46,8 @@ export function ProductionShotList({
     <Box
       sx={{
         display: 'grid',
+        // Колонок столько, сколько вмещает ширина списка: её задаёт разделитель страницы.
         gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 220px), 1fr))',
-        '@container workspace (min-width: 1100px)': withDetails ? { gridTemplateColumns: 'minmax(0, 1fr)' } : {},
         gap: 1.5,
         minWidth: 0
       }}
@@ -88,6 +86,8 @@ export function ProductionShotList({
                     sx={{ height: 18 }}
                   />
                 ) : null}
+                {/* Только пометки о неполном расходе: «цена не указана», «списание неизвестно»; суммы — в карточке плана. */}
+                <SpendChips badge={shot.spend} attentionOnly />
                 {(shot.state === 'completed' || shot.state === 'stale') && !shot.asset?.video ? (
                   <Chip size="small" color="warning" label={productionTexts.productionShotList.missingVideo} sx={{ height: 18 }} />
                 ) : null}

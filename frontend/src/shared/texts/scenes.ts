@@ -44,45 +44,10 @@ export const scenesTexts = {
     assetFolder: 'Папка комплекта',
     packageFolder: 'Папка пакета'
   },
-  inputs: {
-    keyframeLabel: ({ label, approved }: { label: string; approved: boolean }) => `${label}${approved ? '' : ' · кандидат'}`,
-    animaticCardLabel: ({ shot }: { shot: string }) => `Карточка аниматика · ${shot}`,
-    acceptedRequest: 'Входы принятого запроса',
-    packageKeyframes: 'Опоры пакета',
-    openImage: ({ label }: { label: string }) => `Открыть изображение: ${label}`,
-    animaticCard: 'Карточка аниматика',
-    openAnimaticCard: ({ shot }: { shot: string }) => `Открыть карточку аниматика: ${shot}`,
-    inputImage: 'Входное изображение'
-  },
-  prompt: { accepted: 'Промпт принятой генерации', package: 'Видеопромпт пакета', copy: 'Скопировать промпт' },
   staging: { title: 'Постановка', continuity: '{label} {continuity}', continuityLabel: 'Связь.' },
   state: {
     notComputed: ({ title }: { title: string }) => `${title}: не вычислено.`,
     missing: 'состояние не задано',
     checklist: ({ checklist }: { checklist: string }) => `Проверить по кадру: ${checklist}`
-  },
-  comparison: {
-    failed: ({ reason }: { reason: string }) => `Не удалось включить синхронное сравнение: ${reason}`,
-    mediaLoadFailed: 'Не удалось загрузить одно из видео.'
-  },
-  mediaEdit: {
-    still: ({ time }: { time: string }) => `стоп-кадр оригинала на ${time} с`,
-    interval: ({ start, end }: { start: string; end: string }) => `участок оригинала ${start}–${end} с`,
-    wholeOriginal: 'оригинал целиком',
-    speed: ({ speed }: { speed: string }) => `скорость ${speed}`,
-    holdFirst: ({ duration }: { duration: string | number }) => `удержание первого кадра ${duration} с`,
-    holdLast: ({ duration }: { duration: string | number }) => `удержание последнего кадра ${duration} с`,
-    duration: ({ frames, duration }: { frames: number; duration: string }) => `${countLabel(frames, 'кадр', 'кадра', 'кадров')}, ${duration} с`,
-    acceptedAndOriginal: 'Оригинал генерации и принятый монтаж',
-    original: 'Оригинал генерации',
-    accepted: commonTexts.media.acceptedEdit,
-    missingFile: commonTexts.media.fileMissing,
-    originalCaption: ({ media }: { media: string | null | undefined }) => `Оригинал${media ? ` · ${media}` : ''}`,
-    acceptedCaption: ({ recipe }: { recipe: string }) => `Принятый монтаж · ${recipe}`,
-    bothRequired: 'Для сравнения нужны оба видео: оригинал генерации и принятый монтаж.',
-    loading: 'Дождитесь загрузки обоих видео.',
-    pauseTogether: 'Приостановить синхронно',
-    playTogether: 'Воспроизвести синхронно',
-    unaccepted: 'Результат генерации (не принят)'
   }
 } as const;

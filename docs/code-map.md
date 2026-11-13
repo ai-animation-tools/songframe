@@ -146,7 +146,7 @@
 | Страница | Назначение |
 | --- | --- |
 | [`ProductionPage`](../frontend/src/renderer/pages/ProductionPage/ProductionPage.tsx) | Производство: список планов и один путь выбранного плана с решениями и подтверждениями платных действий. |
-| [`ScenesPage`](../frontend/src/renderer/pages/ScenesPage/ScenesPage.tsx) | Дашборд сцен: сводка, шкала, сетка карточек и подробности плана: оригинал против монтажа, опоры, промпт, состояние до и после. |
+| [`ScenesPage`](../frontend/src/renderer/pages/ScenesPage/ScenesPage.tsx) | Дашборд сцен: сводка, шкала, сетка карточек и подробности плана — постановка и состояние до и после. |
 | [`ChecksPage`](../frontend/src/renderer/pages/ChecksPage/ChecksPage.tsx) | Панель проверок: инструменты комплекса, проба стыков и текущие результаты. |
 
 Ещё: [`resources/skills/ai-clip-scene`](../resources/skills/ai-clip-scene), [`resources/skills/ai-clip-video-review`](../resources/skills/ai-clip-video-review).

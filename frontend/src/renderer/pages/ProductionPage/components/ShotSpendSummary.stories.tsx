@@ -1,121 +1,202 @@
-/** Расход плана: попытки и отправки, суммы по источникам, неизвестный расход и стоимость секунды принятого материала. */
+/** Расход плана: бейджи сумм и пометок, окно «Расход Mxx» с записями и правкой своей цены. */
+import { useState, type ReactElement } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, within } from 'storybook/test';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { productionTexts } from '@shared/texts/production';
 import { TEST_PROVIDER, testProviderInfo } from '@shared/testing/media-provider';
-import type { ShotSpend } from '@shared/types';
+import type { ShotSpend, ShotSpendBadge } from '@shared/types';
+import { registerMediaProviderForTests } from '@shared/media-providers';
 import { DELIVERY_PROJECT } from '../../../testing/deliveryStories';
 import { pageShot } from '../../../testing/productionPageStories';
+import { createSpendModel, emptySpend, spendBadge, spendEntry } from '../../../testing/spendStories';
 import { createStoryApi, type StoryOptions } from '../../../testing/storybook';
-import { registerMediaProviderForTests } from '@shared/media-providers';
 import { ShotSpendSummary } from './ShotSpendSummary';
 
 const texts = productionTexts.shotSpend;
-const EMPTY: ShotSpend = {
-  attempts: 0,
-  removed: 0,
-  images: 0,
-  videos: 0,
-  rejected: 0,
-  unknown: 0,
-  manual: 0,
-  totals: [],
-  acceptedSeconds: null,
-  perSecond: []
-};
+const provider = testProviderInfo.title;
 
-/** Принятый план: две попытки, опора и три видео, одно из них ручная генерация в рублях. */
+/** Принятый план: два видео сервиса по 13 кредитов (принято второе), опора сервиса за 2 кредита и своя опора без цены. */
 const ACCEPTED: ShotSpend = {
+  ...emptySpend(),
   attempts: 2,
-  removed: 0,
   images: 1,
-  videos: 3,
-  rejected: 2,
-  unknown: 0,
-  manual: 1,
-  totals: [
-    { provider: TEST_PROVIDER, unit: 'credits', amount: 24.5 },
-    { provider: null, unit: 'RUB', amount: 120 }
-  ],
+  videos: 2,
+  ownImages: 1,
+  rejected: 1,
   acceptedSeconds: 5,
-  perSecond: [
-    { provider: TEST_PROVIDER, unit: 'credits', amount: 4.9 },
-    { provider: null, unit: 'RUB', amount: 24 }
+  entries: [
+    spendEntry('M02', { provider: TEST_PROVIDER, amount: 13, unit: 'credits', removed: true }),
+    spendEntry('M02', { provider: TEST_PROVIDER, amount: 13, unit: 'credits', accepted: true, removed: true }),
+    spendEntry('M02', { kind: 'image', provider: TEST_PROVIDER, amount: 2, unit: 'credits', removed: true }),
+    spendEntry('M02', { kind: 'image', status: 'manual', frame: 'K01', editable: true, removed: true })
   ]
 };
 
-/** План в работе: одна попытка удалена, её отправка сервису осталась в расходе. */
-const REMOVED: ShotSpend = { ...EMPTY, attempts: 2, removed: 1, videos: 2, totals: [{ provider: TEST_PROVIDER, unit: 'credits', amount: 26 }] };
+/** Своё видео без цены, принято. */
+const UNPRICED: ShotSpend = {
+  ...emptySpend(),
+  attempts: 1,
+  videos: 1,
+  manual: 1,
+  acceptedSeconds: 4,
+  entries: [spendEntry('M02', { status: 'manual', accepted: true, editable: true, removed: true })]
+};
 
-/** План в работе: одна отправка с известным расходом, у второй исход неизвестен. */
-const UNKNOWN: ShotSpend = { ...EMPTY, attempts: 2, videos: 2, unknown: 1, totals: [{ provider: TEST_PROVIDER, unit: 'credits', amount: 13 }] };
+/** Принят до начала учёта расхода: записей нет. */
+const MISSING: ShotSpend = { ...emptySpend(), missing: true, unpriced: 1, acceptedSeconds: 4 };
+
+/** План в работе: сервис не сообщил списание. */
+const UNKNOWN: ShotSpend = {
+  ...emptySpend(),
+  attempts: 1,
+  videos: 1,
+  entries: [spendEntry('M02', { provider: TEST_PROVIDER, status: 'unknown', editable: true })]
+};
+
+/** Бейдж в шапке перечитывается после правки, как вид страницы после load(). */
+function SpendHarness({ initial }: { initial: ShotSpendBadge | null }): ReactElement {
+  const [badge, setBadge] = useState(initial);
+  const shot = pageShot('M02', { spend: badge });
+  return (
+    <ShotSpendSummary
+      project={DELIVERY_PROJECT}
+      shot={shot}
+      onChanged={() => void window.api.production.spend(DELIVERY_PROJECT, 'M02').then((spend) => setBadge(spendBadge('M02', spend)))}
+    />
+  );
+}
 
 function options(spend: ShotSpend): StoryOptions {
   return {
     createApi: () => {
-      const session = createStoryApi({ production: { spend: async () => structuredClone(spend) } });
+      const model = createSpendModel({ M02: spend });
+      const session = createStoryApi({
+        production: {
+          spend: async (_project, shot) => model.spend(shot),
+          setSpendAmount: async (_project, ref, amount, unit) => model.setAmount(ref, amount, unit),
+          priceAccepted: async (_project, shot, amount, unit) => model.priceAccepted(shot, amount, unit)
+        }
+      });
       session.onCleanup(registerMediaProviderForTests(TEST_PROVIDER, testProviderInfo));
       return session;
     }
   };
 }
 
+function initialBadge(spend: ShotSpend): ShotSpendBadge {
+  return spendBadge('M02', createSpendModel({ M02: spend }).spend('M02'));
+}
+
 const meta = {
   title: 'Производство/Планы/Расход плана',
-  component: ShotSpendSummary,
+  component: SpendHarness,
   tags: ['!autodocs'],
-  args: { project: DELIVERY_PROJECT, shot: pageShot('M02') },
+  args: { initial: initialBadge(ACCEPTED) },
   parameters: { controls: { disable: true }, songframe: options(ACCEPTED) }
-} satisfies Meta<typeof ShotSpendSummary>;
+} satisfies Meta<typeof SpendHarness>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const provider = testProviderInfo.title;
+/** Открывает окно «Расход M02». */
+async function openDialog(canvasElement: HTMLElement) {
+  await userEvent.click(within(canvasElement).getByRole('button', { name: texts.open }));
+  return within(await within(canvasElement.ownerDocument.body).findByRole('dialog', { name: texts.title({ shot: 'M02' }) }));
+}
+
+/** Вводит стоимость в открытый редактор окна и сохраняет. */
+async function enterCost(dialog: ReturnType<typeof within>, amount: string, unit: string): Promise<void> {
+  const field = dialog.getByRole('spinbutton', { name: productionTexts.manualGeneration.cost });
+  await userEvent.clear(field);
+  await userEvent.type(field, amount);
+  await userEvent.click(dialog.getByRole('combobox', { name: productionTexts.manualGeneration.unit }));
+  await userEvent.click(await within(document.body).findByRole('option', { name: unit }));
+  await userEvent.click(dialog.getByRole('button', { name: texts.save }));
+}
 
 export const Accepted: Story = {
-  name: 'Принятый план · отклонённые варианты и стоимость секунды',
+  name: 'Принятый план · суммы бейджами, записи видео и опор, цена своей опоры',
   tags: ['ci'],
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    // Ручная генерация — не отправка: отдельный счёт загруженных вручную видео.
-    await canvas.findByText('2 попытки · отправлено видео: 2, изображений: 1 · загружено вручную: 1');
-    // Кредиты сервиса и рубли ручной генерации — отдельные суммы.
-    await expect(canvas.getByText(`${texts.spent}: 24,5 кредита (${provider}) · 120 ₽ (${texts.manualSource})`)).toBeInTheDocument();
-    await expect(canvas.getByText(texts.accepted({ seconds: '5,00', rejected: 2 }))).toBeInTheDocument();
-    await expect(canvas.getByText(`${texts.perSecond}: 4,9 кредита (${provider}) · 24 ₽ (${texts.manualSource})`)).toBeInTheDocument();
-    await expect(canvas.queryByRole('alert')).not.toBeInTheDocument();
+    const chips = within(within(canvasElement).getByTestId('shot-spend'));
+    // Видео и опора сервиса — одна сумма в его кредитах; своя опора без цены тревоги не вызывает.
+    await expect(chips.getByText('28 кредитов')).toBeInTheDocument();
+    await expect(chips.queryByText(texts.chipUnpriced)).not.toBeInTheDocument();
+    const dialog = await openDialog(canvasElement);
+    await expect(dialog.getByText(texts.acceptedTotal({ seconds: '5,00', rejected: 1 }))).toBeInTheDocument();
+    await expect(dialog.getByText(`${texts.perSecond}: 5,6 кредита (${provider})`)).toBeInTheDocument();
+    await expect(dialog.getAllByText(texts.videoSent({ source: provider }))).toHaveLength(2);
+    await expect(dialog.getByText(`${texts.acceptedMark} · ${texts.removed}`)).toBeInTheDocument();
+    // Списание сервиса не правится: кнопка есть только у своей опоры.
+    await expect(dialog.getAllByRole('button', { name: new RegExp(`^(${texts.set}|${texts.edit}):`) })).toHaveLength(1);
+    await userEvent.click(dialog.getByRole('button', { name: `${texts.set}: ${texts.ownFrame({ frame: 'K01' })}` }));
+    await enterCost(dialog, '50', '₽');
+    await expect(await dialog.findByText('50 ₽')).toBeInTheDocument();
+    await waitFor(() => expect(chips.getByText('50 ₽')).toBeInTheDocument());
+    await expect(chips.getByText('28 кредитов')).toBeInTheDocument();
   }
 };
 
-export const Unknown: Story = {
-  name: 'План в работе · неизвестный расход не считается нулём',
+export const Unpriced: Story = {
+  name: 'Своё видео без цены · заметный бейдж, цена указывается в окне',
   tags: ['ci'],
+  args: { initial: initialBadge(UNPRICED) },
+  parameters: { songframe: options(UNPRICED) },
+  play: async ({ canvasElement }) => {
+    const chips = within(within(canvasElement).getByTestId('shot-spend'));
+    await expect(chips.getByText(texts.chipUnpriced)).toBeInTheDocument();
+    const dialog = await openDialog(canvasElement);
+    await expect(dialog.getByText(texts.unpriced({ count: 1 }))).toBeInTheDocument();
+    await userEvent.click(dialog.getByRole('button', { name: `${texts.set}: ${texts.videoManual}` }));
+    await enterCost(dialog, '150', '₽');
+    await waitFor(() => expect(chips.getByText('150 ₽')).toBeInTheDocument());
+    await expect(chips.queryByText(texts.chipUnpriced)).not.toBeInTheDocument();
+    // Исправление: та же запись, другая цена; «Снять цену» возвращает пометку.
+    await userEvent.click(dialog.getByRole('button', { name: `${texts.edit}: ${texts.videoManual}` }));
+    await userEvent.click(dialog.getByRole('button', { name: texts.clear }));
+    await waitFor(() => expect(chips.getByText(texts.chipUnpriced)).toBeInTheDocument());
+  }
+};
+
+export const AcceptedWithoutEntry: Story = {
+  name: 'Принят до учёта расхода · цена принятого видео по комплекту',
+  tags: ['ci'],
+  args: { initial: initialBadge(MISSING) },
+  parameters: { songframe: options(MISSING) },
+  play: async ({ canvasElement }) => {
+    const chips = within(within(canvasElement).getByTestId('shot-spend'));
+    await expect(chips.getByText(texts.chipUnpriced)).toBeInTheDocument();
+    const dialog = await openDialog(canvasElement);
+    await expect(dialog.getByText(texts.missing)).toBeInTheDocument();
+    await userEvent.click(dialog.getByRole('button', { name: texts.priceAccepted }));
+    await enterCost(dialog, '300', 'кредиты');
+    await waitFor(() => expect(chips.getByText('300 кредитов')).toBeInTheDocument());
+    await expect(dialog.queryByText(texts.missing)).not.toBeInTheDocument();
+    await expect(dialog.getByText(texts.videoKit)).toBeInTheDocument();
+  }
+};
+
+export const UnknownCharge: Story = {
+  name: 'Списание неизвестно · сумму можно указать самому',
+  tags: ['ci'],
+  args: { initial: initialBadge(UNKNOWN) },
   parameters: { songframe: options(UNKNOWN) },
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await canvas.findByText(texts.unknown({ count: 1 }));
-    await expect(canvas.getByText(`${texts.spent}: 13 кредитов (${provider})`)).toBeInTheDocument();
-    // До приёмки нет ни отклонённых вариантов, ни стоимости секунды.
-    await expect(canvas.queryByText(texts.perSecond, { exact: false })).not.toBeInTheDocument();
+    const chips = within(within(canvasElement).getByTestId('shot-spend'));
+    await expect(chips.getByText(texts.chipUnknown)).toBeInTheDocument();
+    const dialog = await openDialog(canvasElement);
+    await expect(dialog.getByText(texts.unknown({ count: 1 }))).toBeInTheDocument();
+    await userEvent.click(dialog.getByRole('button', { name: `${texts.set}: ${texts.videoSent({ source: provider })}` }));
+    await enterCost(dialog, '20', 'кредиты');
+    await waitFor(() => expect(chips.getByText('20 кредитов')).toBeInTheDocument());
+    await expect(dialog.getByText(texts.userAmount)).toBeInTheDocument();
   }
 };
 
-export const Removed: Story = {
-  name: 'План в работе · удалённая попытка названа удалённой',
-  tags: ['ci'],
-  parameters: { songframe: options(REMOVED) },
+export const NoSpend: Story = {
+  name: 'Без расхода · блока нет',
+  args: { initial: null },
+  parameters: { songframe: options(emptySpend()) },
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await canvas.findByText('2 попытки, удалено: 1 · отправлено видео: 2');
-    await expect(canvas.getByText(`${texts.spent}: 26 кредитов (${provider})`)).toBeInTheDocument();
-  }
-};
-
-export const NoSends: Story = {
-  name: 'Без отправок · блока нет',
-  parameters: { songframe: options(EMPTY) },
-  play: async ({ canvasElement }) => {
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    await expect(within(canvasElement).queryByText(texts.heading)).not.toBeInTheDocument();
+    await expect(within(canvasElement).queryByTestId('shot-spend')).not.toBeInTheDocument();
   }
 };

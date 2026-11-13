@@ -13,6 +13,21 @@ export const SHOT_STATE_LABELS: Record<ShotProductionState, { label: string; col
   unknown: { label: componentsTexts.shot.states.unknown, color: 'error', bar: 'error.main' }
 };
 
+/**
+ * План, который страница открывает сама, когда в адресе нет ?shot=: сначала в работе, затем принятые по
+ * прежней постановке (им нужно новое производство раньше не начатых), затем не начатые, иначе первый.
+ * Одинаково на «Производстве» и «Сценах».
+ */
+export function defaultShot<T extends { id: string; state: ShotProductionState }>(shots: readonly T[]): string | null {
+  return (
+    shots.find((shot) => shot.state === 'progress')?.id ??
+    shots.find((shot) => shot.state === 'stale')?.id ??
+    shots.find((shot) => shot.state === 'planned')?.id ??
+    shots[0]?.id ??
+    null
+  );
+}
+
 const VIDEO_EXTENSION = /\.(?:mp4|webm|mov|m4v|ogv|ogg|avi|mkv)$/i;
 
 /** Среди загрузок пакета видео отличается расширением; изображения и прочие файлы не подходят для предпросмотра. */

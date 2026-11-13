@@ -23,6 +23,7 @@ import { productionShot } from './productionQueueStories';
 import { workflowProposal, workflowView } from './productionWorkflowStories';
 import { reviewView } from './videoReviewStories';
 import { createStoryApi, STORY_IMAGE_PATH, STORY_VIDEO_PATH, type StoryOptions } from './storybook';
+import { createSpendModel } from './spendStories';
 
 export const PAGE_PROJECT = DELIVERY_PROJECT;
 export const PAGE_READ_ERROR = 'Не удалось прочитать состояние производства: plan/project.json занят. Опрос повторит чтение.';
@@ -126,6 +127,15 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
       let disposed = false;
       let failedAction = false;
       let question = 0;
+      // Расход планов: сводки из options.spend, правка в окне «Расход» меняет их и бейджи вида.
+      const spends = createSpendModel(
+        Object.fromEntries(
+          options
+            .shots()
+            .map((shot) => [shot.id, options.spend?.(shot.id) ?? null] as const)
+            .filter((item): item is readonly [string, ShotSpend] => item[1] !== null)
+        )
+      );
       const publish = (): void => {
         version++;
         listeners.forEach((listener) => listener());
@@ -290,21 +300,16 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
             model.view.shots.flatMap((item) => item.packages).find((item) => item.dir === dir)?.request?.ownVideo
               ? { seconds: 4, width: 1080, height: 1920, frameRate: '30000/1001' }
               : null,
-          spend: async (_project, shot) =>
-            structuredClone(
-              options.spend?.(shot) ?? {
-                attempts: 0,
-                removed: 0,
-                images: 0,
-                videos: 0,
-                rejected: 0,
-                unknown: 0,
-                manual: 0,
-                totals: [],
-                acceptedSeconds: null,
-                perSecond: []
-              }
-            ),
+          spend: async (_project, shot) => spends.spend(shot),
+          projectSpend: async () => spends.project(),
+          setSpendAmount: async (_project, ref, amount, unit) => {
+            spends.setAmount(ref, amount, unit);
+            publish();
+          },
+          priceAccepted: async (_project, shot, amount, unit) => {
+            spends.priceAccepted(shot, amount, unit);
+            publish();
+          },
           addKeyframeNote: async (project, dir, frame, note, scope) => {
             find(project, dir);
             model.frameNotes = [...model.frameNotes, `${frame}/${scope}: ${note}`];
@@ -336,7 +341,11 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
             publish();
             if (options.firstRead === 'delayed' && model.reads === 1) await wait(1500);
             if (options.firstRead === 'failed' && model.reads === 1) throw new Error(PAGE_READ_ERROR);
-            return structuredClone(model.view);
+            // Бейдж расхода Go кладёт в вид; модель расхода — отдельно, как журнал.
+            return structuredClone({
+              ...model.view,
+              shots: model.view.shots.map((shot) => ({ ...shot, spend: shot.derivedFrom ? null : spends.badge(shot.id) }))
+            });
           },
           decide: async (project, dir, verdict, note, decisionToken) => {
             const { shot, pkg } = find(project, dir);

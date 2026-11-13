@@ -32,6 +32,8 @@ import type {
   PromptLogRecord,
   PromptLogSummary,
   ShotSpend,
+  ProjectSpend,
+  SpendRef,
   ResultMedia,
   AnimaticView,
   AppState,
@@ -238,6 +240,12 @@ export interface Api {
     acceptedKit(project: string, shot: string): Promise<AcceptedKit | null>;
     /** Расход плана: попытки, отправки, суммы в исходных единицах, неизвестный расход и стоимость секунды принятого материала. */
     spend(project: string, shot: string): Promise<ShotSpend>;
+    /** Расход клипа по всем планам: суммы по единицам с планами, планы без цены и с неизвестным списанием. */
+    projectSpend(project: string): Promise<ProjectSpend>;
+    /** Указать или исправить стоимость записи, которую не сообщил сервис; amount null снимает её. Пишет только журнал расхода. */
+    setSpendAmount(project: string, ref: SpendRef, amount: number | null, unit: string): Promise<void>;
+    /** Цена принятого плана, у которого нет записи принятого видео в журнале. */
+    priceAccepted(project: string, shot: string, amount: number, unit: string): Promise<void>;
     /** Длина, кадр и частота показанного оригинала попытки (ffprobe); null — оригинала нет. */
     resultMedia(project: string, packageDir: string): Promise<ResultMedia | null>;
     /** Режет точный WAV липсинка в audio/ пакета; без границ — по разметке «Таймингов». */

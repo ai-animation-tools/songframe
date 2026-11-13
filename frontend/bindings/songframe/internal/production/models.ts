@@ -7,6 +7,9 @@ import * as json$0 from "../../../encoding/json/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as speech$0 from "../speech/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as spend$0 from "../spend/models.js";
 
 /**
  * AcceptOptions — AcceptOptions контракта: режим full (оригинал целиком совпадает с окном) или
@@ -77,12 +80,35 @@ export interface AcceptedSpeech {
 }
 
 /**
- * Asset — принятые материалы плана в assets/shots/Mxx: пути только к существующим файлам.
+ * Asset — принятые материалы плана в assets/shots/Mxx: пути только к существующим файлам и
+ * параметры пары видео для подписей под плеерами (AssetMedia).
  */
 export interface Asset {
     "dir": string;
     "video": string | null;
     "original": string | null;
+    "originalMedia": string | null;
+    "edit": AssetEdit;
+}
+
+/**
+ * AssetEdit — рецепт принятого участка из manifest.json комплекта (accepted_edit): частота кадров,
+ * длина в кадрах и секундах, участок или стоп-кадр оригинала, скорость и удержания. Поля stillAt, sourceInterval,
+ * speed и note передаются как записаны (JSON), интерфейс сам собирает из них подпись под видео.
+ */
+export interface AssetEdit {
+    /**
+     * Fps — частота кадров принятого участка (accepted_edit.fps), при её отсутствии — сетка проекта.
+     */
+    "fps": number;
+    "frames": number;
+    "duration": number;
+    "sourceInterval": json$0.RawMessage;
+    "stillAt": json$0.RawMessage;
+    "speed": json$0.RawMessage;
+    "holdFirst": number;
+    "holdLast": number;
+    "note": json$0.RawMessage;
 }
 
 /**
@@ -181,6 +207,45 @@ export interface PackageView {
     "sceneChanged": boolean;
     "preview": string[];
     "problems": string[];
+}
+
+/**
+ * ProjectSpend — расход клипа по всем планам реестра (без производных: их материал взят из
+ * других планов). Суммы по единицам и источникам не складываются между собой.
+ */
+export interface ProjectSpend {
+    "shots": ShotSpendBadge[];
+    "totals": ProjectTotal[];
+
+    /**
+     * Unpriced — планы с материалом вне приложения без цены или принятые без записи.
+     */
+    "unpriced": string[];
+
+    /**
+     * Unknown — планы с отправками, списание которых неизвестно.
+     */
+    "unknown": string[];
+    "videos": number;
+    "images": number;
+
+    /**
+     * Manual — видео, созданные вне приложения; OwnImages — свои опоры.
+     */
+    "manual": number;
+    "ownImages": number;
+    "rejected": number;
+}
+
+/**
+ * ProjectTotal — сумма расхода клипа в одной единице одного источника и планы, из которых она
+ * сложилась.
+ */
+export interface ProjectTotal {
+    "provider": string | null;
+    "unit": string | null;
+    "amount": number;
+    "shots": string[];
 }
 
 /**
@@ -317,6 +382,24 @@ export interface ShotProduction {
      * прохода агента); отсутствует в виде самого пакета production.
      */
     "proposal"?: json$0.RawMessage;
+
+    /**
+     * Spend — расход плана для бейджа; null у производного плана и при повреждённом журнале.
+     */
+    "spend": ShotSpendBadge | null;
+}
+
+/**
+ * ShotSpendBadge — расход плана для бейджа в списке планов: суммы, неизвестный и неуказанный
+ * расход. Записей нет — план ещё ничего не стоил.
+ */
+export interface ShotSpendBadge {
+    "shot": string;
+    "totals": spend$0.Total[];
+    "unknown": number;
+    "unpriced": number;
+    "missing": boolean;
+    "entries": number;
 }
 
 /**

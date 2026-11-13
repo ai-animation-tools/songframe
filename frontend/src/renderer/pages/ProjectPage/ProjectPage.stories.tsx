@@ -9,7 +9,10 @@ import { MEDIA_PROVIDERS } from '@shared/media-providers';
 import { navigationTexts } from '@shared/texts/navigation';
 import { projectTexts } from '@shared/texts/project';
 import { DEFAULT_VIDEO_GENERATION } from '@shared/types';
-import type { ApiOverrides, StoryOptions } from '../../testing/storybook';
+import { createStoryApi, type ApiOverrides, type StoryOptions } from '../../testing/storybook';
+import { registerMediaProviderForTests } from '@shared/media-providers';
+import { TEST_PROVIDER, testProviderInfo } from '@shared/testing/media-provider';
+import { productionTexts } from '@shared/texts/production';
 import { ANCHORS } from '../../components/linkTargets';
 import { ProjectPage } from './ProjectPage';
 const meta = { title: 'Страницы/Проект', component: ProjectPage, tags: ['!autodocs'], parameters: { songframe: draftDialogOptions(true) } } satisfies Meta<
@@ -67,5 +70,56 @@ export const ManualVideo: Story = {
     await expect(block.queryByRole('combobox', { name: projectTexts.generation.preferredVideoModel })).not.toBeInTheDocument();
     // Требования проекта к видео остаются: по ним считается длительность среза и пакета.
     await expect(block.getByRole('combobox', { name: projectTexts.generation.durationRule })).toBeInTheDocument();
+  }
+};
+
+/** Проект со сценарием: расход клипа по планам — две единицы, план без цены и план с неизвестным списанием. */
+const spendOptions = (): StoryOptions => {
+  const base = draftDialogOptions(true);
+  const status = base.app!.status!;
+  return {
+    ...base,
+    app: { ...base.app, status: { ...status, checks: { ...status.checks, scenes: true } } },
+    createApi: () => {
+      const overrides = base.createApi!() as ApiOverrides;
+      const session = createStoryApi({
+        ...overrides,
+        production: {
+          listBundles: async () => [],
+          projectSpend: async () => ({
+            shots: [],
+            totals: [
+              { provider: TEST_PROVIDER, unit: 'credits', amount: 1250, shots: ['M01', 'M02', 'M03', 'M04'] },
+              { provider: null, unit: 'RUB', amount: 380, shots: ['M05', 'M06'] }
+            ],
+            unpriced: ['M07'],
+            unknown: ['M08'],
+            videos: 9,
+            images: 4,
+            manual: 2,
+            ownImages: 3,
+            rejected: 3
+          })
+        }
+      });
+      session.onCleanup(registerMediaProviderForTests(TEST_PROVIDER, testProviderInfo));
+      return session;
+    }
+  };
+};
+
+export const ClipSpend: Story = {
+  name: 'Расход клипа · суммы по единицам, планы без цены ссылками',
+  tags: ['ci'],
+  parameters: { songframe: spendOptions() },
+  play: async ({ canvasElement }) => {
+    const card = within(await within(canvasElement).findByTestId('project-spend'));
+    const spend = projectTexts.spend;
+    await expect(await card.findByText(spend.total({ amount: '1250 кредитов', source: testProviderInfo.title, shots: 4 }))).toBeVisible();
+    await expect(card.getByText(spend.total({ amount: '380 ₽', source: productionTexts.shotSpend.manualSource, shots: 2 }))).toBeVisible();
+    await expect(card.getByRole('link', { name: 'M07' })).toHaveAttribute('href', '/project/production?shot=M07');
+    await expect(card.getByRole('link', { name: 'M08' })).toHaveAttribute('href', '/project/production?shot=M08');
+    await expect(card.getByText(spend.incomplete)).toBeVisible();
+    await expect(card.getByText(spend.counts({ videos: 9, manual: 2, images: 4, ownImages: 3, rejected: 3 }))).toBeVisible();
   }
 };

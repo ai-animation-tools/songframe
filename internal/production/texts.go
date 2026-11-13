@@ -313,3 +313,6 @@ const (
 
 // number — число в кратчайшей десятичной записи без экспоненты и лишних нулей.
 func number(value float64) string { return strconv.FormatFloat(value, 'f', -1, 64) }
+
+// textNoAcceptedKit — цену принятого плана указывают только у плана с комплектом.
+const textNoAcceptedKit = "План ещё не принят: цену указывают у видео его попытки."

@@ -4,8 +4,15 @@
 // plan/awaiting), а приёмка и «Удалить попытку» эти папки удаляют. Журнал сохраняет отправки до
 // удаления: Sync переносит в него текущее состояние всех живых запросов и вызывается после
 // отправки, перед приёмкой с очисткой, перед удалением попытки и после «генерация не создана».
-// Удаление попытки убирает из журнала её ручные генерации (SyncDiscarding), отправки остаются.
-// Расход плана — журнал, дополненный живыми запросами (живое состояние новее).
+// Удаление попытки убирает из журнала её ручные генерации и свои опоры (SyncDiscarding), отправки
+// остаются. Расход плана — журнал, дополненный живыми запросами (живое состояние новее).
+//
+// Кроме отправок журнал хранит стоимость, которую указал пользователь: свои опоры (изображение,
+// загруженное файлом, а не сгенерированное), исправленную цену видео вне приложения, сумму вместо
+// неизвестного списания сервиса и цену принятого плана, у которого нет записи (комплект принят до
+// появления журнала). Эти суммы живут только в журнале (SetAmount, AddAccepted): живое состояние
+// попытки их не знает и при слиянии не стирает. Комплект принятого плана стоимость не хранит: его файлы защищены SHA, а замена
+// видео не должна стирать деньги, уже потраченные на прежнее.
 //
 // Одна генерация учитывается один раз: запись с номером генерации совпадает с другой по
 // провайдеру и номеру, запись без номера (исход отправки неизвестен) — по SHA-256 запроса.
@@ -38,10 +45,14 @@ const (
 	StatusSent = "sent"
 	// StatusUnknown — отправка начата, исход неизвестен: списание возможно, номера нет.
 	StatusUnknown = "unknown"
-	// StatusManual — видео создано вне приложения (ручная генерация); расход — стоимость, которую
-	// указал пользователь при загрузке, иначе неизвестен.
+	// StatusManual — материал создан вне приложения: видео ручной генерации или своё видео
+	// (стоимость указал пользователь при загрузке или позже), своя опора (Frame) или принятый
+	// план без записи (Attempt — папка комплекта assets/shots/Mxx).
 	StatusManual = "manual"
 )
+
+// KitPrefix — начало Attempt у записи принятого плана без отправки в журнале (AddAccepted).
+const KitPrefix = "assets/shots/"
 
 // Entry — одна отправка запроса изображения или видео.
 type Entry struct {
@@ -61,9 +72,17 @@ type Entry struct {
 	// Amount — фактический расход из ответа сервиса (credits_consumed) или стоимость ручной
 	// генерации, указанная пользователем; null — неизвестен.
 	Amount *float64 `json:"amount"`
-	// Unit — единица расхода: currency таблицы цен провайдера или единица стоимости ручной
-	// генерации (credits, RUB, USD); null — неизвестна.
+	// Unit — единица расхода: currency таблицы цен провайдера или единица стоимости, указанной
+	// пользователем (credits, RUB, USD); null — неизвестна.
 	Unit *string `json:"unit"`
+	// Frame — опора своей опоры (K01…); у отправок и видео отсутствует.
+	Frame string `json:"frame,omitempty"`
+	// FileSHA256 — SHA-256 файла своей опоры: заменённая опора — другая запись.
+	FileSHA256 string `json:"file_sha256,omitempty"`
+	// UserAmount — сумму указал или исправил пользователь после загрузки: у материала вне
+	// приложения она заменяет стоимость из попытки, у отправки — неизвестное списание (сообщённое
+	// сервисом позже её заменяет). Попытка при этом не меняется: её файлы входят в токен результата.
+	UserAmount bool `json:"user_amount,omitempty"`
 	// live — запись взята из живой папки попытки (Entries), а не только из журнала; в файл не пишется.
 	live bool
 }
@@ -81,7 +100,11 @@ type live struct {
 }
 
 // same — две записи описывают одну отправку: по номеру генерации, а без номера — по SHA запроса.
+// Своя опора — по попытке, опоре и SHA файла.
 func same(a, b Entry) bool {
+	if a.Frame != "" || b.Frame != "" {
+		return a.Frame == b.Frame && a.Attempt == b.Attempt && a.FileSHA256 == b.FileSHA256
+	}
 	if a.GenerationID != nil && b.GenerationID != nil {
 		return a.Provider == b.Provider && *a.GenerationID == *b.GenerationID
 	}
@@ -118,9 +141,18 @@ func merge(entries []Entry, current []live) []Entry {
 			})
 			continue
 		}
-		result = slices.DeleteFunc(result, func(entry Entry) bool { return same(entry, item.entry) })
 		entry := item.entry
 		entry.live = true
+		// Сумма, которую указал или исправил пользователь, есть только в журнале. У материала вне
+		// приложения (ручная генерация, своё видео, своя опора) она заменяет стоимость из попытки,
+		// у отправки — только неизвестное списание: сообщённое сервисом позже важнее.
+		for _, stored := range result {
+			if !same(stored, entry) || !stored.UserAmount || (entry.Status != StatusManual && entry.Amount != nil) {
+				continue
+			}
+			entry.Amount, entry.Unit, entry.UserAmount = stored.Amount, stored.Unit, true
+		}
+		result = slices.DeleteFunc(result, func(stored Entry) bool { return same(stored, entry) })
 		result = append(result, entry)
 	}
 	sort.SliceStable(result, func(i, j int) bool {
@@ -140,8 +172,8 @@ func Sync(root string) error {
 
 // SyncDiscarding — Sync перед удалением попытки attempt (папка от корня проекта через «/»).
 // Отправки провайдеру остаются в журнале: деньги потрачены, кредиты не возвращаются. Ручные
-// генерации этой попытки из журнала убираются: их стоимость вписал сам пользователь, и удаление
-// попытки — его решение отказаться от этой записи вместе с видео.
+// генерации и свои опоры этой попытки из журнала убираются: их стоимость вписал сам пользователь,
+// и удаление попытки — его решение отказаться от этой записи вместе с материалом.
 func SyncDiscarding(root, attempt string) error {
 	entries, err := readJournal(root)
 	if err != nil {
@@ -217,6 +249,7 @@ func scan(root string) ([]live, error) {
 					result = append(result, item)
 				}
 			}
+			result = append(result, ownFrames(directory, attempt)...)
 		}
 	}
 	return result, nil
@@ -273,6 +306,40 @@ func readRequest(directory, attempt string) (live, bool) {
 		entry.Unit = UnitOf(entry.Provider)
 	}
 	return live{entry: entry, sent: true}, true
+}
+
+// ownFrames — свои опоры попытки по workflow.json: утверждённые опоры, файл которых не выбран из
+// запроса изображения (image_requests[].selected_sha256). Сгенерированная опора уже учтена своей
+// отправкой изображения; своя — запись без суммы, стоимость пользователь указывает сам.
+func ownFrames(directory, attempt string) []live {
+	var workflow struct {
+		Shot           string            `json:"shot"`
+		ApprovedFrames map[string]string `json:"approved_frames"`
+		ImageRequests  []struct {
+			Selected string `json:"selected_sha256"`
+		} `json:"image_requests"`
+	}
+	if !readFile(filepath.Join(directory, "workflow.json"), &workflow) || workflow.Shot == "" {
+		return nil
+	}
+	generated := map[string]bool{}
+	for _, request := range workflow.ImageRequests {
+		generated[request.Selected] = true
+	}
+	frames := make([]string, 0, len(workflow.ApprovedFrames))
+	for frame, sha := range workflow.ApprovedFrames {
+		if sha != "" && !generated[sha] {
+			frames = append(frames, frame)
+		}
+	}
+	sort.Strings(frames)
+	result := make([]live, 0, len(frames))
+	for _, frame := range frames {
+		result = append(result, live{sent: true, entry: Entry{
+			Shot: workflow.Shot, Attempt: attempt, Kind: "image", Status: StatusManual, Frame: frame, FileSHA256: workflow.ApprovedFrames[frame],
+		}})
+	}
+	return result
 }
 
 // readFile — JSON-файл в value; false, если файла нет или он не читается.

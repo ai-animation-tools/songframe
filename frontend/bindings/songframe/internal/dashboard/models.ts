@@ -4,6 +4,9 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as json$0 from "../../../encoding/json/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as production$0 from "../production/models.js";
 
 /**
  * Asset — комплект assets/shots/<id>.
@@ -33,16 +36,7 @@ export interface AssetRequest {
 /**
  * Edit — принятый монтаж комплекта.
  */
-export interface Edit {
-    "frames": number;
-    "duration": number;
-    "sourceInterval": json$0.RawMessage;
-    "stillAt": json$0.RawMessage;
-    "speed": json$0.RawMessage;
-    "holdFirst": number;
-    "holdLast": number;
-    "note": json$0.RawMessage;
-}
+export type Edit = production$0.AssetEdit;
 
 /**
  * Input — изображение-вход принятого запроса.

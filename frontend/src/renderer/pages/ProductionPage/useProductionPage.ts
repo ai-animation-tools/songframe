@@ -20,6 +20,7 @@ import {
 } from './decisions';
 import { completeInScope, RequestScope } from '../../hooks/requestScope';
 import { useProjectFps } from '../../hooks/useProjectFps';
+import { defaultShot } from '../../components/shotState';
 
 interface OperationResult {
   job?: JobInfo;
@@ -130,16 +131,7 @@ export function useProductionPage() {
     const next = await window.api.production.view(project);
     if (!current() || loadVersion.current !== version) return;
     setView(next);
-    setSelected((current) =>
-      current && next.shots.some((shot) => shot.id === current)
-        ? current
-        : // После планов в работе — принятые по прежней постановке: им нужно новое производство раньше не начатых.
-          (next.shots.find((shot) => shot.state === 'progress')?.id ??
-          next.shots.find((shot) => shot.state === 'stale')?.id ??
-          next.shots.find((shot) => shot.state === 'planned')?.id ??
-          next.shots[0]?.id ??
-          null)
-    );
+    setSelected((current) => (current && next.shots.some((shot) => shot.id === current) ? current : defaultShot(next.shots)));
   }, [project, projectScope]);
 
   useEffect(() => {

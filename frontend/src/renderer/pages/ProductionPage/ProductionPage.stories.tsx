@@ -27,6 +27,7 @@ import {
   type ProductionPageModelOptions
 } from '../../testing/productionPageStories';
 import { attemptLabel } from './planPath';
+import { emptySpend, spendEntry } from '../../testing/spendStories';
 
 const texts = productionTexts;
 const steps = texts.planPath;
@@ -212,8 +213,8 @@ async function checkLongLayout(context: Context, expectTwoColumns: boolean) {
   // Выбранная из адреса карточка прокручена в видимую часть и не спрятана под панелью.
   await waitFor(() => {
     const rect = selectedCard(context)!.getBoundingClientRect();
-    expect(rect.top).toBeGreaterThanOrEqual(bar.getBoundingClientRect().bottom - 1);
-    expect(rect.bottom).toBeLessThanOrEqual(view.innerHeight + 1);
+    expect(rect.top, 'выбранная карточка под панелью').toBeGreaterThanOrEqual(bar.getBoundingClientRect().bottom - 1);
+    expect(rect.bottom, 'выбранная карточка в окне').toBeLessThanOrEqual(view.innerHeight + 1);
   });
   let grid = heading.parentElement;
   while (grid && view.getComputedStyle(grid).display !== 'grid') grid = grid.parentElement;
@@ -223,7 +224,8 @@ async function checkLongLayout(context: Context, expectTwoColumns: boolean) {
   while (view.getComputedStyle(workspace).containerName !== 'workspace') workspace = workspace.parentElement!;
   const style = view.getComputedStyle(workspace);
   const wide = workspace.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) >= 1100;
-  await expect(columns).toBe(wide ? 2 : 1);
+  // Широкая область: список, разделитель и план.
+  await expect(columns).toBe(wide ? 3 : 1);
   // Область 1600 px в окне от 1200 px обязана дать две колонки.
   if (expectTwoColumns && view.innerWidth >= 1200) await expect(wide).toBe(true);
   let column = heading.parentElement!;
@@ -236,18 +238,27 @@ async function checkLongLayout(context: Context, expectTwoColumns: boolean) {
     await expect(view.getComputedStyle(column).position).toBe('sticky');
     const rect = column.getBoundingClientRect();
     await expect(Math.abs(rect.top - (bar.getBoundingClientRect().bottom + 16))).toBeLessThanOrEqual(2);
-    await expect(rect.bottom).toBeLessThanOrEqual(view.innerHeight + 1);
+    await expect(rect.bottom, 'колонка плана в окне').toBeLessThanOrEqual(view.innerHeight + 1);
     // Длинное содержимое плана прокручивается внутри колонки, документ остаётся на месте.
     const before = view.scrollY;
     await expect(column.scrollHeight).toBeGreaterThan(column.clientHeight);
     column.scrollTop = column.scrollHeight;
     await waitFor(() => expect(column.scrollTop).toBeGreaterThan(0));
     await expect(view.scrollY).toBe(before);
+    // Разделитель расширяет список до предела: карточки планов встают в несколько колонок.
+    const handle = screenOf(context).getByRole('separator', { name: commonTexts.listDetail.split });
+    const cards = () => view.getComputedStyle(grid!.firstElementChild!.firstElementChild as HTMLElement).gridTemplateColumns.split(' ').length;
+    await expect(cards()).toBe(1);
+    handle.focus();
+    await userEvent.keyboard('{End}');
+    await waitFor(() => expect(cards()).toBeGreaterThanOrEqual(2));
+    await expect(column.getBoundingClientRect().width).toBeGreaterThanOrEqual(600);
   } else {
     // Одна колонка: план идёт после списка и прокручивается вместе с документом.
     await expect(view.getComputedStyle(column).position).not.toBe('sticky');
     await expect(view.getComputedStyle(column).overflowY).not.toBe('auto');
-    await expect(column.getBoundingClientRect().top).toBeGreaterThanOrEqual(column.previousElementSibling!.getBoundingClientRect().bottom);
+    await expect(screenOf(context).queryByRole('separator', { name: commonTexts.listDetail.split })).not.toBeInTheDocument();
+    await expect(column.getBoundingClientRect().top).toBeGreaterThanOrEqual(grid!.firstElementChild!.getBoundingClientRect().bottom);
   }
   await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(view.innerWidth);
 }
@@ -260,7 +271,7 @@ export const LongList: Story = {
 };
 
 export const TwoColumns: Story = {
-  name: 'Две колонки (область 1600 px) · план закреплён и прокручивается сам',
+  name: 'Две колонки (область 1600 px) · план закреплён, ширина списка меняется разделителем',
   parameters: { songframe: productionPageOptions(longOptions, '/project/production?shot=M18', 1600) },
   play: (context) => checkLongLayout(context, true)
 };
@@ -678,7 +689,13 @@ const acceptedOptions = (model: Partial<ProductionPageModelOptions> = {}) =>
           title: 'Подъезд к даче',
           start: 0,
           end: 6,
-          asset: { dir: '/mock/assets/shots/M01', video: '/mock/story-derived-source-150.mp4', original: STORY_VIDEO_PATH }
+          asset: {
+            dir: '/mock/assets/shots/M01',
+            video: '/mock/story-derived-source-150.mp4',
+            original: STORY_VIDEO_PATH,
+            originalMedia: '1904×1072, 30/1 FPS, кадров: 120, 4.00 с',
+            edit: { fps: 30, frames: 102, duration: 3.4, sourceInterval: [0, 3.4], stillAt: null, speed: '1', holdFirst: 0, holdLast: 0, note: '' }
+          }
         })
       ]
     },
@@ -715,6 +732,10 @@ export const AcceptedPlan: Story = {
     // Два видео нельзя перепутать: у каждого своя подпись.
     await expect(screen.getByText(texts.productionShotCard.acceptedVideo)).toBeInTheDocument();
     await expect(screen.getByText(texts.productionShotCard.originalVideo)).toBeInTheDocument();
+    // Под плеерами — параметры оригинала и что взято в принятый участок.
+    await expect(screen.getByText('1904×1072, 30/1 FPS, кадров: 120, 4.00 с')).toBeInTheDocument();
+    // У принятого участка тот же вид; размер кадра сообщает само видео после загрузки.
+    await expect(await screen.findByText(/^\d+×\d+, 30\/1 FPS, кадров: 102, 3\.40 с · участок оригинала 0\.00–3\.40 с$/, {}, POLL_TIMEOUT)).toBeInTheDocument();
     // Как получено видео: источник, стоимость и примечание ручной генерации из комплекта.
     await expect(await screen.findByText(/^Источник: Сайт сервиса · Стоимость: 38 кредитов · Загружено .* из avatar_0\.mp4$/)).toBeInTheDocument();
     await expect(screen.getByText('Точно следовал инструкции. Попыток: 1.')).toBeInTheDocument();
@@ -749,17 +770,16 @@ export const AcceptedProviderPlan: Story = {
         speech: null
       }),
       // Две отправки видео по 13 кредитов, принята вторая: 26 кредитов на 5 с материала.
-      spend: () => ({
+      spend: (shot) => ({
+        ...emptySpend(),
         attempts: 2,
-        removed: 0,
-        images: 0,
         videos: 2,
         rejected: 1,
-        unknown: 0,
-        manual: 0,
-        totals: [{ provider: TEST_PROVIDER, unit: 'credits', amount: 26 }],
         acceptedSeconds: 5,
-        perSecond: [{ provider: TEST_PROVIDER, unit: 'credits', amount: 5.2 }]
+        entries: [
+          spendEntry(shot, { provider: TEST_PROVIDER, amount: 13, unit: 'credits', removed: true }),
+          spendEntry(shot, { provider: TEST_PROVIDER, amount: 13, unit: 'credits', accepted: true, removed: true })
+        ]
       })
     })
   },
@@ -771,11 +791,17 @@ export const AcceptedProviderPlan: Story = {
     await expect(screen.getByText('Камера плавно приближается к старым воротам.')).toBeInTheDocument();
     await expect(screen.queryByText(kit.images)).not.toBeInTheDocument();
     await expect(screen.queryByText(/^Срез речи/)).not.toBeInTheDocument();
-    // Расход плана в его карточке: попытки удалены приёмкой, но отправки учтены журналом.
+    // Расход плана бейджем в карточке: попытки удалены приёмкой, но отправки учтены журналом.
+    // Список планов сумм не показывает, только пометки о неполном расходе — здесь их нет.
     const spend = texts.shotSpend;
-    await expect(await screen.findByText(spend.sends({ attempts: 2, removed: 0, videos: 2, images: 0, manual: 0 }))).toBeInTheDocument();
-    await expect(screen.getByText(spend.accepted({ seconds: '5,00', rejected: 1 }))).toBeInTheDocument();
-    await expect(screen.getByText(`${spend.perSecond}: 5,2 кредита (${testProviderInfo.title})`)).toBeInTheDocument();
+    await expect(within(screen.getByTestId('shot-spend')).getByText('26 кредитов')).toBeInTheDocument();
+    await expect(screen.getAllByTestId('spend-chips')).toHaveLength(1);
+    await userEvent.click(screen.getByRole('button', { name: spend.open }));
+    const dialog = within(await screen.findByRole('dialog', { name: /^Расход M\d+/ }));
+    await expect(dialog.getByText(spend.sends({ attempts: 2, removed: 0, videos: 2, images: 0, manual: 0 }))).toBeInTheDocument();
+    await expect(dialog.getByText(spend.acceptedTotal({ seconds: '5,00', rejected: 1 }))).toBeInTheDocument();
+    await expect(dialog.getByText(`${spend.perSecond}: 5,2 кредита (${testProviderInfo.title})`)).toBeInTheDocument();
+    await userEvent.click(dialog.getByRole('button', { name: spend.close }));
   }
 };
 export const AcceptedOwnVideo: Story = {
@@ -790,6 +816,15 @@ export const AcceptedOwnVideo: Story = {
         prompt: '',
         images: [],
         speech: null
+      }),
+      // Своё видео без цены: пометка видна и в списке планов, и в карточке.
+      spend: (shot) => ({
+        ...emptySpend(),
+        attempts: 1,
+        videos: 1,
+        manual: 1,
+        acceptedSeconds: 6,
+        entries: [spendEntry(shot, { status: 'manual', accepted: true, editable: true, removed: true })]
       })
     })
   },
@@ -798,6 +833,9 @@ export const AcceptedOwnVideo: Story = {
     const kit = texts.acceptedKit;
     await expect(await screen.findByText(kit.heading, {}, POLL_TIMEOUT)).toBeInTheDocument();
     await expect(await screen.findByText(kit.ownVideo)).toBeInTheDocument();
+    const chips = screen.getAllByTestId('spend-chips');
+    await expect(chips).toHaveLength(2);
+    for (const item of chips) await expect(within(item).getByText(texts.shotSpend.chipUnpriced)).toBeInTheDocument();
     await expect(screen.getByText(/^Источник: Снято на телефон · Загружено .* из phone\.mp4$/)).toBeInTheDocument();
     // Пустые разделы не показываются: опор, промпта и среза у своего видео нет.
     await expect(screen.queryByText(kit.images)).not.toBeInTheDocument();

@@ -1,8 +1,11 @@
 import { scenesTexts } from '@shared/texts/scenes';
 import { commonTexts } from '@shared/texts/common';
-/** Дашборд сцен: сводка, шкала, сетка карточек и подробности плана: оригинал против монтажа, опоры, промпт, состояние до и после. */
+/**
+ * Дашборд сцен: сводка, шкала, сетка карточек и подробности плана — постановка и состояние до и после.
+ * Видео, опоры и промпт принятого плана показывает «Производство», куда ведёт кнопка карточки.
+ */
 
-import { type ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
+import { type ReactElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePageLoading } from '../../components/PageLoader';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Alert, Box, Button, Checkbox, FormControlLabel, Stack, Typography } from '@mui/material';
@@ -18,6 +21,8 @@ import MovieIcon from '@mui/icons-material/Movie';
 import SelectAllIcon from '@mui/icons-material/SelectAll';
 import DeselectIcon from '@mui/icons-material/Deselect';
 import { LinkedText } from '../../components/LinkedText';
+import { ListDetailLayout } from '../../components/ListDetailLayout';
+import { defaultShot } from '../../components/shotState';
 import { useStickyTop } from '../../hooks/useStickyTop';
 
 export function ScenesPage(): ReactElement {
@@ -56,6 +61,15 @@ export function ScenesPage(): ReactElement {
   }, [shots, filter, query]);
   const shot = shots.find((s) => s.id === selected) ?? null;
   const select = (id: string): void => setParams({ shot: id }, { replace: true });
+  // Как «Производство»: без ?shot= после загрузки открывается план по тому же правилу. Один раз на проект —
+  // закрытая пользователем карточка не открывается снова при «Обновить».
+  const autoSelected = useRef<string | null>(null);
+  useEffect(() => {
+    if (!view || autoSelected.current === project) return;
+    autoSelected.current = project;
+    const id = selected ? null : defaultShot(view.shots);
+    if (id) setParams({ shot: id }, { replace: true });
+  }, [view, project, selected, setParams]);
   const duration = view?.summary.duration ?? 0;
 
   // Пока данные страницы не готовы, общий прелоадер оболочки показывает индикатор.
@@ -150,48 +164,34 @@ export function ScenesPage(): ReactElement {
         }
       />
 
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr)',
-          '@container workspace (min-width: 1100px)': { gridTemplateColumns: shot ? 'minmax(0, 1fr) minmax(0, 1.4fr)' : 'minmax(0, 1fr)' },
-          gap: 2,
-          alignItems: 'start'
-        }}
-      >
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 220px), 1fr))', gap: 1.5, minWidth: 0 }}>
-          {visible.map((s) => (
-            <Box key={s.id}>
-              <FormControlLabel
-                sx={{ ml: 0 }}
-                control={
-                  <Checkbox
-                    size="small"
-                    checked={montageShots.includes(s.id)}
-                    onChange={(event) => setMontageShots((current) => (event.target.checked ? [...current, s.id] : current.filter((id) => id !== s.id)))}
-                  />
-                }
-                label={<Typography variant="caption">{scenesTexts.forMontage}</Typography>}
-              />
-              <SceneCard shot={s} selected={selected === s.id} onSelect={select} />
-            </Box>
-          ))}
-          {!visible.length ? <Typography color="text.secondary">{scenesTexts.nothingFound}</Typography> : null}
-        </Box>
-        {shot ? (
-          // Как на «Производстве»: при двух колонках выбранный план закреплён под панелью действий и прокручивается внутри себя.
-          <Box
-            sx={{
-              minWidth: 0,
-              '@container workspace (min-width: 1100px)': {
-                position: 'sticky',
-                top: stickyTop,
-                maxHeight: `calc(100vh - ${stickyTop + 16}px)`,
-                overflowY: 'auto',
-                pr: 0.5
-              }
-            }}
-          >
+      {/* Как на «Производстве»: список слева, выбранная сцена справа, ширина списка запоминается. */}
+      <ListDetailLayout
+        storageKey="songframe.scenes.list-width"
+        defaultWidth={460}
+        stickyTop={stickyTop}
+        list={
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 220px), 1fr))', gap: 1.5, minWidth: 0 }}>
+            {visible.map((s) => (
+              <Box key={s.id}>
+                <FormControlLabel
+                  sx={{ ml: 0 }}
+                  control={
+                    <Checkbox
+                      size="small"
+                      checked={montageShots.includes(s.id)}
+                      onChange={(event) => setMontageShots((current) => (event.target.checked ? [...current, s.id] : current.filter((id) => id !== s.id)))}
+                    />
+                  }
+                  label={<Typography variant="caption">{scenesTexts.forMontage}</Typography>}
+                />
+                <SceneCard shot={s} selected={selected === s.id} onSelect={select} />
+              </Box>
+            ))}
+            {!visible.length ? <Typography color="text.secondary">{scenesTexts.nothingFound}</Typography> : null}
+          </Box>
+        }
+        detail={
+          shot ? (
             <ShotDetails
               key={shot.id}
               shot={shot}
@@ -199,9 +199,9 @@ export function ScenesPage(): ReactElement {
               onNavigate={(to) => navigate(to)}
               onClose={() => setParams({}, { replace: true })}
             />
-          </Box>
-        ) : null}
-      </Box>
+          ) : null
+        }
+      />
     </Stack>
   );
 }

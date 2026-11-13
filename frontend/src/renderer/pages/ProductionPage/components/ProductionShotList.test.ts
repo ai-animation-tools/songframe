@@ -59,9 +59,10 @@ describe('сетка карточек планов', () => {
         } as unknown as PackageView
       ]
     };
-    const html = renderToStaticMarkup(
-      createElement(ProductionShotList, { shots: [shot], selected: 'M45', onSelect: vi.fn(), filter: 'all', withDetails: true })
-    ).replace(/<style[^>]*>[^<]*<\/style>/g, '');
+    const html = renderToStaticMarkup(createElement(ProductionShotList, { shots: [shot], selected: 'M45', onSelect: vi.fn(), filter: 'all' })).replace(
+      /<style[^>]*>[^<]*<\/style>/g,
+      ''
+    );
     vi.unstubAllGlobals();
     expect(html).toContain('M45');
     expect(html).toContain('в работе');

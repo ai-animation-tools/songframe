@@ -8,6 +8,7 @@ import (
 	"regexp"
 
 	"songframe/internal/dynvalue"
+	"songframe/internal/spend"
 )
 
 // AcceptedKit — то, как получено видео принятого плана, по снимку комплекта assets/shots/Mxx.
@@ -63,7 +64,7 @@ func AcceptedKitFor(project, shot string) (*AcceptedKit, error) {
 			kit.Provider = &provider
 		}
 		if manual := dynvalue.Get(request, "manual_generation"); dynvalue.IsRecord(manual) {
-			kit.ManualGeneration = dynvalue.Raw(manual)
+			kit.ManualGeneration = withJournalCost(project, shot, dynvalue.Raw(manual))
 		}
 	}
 	if id, ok := dynvalue.Get(generation, "generation_id").(string); ok && id != "" {
@@ -104,4 +105,31 @@ func AcceptedKitFor(project, shot string) (*AcceptedKit, error) {
 		}
 	}
 	return kit, nil
+}
+
+// withJournalCost — manual_generation снимка с ценой, исправленной пользователем после загрузки.
+// Снимок комплекта защищён SHA и не переписывается, поэтому исправление живёт в журнале расхода
+// (spend.SetAmount) и подставляется здесь; без исправления — снимок как есть.
+func withJournalCost(project, shot string, manual json.RawMessage) json.RawMessage {
+	entries, err := spend.Entries(project)
+	if err != nil {
+		return manual
+	}
+	entry := spend.AcceptedEntry(entries, shot, acceptedResult(project, shot))
+	if entry == nil || !entry.UserAmount {
+		return manual
+	}
+	var record map[string]any
+	if json.Unmarshal(manual, &record) != nil {
+		return manual
+	}
+	record["cost"] = nil
+	if entry.Amount != nil && entry.Unit != nil {
+		record["cost"] = map[string]any{"amount": *entry.Amount, "unit": *entry.Unit}
+	}
+	data, err := json.Marshal(record)
+	if err != nil {
+		return manual
+	}
+	return data
 }

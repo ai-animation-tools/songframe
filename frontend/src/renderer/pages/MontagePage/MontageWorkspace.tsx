@@ -28,16 +28,20 @@ import { useMontage } from './useMontage';
 import { useMontageRemove } from './useMontageRemove';
 import { MontageRemoveDialog } from './components/MontageRemoveDialog';
 import { MontageMaterialDialog } from './components/MontageMaterialDialog';
-import { MontageSplitHandle } from './components/MontageSplitHandle';
 import { MontageActionBar } from './components/MontageActionBar';
 import { MontageExportDialog } from './components/MontageExportDialog';
 import { useThemeMode } from '../../theme';
 import { useDetachedMontage } from './useDetachedMontage';
 import { useHeaderHeight } from '../../components/headerHeight';
 import { LinkedText } from '../../components/LinkedText';
+import { useStoredNumber } from '../../hooks/useStoredNumber';
+import { SplitHandle } from '../../components/SplitHandle';
 import { useProjectFps } from '../../hooks/useProjectFps';
 
 const SPLIT_KEY = 'montage-preview-split';
+/** При открепленном плеере верхняя панель другая (без видео), поэтому её доля запоминается отдельно. */
+const DETACHED_SPLIT_KEY = 'montage-preview-split-detached';
+const validFraction = (value: number): boolean => value >= 0.05 && value <= 0.95;
 const DIVIDER_HEIGHT = 20;
 
 /** Рабочая область монтируется заново при смене проекта или набора сцен, включая все медиаплееры. */
@@ -48,18 +52,11 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
   const previewPanelId = useId();
   const [viewportHeight, setViewportHeight] = useState(() => window.innerHeight);
   const headerHeight = useHeaderHeight();
-  const [detachedFraction, setDetachedFraction] = useState(0.25);
+  const [detachedFraction, setDetachedFraction] = useStoredNumber(DETACHED_SPLIT_KEY, 0.25, validFraction);
   const [loop, setLoop] = useState(false);
   const [volume, setVolume] = useState(100);
   const { mode: theme } = useThemeMode();
-  const [previewFraction, setPreviewFraction] = useState(() => {
-    try {
-      const saved = Number(localStorage.getItem(SPLIT_KEY));
-      return saved >= 0.05 && saved <= 0.95 ? saved : 0.42;
-    } catch {
-      return 0.42;
-    }
-  });
+  const [previewFraction, setPreviewFraction] = useStoredNumber(SPLIT_KEY, 0.42, validFraction);
   useLayoutEffect(() => {
     const resize = (): void => setViewportHeight(window.innerHeight);
     window.addEventListener('resize', resize);
@@ -181,16 +178,8 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
   const timelineHeight = availableHeight - previewHeight;
   const setSplitHeight = (height: number): void => {
     const fraction = height / availableHeight;
-    if (detachedPlayer.detached) {
-      setDetachedFraction(fraction);
-      return;
-    }
-    setPreviewFraction(fraction);
-    try {
-      localStorage.setItem(SPLIT_KEY, String(fraction));
-    } catch {
-      // Недоступное локальное хранилище не мешает менять компоновку текущего окна.
-    }
+    if (detachedPlayer.detached) setDetachedFraction(fraction);
+    else setPreviewFraction(fraction);
   };
 
   return (
@@ -364,7 +353,16 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
           </Box>
         </Paper>
         <Box sx={{ position: 'sticky', top: previewTop + previewHeight, zIndex: (theme) => theme.zIndex.appBar - 2, bgcolor: 'background.default' }}>
-          <MontageSplitHandle value={previewHeight} min={minPreviewHeight} max={maxPreviewHeight} controls={previewPanelId} onChange={setSplitHeight} />
+          <SplitHandle
+            value={previewHeight}
+            min={minPreviewHeight}
+            max={maxPreviewHeight}
+            controls={previewPanelId}
+            label={montageTexts.splitHeight}
+            hint={montageTexts.splitHint}
+            valueText={montageTexts.panelHeight}
+            onChange={setSplitHeight}
+          />
         </Box>
         {/* Длинная дорожка прокручивается под закреплённым блоком и не прячется за ним в конце страницы. */}
         <Paper

@@ -7,3 +7,4 @@ export { ProjectProblems } from './ProjectProblems';
 export { NextStepCard } from './NextStepCard';
 export { ProjectChecksCard } from './ProjectChecksCard';
 export { EditBundleCard } from './EditBundleCard';
+export { ProjectSpendCard } from './ProjectSpendCard';

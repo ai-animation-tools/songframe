@@ -5,6 +5,29 @@ import { countLabel } from '../plural';
 /** Тексты обзора проекта и настроек генерации; особенности исполнителя передаются из реестра. */
 export const projectTexts = {
   noProject: 'Проект не выбран.',
+  spend: {
+    title: 'Расход клипа',
+    hint: 'Суммы по всем планам в единицах своего источника: кредиты разных сервисов, рубли и доллары не складываются',
+    empty: 'Расхода пока нет: платных отправок не было, цена своих видео и опор не указана.',
+    /** Строка суммы: «1 250 кредитов (Сервис) — 4 плана». */
+    total: ({ amount, source, shots }: { amount: string; source: string; shots: number }) =>
+      `${amount} (${source}) — ${countLabel(shots, 'план', 'плана', 'планов')}`,
+    unpriced: 'Цена не указана',
+    unpricedHint: 'Видео сделано вне приложения или план принят до начала учёта расхода, а цена не указана. Укажите её в окне «Расход» плана',
+    unknown: 'Списание неизвестно',
+    unknownHint: 'Сервис не сообщил, сколько списал. Сумму можно указать в окне «Расход» плана',
+    incomplete: 'Фактический расход больше указанного.',
+    counts: ({ videos, manual, images, ownImages, rejected }: { videos: number; manual: number; images: number; ownImages: number; rejected: number }) =>
+      [
+        `Видео: ${videos}${manual ? `, из них вне приложения: ${manual}` : ''}`,
+        images ? `опор от сервиса: ${images}` : '',
+        ownImages ? `своих опор: ${ownImages}` : '',
+        rejected ? `отклонено вариантов: ${rejected}` : ''
+      ]
+        .filter(Boolean)
+        .join(' · '),
+    loadFailed: ({ reason }: { reason: string }) => `Не удалось прочитать расход клипа: ${reason}`
+  },
   bundle: {
     summary: ({ shots, videos, copied }: { shots: number; videos: number; copied: number }) =>
       `Планов ${shots}, из них видео ${videos}, скопировано файлов ${copied}.`,

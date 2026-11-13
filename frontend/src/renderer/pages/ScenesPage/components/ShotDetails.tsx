@@ -10,9 +10,6 @@ import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import type { DashboardShot } from '@shared/types';
 import { formatClock } from '../../../format';
 import { MEDIA_LABELS, STATE_LABELS } from '../types';
-import { ShotInputs } from './ShotInputs';
-import { ShotMedia } from './ShotMedia';
-import { ShotPrompt } from './ShotPrompt';
 import { ShotSection } from './ShotSection';
 import { ShotStaging } from './ShotStaging';
 import { ShotStateBlock } from './ShotStateBlock';
@@ -66,9 +63,6 @@ export function ShotDetails({
         </Typography>
         <Divider />
 
-        <ShotMedia shot={shot} />
-        <ShotInputs shot={shot} />
-        <ShotPrompt shot={shot} />
         <ShotStaging shot={shot} />
 
         <ShotSection title={scenesTexts.details.worldState}>

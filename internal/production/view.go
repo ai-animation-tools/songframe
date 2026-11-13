@@ -14,13 +14,17 @@ import (
 	"songframe/internal/mediaproviders"
 	"songframe/internal/projectfile"
 	"songframe/internal/providers"
+	"songframe/internal/spend"
 )
 
-// Asset — принятые материалы плана в assets/shots/Mxx: пути только к существующим файлам.
+// Asset — принятые материалы плана в assets/shots/Mxx: пути только к существующим файлам и
+// параметры пары видео для подписей под плеерами (AssetMedia).
 type Asset struct {
-	Dir      string  `json:"dir"`
-	Video    *string `json:"video"`
-	Original *string `json:"original"`
+	Dir           string    `json:"dir"`
+	Video         *string   `json:"video"`
+	Original      *string   `json:"original"`
+	OriginalMedia *string   `json:"originalMedia"`
+	Edit          AssetEdit `json:"edit"`
 }
 
 // ShotProduction — план реестра на странице «Производство»: состояние, подпись этапа, причина
@@ -46,6 +50,8 @@ type ShotProduction struct {
 	// Proposal — непринятое предложение агента производства (добавляет сервис приложения из
 	// прохода агента); отсутствует в виде самого пакета production.
 	Proposal json.RawMessage `json:"proposal,omitempty"`
+	// Spend — расход плана для бейджа; null у производного плана и при повреждённом журнале.
+	Spend *ShotSpendBadge `json:"spend"`
 }
 
 // Broken — BrokenPackage: папка пакета без читаемого workflow.json; приложение её не ведёт, но
@@ -362,6 +368,20 @@ func ViewProduction(project string) (View, error) {
 	for _, item := range broken {
 		view.Problems = append(view.Problems, textBrokenPackageBlocksQueue(item.Relative, item.Reason))
 	}
+	// Расход планов для бейджей списка; повреждённый журнал — проблема страницы, а не отказ вида.
+	if entries, err := spend.Entries(project); err != nil {
+		view.Problems = append(view.Problems, err.Error())
+	} else {
+		badges := map[string]ShotSpendBadge{}
+		for _, badge := range projectSpend(project, registryShots(project), entries).Shots {
+			badges[badge.Shot] = badge
+		}
+		for _, shot := range view.Shots {
+			if badge, ok := badges[shot.ID]; ok {
+				shot.Spend = &badge
+			}
+		}
+	}
 	return view, nil
 }
 
@@ -478,7 +498,8 @@ func shotProduction(project string, scene any, id string, packages []*PackageVie
 		if err != nil {
 			return nil, err
 		}
-		shot.Asset = &Asset{Dir: assetDir, Video: video, Original: original}
+		originalMedia, edit := AssetMedia(manifest, fps)
+		shot.Asset = &Asset{Dir: assetDir, Video: video, Original: original, OriginalMedia: originalMedia, Edit: edit}
 	}
 	return shot, nil
 }

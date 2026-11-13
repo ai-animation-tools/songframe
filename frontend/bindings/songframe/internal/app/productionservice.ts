@@ -143,6 +143,21 @@ export function PrepareSpeech(project: string, packageDir: string, bounds: produ
 }
 
 /**
+ * PriceAccepted — production:priceAccepted: цена принятого плана без записи в журнале.
+ */
+export function PriceAccepted(project: string, shot: string, amount: number, unit: string): $CancellablePromise<void> {
+    return $Call.ByID(1317088369, project, shot, amount, unit);
+}
+
+/**
+ * ProjectSpend — production:projectSpend: расход клипа по всем планам реестра — суммы по единицам
+ * и источникам с планами, планы без цены и с неизвестным списанием, счётчики отправок.
+ */
+export function ProjectSpend(project: string): $CancellablePromise<production$0.ProjectSpend> {
+    return $Call.ByID(566138724, project);
+}
+
+/**
  * Quote — оценка стоимости показанного запроса и одноразовый token согласия.
  */
 export function Quote(project: string, packageDir: string, expectedSha: string, decisionToken: string): $CancellablePromise<production$0.Quote> {
@@ -220,6 +235,14 @@ export function SelectImage(project: string, packageDir: string, index: number, 
  */
 export function SetKeyframeNote(project: string, packageDir: string, id: number, active: boolean): $CancellablePromise<void> {
     return $Call.ByID(936672833, project, packageDir, id, active);
+}
+
+/**
+ * SetSpendAmount — production:setSpendAmount: указать или исправить стоимость записи расхода,
+ * которую не сообщил сервис; amount null снимает её. Пишет только plan/spend.json.
+ */
+export function SetSpendAmount(project: string, ref: spend$0.Ref, amount: number | null, unit: string): $CancellablePromise<void> {
+    return $Call.ByID(886157335, project, ref, amount, unit);
 }
 
 /**

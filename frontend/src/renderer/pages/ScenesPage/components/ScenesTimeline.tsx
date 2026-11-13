@@ -34,7 +34,8 @@ export function ScenesTimeline({
     <Paper variant="outlined" sx={{ p: 1.5 }}>
       <Box sx={{ display: 'flex', height: 26, borderRadius: 1, overflow: 'hidden', border: 1, borderColor: 'divider' }}>
         {shots.map((s) => (
-          <Tooltip key={s.id} title={`${s.id} · ${s.title} · ${STATE_LABELS[s.state].label}`} placement="top">
+          // describeChild: подсказка описывает отрезок, а не становится aria-label у элемента без роли.
+          <Tooltip key={s.id} title={`${s.id} · ${s.title} · ${STATE_LABELS[s.state].label}`} placement="top" describeChild>
             <Box
               onClick={() => onSelect(s.id)}
               sx={{

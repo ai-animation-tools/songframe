@@ -51,7 +51,7 @@ func TestSummaryWithRejectedAttempts(t *testing.T) {
 	provider := ptr("нет-такого")
 	want := Summary{Attempts: 2, Images: 1, Videos: 2, Rejected: 1, Totals: []Total{{Provider: provider, Amount: 24.5}}, AcceptedSeconds: ptrFloat(5),
 		PerSecond: []Total{{Provider: provider, Amount: 4.9}}}
-	if got := Summarize(entries(t, root), "M02", accepted); !reflect.DeepEqual(got, want) {
+	if got := brief(Summarize(entries(t, root), "M02", accepted)); !reflect.DeepEqual(got, want) {
 		t.Fatalf("сводка %+v", got)
 	}
 	if err := Sync(root); err != nil {
@@ -65,7 +65,7 @@ func TestSummaryWithRejectedAttempts(t *testing.T) {
 	if err := os.RemoveAll(filepath.Join(root, "plan/batches/M02-attempt-01")); err != nil {
 		t.Fatal(err)
 	}
-	if got := Summarize(entries(t, root), "M02", accepted); !reflect.DeepEqual(got, want) {
+	if got := brief(Summarize(entries(t, root), "M02", accepted)); !reflect.DeepEqual(got, want) {
 		t.Fatalf("после удаления попытки %+v", got)
 	}
 	if err := Sync(root); err != nil {
@@ -125,9 +125,9 @@ func TestMovedAndRepeated(t *testing.T) {
 		map[string]any{"status": "downloaded", "request_sha256": "m1", "manual_generation": map[string]any{"source": "сайт", "cost": nil}})
 	request(t, root, "plan/batches/M05-attempt-04/request", "M05", "video",
 		map[string]any{"status": "downloaded", "request_sha256": "m2", "manual_generation": map[string]any{"source": "сайт", "cost": map[string]any{"amount": 40, "unit": "credits"}}})
-	got := Summarize(entries(t, root), "M05", &Accepted{RequestSHA256: "m1", Seconds: 4})
+	got := brief(Summarize(entries(t, root), "M05", &Accepted{RequestSHA256: "m1", Seconds: 4}))
 	provider, credits := ptr("нет-такого"), ptr("credits")
-	want := Summary{Attempts: 4, Videos: 4, Rejected: 3, Unknown: 1, Manual: 2, Totals: []Total{{Provider: provider, Amount: 6}, {Unit: credits, Amount: 40}},
+	want := Summary{Attempts: 4, Videos: 4, Rejected: 3, Unpriced: 1, Manual: 2, Totals: []Total{{Provider: provider, Amount: 6}, {Unit: credits, Amount: 40}},
 		AcceptedSeconds: ptrFloat(4), PerSecond: []Total{{Provider: provider, Amount: 1.5}, {Unit: credits, Amount: 10}}}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("сводка %+v", got)
@@ -207,7 +207,13 @@ func TestSyncDiscardingManual(t *testing.T) {
 	}
 	provider := ptr("нет-такого")
 	want := Summary{Attempts: 1, Removed: 1, Videos: 1, Totals: []Total{{Provider: provider, Amount: 10}}, PerSecond: []Total{}}
-	if got := Summarize(entries(t, root), "M02", nil); !reflect.DeepEqual(got, want) {
+	if got := brief(Summarize(entries(t, root), "M02", nil)); !reflect.DeepEqual(got, want) {
 		t.Fatalf("сводка после удаления %+v", got)
 	}
+}
+
+// brief — сводка без записей окна: тесты сумм сравнивают только счётчики и суммы.
+func brief(summary Summary) Summary {
+	summary.Entries = nil
+	return summary
 }

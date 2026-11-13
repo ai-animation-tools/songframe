@@ -831,13 +831,48 @@ export const productionTexts = {
       if (unit === 'USD') return `${number} $`;
       return `${number} ${unit ?? 'ед.'}`;
     },
-    manualSource: 'ручная генерация',
+    manualSource: 'вне приложения',
     spent: 'Известный расход',
     noKnown: 'Сумма неизвестна',
     unknown: ({ count }: { count: number }) =>
-      `Расход неизвестен у ${count} ${plural(count, 'отправки', 'отправок', 'отправок')}: фактический расход больше указанного`,
-    unknownHint: 'Исход отправки неизвестен, сервис не сообщил списание или у ручной генерации не указана стоимость. Такой расход не считается нулём.',
-    accepted: ({ seconds, rejected }: { seconds: string; rejected: number }) =>
+      `Списание неизвестно у ${count} ${plural(count, 'отправки', 'отправок', 'отправок')}: фактический расход больше указанного`,
+    unknownHint: 'Исход отправки неизвестен или сервис не сообщил списание. Такой расход не считается нулём; сумму можно указать самому.',
+    unpriced: ({ count }: { count: number }) => `Цена не указана у ${count} ${plural(count, 'видео', 'видео', 'видео')}: фактический расход больше указанного`,
+    open: 'Расход',
+    openHint: 'Из чего сложилась стоимость плана: видео, отклонённые варианты и опоры. Здесь же указывается или исправляется своя цена',
+    title: ({ shot }: { shot: string }) => `Расход ${shot}`,
+    close: 'Закрыть',
+    chipUnpriced: 'Цена не указана',
+    chipUnpricedHint: 'Видео сделано вне приложения, а его цена не указана. Укажите её в окне «Расход»',
+    chipUnknown: 'Списание неизвестно',
+    chipUnknownHint: 'Сервис не сообщил, сколько списал. Сумму можно указать в окне «Расход»',
+    chipNone: 'Без расхода',
+    chipNoneHint: 'Платных отправок не было, цена своих опор не указана',
+    chipSource: ({ source }: { source: string }) => `Источник: ${source}`,
+    videos: 'Видео',
+    frames: 'Опоры',
+    videoSent: ({ source }: { source: string }) => `Видео · ${source}`,
+    videoManual: 'Видео вне приложения',
+    videoKit: 'Принятое видео',
+    imageSent: ({ source }: { source: string }) => `Опора · ${source}`,
+    ownFrame: ({ frame }: { frame: string }) => `Своя опора ${frame}`,
+    acceptedMark: 'принято',
+    rejectedMark: 'отклонено',
+    removed: 'попытка удалена',
+    userAmount: 'указано вами',
+    noPrice: 'Цена не указана',
+    unknownCharge: 'Списание неизвестно',
+    ownNoPrice: 'Цена не указана',
+    edit: 'Изменить',
+    set: 'Указать',
+    save: 'Сохранить',
+    clear: 'Снять цену',
+    cancel: 'Отмена',
+    amountLabel: ({ label }: { label: string }) => `Стоимость: ${label}`,
+    missing: 'План принят до начала учёта расхода: записи принятого видео нет. Укажите его цену, если она известна.',
+    priceAccepted: 'Указать цену принятого видео',
+    saved: 'Стоимость сохранена',
+    acceptedTotal: ({ seconds, rejected }: { seconds: string; rejected: number }) =>
       `Принято ${seconds} с материала · ${rejected ? `отклонено вариантов: ${rejected}` : 'без отклонённых вариантов'}`,
     perSecond: 'Секунда принятого материала',
     loadFailed: ({ reason }: { reason: string }) => `Не удалось прочитать расход плана: ${reason}`
@@ -925,6 +960,18 @@ export const productionTexts = {
     deleteConfirm: labels.deleteFolder
   },
   productionShotCard: {
+    /** Подпись под видео принятого участка: что взято из оригинала и какой длины получилось. */
+    recipe: {
+      still: ({ time }: { time: string }) => `стоп-кадр оригинала на ${time} с`,
+      interval: ({ start, end }: { start: string; end: string }) => `участок оригинала ${start}–${end} с`,
+      wholeOriginal: 'оригинал целиком',
+      speed: ({ speed }: { speed: string }) => `скорость ${speed}`,
+      holdFirst: ({ duration }: { duration: string | number }) => `удержание первого кадра ${duration} с`,
+      holdLast: ({ duration }: { duration: string | number }) => `удержание последнего кадра ${duration} с`,
+      /** Тот же вид, что параметры оригинала под соседним плеером; размер «?», пока видео не загрузилось. */
+      media: ({ width, height, fps, frames, duration }: { width: number | null; height: number | null; fps: number; frames: number; duration: string }) =>
+        `${width ?? '?'}×${height ?? '?'}, ${fps}/1 FPS, кадров: ${frames}, ${duration} с`
+    },
     deleteFolder: labels.deleteFolder,
     deleteFolderDescription: ({ relative }: { relative: string }) =>
       `Папка ${relative} будет удалена безвозвратно вместе со всем содержимым. Принятый комплект сцены и исходники не затрагиваются.`,

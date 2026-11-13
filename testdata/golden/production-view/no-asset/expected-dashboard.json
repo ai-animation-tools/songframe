@@ -143,6 +143,7 @@
         "original": "<project>/assets/shots/M02/original.mp4",
         "originalMedia": "1920×1080, 24/1 FPS, кадров: 108, 4.50 с",
         "edit": {
+          "fps": 30,
           "frames": 120,
           "duration": 4,
           "sourceInterval": [

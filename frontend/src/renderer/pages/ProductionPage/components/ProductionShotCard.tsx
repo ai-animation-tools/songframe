@@ -39,7 +39,8 @@ export function ProductionShotCard({
   onOwnVideo,
   onDiscardAttempt,
   onFragment,
-  project
+  project,
+  onSpendChanged
 }: {
   shot: ShotProduction;
   busy: boolean;
@@ -60,8 +61,10 @@ export function ProductionShotCard({
   onDiscardAttempt?(pkg: PackageView): void;
   /** Открыть фрагмент под музыку, начиная с этого плана. */
   onFragment?(): void;
-  /** Проект плана: с ним карточка показывает расход плана (production.spend). */
+  /** Проект плана: с ним карточка показывает расход плана и окно «Расход». */
   project?: string;
+  /** Стоимость изменена в окне «Расход»: странице нужно перечитать бейджи. */
+  onSpendChanged?(): void;
 }): ReactElement {
   const [menu, setMenu] = useState<HTMLElement | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
@@ -213,7 +216,7 @@ export function ProductionShotCard({
       <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
         {shot.original}
       </Typography>
-      {project && !shot.derivedFrom ? <ShotSpendSummary project={project} shot={shot} /> : null}
+      {project && !shot.derivedFrom ? <ShotSpendSummary project={project} shot={shot} onChanged={() => onSpendChanged?.()} /> : null}
       {shot.derivedFrom ? (
         <Box sx={{ mt: 1.5 }}>
           <DerivedShotNotice source={shot.derivedFrom} />

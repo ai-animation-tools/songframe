@@ -542,15 +542,88 @@ export interface ShotSpend {
   videos: number;
   /** Отправки видео, не ставшие принятым результатом; 0, пока план не принят. */
   rejected: number;
-  /** Отправки с неизвестным расходом (исход неизвестен, сервис не сообщил, у ручной генерации нет стоимости). */
+  /** Свои опоры, загруженные файлом; в images не входят. */
+  ownImages: number;
+  /** Отправки сервису с неизвестным списанием, сумму которых пользователь не указал. */
   unknown: number;
-  /** Ручные генерации видео. */
+  /** Видео вне приложения без цены и принятое видео без записи (missing); своя опора без цены не входит. */
+  unpriced: number;
+  /** План принят, а записи принятого видео в журнале нет: цену указывают через priceAccepted. */
+  missing: boolean;
+  /** Видео, созданные вне приложения (ручная генерация, своё видео). */
   manual: number;
   totals: SpendTotal[];
   /** Длина принятого материала, с; null — план не принят. */
   acceptedSeconds: number | null;
   /** Суммы на секунду принятого материала. */
   perSecond: SpendTotal[];
+  /** Записи плана для окна «Расход Mxx». */
+  entries: SpendEntry[];
+}
+
+/** Запись расхода, которую правит пользователь: её поля возвращаются в production.setSpendAmount как есть. */
+export interface SpendRef {
+  shot: string;
+  attempt: string;
+  kind: string;
+  provider: string;
+  requestSha256: string;
+  generationId: string | null;
+  frame: string;
+  fileSha256: string;
+}
+
+/** Запись расхода плана: видео или изображение, источник, сумма и можно ли её указать. */
+export interface SpendEntry {
+  ref: SpendRef;
+  kind: 'video' | 'image';
+  /** Сервис отправки; null — материал создан вне приложения. */
+  provider: string | null;
+  status: 'sent' | 'unknown' | 'manual';
+  amount: number | null;
+  unit: string | null;
+  /** Опора своей опоры; пусто у видео и отправок изображений. */
+  frame: string;
+  /** Видео стало принятым результатом плана. */
+  accepted: boolean;
+  /** Цена принятого плана без отправки (указана по комплекту). */
+  kit: boolean;
+  /** Папки попытки уже нет. */
+  removed: boolean;
+  /** Сумму отправки или исправленную цену указал пользователь. */
+  userAmount: boolean;
+  /** Стоимость можно указать или исправить: всё, что не сообщил сервис. */
+  editable: boolean;
+}
+
+/** Расход плана для бейджа в списке; entries — число записей, 0 — план ещё ничего не стоил. */
+export interface ShotSpendBadge {
+  shot: string;
+  totals: SpendTotal[];
+  unknown: number;
+  unpriced: number;
+  missing: boolean;
+  entries: number;
+}
+
+/** Сумма расхода клипа в одной единице одного источника и планы, из которых она сложилась. */
+export interface ProjectSpendTotal extends SpendTotal {
+  shots: string[];
+}
+
+/** Расход клипа по всем планам реестра без производных; суммы разных единиц не складываются. */
+export interface ProjectSpend {
+  shots: ShotSpendBadge[];
+  totals: ProjectSpendTotal[];
+  /** Планы с видео без цены или принятые без записи. */
+  unpriced: string[];
+  /** Планы с отправками, списание которых неизвестно. */
+  unknown: string[];
+  videos: number;
+  images: number;
+  manual: number;
+  ownImages: number;
+  rejected: number;
 }
 
 /** Вид отправки журнала plan/prompt-log: задание агента, изображения агентом, платный запрос изображения или видео. */
@@ -683,6 +756,20 @@ export interface PackageView {
   problems: string[];
 }
 
+/** Рецепт принятого участка комплекта (manifest.json accepted_edit): подпись под видео принятого участка. */
+export interface AssetEdit {
+  /** Частота кадров принятого участка (accepted_edit.fps). */
+  fps: number;
+  frames: number;
+  duration: number;
+  sourceInterval: [number, number] | null;
+  stillAt: number | null;
+  speed: string;
+  holdFirst: number;
+  holdLast: number;
+  note: string;
+}
+
 export interface ShotProduction {
   id: string;
   title: string;
@@ -700,11 +787,16 @@ export interface ShotProduction {
   derivedFrom: string | null;
   /** Пакет плана ждёт действия пользователя: вопрос, подтверждение запроса, просмотр результата, запуск доработки. */
   attention: string | null;
-  /** Принятые материалы в assets: пути только к существующим файлам видео и оригинала. */
-  asset: { dir: string; video: string | null; original: string | null } | null;
+  /**
+   * Принятые материалы в assets: пути только к существующим файлам видео и оригинала. originalMedia и
+   * edit Go отдаёт всегда — подписи под плеерами; необязательны для коротких фикстур тестов.
+   */
+  asset: { dir: string; video: string | null; original: string | null; originalMedia?: string | null; edit?: AssetEdit } | null;
   packages: PackageView[];
   /** Предложение агента, которое ещё не применено и не отклонено; null — такого нет. */
   proposal?: ProductionProposalSummary | null;
+  /** Расход плана для бейджа; null у производного плана и при повреждённом журнале. */
+  spend?: ShotSpendBadge | null;
 }
 
 /** Папка в plan/awaiting или plan/batches без читаемого workflow.json: приложение её не ведёт, но она мешает очереди. */
@@ -989,16 +1081,7 @@ export interface DashboardShot {
     video: string | null;
     original: string | null;
     originalMedia: string | null;
-    edit: {
-      frames: number;
-      duration: number;
-      sourceInterval: [number, number] | null;
-      stillAt: number | null;
-      speed: string;
-      holdFirst: number;
-      holdLast: number;
-      note: string;
-    };
+    edit: AssetEdit;
     prompt: string | null;
     request: { provider: string; model: string; parameters: Record<string, unknown> } | null;
     inputs: { path: string; role: string }[];

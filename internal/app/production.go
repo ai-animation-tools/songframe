@@ -340,6 +340,23 @@ func (s *ProductionService) Spend(project, shot string) (spend.Summary, error) {
 	return wire.Done(production.SpendFor(project, shot))
 }
 
+// ProjectSpend — production:projectSpend: расход клипа по всем планам реестра — суммы по единицам
+// и источникам с планами, планы без цены и с неизвестным списанием, счётчики отправок.
+func (s *ProductionService) ProjectSpend(project string) (production.ProjectSpend, error) {
+	return wire.Done(production.ProjectSpendFor(project))
+}
+
+// SetSpendAmount — production:setSpendAmount: указать или исправить стоимость записи расхода,
+// которую не сообщил сервис; amount null снимает её. Пишет только plan/spend.json.
+func (s *ProductionService) SetSpendAmount(project string, ref spend.Ref, amount *float64, unit string) error {
+	return production.SetSpendAmount(project, ref, amount, unit)
+}
+
+// PriceAccepted — production:priceAccepted: цена принятого плана без записи в журнале.
+func (s *ProductionService) PriceAccepted(project, shot string, amount float64, unit string) error {
+	return production.PriceAccepted(project, shot, amount, unit)
+}
+
 // ResultMedia — production:resultMedia: длина, кадр и частота показанного оригинала попытки по
 // ffprobe; окно приёмки по ним решает, можно ли принять видео целиком. null — оригинала нет.
 func (s *ProductionService) ResultMedia(ctx context.Context, project, packageDir string) (*production.ResultMedia, error) {

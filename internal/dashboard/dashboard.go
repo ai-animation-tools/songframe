@@ -32,10 +32,6 @@ func textStateFailed(shot, reason string) string {
 	return shot + ": состояние не вычислено: " + reason
 }
 
-func textOriginalMedia(width, height, rate, frames, duration string) string {
-	return width + "×" + height + ", " + rate + " FPS, кадров: " + frames + ", " + duration + " с"
-}
-
 // Reference — референс постановки плана.
 type Reference struct {
 	ID        string  `json:"id"`
@@ -44,16 +40,7 @@ type Reference struct {
 }
 
 // Edit — принятый монтаж комплекта.
-type Edit struct {
-	Frames         float64         `json:"frames"`
-	Duration       float64         `json:"duration"`
-	SourceInterval json.RawMessage `json:"sourceInterval"`
-	StillAt        json.RawMessage `json:"stillAt"`
-	Speed          json.RawMessage `json:"speed"`
-	HoldFirst      float64         `json:"holdFirst"`
-	HoldLast       float64         `json:"holdLast"`
-	Note           json.RawMessage `json:"note"`
-}
+type Edit = production.AssetEdit
 
 // AssetRequest — снимок запроса принятого комплекта.
 type AssetRequest struct {
@@ -201,14 +188,6 @@ func readFile(path string) (string, bool) {
 	return dynvalue.DecodeUTF8(data), true
 }
 
-// orText — значение строкой (dynvalue.ToString), а при null или отсутствии — fallback.
-func orText(value any, fallback string) string {
-	if dynvalue.IsNullish(value) {
-		return fallback
-	}
-	return dynvalue.ToString(value)
-}
-
 // raw — значение в JSON (отсутствующее, dynvalue.Undefined, — null).
 func raw(value any) json.RawMessage {
 	if value == dynvalue.Undefined {
@@ -254,39 +233,11 @@ func readAsset(project, sid string, fps float64) *Asset {
 		role := dynvalue.Coalesce(dynvalue.Get(item, "role"), dynvalue.Coalesce(dynvalue.Get(item, "slot"), ""))
 		inputs = append(inputs, Input{Path: *path, Role: dynvalue.ToString(role)})
 	}
-	var originalMedia *string
-	if media := dynvalue.Get(generation, "original_media"); dynvalue.Truthy(media) {
-		text := textOriginalMedia(orText(dynvalue.Get(media, "width"), "?"), orText(dynvalue.Get(media, "height"), "?"),
-			orText(dynvalue.Get(media, "r_frame_rate"), "?"), orText(dynvalue.Get(media, "nb_frames"), "?"),
-			dynvalue.ToFixed(dynvalue.ToNumber(dynvalue.Coalesce(dynvalue.Get(media, "duration"), 0.0)), 2))
-		originalMedia = &text
-	}
-	frames := dynvalue.Coalesce(dynvalue.Get(edit, "frames"), 0.0)
-	speed := dynvalue.Get(edit, "speed")
-	speedValue := dynvalue.Get(speed, "ratio")
-	if dynvalue.IsNullish(speedValue) {
-		if factor := dynvalue.Get(speed, "factor"); dynvalue.Truthy(factor) {
-			speedValue = dynvalue.ToString(factor)
-		} else {
-			speedValue = "1"
-		}
-	}
-	duration := dynvalue.Get(edit, "duration_seconds")
-	if dynvalue.IsNullish(duration) {
-		duration = dynvalue.ToNumber(frames) / fps
-	}
+	originalMedia, assetEdit := production.AssetMedia(manifest, fps)
 	asset := &Asset{
 		Dir: dir, Video: descriptorPath(project, dir, dynvalue.Get(edit, "video")),
 		Original: descriptorPath(project, dir, dynvalue.Get(generation, "original")), OriginalMedia: originalMedia,
-		Edit: Edit{
-			Frames: dynvalue.ToNumber(frames), Duration: dynvalue.ToNumber(duration),
-			SourceInterval: raw(dynvalue.Coalesce(dynvalue.Get(edit, "source_interval_seconds"), nil)),
-			StillAt:        raw(dynvalue.Coalesce(dynvalue.Get(edit, "still_source_time_seconds"), nil)),
-			Speed:          raw(speedValue),
-			HoldFirst:      dynvalue.ToNumber(dynvalue.Coalesce(dynvalue.Get(edit, "hold_first_seconds"), 0.0)),
-			HoldLast:       dynvalue.ToNumber(dynvalue.Coalesce(dynvalue.Get(edit, "hold_last_seconds"), 0.0)),
-			Note:           raw(dynvalue.Coalesce(dynvalue.Get(edit, "processing_note"), "")),
-		},
+		Edit:   assetEdit,
 		Prompt: readText(descriptorPath(project, dir, dynvalue.Get(generation, "prompt"))),
 		Inputs: inputs, Lipsync: dynvalue.Truthy(dynvalue.Get(generation, "lipsync")),
 		Audio: descriptorPath(project, dir, dynvalue.Get(generation, "audio")),

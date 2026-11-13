@@ -8,32 +8,9 @@ import { ShotStateBlock } from './components/ShotStateBlock';
 
 /** Ожидания независимы от словаря: проверяют грамматику, пробелы и безопасную вставку данных сцены. */
 describe('тексты просмотра сцен', () => {
-  it.each([
-    [0, '0 кадров, 1.25 с'],
-    [1, '1 кадр, 1.25 с'],
-    [2, '2 кадра, 1.25 с'],
-    [5, '5 кадров, 1.25 с'],
-    [11, '11 кадров, 1.25 с'],
-    [21, '21 кадр, 1.25 с'],
-    [-2, '-2 кадра, 1.25 с'],
-    [1.5, '1.5 кадра, 1.25 с']
-  ])('сохраняет согласование %s кадров в рецепте', (frames, expected) => {
-    expect(scenesTexts.mediaEdit.duration({ frames, duration: '1.25' })).toBe(expected);
-  });
-
   it('сохраняет целые фразы с путями, кавычками и пустыми JSX-параметрами', () => {
-    expect(scenesTexts.comparison.failed({ reason: '«C:\\Сцены\\план <2>.mp4» & файл' })).toBe(
-      'Не удалось включить синхронное сравнение: «C:\\Сцены\\план <2>.mp4» & файл'
-    );
-    expect(scenesTexts.mediaEdit.originalCaption({ media: 'video "draft" & <x>' })).toBe('Оригинал · video "draft" & <x>');
-    expect(scenesTexts.mediaEdit.originalCaption({ media: null })).toBe('Оригинал');
-    expect(scenesTexts.mediaEdit.originalCaption({ media: undefined })).toBe('Оригинал');
     expect(scenesTexts.details.timing({ start: '0:00', end: '0:02', frames: 21, sequence: undefined })).toBe('0:00–0:02 · 21 кадр · ');
     expect(scenesTexts.details.timing({ start: '0:00', end: '0:02', frames: 21, sequence: null })).toBe('0:00–0:02 · 21 кадр · ');
-    expect(scenesTexts.inputs.keyframeLabel({ label: '«План» {label}', approved: false })).toBe('«План» {label} · кандидат');
-    expect(scenesTexts.inputs.keyframeLabel({ label: '«План» {label}', approved: true })).toBe('«План» {label}');
-    expect(scenesTexts.inputs.openImage({ label: '«План» {label}' })).toBe('Открыть изображение: «План» {label}');
-    expect(scenesTexts.mediaEdit.interval({ start: '1.00', end: '2.50' })).toBe('участок оригинала 1.00–2.50 с');
     expect(scenesTexts.summary.acceptedDuration({ completed: '0:00', duration: '2:30' })).toBe('0:00 из 2:30 принято');
   });
 

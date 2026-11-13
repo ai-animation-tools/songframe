@@ -5,7 +5,16 @@ import { type ReactElement, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Stack, Typography } from '@mui/material';
 import { useApp } from '../../state';
-import { EditBundleCard, NextStepCard, ProjectChecksCard, ProjectHeader, ProjectProblems, ProjectRenameDialog, ProjectSettingsCard } from './components';
+import {
+  EditBundleCard,
+  NextStepCard,
+  ProjectChecksCard,
+  ProjectHeader,
+  ProjectProblems,
+  ProjectRenameDialog,
+  ProjectSettingsCard,
+  ProjectSpendCard
+} from './components';
 
 export function ProjectPage(): ReactElement {
   const { status, refresh, closeProject, state, notify, describeError } = useApp();
@@ -63,6 +72,7 @@ export function ProjectPage(): ReactElement {
             <NextStepCard status={status} />
             <ProjectChecksCard status={status} />
           </Box>
+          {status.checks.scenes ? <ProjectSpendCard project={status.path} version={status} /> : null}
           {status.checks.scenes && state?.current ? <EditBundleCard project={state.current} /> : null}
         </Stack>
         <ProjectSettingsCard key={`settings:${status.path}`} project={status.path} name={status.name} />

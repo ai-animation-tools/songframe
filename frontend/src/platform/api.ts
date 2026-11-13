@@ -11,6 +11,7 @@ import type {
   PromptLogRecord,
   PromptLogSummary,
   ShotSpend,
+  ProjectSpend,
   ResultMedia,
   AnimaticView,
   AppState,
@@ -814,6 +815,11 @@ export function createApi(b: Bindings): Api {
     );
   api.production.park = (project, packageDir) => call('production.park', async () => (await production()).Park(project, packageDir));
   api.production.spend = (project, shot) => call('production.spend', async () => (await (await production()).Spend(project, shot)) as ShotSpend);
+  api.production.projectSpend = (project) => call('production.projectSpend', async () => (await (await production()).ProjectSpend(project)) as ProjectSpend);
+  api.production.setSpendAmount = (project, ref, amount, unit) =>
+    call('production.setSpendAmount', async () => (await production()).SetSpendAmount(project, ref, amount, unit), true);
+  api.production.priceAccepted = (project, shot, amount, unit) =>
+    call('production.priceAccepted', async () => (await production()).PriceAccepted(project, shot, amount, unit), true);
   api.production.resultMedia = (project, packageDir) =>
     call('production.resultMedia', async () => (await (await production()).ResultMedia(project, packageDir)) as ResultMedia | null);
   api.production.acceptedKit = (project, shot) =>

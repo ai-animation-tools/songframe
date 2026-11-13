@@ -14,7 +14,15 @@
       "derivedFrom": null,
       "attention": null,
       "asset": null,
-      "packages": []
+      "packages": [],
+      "spend": {
+        "shot": "M01",
+        "totals": [],
+        "unknown": 0,
+        "unpriced": 0,
+        "missing": false,
+        "entries": 0
+      }
     },
     {
       "id": "M02",
@@ -32,9 +40,32 @@
       "asset": {
         "dir": "<project>/assets/shots/M02",
         "video": "<project>/assets/shots/M02/video.mp4",
-        "original": "<project>/assets/shots/M02/original.mp4"
+        "original": "<project>/assets/shots/M02/original.mp4",
+        "originalMedia": "1920×1080, 24/1 FPS, кадров: 108, 4.50 с",
+        "edit": {
+          "fps": 30,
+          "frames": 120,
+          "duration": 4,
+          "sourceInterval": [
+            0,
+            4
+          ],
+          "stillAt": null,
+          "speed": "1",
+          "holdFirst": 0,
+          "holdLast": 0,
+          "note": ""
+        }
       },
-      "packages": []
+      "packages": [],
+      "spend": {
+        "shot": "M02",
+        "totals": [],
+        "unknown": 0,
+        "unpriced": 1,
+        "missing": true,
+        "entries": 0
+      }
     },
     {
       "id": "M03",
@@ -109,7 +140,15 @@
           "preview": [],
           "problems": []
         }
-      ]
+      ],
+      "spend": {
+        "shot": "M03",
+        "totals": [],
+        "unknown": 0,
+        "unpriced": 0,
+        "missing": false,
+        "entries": 0
+      }
     },
     {
       "id": "M04",
@@ -125,7 +164,15 @@
       "derivedFrom": null,
       "attention": null,
       "asset": null,
-      "packages": []
+      "packages": [],
+      "spend": {
+        "shot": "M04",
+        "totals": [],
+        "unknown": 0,
+        "unpriced": 0,
+        "missing": false,
+        "entries": 0
+      }
     },
     {
       "id": "M05",
@@ -141,7 +188,8 @@
       "derivedFrom": "M02",
       "attention": null,
       "asset": null,
-      "packages": []
+      "packages": [],
+      "spend": null
     }
   ],
   "broken": [],

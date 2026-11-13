@@ -340,7 +340,7 @@ export function TimingStory({
         </ActionButton>
       </Stack>
       <Typography variant="caption" color="text.secondary">
-        Данные живут в памяти витрины. Автоматическая разметка недоступна: распознавание здесь не запускается.
+        Данные живут в памяти витрины. Автоматическая разметка здесь не запускается.
       </Typography>
     </Stack>
   );

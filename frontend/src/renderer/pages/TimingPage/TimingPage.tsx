@@ -466,7 +466,7 @@ export function TimingPage(): ReactElement {
     setResultReady(false);
     setGenerationJob(null);
     try {
-      // Разметка всегда идёт по вокалу: модель распознавания и устройство не выбираются.
+      // Разметка всегда идёт по вокалу: модель выравнивания и устройство не выбираются.
       const job = await window.api.timing.start(project, { reset: resetAll, vocals: true });
       if (!mounted.current || currentProject.current !== project) return;
       setGenerationJob(job);

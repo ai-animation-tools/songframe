@@ -16,7 +16,7 @@ function Journey({ disabled = false }: { disabled?: boolean }) {
   return (
     <Stack spacing={2}>
       <VocalPreparation project="/mock/timing-project" disabled={disabled} onReady={setReady} onJob={setJob} />
-      <Alert severity={ready ? 'success' : 'info'}>{ready ? 'Распознавание разрешено' : 'Распознавание заблокировано'}</Alert>
+      <Alert severity={ready ? 'success' : 'info'}>{ready ? 'Разметка разрешена' : 'Разметка заблокирована'}</Alert>
     </Stack>
   );
 }
@@ -38,7 +38,7 @@ export const ExplicitSelection: Story = {
     await waitFor(() => expect(canvas.getByRole('button', { name: texts.separateVocal })).toBeEnabled());
     await userEvent.click(canvas.getByRole('button', { name: texts.separateVocal }));
     await expect(await canvas.findByRole('button', { name: `${texts.vocalSelect}: Voc FT` }, { timeout: 5000 })).toBeEnabled();
-    await expect(canvas.getByText('Распознавание заблокировано')).toBeVisible();
+    await expect(canvas.getByText('Разметка заблокирована')).toBeVisible();
     await expect(timingLocalInspection().starts).toHaveLength(0);
     await userEvent.click(canvas.getByRole('button', { name: `${texts.vocalPreview}: Voc FT` }));
     const audio = canvasElement.querySelector('audio')!;
@@ -62,11 +62,11 @@ export const ExplicitSelection: Story = {
     audio.pause();
     await expect(canvasElement.querySelectorAll('audio')).toHaveLength(1);
     await userEvent.click(canvas.getByRole('button', { name: `${texts.vocalSelect}: Voc FT` }));
-    await expect(await canvas.findByText('Распознавание разрешено')).toBeVisible();
+    await expect(await canvas.findByText('Разметка разрешена')).toBeVisible();
     await expect(timingLocalInspection().starts).toHaveLength(0);
     await expect(timingLocalInspection().selections).toHaveLength(1);
-    await expect(canvas.getAllByText('Вокал выбран для распознавания.')).toHaveLength(1);
-    await expect(canvas.queryByText('Прослушайте варианты и явно выберите вокал для распознавания.')).not.toBeInTheDocument();
+    await expect(canvas.getAllByText('Вокал выбран для разметки.')).toHaveLength(1);
+    await expect(canvas.queryByText('Прослушайте варианты и явно выберите вокал для разметки.')).not.toBeInTheDocument();
   }
 };
 export const DownloadFailureRetry: Story = {
@@ -103,7 +103,7 @@ export const ExistingSelectionSurvivesFailure: Story = {
     await expect(await canvas.findByText('Выделение не удалось. Готовые варианты и выбор сохранены.', {}, { timeout: 5000 })).toBeVisible();
     await expect(canvas.getByRole('button', { name: `${texts.vocalSelect}: Voc FT` })).toBeDisabled();
     await expect(canvas.getByRole('combobox', { name: texts.vocalResult })).toBeEnabled();
-    await expect(canvas.getByText('Распознавание разрешено')).toBeVisible();
+    await expect(canvas.getByText('Разметка разрешена')).toBeVisible();
     await userEvent.click(canvas.getByRole('button', { name: texts.separateAgain }));
     await waitFor(() => expect(timingLocalInspection().separations).toHaveLength(2), { timeout: 5000 });
     await waitFor(() => expect(canvas.getByRole('button', { name: texts.separateAgain })).toBeEnabled(), { timeout: 5000 });
@@ -111,7 +111,7 @@ export const ExistingSelectionSurvivesFailure: Story = {
   }
 };
 export const StopAndRetry: Story = {
-  name: 'Явная остановка · повтор не запускает распознавание',
+  name: 'Явная остановка · повтор не запускает разметку',
   tags: ['ci'],
   parameters: { songframe: timingPageOptions({ local: 'vocal-running' }) },
   play: async ({ canvasElement }) => {
@@ -142,9 +142,9 @@ export const ChangedSource: Story = {
   parameters: { songframe: timingPageOptions({ local: 'vocal-stale' }) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(await canvas.findByText('Распознавание разрешено')).toBeVisible();
+    await expect(await canvas.findByText('Разметка разрешена')).toBeVisible();
     changeVocalStorySource();
-    await expect(await canvas.findByText('Распознавание заблокировано', {}, { timeout: 5000 })).toBeVisible();
+    await expect(await canvas.findByText('Разметка заблокирована', {}, { timeout: 5000 })).toBeVisible();
     await expect(canvas.queryByRole('button', { name: `${texts.vocalSelect}: Voc FT` })).not.toBeInTheDocument();
     await expect(timingLocalInspection().starts).toHaveLength(0);
   }
@@ -190,14 +190,14 @@ export const ReadFailureBlocksUntilRecovery: Story = {
   parameters: { songframe: timingPageOptions({ local: 'vocal-cached' }) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(await canvas.findByText('Распознавание разрешено')).toBeVisible();
+    await expect(await canvas.findByText('Разметка разрешена')).toBeVisible();
     // Focus вызывает настоящее обновление, не дожидаясь очередного интервала опроса.
     failNextVocalStoryRead();
     window.dispatchEvent(new Event('focus'));
     await expect(await canvas.findByText('Не удалось проверить готовый вокал. Повторяем чтение.')).toBeVisible();
-    await expect(canvas.getByText('Распознавание заблокировано')).toBeVisible();
+    await expect(canvas.getByText('Разметка заблокирована')).toBeVisible();
     await expect(canvas.getByRole('button', { name: `${texts.vocalSelect}: Voc FT` })).toBeDisabled();
-    await expect(await canvas.findByText('Распознавание разрешено', {}, { timeout: 5000 })).toBeVisible();
+    await expect(await canvas.findByText('Разметка разрешена', {}, { timeout: 5000 })).toBeVisible();
     await expect(canvas.queryByText('Не удалось проверить готовый вокал. Повторяем чтение.')).not.toBeInTheDocument();
     await expect(timingLocalInspection().starts).toHaveLength(0);
     await expect(timingLocalInspection().selections).toHaveLength(0);
@@ -222,12 +222,12 @@ export const DeleteSelected: Story = {
     await expect(audio.hasAttribute('src')).toBe(false);
     await userEvent.click(dialog.getByRole('button', { name: 'Отмена' }));
     await expect(timingLocalInspection().deletions).toHaveLength(0);
-    await expect(canvas.getByText('Распознавание разрешено')).toBeVisible();
+    await expect(canvas.getByText('Разметка разрешена')).toBeVisible();
     await userEvent.click(await canvas.findByRole('button', { name: 'Удалить: Voc FT' }));
     dialog = within(await screen.findByRole('dialog', { name: texts.deleteVocalTitle }));
     await userEvent.click(dialog.getByRole('button', { name: 'Удалить' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    await expect(canvas.getByText('Распознавание заблокировано')).toBeVisible();
+    await expect(canvas.getByText('Разметка заблокирована')).toBeVisible();
     await expect(await canvas.findByRole('button', { name: `${texts.vocalPreview}: Kim Vocal 1` })).toBeVisible();
     await expect(timingLocalInspection().deletions).toHaveLength(1);
     await userEvent.click(canvas.getByRole('button', { name: texts.separateAgain }));
@@ -249,7 +249,7 @@ export const DeleteOther: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Удалить: Kim Vocal 1' }));
     await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Удалить' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    await expect(canvas.getByText('Распознавание разрешено')).toBeVisible();
+    await expect(canvas.getByText('Разметка разрешена')).toBeVisible();
     await expect(await canvas.findByRole('button', { name: `${texts.vocalSelect}: Voc FT` })).toBeDisabled();
     await expect(timingLocalInspection().deletions).toEqual(['vocal-result-2']);
   }
@@ -269,12 +269,12 @@ export const DeleteFailureRetry: Story = {
     // Проверяем сохранённый выбор после явного выхода из ошибки: фон модального окна недоступен для действий.
     await userEvent.click(dialog.getByRole('button', { name: 'Отмена' }));
     await expect(await canvas.findByRole('button', { name: `${texts.vocalSelect}: Voc FT` })).toBeDisabled();
-    await expect(canvas.getByText('Распознавание разрешено')).toBeVisible();
+    await expect(canvas.getByText('Разметка разрешена')).toBeVisible();
     await userEvent.click(canvas.getByRole('button', { name: 'Удалить: Voc FT' }));
     const retryDialog = within(await screen.findByRole('dialog'));
     await userEvent.click(retryDialog.getByRole('button', { name: 'Удалить' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    await expect(canvas.getByText('Распознавание заблокировано')).toBeVisible();
+    await expect(canvas.getByText('Разметка заблокирована')).toBeVisible();
     await expect(timingLocalInspection().deletions).toHaveLength(2);
   }
 };

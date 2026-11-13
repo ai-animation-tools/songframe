@@ -224,7 +224,7 @@ export const CompactInitial: Story = {
     // Выбора режима нет: разметка идёт по вокалу, поэтому сразу видна его подготовка.
     await expect(modal.queryByRole('radio')).not.toBeInTheDocument();
     await expect(modal.getByText(texts.vocalPreparation)).toBeVisible();
-    await expect(modal.getByRole('button', { name: 'Настройки распознавания' })).toHaveAttribute('aria-expanded', 'false');
+    await expect(modal.getByRole('button', { name: 'Настройки разметки' })).toHaveAttribute('aria-expanded', 'false');
     await expect(modal.queryByRole('checkbox', { name: timingTexts.resetAll })).not.toBeInTheDocument();
     await expect(modal.getByText(texts.recalculateHint)).toBeVisible();
     await expect(modal.queryByText(texts.resetWarning)).not.toBeInTheDocument();

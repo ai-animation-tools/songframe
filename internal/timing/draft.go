@@ -42,7 +42,7 @@ const (
 // Сообщения автоматической разметки; текст показывается в причине задания без изменений.
 var (
 	errNoLyrics   = errors.New("В source/text.md нет строк песни.")
-	errDuration   = errors.New("В распознавании или треке указана неверная длительность.")
+	errDuration   = errors.New("Неверная длительность трека или результата выравнивания по вокалу.")
 	errCandidate  = errors.New("В сомнительном кандидате есть неверные границы, оценка или причина сомнения.")
 	errNoMatch    = errors.New("Не удалось сопоставить ни одной строки с аудио. Прежняя разметка сохранена; задайте границы вручную или выберите другую модель.")
 	errConflict   = errors.New("Новые границы конфликтуют между собой или с подтверждёнными строками. Прежняя разметка сохранена; исправьте границы вручную.")
@@ -237,11 +237,22 @@ func previousList(previous *draftObject, key string) ([]any, error) {
 // timing.json в модели draftjson.go (nil — нет файла или он повреждён). duration — длительность
 // контейнера по ffprobe, округлённая до миллисекунд. sha256 — SHA исходного трека.
 //
-// reset — пересчёт всех строк: подтверждённые строки, очередь строк и ручные части прежнего
-// файла не переносятся, а ручные заметки строк и кандидатов сохраняются так же, как без сброса.
-// Сброс — выход из прежнего файла с неожиданной структурой (errPrevious предлагает именно его),
-// поэтому при сбросе такая структура не останавливает разметку: заметки тогда не переносятся.
+// reset — пересчёт всех строк: подтверждения прежнего файла снимаются и границы всех строк
+// пересчитываются, а ручные заметки, очередь строк и ручные части песни переносятся так же, как
+// без сброса. Сброс — выход из прежнего файла с неожиданной структурой (errPrevious предлагает
+// именно его), поэтому при сбросе такая структура не останавливает разметку: черновик строится
+// без прежнего файла, и из него ничего не переносится.
 func BuildDraft(text string, recognition Recognition, duration float64, previous any, sha256 string, reset bool) (*draftObject, error) {
+	draft, err := buildDraft(text, recognition, duration, previous, sha256, reset)
+	if reset && previous != nil && errors.Is(err, errPrevious) {
+		return buildDraft(text, recognition, duration, nil, sha256, reset)
+	}
+	return draft, err
+}
+
+// buildDraft — сборка черновика BuildDraft для одного прежнего файла; ошибки его структуры
+// возвращаются как errPrevious.
+func buildDraft(text string, recognition Recognition, duration float64, previous any, sha256 string, reset bool) (*draftObject, error) {
 	decoded := recognition.DecodedDuration
 	for _, value := range []float64{duration, decoded} {
 		if math.IsNaN(value) || math.IsInf(value, 0) || value <= 0 {
@@ -261,22 +272,16 @@ func BuildDraft(text string, recognition Recognition, duration float64, previous
 		segments[segment.SourceLine] = segment
 	}
 
-	// carried — прежний файл для переноса подтверждённых строк, очереди и ручных частей.
-	carried := old
+	// Подтверждённые строки переносятся только без сброса; заметки — всегда.
 	kept := map[string]*draftObject{}
-	var retained map[string]string
-	if reset {
-		carried = nil
-		if retained, err = retainedNotes(old); err != nil {
-			retained = map[string]string{}
-		}
-	} else {
+	if !reset {
 		if kept, err = verifiedLines(old); err != nil {
 			return nil, err
 		}
-		if retained, err = retainedNotes(old); err != nil {
-			return nil, err
-		}
+	}
+	retained, err := retainedNotes(old)
+	if err != nil {
+		return nil, err
 	}
 
 	resultLines := []*draftObject{}
@@ -358,7 +363,7 @@ func BuildDraft(text string, recognition Recognition, duration float64, previous
 		member.set("id", newExactInt(numbers[number]))
 		members[lineKey(number)] = member
 	}
-	previousSections, err := sectionsOf(carried)
+	previousSections, err := sectionsOf(old)
 	if err != nil {
 		return nil, err
 	}
@@ -379,7 +384,7 @@ func BuildDraft(text string, recognition Recognition, duration float64, previous
 	missing := len(lines) - len(resultLines) - len(candidates)
 	status := "Разметка подтверждена на слух."
 	if verified != len(resultLines) || missing != 0 || len(candidates) > 0 {
-		status = fmt.Sprintf("Автоматическая разметка по локальному распознаванию (%s); подтверждено на слух %d из %d строк.", AlignmentModel, verified, len(lines))
+		status = fmt.Sprintf("Автоматическая разметка по вокалу (%s); подтверждено на слух %d из %d строк.", AlignmentModel, verified, len(lines))
 	}
 	if len(candidates) > 0 {
 		status += fmt.Sprintf(" Предложений для ручной проверки: %d.", len(candidates))
@@ -387,7 +392,7 @@ func BuildDraft(text string, recognition Recognition, duration float64, previous
 	if missing != 0 {
 		status += fmt.Sprintf(" Не найдено строк: %d; укажите их границы вручную.", missing)
 	}
-	order, err := lineOrder(lines, carried)
+	order, err := lineOrder(lines, old)
 	if err != nil {
 		return nil, err
 	}

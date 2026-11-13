@@ -39,7 +39,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 export const MenuModes: Story = {
   tags: ['ci'],
-  name: 'Распознать · Автоматически / Вручную',
+  name: 'Разметить · Автоматически / Вручную',
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement),
       screen = within(canvasElement.ownerDocument.body);

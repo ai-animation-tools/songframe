@@ -715,7 +715,7 @@
             "M01.json": "b0dd96b4f2613aed4928387b656b88a51d27d9c99e6ef21dfb4d165158d711de"
           },
           "packages": "unchanged",
-          "jobs": "unchanged"
+          "jobs": {}
         },
         {
           "op": "pending",
@@ -849,33 +849,6 @@
           "local": "unchanged",
           "packages": "unchanged",
           "jobs": "unchanged"
-        },
-        {
-          "op": "agentFiles",
-          "files": [
-            {
-              "path": "K01.png",
-              "base64": "iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAM0lEQVR4nAXBQQEAAAQEwcsiiACi7NNTlAsimARmFEklnThRDDX04EGx1NKLF8VRRx8+HvUzFgE0zTYJAAAAAElFTkSuQmCC"
-            }
-          ],
-          "local": "unchanged",
-          "packages": "unchanged",
-          "jobs": {
-            "job-1": {
-              "K01.png": {
-                "sha256": "d71a7b3bbb19c8570b533e8d06aed0c52728d5110247c5d94556f9ffb06705ae",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            }
-          }
         },
         {
           "op": "write",
@@ -1704,7 +1677,7 @@
             "M01.json": "0c4de90f9ce36e8e0bb942b906ea79e7a38f4bfd5e9a3a7490a59500ba2e59f8"
           },
           "packages": "unchanged",
-          "jobs": "unchanged"
+          "jobs": {}
         }
       ]
     },
@@ -2143,7 +2116,7 @@
             "M01.json": "6de5946212c249580e94721e652d4ec36c3da8863f16ef8db3b0c135eea24943"
           },
           "packages": "unchanged",
-          "jobs": "unchanged"
+          "jobs": {}
         },
         {
           "op": "discard",
@@ -2282,16 +2255,6 @@
           },
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
             "job-2": {
               "job.json": {
                 "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
@@ -2404,7 +2367,7 @@
             "M01.json": "9b751f56fabf16997ab79a9fd8efed423d3a2fe9972ba8c9ac14e0d1ad596657"
           },
           "packages": "unchanged",
-          "jobs": "unchanged"
+          "jobs": {}
         },
         {
           "op": "discard",
@@ -2543,26 +2506,6 @@
           },
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
             "job-3": {
               "job.json": {
                 "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
@@ -2680,7 +2623,7 @@
             "M01.json": "c52a81e9905f9ea1772e822eae6fb65479ea204c4be29893188a0fb7851a35be"
           },
           "packages": "unchanged",
-          "jobs": "unchanged"
+          "jobs": {}
         },
         {
           "op": "discard",
@@ -2819,36 +2762,6 @@
           },
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
             "job-4": {
               "job.json": {
                 "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
@@ -2967,7 +2880,7 @@
             "M01.json": "13febfdbeff1b7891e9c480a0f267988990aa6db7f732e35b56e5d9ff1e7827d"
           },
           "packages": "unchanged",
-          "jobs": "unchanged"
+          "jobs": {}
         },
         {
           "op": "discard",
@@ -3106,46 +3019,6 @@
           },
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
             "job-5": {
               "job.json": {
                 "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
@@ -3268,7 +3141,7 @@
             "M01.json": "5925952717476a8dc8e654ccefaa12644c3d2e6cdf22a740f9b26bc9e5bcd179"
           },
           "packages": "unchanged",
-          "jobs": "unchanged"
+          "jobs": {}
         },
         {
           "op": "discard",
@@ -3407,56 +3280,6 @@
           },
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-5": {
-              "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
             "job-6": {
               "job.json": {
                 "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
@@ -3578,7 +3401,7 @@
             "M01.json": "6c3862829f36ed93dea11f070fa1745bfeb64eb8b4b0f74e1ceaefa30b18aa7f"
           },
           "packages": "unchanged",
-          "jobs": "unchanged"
+          "jobs": {}
         },
         {
           "op": "discard",
@@ -3717,66 +3540,6 @@
           },
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-5": {
-              "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-6": {
-              "job.json": {
-                "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
             "job-7": {
               "job.json": {
                 "text": "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3"
@@ -3812,66 +3575,6 @@
           "local": "unchanged",
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-5": {
-              "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-6": {
-              "job.json": {
-                "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
             "job-7": {
               "K01.png": {
                 "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
@@ -3985,7 +3688,7 @@
             "M01.json": "dabcf6dc09a92f16231821730a5e2e41caa923e6b7486cb84fb117b412e656fb"
           },
           "packages": "unchanged",
-          "jobs": "unchanged"
+          "jobs": {}
         },
         {
           "op": "discard",
@@ -4124,80 +3827,6 @@
           },
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-5": {
-              "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-6": {
-              "job.json": {
-                "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-7": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
             "job-8": {
               "job.json": {
                 "text": "17178a5be1d5cabbe1a8a40fdc61d34b4bc4afc71e969995a490884150cefa8b"
@@ -4319,7 +3948,7 @@
             "M01.json": "4dd46131ffd1f1ceb8444f4dbf2eab311668b08910c872b12109194c19c5ff01"
           },
           "packages": "unchanged",
-          "jobs": "unchanged"
+          "jobs": {}
         },
         {
           "op": "discard",
@@ -4458,90 +4087,6 @@
           },
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-5": {
-              "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-6": {
-              "job.json": {
-                "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-7": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-8": {
-              "job.json": {
-                "text": "17178a5be1d5cabbe1a8a40fdc61d34b4bc4afc71e969995a490884150cefa8b"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
             "job-9": {
               "job.json": {
                 "text": "8571dad575080b780cdf830b9656a720ccd9d88a265b3de4bdeba8020b47c2b7"
@@ -4577,90 +4122,6 @@
           "local": "unchanged",
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-5": {
-              "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-6": {
-              "job.json": {
-                "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-7": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-8": {
-              "job.json": {
-                "text": "17178a5be1d5cabbe1a8a40fdc61d34b4bc4afc71e969995a490884150cefa8b"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
             "job-9": {
               "K01.png": {
                 "symlink": true
@@ -4773,7 +4234,7 @@
             "M01.json": "7788aab6cc777bea89552dd0bde926a5add767b144b38ae5c0a188912e765bd9"
           },
           "packages": "unchanged",
-          "jobs": "unchanged"
+          "jobs": {}
         },
         {
           "op": "discard",
@@ -4912,106 +4373,9 @@
           },
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
             "job-10": {
               "job.json": {
                 "text": "664f484ae97793c0da244be86a00cf00a748f9d0ef4cc114f90ad5a3bbc04f16"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-5": {
-              "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-6": {
-              "job.json": {
-                "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-7": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-8": {
-              "job.json": {
-                "text": "17178a5be1d5cabbe1a8a40fdc61d34b4bc4afc71e969995a490884150cefa8b"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-9": {
-              "K01.png": {
-                "symlink": true
-              },
-              "job.json": {
-                "text": "8571dad575080b780cdf830b9656a720ccd9d88a265b3de4bdeba8020b47c2b7"
               },
               "reference-01.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
@@ -5044,16 +4408,6 @@
           "local": "unchanged",
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
             "job-10": {
               "K01.png": {
                 "sha256": "bc3f0694d36d878e2f8912e10dbe31e5d201b8df470b352e1ca3f4df7c3624c0",
@@ -5061,93 +4415,6 @@
               },
               "job.json": {
                 "text": "664f484ae97793c0da244be86a00cf00a748f9d0ef4cc114f90ad5a3bbc04f16"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-5": {
-              "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-6": {
-              "job.json": {
-                "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-7": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-8": {
-              "job.json": {
-                "text": "17178a5be1d5cabbe1a8a40fdc61d34b4bc4afc71e969995a490884150cefa8b"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-9": {
-              "K01.png": {
-                "symlink": true
-              },
-              "job.json": {
-                "text": "8571dad575080b780cdf830b9656a720ccd9d88a265b3de4bdeba8020b47c2b7"
               },
               "reference-01.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
@@ -5254,7 +4521,7 @@
             "M01.json": "ccc22e7fa45289720d4888286d6023ca37e4d6bd41c3f275a87f84fe17108261"
           },
           "packages": "unchanged",
-          "jobs": "unchanged"
+          "jobs": {}
         },
         {
           "op": "discard",
@@ -5393,120 +4660,9 @@
           },
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-10": {
-              "K01.png": {
-                "sha256": "bc3f0694d36d878e2f8912e10dbe31e5d201b8df470b352e1ca3f4df7c3624c0",
-                "bytes": 27
-              },
-              "job.json": {
-                "text": "664f484ae97793c0da244be86a00cf00a748f9d0ef4cc114f90ad5a3bbc04f16"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
             "job-11": {
               "job.json": {
                 "text": "d3f2735fcc65c06fbccda491fe348c4d6b5552d491682f5e437a4570e677a5f6"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-5": {
-              "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-6": {
-              "job.json": {
-                "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-7": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-8": {
-              "job.json": {
-                "text": "17178a5be1d5cabbe1a8a40fdc61d34b4bc4afc71e969995a490884150cefa8b"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-9": {
-              "K01.png": {
-                "symlink": true
-              },
-              "job.json": {
-                "text": "8571dad575080b780cdf830b9656a720ccd9d88a265b3de4bdeba8020b47c2b7"
               },
               "reference-01.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
@@ -5539,30 +4695,6 @@
           "local": "unchanged",
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-10": {
-              "K01.png": {
-                "sha256": "bc3f0694d36d878e2f8912e10dbe31e5d201b8df470b352e1ca3f4df7c3624c0",
-                "bytes": 27
-              },
-              "job.json": {
-                "text": "664f484ae97793c0da244be86a00cf00a748f9d0ef4cc114f90ad5a3bbc04f16"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
             "job-11": {
               "K01.jpg": {
                 "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
@@ -5570,93 +4702,6 @@
               },
               "job.json": {
                 "text": "d3f2735fcc65c06fbccda491fe348c4d6b5552d491682f5e437a4570e677a5f6"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-5": {
-              "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-6": {
-              "job.json": {
-                "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-7": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-8": {
-              "job.json": {
-                "text": "17178a5be1d5cabbe1a8a40fdc61d34b4bc4afc71e969995a490884150cefa8b"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-9": {
-              "K01.png": {
-                "symlink": true
-              },
-              "job.json": {
-                "text": "8571dad575080b780cdf830b9656a720ccd9d88a265b3de4bdeba8020b47c2b7"
               },
               "reference-01.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
@@ -5763,7 +4808,7 @@
             "M01.json": "b58fc98850e720b79086d6028d85a99d2779bd8253787f963414665cfb429ca5"
           },
           "packages": "unchanged",
-          "jobs": "unchanged"
+          "jobs": {}
         },
         {
           "op": "discard",
@@ -5902,134 +4947,9 @@
           },
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-10": {
-              "K01.png": {
-                "sha256": "bc3f0694d36d878e2f8912e10dbe31e5d201b8df470b352e1ca3f4df7c3624c0",
-                "bytes": 27
-              },
-              "job.json": {
-                "text": "664f484ae97793c0da244be86a00cf00a748f9d0ef4cc114f90ad5a3bbc04f16"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-11": {
-              "K01.jpg": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "d3f2735fcc65c06fbccda491fe348c4d6b5552d491682f5e437a4570e677a5f6"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
             "job-12": {
               "job.json": {
                 "text": "948151487a39b721733fc23bc49a1a504b29507ed88a7c84216b7fa67efe161e"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-5": {
-              "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-6": {
-              "job.json": {
-                "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-7": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-8": {
-              "job.json": {
-                "text": "17178a5be1d5cabbe1a8a40fdc61d34b4bc4afc71e969995a490884150cefa8b"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-9": {
-              "K01.png": {
-                "symlink": true
-              },
-              "job.json": {
-                "text": "8571dad575080b780cdf830b9656a720ccd9d88a265b3de4bdeba8020b47c2b7"
               },
               "reference-01.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
@@ -6062,44 +4982,6 @@
           "local": "unchanged",
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-10": {
-              "K01.png": {
-                "sha256": "bc3f0694d36d878e2f8912e10dbe31e5d201b8df470b352e1ca3f4df7c3624c0",
-                "bytes": 27
-              },
-              "job.json": {
-                "text": "664f484ae97793c0da244be86a00cf00a748f9d0ef4cc114f90ad5a3bbc04f16"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-11": {
-              "K01.jpg": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "d3f2735fcc65c06fbccda491fe348c4d6b5552d491682f5e437a4570e677a5f6"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
             "job-12": {
               "K02.png": {
                 "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
@@ -6107,93 +4989,6 @@
               },
               "job.json": {
                 "text": "948151487a39b721733fc23bc49a1a504b29507ed88a7c84216b7fa67efe161e"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-5": {
-              "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-6": {
-              "job.json": {
-                "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-7": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-8": {
-              "job.json": {
-                "text": "17178a5be1d5cabbe1a8a40fdc61d34b4bc4afc71e969995a490884150cefa8b"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-9": {
-              "K01.png": {
-                "symlink": true
-              },
-              "job.json": {
-                "text": "8571dad575080b780cdf830b9656a720ccd9d88a265b3de4bdeba8020b47c2b7"
               },
               "reference-01.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
@@ -6300,7 +5095,7 @@
             "M01.json": "b3e522930fcc4046807b0d274d54dbd4fb2bd5554a30a25ebad434ca0adfe641"
           },
           "packages": "unchanged",
-          "jobs": "unchanged"
+          "jobs": {}
         },
         {
           "op": "discard",
@@ -6439,148 +5234,9 @@
           },
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-10": {
-              "K01.png": {
-                "sha256": "bc3f0694d36d878e2f8912e10dbe31e5d201b8df470b352e1ca3f4df7c3624c0",
-                "bytes": 27
-              },
-              "job.json": {
-                "text": "664f484ae97793c0da244be86a00cf00a748f9d0ef4cc114f90ad5a3bbc04f16"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-11": {
-              "K01.jpg": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "d3f2735fcc65c06fbccda491fe348c4d6b5552d491682f5e437a4570e677a5f6"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-12": {
-              "K02.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "948151487a39b721733fc23bc49a1a504b29507ed88a7c84216b7fa67efe161e"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
             "job-13": {
               "job.json": {
                 "text": "0ce1b1524748b50d416b71c9923cc334d3041eaf4c7b6ccfe262242a58d14bb3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-5": {
-              "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-6": {
-              "job.json": {
-                "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-7": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-8": {
-              "job.json": {
-                "text": "17178a5be1d5cabbe1a8a40fdc61d34b4bc4afc71e969995a490884150cefa8b"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-9": {
-              "K01.png": {
-                "symlink": true
-              },
-              "job.json": {
-                "text": "8571dad575080b780cdf830b9656a720ccd9d88a265b3de4bdeba8020b47c2b7"
               },
               "reference-01.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
@@ -6613,58 +5269,6 @@
           "local": "unchanged",
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-10": {
-              "K01.png": {
-                "sha256": "bc3f0694d36d878e2f8912e10dbe31e5d201b8df470b352e1ca3f4df7c3624c0",
-                "bytes": 27
-              },
-              "job.json": {
-                "text": "664f484ae97793c0da244be86a00cf00a748f9d0ef4cc114f90ad5a3bbc04f16"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-11": {
-              "K01.jpg": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "d3f2735fcc65c06fbccda491fe348c4d6b5552d491682f5e437a4570e677a5f6"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-12": {
-              "K02.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "948151487a39b721733fc23bc49a1a504b29507ed88a7c84216b7fa67efe161e"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
             "job-13": {
               "K01.png": {
                 "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
@@ -6672,93 +5276,6 @@
               },
               "job.json": {
                 "text": "0ce1b1524748b50d416b71c9923cc334d3041eaf4c7b6ccfe262242a58d14bb3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-5": {
-              "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-6": {
-              "job.json": {
-                "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-7": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-8": {
-              "job.json": {
-                "text": "17178a5be1d5cabbe1a8a40fdc61d34b4bc4afc71e969995a490884150cefa8b"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-9": {
-              "K01.png": {
-                "symlink": true
-              },
-              "job.json": {
-                "text": "8571dad575080b780cdf830b9656a720ccd9d88a265b3de4bdeba8020b47c2b7"
               },
               "reference-01.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
@@ -6869,7 +5386,7 @@
             "M01.json": "d0775d2feba097943eb29821d77eaec6aa9dee35154b8b5e7b35fdbf3c414bb4"
           },
           "packages": "unchanged",
-          "jobs": "unchanged"
+          "jobs": {}
         },
         {
           "op": "discard",
@@ -7008,162 +5525,9 @@
           },
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-10": {
-              "K01.png": {
-                "sha256": "bc3f0694d36d878e2f8912e10dbe31e5d201b8df470b352e1ca3f4df7c3624c0",
-                "bytes": 27
-              },
-              "job.json": {
-                "text": "664f484ae97793c0da244be86a00cf00a748f9d0ef4cc114f90ad5a3bbc04f16"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-11": {
-              "K01.jpg": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "d3f2735fcc65c06fbccda491fe348c4d6b5552d491682f5e437a4570e677a5f6"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-12": {
-              "K02.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "948151487a39b721733fc23bc49a1a504b29507ed88a7c84216b7fa67efe161e"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-13": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "0ce1b1524748b50d416b71c9923cc334d3041eaf4c7b6ccfe262242a58d14bb3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
             "job-14": {
               "job.json": {
                 "text": "1c25c6d94b9bbb834bb3de6a91f5520dc990ba03a3736f043aca9c2b53a65e58"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-5": {
-              "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-6": {
-              "job.json": {
-                "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-7": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-8": {
-              "job.json": {
-                "text": "17178a5be1d5cabbe1a8a40fdc61d34b4bc4afc71e969995a490884150cefa8b"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-9": {
-              "K01.png": {
-                "symlink": true
-              },
-              "job.json": {
-                "text": "8571dad575080b780cdf830b9656a720ccd9d88a265b3de4bdeba8020b47c2b7"
               },
               "reference-01.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
@@ -7277,7 +5641,7 @@
             "M01.json": "87fa8bbdece169a34a09271a94aabc6e6b68092c6a22518d425949383d63bc6e"
           },
           "packages": "unchanged",
-          "jobs": "unchanged"
+          "jobs": {}
         },
         {
           "op": "discard",
@@ -7416,172 +5780,9 @@
           },
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-10": {
-              "K01.png": {
-                "sha256": "bc3f0694d36d878e2f8912e10dbe31e5d201b8df470b352e1ca3f4df7c3624c0",
-                "bytes": 27
-              },
-              "job.json": {
-                "text": "664f484ae97793c0da244be86a00cf00a748f9d0ef4cc114f90ad5a3bbc04f16"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-11": {
-              "K01.jpg": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "d3f2735fcc65c06fbccda491fe348c4d6b5552d491682f5e437a4570e677a5f6"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-12": {
-              "K02.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "948151487a39b721733fc23bc49a1a504b29507ed88a7c84216b7fa67efe161e"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-13": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "0ce1b1524748b50d416b71c9923cc334d3041eaf4c7b6ccfe262242a58d14bb3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-14": {
-              "job.json": {
-                "text": "1c25c6d94b9bbb834bb3de6a91f5520dc990ba03a3736f043aca9c2b53a65e58"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
             "job-15": {
               "job.json": {
                 "text": "feeb72aeb51b17432e7ad13d07cbd9d7f6a2884991c2dcdbf4c9fa69a575b9ed"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-5": {
-              "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-6": {
-              "job.json": {
-                "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-7": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-8": {
-              "job.json": {
-                "text": "17178a5be1d5cabbe1a8a40fdc61d34b4bc4afc71e969995a490884150cefa8b"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-9": {
-              "K01.png": {
-                "symlink": true
-              },
-              "job.json": {
-                "text": "8571dad575080b780cdf830b9656a720ccd9d88a265b3de4bdeba8020b47c2b7"
               },
               "reference-01.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
@@ -7610,82 +5811,6 @@
           "local": "unchanged",
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-10": {
-              "K01.png": {
-                "sha256": "bc3f0694d36d878e2f8912e10dbe31e5d201b8df470b352e1ca3f4df7c3624c0",
-                "bytes": 27
-              },
-              "job.json": {
-                "text": "664f484ae97793c0da244be86a00cf00a748f9d0ef4cc114f90ad5a3bbc04f16"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-11": {
-              "K01.jpg": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "d3f2735fcc65c06fbccda491fe348c4d6b5552d491682f5e437a4570e677a5f6"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-12": {
-              "K02.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "948151487a39b721733fc23bc49a1a504b29507ed88a7c84216b7fa67efe161e"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-13": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "0ce1b1524748b50d416b71c9923cc334d3041eaf4c7b6ccfe262242a58d14bb3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-14": {
-              "job.json": {
-                "text": "1c25c6d94b9bbb834bb3de6a91f5520dc990ba03a3736f043aca9c2b53a65e58"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
             "job-15": {
               "job.json": {
                 "text": "feeb72aeb51b17432e7ad13d07cbd9d7f6a2884991c2dcdbf4c9fa69a575b9ed"
@@ -7693,93 +5818,6 @@
               "reference-01.png": {
                 "sha256": "6d2a3a29826e9f03705aa10a5431672f74698226bebc979d4c824757b230056d",
                 "bytes": 80
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-5": {
-              "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-6": {
-              "job.json": {
-                "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-7": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-8": {
-              "job.json": {
-                "text": "17178a5be1d5cabbe1a8a40fdc61d34b4bc4afc71e969995a490884150cefa8b"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-9": {
-              "K01.png": {
-                "symlink": true
-              },
-              "job.json": {
-                "text": "8571dad575080b780cdf830b9656a720ccd9d88a265b3de4bdeba8020b47c2b7"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
               }
             }
           }
@@ -7795,82 +5833,6 @@
           "local": "unchanged",
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-10": {
-              "K01.png": {
-                "sha256": "bc3f0694d36d878e2f8912e10dbe31e5d201b8df470b352e1ca3f4df7c3624c0",
-                "bytes": 27
-              },
-              "job.json": {
-                "text": "664f484ae97793c0da244be86a00cf00a748f9d0ef4cc114f90ad5a3bbc04f16"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-11": {
-              "K01.jpg": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "d3f2735fcc65c06fbccda491fe348c4d6b5552d491682f5e437a4570e677a5f6"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-12": {
-              "K02.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "948151487a39b721733fc23bc49a1a504b29507ed88a7c84216b7fa67efe161e"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-13": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "0ce1b1524748b50d416b71c9923cc334d3041eaf4c7b6ccfe262242a58d14bb3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-14": {
-              "job.json": {
-                "text": "1c25c6d94b9bbb834bb3de6a91f5520dc990ba03a3736f043aca9c2b53a65e58"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
             "job-15": {
               "K01.png": {
                 "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
@@ -7882,93 +5844,6 @@
               "reference-01.png": {
                 "sha256": "6d2a3a29826e9f03705aa10a5431672f74698226bebc979d4c824757b230056d",
                 "bytes": 80
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-5": {
-              "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-6": {
-              "job.json": {
-                "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-7": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-8": {
-              "job.json": {
-                "text": "17178a5be1d5cabbe1a8a40fdc61d34b4bc4afc71e969995a490884150cefa8b"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-9": {
-              "K01.png": {
-                "symlink": true
-              },
-              "job.json": {
-                "text": "8571dad575080b780cdf830b9656a720ccd9d88a265b3de4bdeba8020b47c2b7"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
               }
             }
           }
@@ -8070,7 +5945,7 @@
             "M01.json": "28697cef19d225fc4c3da07d42c04ae9d39ac8d3808114df6130d39e6d812bb9"
           },
           "packages": "unchanged",
-          "jobs": "unchanged"
+          "jobs": {}
         },
         {
           "op": "discard",
@@ -8209,185 +6084,9 @@
           },
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-10": {
-              "K01.png": {
-                "sha256": "bc3f0694d36d878e2f8912e10dbe31e5d201b8df470b352e1ca3f4df7c3624c0",
-                "bytes": 27
-              },
-              "job.json": {
-                "text": "664f484ae97793c0da244be86a00cf00a748f9d0ef4cc114f90ad5a3bbc04f16"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-11": {
-              "K01.jpg": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "d3f2735fcc65c06fbccda491fe348c4d6b5552d491682f5e437a4570e677a5f6"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-12": {
-              "K02.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "948151487a39b721733fc23bc49a1a504b29507ed88a7c84216b7fa67efe161e"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-13": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "0ce1b1524748b50d416b71c9923cc334d3041eaf4c7b6ccfe262242a58d14bb3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-14": {
-              "job.json": {
-                "text": "1c25c6d94b9bbb834bb3de6a91f5520dc990ba03a3736f043aca9c2b53a65e58"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-15": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "feeb72aeb51b17432e7ad13d07cbd9d7f6a2884991c2dcdbf4c9fa69a575b9ed"
-              },
-              "reference-01.png": {
-                "sha256": "6d2a3a29826e9f03705aa10a5431672f74698226bebc979d4c824757b230056d",
-                "bytes": 80
-              }
-            },
             "job-16": {
               "job.json": {
                 "text": "b1c51ba539564fda645ea04b2810d9ee6a4d8df9927baa0312c4f18e8abd19eb"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-5": {
-              "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-6": {
-              "job.json": {
-                "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-7": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-8": {
-              "job.json": {
-                "text": "17178a5be1d5cabbe1a8a40fdc61d34b4bc4afc71e969995a490884150cefa8b"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-9": {
-              "K01.png": {
-                "symlink": true
-              },
-              "job.json": {
-                "text": "8571dad575080b780cdf830b9656a720ccd9d88a265b3de4bdeba8020b47c2b7"
               },
               "reference-01.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
@@ -8418,185 +6117,9 @@
           "local": "unchanged",
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-10": {
-              "K01.png": {
-                "sha256": "bc3f0694d36d878e2f8912e10dbe31e5d201b8df470b352e1ca3f4df7c3624c0",
-                "bytes": 27
-              },
-              "job.json": {
-                "text": "664f484ae97793c0da244be86a00cf00a748f9d0ef4cc114f90ad5a3bbc04f16"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-11": {
-              "K01.jpg": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "d3f2735fcc65c06fbccda491fe348c4d6b5552d491682f5e437a4570e677a5f6"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-12": {
-              "K02.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "948151487a39b721733fc23bc49a1a504b29507ed88a7c84216b7fa67efe161e"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-13": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "0ce1b1524748b50d416b71c9923cc334d3041eaf4c7b6ccfe262242a58d14bb3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-14": {
-              "job.json": {
-                "text": "1c25c6d94b9bbb834bb3de6a91f5520dc990ba03a3736f043aca9c2b53a65e58"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-15": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "feeb72aeb51b17432e7ad13d07cbd9d7f6a2884991c2dcdbf4c9fa69a575b9ed"
-              },
-              "reference-01.png": {
-                "sha256": "6d2a3a29826e9f03705aa10a5431672f74698226bebc979d4c824757b230056d",
-                "bytes": 80
-              }
-            },
             "job-16": {
               "job.json": {
                 "text": "5cb016f2f1cdd17bdbc3c3b6ac6ec7613032befcbdea2ed18b899c338833f6c7"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-5": {
-              "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-6": {
-              "job.json": {
-                "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-7": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-8": {
-              "job.json": {
-                "text": "17178a5be1d5cabbe1a8a40fdc61d34b4bc4afc71e969995a490884150cefa8b"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-9": {
-              "K01.png": {
-                "symlink": true
-              },
-              "job.json": {
-                "text": "8571dad575080b780cdf830b9656a720ccd9d88a265b3de4bdeba8020b47c2b7"
               },
               "reference-01.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
@@ -8617,95 +6140,6 @@
           "local": "unchanged",
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-10": {
-              "K01.png": {
-                "sha256": "bc3f0694d36d878e2f8912e10dbe31e5d201b8df470b352e1ca3f4df7c3624c0",
-                "bytes": 27
-              },
-              "job.json": {
-                "text": "664f484ae97793c0da244be86a00cf00a748f9d0ef4cc114f90ad5a3bbc04f16"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-11": {
-              "K01.jpg": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "d3f2735fcc65c06fbccda491fe348c4d6b5552d491682f5e437a4570e677a5f6"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-12": {
-              "K02.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "948151487a39b721733fc23bc49a1a504b29507ed88a7c84216b7fa67efe161e"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-13": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "0ce1b1524748b50d416b71c9923cc334d3041eaf4c7b6ccfe262242a58d14bb3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-14": {
-              "job.json": {
-                "text": "1c25c6d94b9bbb834bb3de6a91f5520dc990ba03a3736f043aca9c2b53a65e58"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-15": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "feeb72aeb51b17432e7ad13d07cbd9d7f6a2884991c2dcdbf4c9fa69a575b9ed"
-              },
-              "reference-01.png": {
-                "sha256": "6d2a3a29826e9f03705aa10a5431672f74698226bebc979d4c824757b230056d",
-                "bytes": 80
-              }
-            },
             "job-16": {
               "K01.png": {
                 "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
@@ -8713,93 +6147,6 @@
               },
               "job.json": {
                 "text": "5cb016f2f1cdd17bdbc3c3b6ac6ec7613032befcbdea2ed18b899c338833f6c7"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-5": {
-              "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-6": {
-              "job.json": {
-                "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-7": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-8": {
-              "job.json": {
-                "text": "17178a5be1d5cabbe1a8a40fdc61d34b4bc4afc71e969995a490884150cefa8b"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-9": {
-              "K01.png": {
-                "symlink": true
-              },
-              "job.json": {
-                "text": "8571dad575080b780cdf830b9656a720ccd9d88a265b3de4bdeba8020b47c2b7"
               },
               "reference-01.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
@@ -8906,7 +6253,7 @@
             "M01.json": "12aa077e4fb843f40fc23f0d25f71dae114e2f24951f2187ff401770d9f0619a"
           },
           "packages": "unchanged",
-          "jobs": "unchanged"
+          "jobs": {}
         },
         {
           "op": "discard",
@@ -9045,199 +6392,9 @@
           },
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-10": {
-              "K01.png": {
-                "sha256": "bc3f0694d36d878e2f8912e10dbe31e5d201b8df470b352e1ca3f4df7c3624c0",
-                "bytes": 27
-              },
-              "job.json": {
-                "text": "664f484ae97793c0da244be86a00cf00a748f9d0ef4cc114f90ad5a3bbc04f16"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-11": {
-              "K01.jpg": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "d3f2735fcc65c06fbccda491fe348c4d6b5552d491682f5e437a4570e677a5f6"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-12": {
-              "K02.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "948151487a39b721733fc23bc49a1a504b29507ed88a7c84216b7fa67efe161e"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-13": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "0ce1b1524748b50d416b71c9923cc334d3041eaf4c7b6ccfe262242a58d14bb3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-14": {
-              "job.json": {
-                "text": "1c25c6d94b9bbb834bb3de6a91f5520dc990ba03a3736f043aca9c2b53a65e58"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-15": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "feeb72aeb51b17432e7ad13d07cbd9d7f6a2884991c2dcdbf4c9fa69a575b9ed"
-              },
-              "reference-01.png": {
-                "sha256": "6d2a3a29826e9f03705aa10a5431672f74698226bebc979d4c824757b230056d",
-                "bytes": 80
-              }
-            },
-            "job-16": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "5cb016f2f1cdd17bdbc3c3b6ac6ec7613032befcbdea2ed18b899c338833f6c7"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
             "job-17": {
               "job.json": {
                 "text": "34882c3c586497b4b913ede21f37afeb2a71ed99f455fb96cdb510735f860791"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-5": {
-              "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-6": {
-              "job.json": {
-                "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-7": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-8": {
-              "job.json": {
-                "text": "17178a5be1d5cabbe1a8a40fdc61d34b4bc4afc71e969995a490884150cefa8b"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-9": {
-              "K01.png": {
-                "symlink": true
-              },
-              "job.json": {
-                "text": "8571dad575080b780cdf830b9656a720ccd9d88a265b3de4bdeba8020b47c2b7"
               },
               "reference-01.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
@@ -9268,199 +6425,9 @@
           "local": "unchanged",
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-10": {
-              "K01.png": {
-                "sha256": "bc3f0694d36d878e2f8912e10dbe31e5d201b8df470b352e1ca3f4df7c3624c0",
-                "bytes": 27
-              },
-              "job.json": {
-                "text": "664f484ae97793c0da244be86a00cf00a748f9d0ef4cc114f90ad5a3bbc04f16"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-11": {
-              "K01.jpg": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "d3f2735fcc65c06fbccda491fe348c4d6b5552d491682f5e437a4570e677a5f6"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-12": {
-              "K02.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "948151487a39b721733fc23bc49a1a504b29507ed88a7c84216b7fa67efe161e"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-13": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "0ce1b1524748b50d416b71c9923cc334d3041eaf4c7b6ccfe262242a58d14bb3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-14": {
-              "job.json": {
-                "text": "1c25c6d94b9bbb834bb3de6a91f5520dc990ba03a3736f043aca9c2b53a65e58"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-15": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "feeb72aeb51b17432e7ad13d07cbd9d7f6a2884991c2dcdbf4c9fa69a575b9ed"
-              },
-              "reference-01.png": {
-                "sha256": "6d2a3a29826e9f03705aa10a5431672f74698226bebc979d4c824757b230056d",
-                "bytes": 80
-              }
-            },
-            "job-16": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "5cb016f2f1cdd17bdbc3c3b6ac6ec7613032befcbdea2ed18b899c338833f6c7"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
             "job-17": {
               "job.json": {
                 "text": "cf739369dcd2e212ce7ed5ba57a13de857906baf92a1a6f5ebecb1c8577270d9"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-5": {
-              "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-6": {
-              "job.json": {
-                "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-7": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-8": {
-              "job.json": {
-                "text": "17178a5be1d5cabbe1a8a40fdc61d34b4bc4afc71e969995a490884150cefa8b"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-9": {
-              "K01.png": {
-                "symlink": true
-              },
-              "job.json": {
-                "text": "8571dad575080b780cdf830b9656a720ccd9d88a265b3de4bdeba8020b47c2b7"
               },
               "reference-01.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
@@ -9481,109 +6448,6 @@
           "local": "unchanged",
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-10": {
-              "K01.png": {
-                "sha256": "bc3f0694d36d878e2f8912e10dbe31e5d201b8df470b352e1ca3f4df7c3624c0",
-                "bytes": 27
-              },
-              "job.json": {
-                "text": "664f484ae97793c0da244be86a00cf00a748f9d0ef4cc114f90ad5a3bbc04f16"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-11": {
-              "K01.jpg": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "d3f2735fcc65c06fbccda491fe348c4d6b5552d491682f5e437a4570e677a5f6"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-12": {
-              "K02.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "948151487a39b721733fc23bc49a1a504b29507ed88a7c84216b7fa67efe161e"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-13": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "0ce1b1524748b50d416b71c9923cc334d3041eaf4c7b6ccfe262242a58d14bb3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-14": {
-              "job.json": {
-                "text": "1c25c6d94b9bbb834bb3de6a91f5520dc990ba03a3736f043aca9c2b53a65e58"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-15": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "feeb72aeb51b17432e7ad13d07cbd9d7f6a2884991c2dcdbf4c9fa69a575b9ed"
-              },
-              "reference-01.png": {
-                "sha256": "6d2a3a29826e9f03705aa10a5431672f74698226bebc979d4c824757b230056d",
-                "bytes": 80
-              }
-            },
-            "job-16": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "5cb016f2f1cdd17bdbc3c3b6ac6ec7613032befcbdea2ed18b899c338833f6c7"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
             "job-17": {
               "K01.png": {
                 "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
@@ -9591,93 +6455,6 @@
               },
               "job.json": {
                 "text": "cf739369dcd2e212ce7ed5ba57a13de857906baf92a1a6f5ebecb1c8577270d9"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-5": {
-              "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-6": {
-              "job.json": {
-                "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-7": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-8": {
-              "job.json": {
-                "text": "17178a5be1d5cabbe1a8a40fdc61d34b4bc4afc71e969995a490884150cefa8b"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-9": {
-              "K01.png": {
-                "symlink": true
-              },
-              "job.json": {
-                "text": "8571dad575080b780cdf830b9656a720ccd9d88a265b3de4bdeba8020b47c2b7"
               },
               "reference-01.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
@@ -9784,7 +6561,7 @@
             "M01.json": "96a82d2bcce19d9ea476d5004c564ec2e2cd48fa691894c483ad35e13ecaa8c2"
           },
           "packages": "unchanged",
-          "jobs": "unchanged"
+          "jobs": {}
         },
         {
           "op": "discard",
@@ -9923,213 +6700,9 @@
           },
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-10": {
-              "K01.png": {
-                "sha256": "bc3f0694d36d878e2f8912e10dbe31e5d201b8df470b352e1ca3f4df7c3624c0",
-                "bytes": 27
-              },
-              "job.json": {
-                "text": "664f484ae97793c0da244be86a00cf00a748f9d0ef4cc114f90ad5a3bbc04f16"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-11": {
-              "K01.jpg": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "d3f2735fcc65c06fbccda491fe348c4d6b5552d491682f5e437a4570e677a5f6"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-12": {
-              "K02.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "948151487a39b721733fc23bc49a1a504b29507ed88a7c84216b7fa67efe161e"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-13": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "0ce1b1524748b50d416b71c9923cc334d3041eaf4c7b6ccfe262242a58d14bb3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-14": {
-              "job.json": {
-                "text": "1c25c6d94b9bbb834bb3de6a91f5520dc990ba03a3736f043aca9c2b53a65e58"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-15": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "feeb72aeb51b17432e7ad13d07cbd9d7f6a2884991c2dcdbf4c9fa69a575b9ed"
-              },
-              "reference-01.png": {
-                "sha256": "6d2a3a29826e9f03705aa10a5431672f74698226bebc979d4c824757b230056d",
-                "bytes": 80
-              }
-            },
-            "job-16": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "5cb016f2f1cdd17bdbc3c3b6ac6ec7613032befcbdea2ed18b899c338833f6c7"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-17": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "cf739369dcd2e212ce7ed5ba57a13de857906baf92a1a6f5ebecb1c8577270d9"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
             "job-18": {
               "job.json": {
                 "text": "96589cb85289812523ade97b81f3bed76a00fee659f219cbe3246e44733c73ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-5": {
-              "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-6": {
-              "job.json": {
-                "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-7": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-8": {
-              "job.json": {
-                "text": "17178a5be1d5cabbe1a8a40fdc61d34b4bc4afc71e969995a490884150cefa8b"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-9": {
-              "K01.png": {
-                "symlink": true
-              },
-              "job.json": {
-                "text": "8571dad575080b780cdf830b9656a720ccd9d88a265b3de4bdeba8020b47c2b7"
               },
               "reference-01.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
@@ -10172,123 +6745,6 @@
           "local": "unchanged",
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-10": {
-              "K01.png": {
-                "sha256": "bc3f0694d36d878e2f8912e10dbe31e5d201b8df470b352e1ca3f4df7c3624c0",
-                "bytes": 27
-              },
-              "job.json": {
-                "text": "664f484ae97793c0da244be86a00cf00a748f9d0ef4cc114f90ad5a3bbc04f16"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-11": {
-              "K01.jpg": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "d3f2735fcc65c06fbccda491fe348c4d6b5552d491682f5e437a4570e677a5f6"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-12": {
-              "K02.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "948151487a39b721733fc23bc49a1a504b29507ed88a7c84216b7fa67efe161e"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-13": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "0ce1b1524748b50d416b71c9923cc334d3041eaf4c7b6ccfe262242a58d14bb3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-14": {
-              "job.json": {
-                "text": "1c25c6d94b9bbb834bb3de6a91f5520dc990ba03a3736f043aca9c2b53a65e58"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-15": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "feeb72aeb51b17432e7ad13d07cbd9d7f6a2884991c2dcdbf4c9fa69a575b9ed"
-              },
-              "reference-01.png": {
-                "sha256": "6d2a3a29826e9f03705aa10a5431672f74698226bebc979d4c824757b230056d",
-                "bytes": 80
-              }
-            },
-            "job-16": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "5cb016f2f1cdd17bdbc3c3b6ac6ec7613032befcbdea2ed18b899c338833f6c7"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-17": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "cf739369dcd2e212ce7ed5ba57a13de857906baf92a1a6f5ebecb1c8577270d9"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
             "job-18": {
               "K01.png": {
                 "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
@@ -10296,93 +6752,6 @@
               },
               "job.json": {
                 "text": "96589cb85289812523ade97b81f3bed76a00fee659f219cbe3246e44733c73ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-5": {
-              "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-6": {
-              "job.json": {
-                "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-7": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-8": {
-              "job.json": {
-                "text": "17178a5be1d5cabbe1a8a40fdc61d34b4bc4afc71e969995a490884150cefa8b"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-9": {
-              "K01.png": {
-                "symlink": true
-              },
-              "job.json": {
-                "text": "8571dad575080b780cdf830b9656a720ccd9d88a265b3de4bdeba8020b47c2b7"
               },
               "reference-01.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
@@ -10497,7 +6866,7 @@
             "M01.json": "c4ac9f91c396cda9bfd61750230ae8b88b632c975e476a523ffe8b64de345e36"
           },
           "packages": "unchanged",
-          "jobs": "unchanged"
+          "jobs": {}
         },
         {
           "op": "discard",
@@ -10636,227 +7005,9 @@
           },
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-10": {
-              "K01.png": {
-                "sha256": "bc3f0694d36d878e2f8912e10dbe31e5d201b8df470b352e1ca3f4df7c3624c0",
-                "bytes": 27
-              },
-              "job.json": {
-                "text": "664f484ae97793c0da244be86a00cf00a748f9d0ef4cc114f90ad5a3bbc04f16"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-11": {
-              "K01.jpg": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "d3f2735fcc65c06fbccda491fe348c4d6b5552d491682f5e437a4570e677a5f6"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-12": {
-              "K02.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "948151487a39b721733fc23bc49a1a504b29507ed88a7c84216b7fa67efe161e"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-13": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "0ce1b1524748b50d416b71c9923cc334d3041eaf4c7b6ccfe262242a58d14bb3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-14": {
-              "job.json": {
-                "text": "1c25c6d94b9bbb834bb3de6a91f5520dc990ba03a3736f043aca9c2b53a65e58"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-15": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "feeb72aeb51b17432e7ad13d07cbd9d7f6a2884991c2dcdbf4c9fa69a575b9ed"
-              },
-              "reference-01.png": {
-                "sha256": "6d2a3a29826e9f03705aa10a5431672f74698226bebc979d4c824757b230056d",
-                "bytes": 80
-              }
-            },
-            "job-16": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "5cb016f2f1cdd17bdbc3c3b6ac6ec7613032befcbdea2ed18b899c338833f6c7"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-17": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "cf739369dcd2e212ce7ed5ba57a13de857906baf92a1a6f5ebecb1c8577270d9"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-18": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "96589cb85289812523ade97b81f3bed76a00fee659f219cbe3246e44733c73ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
             "job-19": {
               "job.json": {
                 "text": "fe4358cf39b38b87b36b551114cbde938121a9d685d24e5b6730d2fe3b37ce8c"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-5": {
-              "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-6": {
-              "job.json": {
-                "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-7": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-8": {
-              "job.json": {
-                "text": "17178a5be1d5cabbe1a8a40fdc61d34b4bc4afc71e969995a490884150cefa8b"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-9": {
-              "K01.png": {
-                "symlink": true
-              },
-              "job.json": {
-                "text": "8571dad575080b780cdf830b9656a720ccd9d88a265b3de4bdeba8020b47c2b7"
               },
               "reference-01.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
@@ -10883,226 +7034,7 @@
           "remove": true,
           "local": "unchanged",
           "packages": "unchanged",
-          "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-10": {
-              "K01.png": {
-                "sha256": "bc3f0694d36d878e2f8912e10dbe31e5d201b8df470b352e1ca3f4df7c3624c0",
-                "bytes": 27
-              },
-              "job.json": {
-                "text": "664f484ae97793c0da244be86a00cf00a748f9d0ef4cc114f90ad5a3bbc04f16"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-11": {
-              "K01.jpg": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "d3f2735fcc65c06fbccda491fe348c4d6b5552d491682f5e437a4570e677a5f6"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-12": {
-              "K02.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "948151487a39b721733fc23bc49a1a504b29507ed88a7c84216b7fa67efe161e"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-13": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "0ce1b1524748b50d416b71c9923cc334d3041eaf4c7b6ccfe262242a58d14bb3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-14": {
-              "job.json": {
-                "text": "1c25c6d94b9bbb834bb3de6a91f5520dc990ba03a3736f043aca9c2b53a65e58"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-15": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "feeb72aeb51b17432e7ad13d07cbd9d7f6a2884991c2dcdbf4c9fa69a575b9ed"
-              },
-              "reference-01.png": {
-                "sha256": "6d2a3a29826e9f03705aa10a5431672f74698226bebc979d4c824757b230056d",
-                "bytes": 80
-              }
-            },
-            "job-16": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "5cb016f2f1cdd17bdbc3c3b6ac6ec7613032befcbdea2ed18b899c338833f6c7"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-17": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "cf739369dcd2e212ce7ed5ba57a13de857906baf92a1a6f5ebecb1c8577270d9"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-18": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "96589cb85289812523ade97b81f3bed76a00fee659f219cbe3246e44733c73ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-5": {
-              "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-6": {
-              "job.json": {
-                "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-7": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-8": {
-              "job.json": {
-                "text": "17178a5be1d5cabbe1a8a40fdc61d34b4bc4afc71e969995a490884150cefa8b"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-9": {
-              "K01.png": {
-                "symlink": true
-              },
-              "job.json": {
-                "text": "8571dad575080b780cdf830b9656a720ccd9d88a265b3de4bdeba8020b47c2b7"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            }
-          }
+          "jobs": {}
         },
         {
           "op": "finish",
@@ -11340,227 +7272,9 @@
           },
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-10": {
-              "K01.png": {
-                "sha256": "bc3f0694d36d878e2f8912e10dbe31e5d201b8df470b352e1ca3f4df7c3624c0",
-                "bytes": 27
-              },
-              "job.json": {
-                "text": "664f484ae97793c0da244be86a00cf00a748f9d0ef4cc114f90ad5a3bbc04f16"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-11": {
-              "K01.jpg": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "d3f2735fcc65c06fbccda491fe348c4d6b5552d491682f5e437a4570e677a5f6"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-12": {
-              "K02.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "948151487a39b721733fc23bc49a1a504b29507ed88a7c84216b7fa67efe161e"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-13": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "0ce1b1524748b50d416b71c9923cc334d3041eaf4c7b6ccfe262242a58d14bb3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-14": {
-              "job.json": {
-                "text": "1c25c6d94b9bbb834bb3de6a91f5520dc990ba03a3736f043aca9c2b53a65e58"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-15": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "feeb72aeb51b17432e7ad13d07cbd9d7f6a2884991c2dcdbf4c9fa69a575b9ed"
-              },
-              "reference-01.png": {
-                "sha256": "6d2a3a29826e9f03705aa10a5431672f74698226bebc979d4c824757b230056d",
-                "bytes": 80
-              }
-            },
-            "job-16": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "5cb016f2f1cdd17bdbc3c3b6ac6ec7613032befcbdea2ed18b899c338833f6c7"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-17": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "cf739369dcd2e212ce7ed5ba57a13de857906baf92a1a6f5ebecb1c8577270d9"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-18": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "96589cb85289812523ade97b81f3bed76a00fee659f219cbe3246e44733c73ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
             "job-20": {
               "job.json": {
                 "text": "4b3434eaf295468de273b0a2b1feb0722decb290fd10fd3c514c82fc75d9733d"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-5": {
-              "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-6": {
-              "job.json": {
-                "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-7": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-8": {
-              "job.json": {
-                "text": "17178a5be1d5cabbe1a8a40fdc61d34b4bc4afc71e969995a490884150cefa8b"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-9": {
-              "K01.png": {
-                "symlink": true
-              },
-              "job.json": {
-                "text": "8571dad575080b780cdf830b9656a720ccd9d88a265b3de4bdeba8020b47c2b7"
               },
               "reference-01.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
@@ -11601,147 +7315,6 @@
           "local": "unchanged",
           "packages": "unchanged",
           "jobs": {
-            "job-1": {
-              "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-10": {
-              "K01.png": {
-                "sha256": "bc3f0694d36d878e2f8912e10dbe31e5d201b8df470b352e1ca3f4df7c3624c0",
-                "bytes": 27
-              },
-              "job.json": {
-                "text": "664f484ae97793c0da244be86a00cf00a748f9d0ef4cc114f90ad5a3bbc04f16"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-11": {
-              "K01.jpg": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "d3f2735fcc65c06fbccda491fe348c4d6b5552d491682f5e437a4570e677a5f6"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-12": {
-              "K02.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "948151487a39b721733fc23bc49a1a504b29507ed88a7c84216b7fa67efe161e"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-13": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "0ce1b1524748b50d416b71c9923cc334d3041eaf4c7b6ccfe262242a58d14bb3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-14": {
-              "job.json": {
-                "text": "1c25c6d94b9bbb834bb3de6a91f5520dc990ba03a3736f043aca9c2b53a65e58"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-15": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "feeb72aeb51b17432e7ad13d07cbd9d7f6a2884991c2dcdbf4c9fa69a575b9ed"
-              },
-              "reference-01.png": {
-                "sha256": "6d2a3a29826e9f03705aa10a5431672f74698226bebc979d4c824757b230056d",
-                "bytes": 80
-              }
-            },
-            "job-16": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "5cb016f2f1cdd17bdbc3c3b6ac6ec7613032befcbdea2ed18b899c338833f6c7"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-17": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "cf739369dcd2e212ce7ed5ba57a13de857906baf92a1a6f5ebecb1c8577270d9"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-18": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "96589cb85289812523ade97b81f3bed76a00fee659f219cbe3246e44733c73ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-2": {
-              "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
             "job-20": {
               "K01.png": {
                 "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
@@ -11749,83 +7322,6 @@
               },
               "job.json": {
                 "text": "4b3434eaf295468de273b0a2b1feb0722decb290fd10fd3c514c82fc75d9733d"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-3": {
-              "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-4": {
-              "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-5": {
-              "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-6": {
-              "job.json": {
-                "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-7": {
-              "K01.png": {
-                "sha256": "d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3",
-                "bytes": 108
-              },
-              "job.json": {
-                "text": "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-8": {
-              "job.json": {
-                "text": "17178a5be1d5cabbe1a8a40fdc61d34b4bc4afc71e969995a490884150cefa8b"
-              },
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            },
-            "job-9": {
-              "K01.png": {
-                "symlink": true
-              },
-              "job.json": {
-                "text": "8571dad575080b780cdf830b9656a720ccd9d88a265b3de4bdeba8020b47c2b7"
               },
               "reference-01.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
@@ -11932,7 +7428,7 @@
             "M01.json": "7dd2d0f3418d0e24352312ed8256f97fc246a8b222d60bda3c0e3b3644ffcd69"
           },
           "packages": "unchanged",
-          "jobs": "unchanged"
+          "jobs": {}
         },
         {
           "op": "discard",
@@ -14107,15 +9603,7 @@
           "error": "Недоступна утверждённая опора K01.",
           "local": "unchanged",
           "packages": "unchanged",
-          "jobs": {
-            "<id>": {
-              "reference-01.png": {
-                "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-                "bytes": 126,
-                "readonly": true
-              }
-            }
-          }
+          "jobs": "unchanged"
         },
         {
           "op": "view",

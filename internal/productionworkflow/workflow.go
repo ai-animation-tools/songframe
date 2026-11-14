@@ -60,7 +60,8 @@ type CatalogReader interface {
 // Options — зависимости Workflow.
 type Options struct {
 	// LocalDir — каталог состояния приложения: журналы применения (production-apply) и процессы этой
-	// машины. Записи предложений лежат в проекте (Store), а не здесь.
+	// машины. Записи предложений лежат в проекте (Store), а не здесь. Тот же каталог, что
+	// KeyframeImages.LocalDir: проход удаляет из него рабочие папки завершённых заданий опор.
 	LocalDir string
 	// Agents — менеджер агентов; nil — заданий нет, запуск отклоняется.
 	Agents Agents
@@ -420,7 +421,9 @@ func framesReason(c *Context, derived, common string, imagePhase, framesApproved
 
 // refresh пересчитывает устаревание записи и переводит предложение
 // выполнявшегося задания в итоговый статус (interrupted, cancelled, failed, ready, invalid).
-// Запись пишется только при смене статуса running. Возвращает задание агента записи или nil.
+// Запись пишется только при смене статуса running. После записи итогового статуса предложения
+// опор рабочая папка задания в каталоге состояния удаляется (releaseImageJob): больше её никто
+// не читает. Возвращает задание агента записи или nil.
 func (w *Workflow) refresh(c *Context, stored *Stored) (*agents.Job, error) {
 	if stored == nil {
 		return nil, nil
@@ -476,7 +479,15 @@ func (w *Workflow) refresh(c *Context, stored *Stored) (*agents.Job, error) {
 			proposal.Set("status", "ready")
 		}
 	}
-	return job, w.store.Write(c.Project, c.Shot, stored)
+	if err := w.store.Write(c.Project, c.Shot, stored); err != nil {
+		// Запись осталась running: следующий вид плана повторит сбор, рабочая папка ещё нужна.
+		return job, err
+	}
+	// Итоговый статус записан: кандидаты скопированы в проект или собирать больше нечего.
+	if stored.ImageJob() {
+		releaseImageJob(w.options.LocalDir, stored.JobID())
+	}
+	return job, nil
 }
 
 // accept разбирает результат завершённого задания: предложение записывается в after до

@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
 
 	"songframe/internal/agents"
 	"songframe/internal/dynvalue"
@@ -24,6 +25,10 @@ var frameID = regexp.MustCompile(`^K\d{2}$`)
 
 // sha256Hex — SHA-256 в hex, как записывает job.json.
 var sha256Hex = regexp.MustCompile(`^[a-f0-9]{64}$`)
+
+// jobFolderName — имя рабочей папки задания опор: UUID версии 4 (randomUUID). Уборка трогает
+// только такие папки.
+var jobFolderName = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`)
 
 // ImageJobsFolder — каталог рабочих папок заданий опор внутри каталога состояния. Менеджер
 // агентов разрешает программе-агенту запись только в подпапки этого каталога (StartImages).
@@ -42,9 +47,14 @@ type ImageAgents interface {
 // референсов (только чтение) и job.json — связь задания с согласованным SHA запроса, по которой
 // результат собирается и после перезапуска приложения. Второго журнала нет.
 //
+// Рабочая папка нужна только до регистрации кандидатов в проекте. Её удаляют: ошибка Start;
+// проход производства, когда запись предложения задания перешла из running в итоговый статус
+// (releaseImageJob из Workflow.refresh); и однократная уборка при первом обращении к Start,
+// Collect или RequestSha (sweepStale) — папки, которые не ждёт ни одна запись running.
+//
 // Реализует agentexec.Images для исполнителей провайдеров-агентов (internal/providers/codex).
-// Состояния в памяти нет: методы безопасны для конкурентного вызова, если LocalDir общий только
-// для одного приложения.
+// Из состояния в памяти — только признак выполненной уборки: методы безопасны для конкурентного
+// вызова, если LocalDir общий только для одного приложения. Значение не копируется (sync.Once).
 type KeyframeImages struct {
 	// LocalDir — каталог состояния приложения.
 	LocalDir string
@@ -53,6 +63,8 @@ type KeyframeImages struct {
 	// ValidateImage — дополнительная проверка кандидата декодированием изображения;
 	// nil — только заголовок формата.
 	ValidateImage func(path string) bool
+	// swept — уборка оставшихся рабочих папок выполнена (sweepStale).
+	swept sync.Once
 }
 
 var _ agentexec.Images = (*KeyframeImages)(nil)
@@ -83,8 +95,10 @@ func (k *KeyframeImages) base(create bool) (string, error) {
 // Start готовит рабочую папку задания (копии референсов и утверждённых опор
 // только для чтения), запускает программу-агента провайдера и записывает job.json. Референсы — файлы
 // изображений внутри проекта (каждый копируется один раз), утверждённые опоры — изображения пакета.
-// Ошибка запуска оставляет рабочую папку без job.json: собрать её нельзя.
-func (k *KeyframeImages) Start(input mediaapi.ImagesInput, request agentexec.ImagesRequest) (agents.Job, error) {
+// Ошибка удаляет рабочую папку: без job.json задание не собрать. Если программа-агент уже
+// запущена, а job.json не записан, задание тоже не собрать, и его папка не нужна.
+func (k *KeyframeImages) Start(input mediaapi.ImagesInput, request agentexec.ImagesRequest) (job agents.Job, err error) {
+	k.sweepOnce()
 	project, err := dynvalue.Realpath(input.Project)
 	if err != nil {
 		return agents.Job{}, err
@@ -102,6 +116,11 @@ func (k *KeyframeImages) Start(input mediaapi.ImagesInput, request agentexec.Ima
 	if err := os.MkdirAll(directory, 0o777); err != nil {
 		return agents.Job{}, err
 	}
+	defer func() {
+		if err != nil {
+			_ = os.RemoveAll(directory)
+		}
+	}()
 	inputs := []imagesInput{}
 	copies := map[string]string{}
 	frames := make([]any, len(input.Frames))
@@ -179,7 +198,7 @@ func (k *KeyframeImages) Start(input mediaapi.ImagesInput, request agentexec.Ima
 	if len(notes) > 0 {
 		context.Set("notes", &dynvalue.Array{Items: notes})
 	}
-	job, err := k.Agents.StartImages(agents.StartInput{
+	job, err = k.Agents.StartImages(agents.StartInput{
 		Project: project,
 		Task:    textImagesJobTitle(input.Shot, strings.Join(ids, ", "), providers.Title(request.Provider, generationProviderFallback)),
 		Prompt:  textImagesPrompt(len(approved) > 0, len(notes) > 0),
@@ -281,6 +300,7 @@ func (k *KeyframeImages) jobRecord(job agents.Job) (directory string, record any
 // requestSha записи отдельно не сверяется: единственный путь сбора (CollectJob исполнителя) берёт
 // ожидаемый SHA из этой же записи.
 func (k *KeyframeImages) Collect(job agents.Job) ([]mediaapi.FrameCandidate, error) {
+	k.sweepOnce()
 	if job.Status != "completed" || job.ExitCode == nil || *job.ExitCode != 0 {
 		return nil, errors.New(textImagesJobIncomplete)
 	}
@@ -394,6 +414,7 @@ func matchesFile(path string, expected any) bool {
 // RequestSha возвращает SHA согласованного запроса задания job из его job.json.
 // После перезапуска связь задания с запросом восстанавливается из той же записи.
 func (k *KeyframeImages) RequestSha(job agents.Job) (string, error) {
+	k.sweepOnce()
 	_, record, found, err := k.jobRecord(job)
 	if err != nil {
 		return "", err
@@ -409,4 +430,88 @@ func (k *KeyframeImages) RequestSha(job agents.Job) (string, error) {
 		return "", errors.New(textImagesRequestHashCorrupt)
 	}
 	return sha, nil
+}
+
+// sweepOnce выполняет уборку sweepStale один раз за жизнь значения — при первом обращении к
+// заданиям опор после запуска приложения. Конкурентные вызовы ждут её окончания, поэтому Start
+// создаёт новую папку только после уборки и она не попадает под удаление.
+func (k *KeyframeImages) sweepOnce() {
+	k.swept.Do(k.sweepStale)
+}
+
+// sweepStale удаляет рабочие папки заданий опор, которые уже не соберут: без читаемого job.json
+// (сбой Start или аварийное завершение) и те, чьё задание не ждёт ни одна запись предложения
+// running в проекте из job.json (pendingImageJob). Незавершённое задание после перезапуска
+// по-прежнему собирается: его запись остаётся running до первого вида плана, и папка сохраняется.
+// Трогаются только подпапки с именем-UUID (jobFolderName): других владельцев у
+// <LocalDir>/image-jobs нет — обложки и референсы держат свои image-jobs в папке своей сессии
+// (internal/covergen). Ошибки чтения и удаления не мешают работе: папку уберёт следующий запуск.
+func (k *KeyframeImages) sweepStale() {
+	base, err := k.base(false)
+	if err != nil || base == "" {
+		return
+	}
+	entries, err := os.ReadDir(base)
+	if err != nil {
+		return
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() || !jobFolderName.MatchString(entry.Name()) {
+			continue
+		}
+		directory := filepath.Join(base, entry.Name())
+		value, err := readJSON(filepath.Join(directory, "job.json"))
+		jobID, _ := dynvalue.Get(value, "jobId").(string)
+		project, _ := dynvalue.Get(value, "project").(string)
+		if err == nil && dynvalue.IsRecord(value) && pendingImageJob(project, jobID) {
+			continue
+		}
+		_ = os.RemoveAll(directory)
+	}
+}
+
+// pendingImageJob — в папке записей проекта project есть предложение опор задания jobID со
+// статусом running: проход производства ещё соберёт его кандидатов (Workflow.refresh). Записи
+// читаются как есть, без проверки формы: достаточно связи по jobId. Нечитаемая папка записей и
+// пустые project или jobID — «не ждёт».
+func pendingImageJob(project, jobID string) bool {
+	if project == "" || jobID == "" {
+		return false
+	}
+	folder := Store{}.Folder(project)
+	entries, err := os.ReadDir(folder)
+	if err != nil {
+		return false
+	}
+	for _, entry := range entries {
+		name := entry.Name()
+		if entry.IsDir() || !strings.HasSuffix(name, ".json") || strings.HasSuffix(name, "-request.json") {
+			continue
+		}
+		value, err := readJSON(filepath.Join(folder, name))
+		if err != nil || dynvalue.Get(value, "imageJob") != true {
+			continue
+		}
+		if dynvalue.GetPath(value, "proposal", "jobId") == jobID && dynvalue.GetPath(value, "proposal", "status") == "running" {
+			return true
+		}
+	}
+	return false
+}
+
+// releaseImageJob удаляет рабочую папку задания опор jobID в каталоге состояния localDir.
+// Вызывает проход производства, когда запись предложения задания записана в итоговом статусе:
+// кандидаты уже скопированы в проект (Store.pinCandidates) либо собирать больше нечего (отказ,
+// остановка, ошибка, прерывание). Папка ищется по jobId из job.json; пустые localDir и jobID и
+// отсутствие папки ничего не делают. Ошибка удаления не мешает записанному предложению: папку
+// уберёт уборка следующего запуска (sweepStale).
+func releaseImageJob(localDir, jobID string) {
+	if localDir == "" || jobID == "" {
+		return
+	}
+	directory, _, found, err := (&KeyframeImages{LocalDir: localDir}).jobRecord(agents.Job{ID: jobID})
+	if err != nil || !found {
+		return
+	}
+	_ = os.RemoveAll(directory)
 }

@@ -17,7 +17,7 @@
 | `timing-save/` | `timing.SaveProject`, `timing.Prepare`, сохранение через `app` | 7 |
 | `timing-validation/cases.json` | `timing.Validate` | 33 |
 | `timing-draft/cases.json` | `timing.BuildDraft`: черновик разметки по CTC-распознаванию | 11 |
-| `project-create/` | `app.ProjectService.Create` (копирование шаблона, `git init`, открытие) | 5 |
+| `project-create/` | `app.ProjectService.Create` (копирование шаблона, `git init` с Git LFS, открытие) | 5 |
 | `project-validate-new/cases.json` | `newproject.Validate` | 16 |
 | `project-rename/` | переименование проекта в `app.ProjectService` с историей проектов | 8 |
 | `project-settings/` | чтение и запись настроек `internal/projectfile` | 21 |

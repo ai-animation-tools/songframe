@@ -208,6 +208,14 @@ export function apiSkeleton(): Api {
     dashboard: {
       view: stub('dashboard.view')
     },
+    projectHistory: {
+      status: stub('projectHistory.status'),
+      save: stub('projectHistory.save'),
+      checkpoint: stub('projectHistory.checkpoint'),
+      points: stub('projectHistory.points'),
+      restore: stub('projectHistory.restore'),
+      compareScenario: stub('projectHistory.compareScenario')
+    },
     promptLog: {
       list: stub('promptLog.list'),
       get: stub('promptLog.get')

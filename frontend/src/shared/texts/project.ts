@@ -28,6 +28,52 @@ export const projectTexts = {
         .join(' · '),
     loadFailed: ({ reason }: { reason: string }) => `Не удалось прочитать расход клипа: ${reason}`
   },
+  history: {
+    title: 'История проекта',
+    hint: 'Точки сохранения — коммиты Git папки проекта. Перед крупными операциями приложение само сохраняет точку, если есть несохранённые изменения',
+    /** Подписи разделов приложения в статусе и у точек; страницы — из навигации. */
+    sections: {
+      views: 'Карточки и списки',
+      other: 'Прочие файлы'
+    },
+    unsaved: ({ sections, files }: { sections: string; files: number }) => `Не сохранено: ${sections} (${countLabel(files, 'файл', 'файла', 'файлов')})`,
+    allSaved: 'Все изменения сохранены',
+    lastPoint: ({ message, date }: { message: string; date: string }) => `Последняя точка: «${message}», ${date}`,
+    noPoints: 'Точек пока нет.',
+    autoFailed: 'Автоматическая точка не создана',
+    save: 'Сохранить точку',
+    saveHint: 'Записать все изменения проекта в Git с подписью',
+    nothingToSave: 'Нет несохранённых изменений',
+    saveTitle: 'Сохранить точку',
+    messageLabel: 'Подпись точки',
+    messageHelp: 'По ней точку найдут в истории. Предложены изменённые разделы',
+    messageRequired: 'Укажите подпись точки.',
+    saved: 'Точка сохранена',
+    waitSaving: 'Дождитесь окончания сохранения точки.',
+    points: 'Последние точки',
+    compare: 'Сравнить сценарий',
+    compareHint: 'Чем сценарий этой точки отличается от текущего',
+    restore: 'Вернуть раздел',
+    restoreHint: 'Вернуть файлы раздела к этой точке',
+    restoreSection: ({ section }: { section: string }) => `Вернуть «${section}» к этой точке`,
+    restoreDescription: ({ section, message, date }: { section: string; message: string; date: string }) =>
+      `Файлы раздела «${section}» вернутся к точке «${message}» от ${date}. Текущее состояние проекта сначала сохранится автоматической точкой, к нему можно будет вернуться. Видео, опоры и другие медиа не меняются. Результат останется несохранённым — сохраните точку, когда проверите его.`,
+    restoreScenarioNote: 'Планы, чья постановка изменится, потребуют проверки, как после правки сценария.',
+    restored: ({ section }: { section: string }) => `Раздел «${section}» возвращён к точке`,
+    viewsFailed: ({ reason }: { reason: string }) =>
+      `Раздел возвращён, но карточки и списки не пересобрались: ${reason}. Пересоберите их на странице «Проверки».`,
+    compareTitle: ({ message }: { message: string }) => `Сценарий точки «${message}»`,
+    compareMissing: 'В этой точке ещё нет сценария.',
+    compareSame: 'Постановка планов в точке такая же, как сейчас.',
+    compareChanged: 'При возврате изменятся или появятся планы',
+    compareRemoved: 'Исчезнут планы',
+    comparePlanned: 'не в производстве',
+    compareProduced: 'есть материалы — потребуется новое производство',
+    restoreScenario: 'Вернуть сценарий к этой точке',
+    compareCloseLabel: commonTexts.close,
+    waitRestoring: 'Дождитесь окончания возврата раздела.',
+    loadFailed: ({ reason }: { reason: string }) => `Не удалось прочитать историю проекта: ${reason}`
+  },
   bundle: {
     summary: ({ shots, videos, copied }: { shots: number; videos: number; copied: number }) =>
       `Планов ${shots}, из них видео ${videos}, скопировано файлов ${copied}.`,

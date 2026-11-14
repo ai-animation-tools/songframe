@@ -60,7 +60,7 @@ var Areas = []Area{
 		Title: "Проект и исходники",
 		Docs:  []string{"dev-skills/songframe-project-contract/SKILL.md", "resources/templates/project/README.md"},
 		Packages: []string{
-			"internal/project", "internal/projectfile", "internal/newproject", "internal/status",
+			"internal/project", "internal/projectfile", "internal/newproject", "internal/projectgit", "internal/status",
 			"internal/sources", "internal/sourceedit", "internal/sourceinputs",
 			"internal/referenceimage", "internal/cast", "internal/castregistry", "internal/covergen",
 			"internal/projectviews",

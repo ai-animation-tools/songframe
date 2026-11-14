@@ -53,6 +53,7 @@ function bindings(
     dashboard: missing,
     animatic: overrides.animatic ? service(overrides.animatic) : missing,
     promptLog: missing,
+    projectHistory: missing,
     montage: missing,
     montageWindow: missing,
     derivedShots: missing,

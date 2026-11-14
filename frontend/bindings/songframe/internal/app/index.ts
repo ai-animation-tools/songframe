@@ -20,6 +20,7 @@ import * as NativeCheckService from "./nativecheckservice.js";
 import * as NativeService from "./nativeservice.js";
 import * as ProductionService from "./productionservice.js";
 import * as ProductionWorkflowService from "./productionworkflowservice.js";
+import * as ProjectHistoryService from "./projecthistoryservice.js";
 import * as ProjectService from "./projectservice.js";
 import * as PromptLogService from "./promptlogservice.js";
 import * as ReferenceImagesService from "./referenceimagesservice.js";
@@ -51,6 +52,7 @@ export {
     NativeService,
     ProductionService,
     ProductionWorkflowService,
+    ProjectHistoryService,
     ProjectService,
     PromptLogService,
     ReferenceImagesService,

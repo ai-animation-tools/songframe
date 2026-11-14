@@ -13,6 +13,7 @@ import (
 
 	"songframe/internal/cast"
 	"songframe/internal/dynvalue"
+	"songframe/internal/filedigest"
 	"songframe/internal/scenario"
 	"songframe/internal/sourceinputs"
 	"songframe/internal/timing"
@@ -418,6 +419,16 @@ func readInputs(path string) (*inputs, error) {
 	return result, nil
 }
 
+// sourceChanged — ошибка несовпадения SHA-256 файла исходников: указатель Git LFS вместо
+// содержимого (клип склонирован без git lfs pull) получает отдельный понятный текст, остальное —
+// текст changed вызывающего.
+func sourceChanged(project, relative string, changed func(string) string) error {
+	if text, ok := filedigest.LFSPointerProblem(filepath.Join(project, filepath.FromSlash(relative)), relative); ok {
+		return errors.New(text)
+	}
+	return errors.New(changed(relative))
+}
+
 // readSources — проверка исходников: маркер проекта, опись с SHA трёх исходников и референсов,
 // разметка версии 2 и её согласованность с текстом и треком. Первая ошибка прерывает проверку.
 func readSources(result *inputs, paths *orderedSet) error {
@@ -448,7 +459,7 @@ func readSources(result *inputs, paths *orderedSet) error {
 			return err
 		}
 		if current == nil || *current != source.Value("sha256").(string) {
-			return errors.New(textSourceFileChanged(relative))
+			return sourceChanged(project, relative, textSourceFileChanged)
 		}
 	}
 	for _, item := range arrayItems(manifest.Value("references")) {
@@ -475,7 +486,7 @@ func readSources(result *inputs, paths *orderedSet) error {
 				return err
 			}
 			if current == nil || *current != record.Value("sha256").(string) {
-				return errors.New(textSourceImageChanged(relative))
+				return sourceChanged(project, relative, textSourceImageChanged)
 			}
 		}
 	}

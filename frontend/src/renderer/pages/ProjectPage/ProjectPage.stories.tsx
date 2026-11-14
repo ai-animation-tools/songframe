@@ -14,6 +14,7 @@ import { registerMediaProviderForTests } from '@shared/media-providers';
 import { TEST_PROVIDER, testProviderInfo } from '@shared/testing/media-provider';
 import { productionTexts } from '@shared/texts/production';
 import { ANCHORS } from '../../components/linkTargets';
+import { historyApi } from '../../testing/projectHistoryStories';
 import { ProjectPage } from './ProjectPage';
 const meta = { title: 'Страницы/Проект', component: ProjectPage, tags: ['!autodocs'], parameters: { songframe: draftDialogOptions(true) } } satisfies Meta<
   typeof ProjectPage
@@ -121,5 +122,30 @@ export const ClipSpend: Story = {
     await expect(card.getByRole('link', { name: 'M08' })).toHaveAttribute('href', '/project/production?shot=M08');
     await expect(card.getByText(spend.incomplete)).toBeVisible();
     await expect(card.getByText(spend.counts({ videos: 9, manual: 2, images: 4, ownImages: 3, rejected: 3 }))).toBeVisible();
+  }
+};
+
+/** Проект-репозиторий Git: блок истории на странице с несохранённым сценарием. */
+const historyOptions = (): StoryOptions => {
+  const base = draftDialogOptions(true);
+  return {
+    ...base,
+    createApi: () => {
+      const overrides = base.createApi!() as ApiOverrides;
+      return { ...overrides, projectHistory: historyApi({ sections: ['scenario'], changedFiles: 1 }) };
+    }
+  };
+};
+
+export const ProjectHistory: Story = {
+  name: 'История проекта · несохранённый сценарий',
+  tags: ['ci'],
+  parameters: { songframe: historyOptions() },
+  play: async ({ canvasElement }) => {
+    const card = within(await within(canvasElement).findByTestId('project-history'));
+    const history = projectTexts.history;
+    await expect(await card.findByText(history.unsaved({ sections: navigationTexts.pages.scenario, files: 1 }))).toBeVisible();
+    await expect(card.getByRole('button', { name: history.save })).toBeEnabled();
+    await expect(card.getAllByTestId('project-point')).toHaveLength(3);
   }
 };

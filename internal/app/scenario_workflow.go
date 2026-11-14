@@ -1,6 +1,9 @@
 package app
 
 import (
+	"context"
+
+	"songframe/internal/projectgit"
 	"songframe/internal/scenarioworkflow"
 	"songframe/internal/wire"
 )
@@ -28,6 +31,8 @@ func (s *ScenarioWorkflowService) Start(input scenarioworkflow.StartInput) (scen
 
 // Apply — scenarioWorkflow.apply: проверка и публикация готового предложения.
 func (s *ScenarioWorkflowService) Apply(project, id string) (scenarioworkflow.View, error) {
+	// Несохранённое состояние проекта уходит в точку Git до публикации сценария (если проект — репозиторий).
+	projectgit.Before(context.Background(), project, projectgit.OperationScenarioApply)
 	return wire.Done(s.workflow.Apply(project, id))
 }
 

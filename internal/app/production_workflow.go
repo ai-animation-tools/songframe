@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"songframe/internal/projectgit"
 
 	"songframe/internal/agents"
 	"songframe/internal/productionworkflow"
@@ -46,6 +47,7 @@ func (s *ProductionWorkflowService) Start(ctx context.Context, input productionw
 // к агенту здесь не проверяется: ответ уже получен; доступ к провайдеру видео проверяется внутри
 // при подготовке запроса.
 func (s *ProductionWorkflowService) Apply(ctx context.Context, project, shot, packageDir, id string) (productionworkflow.View, error) {
+	projectgit.Before(ctx, project, projectgit.OperationProductionApply)
 	return wire.Done(s.workflow.Apply(ctx, project, shot, packageDir, id))
 }
 

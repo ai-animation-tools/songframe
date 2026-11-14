@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"songframe/internal/projectgit"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 
@@ -109,6 +110,7 @@ func (s *MontageService) Apply(project string, draft json.RawMessage) (jobs.Info
 	if err != nil {
 		return jobs.Info{}, err
 	}
+	projectgit.Before(context.Background(), project, projectgit.OperationMontageApply)
 	return wire.Done(s.montage.Apply(project, value))
 }
 

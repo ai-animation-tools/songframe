@@ -1,10 +1,17 @@
 /** Строка показывает проверки и управляемый вход без открытия браузера или вызова провайдера. */
+import { environmentTexts } from '@shared/texts/environment';
 import { providerTexts } from '@shared/texts/providers';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { List } from '@mui/material';
 import { EnvironmentCheckRow } from './EnvironmentCheckRow';
-import { ENVIRONMENT_STORY_LOGIN_URL, ENVIRONMENT_STORY_LONG_PATH, EnvironmentProviderStory, environmentCheck } from '../../../testing/environmentStories';
+import {
+  ENVIRONMENT_STORY_LOGIN_URL,
+  ENVIRONMENT_STORY_LONG_PATH,
+  EnvironmentProviderStory,
+  environmentCheck,
+  environmentExternalCheck
+} from '../../../testing/environmentStories';
 
 const meta: Meta<typeof EnvironmentCheckRow> = {
   title: 'Среда/Строка проверки',
@@ -60,6 +67,26 @@ export const OptionalNeutral: Story = {
     await expect(canvas.getByText('—')).toBeVisible();
     await expect(canvas.getByText('Git не установлен.')).toBeVisible();
     await expect(canvas.queryByRole('progressbar')).not.toBeInTheDocument();
+  }
+};
+export const GitLfsMissing: Story = {
+  name: 'Git LFS не установлен · нейтральное состояние',
+  args: { category: 'external', check: environmentExternalCheck('git-lfs', { ok: false, detail: environmentTexts.gitLfsMissing }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText('Git LFS')).toBeVisible();
+    await expect(canvas.getByText('—')).toBeVisible();
+    await expect(canvas.getByText(environmentTexts.gitLfsMissing)).toBeVisible();
+    await expect(canvas.getByText(environmentTexts.gitLfsHint)).toBeVisible();
+  }
+};
+export const GitLfsAvailable: Story = {
+  name: 'Git LFS доступен · версия программы',
+  args: { category: 'external', check: environmentExternalCheck('git-lfs') },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText('git-lfs/3.4.1 (GitHub; linux amd64; go 1.22.2)')).toBeVisible();
+    await expect(canvas.queryByText('—')).not.toBeInTheDocument();
   }
 };
 export const LongPath: Story = {

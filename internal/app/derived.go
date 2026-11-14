@@ -1,7 +1,9 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
+	"songframe/internal/projectgit"
 
 	"songframe/internal/derivedworkflow"
 	"songframe/internal/jobs"
@@ -47,5 +49,6 @@ func (s *DerivedShotService) Build(project, shot string, recipe json.RawMessage)
 // Accept — derivedShots:accept: задание приёмки показанной свежей пробы. replace подтверждает
 // замену уже принятого комплекта.
 func (s *DerivedShotService) Accept(project, shot, previewID, resultToken string, replace bool) (*derivedworkflow.View, error) {
+	projectgit.Before(context.Background(), project, projectgit.OperationDerivedAccept)
 	return wire.Done(s.workflow.Accept(project, shot, previewID, resultToken, replace))
 }

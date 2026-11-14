@@ -27,8 +27,14 @@ import type {
   PackageView,
   SpeechPlan,
   AcceptedKit,
+  ProjectCheckpointOperation,
+  ProjectHistoryStatus,
+  ProjectPoint,
+  ProjectRestoreResult,
+  ProjectScenarioComparison,
   PromptLogRecord,
   PromptLogSummary,
+  RestorableSection,
   ShotSpend,
   ProjectSpend,
   SpendRef,
@@ -264,6 +270,20 @@ export interface Api {
   };
   dashboard: {
     view(project: string): Promise<DashboardView>;
+  };
+  projectHistory: {
+    /** Git проекта: несохранённое по разделам и последняя точка; без Git — available=false. */
+    status(project: string): Promise<ProjectHistoryStatus>;
+    /** «Сохранить точку»: коммит всех изменений с подписью; без изменений ничего не создаёт. */
+    save(project: string, message: string): Promise<ProjectHistoryStatus>;
+    /** Автоматическая точка перед операцией frontend; сбой Git попадает в status.autoError. */
+    checkpoint(project: string, operation: ProjectCheckpointOperation): Promise<void>;
+    /** Последние точки от новых к старым. */
+    points(project: string): Promise<ProjectPoint[]>;
+    /** Возврат файлов-источников раздела к точке; текущее состояние сначала сохраняется точкой. */
+    restore(project: string, point: string, section: RestorableSection): Promise<ProjectRestoreResult>;
+    /** Сравнение сценария точки с текущим в терминах планов. */
+    compareScenario(project: string, point: string): Promise<ProjectScenarioComparison>;
   };
   promptLog: {
     /** Отправки проекта агенту и сервисам генерации, от новых к старым (plan/prompt-log). */

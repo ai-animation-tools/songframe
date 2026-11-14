@@ -36,6 +36,7 @@ function bindings(productionWorkflow: Record<string, unknown>): Bindings {
     dashboard: missing,
     animatic: missing,
     promptLog: missing,
+    projectHistory: missing,
     montage: missing,
     montageWindow: missing,
     derivedShots: missing,

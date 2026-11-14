@@ -18,6 +18,7 @@ import (
 	"regexp"
 	"strings"
 
+	"songframe/internal/filedigest"
 	"songframe/internal/sceneregistry"
 	"songframe/internal/toolrt"
 )
@@ -123,6 +124,16 @@ func Descriptors(value any, visit func(*toolrt.Dict) error) error {
 		}
 	}
 	return nil
+}
+
+// ProjectPath — путь файла path для сообщений: относительно корня проекта root через «/», а если
+// файл вне root — как есть.
+func ProjectPath(path, root string) string {
+	relative, err := toolrt.RelativeTo(path, root)
+	if err != nil {
+		return path
+	}
+	return filepath.ToSlash(relative)
 }
 
 // FileSHA256 — SHA-256 файла потоком. Ошибка открытия — OSError.
@@ -395,6 +406,10 @@ func ValidatePackage(path, shotID, root string) (*toolrt.Dict, error) {
 			changed = !toolrt.Equal(digest, descriptor.Value("sha256"))
 		}
 		if changed {
+			// Указатель Git LFS вместо медиа — не правка комплекта, а незагруженное содержимое клона.
+			if text, ok := filedigest.LFSPointerProblem(source, ProjectPath(source, root)); ok {
+				return toolrt.New(toolrt.ValueError, text)
+			}
 			shot, err := item(document, "shot")
 			if err != nil {
 				return err

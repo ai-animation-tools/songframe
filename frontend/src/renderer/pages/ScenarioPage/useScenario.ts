@@ -274,6 +274,8 @@ export function useScenario() {
     scaffoldRunning.current = true;
     setBusy(true);
     try {
+      // Состояние до пересчёта сохраняется точкой Git проекта (если он репозиторий); сбой Git не мешает пересчёту.
+      await window.api.projectHistory.checkpoint(project, 'recalculateBounds');
       const result = await window.api.tools.run(project, 'scene_scaffold', ['--dry-run', '--json']);
       if (result.code !== 0) throw new Error((result.stderr || result.stdout).trim().split('\n').slice(-2).join(' '));
       const outcome = recalculateSceneBounds(scenes, JSON.parse(result.stdout) as ScenesFile, {

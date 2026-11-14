@@ -7,6 +7,7 @@ import (
 	"math"
 	"os/exec"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -22,6 +23,9 @@ import (
 const (
 	textGitLabel        = "Git"
 	textGitHint         = "Приложению не нужен: все страницы и производство работают без него. Если Git установлен, новый проект сразу создаётся репозиторием, чтобы при желании вести историю версий клипа."
+	textGitLfsLabel     = "Git LFS"
+	textGitLfsHint      = "Приложению не нужен. Если Git LFS установлен, новый проект хранит видео, аудио и изображения в Git через LFS, а не в обычной истории."
+	textGitLfsMissing   = "Git LFS не установлен."
 	textVersionChecking = "Проверяется версия"
 )
 
@@ -367,7 +371,7 @@ func (l *Layer) CancelLogin(provider string) {
 // CheckEnvironment — строки страницы «Среда» с прогрессом.
 // onProgress получает каждую строку до и во время проверки; одновременные вызовы ждут одну
 // проверку, поздний подписчик сначала получает последние состояния строк. Возвращает итог в
-// порядке показа. Строки — платные провайдеры и Git; программы и модели проверяет страница
+// порядке показа. Строки — платные провайдеры, Git и Git LFS; программы и модели проверяет страница
 // «Компоненты».
 func (l *Layer) CheckEnvironment(ctx context.Context, onProgress func(mediaapi.EnvironmentCheck)) ([]mediaapi.EnvironmentCheck, error) {
 	l.mu.Lock()
@@ -429,7 +433,7 @@ func (l *Layer) CheckEnvironment(ctx context.Context, onProgress func(mediaapi.E
 }
 
 // runEnvironment выполняет одну проверку среды. Строки платных провайдеров задают их адаптеры
-// (одинаковая строка показывается один раз), Git проверяется версией программы.
+// (одинаковая строка показывается один раз), Git и Git LFS проверяются версией программы.
 func (l *Layer) runEnvironment(progress func(mediaapi.EnvironmentCheck)) []mediaapi.EnvironmentCheck {
 	environments := []mediaapi.Environment{}
 	for _, paid := range PaidAdapters() {
@@ -450,6 +454,9 @@ func (l *Layer) runEnvironment(progress func(mediaapi.EnvironmentCheck)) []media
 	external := true
 	checks = append(checks, mediaapi.EnvironmentCheck{
 		ID: "git", Label: textGitLabel, Hint: textGitHint, ProductionOnly: true, Detail: mediaapi.TextEnvironmentWaiting,
+		Status: "pending", External: &external,
+	}, mediaapi.EnvironmentCheck{
+		ID: "git-lfs", Label: textGitLfsLabel, Hint: textGitLfsHint, ProductionOnly: true, Detail: mediaapi.TextEnvironmentWaiting,
 		Status: "pending", External: &external,
 	})
 	var mu sync.Mutex
@@ -482,14 +489,18 @@ func (l *Layer) runEnvironment(progress func(mediaapi.EnvironmentCheck)) []media
 		}
 	}
 	var wait sync.WaitGroup
-	wait.Add(1)
-	go func() {
-		defer wait.Done()
-		detail := textVersionChecking
-		update("git", mediaapi.EnvironmentUpdate{Status: "running", Detail: &detail})
-		ok, output, elapsed := l.versionProbe()
-		update("git", mediaapi.EnvironmentUpdate{Status: "done", OK: &ok, Detail: &output, ElapsedMs: &elapsed})
-	}()
+	probe := func(id string, run func() (bool, string, int)) {
+		wait.Add(1)
+		go func() {
+			defer wait.Done()
+			detail := textVersionChecking
+			update(id, mediaapi.EnvironmentUpdate{Status: "running", Detail: &detail})
+			ok, output, elapsed := run()
+			update(id, mediaapi.EnvironmentUpdate{Status: "done", OK: &ok, Detail: &output, ElapsedMs: &elapsed})
+		}()
+	}
+	probe("git", l.versionProbe)
+	probe("git-lfs", l.lfsProbe)
 	for _, environment := range environments {
 		if environment.Run == nil {
 			continue
@@ -506,18 +517,19 @@ func (l *Layer) runEnvironment(progress func(mediaapi.EnvironmentCheck)) []media
 	return append([]mediaapi.EnvironmentCheck(nil), checks...)
 }
 
-// versionProbe — `git --version` с пределом commandTimeout. Успех — первая непустая из stdout и
-// stderr без крайних пробелов; отсутствие программы и истёкший предел — понятные тексты.
-func (l *Layer) versionProbe() (bool, string, int) {
-	command := l.options.Git
-	if command == "" {
-		command = "git"
+// gitCommand — программа Git строки «Среды»: Options.Git либо git из PATH.
+func (l *Layer) gitCommand() string {
+	if l.options.Git != "" {
+		return l.options.Git
 	}
-	started := time.Now()
-	result, err := process.Run(context.Background(), process.Command{
-		Path: command, Args: []string{"--version"}, Timeout: commandTimeout, StdoutLimit: 64 * 1024, StderrLimit: 64 * 1024,
-	})
-	elapsed := int(math.Round(float64(time.Since(started).Microseconds()) / 1000))
+	return "git"
+}
+
+// versionProbe — `git --version` с пределом commandTimeout. Успех — весь вывод (stdout, иначе
+// stderr) без крайних пробелов; отсутствие программы и истёкший предел — понятные тексты.
+func (l *Layer) versionProbe() (bool, string, int) {
+	command := l.gitCommand()
+	result, elapsed, err := runVersion(command, "--version")
 	stdout, stderr := string(result.Stdout), string(result.Stderr)
 	if err == nil {
 		output := stdout
@@ -526,16 +538,66 @@ func (l *Layer) versionProbe() (bool, string, int) {
 		}
 		return true, dynvalue.Trim(output), elapsed
 	}
-	var start *process.StartError
-	switch {
-	case errors.Is(err, process.ErrTimeout):
-		return false, textCommandTimedOut(commandTimeout), elapsed
-	case errors.As(err, &start) && (errors.Is(start.Err, exec.ErrNotFound) || errors.Is(start.Err, fs.ErrNotExist)):
-		return false, textCommandNotFound(command), elapsed
+	if text, known := startProblem(err, command); known {
+		return false, text, elapsed
 	}
 	if message := dynvalue.Trim(stderr); message != "" {
 		return false, message, elapsed
 	}
 	// Команда завершилась с ошибкой и ничего не написала в stderr: деталь называет саму команду.
 	return false, "Команда завершилась с ошибкой: " + command + " --version", elapsed
+}
+
+// lfsProbe — `git lfs version` той же программой Git: так проверяется именно то, что выполнит
+// создание проекта. Успех — первая непустая строка вывода. Ненулевой код при найденном git
+// означает, что подкоманды lfs нет (git пишет «'lfs' is not a git command»): деталь —
+// textGitLfsMissing вместо английского вывода git. Отсутствие самого git и истёкший предел —
+// те же тексты, что у строки Git.
+func (l *Layer) lfsProbe() (bool, string, int) {
+	command := l.gitCommand()
+	result, elapsed, err := runVersion(command, "lfs", "version")
+	if err == nil {
+		output := string(result.Stdout)
+		if dynvalue.Trim(output) == "" {
+			output = string(result.Stderr)
+		}
+		return true, firstLine(output), elapsed
+	}
+	if text, known := startProblem(err, command); known {
+		return false, text, elapsed
+	}
+	return false, textGitLfsMissing, elapsed
+}
+
+// runVersion запускает проверку версии с пределом commandTimeout и захватом обоих потоков;
+// elapsed — длительность в миллисекундах.
+func runVersion(command string, args ...string) (process.Result, int, error) {
+	started := time.Now()
+	result, err := process.Run(context.Background(), process.Command{
+		Path: command, Args: args, Timeout: commandTimeout, StdoutLimit: 64 * 1024, StderrLimit: 64 * 1024,
+	})
+	return result, int(math.Round(float64(time.Since(started).Microseconds()) / 1000)), err
+}
+
+// startProblem — понятный текст для истёкшего предела и ненайденной программы; known=false для
+// остальных ошибок, которые разбирает вызывающий.
+func startProblem(err error, command string) (string, bool) {
+	var start *process.StartError
+	switch {
+	case errors.Is(err, process.ErrTimeout):
+		return textCommandTimedOut(commandTimeout), true
+	case errors.As(err, &start) && (errors.Is(start.Err, exec.ErrNotFound) || errors.Is(start.Err, fs.ErrNotExist)):
+		return textCommandNotFound(command), true
+	}
+	return "", false
+}
+
+// firstLine — первая непустая строка текста без крайних пробелов; "" для пустого текста.
+func firstLine(text string) string {
+	for _, line := range strings.Split(text, "\n") {
+		if line = dynvalue.Trim(line); line != "" {
+			return line
+		}
+	}
+	return ""
 }

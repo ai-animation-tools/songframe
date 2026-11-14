@@ -295,6 +295,7 @@ func run() error {
 		application.NewService(shell.NewDashboardService(scenarioWorkflow)),
 		application.NewService(shell.NewAnimaticService(jobManager, scenarioWorkflow)),
 		application.NewService(shell.NewPromptLogService()),
+		application.NewService(shell.NewProjectHistoryService()),
 		application.NewService(shell.NewDerivedShotService(jobManager)),
 		// Второе окно плеера монтажа: одно окно у одного владельца, положение — в каталоге состояния.
 		application.NewService(montageWindow),

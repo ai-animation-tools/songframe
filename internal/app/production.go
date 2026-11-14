@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"songframe/internal/projectgit"
 
 	"songframe/internal/agents"
 	"songframe/internal/dashboard"
@@ -290,6 +291,7 @@ func (s *ProductionService) Accept(project, shot, packageDir string, options pro
 	if err := s.idle(project, packageDir); err != nil {
 		return jobs.Info{}, err
 	}
+	projectgit.Before(context.Background(), project, projectgit.OperationShotAccept)
 	return wire.Done(s.production.Accept(project, shot, packageDir, options))
 }
 

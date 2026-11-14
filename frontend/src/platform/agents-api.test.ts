@@ -35,6 +35,7 @@ function bindings(services: { agents?: Record<string, unknown>; ai?: Record<stri
     dashboard: missing,
     animatic: missing,
     promptLog: missing,
+    projectHistory: missing,
     montage: missing,
     montageWindow: missing,
     derivedShots: missing,

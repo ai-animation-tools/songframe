@@ -8,3 +8,4 @@ export { NextStepCard } from './NextStepCard';
 export { ProjectChecksCard } from './ProjectChecksCard';
 export { EditBundleCard } from './EditBundleCard';
 export { ProjectSpendCard } from './ProjectSpendCard';
+export { ProjectHistoryCard } from './ProjectHistoryCard';

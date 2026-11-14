@@ -1,6 +1,6 @@
 // Package newproject создаёт папку клипа из встроенного шаблона: проверка формы «Новый проект»,
-// копирование шаблона с подстановкой плейсхолдеров и необязательный git init. Открытие созданного
-// проекта и история остаются у сервиса проектов.
+// копирование шаблона с подстановкой плейсхолдеров и необязательный git init с Git LFS. Открытие
+// созданного проекта и история остаются у сервиса проектов.
 //
 // Файлы, подстановки и тексты проблем зафиксированы эталонами testdata/golden/project-create.
 // Шаблон собирается во временной соседней папке и переносится на место одним rename, поэтому сбой
@@ -42,7 +42,8 @@ func parentMissing(path string) string {
 	return "Родительская папка не существует: " + path
 }
 
-// GitFailedFile — служебный файл, который остаётся в проекте, если git есть, но init не удался.
+// GitFailedFile — служебный файл, который остаётся в проекте, если git есть, но git init или
+// включение Git LFS (git lfs install --local) не удались.
 const GitFailedFile = "GIT-INIT-FAILED.txt"
 
 // Input — CreateProjectInput контракта: название, абсолютный путь новой папки и необязательное имя MP4.
@@ -114,11 +115,11 @@ func Validate(input Input) []string {
 }
 
 // Create проверяет ввод, копирует шаблон в новую папку и, если в системе есть git, делает её
-// репозиторием (git init -q). Возвращает абсолютный путь проекта; открывает его вызывающий.
+// репозиторием (git init -q) с включённым Git LFS, если установлен и он. Возвращает абсолютный путь проекта; открывает его вызывающий.
 //
 // Ошибка проверки — проблемы формы через пробел; в этом случае ничего не создаётся. Отсутствие
-// git не ошибка; другой сбой git init записывается в GIT-INIT-FAILED.txt внутри проекта и тоже не
-// отменяет создание.
+// git или git-lfs не ошибка; другой сбой git init или git lfs install записывается в
+// GIT-INIT-FAILED.txt внутри проекта и тоже не отменяет создание.
 func Create(ctx context.Context, template fs.FS, input Input) (string, error) {
 	if problems := Validate(input); len(problems) > 0 {
 		return "", errors.New(strings.Join(problems, " "))
@@ -182,30 +183,64 @@ func stagingDir(target string) (string, error) {
 	}
 }
 
-// initGit выполняет git init -q в папке проекта. Git необязателен: если программы нет,
-// проект остаётся обычной папкой. Запуск идёт через общий process.Run (без консоли в Windows).
+// initGit выполняет git init -q в папке проекта и, если установлен Git LFS, включает его в новом
+// репозитории (git lfs install --local): медиа по .gitattributes шаблона сразу идут через LFS, даже
+// если пользователь не настраивал LFS глобально. Git и Git LFS необязательны: без git проект
+// остаётся обычной папкой, без git-lfs — обычным репозиторием, где .gitattributes ни на что не
+// влияет. Запуск идёт через общий process.Run (без консоли в Windows).
+//
+// Сбой любого шага не отменяет создание проекта: причина записывается в единственную служебную
+// заметку GitFailedFile. Отдельный файл для LFS не заводится — пользователь ищет причину
+// неудачной настройки Git в одном месте; при сбое git init шаг LFS не выполняется.
 func initGit(ctx context.Context, target string) {
 	git, err := exec.LookPath("git")
 	if err != nil {
 		return
 	}
-	result, err := process.Run(ctx, process.Command{Path: git, Args: []string{"init", "-q", target}, Name: "git", StderrLimit: 64 << 10})
-	if err == nil {
+	reason, missing := runGit(ctx, process.Command{Path: git, Args: []string{"init", "-q", target}, Name: "git"})
+	if missing {
 		return
+	}
+	if reason != "" {
+		writeGitNote(target, "git init не удался: "+reason)
+		return
+	}
+	if _, err := exec.LookPath("git-lfs"); err != nil {
+		return
+	}
+	reason, missing = runGit(ctx, process.Command{Path: git, Args: []string{"lfs", "install", "--local"}, Dir: target, Name: "git"})
+	if reason != "" && !missing {
+		writeGitNote(target, "git lfs install --local не удался: "+reason)
+	}
+}
+
+// runGit запускает команду git с захватом хвоста stderr. Пустая причина — успех; missing — программа
+// исчезла между поиском и запуском (это не сбой, а отсутствие git). Иначе причина — stderr, текст
+// ошибки запуска или «неизвестная ошибка».
+func runGit(ctx context.Context, command process.Command) (reason string, missing bool) {
+	command.StderrLimit = 64 << 10
+	result, err := process.Run(ctx, command)
+	if err == nil {
+		return "", false
 	}
 	var start *process.StartError
 	if errors.As(err, &start) && errors.Is(start.Err, fs.ErrNotExist) {
-		return
+		return "", true
 	}
-	reason := string(result.Stderr)
+	reason = string(result.Stderr)
 	if reason == "" {
 		reason = err.Error()
 	}
 	if reason == "" {
 		reason = "неизвестная ошибка"
 	}
-	// Служебная заметка в папке проекта; создание проекта при этом не отменяется.
-	_ = os.WriteFile(filepath.Join(target, GitFailedFile), []byte("git init не удался: "+reason+"\n"), 0o666)
+	return reason, false
+}
+
+// writeGitNote оставляет служебную заметку GitFailedFile в папке проекта; ошибка записи
+// игнорируется, потому что проект уже создан и открывается без неё.
+func writeGitNote(target, text string) {
+	_ = os.WriteFile(filepath.Join(target, GitFailedFile), []byte(text+"\n"), 0o666)
 }
 
 // Placeholders — значения {{ключ}} шаблона: project_name, animatic_video и fps.

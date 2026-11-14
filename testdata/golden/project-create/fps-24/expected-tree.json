@@ -18,8 +18,9 @@
     "source/vehicles"
   ],
   "files": {
+    ".gitattributes": "995f7832b99611947ccdd4a276ec07d311d5c7e64c18346d929a22b58b2c065b",
     ".gitignore": "a2ea3a218565954a700f285a9428fee885d705afdd73fadb1eeb908b3f424a1a",
-    "README.md": "a207906cd02c2b17fd74654b0bd0408ef15dfe8aac82efdcbc21c4320b0dbee5",
+    "README.md": "a22e58a169339e650ca0fb6465c06d93d85967dedf8d3116a3a959a90c93a03d",
     "assets/README.md": "e7b9112501df4a4067d922787d96a3fcaa06b9d447e06efc34cc5a7ea3057c14",
     "assets/shots/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "plan/README.md": "16a68809f9a75440086e877cd1fa80afe78c9b607e4206ebbf7763a3aecc5407",

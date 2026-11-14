@@ -1,7 +1,9 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
+	"songframe/internal/projectgit"
 
 	"songframe/internal/components"
 	"songframe/internal/dynvalue"
@@ -87,6 +89,7 @@ func (s *TimingService) DownloadSongModels() (jobs.Info, error) {
 
 // Start запускает разметку по выбранному вокалу.
 func (s *TimingService) Start(project string, options songtiming.GenerateOptions) (jobs.Info, error) {
+	projectgit.Before(context.Background(), project, projectgit.OperationTimingAlign)
 	return wire.Done(s.local.Start(project, options))
 }
 

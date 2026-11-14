@@ -6,7 +6,7 @@ Linux AppImage включает PNG как значок desktop entry; исхо�
 
 ## Шаблон проекта
 
-`templates/project/` — шаблон новой папки клипа вместе с `.gitignore` и `.gitkeep`. Правки шаблона вносятся только здесь и вместе с эталонами `testdata/golden/project-create`: шаблон меняет результат программы.
+`templates/project/` — шаблон новой папки клипа вместе с `.gitignore`, `.gitkeep` и `.gitattributes`. `.gitattributes` направляет видео, аудио и изображения клипа в Git LFS; `internal/newproject` включает LFS в новом репозитории (`git lfs install --local`), если Git LFS установлен. В самом репозитории SongFrame этот файл действует только на папку шаблона, поэтому медиа в шаблон не кладут. Правки шаблона вносятся только здесь и вместе с эталонами `testdata/golden/project-create`: шаблон меняет результат программы.
 
 Шаблон встраивается в бинарник (`resources.go`, `//go:embed all:templates/project`; префикс `all:` нужен для скрытых файлов) и доступен через `resources.ProjectTemplate()` как `fs.FS` с корнем шаблона. Копирует его с подстановкой `{{project_name}}`, `{{animatic_video}}` и `{{fps}}` (частота кадров числом) пакет `internal/newproject`; плейсхолдеры подставляются только в текстовые файлы (`.md`, `.json`, `.txt`, `.yml`, `.yaml`, `.gitignore`, `.gitkeep`) и без экранирования JSON.
 

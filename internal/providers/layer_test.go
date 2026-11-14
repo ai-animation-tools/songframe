@@ -156,7 +156,8 @@ func TestCheckEnvironmentRowsAndGit(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("поддельный git — shell-скрипт")
 	}
-	if err := os.WriteFile(git, []byte("#!/bin/sh\necho '  git version 2.43.0  '\n"), 0o755); err != nil {
+	script := "#!/bin/sh\nif [ \"$1\" = lfs ]; then printf '\\ngit-lfs/3.4.1 (GitHub; linux amd64; go 1.22.2)\\nлишняя строка\\n'; exit 0; fi\necho '  git version 2.43.0  '\n"
+	if err := os.WriteFile(git, []byte(script), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	layer := NewLayer(Options{Git: git})
@@ -174,30 +175,58 @@ func TestCheckEnvironmentRowsAndGit(t *testing.T) {
 	for _, check := range checks {
 		ids = append(ids, check.ID)
 	}
-	// Kling и test — строки платных провайдеров в порядке реестра, затем Git.
-	if strings.Join(ids, ",") != "kling,test,git" {
+	// Kling и test — строки платных провайдеров в порядке реестра, затем Git и Git LFS.
+	if strings.Join(ids, ",") != "kling,test,git,git-lfs" {
 		t.Fatalf("строки %v", ids)
 	}
-	last := checks[2]
-	if !last.OK || last.Detail != "git version 2.43.0" || last.Status != "done" || last.External == nil || !*last.External || last.ElapsedMs == nil {
-		t.Fatalf("git %+v", last)
+	gitRow := checks[2]
+	if !gitRow.OK || gitRow.Detail != "git version 2.43.0" || gitRow.Status != "done" || gitRow.External == nil || !*gitRow.External || gitRow.ElapsedMs == nil {
+		t.Fatalf("git %+v", gitRow)
 	}
-	if len(progress) < 6 || progress[0].Status != "pending" {
+	// Деталь Git LFS — первая непустая строка вывода git lfs version.
+	lfs := checks[3]
+	if !lfs.OK || lfs.Detail != "git-lfs/3.4.1 (GitHub; linux amd64; go 1.22.2)" || lfs.Label != "Git LFS" || lfs.Hint != textGitLfsHint ||
+		!lfs.ProductionOnly || lfs.External == nil || !*lfs.External || lfs.Status != "done" || lfs.ElapsedMs == nil {
+		t.Fatalf("git lfs %+v", lfs)
+	}
+	if len(progress) < 8 || progress[0].Status != "pending" {
 		t.Fatalf("прогресс %+v", progress)
 	}
-	layer = NewLayer(Options{Git: filepath.Join(dir, "нет")})
+	missing := filepath.Join(dir, "нет")
+	layer = NewLayer(Options{Git: missing})
 	checks, _ = layer.CheckEnvironment(context.Background(), nil)
-	if checks[2].OK || checks[2].Detail != "Команда не найдена: "+filepath.Join(dir, "нет") {
+	if checks[2].OK || checks[2].Detail != "Команда не найдена: "+missing {
 		t.Fatalf("нет git: %+v", checks[2])
 	}
+	if checks[3].OK || checks[3].Detail != "Команда не найдена: "+missing {
+		t.Fatalf("git lfs без git: %+v", checks[3])
+	}
+	// git есть, подкоманды lfs нет: git пишет английскую ошибку, строка показывает понятный текст.
 	failing := filepath.Join(dir, "failing")
-	if err := os.WriteFile(failing, []byte("#!/bin/sh\nexit 3\n"), 0o755); err != nil {
+	if err := os.WriteFile(failing, []byte("#!/bin/sh\necho \"git: '$1' is not a git command.\" >&2\n[ \"$1\" = lfs ] && exit 1\nexit 3\n"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	layer = NewLayer(Options{Git: failing})
 	checks, _ = layer.CheckEnvironment(context.Background(), nil)
-	if checks[2].Detail != "Команда завершилась с ошибкой: "+failing+" --version" {
+	if checks[3].OK || checks[3].Detail != "Git LFS не установлен." {
+		t.Fatalf("нет git lfs: %+v", checks[3])
+	}
+	silent := filepath.Join(dir, "silent")
+	if err := os.WriteFile(silent, []byte("#!/bin/sh\nexit 3\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	layer = NewLayer(Options{Git: silent})
+	checks, _ = layer.CheckEnvironment(context.Background(), nil)
+	if checks[2].Detail != "Команда завершилась с ошибкой: "+silent+" --version" {
 		t.Fatalf("сбой git: %q", checks[2].Detail)
+	}
+}
+
+func TestFirstLine(t *testing.T) {
+	for text, want := range map[string]string{"": "", "\n  \n": "", " a \nb": "a", "\r\n x\r\ny": "x"} {
+		if got := firstLine(text); got != want {
+			t.Errorf("%q: %q, ожидалось %q", text, got, want)
+		}
 	}
 }
 
@@ -378,7 +407,7 @@ func TestTextsMatchFrontend(t *testing.T) {
 			textRequestChanged, textRequestInputsDamaged, textRequestInputChanged, textAlreadySubmitted, textOriginalsIncomplete, textOriginalListDamaged,
 			textOriginalChanged, textOriginalHashMismatch, textInvalidImage, textImageExtensionMismatch, textInvalidVideo},
 		"application.ts": {textPaidExecutorMissing, textProviderUnsupported, textMediaKindUnknown, textImageAgentUnsupported, textImageExecutorMissing},
-		"environment.ts": {textGitLabel, textGitHint, textVersionChecking, mediaapi.TextEnvironmentWaiting},
+		"environment.ts": {textGitLabel, textGitHint, textGitLfsLabel, textGitLfsHint, textGitLfsMissing, textVersionChecking, mediaapi.TextEnvironmentWaiting},
 		"providers.ts":   {mediaapi.TextBundledClient},
 	}
 	for name, texts := range files {

@@ -31,22 +31,29 @@ export function environmentCheck(overrides: Partial<EnvironmentCheck> = {}): Env
   };
 }
 
-/** Необязательные зависимости не мешают успешному итогу основных ресурсов. */
+/** Строка необязательной внешней программы Git или Git LFS в форме, которую отдаёт проверка среды Go. */
+export function environmentExternalCheck(id: 'git' | 'git-lfs', overrides: Partial<EnvironmentCheck> = {}): EnvironmentCheck {
+  const lfs = id === 'git-lfs';
+  return environmentCheck({
+    id,
+    label: lfs ? environmentTexts.gitLfsLabel : environmentTexts.gitLabel,
+    detail: lfs ? 'git-lfs/3.4.1 (GitHub; linux amd64; go 1.22.2)' : 'git version 2.43.0',
+    hint: lfs ? environmentTexts.gitLfsHint : environmentTexts.gitHint,
+    bundled: false,
+    external: true,
+    productionOnly: true,
+    elapsedMs: 12,
+    ...overrides
+  });
+}
+
+/** Необязательные зависимости не мешают успешному итогу основных ресурсов: Git есть, Git LFS не установлен. */
 export function environmentChecks(): EnvironmentCheck[] {
   return [
     environmentCheck(),
     environmentCheck({ id: 'ffmpeg', label: 'Встроенный FFmpeg', detail: 'FFmpeg 7.1 · resources/media/ffmpeg', productionOnly: true, elapsedMs: 97 }),
-    environmentCheck({
-      id: 'git',
-      label: 'Git',
-      ok: false,
-      detail: 'Программа не найдена.',
-      hint: environmentTexts.gitHint,
-      bundled: false,
-      external: true,
-      productionOnly: true,
-      elapsedMs: 12
-    })
+    environmentExternalCheck('git'),
+    environmentExternalCheck('git-lfs', { ok: false, detail: environmentTexts.gitLfsMissing, elapsedMs: 18 })
   ];
 }
 

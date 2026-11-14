@@ -1,9 +1,13 @@
 package newproject
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -95,5 +99,87 @@ func TestValidateFrameRate(t *testing.T) {
 		if ok != (len(problems) == 0) || (!ok && problems[0] != invalidFrameRate) {
 			t.Fatalf("fps %d: %v", fps, problems)
 		}
+	}
+}
+
+// fakeGit кладёт в пустой PATH поддельный git (и при lfs — git-lfs), который дописывает в журнал
+// «рабочая папка|аргументы»; при FAKE_GIT_FAIL=lfs команда git lfs завершается ошибкой с stderr.
+func fakeGit(t *testing.T, lfs bool) (journal string) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("поддельный git — shell-скрипт")
+	}
+	bin := t.TempDir()
+	journal = filepath.Join(t.TempDir(), "git.log")
+	script := "#!/bin/sh\necho \"$PWD|$*\" >> \"$FAKE_GIT_LOG\"\n" +
+		"if [ \"$1\" = lfs ] && [ \"$FAKE_GIT_FAIL\" = lfs ]; then echo 'lfs: сбой хуков' >&2; exit 2; fi\n"
+	if err := os.WriteFile(filepath.Join(bin, "git"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if lfs {
+		if err := os.WriteFile(filepath.Join(bin, "git-lfs"), []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Setenv("PATH", bin)
+	t.Setenv("FAKE_GIT_LOG", journal)
+	t.Setenv("FAKE_GIT_FAIL", "")
+	return journal
+}
+
+// readJournal — строки журнала поддельного git; отсутствие файла — ни одного вызова.
+func readJournal(t *testing.T, journal string) []string {
+	t.Helper()
+	data, err := os.ReadFile(journal)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	return strings.Split(strings.TrimSpace(string(data)), "\n")
+}
+
+// TestInitGitEnablesLFS — при найденном git-lfs после git init в папке проекта выполняется
+// git lfs install --local, служебная заметка не появляется.
+func TestInitGitEnablesLFS(t *testing.T) {
+	journal := fakeGit(t, true)
+	target := t.TempDir()
+	initGit(context.Background(), target)
+	got := readJournal(t, journal)
+	if len(got) != 2 || !strings.HasSuffix(got[0], "|init -q "+target) || got[1] != target+"|lfs install --local" {
+		t.Fatalf("вызовы git %q", got)
+	}
+	if _, err := os.Stat(filepath.Join(target, GitFailedFile)); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("заметка о сбое: %v", err)
+	}
+}
+
+// TestInitGitWithoutLFS — без git-lfs выполняется только git init: Git LFS необязателен.
+func TestInitGitWithoutLFS(t *testing.T) {
+	journal := fakeGit(t, false)
+	target := t.TempDir()
+	initGit(context.Background(), target)
+	if got := readJournal(t, journal); len(got) != 1 || !strings.HasSuffix(got[0], "|init -q "+target) {
+		t.Fatalf("вызовы git %q", got)
+	}
+	if _, err := os.Stat(filepath.Join(target, GitFailedFile)); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("заметка о сбое: %v", err)
+	}
+}
+
+// TestInitGitLFSFailureNote — сбой git lfs install не отменяет создание: причина из stderr
+// записывается в ту же служебную заметку GitFailedFile.
+func TestInitGitLFSFailureNote(t *testing.T) {
+	fakeGit(t, true)
+	t.Setenv("FAKE_GIT_FAIL", "lfs")
+	target := t.TempDir()
+	initGit(context.Background(), target)
+	data, err := os.ReadFile(filepath.Join(target, GitFailedFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "git lfs install --local не удался: lfs: сбой хуков\n\n"; string(data) != want {
+		t.Fatalf("заметка %q", data)
 	}
 }

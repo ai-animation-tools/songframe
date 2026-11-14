@@ -8,6 +8,10 @@
 import type { Api } from '@shared/api';
 import type {
   AcceptedKit,
+  ProjectHistoryStatus,
+  ProjectPoint,
+  ProjectRestoreResult,
+  ProjectScenarioComparison,
   PromptLogRecord,
   PromptLogSummary,
   ShotSpend,
@@ -161,6 +165,7 @@ export interface Bindings {
   dashboard: () => Promise<typeof import('../../bindings/songframe/internal/app/dashboardservice')>;
   animatic: () => Promise<typeof import('../../bindings/songframe/internal/app/animaticservice')>;
   promptLog: () => Promise<typeof import('../../bindings/songframe/internal/app/promptlogservice')>;
+  projectHistory: () => Promise<typeof import('../../bindings/songframe/internal/app/projecthistoryservice')>;
   montage: () => Promise<typeof import('../../bindings/songframe/internal/app/montageservice')>;
   montageWindow: () => Promise<typeof import('../../bindings/songframe/internal/app/montagewindowservice')>;
   derivedShots: () => Promise<typeof import('../../bindings/songframe/internal/app/derivedshotservice')>;
@@ -194,6 +199,7 @@ export const nativeBindings: Bindings = {
   dashboard: () => import('../../bindings/songframe/internal/app/dashboardservice'),
   animatic: () => import('../../bindings/songframe/internal/app/animaticservice'),
   promptLog: () => import('../../bindings/songframe/internal/app/promptlogservice'),
+  projectHistory: () => import('../../bindings/songframe/internal/app/projecthistoryservice'),
   montage: () => import('../../bindings/songframe/internal/app/montageservice'),
   montageWindow: () => import('../../bindings/songframe/internal/app/montagewindowservice'),
   derivedShots: () => import('../../bindings/songframe/internal/app/derivedshotservice'),
@@ -572,6 +578,18 @@ export function createApi(b: Bindings): Api {
   // Журнал отправок: только чтение plan/prompt-log; Go отдаёт [] вместо null.
   api.promptLog.list = (project) => call('promptLog.list', async () => (await (await b.promptLog()).List(project)) as PromptLogSummary[]);
   api.promptLog.get = (project, id) => call('promptLog.get', async () => ((await (await b.promptLog()).Get(project, id)) ?? null) as PromptLogRecord | null);
+  // История проекта в Git: сохранение и возврат могут идти долго (медиа через Git LFS), поэтому без срока.
+  api.projectHistory.status = (project) =>
+    call('projectHistory.status', async () => (await (await b.projectHistory()).Status(project)) as ProjectHistoryStatus);
+  api.projectHistory.save = (project, message) =>
+    call('projectHistory.save', async () => (await (await b.projectHistory()).Save(project, message)) as ProjectHistoryStatus, false);
+  api.projectHistory.checkpoint = (project, operation) =>
+    call('projectHistory.checkpoint', async () => (await b.projectHistory()).Checkpoint(project, operation), false);
+  api.projectHistory.points = (project) => call('projectHistory.points', async () => (await (await b.projectHistory()).Points(project)) as ProjectPoint[]);
+  api.projectHistory.restore = (project, point, section) =>
+    call('projectHistory.restore', async () => (await (await b.projectHistory()).Restore(project, point, section)) as ProjectRestoreResult, false);
+  api.projectHistory.compareScenario = (project, point) =>
+    call('projectHistory.compareScenario', async () => (await (await b.projectHistory()).CompareScenario(project, point)) as ProjectScenarioComparison);
   api.animatic.view = (project) => call('animatic.view', async () => (await (await b.animatic()).View(project)) as AnimaticView);
   api.animatic.build = (project, planOnly) => call('animatic.build', async () => toJob(await (await b.animatic()).Build(project, planOnly ?? false)));
   api.animatic.fragment = (project, from, to) => call('animatic.fragment', async () => toJob(await (await b.animatic()).Fragment(project, from, to)));

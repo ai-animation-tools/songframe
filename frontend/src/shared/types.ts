@@ -440,6 +440,55 @@ export interface ScenarioSaveImpact {
   shots: ScenarioImpactShot[];
 }
 
+/**
+ * Раздел приложения, к которому относятся файлы проекта в истории Git: страница-владелец
+ * источника, производные представления (`views`) и прочие файлы (`other`).
+ */
+export type ProjectSection =
+  'project' | 'sources' | 'timing' | 'cast' | 'scenario' | 'production' | 'scenes' | 'montage' | 'animatic' | 'prompts' | 'views' | 'other';
+
+/** Разделы, которые можно вернуть к точке: восстанавливаются только их файлы-источники. */
+export type RestorableSection = 'timing' | 'cast' | 'scenario';
+
+/** Точка сохранения проекта — коммит Git. */
+export interface ProjectPoint {
+  id: string;
+  /** Время автора, RFC 3339. */
+  date: string;
+  message: string;
+  /** Разделы, изменённые точкой относительно предыдущей. */
+  sections: ProjectSection[];
+}
+
+/** Git проекта на странице «Проект»; available=false — Git нет или папка не корень репозитория. */
+export interface ProjectHistoryStatus {
+  available: boolean;
+  /** Разделы несохранённых изменений в порядке навигации. */
+  sections: ProjectSection[];
+  changedFiles: number;
+  /** Последняя точка; null в репозитории без коммитов. */
+  head: ProjectPoint | null;
+  /** Почему не создалась последняя автоматическая точка; пусто, если с тех пор точка сохранилась. */
+  autoError: string;
+}
+
+/** Операции frontend, перед которыми приложение само сохраняет точку. */
+export type ProjectCheckpointOperation = 'recalculateBounds';
+
+export interface ProjectRestoreResult {
+  status: ProjectHistoryStatus;
+  /** Почему не пересобрались представления после возврата; сам возврат выполнен. */
+  viewsError: string;
+}
+
+/** Чем сценарий точки отличается от текущего: планы, которые при возврате изменятся или появятся, и исчезнут. */
+export interface ProjectScenarioComparison {
+  /** В точке нет plan/scenes.json. */
+  missing: boolean;
+  shots: ScenarioImpactShot[];
+  removed: string[];
+}
+
 /** frame — только эта опора; following — эта и все следующие генерации опор пакета. */
 export type KeyframeNoteScope = 'frame' | 'following';
 

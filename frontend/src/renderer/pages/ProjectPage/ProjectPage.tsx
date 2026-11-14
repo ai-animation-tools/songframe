@@ -10,6 +10,7 @@ import {
   NextStepCard,
   ProjectChecksCard,
   ProjectHeader,
+  ProjectHistoryCard,
   ProjectProblems,
   ProjectRenameDialog,
   ProjectSettingsCard,
@@ -72,6 +73,7 @@ export function ProjectPage(): ReactElement {
             <NextStepCard status={status} />
             <ProjectChecksCard status={status} />
           </Box>
+          <ProjectHistoryCard project={status.path} version={status} />
           {status.checks.scenes ? <ProjectSpendCard project={status.path} version={status} /> : null}
           {status.checks.scenes && state?.current ? <EditBundleCard project={state.current} /> : null}
         </Stack>

@@ -215,6 +215,14 @@ export function unconfiguredStoryApi(): Api {
     dashboard: {
       view: async () => unconfigured('dashboard.view')
     },
+    projectHistory: {
+      status: async () => ({ available: false, sections: [], changedFiles: 0, head: null, autoError: '' }),
+      save: async () => unconfigured('projectHistory.save'),
+      checkpoint: async () => undefined,
+      points: async () => [],
+      restore: async () => unconfigured('projectHistory.restore'),
+      compareScenario: async () => unconfigured('projectHistory.compareScenario')
+    },
     promptLog: {
       list: async () => [],
       get: async () => null

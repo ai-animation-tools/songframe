@@ -35,6 +35,7 @@ import (
 	"syscall"
 	"time"
 
+	"songframe/internal/filedigest"
 	"songframe/internal/mediacmd"
 	"songframe/internal/projectviews"
 	"songframe/internal/sceneregistry"
@@ -412,6 +413,16 @@ func acceptedEdit(root, folder, manifest string, shot *toolrt.Dict, fps int64) (
 			return "", err
 		}
 		mismatch = !toolrt.Equal(digest, expected)
+		// Указатель Git LFS вместо клипа — незагруженное содержимое клона, а не чужой монтаж.
+		if mismatch {
+			display, err := relative(source, root)
+			if err != nil {
+				display = source
+			}
+			if text, ok := filedigest.LFSPointerProblem(source, display); ok {
+				return "", toolrt.New(toolrt.ValueError, text)
+			}
+		}
 	}
 	if !mismatch {
 		rate, err := item(edit, "fps")

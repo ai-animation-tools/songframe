@@ -1,5 +1,5 @@
 {
-  "description": "Образец: два предупреждения описания, код 0.",
+  "description": "Образец: все герои участвуют в планах, предупреждений нет, код 0.",
   "call": "lint_registry",
   "project": "project",
   "base": "checks-base",

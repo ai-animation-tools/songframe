@@ -63,22 +63,21 @@ func TestListMatchesGolden(t *testing.T) {
 	}
 }
 
-// TestRunAllJournal — «Все проверки» на образце: все пять шагов по порядку, журнал
-// «$ подпись аргументы» + вывод инструмента; strict делает lint неудачным, но
+// TestRunAllJournal — «Все проверки»: на образце все пять шагов по порядку, журнал «$ подпись аргументы» +
+// вывод инструмента. На образце, где один герой не участвует в планах, strict делает lint неудачным, но
 // остальные шаги выполняются, а причина задания — вывод первого неудачного шага.
 func TestRunAllJournal(t *testing.T) {
 	lintCase, lint, _ := sample(t, "lint-registry", "sample")
+	strictCase, strictLint, _ := sample(t, "lint-registry", "strict")
 	_, assets, _ := sample(t, "check-assets", "sample")
 	_, workspace, _ := sample(t, "check-workspace", "sample")
 	_, status, _ := sample(t, "shot-status", "sample")
 	_, views, _ := sample(t, "scene-views", "check-actual")
-	_, next, _ := sample(t, "shot-status", "next")
-	project := lintCase.BuildProject(t)
 	manager := jobs.New(t.TempDir(), jobs.Options{SkipRestore: true})
 	service := checks.New(manager)
 
 	finish := waiter(t, manager)
-	done := finish(service.RunAll(project, checks.Options{}))
+	done := finish(service.RunAll(lintCase.BuildProject(t), checks.Options{}))
 	wantLog := "\n$ Данные планов \n" + lint + "\n$ Карточки и списки --check\n" + views + "\n$ Комплекты планов \n" + assets + "\n$ Порядок в папке проекта \n" + workspace + "\n$ Статусы планов \n" + status
 	if done.Status != jobs.StatusDone || done.Title != "Все проверки" || done.Kind != jobs.KindCheck || done.Log != wantLog {
 		t.Fatalf("задание %+v\n--- журнал\n%s", done, done.Log)
@@ -87,13 +86,24 @@ func TestRunAllJournal(t *testing.T) {
 		t.Fatalf("шаги %+v", done.Steps)
 	}
 
-	done = finish(service.RunAll(project, checks.Options{Strict: true, Next: true}))
-	if done.Status != jobs.StatusFailed || done.Code == nil || *done.Code != 1 || done.Error == nil || *done.Error != strings.TrimSpace(lint) {
+	// Вывод прочих шагов на этом образце эталонами не зафиксирован: проверяется, что они выполнены по порядку.
+	done = finish(service.RunAll(strictCase.BuildProject(t), checks.Options{Strict: true, Next: true}))
+	if done.Status != jobs.StatusFailed || done.Code == nil || *done.Code != 1 || done.Error == nil || *done.Error != strings.TrimSpace(strictLint) {
 		t.Fatalf("strict: %+v", done)
 	}
-	if !strings.HasPrefix(done.Log, "\n$ Данные планов --strict\n"+lint+"\nШаг «Данные планов» завершился с кодом 1.\n") ||
-		!strings.HasSuffix(done.Log, "\n$ Статусы планов --next\n"+next) {
+	if !strings.HasPrefix(done.Log, "\n$ Данные планов --strict\n"+strictLint+"\nШаг «Данные планов» завершился с кодом 1.\n") {
 		t.Fatalf("журнал strict:\n%s", done.Log)
+	}
+	rest := done.Log
+	for _, header := range []string{"\n$ Карточки и списки --check\n", "\n$ Комплекты планов \n", "\n$ Порядок в папке проекта \n", "\n$ Статусы планов --next\n"} {
+		index := strings.Index(rest, header)
+		if index < 0 {
+			t.Fatalf("журнал strict без шага %q:\n%s", header, done.Log)
+		}
+		rest = rest[index+len(header):]
+	}
+	if len(done.Steps) != 5 || done.Steps[0].Status != "failed" || done.Steps[4].Status == "failed" {
+		t.Fatalf("шаги strict %+v", done.Steps)
 	}
 }
 

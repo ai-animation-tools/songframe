@@ -1,5 +1,5 @@
 {
-  "description": "--json --strict.",
+  "description": "--json --strict (герой вне планов).",
   "call": "lint_registry",
   "project": "project",
   "base": "checks-base",

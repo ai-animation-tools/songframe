@@ -467,7 +467,47 @@ func lintCast(root string, scenes any, r *Report) error {
 	return nil
 }
 
-// lintDescription — герои реестра упомянуты в source/description.md.
+// textHeroUnused — предупреждение о герое, которого нет ни в планах, ни в описании клипа.
+func textHeroUnused(title string) string {
+	return "герой «" + title + "» не участвует ни в одном плане и не упоминается в описании клипа: " +
+		"добавьте его в сценарий или описание либо удалите из исходников"
+}
+
+// foldMention приводит текст к виду для поиска упоминания: нижний регистр, «ё» как «е».
+// Имя героя в описании стоит и в начале предложения, и внутри него, и пишется с «е».
+func foldMention(text string) string {
+	return strings.ReplaceAll(strings.ToLower(text), "ё", "е")
+}
+
+// usedReferences — ключи референсов, которые указаны в references хотя бы одного плана.
+// Данные неожиданной формы здесь не ошибка: их показывают схемные проверки реестра.
+func usedReferences(document *toolrt.Dict) map[string]bool {
+	used := map[string]bool{}
+	scenes, err := toolrt.Iter(document.Value("scenes"))
+	if err != nil {
+		return used
+	}
+	for _, scene := range scenes {
+		entry, ok := scene.(*toolrt.Dict)
+		if !ok {
+			continue
+		}
+		keys, err := toolrt.Iter(entry.Value("references"))
+		if err != nil {
+			continue
+		}
+		for _, key := range keys {
+			if name, isString := key.(string); isString {
+				used[name] = true
+			}
+		}
+	}
+	return used
+}
+
+// lintDescription — каждый герой реестра (референс из source/heroes/) участвует в сценарии: указан
+// в references хотя бы одного плана или, пока планов с ним нет, упомянут в source/description.md.
+// Упоминание ищется по первому слову имени без учёта регистра и различия «ё» и «е».
 func lintDescription(root string, data any, r *Report) error {
 	path := toolrt.JoinPath(root, "source", "description.md")
 	document, isDict := data.(*toolrt.Dict)
@@ -478,6 +518,8 @@ func lintDescription(root string, data any, r *Report) error {
 	if err != nil {
 		return err
 	}
+	used := usedReferences(document)
+	text = foldMention(text)
 	referencesValue, _ := get(document, "references", toolrt.NewDict())
 	references, ok := referencesValue.(*toolrt.Dict)
 	if !ok {
@@ -505,8 +547,8 @@ func lintDescription(root string, data any, r *Report) error {
 		if len(words) == 0 {
 			return toolrt.Raise(toolrt.IndexError, "индекс за пределами списка")
 		}
-		if !strings.Contains(text, words[0]) {
-			r.warning("source/description.md", key, "персонаж «"+title+"» из реестра не упомянут в сценарии")
+		if !used[key] && !strings.Contains(text, foldMention(words[0])) {
+			r.warning("source/description.md", key, textHeroUnused(title))
 		}
 	}
 	return nil

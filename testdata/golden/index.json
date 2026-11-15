@@ -2570,7 +2570,7 @@
   {
     "domain": "lint-registry",
     "name": "sample",
-    "description": "Образец: два предупреждения описания, код 0.",
+    "description": "Образец: все герои участвуют в планах, предупреждений нет, код 0.",
     "covers": [
       "lint_description",
       "render"
@@ -2579,7 +2579,7 @@
   {
     "domain": "lint-registry",
     "name": "strict",
-    "description": "--strict: предупреждения — код 1.",
+    "description": "--strict: предупреждение о герое вне планов — код 1.",
     "covers": [
       "--strict"
     ]
@@ -2587,7 +2587,7 @@
   {
     "domain": "lint-registry",
     "name": "json",
-    "description": "--json: errors и warnings.",
+    "description": "--json: errors и warnings (герой вне планов).",
     "covers": [
       "--json"
     ]
@@ -2595,7 +2595,7 @@
   {
     "domain": "lint-registry",
     "name": "json-strict",
-    "description": "--json --strict.",
+    "description": "--json --strict (герой вне планов).",
     "covers": [
       "--json",
       "--strict"
@@ -2844,9 +2844,9 @@
   {
     "domain": "lint-registry",
     "name": "description-mentions",
-    "description": "Описание упоминает героев: предупреждений нет.",
+    "description": "Герой вне планов упомянут в описании в другом регистре и через «ё»: предупреждений нет.",
     "covers": [
-      "первое слово имени в тексте"
+      "упоминание без учёта регистра и «ё»"
     ]
   },
   {

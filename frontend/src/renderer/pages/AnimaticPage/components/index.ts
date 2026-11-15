@@ -4,3 +4,4 @@ export { ShotCard } from './ShotCard';
 export { AnimaticAcceptance } from './AnimaticAcceptance';
 export { AnimaticChapters } from './AnimaticChapters';
 export { AnimaticConfirmDialog } from './AnimaticConfirmDialog';
+export { AnimaticProblems } from './AnimaticProblems';

@@ -21,6 +21,13 @@ const REBUILT_SHA = 'b'.repeat(64);
 export const ANIMATIC_BLOCKED_REASON = applicationTexts.scenarioReviewRequired;
 /** Проблемы свежести устаревшей сборки — фразы Go-сервиса из словаря страницы. */
 export const ANIMATIC_STALE_PROBLEMS = [animaticTexts.main.registryChanged, animaticTexts.main.acceptedEditChanged({ shot: 'M02' })];
+/** Длинный список причин, как после пересоздания карточек: каждая карточка, трек и референс — отдельный вход. */
+export const ANIMATIC_MANY_PROBLEMS = [
+  ...Array.from({ length: 59 }, (_, index) => animaticTexts.main.inputChanged({ name: `plan/animatic/cards/M${String(index + 1).padStart(2, '0')}.png` })),
+  animaticTexts.main.inputChanged({ name: 'source/track.mp3' }),
+  animaticTexts.main.inputChanged({ name: 'source/vehicles/taksi.png' }),
+  animaticTexts.main.registryChanged
+];
 /** Сбой задания, как его сообщает шаг build_animatic. */
 export const ANIMATIC_JOB_ERROR = 'M03: длительность карточки не совпадает с окном плана.';
 
@@ -76,7 +83,7 @@ export const ANIMATIC_SHOTS: AnimaticShot[] = [
   }
 ];
 
-export type AnimaticPageState = 'none' | 'review' | 'accepted' | 'stale' | 'blocked';
+export type AnimaticPageState = 'none' | 'review' | 'accepted' | 'stale' | 'outdated' | 'blocked';
 
 interface AnimaticPageInspection {
   /** Аргумент planOnly каждого вызова animatic.build. */
@@ -134,6 +141,15 @@ function initialView(state: AnimaticPageState): AnimaticView {
         approval: { status: 'approved', approvedSha256: VIDEO_SHA, current: false },
         cardsFresh: false,
         problems: [...ANIMATIC_STALE_PROBLEMS]
+      };
+    // Сборка устарела по многим входам сразу: страница показывает сводку и свёрнутые подробности.
+    case 'outdated':
+      return {
+        built: built(false),
+        shots: structuredClone(ANIMATIC_SHOTS),
+        approval: { status: 'review', approvedSha256: null, current: false },
+        cardsFresh: true,
+        problems: [...ANIMATIC_MANY_PROBLEMS]
       };
     // Как AnimaticService.View при неутверждённом сценарии: сборка несвежая, причина — blockedReason.
     case 'blocked':

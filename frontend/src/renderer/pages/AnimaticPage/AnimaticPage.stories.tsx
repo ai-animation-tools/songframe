@@ -7,6 +7,7 @@ import { notificationsTexts } from '@shared/texts/notifications';
 import {
   ANIMATIC_BLOCKED_REASON,
   ANIMATIC_JOB_ERROR,
+  ANIMATIC_MANY_PROBLEMS,
   ANIMATIC_PAGE_PROJECT,
   ANIMATIC_STALE_PROBLEMS,
   animaticPageInspection,
@@ -177,6 +178,31 @@ export const StaleRebuild: Story = {
     await expect(canvas.queryByText(ANIMATIC_STALE_PROBLEMS[0])).toBeNull();
     await expect(canvas.getByText(animaticTexts.acceptance.reviewInstruction)).toBeVisible();
     await waitFor(() => expect(canvas.getByRole('button', { name: animaticTexts.acceptance.approve })).toBeEnabled());
+  }
+};
+
+export const ManyProblems: Story = {
+  name: 'Устаревшая сборка · сводка длинного списка причин',
+  tags: ['ci'],
+  parameters: { songframe: animaticPageOptions({ state: 'outdated' }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await canvas.findByText(animaticTexts.header.stale);
+    // Вместо десятков строк — заголовок и число причин; сам список свёрнут.
+    const alert = canvas.getByRole('alert');
+    await expect(within(alert).getByText(animaticTexts.problems.staleTitle)).toBeVisible();
+    await expect(within(alert).getByText(animaticTexts.problems.summary({ count: ANIMATIC_MANY_PROBLEMS.length }))).toBeVisible();
+    const details = within(alert).getByRole('button', { name: animaticTexts.problems.details });
+    await expect(details).toHaveAttribute('aria-expanded', 'false');
+    await expect(within(alert).getByText(ANIMATIC_MANY_PROBLEMS[0])).not.toBeVisible();
+
+    // Подробности раскрываются по запросу и сворачиваются обратно.
+    await userEvent.click(details);
+    await expect(details).toHaveAttribute('aria-expanded', 'true');
+    await waitFor(() => expect(within(alert).getByText(ANIMATIC_MANY_PROBLEMS[0])).toBeVisible());
+    await expect(within(alert).getByText(animaticTexts.main.registryChanged)).toBeInTheDocument();
+    await userEvent.click(details);
+    await expect(details).toHaveAttribute('aria-expanded', 'false');
   }
 };
 

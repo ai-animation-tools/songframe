@@ -26,6 +26,12 @@ export const animaticTexts = {
     keyframeSourcesMissing: ({ shot }: { shot: string }) => `${shot}: нет сведений об исходных опорах старой сборки; пересоберите аниматик.`,
     referencePathMissing: ({ shot, id }: { shot: string; id: string }) => `${shot}: нет пути референса ${id}; нужна пересборка.`
   },
+  // Сводка длинного списка причин: подробности свёрнуты под ней.
+  problems: {
+    staleTitle: 'Аниматик устарел, нужна пересборка',
+    summary: ({ count }: { count: number }) => `С прошлой сборки найдено ${countLabel(count, 'причина', 'причины', 'причин')} для пересборки.`,
+    details: 'Подробности'
+  },
   chooseShot: 'Запустите видео или выберите план на полосе глав.',
   media: { video: 'Анимация', card: commonTexts.media.card, keyframes: 'Опоры' },
   jobFailed: ({ title }: { title: string }) => `${title}: ошибка, см. журнал`,

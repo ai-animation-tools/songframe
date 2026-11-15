@@ -8,7 +8,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import type { ReactElement } from 'react';
 import { Alert, Box, Button, Paper, Stack, Typography } from '@mui/material';
 import { JobStatus } from '../../components';
-import { AnimaticAcceptance, AnimaticChapters, AnimaticConfirmDialog, AnimaticHeader, AnimaticPlayer, ShotCard } from './components';
+import { AnimaticAcceptance, AnimaticChapters, AnimaticConfirmDialog, AnimaticHeader, AnimaticPlayer, AnimaticProblems, ShotCard } from './components';
 import { useAnimaticPage } from './useAnimaticPage';
 import { LinkedText } from '../../components/LinkedText';
 
@@ -48,17 +48,7 @@ export function AnimaticPage(): ReactElement {
       </PageActionBar>
       {/* Сбой последней сборки виден и после уведомления: причина и переход к её журналу. */}
       {page.failedJob && !running ? <JobStatus job={page.failedJob} /> : null}
-      {view.problems.length ? (
-        <Alert severity={built ? 'warning' : 'info'}>
-          <ul style={{ margin: 0, paddingLeft: 18 }}>
-            {view.problems.map((problem) => (
-              <li key={problem}>
-                <LinkedText text={problem} />
-              </li>
-            ))}
-          </ul>
-        </Alert>
-      ) : null}
+      <AnimaticProblems problems={view.problems} built={Boolean(built)} />
       {built?.videoPath ? (
         <Box
           sx={{

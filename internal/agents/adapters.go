@@ -155,6 +155,56 @@ type claudeAdapter struct {
 	partial bool
 	// tools — уже показанные запуски инструментов (по id блока tool_use).
 	tools map[string]bool
+	// reply — сборка ответа, который модель продолжила после лимита вывода.
+	reply claudeReply
+}
+
+// claudeReply собирает итог, разорванный лимитом вывода модели. Упёршись в max_tokens,
+// Claude Code просит модель продолжить новым сообщением, а в событии result отдаёт текст только
+// последнего сообщения: без сборки длинный JSON предложения приходит без начала. Цепочка — подряд
+// идущие сообщения, каждое из которых, кроме последнего, оборвано лимитом; сообщение, закончившееся
+// иначе (вызов инструмента, конец хода), цепочку обнуляет.
+type claudeReply struct {
+	// message — id текущего сообщения API; "" — сообщение без id (одно на всё задание).
+	message string
+	// text — текст блоков text текущего сообщения из событий assistant.
+	text strings.Builder
+	// truncated — текущее сообщение остановлено по max_tokens.
+	truncated bool
+	// carried — текст предыдущих оборванных сообщений цепочки, к которому дописывается итог.
+	carried string
+}
+
+// start открывает сообщение id: оборванное предыдущее переходит в начало итога, иначе цепочка
+// обнуляется. Повтор того же id (stream_event и assistant одного сообщения) ничего не меняет.
+func (r *claudeReply) start(id string) {
+	if id == "" || id == r.message {
+		return
+	}
+	if r.truncated {
+		r.carried += r.text.String()
+	} else {
+		r.carried = ""
+	}
+	r.message = id
+	r.text.Reset()
+	r.truncated = false
+}
+
+// stop отмечает причину остановки текущего сообщения (message_delta или assistant).
+func (r *claudeReply) stop(reason any) {
+	if reason == "max_tokens" {
+		r.truncated = true
+	}
+}
+
+// result — итог задания: текст result Claude Code с началом из оборванных сообщений. Если CLI уже
+// вернул склеенный текст, начало не дублируется.
+func (r *claudeReply) result(last string) string {
+	if r.carried == "" || strings.HasPrefix(last, r.carried) {
+		return last
+	}
+	return r.carried + last
 }
 
 func (a *claudeAdapter) Provider() string { return Claude }
@@ -230,7 +280,14 @@ func (a *claudeAdapter) Parse(value *dynvalue.Object) ([]Update, error) {
 			return session(value.Value("session_id")), nil
 		}
 	case "stream_event":
-		delta := object(object(value.Value("event")).Value("delta"))
+		event := object(value.Value("event"))
+		delta := object(event.Value("delta"))
+		switch event.Value("type") {
+		case "message_start":
+			a.reply.start(text(object(event.Value("message")).Value("id")))
+		case "message_delta":
+			a.reply.stop(delta.Value("stop_reason"))
+		}
 		if delta.Value("type") == "text_delta" {
 			if chunk, ok := delta.Value("text").(string); ok {
 				a.partial = true
@@ -240,9 +297,15 @@ func (a *claudeAdapter) Parse(value *dynvalue.Object) ([]Update, error) {
 		return nil, nil
 	case "assistant":
 		updates := []Update{}
-		for _, block := range blocks(object(value.Value("message")).Value("content")) {
-			if block.Value("type") == "text" && !a.partial {
-				updates = append(updates, Update{Type: UpdateTextDelta, Text: text(block.Value("text"))})
+		message := object(value.Value("message"))
+		a.reply.start(text(message.Value("id")))
+		a.reply.stop(message.Value("stop_reason"))
+		for _, block := range blocks(message.Value("content")) {
+			if block.Value("type") == "text" {
+				a.reply.text.WriteString(text(block.Value("text")))
+				if !a.partial {
+					updates = append(updates, Update{Type: UpdateTextDelta, Text: text(block.Value("text"))})
+				}
 			}
 			if id := text(block.Value("id")); block.Value("type") == "tool_use" && !a.tools[id] {
 				a.tools[id] = true
@@ -272,7 +335,7 @@ func (a *claudeAdapter) Parse(value *dynvalue.Object) ([]Update, error) {
 			joined := dynvalue.Join(reason, " ")
 			return []Update{{Type: UpdateFailed, Err: providerFailure(joined, joined)}}, nil
 		}
-		result := text(value.Value("result"))
+		result := a.reply.result(text(value.Value("result")))
 		return append(session(value.Value("session_id")), Update{Type: UpdateCompleted, Result: &result}), nil
 	}
 	return nil, nil

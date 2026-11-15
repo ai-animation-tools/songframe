@@ -44,7 +44,7 @@
 | `continuity-brief/` | инструмент `continuity_brief` | 41 |
 | `scene-views/` | инструмент `update_scene_views` | 53 |
 | `animatic-cards/` | `internal/animaticcards`: раскладка карточек и опор, ширины строк DejaVu Sans | 43 + 1416 |
-| `agents-protocol/cases.json` | чистые функции `internal/agents`: аргументы, stdin, разбор потока, маскировка, диагностика | 206 |
+| `agents-protocol/cases.json` | чистые функции `internal/agents`: аргументы, stdin, разбор потока, маскировка, диагностика | 209 |
 | `agents-settings/cases.json` | настройки агентов в `settings.json` каталога состояния | 15 |
 | `agents-cli/cases.json` | `agents.CheckAgent`, аккаунт, модели и `agents.Manager` на поддельных CLI | 67 |
 | `ai-access-paid/cases.json` | платная часть `agents.AccessChecker`: выбор провайдера, вход, `GetAccess`, `RequireAccess` | 14 |

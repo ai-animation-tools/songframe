@@ -2885,6 +2885,317 @@
       ]
     },
     {
+      "name": "claude-max-tokens-continuation",
+      "provider": "claude",
+      "events": [
+        {
+          "type": "system",
+          "subtype": "init",
+          "session_id": "sess-1"
+        },
+        {
+          "type": "stream_event",
+          "event": {
+            "type": "message_start",
+            "message": {
+              "id": "msg_1"
+            }
+          }
+        },
+        {
+          "type": "stream_event",
+          "event": {
+            "type": "content_block_delta",
+            "delta": {
+              "type": "text_delta",
+              "text": "{\"a\":"
+            }
+          }
+        },
+        {
+          "type": "assistant",
+          "message": {
+            "id": "msg_1",
+            "content": [
+              {
+                "type": "text",
+                "text": "{\"a\":"
+              }
+            ],
+            "stop_reason": null
+          }
+        },
+        {
+          "type": "stream_event",
+          "event": {
+            "type": "message_delta",
+            "delta": {
+              "stop_reason": "max_tokens"
+            }
+          }
+        },
+        {
+          "type": "user",
+          "message": {
+            "content": "Output token limit hit. Resume directly."
+          }
+        },
+        {
+          "type": "stream_event",
+          "event": {
+            "type": "message_start",
+            "message": {
+              "id": "msg_2"
+            }
+          }
+        },
+        {
+          "type": "stream_event",
+          "event": {
+            "type": "content_block_delta",
+            "delta": {
+              "type": "text_delta",
+              "text": "1}"
+            }
+          }
+        },
+        {
+          "type": "assistant",
+          "message": {
+            "id": "msg_2",
+            "content": [
+              {
+                "type": "text",
+                "text": "1}"
+              }
+            ],
+            "stop_reason": null
+          }
+        },
+        {
+          "type": "stream_event",
+          "event": {
+            "type": "message_delta",
+            "delta": {
+              "stop_reason": "end_turn"
+            }
+          }
+        },
+        {
+          "type": "result",
+          "subtype": "success",
+          "result": "1}",
+          "session_id": "sess-1"
+        }
+      ],
+      "expected": [
+        [
+          {
+            "type": "session",
+            "id": "sess-1"
+          }
+        ],
+        [],
+        [
+          {
+            "type": "text_delta",
+            "text": "{\"a\":"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "type": "text_delta",
+            "text": "1}"
+          }
+        ],
+        [],
+        [],
+        [
+          {
+            "type": "session",
+            "id": "sess-1"
+          },
+          {
+            "type": "completed",
+            "result": "{\"a\":1}"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "claude-max-tokens-chain-reset",
+      "provider": "claude",
+      "events": [
+        {
+          "type": "assistant",
+          "message": {
+            "id": "m1",
+            "content": [
+              {
+                "type": "text",
+                "text": "Читаю"
+              }
+            ],
+            "stop_reason": "max_tokens"
+          }
+        },
+        {
+          "type": "assistant",
+          "message": {
+            "id": "m2",
+            "content": [
+              {
+                "type": "tool_use",
+                "id": "t1",
+                "name": "Read"
+              }
+            ],
+            "stop_reason": "tool_use"
+          }
+        },
+        {
+          "type": "user",
+          "message": {
+            "content": [
+              {
+                "type": "tool_result"
+              }
+            ]
+          }
+        },
+        {
+          "type": "assistant",
+          "message": {
+            "id": "m3",
+            "content": [
+              {
+                "type": "text",
+                "text": "{\"b\":"
+              }
+            ],
+            "stop_reason": "max_tokens"
+          }
+        },
+        {
+          "type": "assistant",
+          "message": {
+            "id": "m4",
+            "content": [
+              {
+                "type": "text",
+                "text": "2}"
+              }
+            ],
+            "stop_reason": "end_turn"
+          }
+        },
+        {
+          "type": "result",
+          "subtype": "success",
+          "result": "2}"
+        }
+      ],
+      "expected": [
+        [
+          {
+            "type": "text_delta",
+            "text": "Читаю"
+          }
+        ],
+        [
+          {
+            "type": "tool_started",
+            "tool": "Read"
+          }
+        ],
+        [
+          {
+            "type": "tool_finished",
+            "tool": "Чтение проекта"
+          }
+        ],
+        [
+          {
+            "type": "text_delta",
+            "text": "{\"b\":"
+          }
+        ],
+        [
+          {
+            "type": "text_delta",
+            "text": "2}"
+          }
+        ],
+        [
+          {
+            "type": "completed",
+            "result": "{\"b\":2}"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "claude-max-tokens-joined-result",
+      "provider": "claude",
+      "events": [
+        {
+          "type": "assistant",
+          "message": {
+            "id": "m1",
+            "content": [
+              {
+                "type": "text",
+                "text": "Нача"
+              }
+            ],
+            "stop_reason": "max_tokens"
+          }
+        },
+        {
+          "type": "assistant",
+          "message": {
+            "id": "m2",
+            "content": [
+              {
+                "type": "text",
+                "text": "ло"
+              }
+            ],
+            "stop_reason": "end_turn"
+          }
+        },
+        {
+          "type": "result",
+          "subtype": "success",
+          "result": "Начало"
+        }
+      ],
+      "expected": [
+        [
+          {
+            "type": "text_delta",
+            "text": "Нача"
+          }
+        ],
+        [
+          {
+            "type": "text_delta",
+            "text": "ло"
+          }
+        ],
+        [
+          {
+            "type": "completed",
+            "result": "Начало"
+          }
+        ]
+      ]
+    },
+    {
       "name": "codex-messages",
       "provider": "codex",
       "events": [

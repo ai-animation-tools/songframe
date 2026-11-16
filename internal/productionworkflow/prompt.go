@@ -86,6 +86,8 @@ type contextInput struct {
 	promptMaxChars int
 	// keyframeCount — число опор, выбранное пользователем для этапа description; 0 — ключ не пишется.
 	keyframeCount int
+	// shotFrames — кадры других планов этапа description (shotFramesTree); nil — ключ не пишется.
+	shotFrames *dynvalue.Object
 }
 
 // agentContext — JSON контекста задания (порядок ключей зафиксирован эталоном): план, кастинг, врезки,
@@ -137,6 +139,11 @@ func agentContext(c *Context, input contextInput) string {
 	// Выбранное число опор передаётся только при явном выборе: контекст «авто» не меняется.
 	if input.keyframeCount > 0 {
 		value.Set("keyframeCount", float64(input.keyframeCount))
+	}
+	// Кадры других планов передаются только описанию плана со связанными планами: контекст
+	// остальных не меняется.
+	if input.shotFrames != nil {
+		value.Set("continuityFrames", input.shotFrames)
 	}
 	return dynvalue.Stringify(value)
 }

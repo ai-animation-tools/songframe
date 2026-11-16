@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -263,7 +264,14 @@ func (r *goldenRun) create() *Workflow {
 		LocalDir: r.local, Agents: r.agents, Run: r.runTool, Catalog: &providers.Catalogs{Run: r.runTool},
 		IsScenarioApproved: func(string) bool { return r.config.ScenarioApproved },
 		IsPackageBusy:      func(string, string) bool { return r.config.PackageBusy },
+		ExtractFrame:       fakeExtractFrame,
 	})
+}
+
+// fakeExtractFrame — кадр без FFmpeg: файл с подписью видео и позиции, чтобы эталон не зависел
+// от FFmpeg окружения.
+func fakeExtractFrame(_ context.Context, video, position, target string, side int) error {
+	return os.WriteFile(target, []byte(filepath.Base(filepath.Dir(video))+":"+position+":"+strconv.Itoa(side)), 0o666)
 }
 
 // runTool — настоящий continuity_brief и подставной media_request capabilities.

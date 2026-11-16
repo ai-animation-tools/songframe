@@ -298,3 +298,33 @@ func textManualFrameRole(id string) string { return "Опора " + id }
 func textMethodPromptOverLimit(chars, limit int) string {
 	return fmt.Sprintf("Видеопромпт длиннее предела провайдера (длина %d, предел %d): чтобы выбрать провайдера, верните промпт на доработку и сократите его.", chars, limit)
 }
+
+// textShotFramesFailed — кадры других планов не извлечены: задание описания идёт без них, причину
+// агент получает в continuityFrames.problem.
+func textShotFramesFailed(reason string) string {
+	if reason == "" {
+		return "Не удалось извлечь кадры других планов."
+	}
+	return "Не удалось извлечь кадры других планов: " + reason
+}
+
+// textShotFrameUnavailable — опора называет кадр плана, у которого нет принятого монтажа.
+func textShotFrameUnavailable(shot string) string {
+	return "Опора ссылается на кадр плана " + shot + ", но у него нет принятого видео. Доработайте описание."
+}
+
+// textShotFrameFailed — кадр, названный опорой, не удалось извлечь при применении описания.
+func textShotFrameFailed(shot, reason string) string {
+	if reason == "" {
+		return "Не удалось извлечь кадр плана " + shot + "."
+	}
+	return "Не удалось извлечь кадр плана " + shot + ": " + reason
+}
+
+// textShotFrameName — подпись кадра другого плана в задании опор провайдера-агента.
+func textShotFrameName(shot, position string) string {
+	if position == "first" {
+		return "Первый кадр плана " + shot
+	}
+	return "Последний кадр плана " + shot
+}

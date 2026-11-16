@@ -255,10 +255,15 @@ func (w *Workflow) applyDescription(ctx context.Context, plan *applyPlan) error 
 			return err
 		}
 	}
+	keyframes, _ := dynvalue.AsArray(after.Value("keyframes"))
+	// Кадры других планов, которые опоры назвали референсами, — в пакет до остальных файлов: без
+	// FFmpeg или принятого видео описание не применяется.
+	if err := w.placeShotFrames(ctx, c.Project, target, keyframes); err != nil {
+		return err
+	}
 	if err := writeProjectFile(filepath.Join(target, "description.md"), []byte(dynvalue.ToString(after.Value("description"))+"\n")); err != nil {
 		return err
 	}
-	keyframes, _ := dynvalue.AsArray(after.Value("keyframes"))
 	args := []string{"plan-keyframes", "--dir", target, "--request-seconds", dynvalue.ToString(after.Value("requestSeconds"))}
 	rules := plan.stored.Rules()
 	if rules.Manual || len(keyframes) == 1 {

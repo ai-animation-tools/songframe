@@ -170,6 +170,7 @@ func (r *applyRun) create() *Workflow {
 		VideoMedia: func(provider string) (*providers.PaidMedia, bool) {
 			return video, provider == mediatest.ID
 		},
+		ExtractFrame: fakeExtractFrame,
 	})
 }
 

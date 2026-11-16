@@ -86,6 +86,10 @@ type Options struct {
 	// подготовкой запроса: выбранный
 	// провайдер и вход в него; nil — без проверки (тесты).
 	RequireVideoAccess func(ctx context.Context, project string) error
+	// ExtractFrame — кадр position (first или last) видео video в файл target, при side > 0 —
+	// уменьшенный до этой наибольшей стороны; nil — FFmpeg (extractFrame). Тесты подменяют его,
+	// чтобы не зависеть от FFmpeg окружения.
+	ExtractFrame func(ctx context.Context, video, position, target string, side int) error
 }
 
 // Workflow — проход агента производства. Методы безопасны для конкурентного вызова из сервисов
@@ -114,6 +118,9 @@ func New(options Options) *Workflow {
 	}
 	if options.ValidateImage == nil {
 		options.ValidateImage = mediafile.Decodes
+	}
+	if options.ExtractFrame == nil {
+		options.ExtractFrame = extractFrame
 	}
 	return &Workflow{options: options, store: Store{}, busy: map[string]bool{}}
 }
@@ -600,6 +607,10 @@ type preparedStart struct {
 	target     string
 	hashes     *dynvalue.Object
 	keyframes  int
+	// shotFrames и missingFrames — кадры других планов этапа description (shot_frames.go) и
+	// связанные планы без принятого видео.
+	shotFrames    []ShotFrame
+	missingFrames []string
 }
 
 // prepare — синхронная часть start до первого ожидания: проверки этапа и снимок входов.
@@ -644,6 +655,19 @@ func (w *Workflow) prepare(input StartInput) (*preparedStart, error) {
 	}
 	if prepared.keyframes, err = keyframeChoice(c, prepared.stage, input.Keyframes, input.Action != "prepare"); err != nil {
 		return nil, err
+	}
+	// Кадры других планов разрешены только описанию: опора может назвать их референсами, а видео
+	// получает лишь принятые опоры. Пути в пакете target войдут в снимок входов ещё до извлечения.
+	if prepared.stage == "description" {
+		if prepared.shotFrames, prepared.missingFrames, err = shotFrames(c.Project, input.Shot); err != nil {
+			return nil, err
+		}
+		for _, frame := range prepared.shotFrames {
+			if path := frame.path(c.Project, prepared.target); !slices.Contains(c.AllowedPaths, path) {
+				c.AllowedPaths = append(c.AllowedPaths, path)
+			}
+		}
+		slices.SortFunc(c.AllowedPaths, compareUTF16)
 	}
 	if prepared.hashes, err = Snapshot(c.Project, c.PackageDir, prepared.target, c.AllowedPaths); err != nil {
 		return nil, err
@@ -851,9 +875,15 @@ func (w *Workflow) launch(ctx context.Context, input StartInput, prepared *prepa
 		}
 	}
 	contextInput.note = noteFor(c, input.Note)
+	var images []string
+	if stage == "description" && (len(prepared.shotFrames) > 0 || len(prepared.missingFrames) > 0) {
+		attachments, attached, problem := w.shotFrameAttachments(ctx, c.Project, input.Shot, prepared.shotFrames)
+		images = attachments
+		contextInput.shotFrames = shotFramesTree(c.Project, prepared.target, prepared.shotFrames, attached, prepared.missingFrames, problem)
+	}
 	task := agents.StartInput{
 		Project: c.Project, Task: "ai-clip-scene:" + input.Shot + ":" + stage, Prompt: prompt, Context: agentContext(c, contextInput),
-		Place: &agents.Place{Page: "production", Shot: input.Shot},
+		Images: images, Place: &agents.Place{Page: "production", Shot: input.Shot},
 	}
 	stored := &Stored{Tree: dynvalue.NewObject()}
 	stored.Tree.Set("proposal", proposalTree("", "", stage, ""))

@@ -129,6 +129,8 @@ func (k *KeyframeImages) Start(input mediaapi.ImagesInput, request agentexec.Ima
 	copies := map[string]string{}
 	// Подписи копий: файл и сущность кастинга, которой он принадлежит, в порядке копирования.
 	labels := []any{}
+	// shotFrameCopies — среди копий есть кадр другого плана: промпт объясняет, как им пользоваться.
+	shotFrameCopies := false
 	frames := make([]any, len(input.Frames))
 	for index, frame := range input.Frames {
 		references := make([]any, len(frame.ReferencePaths))
@@ -159,7 +161,13 @@ func (k *KeyframeImages) Start(input mediaapi.ImagesInput, request agentexec.Ima
 				inputs = append(inputs, imagesInput{Path: source, Copy: name, SHA256: digest})
 				label := dynvalue.NewObject()
 				label.Set("file", name)
-				if known {
+				switch {
+				case known && entity.Kind == shotFrameKind:
+					// Кадр другого плана клипа — не сущность кастинга: подпись называет план.
+					label.Set("shot", entity.ID)
+					label.Set("name", entity.Name)
+					shotFrameCopies = true
+				case known:
 					label.Set("entity", entity.ID)
 					label.Set("name", entity.Name)
 					label.Set("kind", entity.Kind)
@@ -224,7 +232,7 @@ func (k *KeyframeImages) Start(input mediaapi.ImagesInput, request agentexec.Ima
 	job, err = k.Agents.StartImages(agents.StartInput{
 		Project: project,
 		Task:    textImagesJobTitle(input.Shot, strings.Join(ids, ", "), providers.Title(request.Provider, generationProviderFallback)),
-		Prompt:  textImagesPrompt(len(approved) > 0, len(notes) > 0),
+		Prompt:  textImagesPrompt(len(approved) > 0, len(notes) > 0, shotFrameCopies),
 		Context: dynvalue.Stringify(context),
 		Place:   &agents.Place{Page: "production", Shot: input.Shot},
 	}, directory, request.Agent)

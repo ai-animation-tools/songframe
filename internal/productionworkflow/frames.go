@@ -200,7 +200,7 @@ func (w *Workflow) GenerateFrames(ctx context.Context, project, shot, packageDir
 	notes := slices.Clone(plan.notes)
 	job, err := w.generateImages(c.Project, mediaapi.ImagesInput{
 		Project: c.Project, Shot: shot, PackageDir: c.PackageDir, Frames: []mediaapi.FramePrompt{frame}, Notes: &notes, ApprovedFrames: &approved,
-		ReferenceEntities: referenceEntities(c.Cast),
+		ReferenceEntities: addShotFrameEntities(c, referenceEntities(c.Cast)),
 	})
 	if err != nil {
 		return View{}, err

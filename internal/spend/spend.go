@@ -313,7 +313,7 @@ func readRequest(directory, attempt string) (live, bool) {
 // провайдера изображений. Сгенерированная опора — выбранная из платного запроса изображения
 // (image_requests[].selected_sha256), уже учтённого своей отправкой, или принятый кандидат
 // провайдера без отдельной цены (keyframes[].provider с тем же SHA). Своя — запись без суммы,
-// стоимость пользователь указывает сам.
+// стоимость пользователь указывает сам; опоры с одинаковыми байтами (копия опоры) — одна запись.
 func ownFrames(directory, attempt string) []live {
 	var workflow struct {
 		Shot           string            `json:"shot"`
@@ -345,6 +345,14 @@ func ownFrames(directory, attempt string) []live {
 		}
 	}
 	sort.Strings(frames)
+	// Копия опоры (copyOf плана) — те же байты: один файл учитывается один раз, первой по плану опорой.
+	seen := map[string]bool{}
+	frames = slices.DeleteFunc(frames, func(frame string) bool {
+		sha := workflow.ApprovedFrames[frame]
+		duplicate := seen[sha]
+		seen[sha] = true
+		return duplicate
+	})
 	result := make([]live, 0, len(frames))
 	for _, frame := range frames {
 		result = append(result, live{sent: true, entry: Entry{

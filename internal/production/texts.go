@@ -324,3 +324,13 @@ func number(value float64) string { return strconv.FormatFloat(value, 'f', -1, 6
 
 // textNoAcceptedKit — цену принятого плана указывают только у плана с комплектом.
 const textNoAcceptedKit = "План ещё не принят: цену указывают у видео его попытки."
+
+// textFrameCopyFailed — файл утверждённой опоры не удалось перенести в её копию.
+func textFrameCopyFailed(frame, source string) string {
+	return "Не удалось скопировать опору " + source + " в " + frame + ". Повторите решение по " + source + "."
+}
+
+// textFrameCopyReopen — копию не возвращают на доработку отдельно: она повторяет источник.
+func textFrameCopyReopen(frame, source string) string {
+	return "Опора " + frame + " — копия " + source + ": верните на доработку " + source + ", копия обновится после её утверждения."
+}

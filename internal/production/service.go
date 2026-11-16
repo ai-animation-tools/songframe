@@ -489,6 +489,12 @@ func (s *Service) Decide(project, packageDir, verdict, note, decisionToken, note
 			return errors.New(textReturnToImageFailed)
 		}
 	}
+	if verdict == "approve" {
+		// Утверждённая опора сразу переходит в свои копии (copyOf плана опор).
+		if err := s.fillFrameCopies(project, directory); err != nil {
+			return err
+		}
+	}
 	// После утверждения одной опоры следующий уже готовый кандидат сразу получает вопрос.
 	if verdict == "approve" && pending != nil && pending.Frame != "" {
 		return s.askNextFrame(project, directory)
@@ -518,6 +524,9 @@ func (s *Service) ReopenFrame(project, packageDir, frame, note, noteScope string
 	}
 	if dynvalue.Trim(note) == "" {
 		return errors.New(textFrameRevisionRequired)
+	}
+	if source, isCopy := frameCopies(directory)[frame]; isCopy {
+		return errors.New(textFrameCopyReopen(frame, source))
 	}
 	directory, release, err := s.claim(project, directory)
 	if err != nil {

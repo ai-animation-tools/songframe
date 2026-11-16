@@ -400,6 +400,7 @@ export function ProductionPath({
                 busyReason={busyReason}
                 onReopen={onReopenFrame}
                 onSetNote={onSetKeyframeNote}
+                copies={Object.fromEntries((view?.framePrompts ?? []).flatMap((prompt) => (prompt.copyOf ? [[prompt.id, prompt.copyOf]] : [])))}
                 renderActions={
                   current && view
                     ? (frame) => (

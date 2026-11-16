@@ -259,6 +259,10 @@ func (w *Workflow) ImportFrames(project, shot, packageDir string, images []Frame
 	}
 	open := []any{}
 	for _, prompt := range c.FramePrompts.Items {
+		// Копию другой опоры не загружают: её файл приходит при принятии источника.
+		if isFrameCopy(prompt) {
+			continue
+		}
 		id := dynvalue.Get(prompt, "id")
 		if !slices.ContainsFunc(keyframes(c.Workflow), func(frame any) bool {
 			return dynvalue.Get(frame, "id") == id && dynvalue.Truthy(dynvalue.Get(frame, "approved"))

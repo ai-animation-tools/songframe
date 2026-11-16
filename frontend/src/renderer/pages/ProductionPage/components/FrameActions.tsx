@@ -2,7 +2,7 @@ import { productionTexts } from '@shared/texts/production';
 /**
  * Действия одной опоры на её карточке: создать следующую по порядку или поставить свой файл.
  * Файл сразу становится кандидатом; утверждение остаётся отдельным вопросом шага. Опору своего описания без промпта
- * создать нечем: кнопка создания недоступна с причиной, остаётся свой файл.
+ * создать нечем: кнопка создания недоступна с причиной, остаётся свой файл. У копии другой опоры действий нет.
  */
 import { useState, type ReactElement } from 'react';
 import EditNoteIcon from '@mui/icons-material/EditNote';
@@ -39,7 +39,8 @@ export function FrameActions({
   const [instructionOpen, setInstructionOpen] = useState(false);
   const [note, setNote] = useState('');
   const [scope, setScope] = useState<KeyframeNoteScope>('frame');
-  if (frame.approved) return null;
+  // Копию другой опоры не создают и не загружают: её файл приходит при утверждении источника.
+  if (frame.approved || view.framePrompts.some((prompt) => prompt.id === frame.id && prompt.copyOf)) return null;
   const replacing = view.replaceFrame === frame.id;
   const available = replacing || view.canGenerateFrames;
   const reason = busy ? BUSY_REASON : !available ? (view.reasons.frames ?? productionTexts.productionWorkflowPanel.descriptionRequired) : null;

@@ -285,13 +285,17 @@ func (w *Workflow) applyDescription(ctx context.Context, plan *applyPlan) error 
 	if !ok || !dynvalue.IsRecord(approved) {
 		approved = dynvalue.NewObject()
 	}
+	// Сброшенные опоры: копия (copyOf) сбрасывается вместе с источником, даже если сама не изменилась.
+	reset := map[any]bool{}
 	for _, item := range frames {
 		frame, isObject := item.(*dynvalue.Object)
 		if !isObject {
 			return errors.New(textWorkflowFrameInvalid)
 		}
 		id := frame.Value("id")
-		if !dynvalue.DeepStrictEqual(findByID(c.FramePrompts.Items, id), findByID(keyframes, id)) {
+		planned := findByID(keyframes, id)
+		if !dynvalue.DeepStrictEqual(findByID(c.FramePrompts.Items, id), planned) || (isFrameCopy(planned) && reset[dynvalue.Get(planned, "copyOf")]) {
+			reset[id] = true
 			frame.Set("approved", false)
 			frame.Set("path", nil)
 			frame.Set("sha256", nil)

@@ -64,6 +64,8 @@ export interface KeyframeReviewStoryProps {
   busyReason?: string;
   failFirst?: boolean;
   delay?: number;
+  /** Копии опор плана (copyOf): ID копии → ID источника; утверждение источника заполняет копию, как Go. */
+  copies?: Record<string, string>;
 }
 
 export function KeyframeReviewStory({
@@ -74,7 +76,8 @@ export function KeyframeReviewStory({
   busy = false,
   busyReason,
   failFirst = false,
-  delay = 500
+  delay = 500,
+  copies = {}
 }: KeyframeReviewStoryProps) {
   const [pkg, setPackage] = useState(() => structuredClone(initialPackage ?? keyframePackage()));
   const [note, setNote] = useState(initialNote);
@@ -118,8 +121,13 @@ export function KeyframeReviewStory({
     const questionRevision = ++revision.current;
     run(
       (current) => {
-        const keyframes = current.keyframes.map((item) =>
+        const decided = current.keyframes.map((item) =>
           item.id !== frame ? item : verdict === 'approve' ? { ...item, approved: true } : { ...item, approved: false, imagePath: null }
+        );
+        // Утверждённый источник сразу переходит в свои копии теми же байтами.
+        const source = decided.find((item) => item.id === frame);
+        const keyframes = decided.map((item) =>
+          verdict === 'approve' && copies[item.id] === frame && source ? { ...item, approved: true, imagePath: source.imagePath } : item
         );
         const next = verdict === 'approve' ? keyframes.find((item) => !item.approved && item.imagePath) : null;
         return {
@@ -176,6 +184,7 @@ export function KeyframeReviewStory({
             pkg={pkg}
             busy={locked}
             busyReason={busyReason}
+            copies={copies}
             onReopen={reopen}
             onSetNote={(id, active) =>
               run(

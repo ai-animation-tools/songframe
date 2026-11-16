@@ -5,6 +5,7 @@ import { KeyframeReviewStory, keyframePackage } from '../../../testing/keyframeS
 import { STORY_IMAGE_PATH } from '../../../testing/storybook';
 import { expectImplicitCloseBlocked } from '../../../testing/dialogStories';
 import type { PackageView } from '@shared/types';
+import { productionTexts } from '@shared/texts/production';
 
 /** Готовый промпт и запрос видео возможны после утверждения всех запланированных опор. */
 function approvedPackage(overrides: Partial<PackageView> = {}): PackageView {
@@ -28,6 +29,37 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const States: Story = { name: 'Утверждена · текущий вопрос · кандидат · не создана' };
+export const FrameCopy: Story = {
+  name: 'Копия опоры · появляется после утверждения источника, возврат через источник',
+  tags: ['!autodocs', 'ci'],
+  args: {
+    copies: { K04: 'K03' },
+    initialPackage: keyframePackage({
+      pendingDecision: null,
+      keyframes: keyframePackage().keyframes.map((frame) => (frame.id === 'K02' ? { ...frame, approved: true } : frame))
+    })
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText(productionTexts.packageKeyframes.copyOf({ source: 'K03' }))).toBeVisible();
+    await expect(canvas.getByText(productionTexts.packageKeyframes.copyPending({ source: 'K03' }))).toBeVisible();
+  }
+};
+export const FrameCopyApproved: Story = {
+  name: 'Копия опоры утверждена · вернуть можно только источник',
+  tags: ['!autodocs', 'ci'],
+  args: { copies: { K04: 'K03' }, initialPackage: approvedPackage() },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const buttons = canvas.getAllByRole('button', { name: productionTexts.packageKeyframes.reopen });
+    await expect(buttons[3]).toBeDisabled();
+    await expect(buttons[3].closest('[title]') ?? buttons[3]).toHaveAttribute(
+      'title',
+      expect.stringContaining(productionTexts.packageKeyframes.copyReopen({ id: 'K04', source: 'K03' }))
+    );
+    await expect(buttons[2]).toBeEnabled();
+  }
+};
 export const NoFrames: Story = {
   name: 'Нет плана опор · блок отсутствует',
   args: { initialPackage: keyframePackage({ keyframes: [], keyframeNotes: [], pendingDecision: null }), showDecision: false }

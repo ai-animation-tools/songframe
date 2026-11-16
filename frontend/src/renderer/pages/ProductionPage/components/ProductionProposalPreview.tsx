@@ -85,7 +85,13 @@ function Frames({ frames }: { frames: ProductionFramePrompt[] }): ReactElement {
               {productionTexts.productionProposalPreview.time({ timeSeconds: frame.timeSeconds })}
             </Typography>
           </Stack>
-          <Paragraphs text={frame.prompt} />
+          {frame.copyOf ? (
+            <Typography variant="body2" color="text.secondary">
+              {productionTexts.productionProposalPreview.copyOf({ source: frame.copyOf })}
+            </Typography>
+          ) : (
+            <Paragraphs text={frame.prompt} />
+          )}
           {frame.referencePaths.length ? (
             <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5, overflowWrap: 'anywhere' }}>
               {productionTexts.productionProposalPreview.references({ filenames: frame.referencePaths.map(fileName).join(', ') })}

@@ -682,6 +682,11 @@ export const productionTexts = {
   },
   packageKeyframes: {
     reopenHint: ({ id }: { id: string }) => `Снять утверждение ${id} и создать опору заново с замечанием`,
+    /** Опора плана, повторяющая другую кадр в кадр (copyOf): её не создают, а копируют файлом источника. */
+    copyOf: ({ source }: { source: string }) => `Копия ${source}`,
+    copyPending: ({ source }: { source: string }) => `Появится после утверждения ${source}`,
+    copyReopen: ({ id, source }: { id: string; source: string }) =>
+      `${id} повторяет ${source}: верните на доработку ${source}, копия обновится после её утверждения`,
     missing: 'не создана',
     candidate: 'кандидат ждёт решения',
     pending: 'вопрос ниже: утвердить?',
@@ -903,6 +908,7 @@ export const productionTexts = {
   productionProposalPreview: {
     time: ({ timeSeconds }: { timeSeconds: number }) => `${timeSeconds} с от начала плана`,
     references: ({ filenames }: { filenames: string }) => `Референсы: ${filenames}`,
+    copyOf: ({ source }: { source: string }) => `Копия ${source} кадр в кадр: опору не создают, приложение возьмёт файл ${source} после его утверждения.`,
     candidate: ({ id }: { id: string }) => `${id} · кандидат, не принят`,
     galleryKind: 'Кандидат опоры',
     modelAndCommand: 'Модель и команда',

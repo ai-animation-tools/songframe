@@ -48,6 +48,27 @@ export const FirstDescription: Story = {
   name: 'Первое описание · сохранённых материалов ещё нет',
   args: { initialProposal: workflowProposal('description', { before: '' }) }
 };
+export const DescriptionFrameCopy: Story = {
+  name: 'Описание с копией опоры · вместо промпта пояснение',
+  tags: ['ci'],
+  args: {
+    initialProposal: (() => {
+      const proposal = workflowProposal('description');
+      if (proposal.after?.stage !== 'description') return proposal;
+      const [first, last] = proposal.after.keyframes;
+      const keyframes = [
+        first,
+        { ...last, id: 'K02', role: 'middle' as const, timeSeconds: 6 },
+        { id: 'K03', role: 'last' as const, timeSeconds: 8, prompt: '', referencePaths: [], copyOf: 'K02' }
+      ];
+      return { ...proposal, after: { ...proposal.after, keyframes } };
+    })()
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText(labels.copyOf({ source: 'K02' }))).toBeVisible();
+  }
+};
 export const Prompt: Story = {
   name: 'Видеопромпт · сравнение текстов',
   args: { initialProposal: workflowProposal('prompt') }

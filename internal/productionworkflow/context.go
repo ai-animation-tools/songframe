@@ -487,12 +487,16 @@ func (c *Context) UndecidedFrame() any {
 }
 
 // NextFrame возвращает ID следующей опоры плана без утверждённого кадра; опоры
-// создаются по одной в порядке плана. nil — создавать нечего или ждёт решения кандидат.
+// создаются по одной в порядке плана. nil — создавать нечего или ждёт решения кандидат. Копия
+// другой опоры (copyOf) не создаётся: её файл приходит при принятии источника.
 func (c *Context) NextFrame() any {
 	if c.UndecidedFrame() != nil {
 		return nil
 	}
 	for _, prompt := range c.FramePrompts.Items {
+		if isFrameCopy(prompt) {
+			continue
+		}
 		id := dynvalue.Get(prompt, "id")
 		approved := false
 		for _, frame := range keyframes(c.Workflow) {
@@ -577,4 +581,10 @@ func generationMethod(c *Context) string {
 		return "manual"
 	}
 	return ""
+}
+
+// isFrameCopy — опора плана повторяет другую опору (copyOf) и не создаётся сама.
+func isFrameCopy(prompt any) bool {
+	object, ok := prompt.(*dynvalue.Object)
+	return ok && object.Has("copyOf")
 }

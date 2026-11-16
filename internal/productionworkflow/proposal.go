@@ -319,7 +319,8 @@ func ParseProposal(raw string, rules Rules) (*dynvalue.Object, error) {
 // (rules.Manual) опора ровно одна — K01 first на 0. Выбранное пользователем число опор
 // (rules.Keyframes) соблюдается точно; одна опора — только K01 first, без last. У своего описания
 // (rules.Own) промпт опоры может быть пустой строкой: опору без промпта создать нельзя, только
-// загрузить своим файлом.
+// загрузить своим файлом. Опора с copyOf — копия более ранней опоры-не-копии: пустой промпт и без
+// референсов.
 func parseDescription(value *dynvalue.Object, rules Rules) error {
 	if err := keys(value, "schemaVersion", "stage", "description", "requestSeconds", "keyframes"); err != nil {
 		return err
@@ -350,8 +351,21 @@ func parseDescription(value *dynvalue.Object, rules Rules) error {
 		if !isObject {
 			return errors.New(textFrameStructureInvalid)
 		}
-		if err := keys(frame, "id", "role", "timeSeconds", "prompt", "referencePaths"); err != nil {
+		if err := keys(frame, "id", "role", "timeSeconds", "prompt", "referencePaths", "copyOf"); err != nil {
 			return err
+		}
+		// Копия повторяет более раннюю опору кадр в кадр: её не создают, а получают файлом
+		// источника при его принятии (shot_workflow), поэтому своего промпта и референсов у неё нет.
+		if frame.Has("copyOf") {
+			source, _ := frame.Value("copyOf").(string)
+			references, _ := dynvalue.AsArray(frame.Value("referencePaths"))
+			valid := !rules.Manual && frame.Value("prompt") == "" && len(references) == 0 && slices.ContainsFunc(frames[:index], func(item any) bool {
+				earlier, _ := item.(*dynvalue.Object)
+				return earlier != nil && earlier.Value("id") == source && !earlier.Has("copyOf")
+			})
+			if !valid {
+				return errors.New(textFrameCopyInvalid)
+			}
 		}
 		role := "middle"
 		if index == 0 {
@@ -362,7 +376,7 @@ func parseDescription(value *dynvalue.Object, rules Rules) error {
 		time, timeOK := frame.Value("timeSeconds").(float64)
 		references, referencesOK := dynvalue.AsArray(frame.Value("referencePaths"))
 		valid := frame.Value("id") == "K"+twoDigits(index+1) && frame.Value("role") == role && timeOK && dynvalue.IsFinite(time) &&
-			time > previous && (isText(frame.Value("prompt")) || (rules.Own && isOptionalText(frame.Value("prompt")))) && referencesOK
+			time > previous && (isText(frame.Value("prompt")) || frame.Has("copyOf") || (rules.Own && isOptionalText(frame.Value("prompt")))) && referencesOK
 		for _, path := range references {
 			text, _ := path.(string)
 			if !valid || !isText(path) || !imagePath.MatchString(text) || !slices.Contains(rules.AllowedPaths, text) {

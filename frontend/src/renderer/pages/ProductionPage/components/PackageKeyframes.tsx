@@ -48,7 +48,8 @@ export function PackageKeyframes({
   busyReason = BUSY_REASON,
   onReopen,
   onSetNote,
-  renderActions
+  renderActions,
+  copies = {}
 }: {
   pkg: PackageView;
   busy: boolean;
@@ -57,6 +58,8 @@ export function PackageKeyframes({
   onSetNote(id: number, active: boolean): void;
   /** Действия неутверждённой опоры на её карточке: создать или поставить свой файл. */
   renderActions?(frame: PackageKeyframe): ReactNode;
+  /** Копии других опор плана (copyOf): ID копии → ID источника. Их возвращают на доработку через источник. */
+  copies?: Record<string, string>;
 }): ReactElement | null {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [reopening, setReopening] = useState<string | null>(null);
@@ -118,7 +121,11 @@ export function PackageKeyframes({
                   }}
                 >
                   <Typography variant="caption">
-                    {k.approved ? productionTexts.packageKeyframes.fileMissing : productionTexts.packageKeyframes.notCreated}
+                    {k.approved
+                      ? productionTexts.packageKeyframes.fileMissing
+                      : copies[k.id]
+                        ? productionTexts.packageKeyframes.copyPending({ source: copies[k.id] })
+                        : productionTexts.packageKeyframes.notCreated}
                   </Typography>
                 </Box>
               )}
@@ -131,6 +138,11 @@ export function PackageKeyframes({
               <Typography variant="caption" color="text.secondary" display="block">
                 {productionTexts.packageKeyframes.frameCaption({ role: ROLE_LABELS[k.role] ?? k.role, timeSeconds: k.time_seconds })}
               </Typography>
+              {copies[k.id] ? (
+                <Typography variant="caption" color="text.secondary" display="block">
+                  {productionTexts.packageKeyframes.copyOf({ source: copies[k.id] })}
+                </Typography>
+              ) : null}
               {k.note ? (
                 <Typography variant="caption" color="text.secondary" display="block">
                   {k.note}
@@ -142,8 +154,10 @@ export function PackageKeyframes({
                   startIcon={<ReplayIcon />}
                   sx={{ mt: 0.5 }}
                   title={productionTexts.packageKeyframes.reopenHint({ id: k.id })}
-                  disabled={busy || !!blocked}
-                  disabledReason={busy ? busyReason : blocked}
+                  disabled={busy || !!blocked || !!copies[k.id]}
+                  disabledReason={
+                    busy ? busyReason : (blocked ?? (copies[k.id] ? productionTexts.packageKeyframes.copyReopen({ id: k.id, source: copies[k.id] }) : null))
+                  }
                   onClick={() => setReopening(k.id)}
                 >
                   {productionTexts.packageKeyframes.reopen}

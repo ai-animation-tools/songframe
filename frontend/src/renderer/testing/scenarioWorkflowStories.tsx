@@ -410,7 +410,18 @@ export function scenarioWorkflowOptions(mode: ScenarioStoryMode = 'prepare'): St
             validate(project);
             // Для двух демонстрационных планов достаточно применить after предыдущего плана; настоящий расчёт остаётся в Go.
             const state: EntityState = { hero: { coat: scenes.scenes[0]?.state_changes.after?.hero?.coat ?? 'сухая' } };
-            return { shot, phase, state, inherited: structuredClone(state), sources: {}, labels: {}, paragraph: '', checklist: [], text: '' };
+            return {
+              shot,
+              phase,
+              state,
+              inherited: structuredClone(state),
+              sources: {},
+              labels: {},
+              scope: Object.keys(state),
+              paragraph: '',
+              checklist: [],
+              text: ''
+            };
           }
         }
       });

@@ -403,17 +403,23 @@ function resolveState(
 
 function pageBrief(scenes: ScenesFile, cast: CastFile | null, shot: string, phase: 'before' | 'after'): BriefResult {
   const { result, inherited } = resolveState(scenes, cast, shot, phase);
+  // Сущности кадра плана, как у scenario.BuildBrief: мир, references плана и сущности state_changes той же фазы.
+  const record = scenes.scenes.find((item) => item.id === shot);
+  const inPlan = new Set(['world', ...(record?.references ?? []), ...Object.keys(record?.state_changes[phase] ?? {})]);
   const labels: BriefResult['labels'] = {};
   const lines: string[] = [];
+  const scope: string[] = [];
   for (const [entity, values] of Object.entries(result.state)) {
     const info = cast?.entities.find((item) => item.id === entity);
     const properties = info ? (cast?.properties[info.kind] ?? []) : [];
     labels[entity] = Object.fromEntries(Object.keys(values).map((key) => [key, properties.find((item) => item.key === key)?.label ?? key]));
+    if (!inPlan.has(entity)) continue;
+    scope.push(entity);
     const described = Object.entries(values).map(([key, value]) => `${labels[entity][key].toLowerCase()} — ${value}`);
     if (described.length) lines.push(`${info?.short_name ?? entity}: ${described.join(', ')}.`);
   }
   const paragraph = lines.join(' ');
-  return { shot, phase, state: result.state, sources: result.sources, labels, inherited, paragraph, checklist: lines, text: paragraph };
+  return { shot, phase, state: result.state, sources: result.sources, labels, inherited, scope, paragraph, checklist: lines, text: paragraph };
 }
 
 interface PageModel {

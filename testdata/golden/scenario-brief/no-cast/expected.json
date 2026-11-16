@@ -9,6 +9,7 @@
       "sources": {},
       "labels": {},
       "inherited": {},
+      "scope": [],
       "paragraph": "Состояние на первый кадр M01: состояние не задано.",
       "checklist": [],
       "text": "Состояние на первый кадр M01 (Действие M01.)\n\nСостояние не задано: в кастинге нет начального состояния, а в планах нет изменений."
@@ -46,6 +47,10 @@
       },
       "labels": {},
       "inherited": {},
+      "scope": [
+        "boat",
+        "mira"
+      ],
       "paragraph": "Состояние на последний кадр M01. boat: wet: мокрая. mira: position: в лодке.",
       "checklist": [],
       "text": "Состояние на последний кадр M01 (Действие M01.)\n\nboat: wet: мокрая.\nmira: position: в лодке."
@@ -100,6 +105,11 @@
           "wet": "мокрая"
         }
       },
+      "scope": [
+        "boat",
+        "mira",
+        "world"
+      ],
       "paragraph": "Состояние на первый кадр M02. boat: wet: мокрая. mira: position: в лодке. world: time of day: сумерки.",
       "checklist": [],
       "text": "Состояние на первый кадр M02 (Действие M02.)\n\nboat: wet: мокрая.\nmira: position: в лодке.\nworld: time of day: сумерки."
@@ -157,6 +167,11 @@
           "time_of_day": "сумерки"
         }
       },
+      "scope": [
+        "boat",
+        "mira",
+        "world"
+      ],
       "paragraph": "Состояние на последний кадр M02. boat: wet: мокрая. mira: position: в лодке. world: time of day: сумерки.",
       "checklist": [],
       "text": "Состояние на последний кадр M02 (Действие M02.)\n\nboat: wet: мокрая.\nmira: position: в лодке.\nworld: time of day: сумерки."
@@ -172,6 +187,7 @@
       "sources": {},
       "labels": {},
       "inherited": {},
+      "scope": [],
       "paragraph": "Состояние на первый кадр M03: состояние не задано.",
       "checklist": [],
       "text": "Состояние на первый кадр M03 (Действие M03.)\n\nСостояние не задано: в кастинге нет начального состояния, а в планах нет изменений."
@@ -209,9 +225,12 @@
       },
       "labels": {},
       "inherited": {},
-      "paragraph": "Состояние на последний кадр M03. boat: wet: мокрая. mira: position: в лодке.",
+      "scope": [
+        "mira"
+      ],
+      "paragraph": "Состояние на последний кадр M03. mira: position: в лодке.",
       "checklist": [],
-      "text": "Состояние на последний кадр M03 (Действие M03.)\n\nboat: wet: мокрая.\nmira: position: в лодке."
+      "text": "Состояние на последний кадр M03 (Действие M03.)\n\nmira: position: в лодке."
     }
   }
 ]

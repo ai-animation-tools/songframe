@@ -1,6 +1,6 @@
 // Package continuitybrief строит врезку непрерывности для плана (инструмент continuity_brief):
-// состояние мира и героев словами на первый или последний кадр и чек-лист «да или нет» для
-// проверки полученного изображения.
+// состояние мира и сущностей плана словами на первый или последний кадр и чек-лист «да или нет»
+// для проверки полученного изображения. Сущности вне плана во врезку не входят (planScope).
 //
 // Текст детерминированно выводится из вычисленного состояния реестра сцен (sceneregistry) и
 // словаря свойств кастинга: приложение вкладывает абзац в задание агента для дословной вставки в
@@ -270,10 +270,50 @@ func actionHeading(scene *toolrt.Dict) (string, error) {
 	return "", toolrt.Raise(toolrt.TypeError, "нельзя обратиться по индексу или ключу: %s", toolrt.TypeName(action))
 }
 
-// Brief — врезка плана sid реестра data на фазу before/after. castData — кастинг
-// castregistry.Load (nil — нет кастинга), initial — начальное состояние сущностей
-// (sceneregistry.InitialStatesFor проекта). Результат — словарь {shot, phase, state, paragraph,
-// checklist, text} в порядке ключей вывода --json.
+// planScope — сущности, которые касаются кадра phase плана: мир, коды из его references (кто и что
+// в кадре) и сущности, чьё состояние план задаёт в state_changes той же фазы (герой, входящий в
+// кадр к концу плана, есть в итоге, но не на первом кадре). Остальные сущности кастинга во врезку
+// не попадают: абзац вставляется в промпт опоры дословно, и упоминание героя вне кадра может
+// появить его на изображении. То же правило у врезки страницы «Сценарий» (scenario.BuildBrief).
+// Поля неожиданной формы пропускаются: их показывает проверка реестра.
+func planScope(scene *toolrt.Dict, phase string) map[string]bool {
+	scope := map[string]bool{castregistry.WorldID: true}
+	if scene == nil {
+		return scope
+	}
+	if references, ok := scene.Value("references").([]any); ok {
+		for _, item := range references {
+			if id, isString := item.(string); isString {
+				scope[id] = true
+			}
+		}
+	}
+	if changes, ok := scene.Value("state_changes").(*toolrt.Dict); ok {
+		if entities, isDict := changes.Value(phase).(*toolrt.Dict); isDict {
+			for _, id := range entities.Keys() {
+				scope[id] = true
+			}
+		}
+	}
+	return scope
+}
+
+// scopedState — состояние только сущностей плана (planScope) в порядке вычисления.
+func scopedState(state *toolrt.Dict, scope map[string]bool) *toolrt.Dict {
+	result := toolrt.NewDict()
+	for _, id := range state.Keys() {
+		if scope[id] {
+			result.Set(id, state.Value(id))
+		}
+	}
+	return result
+}
+
+// Brief — врезка плана sid реестра data на фазу before/after по сущностям этого кадра (planScope).
+// castData — кастинг castregistry.Load (nil — нет кастинга), initial — начальное состояние
+// сущностей (sceneregistry.InitialStatesFor проекта). Состояние вычисляется по всей цепочке
+// планов, поэтому сущность, вернувшаяся в кадр, получает унаследованное значение. Результат —
+// словарь {shot, phase, state, paragraph, checklist, text} в порядке ключей вывода --json.
 func Brief(data *toolrt.Dict, castData *toolrt.Dict, sid, phase string, initial *toolrt.Dict) (*toolrt.Dict, error) {
 	states, err := sceneregistry.SceneState(data, sid, initial)
 	if err != nil {
@@ -283,7 +323,6 @@ func Brief(data *toolrt.Dict, castData *toolrt.Dict, sid, phase string, initial 
 	if err != nil {
 		return nil, err
 	}
-	stateDict := state.(*toolrt.Dict)
 	var scene *toolrt.Dict
 	for _, item := range data.Value("scenes").([]any) {
 		if record := item.(*toolrt.Dict); record.Value("id") == sid {
@@ -291,6 +330,7 @@ func Brief(data *toolrt.Dict, castData *toolrt.Dict, sid, phase string, initial 
 			break
 		}
 	}
+	stateDict := scopedState(state.(*toolrt.Dict), planScope(scene, phase))
 	description, err := describe(castData, stateDict)
 	if err != nil {
 		return nil, err

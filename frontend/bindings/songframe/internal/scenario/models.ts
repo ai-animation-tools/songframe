@@ -21,6 +21,13 @@ export interface Brief {
     "sources": json$0.RawMessage;
     "labels": json$0.RawMessage;
     "inherited": json$0.RawMessage;
+
+    /**
+     * Scope — коды сущностей этого кадра плана (planScope) в порядке врезки. State, Sources и Labels содержат
+     * все сущности с состоянием: страница показывает остальные отдельно, «вне плана». Абзац,
+     * чек-лист и текст построены только по Scope.
+     */
+    "scope": string[];
     "paragraph": string;
     "checklist": string[];
     "text": string;

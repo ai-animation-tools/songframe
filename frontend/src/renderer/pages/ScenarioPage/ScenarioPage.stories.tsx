@@ -134,6 +134,30 @@ export const OpenShotState: Story = {
   }
 };
 
+export const BriefOutsidePlan: Story = {
+  name: 'Врезка · сущности вне плана свёрнуты и не идут агенту',
+  tags: ['!autodocs', 'ci'],
+  parameters: { songframe: scenarioPageOptions({ route: '/project/scenario?shot=M02' }) },
+  play: async (context) => {
+    const screen = await ready(context);
+    await editorHeading(screen, 'M02');
+    // В M02 в кадре только герой: сосед и ворота вычислены, но во врезку агенту не входят.
+    const summary = await screen.findByRole('button', { name: new RegExp(scenarioTexts.brief.outsidePlan({ count: 2 })) }, { timeout: 3000 });
+    await expect(summary).toHaveAttribute('aria-expanded', 'false');
+    await expect(screen.getByText(scenarioTexts.brief.outsidePlanHint)).toBeVisible();
+    // Вопросы сверки и текст для агента — только о герое плана.
+    await expect(screen.queryAllByText(/^(Паша|Ворота):/)).toHaveLength(0);
+    const outside = within(summary.closest('.MuiAccordion-root') as HTMLElement);
+    await expect(outside.getByText('Сосед Паша')).not.toBeVisible();
+
+    // Раскрытие показывает их состояние, чтобы сверить непрерывность, не меняя врезку.
+    await userEvent.click(summary);
+    await expect(summary).toHaveAttribute('aria-expanded', 'true');
+    await waitFor(() => expect(outside.getByText('Сосед Паша')).toBeVisible());
+    await expect(outside.getByText('Старые ворота')).toBeVisible();
+  }
+};
+
 export const TabDrafts: Story = {
   name: 'Вкладки «Трактовка» и «Реестр» · черновики сохраняются независимо',
   tags: ['!autodocs', 'ci'],

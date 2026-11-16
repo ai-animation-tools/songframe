@@ -20,7 +20,7 @@ const cast = {
 } as CastFile;
 
 function brief(phase: 'before' | 'after', state: BriefResult['state'], sources: BriefResult['sources'], labels: BriefResult['labels'] = {}): BriefResult {
-  return { shot: 'M58', phase, state, sources, labels, inherited: {}, paragraph: '', checklist: [], text: '' };
+  return { shot: 'M58', phase, state, sources, labels, inherited: {}, scope: Object.keys(state), paragraph: '', checklist: [], text: '' };
 }
 
 const before = brief(

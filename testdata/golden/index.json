@@ -4008,6 +4008,14 @@
   },
   {
     "domain": "continuity-brief",
+    "name": "plan-scope",
+    "description": "Врезка только по сущностям плана: мир, references и сущности из state_changes плана; Лев вне плана не попадает.",
+    "covers": [
+      "planScope"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
     "name": "json-paragraph",
     "description": "--json и --paragraph: печатается JSON.",
     "covers": [
@@ -4058,7 +4066,7 @@
   {
     "domain": "continuity-brief",
     "name": "outside-cast",
-    "description": "Сущности вне кастинга: после кастинга по алфавиту, подпись из ключа.",
+    "description": "Сущности вне кастинга (введены в план через state_changes): после кастинга по алфавиту, подпись из ключа.",
     "covers": [
       "entity_order sorted",
       "key.replace"
@@ -4067,7 +4075,7 @@
   {
     "domain": "continuity-brief",
     "name": "generic-kind",
-    "description": "Тип без словаря: общий набор свойств и подписи.",
+    "description": "Тип без словаря (сущность введена в план через state_changes): общий набор свойств и подписи.",
     "covers": [
       "GENERIC_PROPERTIES"
     ]

@@ -1,0 +1,17 @@
+{
+  "description": "Врезка только по сущностям плана: мир, references и сущности из state_changes плана; Лев вне плана не попадает.",
+  "call": "continuity_brief",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "planScope"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "M03",
+    "--phase",
+    "after"
+  ],
+  "remove": [],
+  "mkdir": []
+}

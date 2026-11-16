@@ -21,9 +21,35 @@ type Brief struct {
 	Sources   json.RawMessage `json:"sources"`
 	Labels    json.RawMessage `json:"labels"`
 	Inherited json.RawMessage `json:"inherited"`
-	Paragraph string          `json:"paragraph"`
-	Checklist []string        `json:"checklist"`
-	Text      string          `json:"text"`
+	// Scope — коды сущностей этого кадра плана (planScope) в порядке врезки. State, Sources и Labels содержат
+	// все сущности с состоянием: страница показывает остальные отдельно, «вне плана». Абзац,
+	// чек-лист и текст построены только по Scope.
+	Scope     []string `json:"scope"`
+	Paragraph string   `json:"paragraph"`
+	Checklist []string `json:"checklist"`
+	Text      string   `json:"text"`
+}
+
+// planScope — сущности, которые касаются кадра phase плана: мир, коды из его references (кто и что
+// в кадре) и сущности, чьё состояние план задаёт в state_changes той же фазы. Абзац врезки
+// вставляется в промпт опоры дословно, поэтому герои вне плана в него не попадают. То же правило у
+// инструмента continuity_brief (internal/continuitybrief). Поля неожиданной формы пропускаются: их
+// показывает проверка реестра.
+func planScope(scene any, phase string) map[string]bool {
+	scope := map[string]bool{cast.WorldID: true}
+	if references, ok := dynvalue.AsArray(dynvalue.Get(scene, "references")); ok {
+		for _, item := range references {
+			if id, isString := item.(string); isString {
+				scope[id] = true
+			}
+		}
+	}
+	if entities, ok := dynvalue.AsObject(dynvalue.GetPath(scene, "state_changes", phase)); ok {
+		for _, id := range entities.Keys() {
+			scope[id] = true
+		}
+	}
+	return scope
 }
 
 // property — элемент словаря свойств, нужный врезке: подпись и шаблон вопроса чек-листа.
@@ -94,8 +120,8 @@ func sliceUTF16(text string, limit int) (string, bool) {
 	return string(utf16.Decode(units[:limit])), true
 }
 
-// BuildBrief — врезка непрерывности (continuity_brief): мир первым, затем сущности кастинга в его порядке,
-// затем коды вне кастинга по алфавиту; подписи — из словаря кастинга или общего набора по
+// BuildBrief — врезка непрерывности (continuity_brief) по сущностям плана (planScope): мир первым,
+// затем сущности кастинга в его порядке, затем коды вне кастинга по алфавиту; подписи — из словаря кастинга или общего набора по
 // умолчанию для типа без словаря. data — черновик реестра со страницы, castValue — кастинг проекта
 // или nil. Ошибка — неизвестный план или фаза и исключение вычисления состояния.
 func BuildBrief(data, castValue any, sid, phase string) (Brief, error) {
@@ -199,7 +225,13 @@ func BuildBrief(data, castValue any, sid, phase string) (Brief, error) {
 		}
 	}
 	sortUTF16(others)
-	order := append(known, others...)
+	inScope := planScope(scene, phase)
+	order := []string{}
+	for _, id := range append(known, others...) {
+		if inScope[id] {
+			order = append(order, id)
+		}
+	}
 
 	labels := dynvalue.NewObject()
 	for _, entity := range state.Keys() {
@@ -282,7 +314,7 @@ func BuildBrief(data, castValue any, sid, phase string) (Brief, error) {
 	return Brief{
 		Shot: sid, Phase: phase,
 		State: dynvalue.Raw(state), Sources: dynvalue.Raw(sources), Labels: dynvalue.Raw(labels), Inherited: dynvalue.Raw(inherited),
-		Paragraph: paragraph, Checklist: checklist, Text: strings.Join(text, "\n"),
+		Scope: order, Paragraph: paragraph, Checklist: checklist, Text: strings.Join(text, "\n"),
 	}, nil
 }
 

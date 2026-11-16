@@ -1,5 +1,5 @@
 {
-  "description": "Сущности вне кастинга: после кастинга по алфавиту, подпись из ключа.",
+  "description": "Сущности вне кастинга (введены в план через state_changes): после кастинга по алфавиту, подпись из ключа.",
   "call": "continuity_brief",
   "project": "project",
   "base": "checks-base",

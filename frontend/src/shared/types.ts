@@ -411,6 +411,11 @@ export interface BriefResult {
   labels: Record<string, Record<string, string>>;
   /** Состояние до правок этого блока плана: для первого кадра — унаследованное, для итога — первый кадр. */
   inherited: EntityState;
+  /**
+   * Сущности плана в порядке врезки: мир, «В кадре (референсы)» и те, чьё состояние план меняет. state содержит
+   * все сущности с состоянием; paragraph, checklist и text построены только по scope.
+   */
+  scope: string[];
   paragraph: string;
   checklist: string[];
   text: string;

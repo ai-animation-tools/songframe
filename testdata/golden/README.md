@@ -41,7 +41,7 @@
 | `check-assets/` | инструмент `check_assets` (`internal/checkassets`) | 33 |
 | `check-workspace/` | инструмент `check_workspace` (`internal/checkworkspace`) | 33 |
 | `shot-status/` | инструмент `shot_status` | 41 |
-| `continuity-brief/` | инструмент `continuity_brief` | 41 |
+| `continuity-brief/` | инструмент `continuity_brief` | 42 |
 | `scene-views/` | инструмент `update_scene_views` | 53 |
 | `animatic-cards/` | `internal/animaticcards`: раскладка карточек и опор, ширины строк DejaVu Sans | 43 + 1416 |
 | `agents-protocol/cases.json` | чистые функции `internal/agents`: аргументы, stdin, разбор потока, маскировка, диагностика | 209 |

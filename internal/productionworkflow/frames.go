@@ -3,6 +3,7 @@ package productionworkflow
 import (
 	"context"
 	"errors"
+	"path"
 	"slices"
 	"strings"
 
@@ -107,6 +108,27 @@ func (w *Workflow) planFrames(project, shot, packageDir string) (*framesPlan, er
 	return &framesPlan{context: c, prompt: prompt, notes: c.FrameNotes(dynvalue.Get(prompt, "id")), info: info, hashes: hashes}, nil
 }
 
+// referenceEntities — сущность кастинга плана для каждого её изображения: путь от проекта
+// (source/ и путь из images), как его пишет план опор в referencePaths.
+func referenceEntities(cast *dynvalue.Array) map[string]mediaapi.ReferenceEntity {
+	result := map[string]mediaapi.ReferenceEntity{}
+	if cast == nil {
+		return result
+	}
+	for _, entity := range cast.Items {
+		id, _ := dynvalue.Get(entity, "id").(string)
+		name, _ := dynvalue.Get(entity, "name").(string)
+		kind, _ := dynvalue.Get(entity, "kind").(string)
+		images, _ := dynvalue.AsArray(dynvalue.Get(entity, "images"))
+		for _, image := range images {
+			if file, ok := image.(string); ok && id != "" {
+				result[path.Clean("source/"+file)] = mediaapi.ReferenceEntity{ID: id, Name: name, Kind: kind}
+			}
+		}
+	}
+	return result
+}
+
 // framePrompt — ProductionFramePrompt из плана опор пакета для запроса провайдеру.
 func framePrompt(value any) mediaapi.FramePrompt {
 	frame := mediaapi.FramePrompt{ReferencePaths: []string{}}
@@ -178,6 +200,7 @@ func (w *Workflow) GenerateFrames(ctx context.Context, project, shot, packageDir
 	notes := slices.Clone(plan.notes)
 	job, err := w.generateImages(c.Project, mediaapi.ImagesInput{
 		Project: c.Project, Shot: shot, PackageDir: c.PackageDir, Frames: []mediaapi.FramePrompt{frame}, Notes: &notes, ApprovedFrames: &approved,
+		ReferenceEntities: referenceEntities(c.Cast),
 	})
 	if err != nil {
 		return View{}, err

@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"os"
+	pathpkg "path"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -22,6 +23,9 @@ import (
 
 // frameID — ID опоры K01…K99.
 var frameID = regexp.MustCompile(`^K\d{2}$`)
+
+// copySuffix — ID сущности, который можно дописать к имени копии референса без экранирования.
+var copySuffix = regexp.MustCompile(`^[a-z0-9_-]{1,64}$`)
 
 // sha256Hex — SHA-256 в hex, как записывает job.json.
 var sha256Hex = regexp.MustCompile(`^[a-f0-9]{64}$`)
@@ -123,6 +127,8 @@ func (k *KeyframeImages) Start(input mediaapi.ImagesInput, request agentexec.Ima
 	}()
 	inputs := []imagesInput{}
 	copies := map[string]string{}
+	// Подписи копий: файл и сущность кастинга, которой он принадлежит, в порядке копирования.
+	labels := []any{}
 	frames := make([]any, len(input.Frames))
 	for index, frame := range input.Frames {
 		references := make([]any, len(frame.ReferencePaths))
@@ -138,13 +144,27 @@ func (k *KeyframeImages) Start(input mediaapi.ImagesInput, request agentexec.Ima
 			}
 			name, seen := copies[source]
 			if !seen {
-				name = "reference-" + twoDigits(len(copies)+1) + extname(source)
+				entity, known := input.ReferenceEntities[pathpkg.Clean(filepath.ToSlash(path))]
+				name = "reference-" + twoDigits(len(copies)+1)
+				// ID сущности в имени повторяет подпись: имя файла само говорит, чей он.
+				if known && copySuffix.MatchString(entity.ID) {
+					name += "-" + entity.ID
+				}
+				name += extname(source)
 				digest, err := pinCopy(source, filepath.Join(directory, name))
 				if err != nil {
 					return agents.Job{}, err
 				}
 				copies[source] = name
 				inputs = append(inputs, imagesInput{Path: source, Copy: name, SHA256: digest})
+				label := dynvalue.NewObject()
+				label.Set("file", name)
+				if known {
+					label.Set("entity", entity.ID)
+					label.Set("name", entity.Name)
+					label.Set("kind", entity.Kind)
+				}
+				labels = append(labels, label)
 			}
 			references[position] = name
 		}
@@ -191,6 +211,9 @@ func (k *KeyframeImages) Start(input mediaapi.ImagesInput, request agentexec.Ima
 	context := dynvalue.NewObject()
 	context.Set("stage", "frames")
 	context.Set("shot", input.Shot)
+	if len(labels) > 0 {
+		context.Set("references", &dynvalue.Array{Items: labels})
+	}
 	context.Set("frames", &dynvalue.Array{Items: frames})
 	if len(approved) > 0 {
 		context.Set("approvedFrames", &dynvalue.Array{Items: approved})

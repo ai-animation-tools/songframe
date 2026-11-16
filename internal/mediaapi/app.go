@@ -193,6 +193,18 @@ type ImagesInput struct {
 	Frames         []FramePrompt    `json:"frames"`
 	Notes          *[]string        `json:"notes,omitempty"`
 	ApprovedFrames *[]ApprovedFrame `json:"approvedFrames,omitempty"`
+	// ReferenceEntities — сущность кастинга каждого референса по пути от проекта, как в
+	// ReferencePaths: задание агента подписывает копии, чтобы он не угадывал, какой файл чей
+	// (замечание «референс "Мастерская"» указывает на файл этой сущности). Путь без сущности
+	// остаётся без подписи.
+	ReferenceEntities map[string]ReferenceEntity `json:"referenceEntities,omitempty"`
+}
+
+// ReferenceEntity — сущность кастинга, которой принадлежит изображение референса.
+type ReferenceEntity struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Kind string `json:"kind"`
 }
 
 // FrameCandidate — ProductionFrameCandidate контракта: кандидат опоры id в файле path.

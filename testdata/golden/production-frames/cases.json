@@ -6,35 +6,35 @@
     "7a58a283880b425ff5dabde560cca1f072032be5e977086863952aee71368ece": "{\n  \"schema_version\": 1,\n  \"shot\": \"M01\",\n  \"mode\": \"shot\",\n  \"stage\": \"keyframes_review\",\n  \"wait_reason\": null,\n  \"request_dir\": null,\n  \"description_approved\": true,\n  \"scene_sha256\": \"a6cb3fb499ac2caf1589f2ecd4127504a1a9d766598493d9a61547a3fe720366\",\n  \"timing\": {\n    \"fps\": 30,\n    \"frames\": 240,\n    \"window_seconds\": 8,\n    \"request_seconds\": 9\n  },\n  \"keyframes\": [\n    {\n      \"id\": \"K01\",\n      \"role\": \"first\",\n      \"time_seconds\": 0,\n      \"note\": \"опора K01\",\n      \"path\": null,\n      \"sha256\": null,\n      \"approved\": false\n    },\n    {\n      \"id\": \"K02\",\n      \"role\": \"last\",\n      \"time_seconds\": 9,\n      \"note\": \"опора K02\",\n      \"path\": null,\n      \"sha256\": null,\n      \"approved\": false\n    }\n  ],\n  \"approved_frames\": {},\n  \"keyframe_notes\": [],\n  \"prompt\": {\n    \"path\": \"video-prompt.txt\",\n    \"approved\": false\n  },\n  \"approved_prompt_sha256\": null,\n  \"retry_of\": null,\n  \"pending_decision\": null,\n  \"decision\": null\n}\n",
     "0169c11107f9508dc2413ca401259a5327340b38ae735a626fb670b9c08a9d69": "Лодка плывёт по спокойной реке.\n",
     "5d0b3755a10dbcb6d3cbcf7096d3e0335dca1d8389e2865c94dc2b970d4e32e4": "[\n  {\n    \"id\": \"K01\",\n    \"role\": \"first\",\n    \"timeSeconds\": 0,\n    \"prompt\": \"Лодка у берега\",\n    \"referencePaths\": [\n      \"source/vehicles/boat.png\"\n    ]\n  },\n  {\n    \"id\": \"K02\",\n    \"role\": \"last\",\n    \"timeSeconds\": 9,\n    \"prompt\": \"Лодка у пристани\",\n    \"referencePaths\": [\n      \"source/vehicles/boat.png\"\n    ]\n  }\n]\n",
-    "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-1\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
-    "386141e055f46354e151fa7a3676cc68441e066579145dfc233eb330620eabc5": "Создай перечисленные опорные изображения встроенным инструментом генерации изображений. Используй только переданные копии референсов. Сохрани каждый результат как Kxx.png, Kxx.jpg или Kxx.webp в текущей папке, сохраняя фактический формат генератора. Не используй внешние сервисы генерации, API-ключи или другие генераторы. Если встроенный image tool недоступен, сообщи об этом и не подменяй его другим способом. Не изменяй референсы, исходный проект или принятые материалы. Финальный ответ — один JSON без Markdown: {\"schemaVersion\":1,\"stage\":\"frames\",\"images\":[{\"id\":\"K01\",\"path\":\"K01.png\"}]}.",
-    "af2dfb8c342ebf7a1c40fee7ce9a5f7435013bde334427d9494dfe154d4d3c75": "{\"stage\":\"frames\",\"shot\":\"M01\",\"frames\":[{\"id\":\"K01\",\"role\":\"first\",\"timeSeconds\":0,\"prompt\":\"Лодка у берега\",\"referencePaths\":[\"reference-01.png\"]}]}",
+    "be19a39b6d55d2d34b082640e063e2bb70fb5d62a4a99d1690f09e693641b588": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-1\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01-boat.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
+    "cf37c78810735380c8823b9427be0a9a8623951f379b5818e472323425656ad7": "Создай перечисленные опорные изображения встроенным инструментом генерации изображений. Используй только переданные копии референсов. references — что на каждой копии: file — имя копии, entity — ID сущности кастинга, name — её имя, kind — вид (например, character — персонаж, location — место, prop — предмет). Когда промпт опоры или notes называют референс по имени (референс «Мастерская»), это копия с таким name; не определяй принадлежность копии по её содержимому. Передай генератору все копии из referencePaths создаваемой опоры и в его промпте назови по name, какая копия чья. Сохрани каждый результат как Kxx.png, Kxx.jpg или Kxx.webp в текущей папке, сохраняя фактический формат генератора. Не используй внешние сервисы генерации, API-ключи или другие генераторы. Если встроенный image tool недоступен, сообщи об этом и не подменяй его другим способом. Не изменяй референсы, исходный проект или принятые материалы. Финальный ответ — один JSON без Markdown: {\"schemaVersion\":1,\"stage\":\"frames\",\"images\":[{\"id\":\"K01\",\"path\":\"K01.png\"}]}.",
+    "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0": "{\"stage\":\"frames\",\"shot\":\"M01\",\"references\":[{\"file\":\"reference-01-boat.png\",\"entity\":\"boat\",\"name\":\"Лодка\",\"kind\":\"vehicle\"}],\"frames\":[{\"id\":\"K01\",\"role\":\"first\",\"timeSeconds\":0,\"prompt\":\"Лодка у берега\",\"referencePaths\":[\"reference-01-boat.png\"]}]}",
     "8c357a03c82ace7b4c560984185f09f270ff455de5ed9942a91e6df8a6770f05": "{\n  \"schemaVersion\": 1,\n  \"discarded\": \"<id>\"\n}\n",
     "a06e8ebdd60083a53155e4b0b08ef49192ced00c34123ea4c44b8fbd0d753f74": "{\n  \"schema_version\": 1,\n  \"shot\": \"M01\",\n  \"mode\": \"shot\",\n  \"stage\": \"keyframes_review\",\n  \"wait_reason\": null,\n  \"request_dir\": null,\n  \"description_approved\": true,\n  \"scene_sha256\": \"a6cb3fb499ac2caf1589f2ecd4127504a1a9d766598493d9a61547a3fe720366\",\n  \"timing\": {\n    \"fps\": 30,\n    \"frames\": 240,\n    \"window_seconds\": 8,\n    \"request_seconds\": 9\n  },\n  \"keyframes\": [\n    {\n      \"id\": \"K01\",\n      \"role\": \"first\",\n      \"time_seconds\": 0,\n      \"note\": \"опора K01\",\n      \"path\": \"frames/K01.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\",\n      \"approved\": true\n    },\n    {\n      \"id\": \"K02\",\n      \"role\": \"last\",\n      \"time_seconds\": 9,\n      \"note\": \"опора K02\",\n      \"path\": null,\n      \"sha256\": null,\n      \"approved\": false\n    }\n  ],\n  \"approved_frames\": {},\n  \"keyframe_notes\": [\n    {\n      \"id\": 1,\n      \"frame\": \"K02\",\n      \"note\": \"  Темнее  \",\n      \"scope\": \"frame\",\n      \"active\": true\n    },\n    {\n      \"id\": 2,\n      \"frame\": \"K01\",\n      \"note\": \"Сохранить лодку\",\n      \"scope\": \"following\",\n      \"active\": true\n    },\n    {\n      \"id\": 3,\n      \"frame\": \"K02\",\n      \"note\": \"снято\",\n      \"scope\": \"frame\",\n      \"active\": false\n    },\n    {\n      \"id\": 4,\n      \"frame\": \"K01\",\n      \"note\": \"только K01\",\n      \"scope\": \"frame\",\n      \"active\": true\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"video-prompt.txt\",\n    \"approved\": false\n  },\n  \"approved_prompt_sha256\": null,\n  \"retry_of\": null,\n  \"pending_decision\": null,\n  \"decision\": null\n}\n",
-    "a7cc78093f704aa9e120d9248c900565d3368aaf1cc1bedd4e9599c4500523e6": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-1\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K02\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    },\n    {\n      \"path\": \"<project>/plan/batches/M01-attempt-01/frames/K01.png\",\n      \"copy\": \"approved-K01.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
-    "3011993e7f67a52946ab405f47726d361f544086e7820fa36acbc052a990f94a": "Создай перечисленные опорные изображения встроенным инструментом генерации изображений. Используй только переданные копии референсов. approvedFrames — уже утверждённые кадры этого же плана: передай их генератору как референсы и сохрани с ними внешность и одежду героев, свет, место, расстановку и направление транспорта и героев; меняй только то, что задаёт промпт создаваемой опоры. notes — исправления пользователя к прежним вариантам: выполни их, они важнее совпадения с прежним результатом. Сохрани каждый результат как Kxx.png, Kxx.jpg или Kxx.webp в текущей папке, сохраняя фактический формат генератора. Не используй внешние сервисы генерации, API-ключи или другие генераторы. Если встроенный image tool недоступен, сообщи об этом и не подменяй его другим способом. Не изменяй референсы, исходный проект или принятые материалы. Финальный ответ — один JSON без Markdown: {\"schemaVersion\":1,\"stage\":\"frames\",\"images\":[{\"id\":\"K01\",\"path\":\"K01.png\"}]}.",
-    "96d2ebf3af12ae3e39539f8d2cab0b12bb1169741b9733389ffa44ccc50a3033": "{\"stage\":\"frames\",\"shot\":\"M01\",\"frames\":[{\"id\":\"K02\",\"role\":\"last\",\"timeSeconds\":9,\"prompt\":\"Лодка у пристани\",\"referencePaths\":[\"reference-01.png\"]}],\"approvedFrames\":[{\"id\":\"K01\",\"role\":\"first\",\"path\":\"approved-K01.png\"}],\"notes\":[\"Темнее\",\"Сохранить лодку\"]}",
-    "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-2\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
-    "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-3\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
-    "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-4\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
-    "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-5\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
-    "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-6\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
-    "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-7\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
-    "17178a5be1d5cabbe1a8a40fdc61d34b4bc4afc71e969995a490884150cefa8b": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-8\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
-    "8571dad575080b780cdf830b9656a720ccd9d88a265b3de4bdeba8020b47c2b7": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-9\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
-    "664f484ae97793c0da244be86a00cf00a748f9d0ef4cc114f90ad5a3bbc04f16": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-10\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
-    "d3f2735fcc65c06fbccda491fe348c4d6b5552d491682f5e437a4570e677a5f6": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-11\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
-    "948151487a39b721733fc23bc49a1a504b29507ed88a7c84216b7fa67efe161e": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-12\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
-    "0ce1b1524748b50d416b71c9923cc334d3041eaf4c7b6ccfe262242a58d14bb3": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-13\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
-    "1c25c6d94b9bbb834bb3de6a91f5520dc990ba03a3736f043aca9c2b53a65e58": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-14\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
-    "feeb72aeb51b17432e7ad13d07cbd9d7f6a2884991c2dcdbf4c9fa69a575b9ed": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-15\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
-    "b1c51ba539564fda645ea04b2810d9ee6a4d8df9927baa0312c4f18e8abd19eb": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-16\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
-    "5cb016f2f1cdd17bdbc3c3b6ac6ec7613032befcbdea2ed18b899c338833f6c7": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-16\",\n  \"project\": \"<project>\",\n  \"provider\": \"kling\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
-    "34882c3c586497b4b913ede21f37afeb2a71ed99f455fb96cdb510735f860791": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-17\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
-    "cf739369dcd2e212ce7ed5ba57a13de857906baf92a1a6f5ebecb1c8577270d9": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-17\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"bad\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
-    "96589cb85289812523ade97b81f3bed76a00fee659f219cbe3246e44733c73ab": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-18\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
-    "fe4358cf39b38b87b36b551114cbde938121a9d685d24e5b6730d2fe3b37ce8c": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-19\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
-    "4b3434eaf295468de273b0a2b1feb0722decb290fd10fd3c514c82fc75d9733d": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-20\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
+    "da85373ff0bc1744e5d5233532028d459383bcfdc6e117392cb812e44bee9d8f": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-1\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K02\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01-boat.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    },\n    {\n      \"path\": \"<project>/plan/batches/M01-attempt-01/frames/K01.png\",\n      \"copy\": \"approved-K01.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
+    "30b516bad7ebdc9858d84a0e891d4f1440b0cbab4bafddcdee1d84bba0591677": "Создай перечисленные опорные изображения встроенным инструментом генерации изображений. Используй только переданные копии референсов. references — что на каждой копии: file — имя копии, entity — ID сущности кастинга, name — её имя, kind — вид (например, character — персонаж, location — место, prop — предмет). Когда промпт опоры или notes называют референс по имени (референс «Мастерская»), это копия с таким name; не определяй принадлежность копии по её содержимому. Передай генератору все копии из referencePaths создаваемой опоры и в его промпте назови по name, какая копия чья. approvedFrames — уже утверждённые кадры этого же плана: передай их генератору как референсы и сохрани с ними внешность и одежду героев, свет, место, расстановку и направление транспорта и героев; меняй только то, что задаёт промпт создаваемой опоры. notes — исправления пользователя к прежним вариантам: выполни их, они важнее совпадения с прежним результатом. Сохрани каждый результат как Kxx.png, Kxx.jpg или Kxx.webp в текущей папке, сохраняя фактический формат генератора. Не используй внешние сервисы генерации, API-ключи или другие генераторы. Если встроенный image tool недоступен, сообщи об этом и не подменяй его другим способом. Не изменяй референсы, исходный проект или принятые материалы. Финальный ответ — один JSON без Markdown: {\"schemaVersion\":1,\"stage\":\"frames\",\"images\":[{\"id\":\"K01\",\"path\":\"K01.png\"}]}.",
+    "5982a9b800a0a9bb3f4760e42daf36b2c7e0cad8f33a9afe7461703bef5a1184": "{\"stage\":\"frames\",\"shot\":\"M01\",\"references\":[{\"file\":\"reference-01-boat.png\",\"entity\":\"boat\",\"name\":\"Лодка\",\"kind\":\"vehicle\"}],\"frames\":[{\"id\":\"K02\",\"role\":\"last\",\"timeSeconds\":9,\"prompt\":\"Лодка у пристани\",\"referencePaths\":[\"reference-01-boat.png\"]}],\"approvedFrames\":[{\"id\":\"K01\",\"role\":\"first\",\"path\":\"approved-K01.png\"}],\"notes\":[\"Темнее\",\"Сохранить лодку\"]}",
+    "0edc4827fb34a0729763eddf79ba4c5b9edef65c7304800693a6144aa14bc259": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-2\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01-boat.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
+    "7cda1324dfd72e208d681b26383003b590eb68d604ffe8044c048e2b77fde9cd": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-3\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01-boat.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
+    "30cce367284bd932fdfcfefc3889d9560e4cd7b6fa53db6e51e64a7f6cb7851f": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-4\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01-boat.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
+    "124f1c8ce2baa857803134762984adb1f64e81d8db4d8acdbad0b226ab98142b": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-5\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01-boat.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
+    "82495214048e62898f566cbe7c981e4325da141639c6495cd964809f9c52f03f": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-6\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01-boat.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
+    "203becdf0fd4e1ab7f1222f396a65cb5c7923798dc5801266bbf7278e2398618": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-7\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01-boat.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
+    "8394ea2d831e4e764eddda252c6c69b65f346028710db7fdc3d781440c14f28f": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-8\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01-boat.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
+    "a286dd64e456b9816415f9300c617fca1b062b732ea6ff7143e2ed5aedc00d95": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-9\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01-boat.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
+    "ab63e4806125fbc90d64f55ae611383782a6920c5a9b01e27b8815a5370bf8c6": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-10\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01-boat.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
+    "e7b48d871b0b53de53b874fb8b5bf1953a5d4fc216a0ae90684828c48c623b45": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-11\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01-boat.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
+    "a5aca6b00352d7dec939b5171c82cc6e5f7b1608943d5ac790aea3f40df94b37": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-12\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01-boat.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
+    "03c99c0cb06ecc9d46a23d68194cc33ebe5a542a7d7b577c7341b551955da871": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-13\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01-boat.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
+    "b47b7b79cd7014b4d66971fce1740b1c966a712d064bbadcf3162acb78d2d4bf": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-14\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01-boat.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
+    "0bae4eb0e950f6e81ba0701484c09786decae9e25df5e8daa21fd5635bb7e1e8": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-15\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01-boat.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
+    "92b4c5a602be8e757c81c53e30c75074d7149720755e963715ab23abd96f8fae": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-16\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01-boat.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
+    "3bafe1fdf091cea145d1a27847bd8177970956574a949a30e9674415a14db5e8": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-16\",\n  \"project\": \"<project>\",\n  \"provider\": \"kling\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01-boat.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
+    "672e5fe327b38375cb4c2d7f54d3ef5a9287d2ce240b915a387055eca2e39e3c": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-17\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01-boat.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
+    "b445fc7ec1c7bc57bb19ff5e4bf9096225e518ccc84fd68bd132ec2317381514": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-17\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"bad\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01-boat.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
+    "e69588221824e90144ea7fabffa076e4045b9a4840d274db0276b713d33d760c": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-18\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01-boat.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
+    "2da2fc44445e362d68885bda6c48f70cec4e4025e1063536a0c269b04427714b": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-19\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01-boat.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
+    "7cfb778461ac370470f9f58f9d6deb36e4d0390b2f9a1416962486bb91343c42": "{\n  \"schemaVersion\": 1,\n  \"jobId\": \"job-20\",\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"requestSha\": \"<request>\",\n  \"ids\": [\n    \"K01\"\n  ],\n  \"inputs\": [\n    {\n      \"path\": \"<project>/source/vehicles/boat.png\",\n      \"copy\": \"reference-01-boat.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n    }\n  ]\n}\n",
     "c9338bfeb58f4018e14badaad3c21fc4335ccd0f7dfdd7c55a91a53714a22e6b": "{\n  \"schema_version\": 1,\n  \"shot\": \"M01\",\n  \"mode\": \"shot\",\n  \"stage\": \"keyframes_review\",\n  \"wait_reason\": null,\n  \"request_dir\": null,\n  \"description_approved\": false,\n  \"scene_sha256\": \"a6cb3fb499ac2caf1589f2ecd4127504a1a9d766598493d9a61547a3fe720366\",\n  \"timing\": {\n    \"fps\": 30,\n    \"frames\": 240,\n    \"window_seconds\": 8,\n    \"request_seconds\": 9\n  },\n  \"keyframes\": [\n    {\n      \"id\": \"K01\",\n      \"role\": \"first\",\n      \"time_seconds\": 0,\n      \"note\": \"опора K01\",\n      \"path\": null,\n      \"sha256\": null,\n      \"approved\": false\n    },\n    {\n      \"id\": \"K02\",\n      \"role\": \"last\",\n      \"time_seconds\": 9,\n      \"note\": \"опора K02\",\n      \"path\": null,\n      \"sha256\": null,\n      \"approved\": false\n    }\n  ],\n  \"approved_frames\": {},\n  \"keyframe_notes\": [],\n  \"prompt\": {\n    \"path\": \"video-prompt.txt\",\n    \"approved\": false\n  },\n  \"approved_prompt_sha256\": null,\n  \"retry_of\": null,\n  \"pending_decision\": null,\n  \"decision\": null\n}\n",
     "d58dc2b713a34f7529b71f9404d4e42345c0534f82907c2aaea931216171224d": "{\n  \"schema_version\": 1,\n  \"shot\": \"M01\",\n  \"mode\": \"shot\",\n  \"stage\": \"keyframes_review\",\n  \"wait_reason\": null,\n  \"request_dir\": null,\n  \"description_approved\": true,\n  \"scene_sha256\": \"a6cb3fb499ac2caf1589f2ecd4127504a1a9d766598493d9a61547a3fe720366\",\n  \"timing\": {\n    \"fps\": 30,\n    \"frames\": 240,\n    \"window_seconds\": 8,\n    \"request_seconds\": 9\n  },\n  \"keyframes\": [\n    {\n      \"id\": \"K01\",\n      \"role\": \"first\",\n      \"time_seconds\": 0,\n      \"note\": \"опора K01\",\n      \"path\": \"frames/K01.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\",\n      \"approved\": true\n    },\n    {\n      \"id\": \"K02\",\n      \"role\": \"last\",\n      \"time_seconds\": 9,\n      \"note\": \"опора K02\",\n      \"path\": \"frames/K02.png\",\n      \"sha256\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\",\n      \"approved\": true\n    }\n  ],\n  \"approved_frames\": {},\n  \"keyframe_notes\": [],\n  \"prompt\": {\n    \"path\": \"video-prompt.txt\",\n    \"approved\": false\n  },\n  \"approved_prompt_sha256\": null,\n  \"retry_of\": null,\n  \"pending_decision\": null,\n  \"decision\": null\n}\n",
     "a7a94a9ca3c5015de7ac17f95bfaaeb0eb8087195310e079a174a528119bcdb3": "{\n  \"schema_version\": 1,\n  \"shot\": \"M01\",\n  \"mode\": \"shot\",\n  \"stage\": \"keyframes_review\",\n  \"wait_reason\": null,\n  \"request_dir\": null,\n  \"description_approved\": true,\n  \"scene_sha256\": \"a6cb3fb499ac2caf1589f2ecd4127504a1a9d766598493d9a61547a3fe720366\",\n  \"timing\": {\n    \"fps\": 30,\n    \"frames\": 240,\n    \"window_seconds\": 8,\n    \"request_seconds\": 9\n  },\n  \"keyframes\": [\n    {\n      \"id\": \"K01\",\n      \"role\": \"first\",\n      \"time_seconds\": 0,\n      \"note\": \"опора K01\",\n      \"path\": \"frames/K01.png\",\n      \"sha256\": null,\n      \"approved\": false\n    },\n    {\n      \"id\": \"K02\",\n      \"role\": \"last\",\n      \"time_seconds\": 9,\n      \"note\": \"опора K02\",\n      \"path\": null,\n      \"sha256\": null,\n      \"approved\": false\n    }\n  ],\n  \"approved_frames\": {},\n  \"keyframe_notes\": [],\n  \"prompt\": {\n    \"path\": \"video-prompt.txt\",\n    \"approved\": false\n  },\n  \"approved_prompt_sha256\": null,\n  \"retry_of\": null,\n  \"pending_decision\": null,\n  \"decision\": null\n}\n",
@@ -473,9 +473,9 @@
           "jobs": {
             "job-1": {
               "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
+                "text": "be19a39b6d55d2d34b082640e063e2bb70fb5d62a4a99d1690f09e693641b588"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -486,8 +486,8 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "386141e055f46354e151fa7a3676cc68441e066579145dfc233eb330620eabc5",
-              "context": "af2dfb8c342ebf7a1c40fee7ce9a5f7435013bde334427d9494dfe154d4d3c75",
+              "prompt": "cf37c78810735380c8823b9427be0a9a8623951f379b5818e472323425656ad7",
+              "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
                 "provider": "codex"
@@ -601,9 +601,9 @@
                 "bytes": 108
               },
               "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
+                "text": "be19a39b6d55d2d34b082640e063e2bb70fb5d62a4a99d1690f09e693641b588"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -1520,9 +1520,9 @@
                 "readonly": true
               },
               "job.json": {
-                "text": "a7cc78093f704aa9e120d9248c900565d3368aaf1cc1bedd4e9599c4500523e6"
+                "text": "da85373ff0bc1744e5d5233532028d459383bcfdc6e117392cb812e44bee9d8f"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -1533,8 +1533,8 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K02 · Codex",
-              "prompt": "3011993e7f67a52946ab405f47726d361f544086e7820fa36acbc052a990f94a",
-              "context": "96d2ebf3af12ae3e39539f8d2cab0b12bb1169741b9733389ffa44ccc50a3033",
+              "prompt": "30b516bad7ebdc9858d84a0e891d4f1440b0cbab4bafddcdee1d84bba0591677",
+              "context": "5982a9b800a0a9bb3f4760e42daf36b2c7e0cad8f33a9afe7461703bef5a1184",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
                 "provider": "codex"
@@ -1564,9 +1564,9 @@
                 "readonly": true
               },
               "job.json": {
-                "text": "a7cc78093f704aa9e120d9248c900565d3368aaf1cc1bedd4e9599c4500523e6"
+                "text": "da85373ff0bc1744e5d5233532028d459383bcfdc6e117392cb812e44bee9d8f"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -2010,9 +2010,9 @@
           "jobs": {
             "job-1": {
               "job.json": {
-                "text": "84feec726151c79ee3a1cb506a11ce67c026ec4665e8d788213363e2aa7d58bf"
+                "text": "be19a39b6d55d2d34b082640e063e2bb70fb5d62a4a99d1690f09e693641b588"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -2023,8 +2023,8 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "386141e055f46354e151fa7a3676cc68441e066579145dfc233eb330620eabc5",
-              "context": "af2dfb8c342ebf7a1c40fee7ce9a5f7435013bde334427d9494dfe154d4d3c75",
+              "prompt": "cf37c78810735380c8823b9427be0a9a8623951f379b5818e472323425656ad7",
+              "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
                 "provider": "codex"
@@ -2263,9 +2263,9 @@
           "jobs": {
             "job-2": {
               "job.json": {
-                "text": "a2b9e90c3b0b6cbca6a33bfb59b35136586a8999250a0c06db5dd711e3887fcf"
+                "text": "0edc4827fb34a0729763eddf79ba4c5b9edef65c7304800693a6144aa14bc259"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -2276,8 +2276,8 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "386141e055f46354e151fa7a3676cc68441e066579145dfc233eb330620eabc5",
-              "context": "af2dfb8c342ebf7a1c40fee7ce9a5f7435013bde334427d9494dfe154d4d3c75",
+              "prompt": "cf37c78810735380c8823b9427be0a9a8623951f379b5818e472323425656ad7",
+              "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
                 "provider": "codex"
@@ -2516,9 +2516,9 @@
           "jobs": {
             "job-3": {
               "job.json": {
-                "text": "4c3455af78b813d8d304b96554d201ae720ee38cdd078b82e7d8bd60f65e89ab"
+                "text": "7cda1324dfd72e208d681b26383003b590eb68d604ffe8044c048e2b77fde9cd"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -2529,8 +2529,8 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "386141e055f46354e151fa7a3676cc68441e066579145dfc233eb330620eabc5",
-              "context": "af2dfb8c342ebf7a1c40fee7ce9a5f7435013bde334427d9494dfe154d4d3c75",
+              "prompt": "cf37c78810735380c8823b9427be0a9a8623951f379b5818e472323425656ad7",
+              "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
                 "provider": "codex"
@@ -2774,9 +2774,9 @@
           "jobs": {
             "job-4": {
               "job.json": {
-                "text": "fd4cf7830bdbd0eae941c181cc74d07af2634c95269ac59de53b7f1f80b3aefa"
+                "text": "30cce367284bd932fdfcfefc3889d9560e4cd7b6fa53db6e51e64a7f6cb7851f"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -2787,8 +2787,8 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "386141e055f46354e151fa7a3676cc68441e066579145dfc233eb330620eabc5",
-              "context": "af2dfb8c342ebf7a1c40fee7ce9a5f7435013bde334427d9494dfe154d4d3c75",
+              "prompt": "cf37c78810735380c8823b9427be0a9a8623951f379b5818e472323425656ad7",
+              "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
                 "provider": "codex"
@@ -3033,9 +3033,9 @@
           "jobs": {
             "job-5": {
               "job.json": {
-                "text": "26b14038c13e70d9551df7261afb7611e0efb2309b4ed6bff693d8ba6784acde"
+                "text": "124f1c8ce2baa857803134762984adb1f64e81d8db4d8acdbad0b226ab98142b"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -3046,8 +3046,8 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "386141e055f46354e151fa7a3676cc68441e066579145dfc233eb330620eabc5",
-              "context": "af2dfb8c342ebf7a1c40fee7ce9a5f7435013bde334427d9494dfe154d4d3c75",
+              "prompt": "cf37c78810735380c8823b9427be0a9a8623951f379b5818e472323425656ad7",
+              "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
                 "provider": "codex"
@@ -3296,9 +3296,9 @@
           "jobs": {
             "job-6": {
               "job.json": {
-                "text": "a5a7cb082b406e4b7391a20f55eb692dbb551e4ae645b9a02669533d32fea242"
+                "text": "82495214048e62898f566cbe7c981e4325da141639c6495cd964809f9c52f03f"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -3309,8 +3309,8 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "386141e055f46354e151fa7a3676cc68441e066579145dfc233eb330620eabc5",
-              "context": "af2dfb8c342ebf7a1c40fee7ce9a5f7435013bde334427d9494dfe154d4d3c75",
+              "prompt": "cf37c78810735380c8823b9427be0a9a8623951f379b5818e472323425656ad7",
+              "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
                 "provider": "codex"
@@ -3558,9 +3558,9 @@
           "jobs": {
             "job-7": {
               "job.json": {
-                "text": "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3"
+                "text": "203becdf0fd4e1ab7f1222f396a65cb5c7923798dc5801266bbf7278e2398618"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -3571,8 +3571,8 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "386141e055f46354e151fa7a3676cc68441e066579145dfc233eb330620eabc5",
-              "context": "af2dfb8c342ebf7a1c40fee7ce9a5f7435013bde334427d9494dfe154d4d3c75",
+              "prompt": "cf37c78810735380c8823b9427be0a9a8623951f379b5818e472323425656ad7",
+              "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
                 "provider": "codex"
@@ -3597,9 +3597,9 @@
                 "bytes": 108
               },
               "job.json": {
-                "text": "3d5f2b5c2c42aa169125f4d3ca6c675f7a4c327d895371871e350e51e841e4c3"
+                "text": "203becdf0fd4e1ab7f1222f396a65cb5c7923798dc5801266bbf7278e2398618"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -3847,9 +3847,9 @@
           "jobs": {
             "job-8": {
               "job.json": {
-                "text": "17178a5be1d5cabbe1a8a40fdc61d34b4bc4afc71e969995a490884150cefa8b"
+                "text": "8394ea2d831e4e764eddda252c6c69b65f346028710db7fdc3d781440c14f28f"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -3860,8 +3860,8 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "386141e055f46354e151fa7a3676cc68441e066579145dfc233eb330620eabc5",
-              "context": "af2dfb8c342ebf7a1c40fee7ce9a5f7435013bde334427d9494dfe154d4d3c75",
+              "prompt": "cf37c78810735380c8823b9427be0a9a8623951f379b5818e472323425656ad7",
+              "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
                 "provider": "codex"
@@ -3877,7 +3877,7 @@
             "images": [
               {
                 "id": "K01",
-                "path": "reference-01.png"
+                "path": "reference-01-boat.png"
               }
             ]
           },
@@ -3959,7 +3959,7 @@
               "startedAt": "",
               "finishedAt": null,
               "exitCode": 0,
-              "result": "{\"schemaVersion\":1,\"stage\":\"frames\",\"images\":[{\"id\":\"K01\",\"path\":\"reference-01.png\"}]}",
+              "result": "{\"schemaVersion\":1,\"stage\":\"frames\",\"images\":[{\"id\":\"K01\",\"path\":\"reference-01-boat.png\"}]}",
               "log": ""
             }
           },
@@ -4109,9 +4109,9 @@
           "jobs": {
             "job-9": {
               "job.json": {
-                "text": "8571dad575080b780cdf830b9656a720ccd9d88a265b3de4bdeba8020b47c2b7"
+                "text": "a286dd64e456b9816415f9300c617fca1b062b732ea6ff7143e2ed5aedc00d95"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -4122,8 +4122,8 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "386141e055f46354e151fa7a3676cc68441e066579145dfc233eb330620eabc5",
-              "context": "af2dfb8c342ebf7a1c40fee7ce9a5f7435013bde334427d9494dfe154d4d3c75",
+              "prompt": "cf37c78810735380c8823b9427be0a9a8623951f379b5818e472323425656ad7",
+              "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
                 "provider": "codex"
@@ -4136,7 +4136,7 @@
           "files": [
             {
               "path": "K01.png",
-              "symlink": "reference-01.png"
+              "symlink": "reference-01-boat.png"
             }
           ],
           "local": "unchanged",
@@ -4147,9 +4147,9 @@
                 "symlink": true
               },
               "job.json": {
-                "text": "8571dad575080b780cdf830b9656a720ccd9d88a265b3de4bdeba8020b47c2b7"
+                "text": "a286dd64e456b9816415f9300c617fca1b062b732ea6ff7143e2ed5aedc00d95"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -4397,9 +4397,9 @@
           "jobs": {
             "job-10": {
               "job.json": {
-                "text": "664f484ae97793c0da244be86a00cf00a748f9d0ef4cc114f90ad5a3bbc04f16"
+                "text": "ab63e4806125fbc90d64f55ae611383782a6920c5a9b01e27b8815a5370bf8c6"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -4410,8 +4410,8 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "386141e055f46354e151fa7a3676cc68441e066579145dfc233eb330620eabc5",
-              "context": "af2dfb8c342ebf7a1c40fee7ce9a5f7435013bde334427d9494dfe154d4d3c75",
+              "prompt": "cf37c78810735380c8823b9427be0a9a8623951f379b5818e472323425656ad7",
+              "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
                 "provider": "codex"
@@ -4436,9 +4436,9 @@
                 "bytes": 27
               },
               "job.json": {
-                "text": "664f484ae97793c0da244be86a00cf00a748f9d0ef4cc114f90ad5a3bbc04f16"
+                "text": "ab63e4806125fbc90d64f55ae611383782a6920c5a9b01e27b8815a5370bf8c6"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -4686,9 +4686,9 @@
           "jobs": {
             "job-11": {
               "job.json": {
-                "text": "d3f2735fcc65c06fbccda491fe348c4d6b5552d491682f5e437a4570e677a5f6"
+                "text": "e7b48d871b0b53de53b874fb8b5bf1953a5d4fc216a0ae90684828c48c623b45"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -4699,8 +4699,8 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "386141e055f46354e151fa7a3676cc68441e066579145dfc233eb330620eabc5",
-              "context": "af2dfb8c342ebf7a1c40fee7ce9a5f7435013bde334427d9494dfe154d4d3c75",
+              "prompt": "cf37c78810735380c8823b9427be0a9a8623951f379b5818e472323425656ad7",
+              "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
                 "provider": "codex"
@@ -4725,9 +4725,9 @@
                 "bytes": 108
               },
               "job.json": {
-                "text": "d3f2735fcc65c06fbccda491fe348c4d6b5552d491682f5e437a4570e677a5f6"
+                "text": "e7b48d871b0b53de53b874fb8b5bf1953a5d4fc216a0ae90684828c48c623b45"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -4975,9 +4975,9 @@
           "jobs": {
             "job-12": {
               "job.json": {
-                "text": "948151487a39b721733fc23bc49a1a504b29507ed88a7c84216b7fa67efe161e"
+                "text": "a5aca6b00352d7dec939b5171c82cc6e5f7b1608943d5ac790aea3f40df94b37"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -4988,8 +4988,8 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "386141e055f46354e151fa7a3676cc68441e066579145dfc233eb330620eabc5",
-              "context": "af2dfb8c342ebf7a1c40fee7ce9a5f7435013bde334427d9494dfe154d4d3c75",
+              "prompt": "cf37c78810735380c8823b9427be0a9a8623951f379b5818e472323425656ad7",
+              "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
                 "provider": "codex"
@@ -5014,9 +5014,9 @@
                 "bytes": 108
               },
               "job.json": {
-                "text": "948151487a39b721733fc23bc49a1a504b29507ed88a7c84216b7fa67efe161e"
+                "text": "a5aca6b00352d7dec939b5171c82cc6e5f7b1608943d5ac790aea3f40df94b37"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -5264,9 +5264,9 @@
           "jobs": {
             "job-13": {
               "job.json": {
-                "text": "0ce1b1524748b50d416b71c9923cc334d3041eaf4c7b6ccfe262242a58d14bb3"
+                "text": "03c99c0cb06ecc9d46a23d68194cc33ebe5a542a7d7b577c7341b551955da871"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -5277,8 +5277,8 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "386141e055f46354e151fa7a3676cc68441e066579145dfc233eb330620eabc5",
-              "context": "af2dfb8c342ebf7a1c40fee7ce9a5f7435013bde334427d9494dfe154d4d3c75",
+              "prompt": "cf37c78810735380c8823b9427be0a9a8623951f379b5818e472323425656ad7",
+              "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
                 "provider": "codex"
@@ -5303,9 +5303,9 @@
                 "bytes": 108
               },
               "job.json": {
-                "text": "0ce1b1524748b50d416b71c9923cc334d3041eaf4c7b6ccfe262242a58d14bb3"
+                "text": "03c99c0cb06ecc9d46a23d68194cc33ebe5a542a7d7b577c7341b551955da871"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -5557,9 +5557,9 @@
           "jobs": {
             "job-14": {
               "job.json": {
-                "text": "1c25c6d94b9bbb834bb3de6a91f5520dc990ba03a3736f043aca9c2b53a65e58"
+                "text": "b47b7b79cd7014b4d66971fce1740b1c966a712d064bbadcf3162acb78d2d4bf"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -5570,8 +5570,8 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "386141e055f46354e151fa7a3676cc68441e066579145dfc233eb330620eabc5",
-              "context": "af2dfb8c342ebf7a1c40fee7ce9a5f7435013bde334427d9494dfe154d4d3c75",
+              "prompt": "cf37c78810735380c8823b9427be0a9a8623951f379b5818e472323425656ad7",
+              "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
                 "provider": "codex"
@@ -5814,9 +5814,9 @@
           "jobs": {
             "job-15": {
               "job.json": {
-                "text": "feeb72aeb51b17432e7ad13d07cbd9d7f6a2884991c2dcdbf4c9fa69a575b9ed"
+                "text": "0bae4eb0e950f6e81ba0701484c09786decae9e25df5e8daa21fd5635bb7e1e8"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -5827,8 +5827,8 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "386141e055f46354e151fa7a3676cc68441e066579145dfc233eb330620eabc5",
-              "context": "af2dfb8c342ebf7a1c40fee7ce9a5f7435013bde334427d9494dfe154d4d3c75",
+              "prompt": "cf37c78810735380c8823b9427be0a9a8623951f379b5818e472323425656ad7",
+              "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
                 "provider": "codex"
@@ -5838,16 +5838,16 @@
         },
         {
           "op": "jobFile",
-          "path": "reference-01.png",
+          "path": "reference-01-boat.png",
           "base64": "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAF0lEQVR4nGOYKX73oPhdhpnBdw8G3wUALhYG/QnLlj0AAAAASUVORK5CYII=",
           "local": "unchanged",
           "packages": "unchanged",
           "jobs": {
             "job-15": {
               "job.json": {
-                "text": "feeb72aeb51b17432e7ad13d07cbd9d7f6a2884991c2dcdbf4c9fa69a575b9ed"
+                "text": "0bae4eb0e950f6e81ba0701484c09786decae9e25df5e8daa21fd5635bb7e1e8"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "6d2a3a29826e9f03705aa10a5431672f74698226bebc979d4c824757b230056d",
                 "bytes": 80
               }
@@ -5871,9 +5871,9 @@
                 "bytes": 108
               },
               "job.json": {
-                "text": "feeb72aeb51b17432e7ad13d07cbd9d7f6a2884991c2dcdbf4c9fa69a575b9ed"
+                "text": "0bae4eb0e950f6e81ba0701484c09786decae9e25df5e8daa21fd5635bb7e1e8"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "6d2a3a29826e9f03705aa10a5431672f74698226bebc979d4c824757b230056d",
                 "bytes": 80
               }
@@ -6120,9 +6120,9 @@
           "jobs": {
             "job-16": {
               "job.json": {
-                "text": "b1c51ba539564fda645ea04b2810d9ee6a4d8df9927baa0312c4f18e8abd19eb"
+                "text": "92b4c5a602be8e757c81c53e30c75074d7149720755e963715ab23abd96f8fae"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -6133,8 +6133,8 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "386141e055f46354e151fa7a3676cc68441e066579145dfc233eb330620eabc5",
-              "context": "af2dfb8c342ebf7a1c40fee7ce9a5f7435013bde334427d9494dfe154d4d3c75",
+              "prompt": "cf37c78810735380c8823b9427be0a9a8623951f379b5818e472323425656ad7",
+              "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
                 "provider": "codex"
@@ -6153,9 +6153,9 @@
           "jobs": {
             "job-16": {
               "job.json": {
-                "text": "5cb016f2f1cdd17bdbc3c3b6ac6ec7613032befcbdea2ed18b899c338833f6c7"
+                "text": "3bafe1fdf091cea145d1a27847bd8177970956574a949a30e9674415a14db5e8"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -6180,9 +6180,9 @@
                 "bytes": 108
               },
               "job.json": {
-                "text": "5cb016f2f1cdd17bdbc3c3b6ac6ec7613032befcbdea2ed18b899c338833f6c7"
+                "text": "3bafe1fdf091cea145d1a27847bd8177970956574a949a30e9674415a14db5e8"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -6430,9 +6430,9 @@
           "jobs": {
             "job-17": {
               "job.json": {
-                "text": "34882c3c586497b4b913ede21f37afeb2a71ed99f455fb96cdb510735f860791"
+                "text": "672e5fe327b38375cb4c2d7f54d3ef5a9287d2ce240b915a387055eca2e39e3c"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -6443,8 +6443,8 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "386141e055f46354e151fa7a3676cc68441e066579145dfc233eb330620eabc5",
-              "context": "af2dfb8c342ebf7a1c40fee7ce9a5f7435013bde334427d9494dfe154d4d3c75",
+              "prompt": "cf37c78810735380c8823b9427be0a9a8623951f379b5818e472323425656ad7",
+              "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
                 "provider": "codex"
@@ -6463,9 +6463,9 @@
           "jobs": {
             "job-17": {
               "job.json": {
-                "text": "cf739369dcd2e212ce7ed5ba57a13de857906baf92a1a6f5ebecb1c8577270d9"
+                "text": "b445fc7ec1c7bc57bb19ff5e4bf9096225e518ccc84fd68bd132ec2317381514"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -6490,9 +6490,9 @@
                 "bytes": 108
               },
               "job.json": {
-                "text": "cf739369dcd2e212ce7ed5ba57a13de857906baf92a1a6f5ebecb1c8577270d9"
+                "text": "b445fc7ec1c7bc57bb19ff5e4bf9096225e518ccc84fd68bd132ec2317381514"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -6740,9 +6740,9 @@
           "jobs": {
             "job-18": {
               "job.json": {
-                "text": "96589cb85289812523ade97b81f3bed76a00fee659f219cbe3246e44733c73ab"
+                "text": "e69588221824e90144ea7fabffa076e4045b9a4840d274db0276b713d33d760c"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -6753,8 +6753,8 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "386141e055f46354e151fa7a3676cc68441e066579145dfc233eb330620eabc5",
-              "context": "af2dfb8c342ebf7a1c40fee7ce9a5f7435013bde334427d9494dfe154d4d3c75",
+              "prompt": "cf37c78810735380c8823b9427be0a9a8623951f379b5818e472323425656ad7",
+              "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
                 "provider": "codex"
@@ -6789,9 +6789,9 @@
                 "bytes": 108
               },
               "job.json": {
-                "text": "96589cb85289812523ade97b81f3bed76a00fee659f219cbe3246e44733c73ab"
+                "text": "e69588221824e90144ea7fabffa076e4045b9a4840d274db0276b713d33d760c"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -7046,9 +7046,9 @@
           "jobs": {
             "job-19": {
               "job.json": {
-                "text": "fe4358cf39b38b87b36b551114cbde938121a9d685d24e5b6730d2fe3b37ce8c"
+                "text": "2da2fc44445e362d68885bda6c48f70cec4e4025e1063536a0c269b04427714b"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -7059,8 +7059,8 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "386141e055f46354e151fa7a3676cc68441e066579145dfc233eb330620eabc5",
-              "context": "af2dfb8c342ebf7a1c40fee7ce9a5f7435013bde334427d9494dfe154d4d3c75",
+              "prompt": "cf37c78810735380c8823b9427be0a9a8623951f379b5818e472323425656ad7",
+              "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
                 "provider": "codex"
@@ -7315,9 +7315,9 @@
           "jobs": {
             "job-20": {
               "job.json": {
-                "text": "4b3434eaf295468de273b0a2b1feb0722decb290fd10fd3c514c82fc75d9733d"
+                "text": "7cfb778461ac370470f9f58f9d6deb36e4d0390b2f9a1416962486bb91343c42"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true
@@ -7328,8 +7328,8 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "386141e055f46354e151fa7a3676cc68441e066579145dfc233eb330620eabc5",
-              "context": "af2dfb8c342ebf7a1c40fee7ce9a5f7435013bde334427d9494dfe154d4d3c75",
+              "prompt": "cf37c78810735380c8823b9427be0a9a8623951f379b5818e472323425656ad7",
+              "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
                 "provider": "codex"
@@ -7362,9 +7362,9 @@
                 "bytes": 108
               },
               "job.json": {
-                "text": "4b3434eaf295468de273b0a2b1feb0722decb290fd10fd3c514c82fc75d9733d"
+                "text": "7cfb778461ac370470f9f58f9d6deb36e4d0390b2f9a1416962486bb91343c42"
               },
-              "reference-01.png": {
+              "reference-01-boat.png": {
                 "sha256": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
                 "bytes": 126,
                 "readonly": true

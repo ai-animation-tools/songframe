@@ -3,21 +3,28 @@ import { useState, type ReactElement } from 'react';
 import { Box, ButtonBase, Chip, InputAdornment, Paper, TextField, Typography } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import { matchesWords, searchWords } from '../../../components/searchText';
-import type { ScenesFile } from '@shared/types';
+import type { ScenesFile, ShotProductionState } from '@shared/types';
+import { SHOT_STATE_LABELS } from '../../../components/shotState';
 import { formatClock } from '../../../format';
 
-/** Показывает список планов с таймингом и признаками заполнения; поиск стоит сверху, прокручивается только список. */
+/**
+ * Показывает список планов с таймингом, статусом производства (бейдж как в карточке «Производства») и признаками
+ * заполнения; поиск стоит сверху, прокручивается только список.
+ */
 export function SceneList({
   scenes,
   selected,
   onSelect,
-  maxHeight
+  maxHeight,
+  states
 }: {
   scenes: ScenesFile;
   selected: string | null;
   onSelect(id: string): void;
   /** Высота колонки: в закреплённой раскладке — до низа окна. */
   maxHeight: string | Record<string, string>;
+  /** Статусы производства планов (useShotStates); null — ещё не загружены, бейджей нет. */
+  states: Record<string, ShotProductionState> | null;
 }): ReactElement {
   const [query, setQuery] = useState('');
   const words = searchWords(query);
@@ -61,6 +68,7 @@ export function SceneList({
         {shown.map((s) => {
           // eslint-disable-next-line no-restricted-syntax -- Маркер каркаса из данных scene_scaffold, а не подпись интерфейса.
           const filled = !s.action.startsWith('ЗАПОЛНИТЬ') && !s.camera.startsWith('ЗАПОЛНИТЬ');
+          const status = states ? SHOT_STATE_LABELS[states[s.id] ?? 'planned'] : null;
           return (
             // Строка — кнопка: план выбирается и с клавиатуры (Tab, Enter или пробел), выбранный отмечен aria-current.
             <ButtonBase
@@ -84,10 +92,11 @@ export function SceneList({
                 '&.Mui-focusVisible': { outline: '2px solid', outlineColor: 'primary.main', outlineOffset: -2 }
               }}
             >
-              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap', rowGap: 0.25 }}>
                 <Typography fontWeight={600} sx={{ fontFamily: 'monospace' }}>
                   {s.id}
                 </Typography>
+                {status ? <Chip size="small" color={status.color} label={status.label} sx={{ height: 18 }} data-testid="shot-status" /> : null}
                 <Typography variant="caption" color="text.secondary">
                   {scenarioTexts.timeline.range({ start: formatClock(s.start_frame / scenes.fps), end: formatClock(s.end_frame_exclusive / scenes.fps) })}
                 </Typography>

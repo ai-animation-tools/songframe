@@ -1,10 +1,9 @@
 import { scenarioTexts } from '@shared/texts/scenario';
-import { useEffect, useState, type ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Box, Chip, Paper, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material';
 import { alpha, useTheme, type Theme } from '@mui/material/styles';
 import type { ScenesFile, ShotProductionState } from '@shared/types';
 import { formatClock } from '../../../format';
-import { useApp } from '../../../state';
 import { SHOT_STATE_LABELS } from '../../../components/shotState';
 
 /** Цвета частей чередуются по порядку: соседние части всегда различаются, а цвета берутся из темы и работают в обеих темах. */
@@ -23,35 +22,18 @@ export function SceneTimeline({
   scenes,
   duration,
   selected,
-  onSelect
+  onSelect,
+  states
 }: {
   scenes: ScenesFile;
   duration: number;
   selected: string | null;
   onSelect(id: string): void;
+  /** Статусы производства планов (useShotStates); без них план считается не начатым. */
+  states: Record<string, ShotProductionState> | null;
 }): ReactElement {
   const theme = useTheme();
-  const { state } = useApp();
-  const project = state?.current ?? '';
   const [mode, setMode] = useState<Mode>('parts');
-  const [states, setStates] = useState<Record<string, ShotProductionState> | null>(null);
-
-  // Статус считает Go по сохранённому реестру; после сохранения оболочка обновляет state, и статусы перечитываются.
-  useEffect(() => {
-    if (mode !== 'status' || !project) return;
-    let cancelled = false;
-    window.api.production
-      .view(project)
-      .then((view) => {
-        if (!cancelled) setStates(Object.fromEntries(view.shots.map((shot) => [shot.id, shot.state])));
-      })
-      .catch(() => {
-        if (!cancelled) setStates({});
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [mode, project, state]);
 
   const total = Math.max(duration * scenes.fps, scenes.scenes.at(-1)?.end_frame_exclusive ?? 1);
   const seqIndex = new Map(scenes.sequences.map((s, i) => [s.id, i]));

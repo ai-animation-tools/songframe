@@ -274,6 +274,19 @@ export const SaveProducedShots: Story = {
   }
 };
 
+export const ShotStatusInList: Story = {
+  name: 'Список планов · статус производства бейджем, как на «Производстве»',
+  tags: ['ci'],
+  parameters: { songframe: scenarioPageOptions({ variant: 'produced' }) },
+  play: async (context) => {
+    await ready(context);
+    const status = async (shot: string) => within(row(context, shot)).findByTestId('shot-status');
+    await expect(await status('M01')).toHaveTextContent(componentsTexts.shot.states.completed);
+    await expect(await status('M02')).toHaveTextContent(componentsTexts.shot.states.completed);
+    await expect(await status('M03')).toHaveTextContent(componentsTexts.shot.states.planned);
+  }
+};
+
 export const RecalculateBounds: Story = {
   name: 'Пересчёт границ · постановка прежняя · принятые планы в списке сохранения',
   tags: ['ci'],

@@ -8,6 +8,7 @@ import { useSceneDraft } from '../useSceneDraft';
 import { SceneGlobalRules } from './SceneGlobalRules';
 import { SceneTimeline } from './SceneTimeline';
 import { SceneList } from './SceneList';
+import { useShotStates } from '../useShotStates';
 import { SceneShotEditor } from './SceneShotEditor';
 import { SceneStateEditor } from './SceneStateEditor';
 import { ContinuityBrief } from './ContinuityBrief';
@@ -64,6 +65,7 @@ export function SceneRegistry({
 }): ReactElement {
   const { shot, shotIndex, updateShot, setBoundary, split, mergeNext, setDelta } = useSceneDraft(scenes, selected, setScenes, setSelected, notify);
   const locked = !!shot && acceptedShots.includes(shot.id);
+  const states = useShotStates();
   // Граница и слияние меняют и следующий план, поэтому его принятие тоже закрывает эти правки.
   const nextId = shotIndex >= 0 ? scenes.scenes[shotIndex + 1]?.id : undefined;
   const nextLocked = nextId && acceptedShots.includes(nextId) ? nextId : null;
@@ -96,11 +98,17 @@ export function SceneRegistry({
           </ul>
         </Alert>
       ) : null}
-      <SceneTimeline scenes={scenes} duration={duration} selected={selected} onSelect={setSelected} />
+      <SceneTimeline scenes={scenes} duration={duration} selected={selected} onSelect={setSelected} states={states} />
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '300px minmax(0, 1fr)' }, gap: 2, alignItems: 'start' }}>
         {/* В двух колонках список закреплён под панелью страницы и прокручивается сам, пока редактор плана листается. */}
         <Box ref={listRef} sx={{ minWidth: 0, position: { lg: 'sticky' }, top: { lg: stickyTop } }}>
-          <SceneList scenes={scenes} selected={selected} onSelect={setSelected} maxHeight={{ xs: '50vh', lg: `calc(100vh - ${stickyTop + 16}px)` }} />
+          <SceneList
+            scenes={scenes}
+            selected={selected}
+            onSelect={setSelected}
+            states={states}
+            maxHeight={{ xs: '50vh', lg: `calc(100vh - ${stickyTop + 16}px)` }}
+          />
         </Box>
         {shot ? (
           <Stack spacing={2} sx={{ minWidth: 0 }}>

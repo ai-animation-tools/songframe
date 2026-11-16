@@ -28,7 +28,7 @@
       "type": "object", "required": ["id", "role", "time_seconds"],
       "properties": {"id": {"type": "string", "pattern": "^K\\d{2}$"}, "role": {"enum": ["first", "middle", "last"]},
                      "time_seconds": {"type": "number", "minimum": 0}, "note": {"type": ["string", "null"]},
-                     "path": {"type": ["string", "null"]}, "sha256": {"type": ["string", "null"]}, "approved": {"type": "boolean"}}}},
+                     "path": {"type": ["string", "null"]}, "sha256": {"type": ["string", "null"]}, "approved": {"type": "boolean"}, "provider": {"type": "string"}}}},
     "approved_frames": {"type": "object"},
     "keyframe_count": {"type": "integer", "minimum": 1},
     "keyframe_notes": {"type": "array", "items": {

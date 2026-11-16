@@ -169,3 +169,44 @@ func TestAcceptedWithoutEntry(t *testing.T) {
 		t.Fatalf("исправленная цена: %+v", summary.Totals)
 	}
 }
+
+// TestProviderFrameNotOwn — принятый кандидат провайдера изображений без отдельной цены
+// (keyframes[].provider с тем же SHA) — не своя опора и не попадает в журнал; та же опора,
+// заменённая файлом другого SHA, — своя.
+func TestProviderFrameNotOwn(t *testing.T) {
+	root := t.TempDir()
+	attempt := "plan/batches/M01-attempt-01"
+	write := func(frames map[string]string, keyframes []map[string]any) {
+		t.Helper()
+		data, _ := json.Marshal(map[string]any{"shot": "M01", "approved_frames": frames, "image_requests": []any{}, "keyframes": keyframes})
+		folder := filepath.Join(root, filepath.FromSlash(attempt))
+		if err := os.MkdirAll(folder, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(folder, "workflow.json"), data, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write(map[string]string{"K01": "agent-1", "K02": "agent-2"}, []map[string]any{
+		{"id": "K01", "sha256": "agent-1", "provider": "codex"},
+		{"id": "K02", "sha256": "agent-2", "provider": "codex"},
+	})
+	if err := Sync(root); err != nil {
+		t.Fatal(err)
+	}
+	if summary := Summarize(entries(t, root), "M01", nil); summary.OwnImages != 0 || summary.Images != 0 || len(summary.Entries) != 0 {
+		t.Fatalf("опоры провайдера: %+v", summary)
+	}
+	if _, err := os.Stat(filepath.Join(root, filepath.FromSlash(File))); !os.IsNotExist(err) {
+		t.Fatalf("журнал без расхода создан: %v", err)
+	}
+	// Отметка относится к файлу кандидата: другой файл той же опоры — своя опора.
+	write(map[string]string{"K01": "own-1", "K02": "agent-2"}, []map[string]any{
+		{"id": "K01", "sha256": "agent-1", "provider": "codex"},
+		{"id": "K02", "sha256": "agent-2", "provider": "codex"},
+	})
+	summary := Summarize(entries(t, root), "M01", nil)
+	if summary.OwnImages != 1 || viewOf(t, summary, func(entry EntryView) bool { return entry.Frame == "K01" }).Ref.FileSHA256 != "own-1" {
+		t.Fatalf("своя опора вместо кандидата провайдера: %+v", summary)
+	}
+}

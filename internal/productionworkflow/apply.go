@@ -5,6 +5,7 @@ import (
 	"errors"
 	"path/filepath"
 	"regexp"
+	"slices"
 
 	"songframe/internal/dynvalue"
 	"songframe/internal/mediaproviders"
@@ -182,6 +183,20 @@ func (w *Workflow) applyStage(ctx context.Context, plan *applyPlan) error {
 		if dynvalue.IsRecord(proposed) {
 			frames, _ = dynvalue.AsArray(dynvalue.Get(proposed, "keyframes"))
 		}
+		// Кандидат от провайдера изображений помечается его ID: принятая опора остаётся
+		// сгенерированной, и учёт расхода (internal/spend) не выдаёт её за свой файл. propose снимает
+		// отметку с любой опоры, поэтому импорт файла её не наследует.
+		if provider, ok := plan.stored.Tree.Value("imageProvider").(string); ok && provider != "" && len(images) > 0 {
+			for _, frame := range frames {
+				object, isObject := frame.(*dynvalue.Object)
+				if isObject && slices.ContainsFunc(images, func(image any) bool { return dynvalue.Get(image, "id") == object.Value("id") }) {
+					object.Set("provider", provider)
+				}
+			}
+			if err := writeProjectJSON(filepath.Join(target, "workflow.json"), proposed); err != nil {
+				return err
+			}
+		}
 		for _, frame := range frames {
 			if dynvalue.Truthy(dynvalue.Get(frame, "path")) && !dynvalue.Truthy(dynvalue.Get(frame, "approved")) {
 				return ask("keyframes_review", "--frame", dynvalue.ToString(dynvalue.Get(frame, "id")))
@@ -280,6 +295,7 @@ func (w *Workflow) applyDescription(ctx context.Context, plan *applyPlan) error 
 			frame.Set("approved", false)
 			frame.Set("path", nil)
 			frame.Set("sha256", nil)
+			frame.Delete("provider")
 			approved.Delete(dynvalue.ToString(id))
 		}
 	}

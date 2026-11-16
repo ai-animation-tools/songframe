@@ -511,10 +511,12 @@ func (w *Workflow) refresh(c *Context, stored *Stored) (*agents.Job, error) {
 func (w *Workflow) accept(c *Context, stored *Stored, job agents.Job) error {
 	raw := job.Result
 	if stored.ImageJob() {
-		images, err := w.collectImages(job)
+		images, provider, err := w.collectImages(job)
 		if err != nil {
 			return err
 		}
+		// Применение отметит опоры этим провайдером: учёт расхода отличает их от своих файлов.
+		stored.Tree.Set("imageProvider", provider)
 		document := dynvalue.NewObject()
 		document.Set("schemaVersion", float64(1))
 		document.Set("stage", "frames")

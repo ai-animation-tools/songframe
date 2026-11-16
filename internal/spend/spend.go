@@ -9,7 +9,7 @@
 // остаются. Расход плана — журнал, дополненный живыми запросами (живое состояние новее).
 //
 // Кроме отправок журнал хранит стоимость, которую указал пользователь: свои опоры (изображение,
-// загруженное файлом, а не сгенерированное), исправленную цену видео вне приложения, сумму вместо
+// загруженное файлом, а не созданное провайдером изображений), исправленную цену видео вне приложения, сумму вместо
 // неизвестного списания сервиса и цену принятого плана, у которого нет записи (комплект принят до
 // появления журнала). Эти суммы живут только в журнале (SetAmount, AddAccepted): живое состояние
 // попытки их не знает и при слиянии не стирает. Комплект принятого плана стоимость не хранит: его файлы защищены SHA, а замена
@@ -309,9 +309,11 @@ func readRequest(directory, attempt string) (live, bool) {
 	return live{entry: entry, sent: true}, true
 }
 
-// ownFrames — свои опоры попытки по workflow.json: утверждённые опоры, файл которых не выбран из
-// запроса изображения (image_requests[].selected_sha256). Сгенерированная опора уже учтена своей
-// отправкой изображения; своя — запись без суммы, стоимость пользователь указывает сам.
+// ownFrames — свои опоры попытки по workflow.json: утверждённые опоры, файл которых получен не от
+// провайдера изображений. Сгенерированная опора — выбранная из платного запроса изображения
+// (image_requests[].selected_sha256), уже учтённого своей отправкой, или принятый кандидат
+// провайдера без отдельной цены (keyframes[].provider с тем же SHA). Своя — запись без суммы,
+// стоимость пользователь указывает сам.
 func ownFrames(directory, attempt string) []live {
 	var workflow struct {
 		Shot           string            `json:"shot"`
@@ -319,6 +321,10 @@ func ownFrames(directory, attempt string) []live {
 		ImageRequests  []struct {
 			Selected string `json:"selected_sha256"`
 		} `json:"image_requests"`
+		Keyframes []struct {
+			SHA256   string `json:"sha256"`
+			Provider string `json:"provider"`
+		} `json:"keyframes"`
 	}
 	if !readFile(filepath.Join(directory, "workflow.json"), &workflow) || workflow.Shot == "" {
 		return nil
@@ -326,6 +332,11 @@ func ownFrames(directory, attempt string) []live {
 	generated := map[string]bool{}
 	for _, request := range workflow.ImageRequests {
 		generated[request.Selected] = true
+	}
+	for _, keyframe := range workflow.Keyframes {
+		if keyframe.Provider != "" && keyframe.SHA256 != "" {
+			generated[keyframe.SHA256] = true
+		}
 	}
 	frames := make([]string, 0, len(workflow.ApprovedFrames))
 	for frame, sha := range workflow.ApprovedFrames {

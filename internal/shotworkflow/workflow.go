@@ -457,7 +457,7 @@ func (t *workflowTool) planKeyframes(dirArg string, requestSeconds toolrt.Int, m
 			}
 			keep = toolrt.Equal(role, point.role) && toolrt.Equal(seconds, point.seconds) && toolrt.Truthy(flag)
 		}
-		var path, digest any
+		var path, digest, provider any
 		if keep {
 			if path, err = item(old, "path"); err != nil {
 				return nil, err
@@ -465,9 +465,17 @@ func (t *workflowTool) planKeyframes(dirArg string, requestSeconds toolrt.Int, m
 			if digest, err = item(old, "sha256"); err != nil {
 				return nil, err
 			}
+			if provider, err = get(old, "provider", nil); err != nil {
+				return nil, err
+			}
 			approved.Set(id, digest)
 		}
-		planned = append(planned, record("id", id, "role", point.role, "time_seconds", point.seconds, "note", point.note, "path", path, "sha256", digest, "approved", keep))
+		frame := record("id", id, "role", point.role, "time_seconds", point.seconds, "note", point.note, "path", path, "sha256", digest, "approved", keep)
+		// Сохранённая опора сохраняет и отметку провайдера, создавшего её (учёт расхода).
+		if provider != nil {
+			frame.Set("provider", provider)
+		}
+		planned = append(planned, frame)
 	}
 	data.Set("keyframes", planned)
 	data.Set("approved_frames", approved)
@@ -596,6 +604,9 @@ func (t *workflowTool) approve(dirArg, id, source string, candidate bool) (*tool
 	keyframe.Set("path", relative)
 	keyframe.Set("sha256", digest)
 	keyframe.Set("approved", !candidate)
+	// Новый файл опоры — не результат прежнего провайдера: отметку провайдера ставит производство
+	// после предложения кандидатов задания (internal/productionworkflow).
+	keyframe.Delete("provider")
 	frames, err := approvedFrames(data)
 	if err != nil {
 		return nil, err

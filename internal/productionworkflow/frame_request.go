@@ -244,22 +244,22 @@ func (w *Workflow) generateImages(project string, input mediaapi.ImagesInput) (a
 }
 
 // collectImages — кандидаты задания опор собирает исполнитель
-// провайдера, чья программа-агент выполнила задание.
-func (w *Workflow) collectImages(job agents.Job) ([]FrameCandidate, error) {
+// провайдера, чья программа-агент выполнила задание; вместе с ними — ID этого провайдера изображений.
+func (w *Workflow) collectImages(job agents.Job) ([]FrameCandidate, string, error) {
 	if w.options.Media == nil {
-		return nil, errors.New(textImageExecutorMissing)
+		return nil, "", errors.New(textImageExecutorMissing)
 	}
 	executor, err := w.options.Media.JobAgentImages(job)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	artifacts, err := executor.CollectJob(job)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	candidates := make([]FrameCandidate, len(artifacts))
 	for index, artifact := range artifacts {
 		candidates[index] = FrameCandidate{ID: artifact.FrameID, Path: artifact.Path}
 	}
-	return candidates, nil
+	return candidates, executor.Provider(), nil
 }

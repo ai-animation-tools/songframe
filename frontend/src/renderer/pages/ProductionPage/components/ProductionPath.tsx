@@ -8,6 +8,7 @@ import { useEffect, useRef, useState, type ReactElement, type ReactNode } from '
 import { Box, Chip, LinearProgress, Paper, Stack, Step, StepButton, StepContent, StepLabel, Stepper, Typography } from '@mui/material';
 import { keyframeLimit, mediaProviderInfo, normalizeMediaProvider } from '@shared/media-providers';
 import type { KeyframeNoteScope, ManualVideo, PackageView, ShotProduction } from '@shared/types';
+import type { ProductionPass } from '@shared/production-workflow';
 import { BUSY_REASON } from '../constants';
 import { manualGeneration, planPath, questionStep, REQUEST_IN_FLIGHT, type PlanPath, type PlanStepKey } from '../planPath';
 import { useProductionWorkflow, type ProductionWorkflow } from '../useProductionWorkflow';
@@ -147,6 +148,8 @@ export function ProductionPath({
   const blocked = busy || workflow.busy;
   const [opened, setOpened] = useState<Record<string, boolean>>({});
   const [reviseOpen, setReviseOpen] = useState(false);
+  // Шаг, из которого последний раз запускали агента: ошибка запуска показывается рядом с нажатой кнопкой.
+  const [launchStep, setLaunchStep] = useState<PlanStepKey | null>(null);
   const [reopeningPrompt, setReopeningPrompt] = useState(false);
   // Своё описание: черновик открытого редактора; null — редактор закрыт.
   const [ownDescription, setOwnDescription] = useState<OwnDescriptionDraft | null>(null);
@@ -258,7 +261,21 @@ export function ProductionPath({
     await workflow.generateFrames();
   };
 
-  const panel = (questionOpen: boolean): ReactNode => (
+  // Части панели агента живут в шагах своих этапов: задание и его предложение — в шаге этапа задания,
+  // доработка — в шаге этапа, который она переделает. Иначе завершённое описание и его доработка
+  // висели бы в шаге опор. Этап без открытого шага в пути показывается в текущем шаге.
+  const reachable = (pass: ProductionPass | null | undefined): PlanStepKey =>
+    path.steps.find((step) => step.key === pass && step.status !== 'future')?.key ?? path.current;
+  const jobStep = reachable(view?.job ? view.proposal?.stage : null);
+  const reviseStep = reachable(view?.canRevise ? view.reviseStage : null);
+  const panelSteps = new Set<PlanStepKey>([path.current, jobStep, reviseStep]);
+  const errorStep = launchStep && panelSteps.has(launchStep) ? launchStep : jobStep;
+  // Свёрнутый пройденный шаг раскрывается сам, когда в нём ждёт задание, предложение или открытая доработка.
+  const proposalWaits = !!view?.proposal && view.proposal.status !== 'running' && view.proposal.status !== 'applied';
+  const jobWaits = !!view?.job && (view.job.status === 'running' || view.job.status === 'failed' || proposalWaits);
+  const attention = (key: PlanStepKey): boolean => (key === jobStep && jobWaits) || (key === reviseStep && reviseOpen);
+
+  const panel = (step: PlanStepKey, questionOpen: boolean): ReactNode => (
     <ProductionWorkflowPanel
       key={`${project}:${shot.id}:${packageSelection}`}
       workflow={workflow}
@@ -273,6 +290,8 @@ export function ProductionPath({
       onReviseProposal={reviseProposal}
       onWriteOwn={!pkg ? openOwnDescription : view?.nextStage === 'prompt' ? openOwnPrompt : undefined}
       onOwnVideo={!pkg ? onOwnVideo : undefined}
+      parts={{ current: step === path.current, job: step === jobStep, revise: step === reviseStep, error: step === errorStep }}
+      onLaunch={() => setLaunchStep(step)}
     />
   );
 
@@ -362,7 +381,7 @@ export function ProductionPath({
                 {productionTexts.ownDescriptionDialog.edit}
               </ActionButton>
             ) : null}
-            {current ? panel(asked) : null}
+            {current || (!path.finished && panelSteps.has(key)) ? panel(key, asked) : null}
             {current ? decision(key) : null}
           </>
         );
@@ -396,7 +415,7 @@ export function ProductionPath({
                 }
               />
             ) : null}
-            {current ? panel(asked) : null}
+            {current || (!path.finished && panelSteps.has(key)) ? panel(key, asked) : null}
             {current && pkg?.request?.kind === 'image' ? (
               <>
                 {waiting}
@@ -461,7 +480,7 @@ export function ProductionPath({
                 }}
               />
             ) : null}
-            {current ? panel(asked) : null}
+            {current || (!path.finished && panelSteps.has(key)) ? panel(key, asked) : null}
             {current ? decision(key) : null}
           </>
         );
@@ -491,7 +510,7 @@ export function ProductionPath({
                 onAttach={onAttachManual}
               />
             ) : null}
-            {current ? panel(asked) : null}
+            {current || (!path.finished && panelSteps.has(key)) ? panel(key, asked) : null}
           </>
         ) : (
           <>
@@ -499,7 +518,7 @@ export function ProductionPath({
             {/* Шаг «Речь» уже свёрнут: срез повторяется здесь, чтобы прослушать его перед отправкой. */}
             {pkg?.speech && pkg.request?.kind !== 'image' ? <SpeechSlice speech={pkg.speech} /> : null}
             {pkg?.request?.kind !== 'image' ? request : null}
-            {current ? panel(asked) : null}
+            {current || (!path.finished && panelSteps.has(key)) ? panel(key, asked) : null}
             {current ? decision(key) : null}
           </>
         );
@@ -574,7 +593,7 @@ export function ProductionPath({
             {path.steps.map((step) => {
               const done = step.status === 'done';
               const current = step.status === 'current' || (path.finished && step.key === 'result');
-              const expanded = current || (done && !!opened[step.key]);
+              const expanded = current || (done && (opened[step.key] ?? attention(step.key)));
               const label = (
                 <Box>
                   <Typography variant="subtitle2" color={step.status === 'future' ? 'text.secondary' : undefined}>
@@ -590,7 +609,7 @@ export function ProductionPath({
               return (
                 <Step key={step.key} completed={done} active={current} expanded={expanded} disabled={step.status === 'future'} data-plan-step={step.key}>
                   {done ? (
-                    <StepButton onClick={() => setOpened((value) => ({ ...value, [step.key]: !value[step.key] }))}>{label}</StepButton>
+                    <StepButton onClick={() => setOpened((value) => ({ ...value, [step.key]: !expanded }))}>{label}</StepButton>
                   ) : (
                     <StepLabel>{label}</StepLabel>
                   )}

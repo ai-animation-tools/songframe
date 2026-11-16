@@ -263,6 +263,7 @@ function toProductionWorkflowView({
   imageProvider,
   videoProvider,
   nextStage,
+  reviseStage,
   generationMethod,
   framePrompts,
   nextFrame,
@@ -274,6 +275,7 @@ function toProductionWorkflowView({
   return {
     ...view,
     ...(nextStage ? { nextStage: nextStage as ProductionPass } : {}),
+    ...(reviseStage ? { reviseStage: reviseStage as ProductionPass } : {}),
     ...(generationMethod === 'manual' ? { generationMethod } : {}),
     ...(imageProvider === undefined ? {} : { imageProvider: imageProvider as string }),
     ...(videoProvider === undefined ? {} : { videoProvider: videoProvider as string }),

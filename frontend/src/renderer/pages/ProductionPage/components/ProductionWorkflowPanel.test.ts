@@ -177,3 +177,56 @@ describe('Явный запуск доработки плана', () => {
     expect(retry?.[0]).toContain(`title="${agentTitle(testAgentProviderInfo.executor!)}"`);
   });
 });
+
+describe('Части панели в шагах пути', () => {
+  const job: NonNullable<ProductionWorkflowView['job']> = {
+    schemaVersion: 1,
+    id: 'job-description',
+    sequence: 1,
+    project: '/fixture',
+    provider: 'codex',
+    task: 'ai-clip-scene:M44:description',
+    permissions: 'read-only',
+    inputHashes: { prompt: 'p', context: 'c' },
+    status: 'completed',
+    phase: 'done',
+    startedAt: '2026-10-28T10:00:00.000Z',
+    finishedAt: '2026-10-28T10:01:00.000Z',
+    exitCode: 0,
+    result: '',
+    log: ''
+  };
+
+  it.each([
+    ['description', 'Доработать описание', 'Что исправить в описании и плане опор'],
+    ['prompt', 'Доработать видеопромпт', 'Что исправить в видеопромпте'],
+    ['request', 'Доработать запрос', 'Что исправить в запросе']
+  ] as const)('называет доработку этапом %s', (stage, button, field) => {
+    workflow.view!.reviseStage = stage;
+    expect(render({ reviseOpen: false, decision: null })).toContain(button);
+    expect(render({ decision: null })).toContain(field);
+  });
+
+  it('показывает задание и доработку только в экземпляре их шага', () => {
+    const view = workflow.view!;
+    view.reviseStage = 'description';
+    view.job = job;
+    view.proposal = { id: 'description-1', stage: 'description', status: 'applied' } as NonNullable<ProductionWorkflowView['proposal']>;
+    const owner = render({ reviseOpen: false, decision: null, parts: { current: false, job: true, revise: true, error: true } });
+    expect(owner).toContain('ai-clip-scene:M44:description');
+    expect(owner).toContain('Доработать описание');
+    const current = render({ reviseOpen: false, decision: null, parts: { current: true, job: false, revise: false, error: false } });
+    expect(current).not.toContain('ai-clip-scene:M44:description');
+    expect(current).not.toContain('Доработать');
+  });
+
+  it('показывает ошибку запуска только в одном экземпляре', () => {
+    (workflow as { error: string | null }).error = 'Сначала ответьте на вопрос попытки.';
+    try {
+      expect(render({ parts: { current: true, job: true, revise: true, error: true } })).toContain('Сначала ответьте на вопрос попытки.');
+      expect(render({ parts: { current: true, job: true, revise: true, error: false } })).not.toContain('Сначала ответьте на вопрос попытки.');
+    } finally {
+      (workflow as { error: string | null }).error = null;
+    }
+  });
+});

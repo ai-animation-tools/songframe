@@ -171,11 +171,14 @@ type View struct {
 	DerivedFrom *string `json:"derivedFrom"`
 	// NextStage — следующий проход агента по пакету ("" → null): им интерфейс называет следующее
 	// действие. ReplaceFrame — опора открытого вопроса, кандидата которой можно заменить файлом.
-	NextStage         *string `json:"nextStage,omitempty"`
-	ReplaceFrame      *string `json:"replaceFrame,omitempty"`
-	CanPrepare        bool    `json:"canPrepare"`
-	CanContinue       bool    `json:"canContinue"`
-	CanRevise         bool    `json:"canRevise"`
+	NextStage    *string `json:"nextStage,omitempty"`
+	ReplaceFrame *string `json:"replaceFrame,omitempty"`
+	CanPrepare   bool    `json:"canPrepare"`
+	CanContinue  bool    `json:"canContinue"`
+	CanRevise    bool    `json:"canRevise"`
+	// ReviseStage — этап, который переделает доработка без явного этапа, пока она доступна
+	// (CanRevise): интерфейс показывает доработку в шаге этого этапа и называет её по нему.
+	ReviseStage       *string `json:"reviseStage,omitempty"`
 	CanGenerateFrames bool    `json:"canGenerateFrames"`
 	// Manual — видео плана создаётся вне приложения по пакету ручной генерации (Context.Manual).
 	// CanBuildManual — пакет можно собрать сейчас. SingleFrame — речевой план у провайдера без
@@ -325,6 +328,16 @@ func (w *Workflow) view(project, shot, packageDir string) (View, error) {
 			(descriptionApproved || frameRevision),
 		Paid: c.Paid, FramePrompts: dynvalue.Raw(c.FramePrompts), NextFrame: dynvalue.Raw(nextFrame),
 		ApprovedFrameIDs: dynvalue.Raw(&dynvalue.Array{Items: c.ApprovedFrameIDs()}), Problems: c.Problems, Proposal: json.RawMessage("null"), Job: job,
+	}
+	if view.CanRevise {
+		// Доработка оплаченной попытки начинается с описания в новой попытке (prepare).
+		revise := "description"
+		if !c.Paid {
+			if revise, err = c.reviseStage(nextStage); err != nil {
+				return View{}, err
+			}
+		}
+		view.ReviseStage = optional(revise)
 	}
 	generation, err := projectGeneration(canonical)
 	if err != nil {
@@ -666,6 +679,31 @@ func keyframeChoice(c *Context, stage string, chosen *int, inherit bool) (int, e
 	return *chosen, nil
 }
 
+// reviseStage — этап, который переделает доработка без явного этапа: следующий проход пакета
+// next, а если его нет — ближайший пройденный (запрос, промпт, иначе описание). Тем же правилом
+// View.ReviseStage называет доработку в интерфейсе.
+func (c *Context) reviseStage(next string) (string, error) {
+	if next != "" {
+		return next, nil
+	}
+	prompt, err := c.PromptApproved()
+	if err != nil {
+		return "", err
+	}
+	frames, err := c.FramesApproved()
+	if err != nil {
+		return "", err
+	}
+	switch {
+	case prompt && !c.Manual:
+		return "request", nil
+	case prompt, frames:
+		return "prompt", nil
+	default:
+		return "description", nil
+	}
+}
+
 // continuedStage — этап доработки или продолжения пакета: явный, следующий по пакету или, для
 // доработки, ближайший доступный.
 func (w *Workflow) continuedStage(c *Context, input StartInput) (string, error) {
@@ -688,23 +726,8 @@ func (w *Workflow) continuedStage(c *Context, input StartInput) (string, error) 
 		stage = *input.Stage
 	}
 	if stage == "" && input.Action == "revise" {
-		prompt, err := c.PromptApproved()
-		if err != nil {
+		if stage, err = c.reviseStage(""); err != nil {
 			return "", err
-		}
-		frames, err := c.FramesApproved()
-		if err != nil {
-			return "", err
-		}
-		switch {
-		case prompt && !c.Manual:
-			stage = "request"
-		case prompt:
-			stage = "prompt"
-		case frames:
-			stage = "prompt"
-		default:
-			stage = "description"
 		}
 	}
 	if stage == "" {

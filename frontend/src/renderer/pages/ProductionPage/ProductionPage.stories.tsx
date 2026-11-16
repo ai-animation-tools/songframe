@@ -12,6 +12,7 @@ import type { AcceptedKit, ShotProduction } from '@shared/types';
 import { ANCHORS } from '../../components/linkTargets';
 import { formatClock } from '../../format';
 import { keyframePackage } from '../../testing/keyframeStories';
+import { workflowAgentJob, workflowProposal } from '../../testing/productionWorkflowStories';
 import { STORY_IMAGE_PATH, STORY_TRACK_PATH, STORY_VIDEO_PATH } from '../../testing/storybook';
 import { preparedPackage, queuedPackage } from '../../testing/productionQueueStories';
 import { receivingPackage, receivedPackage } from '../../testing/resultStories';
@@ -116,6 +117,56 @@ export const Overview: Story = {
     await expect(description.queryByRole('button', { name: texts.productionWorkflowPanel.prepare })).not.toBeInTheDocument();
     await userEvent.click(description.getByRole('button', { name: new RegExp(steps.titles.description) }));
     await waitFor(() => expect(description.queryByText(/Герой останавливается у ворот/)).not.toBeInTheDocument());
+  }
+};
+
+/** Описание принято, опоры ещё создаются: доработка переделает описание, а не опоры. */
+const framesInProgress = keyframePackage({
+  stage: 'keyframes',
+  stageLabel: 'Опоры',
+  pendingDecision: null,
+  keyframeNotes: [],
+  description: 'Герой останавливается у ворот и смотрит на свет в окне.',
+  keyframes: keyframePackage().keyframes.map((frame) => ({ ...frame, imagePath: null, approved: false }))
+});
+
+export const RevisionInStageStep: Story = {
+  tags: ['ci'],
+  name: 'Доработка описания · задание и доработка в шаге «Описание», а не в шаге опор',
+  parameters: {
+    songframe: options({
+      shots: () => baseShots({ stageLabel: 'Опоры', attention: null, packages: [framesInProgress] }),
+      workflowView: (shot, packageDir) =>
+        shot === 'M02' && packageDir
+          ? {
+              canRevise: true,
+              reviseStage: 'description',
+              job: workflowAgentJob({
+                task: 'ai-clip-scene:M02:description',
+                status: 'completed',
+                phase: 'done',
+                finishedAt: '2026-10-30T09:02:00.000Z',
+                exitCode: 0
+              }),
+              proposal: workflowProposal('description', { status: 'applied' })
+            }
+          : {}
+    })
+  },
+  play: async (context) => {
+    await shotHeading(context, 'M02');
+    const frames = within(planStep(context, 'frames'));
+    await expect(await frames.findByText('K01', {}, POLL_TIMEOUT)).toBeInTheDocument();
+    // Шаг опор не показывает завершённое задание описания и его доработку.
+    await expect(frames.queryByText('ai-clip-scene:M02:description')).not.toBeInTheDocument();
+    await expect(frames.queryByRole('button', { name: /Доработать/ })).not.toBeInTheDocument();
+    const description = within(planStep(context, 'description'));
+    await expect(description.queryByText('ai-clip-scene:M02:description')).not.toBeInTheDocument();
+    await userEvent.click(description.getByRole('button', { name: new RegExp(steps.titles.description) }));
+    await expect(await description.findByText('ai-clip-scene:M02:description')).toBeInTheDocument();
+    await userEvent.click(description.getByRole('button', { name: texts.productionWorkflowPanel.reviseOpenFor.description }));
+    await expect(await description.findByRole('textbox', { name: texts.productionWorkflowPanel.noteFor.description })).toBeInTheDocument();
+    await expect(description.getByRole('button', { name: texts.productionWorkflowPanel.revise })).toBeDisabled();
   }
 };
 

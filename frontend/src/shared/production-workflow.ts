@@ -76,6 +76,8 @@ export interface ProductionWorkflowView {
   canPrepare: boolean;
   canContinue: boolean;
   canRevise: boolean;
+  /** Этап, который переделает доработка, пока она доступна (canRevise): в его шаге пути она показывается и по нему называется. */
+  reviseStage?: ProductionPass | null;
   canGenerateFrames: boolean;
   /** Попытка пакета уже оплачена: подготовка продолжается только новой попыткой или возвратом с замечанием. */
   paid: boolean;

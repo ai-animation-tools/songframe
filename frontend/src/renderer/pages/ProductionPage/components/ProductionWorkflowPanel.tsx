@@ -1,7 +1,10 @@
 import { productionTexts } from '@shared/texts/production';
 /**
- * Работа агента внутри текущего шага пути: задание, предложение, следующее действие и доработка.
- * Предложение решается целиком в окне сравнения; на самом шаге его текст не повторяется.
+ * Работа агента в шагах пути: задание, предложение, следующее действие и доработка.
+ * Путь показывает панель в нескольких шагах, и каждая часть живёт в шаге своего этапа (parts):
+ * задание и его предложение — в шаге этапа задания, доработка — в шаге этапа, который она переделает,
+ * следующее действие — в текущем шаге. Предложение решается целиком в окне сравнения; на самом
+ * шаге его текст не повторяется.
  */
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { Alert, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
@@ -25,6 +28,20 @@ const CONTINUE_LABELS: Partial<Record<ProductionPass, string>> = {
   request: productionTexts.productionWorkflowPanel.continueRequest
 };
 
+/** Какие части панели показывает этот её экземпляр; без раскладки — все. */
+export interface WorkflowPanelParts {
+  /** Проблемы попытки и следующее действие агента: текущий шаг пути. */
+  current: boolean;
+  /** Карточка последнего задания и окно его предложения: шаг этапа задания. */
+  job: boolean;
+  /** Доработка с замечанием: шаг этапа, который она переделает (reviseStage). */
+  revise: boolean;
+  /** Ошибка запуска: шаг, откуда запускали, иначе шаг задания. */
+  error: boolean;
+}
+
+const ALL_PARTS: WorkflowPanelParts = { current: true, job: true, revise: true, error: true };
+
 export function ProductionWorkflowPanel({
   workflow,
   packageDir,
@@ -37,7 +54,9 @@ export function ProductionWorkflowPanel({
   onAcceptProposal,
   onReviseProposal,
   onWriteOwn,
-  onOwnVideo
+  onOwnVideo,
+  parts = ALL_PARTS,
+  onLaunch
 }: {
   workflow: ProductionWorkflow;
   packageDir: string | undefined;
@@ -57,6 +76,9 @@ export function ProductionWorkflowPanel({
   onWriteOwn?(): void;
   /** Своё готовое видео плана без описания, опор и промпта: рядом с подготовкой описания у плана без попытки. */
   onOwnVideo?(): void;
+  parts?: WorkflowPanelParts;
+  /** Запуск агента из этого экземпляра: путь показывает ошибку запуска рядом с нажатой кнопкой. */
+  onLaunch?(): void;
 }): ReactElement {
   // Замечание к опоре уже в списке замечаний и уходит в создание опоры: в поле доработки агентом его не подставляем.
   const savedNote = decision?.verdict === 'revise' && decision.stage !== 'keyframes_review' ? (decision.note ?? '') : '';
@@ -80,11 +102,12 @@ export function ProductionWorkflowPanel({
   useEffect(() => {
     if (reviseOpen) reviseArea.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, [reviseOpen]);
-  const errorAlert = workflow.error ? (
-    <Alert severity="error">
-      <LinkedText text={workflow.error} />
-    </Alert>
-  ) : null;
+  const errorAlert =
+    workflow.error && parts.error ? (
+      <Alert severity="error">
+        <LinkedText text={workflow.error} />
+      </Alert>
+    ) : null;
   const start = async (action: ProductionWorkflowStart['action']): Promise<void> => {
     if (busy) return;
     if (action === 'revise' && !note.trim()) {
@@ -93,6 +116,7 @@ export function ProductionWorkflowPanel({
     }
     setValidation(null);
     setLastAction(action);
+    onLaunch?.();
     const instructionText = action === 'continue' && promptNext ? instruction.trim() : '';
     await workflow.start(
       action,
@@ -101,6 +125,7 @@ export function ProductionWorkflowPanel({
     );
   };
   const proposal = view?.proposal;
+  const reviseStage = view?.reviseStage ?? undefined;
   // Кнопка просмотра есть только у законченного ответа: идущее задание и применённое предложение нечего решать.
   const reviewable = !!proposal && proposal.status !== 'running' && proposal.status !== 'applied';
   // Опора агента применяется сама; окно нужно, только если применить её нельзя.
@@ -111,12 +136,12 @@ export function ProductionWorkflowPanel({
   const primaryDisabled = busy || !(packageDir ? view?.canContinue : view?.canPrepare);
   return (
     <Stack spacing={1.5}>
-      {view?.problems.length ? (
+      {parts.current && view?.problems.length ? (
         <Alert severity="warning">
           <LinkedText text={view.problems.join(' ')} />
         </Alert>
       ) : null}
-      {view?.job ? (
+      {parts.job && view?.job ? (
         <AgentJobCard
           compact
           job={view.job}
@@ -133,7 +158,7 @@ export function ProductionWorkflowPanel({
           }}
         />
       ) : null}
-      {reviewable && proposal && !quietFrames ? (
+      {parts.job && reviewable && proposal && !quietFrames ? (
         <ProductionProposalDialog
           key={proposal.id}
           proposal={proposal}
@@ -147,7 +172,7 @@ export function ProductionWorkflowPanel({
           onDiscard={workflow.discard}
         />
       ) : null}
-      {canAct && (!packageDir || continueLabel) ? (
+      {parts.current && canAct && (!packageDir || continueLabel) ? (
         <Stack spacing={0.5} sx={{ alignItems: 'flex-start' }}>
           {packageDir && promptNext && instructionOpen ? (
             <TextField
@@ -259,11 +284,17 @@ export function ProductionWorkflowPanel({
       ) : null}
       {/* Пока видеопромпта нет и ничего не возвращено на доработку, дорабатывать нечего: доработка повторила бы
           «Подготовить видеопромпт» с указаниями. */}
-      {view?.canRevise && !(promptNext && decision?.verdict !== 'revise') && !reviewable && !questionOpen ? (
+      {parts.revise && view?.canRevise && !(promptNext && decision?.verdict !== 'revise') && !reviewable && !questionOpen ? (
         reviseOpen || savedNote ? (
           <Stack spacing={1} ref={reviseArea}>
             <TextField
-              label={savedNote ? productionTexts.productionWorkflowPanel.savedNote : productionTexts.productionWorkflowPanel.note}
+              label={
+                savedNote
+                  ? productionTexts.productionWorkflowPanel.savedNote
+                  : reviseStage
+                    ? productionTexts.productionWorkflowPanel.noteFor[reviseStage]
+                    : productionTexts.productionWorkflowPanel.note
+              }
               multiline
               fullWidth
               minRows={3}
@@ -286,7 +317,7 @@ export function ProductionWorkflowPanel({
           </Stack>
         ) : (
           <Button size="small" startIcon={<EditIcon />} sx={{ alignSelf: 'flex-start' }} disabled={busy} onClick={() => onReviseOpen(true)}>
-            {productionTexts.productionWorkflowPanel.reviseOpen}
+            {reviseStage ? productionTexts.productionWorkflowPanel.reviseOpenFor[reviseStage] : productionTexts.productionWorkflowPanel.reviseOpen}
           </Button>
         )
       ) : null}

@@ -9,7 +9,7 @@ import type { VideoReviewView } from '@shared/video-review';
 import { videoReviewTexts } from '@shared/texts/video-review';
 import type { Api } from '@shared/api';
 import type { AcceptedKit, AppState, ShotSpend, BrokenPackage, JobInfo, PackageView, ProductionView, ShotProduction } from '@shared/types';
-import type { ProductionFramePrompt, ProductionProposal } from '@shared/production-workflow';
+import type { ProductionFramePrompt, ProductionProposal, ProductionWorkflowView } from '@shared/production-workflow';
 import { registerMediaProviderForTests } from '@shared/media-providers';
 import { productionTexts } from '@shared/texts/production';
 import { TEST_PROVIDER, testProviderInfo } from '@shared/testing/media-provider';
@@ -83,6 +83,8 @@ export interface ProductionPageModelOptions {
   acceptedKit?: (shot: string) => AcceptedKit | null;
   /** Расход плана (production.spend); без модели — отправок нет и блок «Расход» не показывается. */
   spend?: (shot: string) => ShotSpend | null;
+  /** Поля вида прохода агента поверх вычисленных моделью: задание, предложение, доступная доработка. */
+  workflowView?: (shot: string, packageDir: string | undefined) => Partial<ProductionWorkflowView>;
 }
 
 interface PageModel {
@@ -285,7 +287,8 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
                 frames: nextFrame ? null : 'Сначала ответьте на вопрос пакета.',
                 ...(manual ? { manual: manualReason } : {})
               }
-            : workflowView().reasons
+            : workflowView().reasons,
+          ...options.workflowView?.(shot, packageDir)
         });
       };
       const derived = createDerivedScenario({ view: { project: PAGE_PROJECT } });

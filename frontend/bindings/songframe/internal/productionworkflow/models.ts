@@ -110,6 +110,12 @@ export interface View {
     "canPrepare": boolean;
     "canContinue": boolean;
     "canRevise": boolean;
+
+    /**
+     * ReviseStage — этап, который переделает доработка без явного этапа, пока она доступна
+     * (CanRevise): интерфейс показывает доработку в шаге этого этапа и называет её по нему.
+     */
+    "reviseStage"?: string | null;
     "canGenerateFrames": boolean;
 
     /**

@@ -111,6 +111,21 @@ describe('чтение и опрос проверки видео', () => {
     expect(api.view).toHaveBeenCalledTimes(2);
     expect(fixture.notify).toHaveBeenCalledWith('Отчёт проверки видео готов.', 'success');
   });
+  it('перечитывает вид, пока проект занят другим заданием, и открывает запуск без уведомления', async () => {
+    const busy = { ...idle, canStart: false, busy: true, reason: 'Дождитесь завершения текущего задания проекта.' };
+    api.view.mockResolvedValueOnce(busy).mockResolvedValueOnce(busy).mockResolvedValue(idle);
+    mount();
+    await settle();
+    expect(Draw().view?.canStart).toBe(false);
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(Draw().view?.canStart).toBe(false);
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(Draw().view?.canStart).toBe(true);
+    expect(api.view).toHaveBeenCalledTimes(3);
+    await vi.advanceTimersByTimeAsync(6000);
+    expect(api.view).toHaveBeenCalledTimes(3);
+    expect(fixture.notify).not.toHaveBeenCalled();
+  });
   it('оставляет актуальную ошибку чтения для явного повтора', async () => {
     api.view.mockRejectedValueOnce(new Error('Ошибка чтения.'));
     mount();

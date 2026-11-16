@@ -1,10 +1,15 @@
-/** Чтение сохранённого отчёта и опрос только выполняющейся проверки выбранного пакета. */
+/**
+ * Чтение сохранённого отчёта и опрос выбранного пакета, пока идёт его проверка или другое задание
+ * проекта: без опроса занятость, замеченная при открытии, держала бы запуск заблокированным.
+ */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { VideoReviewView } from '@shared/video-review';
 import { videoReviewTexts } from '@shared/texts/video-review';
 import { useApp } from '../../state';
 
 const running = (view: VideoReviewView | null): boolean => view?.status === 'preparing' || view?.status === 'running';
+/** Вид нужно перечитывать: идёт проверка или проект занят другим заданием. */
+const waiting = (view: VideoReviewView | null): boolean => running(view) || !!view?.busy;
 
 export function useVideoReview(packageDir: string) {
   const { state, describeError, notify } = useApp();
@@ -62,14 +67,14 @@ export function useVideoReview(packageDir: string) {
         show(next, !manual);
         setError(null);
         if (manual) notify(next.status === 'failed' ? videoReviewTexts.refreshedFailed : videoReviewTexts.refreshed, 'info');
-        poll = running(next);
+        poll = waiting(next);
       } catch (reason) {
         if (!valid()) return;
         const message = describeError(reason);
         setError(message);
         if (manual) notify(message, 'error');
         // Ошибка опроса оставляет последнее выполняющееся задание и его отмену доступными.
-        poll = running(current.current);
+        poll = waiting(current.current);
       } finally {
         if (valid()) {
           if (manual) {
@@ -125,7 +130,7 @@ export function useVideoReview(packageDir: string) {
           mutating.current = false;
           setPending(false);
           // Новый опрос не конкурирует с командой запуска/отмены и не затирает её ошибку немедленно.
-          if (running(current.current)) timer.current = setTimeout(() => void read(), 1500);
+          if (waiting(current.current)) timer.current = setTimeout(() => void read(), 1500);
         }
       }
     },

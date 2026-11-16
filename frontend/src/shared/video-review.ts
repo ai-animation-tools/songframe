@@ -26,6 +26,8 @@ export interface VideoReviewView {
   frames: VideoReviewFrame[];
   stale: boolean;
   canStart: boolean;
+  /** В проекте идёт другое задание: панель перечитывает вид, пока оно не закончится, и запуск откроется сам. */
+  busy?: boolean;
   reason: string | null;
   error: string | null;
   durationSeconds: number | null;

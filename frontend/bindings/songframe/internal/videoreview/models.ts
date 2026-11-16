@@ -46,6 +46,12 @@ export interface View {
     "frames": Frame[];
     "stale": boolean;
     "canStart": boolean;
+
+    /**
+     * Busy — в проекте идёт другое задание (агент, операция над пакетом, подготовка кадров):
+     * интерфейс перечитывает вид, пока оно не закончится, иначе запуск остался бы заблокированным.
+     */
+    "busy"?: boolean;
     "reason": string | null;
     "error": string | null;
     "durationSeconds": number | null;

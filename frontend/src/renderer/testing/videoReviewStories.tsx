@@ -120,7 +120,7 @@ export function videoReviewStoryOptions(
             }
             if (busyRead) {
               busyRead = false;
-              return { ...structuredClone(view), canStart: false, reason: videoReviewTexts.main.busy };
+              return { ...structuredClone(view), canStart: false, busy: true, reason: videoReviewTexts.main.busy };
             }
             return structuredClone(view);
           },

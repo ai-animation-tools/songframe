@@ -105,15 +105,18 @@ type Options struct {
 
 // View — VideoReviewView контракта.
 type View struct {
-	Status          string      `json:"status"`
-	Job             *agents.Job `json:"job"`
-	Report          *Report     `json:"report"`
-	Frames          []Frame     `json:"frames"`
-	Stale           bool        `json:"stale"`
-	CanStart        bool        `json:"canStart"`
-	Reason          *string     `json:"reason"`
-	Error           *string     `json:"error"`
-	DurationSeconds *float64    `json:"durationSeconds"`
+	Status   string      `json:"status"`
+	Job      *agents.Job `json:"job"`
+	Report   *Report     `json:"report"`
+	Frames   []Frame     `json:"frames"`
+	Stale    bool        `json:"stale"`
+	CanStart bool        `json:"canStart"`
+	// Busy — в проекте идёт другое задание (агент, операция над пакетом, подготовка кадров):
+	// интерфейс перечитывает вид, пока оно не закончится, иначе запуск остался бы заблокированным.
+	Busy            bool     `json:"busy,omitempty"`
+	Reason          *string  `json:"reason"`
+	Error           *string  `json:"error"`
+	DurationSeconds *float64 `json:"durationSeconds"`
 }
 
 // preparation — идущая подготовка кадров пакета: отмена и признак завершения горутины.
@@ -398,7 +401,7 @@ func (s *Service) view(root, directory string) (View, error) {
 		busy = busy || job.Status == "running"
 	}
 	idle := func(status string, message *string) View {
-		view := View{Status: status, Frames: []Frame{}, Stale: status == StatusFailed, CanStart: reason == nil && !busy, Reason: reason, Error: message}
+		view := View{Status: status, Frames: []Frame{}, Stale: status == StatusFailed, CanStart: reason == nil && !busy, Busy: busy, Reason: reason, Error: message}
 		if reason == nil && busy {
 			view.Reason = text(textBusy)
 		}
@@ -463,7 +466,7 @@ func (s *Service) view(root, directory string) (View, error) {
 	}
 	view := View{
 		Status: status, Job: job, Report: reportDTO(record.doc.Value("report")), Frames: frames, Stale: stale,
-		CanStart: !active && reason == nil && !busy, Reason: reason, Error: record.errorText(), DurationSeconds: record.duration(),
+		CanStart: !active && reason == nil && !busy, Busy: busy, Reason: reason, Error: record.errorText(), DurationSeconds: record.duration(),
 	}
 	if reason == nil && (active || busy) {
 		view.Reason = text(textBusy)

@@ -149,7 +149,7 @@ export const LongReport: Story = {
 };
 
 export const RefreshAvailability: Story = {
-  name: 'Чужое задание завершилось · обновление доступности без закрытия',
+  name: 'Чужое задание завершилось · запуск открывается сам, без «Перечитать статус»',
   tags: ['ci'],
   parameters: { songframe: videoReviewStoryOptions({ initiallyBusy: true }) },
   play: async ({ canvasElement }) => {
@@ -157,8 +157,8 @@ export const RefreshAvailability: Story = {
     await canvas.findByText(videoReviewTexts.status.idle);
     await expect(canvas.getByRole('button', { name: videoReviewTexts.start })).toBeDisabled();
     await expect(canvas.getByRole('button', { name: videoReviewTexts.start })).toHaveAttribute('title', expect.stringContaining(videoReviewTexts.main.busy));
-    await userEvent.click(canvas.getByRole('button', { name: videoReviewTexts.refresh }));
-    await waitFor(() => expect(canvas.getByRole('button', { name: videoReviewTexts.start })).toBeEnabled());
+    // Пока проект занят, панель перечитывает вид сама: освобождение открывает запуск без ручного действия.
+    await waitFor(() => expect(canvas.getByRole('button', { name: videoReviewTexts.start })).toBeEnabled(), { timeout: 6000 });
     await expect(canvas.getByTestId('review-accepts')).toHaveTextContent('Подтверждений приёмки: 0');
   }
 };

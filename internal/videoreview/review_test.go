@@ -293,6 +293,28 @@ func TestBusyPackageRejectsStart(t *testing.T) {
 	}
 }
 
+// TestViewReportsBusy — вид отмечает чужое задание проекта, чтобы интерфейс перечитывал его до
+// освобождения: занятая попытка блокирует запуск, после освобождения запуск снова доступен.
+func TestViewReportsBusy(t *testing.T) {
+	h := newHarness(t)
+	review := h.service(nil)
+	h.busy = true
+	view, err := review.View(h.project, h.directory)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !view.Busy || view.CanStart || view.Reason == nil || *view.Reason != textBusy {
+		t.Fatalf("занятая попытка: %+v", view)
+	}
+	h.busy = false
+	if view, err = review.View(h.project, h.directory); err != nil {
+		t.Fatal(err)
+	}
+	if view.Busy || !view.CanStart || view.Reason != nil {
+		t.Fatalf("свободная попытка: %+v", view)
+	}
+}
+
 // TestBudgetRejectedBeforeProcesses — неверный бюджет и пути отклоняются до запуска FFmpeg.
 func TestBudgetRejectedBeforeProcesses(t *testing.T) {
 	dir := t.TempDir()

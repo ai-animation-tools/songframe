@@ -8,6 +8,7 @@ import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import ReplayIcon from '@mui/icons-material/Replay';
 import { Box, Chip, Typography } from '@mui/material';
 import type { KeyframeNoteScope, PackageKeyframe, PackageView } from '@shared/types';
+import { copyShotFrame } from '@shared/production-workflow';
 import { ImageGallery } from '../../../components/ImageGallery';
 import { ImageThumbnail } from '../../../components/ImageThumbnail';
 import { ActionButton } from '../../../components/ActionButton';
@@ -35,6 +36,17 @@ const STATE_CHIPS: Record<FrameState, { label: string; color: 'default' | 'warni
 };
 
 /** Почему утверждённую опору нельзя вернуть: видеопромпт или запрос видео уже строятся на ней. */
+/** Подпись копии: «Копия K02» или кадр принятого плана, из которого взята опора. */
+function copyLabel(source: string): string {
+  const frame = copyShotFrame(source);
+  return frame ? productionTexts.packageKeyframes.shotFrame(frame) : productionTexts.packageKeyframes.copyOf({ source });
+}
+
+/** Почему копию не вернуть на доработку отдельно: через источник или, для кадра другого плана, через описание. */
+function copyReopenReason(id: string, source: string): string {
+  return copyShotFrame(source) ? productionTexts.packageKeyframes.shotFrameReopen({ id }) : productionTexts.packageKeyframes.copyReopen({ id, source });
+}
+
 function reopenFrameReason(pkg: PackageView): string | null {
   if (pkg.prompt?.approved) return productionTexts.packageKeyframes.promptApproved;
   if (pkg.request && pkg.request.kind !== 'image') return productionTexts.packageKeyframes.requestPrepared;
@@ -124,7 +136,9 @@ export function PackageKeyframes({
                     {k.approved
                       ? productionTexts.packageKeyframes.fileMissing
                       : copies[k.id]
-                        ? productionTexts.packageKeyframes.copyPending({ source: copies[k.id] })
+                        ? copyShotFrame(copies[k.id])
+                          ? productionTexts.packageKeyframes.shotFramePending
+                          : productionTexts.packageKeyframes.copyPending({ source: copies[k.id] })
                         : productionTexts.packageKeyframes.notCreated}
                   </Typography>
                 </Box>
@@ -140,7 +154,7 @@ export function PackageKeyframes({
               </Typography>
               {copies[k.id] ? (
                 <Typography variant="caption" color="text.secondary" display="block">
-                  {productionTexts.packageKeyframes.copyOf({ source: copies[k.id] })}
+                  {copyLabel(copies[k.id])}
                 </Typography>
               ) : null}
               {k.note ? (
@@ -155,9 +169,7 @@ export function PackageKeyframes({
                   sx={{ mt: 0.5 }}
                   title={productionTexts.packageKeyframes.reopenHint({ id: k.id })}
                   disabled={busy || !!blocked || !!copies[k.id]}
-                  disabledReason={
-                    busy ? busyReason : (blocked ?? (copies[k.id] ? productionTexts.packageKeyframes.copyReopen({ id: k.id, source: copies[k.id] }) : null))
-                  }
+                  disabledReason={busy ? busyReason : (blocked ?? (copies[k.id] ? copyReopenReason(k.id, copies[k.id]) : null))}
                   onClick={() => setReopening(k.id)}
                 >
                   {productionTexts.packageKeyframes.reopen}

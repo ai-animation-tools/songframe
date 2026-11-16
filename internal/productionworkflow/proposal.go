@@ -319,8 +319,8 @@ func ParseProposal(raw string, rules Rules) (*dynvalue.Object, error) {
 // (rules.Manual) опора ровно одна — K01 first на 0. Выбранное пользователем число опор
 // (rules.Keyframes) соблюдается точно; одна опора — только K01 first, без last. У своего описания
 // (rules.Own) промпт опоры может быть пустой строкой: опору без промпта создать нельзя, только
-// загрузить своим файлом. Опора с copyOf — копия более ранней опоры-не-копии: пустой промпт и без
-// референсов.
+// загрузить своим файлом. Опора с copyOf — копия более ранней опоры-не-копии или кадра принятого
+// плана из continuityFrames (его путь в allowedPaths): пустой промпт и без референсов.
 func parseDescription(value *dynvalue.Object, rules Rules) error {
 	if err := keys(value, "schemaVersion", "stage", "description", "requestSeconds", "keyframes"); err != nil {
 		return err
@@ -354,15 +354,17 @@ func parseDescription(value *dynvalue.Object, rules Rules) error {
 		if err := keys(frame, "id", "role", "timeSeconds", "prompt", "referencePaths", "copyOf"); err != nil {
 			return err
 		}
-		// Копия повторяет более раннюю опору кадр в кадр: её не создают, а получают файлом
-		// источника при его принятии (shot_workflow), поэтому своего промпта и референсов у неё нет.
+		// Копия повторяет более раннюю опору или кадр принятого плана кадр в кадр: её не создают, а
+		// получают файлом источника (internal/production, frame_copies.go), поэтому своего промпта и
+		// референсов у неё нет.
 		if frame.Has("copyOf") {
 			source, _ := frame.Value("copyOf").(string)
 			references, _ := dynvalue.AsArray(frame.Value("referencePaths"))
-			valid := !rules.Manual && frame.Value("prompt") == "" && len(references) == 0 && slices.ContainsFunc(frames[:index], func(item any) bool {
-				earlier, _ := item.(*dynvalue.Object)
-				return earlier != nil && earlier.Value("id") == source && !earlier.Has("copyOf")
-			})
+			valid := !rules.Manual && frame.Value("prompt") == "" && len(references) == 0 && (isShotFramePath(source) && slices.Contains(rules.AllowedPaths, source) ||
+				slices.ContainsFunc(frames[:index], func(item any) bool {
+					earlier, _ := item.(*dynvalue.Object)
+					return earlier != nil && earlier.Value("id") == source && !earlier.Has("copyOf")
+				}))
 			if !valid {
 				return errors.New(textFrameCopyInvalid)
 			}

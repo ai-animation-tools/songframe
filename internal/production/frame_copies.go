@@ -1,10 +1,14 @@
 package production
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"os"
+	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"songframe/internal/projectfs"
@@ -15,6 +19,12 @@ import (
 // не загружают: когда источник утверждён, его файл побайтно копируется в frames/<копия>.<расширение>
 // и утверждается штатным shot_workflow approve. Одинаковые байты дают настоящее удержание кадра,
 // а не два похожих изображения, между которыми модель видео стала бы переходить.
+//
+// Источником может быть и кадр принятого плана (путь от проекта к <пакет>/continuity/<план>-
+// <first|last>.png): например, первый кадр, продолжающий последний кадр предыдущего плана без
+// смены точки. Такой кадр уже принят вместе с монтажом того плана и извлечён в пакет при
+// применении описания, поэтому копия заполняется при первом утверждении после этого — обычно
+// при утверждении описания, до создания остальных опор, которые могут на неё опираться.
 
 // frameCopies — пары «копия → источник» из плана опор пакета; нет файла или копий — пусто.
 // Ответ агента с copyOf уже проверен при применении описания (internal/productionworkflow).
@@ -63,13 +73,9 @@ func (s *Service) fillFrameCopies(project, directory string) error {
 	if err := json.Unmarshal(data, &workflow); err != nil {
 		return err
 	}
-	type frame struct {
-		path, sha string
-		approved  bool
-	}
-	frames := map[string]frame{}
+	frames := map[string]copySource{}
 	for _, item := range workflow.Keyframes {
-		value := frame{approved: item.Approved}
+		value := copySource{approved: item.Approved}
 		if item.Path != nil {
 			value.path = *item.Path
 		}
@@ -82,6 +88,9 @@ func (s *Service) fillFrameCopies(project, directory string) error {
 		id := item.ID
 		source, isCopy := copies[id]
 		original, found := frames[source]
+		if isCopy && !found {
+			original, found = shotFrameSource(project, directory, source)
+		}
 		if !isCopy || !found || !original.approved || original.path == "" {
 			continue
 		}
@@ -107,4 +116,41 @@ func (s *Service) fillFrameCopies(project, directory string) error {
 		}
 	}
 	return nil
+}
+
+// copySource — файл источника копии: путь от папки пакета, SHA-256 и утверждён ли он.
+type copySource struct {
+	path, sha string
+	approved  bool
+}
+
+// shotFrameSource — источник копии, заданный путём кадра принятого плана от проекта. Годится только
+// файл внутри папки continuity этого пакета; он считается утверждённым. Нет файла или путь вне
+// пакета — false: копия остаётся незаполненной, как при неутверждённом источнике.
+func shotFrameSource(project, directory, source string) (copySource, bool) {
+	file := filepath.Join(project, filepath.FromSlash(source))
+	relative, err := filepath.Rel(directory, file)
+	if err != nil || filepath.Dir(relative) != "continuity" {
+		return copySource{}, false
+	}
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return copySource{}, false
+	}
+	sum := sha256.Sum256(data)
+	return copySource{path: filepath.ToSlash(relative), sha: hex.EncodeToString(sum[:]), approved: true}, true
+}
+
+// shotFrameName — имя кадра другого плана в папке continuity пакета.
+var shotFrameName = regexp.MustCompile(`^(M\d{2}(?:\.\d+)?)-(first|last)\.png$`)
+
+// shotFrameOf — план и положение кадра (first или last), если источник копии — кадр другого плана,
+// а не ID опоры.
+func shotFrameOf(source string) (shot, position string, ok bool) {
+	folder, name := path.Split(source)
+	match := shotFrameName.FindStringSubmatch(name)
+	if match == nil || path.Base(path.Clean(folder)) != "continuity" {
+		return "", "", false
+	}
+	return match[1], match[2], true
 }

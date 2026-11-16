@@ -69,6 +69,23 @@ export const DescriptionFrameCopy: Story = {
     await expect(canvas.getByText(labels.copyOf({ source: 'K02' }))).toBeVisible();
   }
 };
+export const DescriptionShotFrameCopy: Story = {
+  name: 'Описание с первой опорой из кадра другого плана · пояснение вместо промпта',
+  tags: ['ci'],
+  args: {
+    initialProposal: (() => {
+      const proposal = workflowProposal('description');
+      if (proposal.after?.stage !== 'description') return proposal;
+      const [first, ...rest] = proposal.after.keyframes;
+      const copy = { ...first, prompt: '', referencePaths: [], copyOf: 'plan/batches/M02-attempt-01/continuity/M01-last.png' };
+      return { ...proposal, after: { ...proposal.after, keyframes: [copy, ...rest] } };
+    })()
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText(labels.copyOfShotFrame({ shot: 'M01', position: 'last' }))).toBeVisible();
+  }
+};
 export const Prompt: Story = {
   name: 'Видеопромпт · сравнение текстов',
   args: { initialProposal: workflowProposal('prompt') }

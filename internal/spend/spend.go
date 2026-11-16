@@ -329,6 +329,8 @@ func readRequest(directory, attempt string) (live, bool) {
 // (image_requests[].selected_sha256), уже учтённого своей отправкой, или принятый кандидат
 // провайдера без отдельной цены (keyframes[].provider с тем же SHA). Своя — запись без суммы,
 // стоимость пользователь указывает сам; опоры с одинаковыми байтами (копия опоры) — одна запись.
+// Копия кадра другого плана (copyOf с путём кадра в keyframe-prompts.json) — кадр уже принятого
+// монтажа, а не новый материал: в расход не входит.
 func ownFrames(directory, attempt string) []live {
 	var workflow struct {
 		Shot           string            `json:"shot"`
@@ -353,9 +355,20 @@ func ownFrames(directory, attempt string) []live {
 			generated[keyframe.SHA256] = true
 		}
 	}
+	var prompts []struct {
+		ID     string `json:"id"`
+		CopyOf string `json:"copyOf"`
+	}
+	readFile(filepath.Join(directory, "keyframe-prompts.json"), &prompts)
+	shotFrames := map[string]bool{}
+	for _, prompt := range prompts {
+		if strings.Contains(prompt.CopyOf, "/") {
+			shotFrames[prompt.ID] = true
+		}
+	}
 	frames := make([]string, 0, len(workflow.ApprovedFrames))
 	for frame, sha := range workflow.ApprovedFrames {
-		if sha != "" && !generated[sha] {
+		if sha != "" && !generated[sha] && !shotFrames[frame] {
 			frames = append(frames, frame)
 		}
 	}

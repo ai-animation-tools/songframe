@@ -91,7 +91,7 @@ const (
 	textFrameStructureInvalid        = "Неверная структура опоры."
 	textFramePlanInvalid             = "Неверные ID, роли, порядок, промпт или референсы опор."
 	textFrameBoundariesInvalid       = "Первая опора должна быть на 0, последняя — на границе запроса."
-	textFrameCopyInvalid             = "Копия опоры (copyOf) должна ссылаться на более раннюю опору, которая сама не копия, и не иметь своего промпта и референсов."
+	textFrameCopyInvalid             = "Копия опоры (copyOf) должна ссылаться на более раннюю опору, которая сама не копия, или на кадр принятого плана из continuityFrames и не иметь своего промпта и референсов."
 	textVideoPromptRequired          = "Нужен непустой видеопромпт."
 	textRequestSpecificationRequired = "Нужна спецификация запроса."
 	textRequestStructureInvalid      = "Неверная модель, команда, параметры, входы или число результатов."

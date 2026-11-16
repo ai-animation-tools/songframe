@@ -4,6 +4,7 @@ import { useId, useState, type ReactElement, type ReactNode } from 'react';
 import { Alert, Box, Chip, Divider, Paper, Stack, Typography } from '@mui/material';
 import type { AgentSettings } from '@shared/agents';
 import type { ProductionFramePrompt, ProductionProposal, ProductionRequestDraft, ProductionScenarioProblem } from '@shared/production-workflow';
+import { copyShotFrame } from '@shared/production-workflow';
 import { productionInputLabel } from '@shared/production-labels';
 import { mediaCommandLabel } from '@shared/media-providers';
 import { AgentButton, AgentIcon, ImageGallery, ImageThumbnail } from '../../../components';
@@ -17,6 +18,12 @@ import { Prose } from '../../../components/Prose';
 import { ReadableValue } from '../../../components/ReadableValue';
 
 const FRAME_ROLES: Record<ProductionFramePrompt['role'], string> = productionTexts.inputRoles;
+
+/** Пояснение копии опоры: копия более ранней опоры или кадр принятого плана. */
+function copyText(source: string): string {
+  const frame = copyShotFrame(source);
+  return frame ? productionTexts.productionProposalPreview.copyOfShotFrame(frame) : productionTexts.productionProposalPreview.copyOf({ source });
+}
 
 function fileName(path: string): string {
   return path.split(/[\\/]/).pop() ?? path;
@@ -87,7 +94,7 @@ function Frames({ frames }: { frames: ProductionFramePrompt[] }): ReactElement {
           </Stack>
           {frame.copyOf ? (
             <Typography variant="body2" color="text.secondary">
-              {productionTexts.productionProposalPreview.copyOf({ source: frame.copyOf })}
+              {copyText(frame.copyOf)}
             </Typography>
           ) : (
             <Paragraphs text={frame.prompt} />

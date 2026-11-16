@@ -248,15 +248,27 @@ func shotFramesTree(project, target string, frames []ShotFrame, attached []bool,
 	return value
 }
 
-// placeShotFrames — полноразмерные кадры других планов, которые назвали опоры плана keyframes,
-// в папке continuity пакета target. Файл с теми же байтами не перезаписывается. Путь кадра
-// проверен при разборе ответа (allowedPaths задания), поэтому здесь разбирается только имя.
+// isShotFramePath — путь кадра другого плана в папке continuity пакета (<пакет>/continuity/
+// <план>-<first|last>.png). Какой именно пакет, проверяет allowedPaths задания.
+func isShotFramePath(path string) bool {
+	folder, name := filepath.Split(filepath.FromSlash(path))
+	return filepath.Base(filepath.Clean(folder)) == "continuity" && shotFrameFile.MatchString(name)
+}
+
+// placeShotFrames — полноразмерные кадры других планов, которые назвали опоры плана keyframes
+// (референсом или источником копии copyOf), в папке continuity пакета target. Файл с теми же
+// байтами не перезаписывается. Путь кадра проверен при разборе ответа (allowedPaths задания),
+// поэтому здесь разбирается только имя.
 func (w *Workflow) placeShotFrames(ctx context.Context, project, target string, keyframes []any) error {
 	folder := rel(project, filepath.Join(target, "continuity")) + "/"
 	placed := map[string]bool{}
 	for _, frame := range keyframes {
 		references, _ := dynvalue.AsArray(dynvalue.Get(frame, "referencePaths"))
-		for _, reference := range references {
+		paths := slices.Clone(references)
+		if source, ok := dynvalue.Get(frame, "copyOf").(string); ok {
+			paths = append(paths, source)
+		}
+		for _, reference := range paths {
 			text, _ := reference.(string)
 			name, inside := strings.CutPrefix(text, folder)
 			match := shotFrameFile.FindStringSubmatch(name)

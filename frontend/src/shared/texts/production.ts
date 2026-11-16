@@ -688,6 +688,11 @@ export const productionTexts = {
     copyPending: ({ source }: { source: string }) => `Появится после утверждения ${source}`,
     copyReopen: ({ id, source }: { id: string; source: string }) =>
       `${id} повторяет ${source}: верните на доработку ${source}, копия обновится после её утверждения`,
+    /** Опора — кадр принятого монтажа другого плана (copyOf с путём кадра): её задаёт описание. */
+    shotFrame: ({ shot, position }: { shot: string; position: 'first' | 'last' }) =>
+      position === 'first' ? `Первый кадр плана ${shot}` : `Последний кадр плана ${shot}`,
+    shotFramePending: 'Появится после утверждения описания',
+    shotFrameReopen: ({ id }: { id: string }) => `${id} взята из принятого монтажа другого плана: чтобы её заменить, доработайте описание`,
     missing: 'не создана',
     candidate: 'кандидат ждёт решения',
     pending: 'вопрос ниже: утвердить?',
@@ -911,6 +916,8 @@ export const productionTexts = {
     time: ({ timeSeconds }: { timeSeconds: number }) => `${timeSeconds} с от начала плана`,
     references: ({ filenames }: { filenames: string }) => `Референсы: ${filenames}`,
     copyOf: ({ source }: { source: string }) => `Копия ${source} кадр в кадр: опору не создают, приложение возьмёт файл ${source} после его утверждения.`,
+    copyOfShotFrame: ({ shot, position }: { shot: string; position: 'first' | 'last' }) =>
+      `${position === 'first' ? 'Первый' : 'Последний'} кадр принятого плана ${shot} кадр в кадр: опору не создают, приложение возьмёт этот кадр при утверждении описания.`,
     candidate: ({ id }: { id: string }) => `${id} · кандидат, не принят`,
     galleryKind: 'Кандидат опоры',
     modelAndCommand: 'Модель и команда',

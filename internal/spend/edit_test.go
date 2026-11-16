@@ -259,3 +259,29 @@ func TestProviderFrameNotOwn(t *testing.T) {
 		t.Fatalf("своя опора вместо кандидата провайдера: %+v", summary)
 	}
 }
+
+// TestShotFrameCopyNotOwn — опора-копия кадра принятого плана (copyOf с путём кадра) — кадр уже
+// принятого монтажа, а не своя опора; остальные опоры той же попытки учитываются как обычно.
+func TestShotFrameCopyNotOwn(t *testing.T) {
+	root := t.TempDir()
+	attempt := "plan/batches/M02-attempt-01"
+	folder := filepath.Join(root, filepath.FromSlash(attempt))
+	if err := os.MkdirAll(folder, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	workflow, _ := json.Marshal(map[string]any{"shot": "M02", "approved_frames": map[string]string{"K01": "frame-m01", "K02": "own-2"}, "image_requests": []any{},
+		"keyframes": []map[string]any{{"id": "K01", "sha256": "frame-m01"}, {"id": "K02", "sha256": "own-2"}}})
+	prompts, _ := json.Marshal([]map[string]any{
+		{"id": "K01", "prompt": "", "copyOf": attempt + "/continuity/M01-last.png"},
+		{"id": "K02", "prompt": "Финал"},
+	})
+	for name, data := range map[string][]byte{"workflow.json": workflow, "keyframe-prompts.json": prompts} {
+		if err := os.WriteFile(filepath.Join(folder, name), data, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	summary := Summarize(entries(t, root), "M02", nil)
+	if summary.OwnImages != 1 || viewOf(t, summary, func(entry EntryView) bool { return entry.Frame == "K02" }).Ref.FileSHA256 != "own-2" {
+		t.Fatalf("копия кадра M01 учтена своей опорой: %+v", summary)
+	}
+}

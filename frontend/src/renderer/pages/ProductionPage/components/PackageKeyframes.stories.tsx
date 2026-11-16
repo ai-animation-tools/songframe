@@ -45,6 +45,22 @@ export const FrameCopy: Story = {
     await expect(canvas.getByText(productionTexts.packageKeyframes.copyPending({ source: 'K03' }))).toBeVisible();
   }
 };
+export const ShotFrameCopy: Story = {
+  name: 'Опора из кадра другого плана · подпись плана, возврат через описание',
+  tags: ['!autodocs', 'ci'],
+  args: { copies: { K01: 'plan/batches/M02-attempt-01/continuity/M01-last.png' }, initialPackage: approvedPackage() },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText(productionTexts.packageKeyframes.shotFrame({ shot: 'M01', position: 'last' }))).toBeVisible();
+    const buttons = canvas.getAllByRole('button', { name: productionTexts.packageKeyframes.reopen });
+    await expect(buttons[0]).toBeDisabled();
+    await expect(buttons[0].closest('[title]') ?? buttons[0]).toHaveAttribute(
+      'title',
+      expect.stringContaining(productionTexts.packageKeyframes.shotFrameReopen({ id: 'K01' }))
+    );
+    await expect(buttons[1]).toBeEnabled();
+  }
+};
 export const FrameCopyApproved: Story = {
   name: 'Копия опоры утверждена · вернуть можно только источник',
   tags: ['!autodocs', 'ci'],

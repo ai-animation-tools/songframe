@@ -325,12 +325,27 @@ func number(value float64) string { return strconv.FormatFloat(value, 'f', -1, 6
 // textNoAcceptedKit — цену принятого плана указывают только у плана с комплектом.
 const textNoAcceptedKit = "План ещё не принят: цену указывают у видео его попытки."
 
-// textFrameCopyFailed — файл утверждённой опоры не удалось перенести в её копию.
+// textFrameCopyFailed — файл утверждённой опоры или кадр другого плана не удалось перенести в копию.
 func textFrameCopyFailed(frame, source string) string {
+	if shot, position, ok := shotFrameOf(source); ok {
+		return "Не удалось взять " + textShotFrame(shot, position) + " в опору " + frame + ". Повторите решение."
+	}
 	return "Не удалось скопировать опору " + source + " в " + frame + ". Повторите решение по " + source + "."
 }
 
-// textFrameCopyReopen — копию не возвращают на доработку отдельно: она повторяет источник.
+// textFrameCopyReopen — копию не возвращают на доработку отдельно: она повторяет источник. Кадр
+// другого плана задан описанием: заменить его можно только доработкой описания.
 func textFrameCopyReopen(frame, source string) string {
+	if shot, position, ok := shotFrameOf(source); ok {
+		return "Опора " + frame + " — " + textShotFrame(shot, position) + ": чтобы её заменить, доработайте описание."
+	}
 	return "Опора " + frame + " — копия " + source + ": верните на доработку " + source + ", копия обновится после её утверждения."
+}
+
+// textShotFrame — «последний кадр плана M09» или «первый кадр плана M09».
+func textShotFrame(shot, position string) string {
+	if position == "first" {
+		return "первый кадр плана " + shot
+	}
+	return "последний кадр плана " + shot
 }

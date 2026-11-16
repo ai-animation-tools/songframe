@@ -9,8 +9,16 @@ export interface ProductionFramePrompt {
   timeSeconds: number;
   prompt: string;
   referencePaths: string[];
-  /** Опора повторяет более раннюю кадр в кадр: промпт пуст, файл приходит копией источника после его утверждения. */
+  /**
+   * Опора повторяет кадр в кадр более раннюю опору (её ID) или кадр принятого плана (путь `<пакет>/continuity/M09-last.png`):
+   * промпт пуст, файл приходит копией источника — после утверждения опоры или описания.
+   */
   copyOf?: string;
+}
+/** Кадр принятого плана, которому копия опоры равна кадр в кадр; null — источник копии другая опора. */
+export function copyShotFrame(copyOf: string): { shot: string; position: 'first' | 'last' } | null {
+  const match = /(?:^|\/)continuity\/(M\d{2}(?:\.\d+)?)-(first|last)\.png$/.exec(copyOf);
+  return match ? { shot: match[1], position: match[2] as 'first' | 'last' } : null;
 }
 /**
  * Свой текст этапа без агента: описание с планом опор или видеопромпт. Go проверяет его теми же правилами, что ответ агента,

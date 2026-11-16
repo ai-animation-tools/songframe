@@ -40,6 +40,10 @@ func agentError(code, detail string) *Error { return &Error{Code: code, Detail: 
 // DefaultLineBytes — предел одной строки JSONL (256 КиБ).
 const DefaultLineBytes = 256 * 1024
 
+// oversizePrefix — сколько начальных байтов слишком длинной строки получает Oversize для решения:
+// хватает на тип события и первый блок содержимого, а остаток строки не накапливается.
+const oversizePrefix = 1024
+
 // JSONLines разбирает поток JSONL по строкам независимо от границ фрагментов вывода.
 // Разделитель \n не встречается внутри многобайтных символов UTF-8, поэтому строка режется
 // по байтам и декодируется целиком (недопустимые байты — U+FFFD, как StringDecoder).
@@ -49,6 +53,14 @@ type JSONLines struct {
 	onValue   func(value *dynvalue.Object) error
 	lineBytes int
 	pending   []byte
+	// Oversize решает по началу строки длиннее предела, можно ли её пропустить: true — строка
+	// отбрасывается до перевода строки без накопления, false — ошибка OUTPUT_LIMIT. Без обработчика
+	// любая длинная строка — ошибка. Так CLI, повторяющий в выводе прочитанные файлы, не обрывает задание.
+	Oversize func(prefix []byte) (bool, error)
+	// skipping — остаток пропускаемой строки ещё не дочитан до перевода строки.
+	skipping bool
+	// skipped — сколько байтов вывода (с переводами строк) отброшено пропуском длинных строк.
+	skipped int
 }
 
 // NewJSONLines создаёт разборщик; lineBytes <= 0 означает DefaultLineBytes.
@@ -59,45 +71,80 @@ func NewJSONLines(onValue func(value *dynvalue.Object) error, lineBytes int) *JS
 	return &JSONLines{onValue: onValue, lineBytes: lineBytes}
 }
 
+// Skipped — число байтов вывода, отброшенных пропуском длинных строк: менеджер не учитывает
+// их в общем пределе вывода, потому что они не хранятся.
+func (p *JSONLines) Skipped() int { return p.skipped }
+
 // Push принимает очередной фрагмент stdout и разбирает все завершённые строки.
 func (p *JSONLines) Push(chunk []byte) error {
-	p.pending = append(p.pending, chunk...)
-	for {
-		end := bytes.IndexByte(p.pending, '\n')
-		if end < 0 {
-			break
+	for len(chunk) > 0 {
+		end := bytes.IndexByte(chunk, '\n')
+		if p.skipping {
+			if end < 0 {
+				p.skipped += len(chunk)
+				return nil
+			}
+			p.skipped += end + 1
+			p.skipping = false
+			chunk = chunk[end+1:]
+			continue
 		}
-		line := p.pending[:end]
-		rest := append([]byte(nil), p.pending[end+1:]...)
-		p.pending = rest
+		if end < 0 {
+			p.pending = append(p.pending, chunk...)
+			if len(p.pending) <= p.lineBytes {
+				return nil
+			}
+			// Строка уже длиннее предела: решение принимается сразу, остаток не копится.
+			line := p.pending
+			p.skipped += len(line)
+			p.pending, p.skipping = nil, true
+			return p.oversize(line)
+		}
+		line := append(p.pending, chunk[:end]...)
+		p.pending = nil
+		chunk = chunk[end+1:]
+		if len(line) > p.lineBytes {
+			p.skipped += len(line) + 1
+			if err := p.oversize(line); err != nil {
+				return err
+			}
+			continue
+		}
 		if err := p.parse(line); err != nil {
 			return err
 		}
 	}
-	return p.checkSize(p.pending)
+	return nil
 }
 
-// Finish разбирает последнюю строку без завершающего перевода строки.
-func (p *JSONLines) Finish() error {
-	line := p.pending
-	p.pending = nil
-	if dynvalue.Trim(dynvalue.DecodeUTF8(line)) == "" {
-		return nil
+// oversize применяет Oversize к началу строки длиннее предела; без обработчика или при отказе
+// пропустить — ошибка OUTPUT_LIMIT без текста строки.
+func (p *JSONLines) oversize(line []byte) error {
+	if p.Oversize == nil {
+		return agentError(CodeOutputLimit, textLineTooLarge)
 	}
-	return p.parse(line)
-}
-
-func (p *JSONLines) checkSize(line []byte) error {
-	if len(line) > p.lineBytes {
+	skip, err := p.Oversize(line[:min(len(line), oversizePrefix)])
+	if err != nil {
+		return err
+	}
+	if !skip {
 		return agentError(CodeOutputLimit, textLineTooLarge)
 	}
 	return nil
 }
 
-func (p *JSONLines) parse(raw []byte) error {
-	if err := p.checkSize(raw); err != nil {
-		return err
+// Finish разбирает последнюю строку без завершающего перевода строки; недочитанная
+// пропускаемая строка просто отбрасывается.
+func (p *JSONLines) Finish() error {
+	line := p.pending
+	p.pending = nil
+	if p.skipping || dynvalue.Trim(dynvalue.DecodeUTF8(line)) == "" {
+		return nil
 	}
+	return p.parse(line)
+}
+
+func (p *JSONLines) parse(raw []byte) error {
 	line := dynvalue.DecodeUTF8(raw)
 	if dynvalue.Trim(line) == "" {
 		return nil

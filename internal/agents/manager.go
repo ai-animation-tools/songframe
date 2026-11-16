@@ -471,6 +471,17 @@ func (m *Manager) launch(run *running, config Settings, prompt string, images []
 		}
 		return nil
 	}, DefaultLineBytes)
+	if handler, ok := adapter.(OversizeHandler); ok {
+		parser.Oversize = func(prefix []byte) (bool, error) {
+			updates, skip := handler.Oversize(prefix)
+			for _, update := range updates {
+				if err := m.update(run, update); err != nil {
+					return false, err
+				}
+			}
+			return skip, nil
+		}
+	}
 	// stderr не передаётся в историю: CLI может печатать ключи, промпт и содержимое файлов.
 	stderr := ""
 	command.OnOutput = func(data []byte, isStderr bool) {
@@ -480,7 +491,14 @@ func (m *Manager) launch(run *running, config Settings, prompt string, images []
 		if run.ended {
 			return
 		}
-		run.outputBytes += len(data)
+		// Пропущенные разборщиком длинные строки не хранятся и в общий предел вывода не входят:
+		// иначе несколько прочитанных агентом изображений обрывали бы задание.
+		var err error
+		skipped := parser.Skipped()
+		if !isStderr {
+			err = parser.Push(data)
+		}
+		run.outputBytes += len(data) - (parser.Skipped() - skipped)
 		if run.outputBytes > m.options.OutputBytes {
 			m.finish(run, StatusFailed, agentError(CodeOutputLimit, textJobOutputLimit))
 			return
@@ -489,7 +507,7 @@ func (m *Manager) launch(run *running, config Settings, prompt string, images []
 			stderr = utf16Tail(stderr+dynvalue.DecodeUTF8(data), stderrTail)
 			return
 		}
-		if err := parser.Push(data); err != nil {
+		if err != nil {
 			m.fail(run, err)
 		}
 	}

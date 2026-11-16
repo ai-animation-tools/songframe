@@ -1,6 +1,7 @@
 package agents
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"regexp"
@@ -69,6 +70,14 @@ type Adapter interface {
 // вложения не превращаются молча в текстовые пути: менеджер отказывает до запуска.
 type InputEncoder interface {
 	Input(prompt string, images []Image) (string, error)
+}
+
+// OversizeHandler — адаптер, CLI которого печатает служебные события длиннее предела строки JSONL.
+// Oversize получает начало такой строки (до oversizePrefix байт): true — событие опознано и
+// пропускается целиком, а вместо разбора применяются возвращённые обновления; false — строка
+// остаётся ошибкой OUTPUT_LIMIT. Без обработчика длинная строка всегда ошибка.
+type OversizeHandler interface {
+	Oversize(prefix []byte) ([]Update, bool)
 }
 
 // NewAdapter создаёт адаптер исполнителя реестра с окружением приложения; для неизвестного id — nil.
@@ -270,6 +279,24 @@ func object2(k1 string, v1 any, k2 string, v2 any) *dynvalue.Object {
 	result.Set(k1, v1)
 	result.Set(k2, v2)
 	return result
+}
+
+// claudeUserEvent и claudeToolResult опознают по началу строки событие stream-json с результатом
+// инструмента. Claude Code повторяет в нём прочитанный файл: изображение приходит в base64 и
+// превышает предел строки, а приложению из события нужен только факт завершения инструмента.
+// Поля проверяются по началу строки, потому что целиком её не накапливают.
+var (
+	claudeUserEvent  = []byte(`{"type":"user"`)
+	claudeToolResult = []byte(`"type":"tool_result"`)
+)
+
+// Oversize пропускает длинное событие с результатом инструмента и отмечает его завершение,
+// как Parse для обычного события user; прочие длинные строки остаются ошибкой.
+func (a *claudeAdapter) Oversize(prefix []byte) ([]Update, bool) {
+	if !bytes.HasPrefix(bytes.TrimLeft(prefix, " \t\r"), claudeUserEvent) || !bytes.Contains(prefix, claudeToolResult) {
+		return nil, false
+	}
+	return []Update{{Type: UpdateToolFinished, Tool: phaseReading}}, true
 }
 
 func (a *claudeAdapter) Parse(value *dynvalue.Object) ([]Update, error) {

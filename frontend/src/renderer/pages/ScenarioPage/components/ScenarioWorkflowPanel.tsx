@@ -15,6 +15,7 @@ import { ScenarioDraftConflictDialog } from './ScenarioDraftConflictDialog';
 import { ScenarioReviseDialog } from './ScenarioReviseDialog';
 import { ScenarioProposalDialog } from './ScenarioProposalDialog';
 import { LinkedText } from '../../../components/LinkedText';
+import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 
 /** Доменные действия создают новое предложение; повтор всегда заново собирает контекст. */
 export function ScenarioWorkflowPanel({
@@ -45,6 +46,8 @@ export function ScenarioWorkflowPanel({
   const [reviseIds, setReviseIds] = useState<string[]>([]);
   const [note, setNote] = useState('');
   const [pendingAction, setPendingAction] = useState<(() => Promise<unknown>) | null>(null);
+  // Новая трактовка или сценарий при принятых планах запускаются только после подтверждения последствий.
+  const [acceptedPass, setAcceptedPass] = useState<'treatment' | 'scenes' | null>(null);
   // Предложение сверяется с хешами сохранённых документов: запись правок перед применением сделала бы его устаревшим.
   const [saveBlocked, setSaveBlocked] = useState(false);
   const [resolving, setResolving] = useState(false);
@@ -75,11 +78,13 @@ export function ScenarioWorkflowPanel({
     setSaveBlocked(blockSave);
     setPendingAction(() => action);
   };
+  const acceptedShots = view?.acceptedShots ?? [];
   const begin = (pass: ScenarioPass, ids?: string[]): void => {
     if (pass === 'revise') {
       setReviseIds(ids?.length ? ids : selected ? [selected] : []);
       setRevise(true);
-    } else guard(() => workflow.start(pass));
+    } else if (acceptedShots.length) setAcceptedPass(pass);
+    else guard(() => workflow.start(pass));
   };
   const resolve = async (action: 'save' | 'discard'): Promise<void> => {
     setResolving(true);
@@ -240,9 +245,29 @@ export function ScenarioWorkflowPanel({
           onResolve={(action) => void resolve(action)}
           onClose={() => setPendingAction(null)}
         />
+        <ConfirmationDialog
+          open={!!acceptedPass}
+          title={scenarioTexts.accepted.confirmTitle}
+          description={acceptedPass ? scenarioTexts.accepted[acceptedPass]({ shots: acceptedShots }) : undefined}
+          confirmLabel={scenarioTexts.accepted.confirm}
+          confirmAgent={{}}
+          confirmColor="warning"
+          cancelAutoFocus
+          onClose={() => setAcceptedPass(null)}
+          onConfirm={() => {
+            const pass = acceptedPass;
+            setAcceptedPass(null);
+            if (pass) guard(() => workflow.start(pass));
+          }}
+        >
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            {scenarioTexts.accepted.kept}
+          </Typography>
+        </ConfirmationDialog>
         <ScenarioReviseDialog
           open={revise}
           ids={reviseIds}
+          acceptedIds={reviseIds.filter((id) => acceptedShots.includes(id))}
           note={note}
           busy={disabled}
           onNote={setNote}

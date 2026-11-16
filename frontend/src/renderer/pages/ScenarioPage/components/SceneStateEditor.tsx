@@ -15,7 +15,8 @@ export function SceneStateEditor({
   entityOptions,
   propertiesOf,
   updateShot,
-  setDelta
+  setDelta,
+  locked = false
 }: {
   resetKey?: object | null;
   /** Сущность и блок, которые нужно раскрыть после перехода из врезки. */
@@ -27,6 +28,8 @@ export function SceneStateEditor({
   propertiesOf(entity: string): CastProperty[];
   updateShot(patch: Partial<SceneShot>): void;
   setDelta(phase: 'before' | 'after', entity: string, value: Record<string, string | null>): void;
+  /** Принятый план: наследование и изменения состояния только для чтения. */
+  locked?: boolean;
 }): ReactElement {
   const stateFromValue = (from: StateFrom): string => (from === null ? 'null' : typeof from === 'string' ? `after:${from}` : `${from.phase}:${from.scene}`);
   const parseStateFrom = (value: string): StateFrom => {
@@ -47,6 +50,7 @@ export function SceneStateEditor({
           label={scenarioTexts.state.inherit}
           value={stateFromValue(shot.state_from)}
           onChange={(e) => updateShot({ state_from: parseStateFrom(e.target.value) })}
+          disabled={locked}
           sx={{ flex: '1 1 260px', minWidth: 0 }}
         >
           <MenuItem value="null">{scenarioTexts.state.start}</MenuItem>
@@ -82,6 +86,7 @@ export function SceneStateEditor({
               entities={entityOptions}
               propertiesOf={propertiesOf}
               onChange={(entity, value) => setDelta(phase, entity, value)}
+              locked={locked}
             />
           </Box>
         ))}

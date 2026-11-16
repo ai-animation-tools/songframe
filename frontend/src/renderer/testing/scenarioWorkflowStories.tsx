@@ -16,7 +16,7 @@ export const SCENARIO_STORY_PROJECT = '/mock/Сценарий у старых в
 export const SCENARIO_APPLY_FAILURE = 'Не удалось записать сценарий. Исходные документы и предложение сохранены; повторите применение.';
 export const SCENARIO_APPLY_CONFLICT = 'Изменился plan/treatment.json во время применения. Подготовьте новое предложение.';
 export type ScenarioStoryMode =
-  'prepare' | 'inputs' | 'ready' | 'stale' | 'applyConflict' | 'applyFailure' | 'readFailure' | 'manual' | 'drafts' | 'scenes' | 'revise';
+  'prepare' | 'inputs' | 'ready' | 'stale' | 'applyConflict' | 'applyFailure' | 'readFailure' | 'manual' | 'drafts' | 'scenes' | 'revise' | 'accepted';
 
 /** Небольшой цельный клип позволяет читать сравнение и проследить наследование состояния от M01 к M02. */
 export function scenarioDocuments(proposed = false): ScenarioDocuments {
@@ -202,6 +202,7 @@ export function scenarioWorkflowOptions(mode: ScenarioStoryMode = 'prepare'): St
         treatmentApproved: false,
         scenesNeedReview: false,
         changedInputs: [],
+        acceptedShots: [],
         problems: [],
         proposal: null,
         job: null
@@ -246,8 +247,10 @@ export function scenarioWorkflowOptions(mode: ScenarioStoryMode = 'prepare'): St
           model.note = '';
           model.savedDraft = '';
           failedApply = false;
-          if (['scenes', 'revise', 'drafts'].includes(mode))
+          if (['scenes', 'revise', 'drafts', 'accepted'].includes(mode))
             Object.assign(model.view, { treatmentApproved: true, canApproveCurrent: false, canStartScenes: true, canRevise: true });
+          // Видео M01 принято в производстве: новые проходы сначала спрашивают подтверждение.
+          if (mode === 'accepted') model.view.acceptedShots = ['M01'];
           if (mode === 'inputs') {
             model.view.canStartTreatment = false;
             model.view.canApproveCurrent = false;

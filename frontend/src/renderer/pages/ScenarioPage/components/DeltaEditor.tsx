@@ -17,7 +17,8 @@ export function DeltaEditor({
   baseline,
   entities,
   propertiesOf,
-  onChange
+  onChange,
+  locked = false
 }: {
   resetKey?: object | null;
   phase: 'before' | 'after';
@@ -28,6 +29,8 @@ export function DeltaEditor({
   entities: { id: string; label: string }[];
   propertiesOf(entity: string): CastProperty[];
   onChange(entity: string, value: Record<string, string | null>): void;
+  /** Принятый план: изменения видны для чтения, а добавление, правка и удаление закрыты. */
+  locked?: boolean;
 }): ReactElement {
   const [adding, setAdding] = useState('');
   // Добавленная без значений сущность остаётся только в интерфейсе, без пробела в state_changes.
@@ -118,6 +121,7 @@ export function DeltaEditor({
                   resetKey={resetKey}
                   compact
                   allowRemove
+                  disabled={locked}
                   properties={propertiesOf(entity)}
                   value={delta[entity] ?? {}}
                   baseline={baseline[entity] ?? {}}
@@ -126,63 +130,67 @@ export function DeltaEditor({
                     onChange(entity, value);
                   }}
                 />
-                <Box sx={{ mt: 1 }}>
-                  <DestructiveButton
-                    label={scenarioTexts.delta.removeEntity({ name: labelOf(entity) })}
-                    description={scenarioTexts.delta.removeDescription}
-                    size="small"
-                    startIcon={<DeleteOutlineIcon />}
-                    onConfirm={() => {
-                      setDraftEntities((current) => current.filter((id) => id !== entity));
-                      toggle(entity, false);
-                      onChange(entity, {});
-                    }}
-                  >
-                    {scenarioTexts.delta.removeChanges}
-                  </DestructiveButton>
-                </Box>
+                {locked ? null : (
+                  <Box sx={{ mt: 1 }}>
+                    <DestructiveButton
+                      label={scenarioTexts.delta.removeEntity({ name: labelOf(entity) })}
+                      description={scenarioTexts.delta.removeDescription}
+                      size="small"
+                      startIcon={<DeleteOutlineIcon />}
+                      onConfirm={() => {
+                        setDraftEntities((current) => current.filter((id) => id !== entity));
+                        toggle(entity, false);
+                        onChange(entity, {});
+                      }}
+                    >
+                      {scenarioTexts.delta.removeChanges}
+                    </DestructiveButton>
+                  </Box>
+                )}
               </AccordionDetails>
             </Accordion>
           );
         })}
       </Box>
       {/* Выбор и добавление замыкают свой список (первый кадр или итог плана) и стоят слева одной строкой. */}
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, flexWrap: 'wrap', minWidth: 0 }}>
-        <TextField
-          select
-          size="small"
-          label={scenarioTexts.delta.entity}
-          value={selectedEntity}
-          onChange={(e) => setAdding(e.target.value)}
-          disabled={!available.length}
-          helperText={!available.length ? (entities.length ? scenarioTexts.delta.allAdded : scenarioTexts.delta.noEntities) : undefined}
-          sx={{ flex: '1 1 220px', minWidth: 0, maxWidth: 360 }}
-        >
-          {available.map((entity) => (
-            <MenuItem key={entity.id} value={entity.id}>
-              {entity.label}
-            </MenuItem>
-          ))}
-        </TextField>
-        <ActionButton
-          size="small"
-          color="success"
-          startIcon={<AddIcon />}
-          disabled={!selectedEntity}
-          disabledReason={
-            available.length ? scenarioTexts.delta.selectEntity : entities.length ? scenarioTexts.delta.allAddedReason : scenarioTexts.delta.noEntitiesReason
-          }
-          sx={{ mt: 0.5, flexShrink: 0 }}
-          onClick={() => {
-            if (!selectedEntity) return;
-            setDraftEntities((current) => [...new Set([...current, selectedEntity])]);
-            toggle(selectedEntity, true);
-            setAdding('');
-          }}
-        >
-          {scenarioTexts.delta.addEntity}
-        </ActionButton>
-      </Box>
+      {locked ? null : (
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, flexWrap: 'wrap', minWidth: 0 }}>
+          <TextField
+            select
+            size="small"
+            label={scenarioTexts.delta.entity}
+            value={selectedEntity}
+            onChange={(e) => setAdding(e.target.value)}
+            disabled={!available.length}
+            helperText={!available.length ? (entities.length ? scenarioTexts.delta.allAdded : scenarioTexts.delta.noEntities) : undefined}
+            sx={{ flex: '1 1 220px', minWidth: 0, maxWidth: 360 }}
+          >
+            {available.map((entity) => (
+              <MenuItem key={entity.id} value={entity.id}>
+                {entity.label}
+              </MenuItem>
+            ))}
+          </TextField>
+          <ActionButton
+            size="small"
+            color="success"
+            startIcon={<AddIcon />}
+            disabled={!selectedEntity}
+            disabledReason={
+              available.length ? scenarioTexts.delta.selectEntity : entities.length ? scenarioTexts.delta.allAddedReason : scenarioTexts.delta.noEntitiesReason
+            }
+            sx={{ mt: 0.5, flexShrink: 0 }}
+            onClick={() => {
+              if (!selectedEntity) return;
+              setDraftEntities((current) => [...new Set([...current, selectedEntity])]);
+              toggle(selectedEntity, true);
+              setAdding('');
+            }}
+          >
+            {scenarioTexts.delta.addEntity}
+          </ActionButton>
+        </Box>
+      )}
     </Stack>
   );
 }

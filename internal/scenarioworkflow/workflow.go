@@ -20,6 +20,7 @@ import (
 	"strings"
 	"sync"
 
+	"songframe/internal/acceptance"
 	"songframe/internal/cast"
 	"songframe/internal/dynvalue"
 	"songframe/internal/projectfile"
@@ -68,7 +69,12 @@ type View struct {
 	// ChangedInputs — что изменилось после утверждения, из-за чего сценарий требует пересмотра:
 	// "sources", "timing", "cast", "treatment" в этом порядке. Пусто, если сравнить не с чем:
 	// пара до появления сценария не утверждалась.
-	ChangedInputs []string  `json:"changedInputs"`
+	ChangedInputs []string `json:"changedInputs"`
+	// AcceptedShots — принятые в производстве планы, чья постановка совпадает с принятой (completed):
+	// их правка на странице заблокирована, а новые трактовка, сценарий или доработка этих планов
+	// спрашивают подтверждения. Планы «Постановка изменена» сюда не входят: им и так нужно новое
+	// производство. Порядок — порядок реестра.
+	AcceptedShots []string  `json:"acceptedShots"`
 	Problems      []string  `json:"problems"`
 	Proposal      *Proposal `json:"proposal"`
 	Job           *AgentJob `json:"job"`
@@ -334,6 +340,7 @@ func (w *Workflow) view(project string) (View, *inputs, error) {
 		TreatmentApproved: treatmentApproved,
 		ScenesNeedReview:  scenesNeedReview,
 		ChangedInputs:     changedInputs,
+		AcceptedShots:     acceptedShots(input.project, input.documents.Scenes),
 		Problems:          append(append([]string{}, input.problems...), input.documentProblems...),
 		Job:               job,
 	}
@@ -341,6 +348,29 @@ func (w *Workflow) view(project string) (View, *inputs, error) {
 		view.Proposal = proposalView(proposal)
 	}
 	return view, input, nil
+}
+
+// acceptedShots — ID планов реестра со статусом приёмки completed. Непригодный реестр или ошибка
+// сравнения отпечатков дают пустой список: о проблеме реестра страница узнаёт из problems.
+func acceptedShots(project string, scenes any) []string {
+	result := []string{}
+	if scenes == nil {
+		return result
+	}
+	accepted, err := acceptance.Compute(project, scenes)
+	if err != nil {
+		return result
+	}
+	list, err := dynvalue.Iterate(dynvalue.Get(scenes, "scenes"))
+	if err != nil {
+		return result
+	}
+	for _, scene := range list {
+		if id, ok := dynvalue.Get(scene, "id").(string); ok && accepted.Accepted[id] == acceptance.Completed {
+			result = append(result, id)
+		}
+	}
+	return result
 }
 
 // proposalView — DTO предложения из записи прохода.

@@ -17,6 +17,10 @@
         "treatmentApproved": true,
         "scenesNeedReview": false,
         "changedInputs": [],
+        "acceptedShots": [
+          "M01",
+          "M02"
+        ],
         "problems": [],
         "proposal": null,
         "job": null
@@ -41,6 +45,10 @@
         "treatmentApproved": true,
         "scenesNeedReview": false,
         "changedInputs": [],
+        "acceptedShots": [
+          "M01",
+          "M02"
+        ],
         "problems": [],
         "proposal": {
           "id": "<proposal-1>",
@@ -1152,6 +1160,10 @@
         "treatmentApproved": true,
         "scenesNeedReview": false,
         "changedInputs": [],
+        "acceptedShots": [
+          "M01",
+          "M02"
+        ],
         "problems": [],
         "proposal": {
           "id": "<proposal-1>",
@@ -2252,6 +2264,10 @@
         "treatmentApproved": true,
         "scenesNeedReview": false,
         "changedInputs": [],
+        "acceptedShots": [
+          "M01",
+          "M02"
+        ],
         "problems": [],
         "proposal": {
           "id": "<proposal-1>",
@@ -3352,6 +3368,10 @@
         "treatmentApproved": true,
         "scenesNeedReview": false,
         "changedInputs": [],
+        "acceptedShots": [
+          "M01",
+          "M02"
+        ],
         "problems": [],
         "proposal": {
           "id": "<proposal-1>",

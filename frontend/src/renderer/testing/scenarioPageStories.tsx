@@ -65,6 +65,8 @@ export interface ScenarioPageOptions {
    * «Пересчитать границы» отказывает: строка ушла бы в чужой план.
    */
   lineMoved?: boolean;
+  /** Планы с принятым в производстве видео: их постановка на странице закрыта для правки. */
+  accepted?: string[];
 }
 
 /** Секции карты для gappedTiming: промежутки короче порога разметки и перекрытие последних двух частей. */
@@ -448,7 +450,8 @@ export function scenarioPageOptions({
   gappedTiming = false,
   referencesStale = false,
   leadPause = false,
-  lineMoved = false
+  lineMoved = false,
+  accepted = []
 }: ScenarioPageOptions = {}): StoryOptions {
   const state: AppState = {
     packaged: false,
@@ -485,6 +488,7 @@ export function scenarioPageOptions({
         treatmentApproved: approved,
         scenesNeedReview: false,
         changedInputs: [],
+        acceptedShots: [...accepted],
         problems: [],
         proposal: null,
         job: null

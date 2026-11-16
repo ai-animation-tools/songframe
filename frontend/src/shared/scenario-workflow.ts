@@ -47,6 +47,8 @@ export interface ScenarioWorkflowView {
   scenesNeedReview: boolean;
   /** Что изменилось после утверждения, из-за чего сценарий требует пересмотра; пусто — сравнить не с чем. */
   changedInputs: ScenarioInput[];
+  /** Принятые в производстве планы с прежней постановкой: их правка закрыта, проходы агента спрашивают подтверждения. */
+  acceptedShots: string[];
   problems: string[];
   proposal: ScenarioProposal | null;
   job: AgentJob | null;

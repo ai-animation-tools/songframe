@@ -17,6 +17,10 @@
         "treatmentApproved": true,
         "scenesNeedReview": false,
         "changedInputs": [],
+        "acceptedShots": [
+          "M01",
+          "M02"
+        ],
         "problems": [],
         "proposal": null,
         "job": null
@@ -42,6 +46,10 @@
         "treatmentApproved": false,
         "scenesNeedReview": true,
         "changedInputs": ["cast"],
+        "acceptedShots": [
+          "M01",
+          "M02"
+        ],
         "problems": [],
         "proposal": null,
         "job": null
@@ -60,6 +68,10 @@
         "treatmentApproved": true,
         "scenesNeedReview": true,
         "changedInputs": ["cast"],
+        "acceptedShots": [
+          "M01",
+          "M02"
+        ],
         "problems": [],
         "proposal": null,
         "job": null
@@ -82,6 +94,10 @@
         "treatmentApproved": true,
         "scenesNeedReview": false,
         "changedInputs": [],
+        "acceptedShots": [
+          "M01",
+          "M02"
+        ],
         "problems": [],
         "proposal": null,
         "job": null

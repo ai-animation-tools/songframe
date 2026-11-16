@@ -2,14 +2,18 @@ import { scenarioTexts } from '@shared/texts/scenario';
 import { commonTexts } from '@shared/texts/common';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import type { ReactElement } from 'react';
-import { Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from '@mui/material';
 import { ActionButton } from '../../../components/ActionButton';
 import { AgentButton } from '../../../components/AgentButton';
 
-/** Доработка ограничена выбранным планом и требует содержательного замечания. */
+/**
+ * Доработка ограничена выбранным планом и требует содержательного замечания. Если среди выбранных есть
+ * принятые в производстве планы, окно до запуска называет их и последствия: само окно и есть подтверждение.
+ */
 export function ScenarioReviseDialog({
   open,
   ids,
+  acceptedIds = [],
   note,
   busy,
   onNote,
@@ -18,6 +22,8 @@ export function ScenarioReviseDialog({
 }: {
   open: boolean;
   ids: string[];
+  /** Выбранные планы, принятые в производстве. */
+  acceptedIds?: string[];
   note: string;
   busy: boolean;
   onNote(note: string): void;
@@ -30,6 +36,11 @@ export function ScenarioReviseDialog({
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>
           <Typography>{scenarioTexts.revise.context({ ids })}</Typography>
+          {acceptedIds.length ? (
+            <Alert severity="warning">
+              {scenarioTexts.accepted.revise({ shots: acceptedIds })} {scenarioTexts.accepted.kept}
+            </Alert>
+          ) : null}
           <TextField autoFocus multiline minRows={4} label={scenarioTexts.revise.note} value={note} onChange={(event) => onNote(event.target.value)} />
         </Stack>
       </DialogContent>

@@ -243,6 +243,34 @@ export const DraftConflict: Story = {
     await expect(screen.getByTestId('scenario-drafts')).toHaveTextContent('Черновики сохранены');
   }
 };
+export const AcceptedShots: Story = {
+  name: 'Принятый M01 · подтверждение проходов и предупреждение доработки',
+  tags: ['ci'],
+  parameters: { songframe: scenarioWorkflowOptions('accepted') },
+  play: async (context) => {
+    const screen = await ready(context);
+    // Отказ от подтверждения ничего не запускает.
+    await userEvent.click(screen.getByRole('button', { name: scenarioTexts.workflow.createTreatment }));
+    let confirmation = within(await screen.findByRole('dialog', { name: scenarioTexts.accepted.confirmTitle }));
+    await expect(confirmation.getByText(scenarioTexts.accepted.treatment({ shots: ['M01'] }))).toBeVisible();
+    await expect(confirmation.getByText(scenarioTexts.accepted.kept)).toBeVisible();
+    await userEvent.click(confirmation.getByRole('button', { name: commonTexts.cancel }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await expect(screen.getByTestId('scenario-counts')).toHaveTextContent('Запусков: 0.');
+    // Доработка принятого плана предупреждает в своём окне, без второго подтверждения.
+    await userEvent.click(screen.getByRole('button', { name: scenarioTexts.revise.title }));
+    const revise = within(await screen.findByRole('dialog'));
+    await expect(revise.getByText(new RegExp(scenarioTexts.accepted.revise({ shots: ['M01'] }).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))).toBeVisible();
+    await userEvent.click(revise.getByRole('button', { name: commonTexts.cancel }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    // Согласие запускает сценарий.
+    await userEvent.click(screen.getByRole('button', { name: scenarioTexts.workflow.createScenes }));
+    confirmation = within(await screen.findByRole('dialog', { name: scenarioTexts.accepted.confirmTitle }));
+    await expect(confirmation.getByText(scenarioTexts.accepted.scenes({ shots: ['M01'] }))).toBeVisible();
+    await userEvent.click(confirmation.getByRole('button', { name: scenarioTexts.accepted.confirm }));
+    await waitFor(() => expect(screen.getByTestId('scenario-counts')).toHaveTextContent('Запусков: 1.'));
+  }
+};
 export const Revise: Story = {
   name: 'Доработка M01 · обязательное замечание и выбранный охват',
   parameters: { songframe: scenarioWorkflowOptions('drafts') },

@@ -23,6 +23,10 @@
         "treatmentApproved": false,
         "scenesNeedReview": false,
         "changedInputs": [],
+        "acceptedShots": [
+          "M01",
+          "M02"
+        ],
         "problems": [],
         "proposal": {
           "id": "<proposal-1>",
@@ -1132,6 +1136,10 @@
         "treatmentApproved": false,
         "scenesNeedReview": false,
         "changedInputs": [],
+        "acceptedShots": [
+          "M01",
+          "M02"
+        ],
         "problems": [],
         "proposal": {
           "id": "<proposal-1>",

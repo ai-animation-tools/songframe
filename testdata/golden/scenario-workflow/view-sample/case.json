@@ -17,6 +17,10 @@
         "treatmentApproved": false,
         "scenesNeedReview": false,
         "changedInputs": [],
+        "acceptedShots": [
+          "M01",
+          "M02"
+        ],
         "problems": [],
         "proposal": null,
         "job": null

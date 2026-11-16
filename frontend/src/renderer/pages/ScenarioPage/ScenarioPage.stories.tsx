@@ -114,6 +114,10 @@ export const OpenShotState: Story = {
     const screen = await ready(context);
     await editorHeading(screen, 'M02');
     await userEvent.type(field(screen, scenarioTexts.fields.camera), ' Правка M02.');
+    // Унаследованное без изменений значение видно только при показе полного состояния.
+    const onlyChanges = await screen.findByLabelText(scenarioTexts.brief.onlyChanges, undefined, { timeout: 3000 });
+    await expect(onlyChanges).toBeChecked();
+    await userEvent.click(onlyChanges);
     const source = scenarioTexts.brief.planSource({ shot: 'M01', phase: 'after' });
     const links = await screen.findAllByRole('button', { name: source }, { timeout: 3000 });
     // Уход на «Кастинг» потерял бы черновик: переход туда объясняет причину, а переход внутри страницы доступен.
@@ -131,6 +135,36 @@ export const OpenShotState: Story = {
     await selectByKeyboard(context, 'M02');
     await expect(field(screen, scenarioTexts.fields.camera).value).toContain('Правка M02.');
     await expect(screen.getByTestId('page-model-shot-M02')).not.toHaveTextContent('Правка M02.');
+  }
+};
+
+export const AcceptedShotLocked: Story = {
+  name: 'Принятый M02 · постановка закрыта, соседняя граница тоже',
+  tags: ['!autodocs', 'ci'],
+  parameters: { songframe: scenarioPageOptions({ route: '/project/scenario?shot=M02', accepted: ['M02'] }) },
+  play: async (context) => {
+    const screen = await ready(context);
+    await editorHeading(screen, 'M02');
+    // Причина блокировки и путь к изменению видны над полями.
+    // Заголовок подсказки повторяется под границей: её закрывает принятие самого плана.
+    const titles = await screen.findAllByText(scenarioTexts.accepted.lockedTitle({ shot: 'M02' }));
+    await expect(titles[0].closest('[role="alert"]')).not.toBeNull();
+    await expect(screen.getByText(scenarioTexts.accepted.lockedHint)).toBeVisible();
+    await expect(field(screen, scenarioTexts.fields.action)).toBeDisabled();
+    await expect(field(screen, scenarioTexts.fields.camera)).toBeDisabled();
+    await expect(screen.getByRole('combobox', { name: scenarioTexts.state.inherit })).toHaveAttribute('aria-disabled', 'true');
+    await expect(screen.queryByRole('button', { name: scenarioTexts.delta.addEntity })).not.toBeInTheDocument();
+    await expect(screen.getByRole('button', { name: scenarioTexts.shot.split })).toBeDisabled();
+    // У M01 граница — начало принятого M02: она и объединение закрыты с причиной, остальная постановка открыта.
+    await selectByKeyboard(context, 'M01');
+    await expect(screen.queryByText(scenarioTexts.accepted.lockedTitle({ shot: 'M01' }))).not.toBeInTheDocument();
+    await expect(field(screen, scenarioTexts.fields.action)).toBeEnabled();
+    await expect(screen.getByText(scenarioTexts.accepted.boundaryReason({ shot: 'M02' }))).toBeVisible();
+    await expect(screen.getByRole('button', { name: scenarioTexts.shot.mergeNext })).toHaveAttribute(
+      'title',
+      expect.stringContaining(scenarioTexts.accepted.mergeReason({ shot: 'M02' }))
+    );
+    await expect(unsavedChip(screen)).not.toBeInTheDocument();
   }
 };
 

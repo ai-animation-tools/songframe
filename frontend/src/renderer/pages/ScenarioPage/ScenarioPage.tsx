@@ -158,6 +158,7 @@ export function ScenarioPage(): ReactElement {
             referenceOptions={referenceOptions}
             propertiesOf={propertiesOf}
             notify={notify}
+            acceptedShots={workflow.view?.acceptedShots}
           />
         ) : (
           <Paper variant="outlined" sx={{ p: 3 }}>

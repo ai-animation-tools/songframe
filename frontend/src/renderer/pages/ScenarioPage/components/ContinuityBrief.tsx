@@ -23,7 +23,8 @@ export function ContinuityBrief({
   leaveReason: string | null;
   onOpenShotState: OpenShotState;
 }): ReactElement {
-  const [onlyChanges, setOnlyChanges] = useState(false);
+  // По умолчанию видны только изменения за план: неизменное состояние повторяет предыдущие планы и прячет главное.
+  const [onlyChanges, setOnlyChanges] = useState(true);
   const all = useMemo(() => (brief ? compareBrief(brief.before, brief.after, cast) : []), [brief, cast]);
   // Врезка агента построена по сущностям плана; остальные сущности с состоянием показываются отдельно и свёрнуто.
   const { entities, outside } = useMemo(() => {

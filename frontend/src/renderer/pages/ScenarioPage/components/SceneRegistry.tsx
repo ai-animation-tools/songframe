@@ -33,7 +33,8 @@ export function SceneRegistry({
   entityOptions,
   referenceOptions,
   propertiesOf,
-  notify
+  notify,
+  acceptedShots = []
 }: {
   resetKey?: object | null;
   scenes: ScenesFile;
@@ -58,8 +59,14 @@ export function SceneRegistry({
   referenceOptions: EntityOption[];
   propertiesOf(entity: string): CastProperty[];
   notify(message: string, severity: 'warning'): void;
+  /** Планы с принятым видео: их постановка и состояние закрыты для правки. */
+  acceptedShots?: string[];
 }): ReactElement {
   const { shot, shotIndex, updateShot, setBoundary, split, mergeNext, setDelta } = useSceneDraft(scenes, selected, setScenes, setSelected, notify);
+  const locked = !!shot && acceptedShots.includes(shot.id);
+  // Граница и слияние меняют и следующий план, поэтому его принятие тоже закрывает эти правки.
+  const nextId = shotIndex >= 0 ? scenes.scenes[shotIndex + 1]?.id : undefined;
+  const nextLocked = nextId && acceptedShots.includes(nextId) ? nextId : null;
   const listRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const stateRef = useRef<HTMLDivElement>(null);
@@ -108,6 +115,8 @@ export function SceneRegistry({
                 setBoundary={setBoundary}
                 split={split}
                 mergeNext={mergeNext}
+                locked={locked}
+                nextLocked={nextLocked}
               />
             </Box>
             <Box ref={stateRef} sx={{ minWidth: 0 }}>
@@ -125,6 +134,7 @@ export function SceneRegistry({
                 propertiesOf={propertiesOf}
                 updateShot={updateShot}
                 setDelta={setDelta}
+                locked={locked}
               />
             </Box>
             <ContinuityBrief brief={brief} cast={cast} leaveReason={leaveReason} onOpenShotState={onOpenShotState} />

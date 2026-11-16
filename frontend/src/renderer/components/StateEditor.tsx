@@ -20,9 +20,20 @@ interface Props {
   compact?: boolean;
   /** Новый сохранённый снимок очищает только незаполненный локальный выбор, не текущие значения документа. */
   resetKey?: object | null;
+  /** Только чтение: значения видны, а поля и кнопки правки закрыты (например, у принятого плана). */
+  disabled?: boolean;
 }
 
-export function StateEditor({ properties, value, onChange, baseline = {}, allowRemove = false, compact = false, resetKey }: Props): ReactElement {
+export function StateEditor({
+  properties,
+  value,
+  onChange,
+  baseline = {},
+  allowRemove = false,
+  compact = false,
+  resetKey,
+  disabled = false
+}: Props): ReactElement {
   const texts = componentsTexts.stateEditor;
   const [customKey, setCustomKey] = useState('');
   const [propertyKey, setPropertyKey] = useState('');
@@ -93,7 +104,7 @@ export function StateEditor({ properties, value, onChange, baseline = {}, allowR
                 if (reason === 'reset') return;
                 set(row.key, text);
               }}
-              disabled={removed}
+              disabled={disabled || removed}
               renderInput={(params) => (
                 <TextField
                   {...params}
@@ -111,7 +122,7 @@ export function StateEditor({ properties, value, onChange, baseline = {}, allowR
               )}
             />
             <Box sx={{ display: 'flex', mt: 0.5, minWidth: 0 }}>
-              {removed ? (
+              {disabled ? null : removed ? (
                 <ActionIconButton size="small" aria-label={texts.restoreProperty({ label: row.label })} title={texts.restore} onClick={() => remove(row.key)}>
                   <UndoIcon fontSize="small" />
                 </ActionIconButton>
@@ -163,7 +174,7 @@ export function StateEditor({ properties, value, onChange, baseline = {}, allowR
           {properties.length ? texts.emptyState : texts.noDictionary}
         </Typography>
       )}
-      {available.length > 0 && (
+      {!disabled && available.length > 0 && (
         <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 34px', gap: 0.5, alignItems: 'start', minWidth: 0, gridColumn: '1 / -1' }}>
           <TextField select size="small" label={texts.dictionaryProperty} value={selectedProperty} onChange={(event) => setPropertyKey(event.target.value)}>
             {available.map((property) => (
@@ -187,33 +198,35 @@ export function StateEditor({ properties, value, onChange, baseline = {}, allowR
           </ActionIconButton>
         </Box>
       )}
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 34px', gap: 0.5, alignItems: 'start', minWidth: 0, gridColumn: '1 / -1' }}>
-        <TextField
-          size="small"
-          label={texts.customKey}
-          value={customKey}
-          inputRef={customRef}
-          onChange={(event) => setCustomKey(event.target.value)}
-          placeholder={texts.customKeyExample}
-          helperText={texts.customKeyHint}
-          slotProps={{ inputLabel: { shrink: true } }}
-          sx={{ minWidth: 0 }}
-        />
-        <ActionIconButton
-          size="small"
-          color="success"
-          aria-label={texts.addCustomProperty}
-          sx={{ mt: 0.5 }}
-          disabled={!!customProblem}
-          disabledReason={customProblem}
-          onClick={() => {
-            selectField(customKey);
-            setCustomKey('');
-          }}
-        >
-          <AddIcon fontSize="small" />
-        </ActionIconButton>
-      </Box>
+      {disabled ? null : (
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 34px', gap: 0.5, alignItems: 'start', minWidth: 0, gridColumn: '1 / -1' }}>
+          <TextField
+            size="small"
+            label={texts.customKey}
+            value={customKey}
+            inputRef={customRef}
+            onChange={(event) => setCustomKey(event.target.value)}
+            placeholder={texts.customKeyExample}
+            helperText={texts.customKeyHint}
+            slotProps={{ inputLabel: { shrink: true } }}
+            sx={{ minWidth: 0 }}
+          />
+          <ActionIconButton
+            size="small"
+            color="success"
+            aria-label={texts.addCustomProperty}
+            sx={{ mt: 0.5 }}
+            disabled={!!customProblem}
+            disabledReason={customProblem}
+            onClick={() => {
+              selectField(customKey);
+              setCustomKey('');
+            }}
+          >
+            <AddIcon fontSize="small" />
+          </ActionIconButton>
+        </Box>
+      )}
     </Box>
   );
 }

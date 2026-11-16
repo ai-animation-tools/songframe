@@ -469,7 +469,9 @@ export function useProductionPage() {
     selectImage,
     packageSelection,
     selectedPackage,
-    newAttempt: rememberedPackage === '__new__',
+    // Новая подготовка открыта пользователем или выбрана сама ради ожидающего предложения новой попытки
+    // (например, после перезапуска): у принятого плана её путь показывается вместо принятого комплекта.
+    newAttempt: rememberedPackage === '__new__' || (currentPackage === undefined && proposalSelection === '__new__'),
     selectPackage,
     reportWorkflowBusy,
     workflowBusyFor

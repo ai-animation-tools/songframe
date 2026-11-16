@@ -83,7 +83,13 @@ export function ProductionShotList({
                         : productionTexts.productionShotList.invalidProposal
                     }
                     title={proposalAttention(shot.proposal)}
-                    sx={{ height: 18 }}
+                    // На фоне выделенной строки светлой темы основной цвет info не дотягивает до контраста 4.5:1.
+                    sx={(theme) => ({
+                      height: 18,
+                      ...(theme.palette.mode === 'light' && shot.proposal?.status === 'ready' && !shot.proposal.stale
+                        ? { color: theme.palette.info.dark, borderColor: theme.palette.info.dark }
+                        : {})
+                    })}
                   />
                 ) : null}
                 {/* Только пометки о неполном расходе: «цена не указана», «списание неизвестно»; суммы — в карточке плана. */}

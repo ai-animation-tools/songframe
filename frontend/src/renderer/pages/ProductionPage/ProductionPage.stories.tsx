@@ -731,12 +731,13 @@ export const GenerationInterrupted: Story = {
   }
 };
 
-const acceptedOptions = (model: Partial<ProductionPageModelOptions> = {}) =>
+const acceptedOptions = (model: Partial<ProductionPageModelOptions> = {}, extra: Partial<ShotProduction> = {}) =>
   options(
     {
       ...model,
       shots: () => [
         pageShot('M01', {
+          ...extra,
           title: 'Подъезд к даче',
           start: 0,
           end: 6,
@@ -805,6 +806,32 @@ export const AcceptedPlan: Story = {
     // Новый заход начинается с описания: принятый комплект не показывается как результат этой попытки.
     await expect(await within(planStep(context, 'description')).findByRole('button', { name: texts.productionWorkflowPanel.prepare })).toBeEnabled();
     await expect(screen.queryByText(kit.heading)).not.toBeInTheDocument();
+  }
+};
+
+export const AcceptedPlanProposal: Story = {
+  tags: ['ci'],
+  name: 'Принятый план · предложение новой попытки открыто без выбора в меню',
+  parameters: {
+    songframe: acceptedOptions(
+      {
+        acceptedKit: manualKit,
+        workflowView: (shot, packageDir) => (shot === 'M01' && !packageDir ? { proposal: workflowProposal('description') } : {})
+      },
+      { proposal: { stage: 'description', status: 'ready', stale: false, packageDir: null } }
+    )
+  },
+  play: async (context) => {
+    const screen = screenOf(context);
+    // После перезапуска выбор «Новая подготовка» не запомнен: её открывает само ожидающее предложение.
+    const step = await waitFor(() => {
+      const element = planStep(context, 'description');
+      if (!element) throw new Error('Шаг «Описание» не показан');
+      return element;
+    }, POLL_TIMEOUT);
+    const description = within(step);
+    await expect(await description.findByRole('button', { name: texts.productionProposalDialog.open }, POLL_TIMEOUT)).toBeEnabled();
+    await expect(screen.queryByText(texts.acceptedKit.heading)).not.toBeInTheDocument();
   }
 };
 

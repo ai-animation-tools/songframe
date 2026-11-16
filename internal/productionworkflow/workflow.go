@@ -486,7 +486,14 @@ func (w *Workflow) refresh(c *Context, stored *Stored) (*agents.Job, error) {
 			proposal.Set("message", err.Error())
 			// Ответ агента сохраняется для показа: он часто объясняет, почему предложение не
 			// подготовлено. Текст вместо JSON — штатный отказ, ошибка разбора ничего не объясняет.
-			if !stored.ImageJob() {
+			var refusal *refusalError
+			if errors.As(err, &refusal) {
+				// Отказ со списком противоречий: таблица исправлений и её пересказ.
+				proposal.Set("message", textAgentRefused)
+				proposal.Set("refused", true)
+				proposal.Set("agentText", refusal.text)
+				proposal.Set("problems", refusal.problems)
+			} else if !stored.ImageJob() {
 				if answer := AgentResponseText(job.Result, stored.Stage()); answer != "" {
 					proposal.Set("agentText", answer)
 					if IsAgentRefusal(job.Result) {
@@ -531,6 +538,15 @@ func (w *Workflow) accept(c *Context, stored *Stored, job agents.Job) error {
 		raw = dynvalue.Stringify(document)
 	}
 	rules := stored.Rules()
+	if rules.Stage == "description" {
+		refusal, blocked, err := parseBlocked(c.Project, c.Shot, raw)
+		if err != nil {
+			return err
+		}
+		if blocked {
+			return refusal
+		}
+	}
 	after, err := ParseProposal(raw, rules)
 	if err != nil {
 		return err
@@ -875,6 +891,9 @@ func (w *Workflow) launch(ctx context.Context, input StartInput, prepared *prepa
 		}
 	}
 	contextInput.note = noteFor(c, input.Note)
+	if stage == "description" {
+		contextInput.stateSources = stateSourcesTree(c.Project, input.Shot, briefs)
+	}
 	var images []string
 	if stage == "description" && (len(prepared.shotFrames) > 0 || len(prepared.missingFrames) > 0) {
 		attachments, attached, problem := w.shotFrameAttachments(ctx, c.Project, input.Shot, prepared.shotFrames)

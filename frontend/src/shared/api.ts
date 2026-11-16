@@ -107,6 +107,8 @@ export interface Api {
     start(input: ProductionWorkflowStart): Promise<ProductionWorkflowView>;
     apply(project: string, shot: string, packageDir: string | undefined, id: string): Promise<ProductionWorkflowView>;
     discard(project: string, shot: string, packageDir: string | undefined, id: string): Promise<ProductionWorkflowView>;
+    /** Исправления из отказа агента записываются в состояние плана в сценарии, отказ отклоняется; агент не запускается. */
+    fixScenario(project: string, shot: string, packageDir: string | undefined, id: string): Promise<ProductionWorkflowView>;
     generateFrames(project: string, shot: string, packageDir: string): Promise<ProductionWorkflowView>;
     importFrames(project: string, shot: string, packageDir: string, images: ProductionFrameCandidate[]): Promise<ProductionWorkflowView>;
     /** Ручная попытка: собирает без агента пакет для генерации вне приложения (опоры, у речевого плана срез речи, промпт). */

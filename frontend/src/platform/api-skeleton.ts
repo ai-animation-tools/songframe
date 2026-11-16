@@ -94,6 +94,7 @@ export function apiSkeleton(): Api {
       start: stub('productionWorkflow.start'),
       apply: stub('productionWorkflow.apply'),
       discard: stub('productionWorkflow.discard'),
+      fixScenario: stub('productionWorkflow.fixScenario'),
       generateFrames: stub('productionWorkflow.generateFrames'),
       importFrames: stub('productionWorkflow.importFrames'),
       buildManual: stub('productionWorkflow.buildManual'),

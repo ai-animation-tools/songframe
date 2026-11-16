@@ -44,6 +44,15 @@ export function Discard(project: string, shot: string, packageDir: string, id: s
 }
 
 /**
+ * FixScenario — productionWorkflow.fixScenario: исправления из отказа агента записываются в
+ * состояние плана в сценарии, отказ отклоняется. Агент не запускается; перед записью — точка
+ * истории проекта, как перед применением изменений плана.
+ */
+export function FixScenario(project: string, shot: string, packageDir: string, id: string): $CancellablePromise<productionworkflow$0.View> {
+    return $Call.ByID(1662855331, project, shot, packageDir, id);
+}
+
+/**
  * GenerateFrames — productionWorkflow.generateFrames: сначала проверка доступа KindImage —
  * выбранный провайдер изображений, его программа-агент или вход в платного провайдера, затем
  * следующая опора плана. Внутри генерации выбор второй раз не проверяется.

@@ -37,6 +37,24 @@ export type ProductionStageProposal =
   | { schemaVersion: 1; stage: 'frames'; images: ProductionFrameCandidate[] }
   | { schemaVersion: 1; stage: 'prompt'; prompt: string }
   | { schemaVersion: 1; stage: 'request'; request: ProductionRequestDraft };
+/**
+ * Противоречие сценария из отказа агента. Поле состояния: кадр, сущность и свойство с текущим значением и его источником
+ * (source.shot null — начальное состояние кастинга) и предложенным значением fix (null — не исправляется в этом плане).
+ * Поле постановки (field) только объясняется.
+ */
+export type ProductionScenarioProblem =
+  | {
+      phase: 'before' | 'after';
+      entity: string;
+      entityName: string;
+      property: string;
+      propertyLabel: string;
+      current: string | null;
+      source: { shot: string | null; phase: 'before' | 'after' | null } | null;
+      conflict: string;
+      fix: string | null;
+    }
+  | { field: 'action' | 'camera' | 'continuity' | 'references'; conflict: string };
 export interface ProductionProposal {
   id: string;
   jobId: string;
@@ -47,8 +65,10 @@ export interface ProductionProposal {
   message?: string;
   /** Текст ответа агента, не прошедшего проверку: показывается вместо предложения вместе с причиной. */
   agentText?: string;
-  /** Агент ответил текстом вместо JSON — штатный отказ по скиллу, а не ошибка формата; причина в agentText. */
+  /** Агент отказался по скиллу (текстом или списком противоречий), а не ошибся форматом; причина в agentText. */
   refused?: boolean;
+  /** Противоречия сценария из отказа описания: таблица «было → станет»; исправления вносит fixScenario. */
+  problems?: ProductionScenarioProblem[];
   before: string;
   after: ProductionStageProposal | null;
 }

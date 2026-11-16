@@ -207,6 +207,26 @@ export const Refused: Story = {
     await expect(counts(context)).toHaveTextContent('Применений: 0. Отклонений: 0.');
   }
 };
+export const Conflicts: Story = {
+  name: 'Отказ со списком противоречий · исправить сценарий и подготовить заново',
+  tags: ['ci'],
+  parameters: { songframe: workflowPanelOptions('conflicts') },
+  play: async (context) => {
+    const dialog = await openProposal(context);
+    await expect(dialog.getByText(proposalLabels.problems({ count: 2 }))).toBeInTheDocument();
+    const problems = dialog.getAllByTestId('scenario-problem');
+    await expect(problems).toHaveLength(2);
+    await expect(problems[0]).toHaveTextContent('Первый кадр · Мира · Положение');
+    await expect(problems[0]).toHaveTextContent(proposalLabels.problemSource({ shot: null, phase: null }));
+    await expect(problems[0]).toHaveTextContent('У подъезда, в нескольких шагах от машины');
+    await expect(problems[1]).toHaveTextContent(proposalLabels.problemField.camera);
+    await userEvent.click(dialog.getByRole('button', { name: proposalLabels.fixAndPrepare }));
+    await closed(context);
+    // Исправления внесены, отказ отклонён, описание сразу готовится заново.
+    await waitFor(() => expect(counts(context)).toHaveTextContent('Запусков: 1. Применений: 0. Отклонений: 0.'));
+    await expect(counts(context)).toHaveTextContent('Исправлений сценария: 1.');
+  }
+};
 export const FailedJob: Story = {
   name: 'Задание завершилось с ошибкой · явный повтор',
   parameters: { songframe: workflowPanelOptions('failedJob') },

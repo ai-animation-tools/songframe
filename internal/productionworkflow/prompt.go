@@ -26,7 +26,8 @@ const promptContract = "" +
 	"Если manualGeneration=true, видео плана создаёт пользователь вне приложения в форме сайта провайдера по одной опоре, звуку среза и видеопромпту. На этапе description — ровно одна опора K01 с role first и timeSeconds 0, без last. На этапе prompt не используй обозначения входов (图片1, 音频1 и подобные): пиши «изображение» и «аудио» — «Изображение задаёт внешность…», «используй изображение как визуальный референс», «движения губ точно совпадают с исполнением в аудио». Этапа request нет: модель и параметры запроса не выбираются, правила lipSync и capabilities к такому плану не относятся, и отсутствие в capabilities режима lip sync или звукового слота — не причина отказа. requestSeconds — наименьшее целое число, удовлетворяющее settings.duration_rule относительно окна, без сетки длительностей моделей: такой длины приложение режет срез речи, который пользователь загрузит на сайт. " +
 	"Если manualVideo=true, для этой попытки пользователь выбрал создать видео вне приложения в форме сайта сервиса по утверждённым опорам и видеопромпту. На этапе prompt не используй обозначения входов (图片1 и подобные): называй опоры словами — «первое изображение», «последнее изображение», «промежуточное изображение». Этапа request нет: модель и параметры запроса не выбираются. " +
 	"Длина видеопромпта — не больше promptMaxChars символов (предел провайдера видео); если promptMaxChars нет, предела нет. " +
-	"Если передан keyframeCount, число опор выбрал пользователь: на этапе description верни ровно keyframeCount опор; при keyframeCount=1 — одна опора K01 с role first и timeSeconds 0, без last; при 2 — first и last; больше — first, last и middle между ними. Без keyframeCount число опор выбирай сам."
+	"Если передан keyframeCount, число опор выбрал пользователь: на этапе description верни ровно keyframeCount опор; при keyframeCount=1 — одна опора K01 с role first и timeSeconds 0, без last; при 2 — first и last; больше — first, last и middle между ними. Без keyframeCount число опор выбирай сам. " +
+	"На этапе description противоречие сценария, из-за которого непротиворечивые опоры не подготовить, — не текст, а отказ blocked={\"schemaVersion\":1,\"stage\":\"blocked\",\"reason\":\"итог одной фразой\",\"problems\":[{\"phase\":\"before|after\",\"entity\":\"ID сущности\",\"property\":\"ключ свойства\",\"conflict\":\"текущее значение и его источник из stateSources, с чем и почему оно расходится\",\"fix\":\"новое значение свойства или null\"},{\"field\":\"action|camera|continuity|references\",\"conflict\":\"...\"}]} по разделу «Противоречия сценария»."
 
 // skillText — скилл ai-clip-scene и указания провайдеров, выбранных в проекте: SKILL.md,
 // references/app-proposal.md, references/prompt-template.md, раздел «Указания агенту» документа
@@ -88,6 +89,9 @@ type contextInput struct {
 	keyframeCount int
 	// shotFrames — кадры других планов этапа description (shotFramesTree); nil — ключ не пишется.
 	shotFrames *dynvalue.Object
+	// stateSources — источники значений врезок этапа description (stateSourcesTree); nil — ключ
+	// не пишется.
+	stateSources *dynvalue.Object
 }
 
 // agentContext — JSON контекста задания (порядок ключей зафиксирован эталоном): план, кастинг, врезки,
@@ -144,6 +148,11 @@ func agentContext(c *Context, input contextInput) string {
 	// остальных не меняется.
 	if input.shotFrames != nil {
 		value.Set("continuityFrames", input.shotFrames)
+	}
+	// Источники значений врезок передаются только описанию: по ним агент называет, где задано
+	// противоречивое значение. Контекст остальных этапов не меняется.
+	if input.stateSources != nil {
+		value.Set("stateSources", input.stateSources)
 	}
 	return dynvalue.Stringify(value)
 }

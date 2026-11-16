@@ -202,6 +202,15 @@ export function useProductionWorkflow(project: string, shot: string, packageDir:
         true,
         productionTexts.useProductionWorkflow.ownSaved
       ),
+    /** Исправления из отказа агента записываются в сценарий; новое описание запускает панель. */
+    fixScenario: () =>
+      view?.proposal
+        ? execute(
+            () => window.api.productionWorkflow.fixScenario(project, shot, packageDir, view.proposal!.id),
+            false,
+            productionTexts.useProductionWorkflow.scenarioFixed
+          )
+        : Promise.resolve(false),
     discard: () =>
       view?.proposal
         ? execute(

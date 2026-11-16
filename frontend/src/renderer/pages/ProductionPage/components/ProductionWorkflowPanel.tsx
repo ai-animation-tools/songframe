@@ -170,6 +170,13 @@ export function ProductionWorkflowPanel({
           onApply={onAcceptProposal}
           onRevise={onReviseProposal}
           onDiscard={workflow.discard}
+          // Исправления отказа: у новой попытки описание сразу готовится заново тем же выбором опор.
+          fixRestarts={!packageDir}
+          onFixScenario={async () => {
+            if (!(await workflow.fixScenario())) return false;
+            if (!packageDir) void start('prepare');
+            return true;
+          }}
         />
       ) : null}
       {parts.current && canAct && (!packageDir || continueLabel) ? (

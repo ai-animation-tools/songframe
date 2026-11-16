@@ -867,6 +867,8 @@ export function createApi(b: Bindings): Api {
     call('productionWorkflow.apply', async () => productionWorkflow((await b.productionWorkflow()).Apply(project, shot, packageDir ?? '', id)), false);
   api.productionWorkflow.discard = (project, shot, packageDir, id) =>
     call('productionWorkflow.discard', async () => productionWorkflow((await b.productionWorkflow()).Discard(project, shot, packageDir ?? '', id)));
+  api.productionWorkflow.fixScenario = (project, shot, packageDir, id) =>
+    call('productionWorkflow.fixScenario', async () => productionWorkflow((await b.productionWorkflow()).FixScenario(project, shot, packageDir ?? '', id)));
   // Платная опора ждёт каталог моделей и подготовку запроса провайдера, поэтому срока ожидания нет.
   api.productionWorkflow.generateFrames = (project, shot, packageDir) =>
     call('productionWorkflow.generateFrames', async () => productionWorkflow((await b.productionWorkflow()).GenerateFrames(project, shot, packageDir)), false);

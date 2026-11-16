@@ -3,7 +3,7 @@ import { productionTexts } from '@shared/texts/production';
 import { useId, useState, type ReactElement, type ReactNode } from 'react';
 import { Alert, Box, Chip, Divider, Paper, Stack, Typography } from '@mui/material';
 import type { AgentSettings } from '@shared/agents';
-import type { ProductionFramePrompt, ProductionProposal, ProductionRequestDraft } from '@shared/production-workflow';
+import type { ProductionFramePrompt, ProductionProposal, ProductionRequestDraft, ProductionScenarioProblem } from '@shared/production-workflow';
 import { productionInputLabel } from '@shared/production-labels';
 import { mediaCommandLabel } from '@shared/media-providers';
 import { AgentButton, AgentIcon, ImageGallery, ImageThumbnail } from '../../../components';
@@ -192,8 +192,81 @@ function Current({ proposal }: { proposal: ProductionProposal }): ReactElement {
   return <Paragraphs text={before} />;
 }
 
+const problemTexts = productionTexts.productionProposalPreview;
+
+/** Исправления отказа: противоречия состояния с предложенным значением. */
+export function scenarioFixes(proposal: ProductionProposal): ProductionScenarioProblem[] {
+  return (proposal.problems ?? []).filter((problem) => 'entity' in problem && problem.fix !== null);
+}
+
+/** Одно противоречие: где, что сейчас и откуда, в чём расхождение и что станет. */
+function ScenarioProblem({ problem }: { problem: ProductionScenarioProblem }): ReactElement {
+  if (!('entity' in problem))
+    return (
+      <Paper variant="outlined" sx={{ p: 1.5 }} data-testid="scenario-problem">
+        <Typography variant="subtitle2">{problemTexts.problemField[problem.field]}</Typography>
+        <Typography variant="body2">{problem.conflict}</Typography>
+      </Paper>
+    );
+  return (
+    <Paper variant="outlined" sx={{ p: 1.5 }} data-testid="scenario-problem">
+      <Stack spacing={0.75}>
+        <Typography variant="subtitle2">
+          {[problemTexts.problemPhase[problem.phase], problem.entityName || problem.entity, problem.propertyLabel || problem.property].join(' · ')}
+        </Typography>
+        <Box>
+          <Typography variant="caption" color="text.secondary">
+            {problemTexts.problemNow}
+            {problem.source ? ` · ${problemTexts.problemSource(problem.source)}` : ''}
+          </Typography>
+          <Typography variant="body2">{problem.current ?? problemTexts.problemEmpty}</Typography>
+        </Box>
+        <Box>
+          <Typography variant="caption" color="text.secondary">
+            {problemTexts.problemConflict}
+          </Typography>
+          <Typography variant="body2">{problem.conflict}</Typography>
+        </Box>
+        {problem.fix !== null ? (
+          <Box>
+            <Typography variant="caption" color="success.main" fontWeight={600}>
+              {problemTexts.problemFix}
+            </Typography>
+            <Typography variant="body2" fontWeight={500}>
+              {problem.fix}
+            </Typography>
+          </Box>
+        ) : (
+          <Alert severity="warning" sx={{ py: 0 }}>
+            {problemTexts.problemNoFix}
+          </Alert>
+        )}
+      </Stack>
+    </Paper>
+  );
+}
+
 function Proposed({ proposal, videoProvider }: { proposal: ProductionProposal; videoProvider: string | null }): ReactElement {
   const after = proposal.after;
+  if (!after && proposal.refused && proposal.problems?.length)
+    // Отказ со списком противоречий: итог агента и по каждому противоречию — было, почему и что станет.
+    return (
+      <Stack spacing={1.5}>
+        <Typography variant="subtitle2">{productionTexts.productionProposalPreview.refused}</Typography>
+        {proposal.agentText ? (
+          <Section title={productionTexts.productionProposalPreview.refusalReason}>
+            <Paragraphs text={proposal.agentText} />
+          </Section>
+        ) : null}
+        <Section title={problemTexts.problems({ count: proposal.problems.length })}>
+          <Stack spacing={1}>
+            {proposal.problems.map((problem, index) => (
+              <ScenarioProblem key={index} problem={problem} />
+            ))}
+          </Stack>
+        </Section>
+      </Stack>
+    );
   if (!after && proposal.agentText && proposal.refused)
     // Штатный отказ агента: его причина и есть объяснение, технической ошибки разбора здесь нет.
     return (
@@ -253,10 +326,16 @@ export function ProposalActions({
   onRevise,
   onApply,
   onDiscard,
+  onFixScenario,
+  fixRestarts = false,
   applyBlockedReason = null
 }: {
   proposal: ProductionProposal;
   busy: boolean;
+  /** Исправить сценарий по отказу агента; без обработчика кнопки нет. */
+  onFixScenario?(): void;
+  /** После исправления панель сама подготовит описание заново (новая попытка). */
+  fixRestarts?: boolean;
   /** Принять предложение нельзя по его содержанию (например, промпт сверх предела провайдера): причина; доработка остаётся. */
   applyBlockedReason?: string | null;
   /** Открыто поле замечания: кнопка доработки запускает агента. */
@@ -268,6 +347,7 @@ export function ProposalActions({
   onDiscard(): void;
 }): ReactElement | null {
   const ready = proposal.status === 'ready' && !proposal.stale && !!proposal.after;
+  const fixes = scenarioFixes(proposal);
   if (proposal.status === 'applied' || proposal.status === 'running') return null;
   const applyReason = busy
     ? BUSY_REASON
@@ -300,6 +380,30 @@ export function ProposalActions({
         ) : (
           <ActionButton startIcon={<EditIcon />} disabled={busy || !ready} disabledReason={applyReason} onClick={onReviseOpen}>
             {productionTexts.verdictLabels.revise}
+          </ActionButton>
+        )
+      ) : null}
+      {onFixScenario && fixes.length ? (
+        fixRestarts ? (
+          <AgentButton
+            variant="contained"
+            disabled={busy || proposal.stale}
+            disabledReason={busy ? BUSY_REASON : problemTexts.fixStaleReason}
+            title={problemTexts.fixHint({ count: fixes.length })}
+            onClick={onFixScenario}
+          >
+            {problemTexts.fixAndPrepare}
+          </AgentButton>
+        ) : (
+          <ActionButton
+            variant="contained"
+            startIcon={<EditIcon />}
+            disabled={busy || proposal.stale}
+            disabledReason={busy ? BUSY_REASON : problemTexts.fixStaleReason}
+            title={problemTexts.fixHint({ count: fixes.length })}
+            onClick={onFixScenario}
+          >
+            {problemTexts.fix}
           </ActionButton>
         )
       ) : null}

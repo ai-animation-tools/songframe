@@ -20,7 +20,9 @@ export function ProductionProposalDialog({
   promptMaxChars,
   onApply,
   onRevise,
-  onDiscard
+  onDiscard,
+  onFixScenario,
+  fixRestarts = false
 }: {
   proposal: ProductionProposal;
   provider: AgentSettings['provider'] | null;
@@ -33,6 +35,9 @@ export function ProductionProposalDialog({
   /** Замечание и запуск доработки агентом: одно действие над этим предложением. */
   onRevise(note: string): Promise<boolean>;
   onDiscard(): Promise<boolean>;
+  /** Исправления из отказа агента в сценарий (и, при fixRestarts, новая подготовка описания). */
+  onFixScenario?(): Promise<boolean>;
+  fixRestarts?: boolean;
 }): ReactElement {
   const [open, setOpen] = useState(false);
   const [reviseNote, setReviseNote] = useState<string | null>(null);
@@ -47,6 +52,9 @@ export function ProductionProposalDialog({
   };
   const discard = async (): Promise<void> => {
     if (await onDiscard()) setOpen(false);
+  };
+  const fixScenario = async (): Promise<void> => {
+    if (onFixScenario && (await onFixScenario())) setOpen(false);
   };
   return (
     <Box data-production-proposal={proposal.id}>
@@ -115,6 +123,8 @@ export function ProductionProposalDialog({
             onRevise={() => void revise()}
             onApply={apply}
             onDiscard={discard}
+            onFixScenario={onFixScenario ? () => void fixScenario() : undefined}
+            fixRestarts={fixRestarts}
           />
         </DialogActions>
       </Dialog>

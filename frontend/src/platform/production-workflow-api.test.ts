@@ -1,5 +1,5 @@
 /**
- * Адаптер группы productionWorkflow: все методы (view, start, apply, discard, generateFrames,
+ * Адаптер группы productionWorkflow: все методы (view, start, apply, discard, fixScenario, generateFrames,
  * importFrames) вызывают Go. Документы
  * пакета и предложения проходят через json.RawMessage без изменений. Bindings подменяются
  * целиком: Wails runtime и Go не запускаются.
@@ -84,17 +84,24 @@ describe('window.api.productionWorkflow', () => {
   });
 
   it('вызывает методы Go с теми же аргументами; пакет undefined — пустая строка', async () => {
-    const methods = { Start: vi.fn(async () => view()), Apply: vi.fn(async () => view()), Discard: vi.fn(async () => view()) };
+    const methods = {
+      Start: vi.fn(async () => view()),
+      Apply: vi.fn(async () => view()),
+      Discard: vi.fn(async () => view()),
+      FixScenario: vi.fn(async () => view())
+    };
     const api = createApi(bindings(methods));
     const input: ProductionWorkflowStart = { project: '/клип', shot: 'M01', packageDir: '/клип/plan/batches/M01-attempt-01', action: 'revise', note: 'Ветер' };
     await api.productionWorkflow.start(input);
     await api.productionWorkflow.apply('/клип', 'M01', undefined, 'p');
     await api.productionWorkflow.apply('/клип', 'M01', '/клип/plan/batches/M01-attempt-01', 'q');
     await api.productionWorkflow.discard('/клип', 'M01', undefined, 'p');
+    await api.productionWorkflow.fixScenario('/клип', 'M01', undefined, 'p');
     expect(methods.Start).toHaveBeenCalledWith(input);
     expect(methods.Apply).toHaveBeenNthCalledWith(1, '/клип', 'M01', '', 'p');
     expect(methods.Apply).toHaveBeenNthCalledWith(2, '/клип', 'M01', '/клип/plan/batches/M01-attempt-01', 'q');
     expect(methods.Discard).toHaveBeenCalledWith('/клип', 'M01', '', 'p');
+    expect(methods.FixScenario).toHaveBeenCalledWith('/клип', 'M01', '', 'p');
   });
 
   it('создание и импорт опор передают пакет и кандидатов как есть', async () => {

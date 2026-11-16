@@ -6,7 +6,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import type { Api } from '@shared/api';
 import type { PackageKeyframe, PackageView } from '@shared/types';
-import type { ProductionWorkflowView } from '@shared/production-workflow';
+import type { ProductionScenarioProblem, ProductionWorkflowView } from '@shared/production-workflow';
 import { registerMediaProviderForTests } from '@shared/media-providers';
 import { TEST_AGENT_PROVIDER, testAgentProviderInfo } from '@shared/testing/media-provider';
 import { FrameActions } from '../pages/ProductionPage/components/FrameActions';
@@ -83,6 +83,8 @@ export type WorkflowPanelMode =
   | 'invalid'
   | 'stale'
   | 'refused'
+  /** Отказ описания со списком противоречий сценария: одно исправляется значением, другое только объяснено. */
+  | 'conflicts'
   | 'failedJob'
   | 'revision'
   | 'paid'
@@ -93,6 +95,23 @@ export type WorkflowPanelMode =
   | 'late'
   | 'frames'
   | 'next';
+/** Итог отказа со списком противоречий. */
+export const WORKFLOW_CONFLICTS_REASON = 'Два противоречия врезки с действием: первый кадр не подготовить.';
+/** Противоречия отказа: значение врезки с исправлением и поле постановки без него. */
+export const WORKFLOW_CONFLICTS: ProductionScenarioProblem[] = [
+  {
+    phase: 'before',
+    entity: 'mira',
+    entityName: 'Мира',
+    property: 'position',
+    propertyLabel: 'Положение',
+    current: 'В машине на водительском месте',
+    source: { shot: null, phase: null },
+    conflict: 'Действие: «Мира выходит из подъезда к машине» — на первом кадре она ещё не в машине.',
+    fix: 'У подъезда, в нескольких шагах от машины'
+  },
+  { field: 'camera', conflict: 'Камера «из салона» не видит подъезд, откуда выходит Мира.' }
+];
 export const PANEL_SAVED_NOTE = 'Сохранить свет слева, убрать лишнее движение камеры.';
 interface PanelModel {
   mode: WorkflowPanelMode;
@@ -105,6 +124,8 @@ interface PanelModel {
   keyframes: number | undefined;
   applies: number;
   discards: number;
+  /** Сколько раз исправления отказа внесены в сценарий. */
+  fixes: number;
   callbacks: number;
   busy: boolean;
   busySeen: boolean;
@@ -147,18 +168,20 @@ export function workflowPanelOptions(mode: WorkflowPanelMode = 'empty'): StoryOp
       let running = false;
       const snapshot = () => structuredClone(model.view);
       const initial = (): ProductionWorkflowView => {
-        const ready = ['ready', 'applyFailure', 'invalid', 'stale', 'refused'].includes(mode);
+        const ready = ['ready', 'applyFailure', 'invalid', 'stale', 'refused', 'conflicts'].includes(mode);
         const hasPackage = ['revision', 'paid', 'frames', 'next'].includes(mode);
         const view = workflowView({ packageDir: hasPackage ? WORKFLOW_STORY_PACKAGE : null, imageProvider: TEST_AGENT_PROVIDER });
         if (ready) {
-          view.canPrepare = mode === 'invalid' || mode === 'refused';
+          view.canPrepare = mode === 'invalid' || mode === 'refused' || mode === 'conflicts';
           view.proposal = workflowProposal(
             'description',
             mode === 'invalid'
               ? { status: 'invalid', after: null, message: 'В ответе нет плана опор.', agentText: '{"description":"Без опор"}' }
               : mode === 'refused'
                 ? { status: 'invalid', refused: true, after: null, agentText: 'Положение машины противоречит утверждённой сцене: уточните постановку.' }
-                : { stale: mode === 'stale' }
+                : mode === 'conflicts'
+                  ? { status: 'invalid', refused: true, after: null, agentText: WORKFLOW_CONFLICTS_REASON, problems: WORKFLOW_CONFLICTS }
+                  : { stale: mode === 'stale' }
           );
           view.job = workflowAgentJob({ status: 'completed', exitCode: 0 });
         }
@@ -208,6 +231,7 @@ export function workflowPanelOptions(mode: WorkflowPanelMode = 'empty'): StoryOp
         keyframes: undefined,
         applies: 0,
         discards: 0,
+        fixes: 0,
         callbacks: 0,
         busy: false,
         busySeen: false,
@@ -395,6 +419,16 @@ export function workflowPanelOptions(mode: WorkflowPanelMode = 'empty'): StoryOp
             model.publish();
             return snapshot();
           },
+          fixScenario: async (project, shot, dir, id) => {
+            validate(project, shot, dir);
+            const proposal = model.view.proposal;
+            if (model.view.busy || !proposal || proposal.id !== id || !proposal.problems?.length) throw new Error('Исправлять нечего.');
+            model.fixes++;
+            // Как в Go: исправления записаны в сценарий, отказ отклонён, план снова можно подготовить.
+            model.view = { ...model.view, proposal: null, canPrepare: true };
+            model.publish();
+            return snapshot();
+          },
           discard: async (project, shot, dir, id) => {
             validate(project, shot, dir);
             if (model.view.busy || !model.view.proposal || model.view.proposal.id !== id) throw new Error('Предложение уже изменилось.');
@@ -530,7 +564,7 @@ export function WorkflowPanelStory() {
       />
       <Typography data-testid="workflow-counts">
         Запусков: {model.starts}. Применений: {model.applies}. Отклонений: {model.discards}. Обновлений пакета: {model.callbacks}. Текст запуска:{' '}
-        {model.note || 'нет'}.
+        {model.note || 'нет'}. Исправлений сценария: {model.fixes}.
       </Typography>
       <Typography data-testid="workflow-keyframes">
         Опор при запуске: {model.keyframes === undefined ? 'не передано' : model.keyframes === 0 ? 'авто' : model.keyframes}.

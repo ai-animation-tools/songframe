@@ -570,7 +570,8 @@ export const productionTexts = {
     jobFailed: ({ task, failed }: { task: string; failed: boolean }) => `${task}: задание агента ${failed ? 'завершилось с ошибкой' : 'прервано'}.`,
     proposalCancelled: ({ stage }: { stage: string }) => `${stage}: подготовка остановлена.`,
     applied: commonTexts.proposal.appliedSentence,
-    discarded: 'Предложение отклонено.'
+    discarded: 'Предложение отклонено.',
+    scenarioFixed: 'Исправления внесены в сценарий.'
   },
   useRequestQuote: {
     quoteMismatch: 'Оценка относится к другому запросу. Откройте попытку заново.'
@@ -925,6 +926,21 @@ export const productionTexts = {
     firstPrompt: 'В попытке ещё нет видеопромпта: это первое предложение. После применения здесь будет текущий текст.',
     refused: `Агент отказался подготовить предложение. Возможно, в сценарии есть противоречия.`,
     refusalReason: 'Причина отказа',
+    problems: ({ count }: { count: number }) => `Противоречия сценария: ${count}`,
+    problemPhase: { before: 'Первый кадр', after: 'Последний кадр' },
+    problemField: { action: 'Действие плана', camera: 'Камера плана', continuity: 'Непрерывность плана', references: 'Сущности в кадре' },
+    problemNow: 'Сейчас',
+    problemEmpty: 'не задано',
+    problemSource: ({ shot, phase }: { shot: string | null; phase: 'before' | 'after' | null }) =>
+      shot === null ? 'из начального состояния кастинга' : `задано на ${phase === 'after' ? 'последнем' : 'первом'} кадре ${shot}`,
+    problemConflict: 'Противоречие',
+    problemFix: 'Станет',
+    problemNoFix: 'В этом плане не исправить: правьте сценарий или кастинг по объяснению агента',
+    fix: 'Исправить сценарий',
+    fixAndPrepare: 'Исправить сценарий и подготовить заново',
+    fixHint: ({ count }: { count: number }) =>
+      `Записать ${count} ${count === 1 ? 'значение' : count < 5 ? 'значения' : 'значений'} «Станет» в состояние этого плана на странице «Сценарий». Кастинг и другие планы не меняются`,
+    fixStaleReason: 'Сценарий изменился после ответа агента: подготовьте описание заново',
     noProposal: `Агент не подготовил предложение`,
     agentAnswer: 'Ответ агента',
     validationReason: 'Причина проверки',

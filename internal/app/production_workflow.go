@@ -80,6 +80,14 @@ func (s *ProductionWorkflowService) Discard(project, shot, packageDir, id string
 	return wire.Done(s.workflow.Discard(project, shot, packageDir, id))
 }
 
+// FixScenario — productionWorkflow.fixScenario: исправления из отказа агента записываются в
+// состояние плана в сценарии, отказ отклоняется. Агент не запускается; перед записью — точка
+// истории проекта, как перед применением изменений плана.
+func (s *ProductionWorkflowService) FixScenario(ctx context.Context, project, shot, packageDir, id string) (productionworkflow.View, error) {
+	projectgit.Before(ctx, project, projectgit.OperationProductionApply)
+	return wire.Done(s.workflow.FixScenario(project, shot, packageDir, id))
+}
+
 // GenerateFrames — productionWorkflow.generateFrames: сначала проверка доступа KindImage —
 // выбранный провайдер изображений, его программа-агент или вход в платного провайдера, затем
 // следующая опора плана. Внутри генерации выбор второй раз не проверяется.

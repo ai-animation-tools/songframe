@@ -138,6 +138,55 @@ func TestUserAmountForUnknownCharge(t *testing.T) {
 	}
 }
 
+// TestQuotedChargeEstimate — сервис принял запрос без списания, а перед отправкой пользователь
+// одобрил цену: расход — эта цена с пометкой «по оценке»; после удаления попытки оценка живёт в
+// журнале, сумма пользователя её заменяет, снятая — возвращает, а сумма сервиса важнее оценки.
+func TestQuotedChargeEstimate(t *testing.T) {
+	root := t.TempDir()
+	dir := "plan/batches/M07-attempt-01/request-01"
+	state := sent("v1", "gen-1", nil)
+	state["quoted_credits"] = 48
+	request(t, root, dir, "M07", "video", state)
+	check := func(stage string, amount float64, estimated, user bool) EntryView {
+		t.Helper()
+		summary := Summarize(entries(t, root), "M07", nil)
+		view := viewOf(t, summary, func(entry EntryView) bool { return entry.Ref.RequestSHA256 == "v1" })
+		if summary.Unknown != 0 || view.Amount == nil || *view.Amount != amount || view.Estimated != estimated || view.UserAmount != user || !view.Editable ||
+			len(summary.Totals) != 1 || summary.Totals[0].Amount != amount {
+			t.Fatalf("%s: %+v %+v", stage, summary, view)
+		}
+		return view
+	}
+	check("живая попытка", 48, true, false)
+	if err := Sync(root); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.RemoveAll(filepath.Join(root, "plan/batches/M07-attempt-01")); err != nil {
+		t.Fatal(err)
+	}
+	view := check("попытка удалена", 48, true, false)
+	if err := SetAmount(root, view.Ref, ptrFloat(50), "credits"); err != nil {
+		t.Fatal(err)
+	}
+	check("сумма пользователя", 50, false, true)
+	if err := SetAmount(root, view.Ref, nil, ""); err != nil {
+		t.Fatal(err)
+	}
+	check("сумма снята", 48, true, false)
+	// Сумма сервиса заменяет оценку и не правится.
+	request(t, root, dir, "M07", "video", sent("v1", "gen-1", 45))
+	summary := Summarize(entries(t, root), "M07", nil)
+	reported := viewOf(t, summary, func(entry EntryView) bool { return entry.Ref.RequestSHA256 == "v1" })
+	if *reported.Amount != 45 || reported.Estimated || reported.Editable {
+		t.Fatalf("сумма сервиса: %+v", reported)
+	}
+	// Без одобренной цены списание по-прежнему неизвестно.
+	request(t, root, "plan/batches/M08-attempt-01/request-01", "M08", "video", sent("v8", "gen-8", nil))
+	if summary := Summarize(entries(t, root), "M08", nil); summary.Unknown != 1 {
+		t.Fatalf("без оценки: %+v", summary)
+	}
+}
+
 // TestAcceptedWithoutEntry — принятый план без записи принятого видео: «цена не указана»; цена,
 // указанная по комплекту, узнаётся как принятое видео, правится и не добавляется второй раз.
 func TestAcceptedWithoutEntry(t *testing.T) {

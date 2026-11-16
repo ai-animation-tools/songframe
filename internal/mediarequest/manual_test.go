@@ -53,7 +53,7 @@ func TestAttachManual(t *testing.T) {
 	if err != nil || state.Value("status") != "manual_pending" {
 		t.Fatalf("статус до загрузки %v, %v", state.Value("status"), err)
 	}
-	if _, err := Submit(context.Background(), root, work, toolrt.Str(state.Value("request_sha256")), 60); err == nil || err.Error() != textManualRequest {
+	if _, err := Submit(context.Background(), root, work, toolrt.Str(state.Value("request_sha256")), nil, 60); err == nil || err.Error() != textManualRequest {
 		t.Fatalf("отправка ручного пакета: %v", err)
 	}
 	video := filepath.Join(t.TempDir(), "kling_avatar.mp4")

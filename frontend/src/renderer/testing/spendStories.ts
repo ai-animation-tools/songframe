@@ -39,6 +39,7 @@ export function spendEntry(shot: string, overrides: Partial<Omit<SpendEntry, 're
     kit: false,
     removed: false,
     userAmount: false,
+    estimated: false,
     editable: false,
     ...rest,
     ref: {
@@ -109,6 +110,7 @@ function sameRef(a: SpendRef, b: SpendRef): boolean {
 /** Модель расхода планов: сводки по коду плана, правка и цена принятого плана. */
 export function createSpendModel(initial: Record<string, ShotSpend>) {
   const spends = new Map(Object.entries(initial).map(([shot, spend]) => [shot, recomputeSpend(structuredClone(spend))]));
+  const quoted = new Map<SpendEntry, Pick<SpendEntry, 'amount' | 'unit'>>();
   const model = {
     edits: 0,
     spend: (shot: string): ShotSpend => structuredClone(spends.get(shot) ?? emptySpend()),
@@ -118,9 +120,13 @@ export function createSpendModel(initial: Record<string, ShotSpend>) {
       const entry = spend?.entries.find((item) => sameRef(item.ref, ref));
       if (!spend || !entry) throw new Error('Запись расхода не найдена: обновите страницу.');
       if (!entry.editable) throw new Error('Списание сообщил сервис: его сумма не правится.');
-      entry.amount = amount;
-      entry.unit = amount === null ? null : unit;
-      entry.userAmount = true;
+      // Оценка запоминается, чтобы снятая сумма вернула её, как SetAmount в Go.
+      if (entry.estimated) quoted.set(entry, { amount: entry.amount, unit: entry.unit });
+      const estimate = amount === null ? quoted.get(entry) : undefined;
+      entry.amount = estimate ? estimate.amount : amount;
+      entry.unit = estimate ? estimate.unit : amount === null ? null : unit;
+      entry.userAmount = !estimate;
+      entry.estimated = !!estimate;
       spends.set(ref.shot, recomputeSpend(spend));
       model.edits++;
     },

@@ -79,14 +79,14 @@ func TestSubmitCancelled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer mediaadapters.Register("cancelling", cancellingAdapter{cancel: cancel})()
 	root, work, sha := prepared(t, "cancelling")
-	if _, err := Submit(ctx, root, work, sha, 60); err == nil || ctx.Err() == nil {
+	if _, err := Submit(ctx, root, work, sha, nil, 60); err == nil || ctx.Err() == nil {
 		t.Fatalf("ожидалась отмена, получено %v", err)
 	}
 	_, state, err := LoadAttempt(work, false)
 	if err != nil || state.Value("status") != "submitting" {
 		t.Fatalf("статус %v, %v", state.Value("status"), err)
 	}
-	if _, err := Submit(context.Background(), root, work, sha, 60); err == nil || err.Error() != textAlreadySent {
+	if _, err := Submit(context.Background(), root, work, sha, nil, 60); err == nil || err.Error() != textAlreadySent {
 		t.Fatalf("повтор после отмены: %v", err)
 	}
 	if result, err := NotCreated(root, work); err != nil || result.Value("status") != "prepared" {
@@ -94,11 +94,40 @@ func TestSubmitCancelled(t *testing.T) {
 	}
 }
 
+// quietAdapter — адаптер, который принимает запрос и не сообщает списание.
+type quietAdapter struct{}
+
+func (quietAdapter) Submit(context.Context, string, *toolrt.Dict, *toolrt.Dict, time.Duration) (mediaapi.SubmitResult, error) {
+	return mediaapi.SubmitResult{GenerationID: "gen-1"}, nil
+}
+
+// TestSubmitQuotedCredits — одобренная цена записывается в quoted_credits, credits_consumed без
+// ответа сервиса не появляется; недопустимая цена отклоняется до отправки.
+func TestSubmitQuotedCredits(t *testing.T) {
+	defer mediaadapters.Register("quiet", quietAdapter{})()
+	root, work, sha := prepared(t, "quiet")
+	if _, err := Submit(context.Background(), root, work, sha, ptr(-1), 60); err == nil || err.Error() != textQuotedCredits {
+		t.Fatalf("отрицательная цена: %v", err)
+	}
+	if _, err := Submit(context.Background(), root, work, sha, ptr(48), 60); err != nil {
+		t.Fatal(err)
+	}
+	_, state, err := LoadAttempt(work, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !toolrt.Equal(state.Value("quoted_credits"), toolrt.NewInt(48)) || state.Has("credits_consumed") || state.Value("status") != "submitted" {
+		t.Fatalf("состояние %v", state)
+	}
+}
+
+func ptr(value float64) *float64 { return &value }
+
 // TestSubmitUnsupported — адаптер без отправки отклоняется до записи submitting.
 func TestSubmitUnsupported(t *testing.T) {
 	defer mediaadapters.Register("silent", silentAdapter{})()
 	root, work, sha := prepared(t, "silent")
-	if _, err := Submit(context.Background(), root, work, sha, 60); err == nil || err.Error() != "Провайдер 'silent' не поддерживает это действие." {
+	if _, err := Submit(context.Background(), root, work, sha, nil, 60); err == nil || err.Error() != "Провайдер 'silent' не поддерживает это действие." {
 		t.Fatalf("ожидался отказ, получено %v", err)
 	}
 	if _, state, err := LoadAttempt(work, false); err != nil || state.Value("status") != "prepared" {

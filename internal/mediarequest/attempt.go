@@ -79,6 +79,7 @@ const (
 	textNotManualResult  = "Заменить можно только видео, загруженное вручную в пакет ручной генерации."
 	textManualSource     = "Укажите источник видео."
 	textManualCost       = "Стоимость должна быть неотрицательным числом."
+	textQuotedCredits    = "Одобренная стоимость должна быть неотрицательным числом."
 	textManualCostUnit   = "Единица стоимости: credits, RUB или USD."
 )
 
@@ -398,7 +399,10 @@ func positive(value float64) bool { return !math.IsNaN(value) && !math.IsInf(val
 // записывается submitting; generation_id сохраняется сразу после ответа. Повтор запрещён,
 // включая submitting и submission_unknown. Явный отказ и «отправка не начиналась» возвращают
 // попытку в prepared (отказ — с last_rejection); прочие сбои — submission_unknown.
-func Submit(ctx context.Context, root, directory, confirmation string, timeout float64) (*toolrt.Dict, error) {
+// quoted — стоимость, которую пользователь видел и одобрил перед отправкой (nil — неизвестна):
+// пишется в quoted_credits вместе с submitting, чтобы журнал расхода учёл её, если сервис не
+// сообщит списание (credits_consumed). Наблюдения цен из неё не учатся.
+func Submit(ctx context.Context, root, directory, confirmation string, quoted *float64, timeout float64) (*toolrt.Dict, error) {
 	workDir, err := WorkPath(root, directory)
 	if err != nil {
 		return nil, err
@@ -434,6 +438,16 @@ func Submit(ctx context.Context, root, directory, confirmation string, timeout f
 			return unsupported(request.Value("provider"))
 		}
 		state.Set("status", "submitting")
+		if quoted != nil {
+			if math.IsNaN(*quoted) || math.IsInf(*quoted, 0) || *quoted < 0 {
+				return valueError(textQuotedCredits)
+			}
+			var value any = *quoted
+			if *quoted == math.Trunc(*quoted) && *quoted < 1e15 {
+				value = toolrt.NewInt(int64(*quoted))
+			}
+			state.Set("quoted_credits", value)
+		}
 		if tracer, ok := service.(mediaapi.TaskTracer); ok && tracer.TaskTraceID() && !state.Has("task_trace_id") {
 			// Один идентификатор на попытку: сервис связывает по нему загрузки, отправку и опрос.
 			state.Set("task_trace_id", uuid7())

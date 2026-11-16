@@ -60,6 +60,7 @@ var Parser = toolsubcmd.Parser{
 			{Name: "--work-dir", Required: true},
 			{Name: "--timeout", Float: true},
 			{Name: "--confirm", Required: true},
+			{Name: "--quoted-credits", Float: true},
 		}},
 		{Name: "resume", Options: []toolsubcmd.Option{
 			{Name: "--work-dir", Required: true},
@@ -227,7 +228,11 @@ func run(ctx context.Context, root string, args toolsubcmd.Result, printer *tool
 	case "prepare":
 		result, err = Prepare(root, value("--request"), value("--work-dir"))
 	case "submit":
-		result, err = Submit(ctx, root, value("--work-dir"), value("--confirm"), args.Float("--timeout", 60))
+		var quoted *float64
+		if amount, ok := args.Floats["--quoted-credits"]; ok {
+			quoted = &amount
+		}
+		result, err = Submit(ctx, root, value("--work-dir"), value("--confirm"), quoted, args.Float("--timeout", 60))
 	case "attach":
 		result, err = Attach(root, value("--work-dir"), args.Values["--file"])
 	case "attach-manual":

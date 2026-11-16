@@ -15,6 +15,10 @@
 // попытки их не знает и при слиянии не стирает. Комплект принятого плана стоимость не хранит: его файлы защищены SHA, а замена
 // видео не должна стирать деньги, уже потраченные на прежнее.
 //
+// Если сервис не сообщил списание принятой отправки, расходом служит стоимость, которую
+// пользователь видел и одобрил перед отправкой (quoted_credits попытки): запись помечена Estimated
+// и правится как неизвестное списание. Сумма сервиса и сумма пользователя важнее оценки.
+//
 // Одна генерация учитывается один раз: запись с номером генерации совпадает с другой по
 // провайдеру и номеру, запись без номера (исход отправки неизвестен) — по SHA-256 запроса.
 // Поэтому перенос попытки в очередь, повторная приёмка и найденный позже номер генерации не
@@ -80,6 +84,11 @@ type Entry struct {
 	Frame string `json:"frame,omitempty"`
 	// FileSHA256 — SHA-256 файла своей опоры: заменённая опора — другая запись.
 	FileSHA256 string `json:"file_sha256,omitempty"`
+	// Quoted — стоимость, одобренная перед отправкой (quoted_credits попытки); nil — цена была
+	// неизвестна или отправка не через одобрение.
+	Quoted *float64 `json:"quoted,omitempty"`
+	// Estimated — Amount взят из Quoted: сервис не сообщил списание, а пользователь сумму не указал.
+	Estimated bool `json:"estimated,omitempty"`
 	// UserAmount — сумму указал или исправил пользователь после загрузки: у материала вне
 	// приложения она заменяет стоимость из попытки, у отправки — неизвестное списание (сообщённое
 	// сервисом позже её заменяет). Попытка при этом не меняется: её файлы входят в токен результата.
@@ -146,12 +155,12 @@ func merge(entries []Entry, current []live) []Entry {
 		entry.live = true
 		// Сумма, которую указал или исправил пользователь, есть только в журнале. У материала вне
 		// приложения (ручная генерация, своё видео, своя опора) она заменяет стоимость из попытки,
-		// у отправки — только неизвестное списание: сообщённое сервисом позже важнее.
+		// у отправки — только неизвестное списание или оценку: сообщённое сервисом позже важнее.
 		for _, stored := range result {
-			if !same(stored, entry) || !stored.UserAmount || (entry.Status != StatusManual && entry.Amount != nil) {
+			if !same(stored, entry) || !stored.UserAmount || (entry.Status != StatusManual && entry.Amount != nil && !entry.Estimated) {
 				continue
 			}
-			entry.Amount, entry.Unit, entry.UserAmount = stored.Amount, stored.Unit, true
+			entry.Amount, entry.Unit, entry.UserAmount, entry.Estimated = stored.Amount, stored.Unit, true, false
 		}
 		result = slices.DeleteFunc(result, func(stored Entry) bool { return same(stored, entry) })
 		result = append(result, entry)
@@ -268,6 +277,7 @@ func readRequest(directory, attempt string) (live, bool) {
 		RequestSHA256    string   `json:"request_sha256"`
 		GenerationID     *string  `json:"generation_id"`
 		CreditsConsumed  *float64 `json:"credits_consumed"`
+		QuotedCredits    *float64 `json:"quoted_credits"`
 		ManualGeneration *struct {
 			Cost *struct {
 				Amount *float64 `json:"amount"`
@@ -283,7 +293,7 @@ func readRequest(directory, attempt string) (live, bool) {
 	}
 	entry := Entry{
 		Shot: request.Shot, Attempt: attempt, Kind: request.Kind, Provider: request.Provider,
-		RequestSHA256: state.RequestSHA256, Amount: state.CreditsConsumed,
+		RequestSHA256: state.RequestSHA256, Amount: state.CreditsConsumed, Quoted: state.QuotedCredits,
 	}
 	if state.GenerationID != nil && *state.GenerationID != "" {
 		entry.GenerationID = state.GenerationID
@@ -298,6 +308,11 @@ func readRequest(directory, attempt string) (live, bool) {
 		}
 	case entry.GenerationID != nil:
 		entry.Status = StatusSent
+		// Сервис принял запрос, но списание не сообщил: расход — одобренная перед отправкой цена.
+		if entry.Amount == nil && entry.Quoted != nil {
+			quoted := *entry.Quoted
+			entry.Amount, entry.Estimated = &quoted, true
+		}
 	case state.Status == "submitting" || state.Status == "submission_unknown":
 		entry.Status, entry.Amount = StatusUnknown, nil
 	default:

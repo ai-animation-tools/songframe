@@ -11402,7 +11402,7 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "использование: media_request submit [-h] --work-dir WORK_DIR\n                                    [--timeout TIMEOUT] --confirm CONFIRM\nmedia_request submit: ошибка: обязательные аргументы: --work-dir, --confirm\n",
+        "stderr": "использование: media_request submit [-h] --work-dir WORK_DIR\n                                    [--timeout TIMEOUT] --confirm CONFIRM\n                                    [--quoted-credits QUOTED_CREDITS]\nmedia_request submit: ошибка: обязательные аргументы: --work-dir, --confirm\n",
         "unhandled": false,
         "interrupted": false,
         "calls": [],
@@ -11421,7 +11421,7 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "использование: media_request submit [-h] --work-dir WORK_DIR\n                                    [--timeout TIMEOUT] --confirm CONFIRM\nmedia_request submit: ошибка: обязательные аргументы: --confirm\n",
+        "stderr": "использование: media_request submit [-h] --work-dir WORK_DIR\n                                    [--timeout TIMEOUT] --confirm CONFIRM\n                                    [--quoted-credits QUOTED_CREDITS]\nmedia_request submit: ошибка: обязательные аргументы: --confirm\n",
         "unhandled": false,
         "interrupted": false,
         "calls": [],
@@ -11440,7 +11440,7 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "использование: media_request submit [-h] --work-dir WORK_DIR\n                                    [--timeout TIMEOUT] --confirm CONFIRM\nmedia_request submit: ошибка: аргумент --timeout: не число: 'abc'\n",
+        "stderr": "использование: media_request submit [-h] --work-dir WORK_DIR\n                                    [--timeout TIMEOUT] --confirm CONFIRM\n                                    [--quoted-credits QUOTED_CREDITS]\nmedia_request submit: ошибка: аргумент --timeout: не число: 'abc'\n",
         "unhandled": false,
         "interrupted": false,
         "calls": [],
@@ -11515,7 +11515,7 @@
       },
       {
         "code": 0,
-        "stdout": "использование: media_request submit [-h] --work-dir WORK_DIR\n                                    [--timeout TIMEOUT] --confirm CONFIRM\n\nпараметры:\n  -h, --help           показать справку и выйти\n  --work-dir WORK_DIR\n  --timeout TIMEOUT\n  --confirm CONFIRM\n",
+        "stdout": "использование: media_request submit [-h] --work-dir WORK_DIR\n                                    [--timeout TIMEOUT] --confirm CONFIRM\n                                    [--quoted-credits QUOTED_CREDITS]\n\nпараметры:\n  -h, --help            показать справку и выйти\n  --work-dir WORK_DIR\n  --timeout TIMEOUT\n  --confirm CONFIRM\n  --quoted-credits QUOTED_CREDITS\n",
         "stderr": "",
         "unhandled": false,
         "interrupted": false,
@@ -11708,7 +11708,7 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "использование: media_request submit [-h] --work-dir WORK_DIR\n                                    [--timeout TIMEOUT] --confirm CONFIRM\nmedia_request submit: ошибка: обязательные аргументы: --work-dir\n",
+        "stderr": "использование: media_request submit [-h] --work-dir WORK_DIR\n                                    [--timeout TIMEOUT] --confirm CONFIRM\n                                    [--quoted-credits QUOTED_CREDITS]\nmedia_request submit: ошибка: обязательные аргументы: --work-dir\n",
         "unhandled": false,
         "interrupted": false,
         "calls": [],

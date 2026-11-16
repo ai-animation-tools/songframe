@@ -53,6 +53,15 @@ const UNKNOWN: ShotSpend = {
   entries: [spendEntry('M02', { provider: TEST_PROVIDER, status: 'unknown', editable: true })]
 };
 
+/** Принятый план: сервис не сообщил списание, учтена одобренная перед отправкой цена. */
+const ESTIMATED: ShotSpend = {
+  ...emptySpend(),
+  attempts: 1,
+  videos: 1,
+  acceptedSeconds: 6,
+  entries: [spendEntry('M02', { provider: TEST_PROVIDER, amount: 48, unit: 'credits', accepted: true, removed: true, estimated: true, editable: true })]
+};
+
 /** Бейдж в шапке перечитывается после правки, как вид страницы после load(). */
 function SpendHarness({ initial }: { initial: ShotSpendBadge | null }): ReactElement {
   const [badge, setBadge] = useState(initial);
@@ -189,6 +198,27 @@ export const UnknownCharge: Story = {
     await enterCost(dialog, '20', 'кредиты');
     await waitFor(() => expect(chips.getByText('20 кредитов')).toBeInTheDocument());
     await expect(dialog.getByText(texts.userAmount)).toBeInTheDocument();
+  }
+};
+
+export const EstimatedCharge: Story = {
+  name: 'Списание по оценке · сумма в расходе, её можно заменить своей',
+  tags: ['ci'],
+  args: { initial: initialBadge(ESTIMATED) },
+  parameters: { songframe: options(ESTIMATED) },
+  play: async ({ canvasElement }) => {
+    const chips = within(within(canvasElement).getByTestId('shot-spend'));
+    await expect(chips.getByText('48 кредитов')).toBeInTheDocument();
+    await expect(chips.queryByText(texts.chipUnknown)).not.toBeInTheDocument();
+    const dialog = await openDialog(canvasElement);
+    await expect(dialog.queryByText(texts.unknown({ count: 1 }))).not.toBeInTheDocument();
+    await expect(dialog.getByText(new RegExp(texts.estimated))).toBeInTheDocument();
+    await userEvent.click(dialog.getByRole('button', { name: `${texts.edit}: ${texts.videoSent({ source: provider })}` }));
+    await expect(dialog.queryByRole('button', { name: texts.clear })).not.toBeInTheDocument();
+    await enterCost(dialog, '50', 'кредиты');
+    await waitFor(() => expect(chips.getByText('50 кредитов')).toBeInTheDocument());
+    await expect(dialog.getByText(new RegExp(texts.userAmount))).toBeInTheDocument();
+    await expect(dialog.queryByText(new RegExp(texts.estimated))).not.toBeInTheDocument();
   }
 };
 

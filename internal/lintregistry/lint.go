@@ -75,7 +75,7 @@ var snapshotForbidden = map[string]bool{
 	"result_saved": true, "status": true, "notes": true, "revision": true, "revision_reason": true, "stage": true,
 	"attempt": true, "cli_version": true, "approved_at": true, "approval": true, "created_at": true, "updated_at": true,
 	"saved_at": true, "submitted_at": true, "submission_started_at": true, "downloaded_at": true, "last_query_at": true,
-	"capabilities_checked_at": true, "balance": true, "pricing": true, "credits_consumed": true, "creditsConsumed": true,
+	"capabilities_checked_at": true, "balance": true, "pricing": true, "credits_consumed": true, "creditsConsumed": true, "quoted_credits": true,
 	"download_status": true, "service_statuses": true, "submitted": true, "uploaded": true,
 }
 

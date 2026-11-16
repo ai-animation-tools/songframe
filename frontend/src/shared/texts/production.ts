@@ -865,6 +865,7 @@ export const productionTexts = {
     rejectedMark: 'отклонено',
     removed: 'попытка удалена',
     userAmount: 'указано вами',
+    estimated: 'по оценке: сервис не сообщил списание, учтена цена, одобренная перед отправкой',
     noPrice: 'Цена не указана',
     unknownCharge: 'Списание неизвестно',
     ownNoPrice: 'Цена не указана',

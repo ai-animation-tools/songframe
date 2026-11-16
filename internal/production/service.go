@@ -990,6 +990,12 @@ func (s *Service) Submit(project, packageDir, expectedSha, decisionToken, quoteT
 		}
 	}
 	requestDir := fresh.Request.Dir
+	// Показанная и одобренная цена сохраняется в попытке: если сервис не сообщит списание, журнал
+	// расхода учтёт её с пометкой «по оценке», а не как неизвестный расход.
+	submitArgs := []string{"submit", "--work-dir", requestDir, "--confirm", expectedSha}
+	if price.Credits != nil {
+		submitArgs = append(submitArgs, "--quoted-credits", strconv.FormatFloat(*price.Credits, 'f', -1, 64))
+	}
 	var started *jobs.Info
 	execute := func(context.Context, string, providers.PreparedRequest) error {
 		title := textSubmitJob(fresh.Shot)
@@ -1000,7 +1006,7 @@ func (s *Service) Submit(project, packageDir, expectedSha, decisionToken, quoteT
 		steps := []jobs.Step{
 			s.toolStep(project, "shot_workflow", []string{"check", "--dir", directory}, textVerifyMaterialsStep, false, nil),
 			paidStep(project, requestDir, &promptlog.Place{Page: "production", Shot: fresh.Shot},
-				s.toolStep(project, "media_request", []string{"submit", "--work-dir", requestDir, "--confirm", expectedSha}, textSubmitStep, false, nil)),
+				s.toolStep(project, "media_request", submitArgs, textSubmitStep, false, nil)),
 			s.toolStep(project, "cost_check", append([]string{"learn", "--work-dir", requestDir}, s.pricingArgs()...), textRecordChargeStep, true, nil),
 			// Журнал расходов получает отправку сразу: сбой его записи не отменяет оплаченную отправку,
 			// живая попытка всё равно учитывается, а журнал дополнится при следующей синхронизации.

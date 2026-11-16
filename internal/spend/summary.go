@@ -43,7 +43,9 @@ type EntryView struct {
 	Removed bool `json:"removed"`
 	// UserAmount — сумму отправки указал пользователь.
 	UserAmount bool `json:"userAmount"`
-	// Editable — стоимость можно указать или исправить: всё, что не сообщил сервис.
+	// Estimated — сервис не сообщил списание: сумма — цена, одобренная перед отправкой.
+	Estimated bool `json:"estimated"`
+	// Editable — стоимость можно указать или исправить: всё, что не сообщил сервис, включая оценку.
 	Editable bool `json:"editable"`
 }
 
@@ -101,7 +103,8 @@ func Summarize(entries []Entry, shot string, accepted *Accepted) Summary {
 			Ref: Ref{Shot: entry.Shot, Attempt: entry.Attempt, Kind: entry.Kind, Provider: entry.Provider, RequestSHA256: entry.RequestSHA256, GenerationID: entry.GenerationID,
 				Frame: entry.Frame, FileSHA256: entry.FileSHA256},
 			Kind: entry.Kind, Status: entry.Status, Amount: entry.Amount, Unit: entry.Unit, Frame: entry.Frame, Kit: kit,
-			Removed: !entry.live && !kit, UserAmount: entry.UserAmount, Editable: manual || entry.Amount == nil || entry.UserAmount,
+			Removed: !entry.live && !kit, UserAmount: entry.UserAmount, Estimated: entry.Estimated,
+			Editable: manual || entry.Amount == nil || entry.UserAmount || entry.Estimated,
 		}
 		if !own && !kit {
 			attempts[entry.Attempt] = attempts[entry.Attempt] || entry.live

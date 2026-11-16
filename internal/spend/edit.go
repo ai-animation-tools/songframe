@@ -55,7 +55,7 @@ func checkAmount(amount *float64, unit string) error {
 
 // SetAmount — пользователь указывает или исправляет стоимость записи ref; amount nil снимает её.
 // Правится только то, что сервис не сообщил: своя опора, видео вне приложения, принятый план без
-// отправки, отправка без списания. Перед правкой живые запросы переносятся в журнал, правка
+// отправки, отправка без списания (в том числе учтённая по оценке; снятая сумма возвращает оценку). Перед правкой живые запросы переносятся в журнал, правка
 // пишется в него с UserAmount; файлы попытки не меняются.
 func SetAmount(root string, ref Ref, amount *float64, unit string) error {
 	if err := checkAmount(amount, unit); err != nil {
@@ -71,7 +71,7 @@ func SetAmount(root string, ref Ref, amount *float64, unit string) error {
 		return errors.New(textEntryMissing)
 	}
 	found := all[index]
-	if found.Status != StatusManual && found.Amount != nil && !found.UserAmount {
+	if found.Status != StatusManual && found.Amount != nil && !found.UserAmount && !found.Estimated {
 		return errors.New(textServiceReported)
 	}
 	if err := Sync(root); err != nil {
@@ -86,7 +86,7 @@ func SetAmount(root string, ref Ref, amount *float64, unit string) error {
 		return errors.New(textEntryMissing)
 	}
 	entry := &entries[index]
-	entry.Amount, entry.Unit = nil, nil
+	entry.Amount, entry.Unit, entry.Estimated = nil, nil, false
 	if amount != nil {
 		value, text := *amount, unit
 		entry.Amount, entry.Unit = &value, &text
@@ -97,8 +97,12 @@ func SetAmount(root string, ref Ref, amount *float64, unit string) error {
 	} else {
 		entry.UserAmount = amount != nil
 		if amount == nil {
-			// Снятая сумма отправки — снова неизвестное списание в единице сервиса.
+			// Снятая сумма отправки — снова одобренная оценка или неизвестное списание в единице сервиса.
 			entry.Unit = UnitOf(entry.Provider)
+			if entry.Quoted != nil && entry.Status == StatusSent {
+				quoted := *entry.Quoted
+				entry.Amount, entry.Estimated = &quoted, true
+			}
 		}
 	}
 	return projectfs.WriteJSON(filepath.Join(root, filepath.FromSlash(File)), journal{SchemaVersion: 1, Entries: entries})

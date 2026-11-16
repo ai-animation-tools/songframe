@@ -2,7 +2,7 @@
  * Окно «Расход Mxx»: из чего сложилась стоимость плана и правка своей цены. Сверху — сводка
  * (попытки и отправки, известный расход, принятый материал и стоимость секунды), ниже — записи
  * по видео и опорам. Стоимость указывается у всего, что не сообщил сервис: видео вне приложения,
- * своя опора, отправка без списания, принятый план без записи. Правка пишет только журнал расхода
+ * своя опора, отправка без списания (в том числе учтённая по одобренной оценке), принятый план без записи. Правка пишет только журнал расхода
  * (production.setSpendAmount, production.priceAccepted), файлы попыток и комплекта не меняются.
  */
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
@@ -26,12 +26,13 @@ function entryLabel(entry: SpendEntry): string {
   return entry.provider === null ? texts.videoManual : texts.videoSent({ source: spendSource(entry.provider) });
 }
 
-/** Отметки записи: принято или отклонено, попытка удалена, сумму указал пользователь. */
+/** Отметки записи: принято или отклонено, попытка удалена, сумму указал пользователь или она по оценке. */
 function entryMarks(entry: SpendEntry, accepted: boolean): string {
   return [
     entry.kind === 'video' && accepted ? (entry.accepted ? texts.acceptedMark : texts.rejectedMark) : '',
     entry.removed ? texts.removed : '',
-    entry.userAmount ? texts.userAmount : ''
+    entry.userAmount ? texts.userAmount : '',
+    entry.estimated ? texts.estimated : ''
   ]
     .filter(Boolean)
     .join(' · ');
@@ -273,7 +274,10 @@ export function ShotSpendDialog({
                             busy={busy}
                             onSave={(amount, unit) => void save(() => window.api.production.setSpendAmount(project, entry.ref, amount, unit))}
                             onClear={
-                              entry.amount === null ? undefined : () => void save(() => window.api.production.setSpendAmount(project, entry.ref, null, ''))
+                              // Оценка — не указанная сумма: снимать нечего, её можно только заменить своей.
+                              entry.amount === null || entry.estimated
+                                ? undefined
+                                : () => void save(() => window.api.production.setSpendAmount(project, entry.ref, null, ''))
                             }
                             onCancel={() => setEditing(null)}
                           />

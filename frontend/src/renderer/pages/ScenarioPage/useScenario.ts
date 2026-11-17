@@ -72,6 +72,14 @@ export function useScenario() {
     setRevealShot({ shot, target: 'shot' });
   }, [shotParam, scenesReady]);
 
+  // Переход из отчёта проверки сценария: выбрать план в черновике и прокрутить к его постановке.
+  const openShot = useCallback((shot: string) => {
+    if (!requestedShot(scenesRef.current, shot)) return;
+    setTab('scenes');
+    setSelected(shot);
+    setRevealShot({ shot, target: 'shot' });
+  }, []);
+
   // Источник значения врезки: выбрать план в черновике (правки других планов остаются) и прокрутить к его блоку состояния.
   const openShotState = useCallback<OpenShotState>((shot, entity, phase) => {
     if (!requestedShot(scenesRef.current, shot)) return;
@@ -364,6 +372,7 @@ export function useScenario() {
     revealShot,
     clearReveal,
     openShotState,
+    openShot,
     problems,
     treatmentProblems,
     brief,

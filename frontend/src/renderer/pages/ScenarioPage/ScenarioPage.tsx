@@ -6,6 +6,8 @@ import { Alert, Box, Button, Paper, Stack, Typography } from '@mui/material';
 import { ScenarioToolbar, ScenesSaveDialog, TreatmentEditor, SceneRegistry } from './components';
 import { useScenario } from './useScenario';
 import { useScenarioWorkflow } from './useScenarioWorkflow';
+import { useScenarioCheck } from './useScenarioCheck';
+import { ScenarioCheckPanel } from './components/ScenarioCheckPanel';
 import { ScenarioWorkflowPanel } from './components/ScenarioWorkflowPanel';
 import { PageActionBar } from '../../components/PageActionBar';
 import { useStickyTop } from '../../hooks/useStickyTop';
@@ -17,6 +19,7 @@ import { unsavedDraftsReason } from './shotNavigation';
 export function ScenarioPage(): ReactElement {
   const scenario = useScenario();
   const workflow = useScenarioWorkflow(scenario.project, scenario.acceptWorkflowUpdate);
+  const check = useScenarioCheck(scenario.project);
   const [showGlobal, setShowGlobal] = useState(false);
   const {
     view,
@@ -119,6 +122,25 @@ export function ScenarioPage(): ReactElement {
         scenesDirty={scenesDirty}
         editorBusy={busy}
         scenesInputProblem={scenario.scenesInputProblem}
+        onResolveDrafts={scenario.resolveWorkflowDrafts}
+      />
+      <ScenarioCheckPanel
+        key={`check-${scenario.project}`}
+        check={check}
+        blockedReason={busy || workflow.pending ? commonTexts.operationPending : null}
+        treatmentDirty={treatmentDirty}
+        scenesDirty={scenesDirty}
+        editorBusy={busy}
+        entityName={(id) => cast?.entities.find((entity) => entity.id === id)?.name ?? id}
+        onOpenShot={(shot, issue) =>
+          issue.group === 'state'
+            ? openShotState(
+                shot,
+                issue.entities.find((id) => id !== 'world'),
+                'before'
+              )
+            : scenario.openShot(shot)
+        }
         onResolveDrafts={scenario.resolveWorkflowDrafts}
       />
       {workflow.busy && (

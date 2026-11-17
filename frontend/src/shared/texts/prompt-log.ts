@@ -3,8 +3,8 @@ import type { PromptLogKind, PromptLogStatus } from '../types';
 import { navigationTexts } from './navigation';
 import { productionTexts } from './production';
 
-/** Проходы сценария в заголовках заданий ai-clip-scenario:<проход>. */
-const SCENARIO_PASSES: Record<string, string> = { treatment: 'трактовка', scenes: 'планы', revise: 'доработка' };
+/** Проходы сценария и его проверка в заголовках заданий ai-clip-scenario:<проход>. */
+const SCENARIO_PASSES: Record<string, string> = { treatment: 'трактовка', scenes: 'планы', revise: 'доработка', check: 'проверка' };
 const STAGE_TITLES: Record<string, string> = productionTexts.planPath.titles;
 
 export const promptLogTexts = {

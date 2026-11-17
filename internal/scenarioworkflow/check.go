@@ -44,8 +44,9 @@ const (
 // checkStatuses — состояния, которые хранит запись.
 var checkStatuses = []string{CheckRunning, CheckReady, CheckInvalid, CheckFailed, CheckCancelled, CheckInterrupted}
 
-// checkTask — имя задания агента проверки.
-const checkTask = "ai-clip-scenario-check"
+// checkTask — имя задания агента проверки: тот же вид «ai-clip-scenario:<проход>», что у проходов, —
+// по нему интерфейс относит задание к странице «Сценарий» (уведомления, журнал отправок).
+const checkTask = "ai-clip-scenario:check"
 
 // CheckView — ScenarioCheckView: последняя проверка проекта и доступность новой.
 type CheckView struct {

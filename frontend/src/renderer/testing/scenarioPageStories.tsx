@@ -17,7 +17,7 @@ import type {
   TimingFile,
   TreatmentFile
 } from '@shared/types';
-import type { ScenarioWorkflowView } from '@shared/scenario-workflow';
+import type { ScenarioCheckReport, ScenarioCheckView, ScenarioWorkflowView } from '@shared/scenario-workflow';
 import { DEFAULT_FPS } from '@shared/video';
 import { scenarioTexts } from '@shared/texts/scenario';
 import { ScenarioPage } from '../pages/ScenarioPage/ScenarioPage';
@@ -67,7 +67,47 @@ export interface ScenarioPageOptions {
   lineMoved?: boolean;
   /** Планы с принятым в производстве видео: их постановка на странице закрыта для правки. */
   accepted?: string[];
+  /** Последняя проверка сценария агентом: не было, отчёт с проблемами или без них. */
+  check?: 'none' | 'report' | 'clean';
 }
+
+/** Демонстрационный отчёт проверки: по одной проблеме каждой важности, самая важная записана последней. */
+export const STORY_CHECK_REPORT: ScenarioCheckReport = {
+  summary: 'Сценарий в целом согласован. Сначала исправьте состояние героя в M02: иначе опора покажет его сухим под дождём.',
+  issues: [
+    {
+      group: 'joins',
+      severity: 'low',
+      shots: ['M05', 'M06'],
+      entities: [],
+      title: 'Камера меняет сторону на стыке M05 и M06',
+      problem: 'В M05 «Камера» снимает ворота слева, а в M06 — справа, хотя «Непрерывность (стыки с соседями)» обещает тот же ракурс.',
+      why: 'На склейке ворота перескочат с одной стороны кадра на другую.',
+      fix: 'У M06 в «Камера» укажите съёмку слева, как в M05, или опишите смену стороны в «Непрерывность (стыки с соседями)».'
+    },
+    {
+      group: 'story',
+      severity: 'medium',
+      shots: ['M04'],
+      entities: ['neighbor'],
+      title: 'Сосед появляется раньше куплета',
+      problem: 'Трактовка части «Куплет у калитки» вводит соседа Пашу, а в M04 «Действие» уже показывает его разговор с героем в части «Возвращение».',
+      why: 'Разговор начнётся до строки песни о калитке, и сюжет части сдвинется.',
+      fix: 'Перенесите разговор в первый план части «Куплет у калитки» или уберите соседа из «В кадре (референсы)» у M04.'
+    },
+    {
+      group: 'state',
+      severity: 'high',
+      shots: ['M02', 'M03'],
+      entities: ['hero'],
+      title: 'Герой в сухой куртке под дождём',
+      problem:
+        'У M02 в «Состояние героев и мира» → «Первый кадр (before)» у героя «Куртка» — «сухая» из начального состояния кастинга, а «Действие» идёт под дождём с M01.',
+      why: 'Опоры M02 и M03 покажут сухую куртку, хотя герой уже несколько планов мокнет.',
+      fix: 'У M02 в «Первый кадр (before)» задайте герою «Куртка» — «мокрая, тёмная от дождя».'
+    }
+  ]
+};
 
 /** Секции карты для gappedTiming: промежутки короче порога разметки и перекрытие последних двух частей. */
 const GAPPED_SECTIONS: ReadonlyArray<{ start: number; end: number }> = [
@@ -427,6 +467,8 @@ function pageBrief(scenes: ScenesFile, cast: CastFile | null, shot: string, phas
 interface PageModel {
   saved: ScenarioView;
   workflow: ScenarioWorkflowView;
+  check: ScenarioCheckView;
+  checkStarts: number;
   links: string[];
   reads: number;
   treatmentSaves: number;
@@ -451,7 +493,8 @@ export function scenarioPageOptions({
   referencesStale = false,
   leadPause = false,
   lineMoved = false,
-  accepted = []
+  accepted = [],
+  check = 'none'
 }: ScenarioPageOptions = {}): StoryOptions {
   const state: AppState = {
     packaged: false,
@@ -469,6 +512,7 @@ export function scenarioPageOptions({
       const listeners = new Set<() => void>();
       let version = 0;
       let failedReads = variant === 'loadError' ? 1 : 0;
+      let checkReads = 0;
       const produced = new Set(variant === 'produced' ? ['M01', 'M02'] : []);
       const saved = pageView(variant, gappedTiming);
       if (referencesStale) Object.assign(saved, { referencesStale: true, problems: [scenarioTexts.main.referencesRefresh] });
@@ -500,6 +544,16 @@ export function scenarioPageOptions({
       const model: PageModel = {
         saved,
         workflow,
+        check: {
+          status: check === 'none' ? 'none' : 'ready',
+          canStart: true,
+          reason: null,
+          stale: false,
+          report: check === 'none' ? null : check === 'clean' ? { summary: 'Противоречий не найдено.', issues: [] } : structuredClone(STORY_CHECK_REPORT),
+          message: null,
+          job: null
+        },
+        checkStarts: 0,
         links,
         reads: 0,
         treatmentSaves: 0,
@@ -527,6 +581,7 @@ export function scenarioPageOptions({
       const snapshot = (): ScenarioWorkflowView => structuredClone(model.workflow);
       const capabilities = (): void => {
         const view = model.workflow;
+        Object.assign(model.check, { canStart: !view.busy, reason: view.busy ? 'Дождитесь окончания задания агента в этом проекте.' : null });
         Object.assign(view, {
           canStartTreatment: !view.busy,
           canStartScenes: !view.busy && view.treatmentApproved,
@@ -538,6 +593,8 @@ export function scenarioPageOptions({
       const documentsWritten = (treatment: boolean): void => {
         const view = model.workflow;
         if (view.proposal && view.proposal.status !== 'applied') view.proposal.stale = true;
+        // Отчёт проверки хранит отпечатки сценария: любая запись делает его устаревшим.
+        if (model.check.report) model.check.stale = true;
         if (treatment && view.treatmentApproved) {
           Object.assign(view, {
             treatmentApproved: false,
@@ -726,10 +783,49 @@ export function scenarioPageOptions({
             Object.assign(model.workflow, { canApproveScenes: false, scenesNeedReview: false, changedInputs: [] });
             model.publish();
             return snapshot();
+          },
+          // Как в Go: проверка занимает проект на время задания; следующее чтение после запуска показывает готовый отчёт.
+          checkView: async (project) => {
+            validate(project);
+            if (model.check.status === 'running' && model.check.job?.status === 'running' && checkReads++ > 0) {
+              Object.assign(model.check, {
+                status: 'ready',
+                stale: false,
+                report: structuredClone(STORY_CHECK_REPORT),
+                job: { ...scenarioJob('completed'), id: 'scenario-check-job', task: 'ai-clip-scenario:check' }
+              });
+              model.workflow.busy = false;
+              capabilities();
+              model.publish();
+            }
+            return structuredClone(model.check);
+          },
+          startCheck: async (project) => {
+            validate(project);
+            if (model.workflow.busy) throw new Error('Дождитесь окончания задания агента в этом проекте.');
+            model.checkStarts++;
+            checkReads = 0;
+            Object.assign(model.check, {
+              status: 'running',
+              message: null,
+              job: { ...scenarioJob('running'), id: 'scenario-check-job', task: 'ai-clip-scenario:check' }
+            });
+            model.workflow.busy = true;
+            capabilities();
+            model.publish();
+            return structuredClone(model.check);
           }
         },
         agents: {
           cancel: async (jobId) => {
+            if (model.check.job?.id === jobId && model.check.status === 'running') {
+              model.cancels++;
+              Object.assign(model.check, { status: 'cancelled', message: 'Проверка остановлена.', job: { ...model.check.job, status: 'cancelled' } });
+              model.workflow.busy = false;
+              capabilities();
+              model.publish();
+              return structuredClone(model.check.job!);
+            }
             const view = model.workflow;
             if (view.job?.id !== jobId || !view.busy) throw new Error('Задание уже завершено.');
             model.cancels++;
@@ -786,7 +882,7 @@ function ScenarioPageModelPanel(): ReactElement {
           {model.scenesSaves.length ? ` (${model.scenesSaves.join(', ')})` : ''}.
         </Typography>
         <Typography variant="body2" data-testid="page-model-agent">
-          Запусков агента: {model.starts}. Применений: {model.applies}. Остановок: {model.cancels}.
+          Запусков агента: {model.starts}. Применений: {model.applies}. Остановок: {model.cancels}. Проверок сценария: {model.checkStarts}.
         </Typography>
         <Typography variant="body2" data-testid="page-model-scaffold">
           Построений каркаса: {model.scaffolds.length}

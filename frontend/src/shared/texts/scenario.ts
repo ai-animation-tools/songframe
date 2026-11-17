@@ -1,6 +1,6 @@
 import { commonTexts } from './common';
 import { countLabel } from '../plural';
-import type { ScenarioInput } from '../scenario-workflow';
+import type { ScenarioCheckGroup, ScenarioCheckSeverity, ScenarioInput } from '../scenario-workflow';
 
 /** Подпись поля длины плана части трактовки: на неё ссылаются и советы при отказе пересчёта границ. */
 const maxShotLabel = 'Макс. план, с';
@@ -375,7 +375,7 @@ export const scenarioTexts = {
     treatmentProblems: 'Исправьте проблемы трактовки перед построением каркаса: их список показан над частями.'
   },
   workflow: {
-    agentBusy: 'Агент уже готовит предложение.',
+    agentBusy: 'Агент уже работает в этом проекте.',
     resolveProposal: commonTexts.proposal.resolveCurrent,
     title: 'Подготовка с агентом',
     treatmentApproved: 'Кастинг и трактовка утверждены',
@@ -415,6 +415,44 @@ export const scenarioTexts = {
     collapseProblems: 'Свернуть',
     showAllProblems: ({ count }: { count: number }) => `Показать все (${count})`,
     scenesApproved: 'Сценарий утверждён'
+  },
+  /** Блок «Проверка сценария»: отчёт агента о противоречиях до производства. */
+  check: {
+    title: 'Проверка сценария',
+    description:
+      'Агент сверяет сценарий с трактовкой, кастингом, изображениями и состоянием героев и находит то, что испортит опоры и видео. Сценарий он не меняет: что исправить, решаете вы.',
+    start: 'Проверить сценарий',
+    restart: 'Проверить заново',
+    statusNone: 'Не проверялся',
+    statusRunning: 'Проверяется',
+    statusClean: 'Проблем не найдено',
+    statusIssues: ({ count }: { count: number }) => `Найдено ${countLabel(count, 'проблема', 'проблемы', 'проблем')}`,
+    statusStale: 'Отчёт устарел',
+    statusFailed: 'Проверка не удалась',
+    stale: 'После проверки изменились сценарий, кастинг или исходники: отчёт может не совпадать с текущими файлами. Проверьте сценарий заново.',
+    clean: 'Агент не нашёл противоречий, которые испортят опоры или видео.',
+    groups: {
+      state: 'Состояние героев и мира',
+      story: 'Сюжет и трактовка',
+      cast: 'Кастинг и референсы',
+      joins: 'Стыки планов'
+    } satisfies Record<ScenarioCheckGroup, string>,
+    severities: {
+      high: 'Важно',
+      medium: 'Заметно',
+      low: 'Мелочь'
+    } satisfies Record<ScenarioCheckSeverity, string>,
+    problem: 'Что не так',
+    why: 'Чем это грозит',
+    fix: 'Что сделать',
+    entities: ({ names }: { names: string }) => `Касается: ${names}`,
+    openShot: ({ shot }: { shot: string }) => `Открыть ${shot}`,
+    openShotHint: ({ shot }: { shot: string }) => `Выбрать ${shot} в реестре планов и прокрутить к нему`,
+    showAll: ({ count }: { count: number }) => `Показать все (${count})`,
+    collapse: 'Свернуть',
+    finished: ({ count }: { count: number }) =>
+      count ? `Проверка сценария готова: ${countLabel(count, 'проблема', 'проблемы', 'проблем')}.` : 'Проверка сценария готова: проблем не найдено.',
+    finishedFailed: 'Проверка сценария не удалась. Подробности — на странице «Сценарий».'
   },
   list: {
     search: 'Поиск плана',

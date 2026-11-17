@@ -524,6 +524,73 @@ export const ProposalStaleAfterSave: Story = {
   }
 };
 
+const checkPanel = async (screen: Screen) => {
+  const heading = await screen.findByRole('heading', { name: scenarioTexts.check.title }, { timeout: 3000 });
+  return within(heading.closest('.MuiPaper-root') as HTMLElement);
+};
+
+export const CheckReport: Story = {
+  name: 'Проверка сценария · отчёт: важные проблемы первыми, переход к блоку состояния плана',
+  tags: ['!autodocs', 'ci'],
+  parameters: { songframe: scenarioPageOptions({ check: 'report' }) },
+  play: async (context) => {
+    const screen = await ready(context);
+    const panel = await checkPanel(screen);
+    await expect(panel.getByText(scenarioTexts.check.statusIssues({ count: 3 }))).toBeInTheDocument();
+    // Важность задаёт порядок: проблема состояния записана в отчёте последней, а показана первой.
+    const summaries = panel.getAllByRole('button', { expanded: false });
+    await expect(summaries[0]).toHaveTextContent('Герой в сухой куртке под дождём');
+    await expect(summaries[2]).toHaveTextContent('Камера меняет сторону');
+    await userEvent.click(summaries[0]);
+    await expect(await panel.findByText(scenarioTexts.check.fix)).toBeVisible();
+    await expect(panel.getByText(scenarioTexts.check.entities({ names: 'Герой у ворот' }))).toBeInTheDocument();
+    await userEvent.click(panel.getByRole('button', { name: scenarioTexts.check.openShot({ shot: 'M02' }) }));
+    await editorHeading(screen, 'M02');
+    await expect(row(context, 'M02')).toHaveAttribute('aria-current', 'true');
+    // У героя в первом кадре M02 нет своих изменений: переход прокручивает к блоку состояния плана.
+    await expectRevealed(context, await screen.findByRole('heading', { name: scenarioTexts.state.title }, { timeout: 3000 }));
+    // Проблема сюжета ведёт к постановке плана, а не к блоку состояния.
+    await userEvent.click(panel.getByRole('button', { name: /Сосед появляется раньше куплета/ }));
+    await userEvent.click(await panel.findByRole('button', { name: scenarioTexts.check.openShot({ shot: 'M04' }) }));
+    await editorHeading(screen, 'M04');
+    await expect(row(context, 'M04')).toHaveAttribute('aria-current', 'true');
+  }
+};
+
+export const CheckRunAndStale: Story = {
+  name: 'Проверка сценария · запуск, готовый отчёт и устаревание после сохранения реестра',
+  tags: ['!autodocs', 'ci'],
+  play: async (context) => {
+    const screen = await ready(context);
+    const panel = await checkPanel(screen);
+    await expect(panel.getByText(scenarioTexts.check.statusNone)).toBeInTheDocument();
+    await userEvent.click(panel.getByRole('button', { name: scenarioTexts.check.start }));
+    // Пока агент проверяет, правка сценария закрыта, а повторный запуск недоступен.
+    await panel.findByText(scenarioTexts.check.statusRunning, undefined, { timeout: 3000 });
+    await screen.findByText(scenarioTexts.page.agentEditingPaused, undefined, { timeout: 3000 });
+    await panel.findByText(scenarioTexts.check.statusIssues({ count: 3 }), undefined, { timeout: 4000 });
+    await expect(await screen.findByText(scenarioTexts.check.finished({ count: 3 }))).toBeInTheDocument();
+    await expect(screen.getByTestId('page-model-agent')).toHaveTextContent('Проверок сценария: 1.');
+    await waitFor(() => expect(screen.queryByText(scenarioTexts.page.agentEditingPaused)).not.toBeInTheDocument());
+    await userEvent.type(field(screen, scenarioTexts.fields.action), ' Правка после проверки.');
+    await userEvent.click(saveButton(screen));
+    await waitFor(() => expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений реестра: 1 (production).'));
+    await panel.findByText(scenarioTexts.check.statusStale, undefined, { timeout: 3000 });
+    await expect(panel.getByText(scenarioTexts.check.stale)).toBeInTheDocument();
+    await expect(panel.getByRole('button', { name: scenarioTexts.check.restart })).toBeEnabled();
+  }
+};
+
+export const CheckClean: Story = {
+  name: 'Проверка сценария · проблем не найдено',
+  parameters: { songframe: scenarioPageOptions({ check: 'clean' }) },
+  play: async (context) => {
+    const panel = await checkPanel(await ready(context));
+    await expect(panel.getByText(scenarioTexts.check.statusClean)).toBeInTheDocument();
+    await expect(panel.getByText(scenarioTexts.check.clean)).toBeInTheDocument();
+  }
+};
+
 export const Loading: Story = {
   name: 'Загрузка · общий индикатор до ответа',
   parameters: { songframe: scenarioPageOptions({ variant: 'loading' }) },

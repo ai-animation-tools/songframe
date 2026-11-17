@@ -14,7 +14,7 @@
           "I03.jpg",
           "I04.jpg"
         ],
-        "task": "ai-clip-scenario-check"
+        "task": "ai-clip-scenario:check"
       },
       "op": "start",
       "view": {
@@ -37,7 +37,7 @@
           "sequence": 1,
           "startedAt": "2026-11-04T12:00:00.000Z",
           "status": "running",
-          "task": "ai-clip-scenario-check"
+          "task": "ai-clip-scenario:check"
         },
         "message": null,
         "reason": "Дождитесь окончания задания агента в этом проекте.",
@@ -72,7 +72,7 @@
           "sequence": 1,
           "startedAt": "2026-11-04T12:00:00.000Z",
           "status": "running",
-          "task": "ai-clip-scenario-check"
+          "task": "ai-clip-scenario:check"
         },
         "message": null,
         "reason": "Дождитесь окончания задания агента в этом проекте.",

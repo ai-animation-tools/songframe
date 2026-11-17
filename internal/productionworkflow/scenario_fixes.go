@@ -37,15 +37,6 @@ type refusalError struct {
 
 func (e *refusalError) Error() string { return textAgentRefused }
 
-// sourceLabel — источник значения состояния для контекста агента: cast — начальное состояние
-// кастинга, Mxx.before / Mxx.after — изменение плана Mxx на его первом или последнем кадре.
-func sourceLabel(source any) string {
-	if dynvalue.Get(source, "kind") == "plan" {
-		return dynvalue.ToString(dynvalue.Get(source, "shot")) + "." + dynvalue.ToString(dynvalue.Get(source, "phase"))
-	}
-	return "cast"
-}
-
 // resolvedPlan — вычисленное состояние плана shot по сохранённому реестру и кастингу проекта.
 func resolvedPlan(project, shot string) (scenario.Detailed, bool) {
 	registry, err := readJSON(filepath.Join(project, "plan", "scenes.json"))
@@ -70,7 +61,7 @@ func resolvedPlan(project, shot string) (scenario.Detailed, bool) {
 }
 
 // stateSourcesTree — источники значений врезок плана shot: фаза → сущность → свойство → метка
-// sourceLabel, только по сущностям самих врезок (briefs[phase].state). nil, если состояние не
+// scenario.SourceLabel, только по сущностям самих врезок (briefs[phase].state). nil, если состояние не
 // вычисляется: тогда ключ в контекст не пишется.
 func stateSourcesTree(project, shot string, briefs *dynvalue.Object) *dynvalue.Object {
 	detail, ok := resolvedPlan(project, shot)
@@ -90,7 +81,7 @@ func stateSourcesTree(project, shot string, briefs *dynvalue.Object) *dynvalue.O
 				}
 				labels := dynvalue.NewObject()
 				for _, property := range entitySources.Keys() {
-					labels.Set(property, sourceLabel(entitySources.Value(property)))
+					labels.Set(property, scenario.SourceLabel(entitySources.Value(property)))
 				}
 				phaseSources.Set(entity, labels)
 			}

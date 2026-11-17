@@ -108,7 +108,9 @@ export function apiSkeleton(): Api {
       apply: stub('scenarioWorkflow.apply'),
       approveCurrent: stub('scenarioWorkflow.approveCurrent'),
       approveScenes: stub('scenarioWorkflow.approveScenes'),
-      discard: stub('scenarioWorkflow.discard')
+      discard: stub('scenarioWorkflow.discard'),
+      checkView: stub('scenarioWorkflow.checkView'),
+      startCheck: stub('scenarioWorkflow.startCheck')
     },
     agents: {
       getSettings: stub('agents.getSettings'),

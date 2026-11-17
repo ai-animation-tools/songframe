@@ -64,9 +64,9 @@ func VideoReviewTools(manager *components.Manager) func() (videoreview.Tools, bo
 	}
 }
 
-// VideoReviewBudget — бюджет изображений проверки выбранного текстового агента (Codex, если агент
-// не выбран).
-func VideoReviewBudget(settings *agents.SettingsStore) func() int {
+// ReviewImageBudget — бюджет изображений заданий проверки видео и сценария для выбранного текстового
+// агента (Codex, если агент не выбран).
+func ReviewImageBudget(settings *agents.SettingsStore) func() int {
 	return func() int {
 		provider := agents.Codex
 		if config, err := settings.Agent(); err == nil && config != nil && agents.IsProvider(config.Provider) {

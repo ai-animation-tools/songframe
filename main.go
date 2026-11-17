@@ -214,6 +214,7 @@ func run() error {
 		RequireAgentAccess: func(project string) error {
 			return aiAccess.RequireAccess(context.Background(), &project, agents.KindAgent)
 		},
+		CheckImageBudget: shell.ReviewImageBudget(agentSettings),
 	})
 	shell.ConnectScenarioReview(projects, scenarioWorkflow)
 	productionService := production.New(production.Options{Jobs: jobManager, Layer: providerLayer})
@@ -281,7 +282,7 @@ func run() error {
 		// Проверка видео агентом не запускается, пока над пакетом идёт производственная операция.
 		application.NewService(shell.NewVideoReviewService(videoreview.New(videoreview.Options{
 			Agents: agentManager, Tools: shell.VideoReviewTools(componentManager), Brief: shell.ContinuityBrief,
-			ImageBudgetBytes: shell.VideoReviewBudget(agentSettings), IsPackageBusy: productionService.IsBusy,
+			ImageBudgetBytes: shell.ReviewImageBudget(agentSettings), IsPackageBusy: productionService.IsBusy,
 		}), aiAccess)),
 		// Генерация обложки и изображений референсов провайдером изображений проекта; сессии
 		// окна закрываются вместе с ним, при выходе — все.

@@ -328,3 +328,22 @@ func (e errorText) Error() string { return string(e) }
 func ProjectBrief(project string, data any, sid, phase string) (Brief, error) {
 	return BuildBrief(data, readCastValue(project), sid, phase)
 }
+
+// PlanEntities — сущности плана в обеих фазах (объединение planScope первого и последнего кадра):
+// мир, «В кадре» и сущности его state_changes. Так отбирает состояние проверка сценария агентом.
+func PlanEntities(scene any) map[string]bool {
+	result := planScope(scene, "before")
+	for id := range planScope(scene, "after") {
+		result[id] = true
+	}
+	return result
+}
+
+// SourceLabel — короткая метка источника значения состояния для контекста агента: cast — начальное
+// состояние кастинга, Mxx.before / Mxx.after — изменение плана Mxx на его первом или последнем кадре.
+func SourceLabel(source any) string {
+	if dynvalue.Get(source, "kind") == "plan" {
+		return dynvalue.ToString(dynvalue.Get(source, "shot")) + "." + dynvalue.ToString(dynvalue.Get(source, "phase"))
+	}
+	return "cast"
+}

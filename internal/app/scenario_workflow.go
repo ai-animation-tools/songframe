@@ -50,3 +50,13 @@ func (s *ScenarioWorkflowService) ApproveScenes(project string) (scenarioworkflo
 func (s *ScenarioWorkflowService) Discard(project, id string) (scenarioworkflow.View, error) {
 	return wire.Done(s.workflow.Discard(project, id))
 }
+
+// CheckView — scenarioWorkflow.checkView: последняя проверка сценария агентом и доступность новой.
+func (s *ScenarioWorkflowService) CheckView(project string) (scenarioworkflow.CheckView, error) {
+	return wire.Done(s.workflow.CheckView(project))
+}
+
+// StartCheck — scenarioWorkflow.startCheck: запуск проверки сценария агентом; сценарий не меняется.
+func (s *ScenarioWorkflowService) StartCheck(project string) (scenarioworkflow.CheckView, error) {
+	return wire.Done(s.workflow.StartCheck(project))
+}

@@ -16,6 +16,50 @@ import * as agents$0 from "../agents/models.js";
 export type AgentJob = agents$0.Job;
 
 /**
+ * CheckIssue — одна проблема отчёта. Shots и Entities — ID планов реестра и сущностей кастинга,
+ * которых она касается; тексты написаны для человека без путей и ключей файлов.
+ */
+export interface CheckIssue {
+    "group": string;
+    "severity": string;
+    "shots": string[];
+    "entities": string[];
+    "title": string;
+    "problem": string;
+    "why": string;
+    "fix": string;
+}
+
+/**
+ * CheckReport — отчёт проверки после разбора.
+ */
+export interface CheckReport {
+    "summary": string;
+    "issues": CheckIssue[];
+}
+
+/**
+ * CheckView — ScenarioCheckView: последняя проверка проекта и доступность новой.
+ */
+export interface CheckView {
+    "status": string;
+    "canStart": boolean;
+
+    /**
+     * Reason — почему новую проверку запустить нельзя; nil, если можно.
+     */
+    "reason": string | null;
+
+    /**
+     * Stale — трактовка, реестр, кастинг или исходники изменились после проверки.
+     */
+    "stale": boolean;
+    "report": CheckReport | null;
+    "message": string | null;
+    "job": AgentJob | null;
+}
+
+/**
  * Proposal — ScenarioProposal для renderer. Before и After — документы { cast, treatment, scenes }
  * как JSON (порядок ключей и числа документов сохраняются).
  */

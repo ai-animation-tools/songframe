@@ -72,6 +72,7 @@ var sectionRules = []sectionRule{
 	{"plan/treatment.json", SectionScenario},
 	{"plan/scenes.json", SectionScenario},
 	{"plan/scenario-workflow.json", SectionScenario},
+	{"plan/scenario-check.json", SectionScenario},
 	{"plan/batches/", SectionProduction},
 	{"plan/awaiting/", SectionProduction},
 	{"plan/production-status.json", SectionProduction},

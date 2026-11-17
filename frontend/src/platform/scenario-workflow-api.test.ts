@@ -1,5 +1,5 @@
 /**
- * Адаптер группы scenarioWorkflow: шесть методов вызывают Go. Документы предложения проходят
+ * Адаптер группы scenarioWorkflow: восемь методов вызывают Go. Документы предложения проходят
  * через json.RawMessage без изменений, необязательное message появляется только при наличии,
  * отказ Go-сервиса показывается своим текстом. Bindings подменяются целиком: Wails runtime и Go не запускаются.
  */
@@ -128,5 +128,24 @@ describe('window.api.scenarioWorkflow', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('проверка сценария: отчёт передаётся как есть, задание агента — через общий вид', async () => {
+    const report = {
+      summary: 'Одна проблема.',
+      issues: [
+        { group: 'state', severity: 'high', shots: ['M08'], entities: ['artem'], title: 'Часы на улице', problem: 'Где.', why: 'Почему.', fix: 'Что сделать.' }
+      ]
+    };
+    const checkView = { status: 'ready', canStart: true, reason: null, stale: false, report, message: null, job: null };
+    const methods = {
+      CheckView: vi.fn(async () => checkView),
+      StartCheck: vi.fn(async () => ({ ...checkView, status: 'running', report: null, canStart: false, reason: 'Занято.' }))
+    };
+    const api = createApi(bindings(methods));
+    await expect(api.scenarioWorkflow.checkView('/клип')).resolves.toEqual(checkView);
+    await expect(api.scenarioWorkflow.startCheck('/клип')).resolves.toMatchObject({ status: 'running', report: null, reason: 'Занято.' });
+    expect(methods.CheckView).toHaveBeenCalledWith('/клип');
+    expect(methods.StartCheck).toHaveBeenCalledWith('/клип');
   });
 });

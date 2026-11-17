@@ -1,0 +1,85 @@
+{
+  "base": "checks-base",
+  "call": "ScenarioCheck",
+  "covers": [],
+  "description": "Ответ со ссылкой на несуществующий план отклоняется целиком.",
+  "project": "project",
+  "steps": [
+    {
+      "agent": {
+        "context": "context-0.txt",
+        "images": [
+          "I01.jpg",
+          "I02.jpg",
+          "I03.jpg",
+          "I04.jpg"
+        ],
+        "task": "ai-clip-scenario-check"
+      },
+      "op": "start",
+      "view": {
+        "canStart": false,
+        "job": {
+          "exitCode": null,
+          "finishedAt": null,
+          "id": "job-0",
+          "inputHashes": {
+            "context": "b0ca0b134f71ea0fc947fc6c7ee2da9b2a527aef806c76d343bd589657aae9fa",
+            "prompt": "6933c640f1f2da7cbef51ee288b1c4598642ebd40fcbfa57c0ca08f6cb056583"
+          },
+          "log": "",
+          "permissions": "read-only",
+          "phase": "работает",
+          "project": "\u003cproject\u003e",
+          "provider": "codex",
+          "result": "",
+          "schemaVersion": 1,
+          "sequence": 1,
+          "startedAt": "2026-11-04T12:00:00.000Z",
+          "status": "running",
+          "task": "ai-clip-scenario-check"
+        },
+        "message": null,
+        "reason": "Дождитесь окончания задания агента в этом проекте.",
+        "report": null,
+        "stale": false,
+        "status": "running"
+      }
+    },
+    {
+      "op": "finish",
+      "result": "{\"schemaVersion\":1,\"summary\":\"Сценарий в целом согласован; одно расхождение состояния Миры.\",\"issues\":[{\"group\":\"state\",\"severity\":\"high\",\"shots\":[\"M99\"],\"entities\":[\"mira\"],\"title\":\"Мира стоит у края причала до того, как подошла\",\"problem\":\"У M02 в «Состояние героев и мира» → «Первый кадр (before)» у Миры «Положение» — «у края причала», а в «Действии» она только подходит к лодке.\",\"why\":\"Опора первого кадра покажет Миру уже у края, и подход к лодке пропадёт.\",\"fix\":\"У M02 в «Первый кадр (before)» задайте Мире «Положение» — «на середине причала, идёт к лодке».\"}]}"
+    },
+    {
+      "op": "view",
+      "view": {
+        "canStart": true,
+        "job": {
+          "exitCode": 0,
+          "finishedAt": null,
+          "id": "job-0",
+          "inputHashes": {
+            "context": "b0ca0b134f71ea0fc947fc6c7ee2da9b2a527aef806c76d343bd589657aae9fa",
+            "prompt": "6933c640f1f2da7cbef51ee288b1c4598642ebd40fcbfa57c0ca08f6cb056583"
+          },
+          "log": "",
+          "permissions": "read-only",
+          "phase": "работает",
+          "project": "\u003cproject\u003e",
+          "provider": "codex",
+          "result": "{\"schemaVersion\":1,\"summary\":\"Сценарий в целом согласован; одно расхождение состояния Миры.\",\"issues\":[{\"group\":\"state\",\"severity\":\"high\",\"shots\":[\"M99\"],\"entities\":[\"mira\"],\"title\":\"Мира стоит у края причала до того, как подошла\",\"problem\":\"У M02 в «Состояние героев и мира» → «Первый кадр (before)» у Миры «Положение» — «у края причала», а в «Действии» она только подходит к лодке.\",\"why\":\"Опора первого кадра покажет Миру уже у края, и подход к лодке пропадёт.\",\"fix\":\"У M02 в «Первый кадр (before)» задайте Мире «Положение» — «на середине причала, идёт к лодке».\"}]}",
+          "schemaVersion": 1,
+          "sequence": 1,
+          "startedAt": "2026-11-04T12:00:00.000Z",
+          "status": "completed",
+          "task": "ai-clip-scenario-check"
+        },
+        "message": "Проблема 1 отчёта агента не принята: неизвестный план M99. Запустите проверку снова.",
+        "reason": null,
+        "report": null,
+        "stale": false,
+        "status": "invalid"
+      }
+    }
+  ]
+}

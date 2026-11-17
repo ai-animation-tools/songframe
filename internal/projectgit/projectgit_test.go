@@ -83,6 +83,7 @@ func TestSectionOf(t *testing.T) {
 		"plan/cast.json":                      SectionCast,
 		"plan/scenes.json":                    SectionScenario,
 		"plan/scenario-workflow.json":         SectionScenario,
+		"plan/scenario-check.json":            SectionScenario,
 		"plan/batches/proposals/M01.json":     SectionProduction,
 		"plan/spend.json":                     SectionProduction,
 		"assets/shots/M01/original.mp4":       SectionScenes,

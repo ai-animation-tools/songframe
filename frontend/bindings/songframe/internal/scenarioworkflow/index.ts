@@ -3,6 +3,9 @@
 
 export type {
     AgentJob,
+    CheckIssue,
+    CheckReport,
+    CheckView,
     Proposal,
     StartInput,
     View

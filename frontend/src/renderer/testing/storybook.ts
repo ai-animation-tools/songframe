@@ -222,7 +222,9 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
       apply: guardedAsync(merged.scenarioWorkflow.apply),
       approveCurrent: guardedAsync(merged.scenarioWorkflow.approveCurrent),
       approveScenes: guardedAsync(merged.scenarioWorkflow.approveScenes),
-      discard: guardedAsync(merged.scenarioWorkflow.discard)
+      discard: guardedAsync(merged.scenarioWorkflow.discard),
+      checkView: guardedAsync(merged.scenarioWorkflow.checkView),
+      startCheck: guardedAsync(merged.scenarioWorkflow.startCheck)
     },
     agents: {
       getSettings: guardedAsync(merged.agents.getSettings),

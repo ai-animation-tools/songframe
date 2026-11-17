@@ -54,6 +54,43 @@ export interface ScenarioWorkflowView {
   job: AgentJob | null;
 }
 
+/** Группа проблемы проверки сценария: состояние героев и мира, сюжет и трактовка, кастинг и референсы, стыки планов. */
+export type ScenarioCheckGroup = 'state' | 'story' | 'cast' | 'joins';
+
+/** Важность проблемы: high — испортит видео, medium — заметное расхождение, low — мелочь или сомнение. */
+export type ScenarioCheckSeverity = 'high' | 'medium' | 'low';
+
+/** Проблема отчёта проверки: тексты для человека, ID планов реестра и сущностей кастинга. */
+export interface ScenarioCheckIssue {
+  group: ScenarioCheckGroup;
+  severity: ScenarioCheckSeverity;
+  shots: string[];
+  entities: string[];
+  title: string;
+  problem: string;
+  why: string;
+  fix: string;
+}
+
+export interface ScenarioCheckReport {
+  summary: string;
+  issues: ScenarioCheckIssue[];
+}
+
+/** Проверка сценария агентом: последний отчёт (plan/scenario-check.json) и доступность новой проверки. */
+export interface ScenarioCheckView {
+  /** none — проверки ещё не было; cancelled — остановлена пользователем; interrupted — задание оборвалось. */
+  status: 'none' | 'running' | 'ready' | 'invalid' | 'failed' | 'cancelled' | 'interrupted';
+  canStart: boolean;
+  /** Почему новую проверку запустить нельзя. */
+  reason: string | null;
+  /** Сценарий, кастинг или исходники изменились после проверки. */
+  stale: boolean;
+  report: ScenarioCheckReport | null;
+  message: string | null;
+  job: AgentJob | null;
+}
+
 /** Перед публикацией проверяются хеши именно файлов, а не только отправленного агенту текста. */
 export interface ScenarioPublication {
   project: string;

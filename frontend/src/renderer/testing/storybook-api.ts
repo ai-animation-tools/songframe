@@ -99,7 +99,9 @@ export function unconfiguredStoryApi(): Api {
       apply: async () => unconfigured('scenarioWorkflow.apply'),
       approveCurrent: async () => unconfigured('scenarioWorkflow.approveCurrent'),
       approveScenes: async () => unconfigured('scenarioWorkflow.approveScenes'),
-      discard: async () => unconfigured('scenarioWorkflow.discard')
+      discard: async () => unconfigured('scenarioWorkflow.discard'),
+      checkView: async () => unconfigured('scenarioWorkflow.checkView'),
+      startCheck: async () => unconfigured('scenarioWorkflow.startCheck')
     },
     agents: {
       getSettings: async () => unconfigured('agents.getSettings'),

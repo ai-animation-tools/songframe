@@ -204,3 +204,54 @@ func textValidationExitCode(code *int) string {
 func textScaffoldFailed(details string) string {
 	return "Не удалось подготовить каркас: " + details
 }
+
+// Тексты проверки сценария (check.go, check_report.go, check_images.go).
+const (
+	textCheckBusy            = "Дождитесь окончания задания агента в этом проекте."
+	textCheckNoScenario      = "Проверять пока нечего: нужны кастинг, трактовка и сценарий."
+	textCheckScenarioInvalid = "Сначала исправьте ошибки сценария, которые показывает страница: агенту нужен читаемый сценарий."
+	textCheckInterrupted     = "Проверка прервалась: задание агента не завершилось. Запустите её снова."
+	textCheckCancelled       = "Проверка остановлена."
+	textCheckAgentFailed     = "Агент не закончил проверку. Запустите её снова."
+	textCheckNotObject       = "Агент вернул отчёт не в формате JSON. Запустите проверку снова."
+	textCheckShape           = "Отчёт агента не того вида: нужны schemaVersion 1, summary и issues без других полей. Запустите проверку снова."
+	textCheckEmpty           = "пустой текст"
+	textCheckIssueShape      = "поля не того вида"
+	textCheckIssueGroup      = "неизвестная группа"
+	textCheckIssueSeverity   = "неизвестная важность"
+)
+
+func textCheckLong(length, limit int) string {
+	return strconv.Itoa(length) + " знаков при пределе " + strconv.Itoa(limit)
+}
+
+func textCheckSummary(reason string) string {
+	return "Итог отчёта агента не принят: " + reason + ". Запустите проверку снова."
+}
+
+func textCheckTooMany(count, limit int) string {
+	return "Агент вернул " + strconv.Itoa(count) + " проблем при пределе " + strconv.Itoa(limit) + ". Запустите проверку снова."
+}
+
+func textCheckIssue(number int, reason string) string {
+	return "Проблема " + strconv.Itoa(number) + " отчёта агента не принята: " + reason + ". Запустите проверку снова."
+}
+
+func textCheckIssueField(field, reason string) string { return field + ": " + reason }
+
+func textCheckIssueShot(id string) string { return "неизвестный план " + id }
+
+func textCheckIssueEntity(id string) string { return "неизвестная сущность " + id }
+
+// textCheckImagesProblem — пояснение агенту, почему часть изображений кастинга не приложена; пусто,
+// если приложены все.
+func textCheckImagesProblem(unreadable []string, skipped int) string {
+	parts := []string{}
+	if len(unreadable) > 0 {
+		parts = append(parts, "Не удалось прочитать изображения: "+strings.Join(unreadable, ", ")+".")
+	}
+	if skipped > 0 {
+		parts = append(parts, "Не приложено изображений из-за предела вложений: "+strconv.Itoa(skipped)+".")
+	}
+	return strings.Join(parts, " ")
+}

@@ -49,6 +49,7 @@
 | `agents-cli/cases.json` | `agents.CheckAgent`, аккаунт, модели и `agents.Manager` на поддельных CLI | 67 |
 | `ai-access-paid/cases.json` | платная часть `agents.AccessChecker`: выбор провайдера, вход, `GetAccess`, `RequireAccess` | 14 |
 | `scenario-workflow/` | `scenarioworkflow.Workflow` с поддельным менеджером агентов | 16 |
+| `scenario-check/` | проверка сценария агентом: `Workflow.CheckView`, `Workflow.StartCheck` с поддельным менеджером агентов | 9 |
 | `video-review-frames/cases.json` | `videoreview.Extract`: кадры, опоры, бюджет изображений | 18 |
 | `contact-sheet/cases.json` | инструмент `contact_sheet` | 30 |
 | `video-review/cases.json` | `videoreview.ParseReport` и `videoreview.Service` (`View`, `Start`, `Cancel`) | 61 |
@@ -139,6 +140,7 @@
 - `scenario-scenes/*/case.json.mode` — `production`, `keep` или неверный; `expected-impact.json` — оценка сохранения черновика до записи, `expected-validate.json` — проблемы сцен с кастингом проекта.
 - `scenario-brief/*/case.json.briefs` — пары `[план, фаза]`; без него — все планы реестра в обеих фазах. Черновик — `scenes-input.json` или `project/plan/scenes.json`. `expected.json` — массив `{shot, phase, result|error}`.
 - `scenario-workflow/<случай>/` — `base: checks-base`; `case.json.steps`: `view`, `start` (`pass`, `note`, `selectedIds`), `finish` (`result` — ответ агента), `cancel`, `fail`, `drop` (задания больше нет), `write`, `editCast` (роль второй сущности + « Ведёт лодку.»), `apply`/`discard` (`id` — чужой ID, без него — текущее предложение), `approveCurrent`, `approveScenes`. Исход — `view` или `error`; у запуска — `agent` (`project`, `task`, `prompt` — файл домена `prompt-<pass>.txt`, `context` — файл случая `context-N.txt`, дословно). `files.json` — `{путь: {before, after}}` (SHA-256 или `null`), `after/<путь>` — байты (кроме PNG), `state.json` — запись `scenario-workflow/<sha>.json` или `null`. Ответ агента не в JSON даёт текст `proposalInvalidDocument`.
+- `scenario-check/<случай>/` — `base: checks-base`; `case.json.steps`: `view`, `start`, `finish` (`result` — ответ агента), `cancel`, `fail` (`message`), `drop`, `write`, `editCast`. Исход — `view` или `error`; у запуска — `agent` (`task`, `context` — файл случая `context-N.txt` дословно, `images` — имена приложенных копий в порядке вложения). Промпт — файл домена `prompt.txt`. `record.json` — запись `plan/scenario-check.json` после шагов или `null`; копии изображений сравниваются только по составу.
 
 ### Реестр сцен и регулярные выражения
 

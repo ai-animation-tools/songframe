@@ -9,7 +9,7 @@ import type {
   ProductionWorkflowView
 } from './production-workflow';
 import type { MediaCapabilities, MediaKind, ProviderAuth } from './media-providers';
-import type { ScenarioWorkflowStart, ScenarioWorkflowView } from './scenario-workflow';
+import type { ScenarioCheckView, ScenarioWorkflowStart, ScenarioWorkflowView } from './scenario-workflow';
 import type { NotificationTarget } from './notifications';
 import type { DerivedShotApi } from './derived-shot';
 import type { MontageApi } from './montage';
@@ -127,6 +127,10 @@ export interface Api {
     approveCurrent(project: string): Promise<ScenarioWorkflowView>;
     approveScenes(project: string): Promise<ScenarioWorkflowView>;
     discard(project: string, id: string): Promise<ScenarioWorkflowView>;
+    /** Последняя проверка сценария агентом и доступность новой; агента не запускает. */
+    checkView(project: string): Promise<ScenarioCheckView>;
+    /** Запуск проверки сценария агентом; сценарий не меняется. */
+    startCheck(project: string): Promise<ScenarioCheckView>;
   };
   agents: {
     getSettings(): Promise<AgentSettings | null>;

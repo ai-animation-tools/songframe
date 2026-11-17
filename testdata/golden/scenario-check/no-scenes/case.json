@@ -1,0 +1,28 @@
+{
+  "base": "checks-base",
+  "call": "ScenarioCheck",
+  "covers": [],
+  "description": "Без сценария проверять нечего.",
+  "project": "project",
+  "remove": [
+    "plan/scenes.json"
+  ],
+  "steps": [
+    {
+      "op": "view",
+      "view": {
+        "canStart": false,
+        "job": null,
+        "message": null,
+        "reason": "Проверять пока нечего: нужны кастинг, трактовка и сценарий.",
+        "report": null,
+        "stale": false,
+        "status": "none"
+      }
+    },
+    {
+      "error": "Проверять пока нечего: нужны кастинг, трактовка и сценарий.",
+      "op": "start"
+    }
+  ]
+}

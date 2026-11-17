@@ -39,6 +39,13 @@ export function ApproveScenes(project: string): $CancellablePromise<scenariowork
 }
 
 /**
+ * CheckView — scenarioWorkflow.checkView: последняя проверка сценария агентом и доступность новой.
+ */
+export function CheckView(project: string): $CancellablePromise<scenarioworkflow$0.CheckView> {
+    return $Call.ByID(1147320892, project);
+}
+
+/**
  * Discard — scenarioWorkflow.discard: отклонение ожидающего предложения.
  */
 export function Discard(project: string, id: string): $CancellablePromise<scenarioworkflow$0.View> {
@@ -50,6 +57,13 @@ export function Discard(project: string, id: string): $CancellablePromise<scenar
  */
 export function Start(input: scenarioworkflow$0.StartInput): $CancellablePromise<scenarioworkflow$0.View> {
     return $Call.ByID(722864869, input);
+}
+
+/**
+ * StartCheck — scenarioWorkflow.startCheck: запуск проверки сценария агентом; сценарий не меняется.
+ */
+export function StartCheck(project: string): $CancellablePromise<scenarioworkflow$0.CheckView> {
+    return $Call.ByID(1957307207, project);
 }
 
 /**

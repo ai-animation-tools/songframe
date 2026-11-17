@@ -53,7 +53,7 @@ import type { ReferenceImageGenerationInput } from '@shared/reference-image-gene
 import type { AiAccess } from '@shared/ai-access';
 import type { UpdateView } from '@shared/updates';
 import type * as scenarioworkflow from '../../bindings/songframe/internal/scenarioworkflow/models';
-import type { ScenarioDocuments, ScenarioProposal, ScenarioWorkflowView } from '@shared/scenario-workflow';
+import type { ScenarioCheckView, ScenarioDocuments, ScenarioProposal, ScenarioWorkflowView } from '@shared/scenario-workflow';
 import type * as productionworkflow from '../../bindings/songframe/internal/productionworkflow/models';
 import type { ProductionFramePrompt, ProductionPass, ProductionProposal, ProductionWorkflowView } from '@shared/production-workflow';
 import type { VocalModelId, VocalPreparationView } from '@shared/vocals';
@@ -251,6 +251,19 @@ function toWorkflowView({ proposal, job, ...view }: scenarioworkflow.View): Scen
     changedInputs: view.changedInputs as ScenarioWorkflowView['changedInputs'],
     proposal: next,
     job: job ? (job as unknown as AgentJob) : null
+  };
+}
+
+/**
+ * Вид проверки сценария: статус, группа и важность проблем Go хранит строками, отчёт проверен
+ * разбором ответа агента; адаптер только сужает типы.
+ */
+function toCheckView({ job, report, ...view }: scenarioworkflow.CheckView): ScenarioCheckView {
+  return {
+    ...view,
+    status: view.status as ScenarioCheckView['status'],
+    report: report ? (report as ScenarioCheckView['report']) : null,
+    job: job ? toAgentJob(job) : null
   };
 }
 
@@ -652,7 +665,10 @@ export function createApi(b: Bindings): Api {
     apply: (project, id) => call('scenarioWorkflow.apply', async () => workflow((await b.scenarioWorkflow()).Apply(project, id)), false),
     approveCurrent: (project) => call('scenarioWorkflow.approveCurrent', async () => workflow((await b.scenarioWorkflow()).ApproveCurrent(project)), false),
     approveScenes: (project) => call('scenarioWorkflow.approveScenes', async () => workflow((await b.scenarioWorkflow()).ApproveScenes(project)), false),
-    discard: (project, id) => call('scenarioWorkflow.discard', async () => workflow((await b.scenarioWorkflow()).Discard(project, id)), false)
+    discard: (project, id) => call('scenarioWorkflow.discard', async () => workflow((await b.scenarioWorkflow()).Discard(project, id)), false),
+    checkView: (project) => call('scenarioWorkflow.checkView', async () => toCheckView(await (await b.scenarioWorkflow()).CheckView(project))),
+    // Подготовка уменьшает изображения кастинга (несколько секунд на клипе), поэтому без срока оболочки.
+    startCheck: (project) => call('scenarioWorkflow.startCheck', async () => toCheckView(await (await b.scenarioWorkflow()).StartCheck(project)), false)
   };
 
   api.jobs.list = () => call('jobs.list', async () => (await (await b.jobs()).List()).map(toJob));

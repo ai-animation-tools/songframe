@@ -29,8 +29,15 @@ import (
 // менеджеру агентов. Проверка и сценарный проход не идут одновременно: оба запускаются, только
 // когда у проекта нет работающего задания (busy).
 
-// CheckPath — запись проверки сценария относительно папки проекта.
+// CheckPath — готовый отчёт проверки сценария относительно папки проекта: он в Git, на нём пользователь
+// отмечает внесённые и решённые вручную проблемы.
 const CheckPath = "plan/scenario-check.json"
+
+// CheckAttemptPath — запись незавершённой или неудавшейся проверки (running, invalid, failed,
+// cancelled, interrupted) рядом с ожидающими предложениями, вне Git: ход задания и его ID — временное
+// состояние, в историю клипа оно не попадает. Пока она есть, вид показывает её; готовый отчёт
+// переносится в CheckPath, и запись попытки удаляется.
+const CheckAttemptPath = "plan/batches/proposals/scenario-check.json"
 
 // Состояния проверки (ScenarioCheckView.status). CheckNone — проверки ещё не было.
 const (
@@ -63,20 +70,37 @@ type CheckView struct {
 	Job     *AgentJob    `json:"job"`
 }
 
-// checkRecord — запись plan/scenario-check.json (schemaVersion 1): status, jobId, shots, entities и
+// checkRecord — запись проверки (schemaVersion 1; готовая — CheckPath, остальные — CheckAttemptPath): status, jobId, shots, entities и
 // properties (ID проверенного сценария и свойства состояния каждой сущности — по ним проверяется
 // ответ), hashes (отпечатки входов), report, message, fixed (номера проблем отчёта с 0, чьи правки
 // внесены) и resolved (номера проблем, отмеченных решёнными вручную; пустой список можно не писать).
 // Повреждённая запись читается как отсутствующая.
 type checkRecord struct{ doc *dynvalue.Object }
 
-func checkRecordPath(project string) string {
-	return filepath.Join(project, filepath.FromSlash(CheckPath))
+// checkRecordPath — файл записи со статусом status: готовый отчёт в CheckPath, остальное — в
+// CheckAttemptPath.
+func checkRecordPath(project, status string) string {
+	if status == CheckReady {
+		return filepath.Join(project, filepath.FromSlash(CheckPath))
+	}
+	return filepath.Join(project, filepath.FromSlash(CheckAttemptPath))
 }
 
-// readCheck — проверенная запись или nil.
+// readCheck — последняя проверка: запись попытки, если она есть и годна, иначе готовый отчёт; nil —
+// ни одной годной записи.
 func readCheck(project string) *checkRecord {
-	data, err := os.ReadFile(checkRecordPath(project))
+	if record := readCheckFile(checkRecordPath(project, CheckRunning)); record != nil && record.status() != CheckReady {
+		return record
+	}
+	if record := readCheckFile(checkRecordPath(project, CheckReady)); record != nil && record.status() == CheckReady {
+		return record
+	}
+	return nil
+}
+
+// readCheckFile — проверенная запись файла path или nil.
+func readCheckFile(path string) *checkRecord {
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil
 	}
@@ -111,12 +135,24 @@ func readCheck(project string) *checkRecord {
 	return &checkRecord{doc: doc}
 }
 
-// writeCheck — атомарная запись через шлюз записи проекта, как writeState.
+// writeCheck — атомарная запись через шлюз записи проекта, как writeState: готовый отчёт — в
+// CheckPath с удалением записи попытки, остальные статусы — в CheckAttemptPath, не трогая
+// прежний отчёт в Git.
 func writeCheck(project string, record *checkRecord) error {
 	if err := projectfs.CheckWrite(project); err != nil {
 		return err
 	}
-	return projectfs.WriteFile(checkRecordPath(project), []byte(dynvalue.StringifyIndent(record.doc, "  ")+"\n"), 0o666)
+	status := record.status()
+	if err := projectfs.WriteFile(checkRecordPath(project, status), []byte(dynvalue.StringifyIndent(record.doc, "  ")+"\n"), 0o666); err != nil {
+		return err
+	}
+	if status != CheckReady {
+		return nil
+	}
+	if err := os.Remove(checkRecordPath(project, CheckRunning)); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	return nil
 }
 
 func (r *checkRecord) status() string { text, _ := r.doc.Value("status").(string); return text }

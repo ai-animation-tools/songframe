@@ -41,7 +41,6 @@ const (
 	SectionScenes     Section = "scenes"
 	SectionMontage    Section = "montage"
 	SectionAnimatic   Section = "animatic"
-	SectionPrompts    Section = "prompts"
 	SectionViews      Section = "views"
 	SectionOther      Section = "other"
 )
@@ -50,7 +49,7 @@ const (
 // в конце. По нему же frontend составляет подпись точки.
 var sectionOrder = []Section{
 	SectionProject, SectionSources, SectionTiming, SectionCast, SectionScenario, SectionProduction,
-	SectionScenes, SectionMontage, SectionAnimatic, SectionPrompts, SectionViews, SectionOther,
+	SectionScenes, SectionMontage, SectionAnimatic, SectionViews, SectionOther,
 }
 
 // sectionRule — путь проекта (файл или папка с завершающим «/») и его раздел. Правила проверяются
@@ -84,7 +83,6 @@ var sectionRules = []sectionRule{
 	{"plan/montage-history/", SectionMontage},
 	{"plan/animatic/cards/", SectionViews},
 	{"plan/animatic/", SectionAnimatic},
-	{"plan/prompt-log/", SectionPrompts},
 	{"ROADMAP.md", SectionViews},
 	{"plan/edit-list.md", SectionViews},
 	{"plan/storyboard.md", SectionViews},

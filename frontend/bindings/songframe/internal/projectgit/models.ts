@@ -79,7 +79,6 @@ export const Section = {
     SectionScenes: "scenes",
     SectionMontage: "montage",
     SectionAnimatic: "animatic",
-    SectionPrompts: "prompts",
     SectionViews: "views",
     SectionOther: "other",
 };

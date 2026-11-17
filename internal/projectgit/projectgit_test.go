@@ -90,7 +90,6 @@ func TestSectionOf(t *testing.T) {
 		"plan/montage-history/1/montage.json": SectionMontage,
 		"plan/animatic/cards/M01.png":         SectionViews,
 		"plan/animatic/latest/manifest.json":  SectionAnimatic,
-		"plan/prompt-log/1.json":              SectionPrompts,
 		"ROADMAP.md":                          SectionViews,
 		".gitattributes":                      SectionOther,
 		"plan/scenes.json.bak":                SectionOther,

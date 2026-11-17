@@ -208,8 +208,9 @@ func replaceParseMessages(t *testing.T, data []byte) []byte {
 	return []byte(dynvalue.StringifyIndent(value, "  ") + "\n")
 }
 
-// treeFiles — файлы проекта без .git и без записи сценарного прохода StatePath: путь → байты.
-// Запись сверяется отдельно (compareState), а здесь сравниваются документы, которые меняет проход.
+// treeFiles — файлы проекта без .git, без записи сценарного прохода StatePath и ожидающего
+// предложения PendingPath: путь → байты. Запись и предложение сверяются отдельно (compareState), а
+// здесь сравниваются документы, которые меняет проход.
 func treeFiles(t *testing.T, root string) map[string][]byte {
 	t.Helper()
 	result := map[string][]byte{}
@@ -226,7 +227,7 @@ func treeFiles(t *testing.T, root string) map[string][]byte {
 				return err
 			}
 			relative, _ := filepath.Rel(root, path)
-			if filepath.ToSlash(relative) == StatePath {
+			if local := filepath.ToSlash(relative); local == StatePath || local == PendingPath {
 				return nil
 			}
 			result[filepath.ToSlash(relative)] = data
@@ -518,14 +519,21 @@ func checkCardHashes(t *testing.T, project string, manifest []byte) {
 	}
 }
 
-// compareState — запись сценарного прохода в проекте побайтно после замены путей и ID.
+// compareState — запись сценарного прохода (state.json) и ожидающее предложение (pending.json) в
+// проекте побайтно после замены путей и ID; null в эталоне — файла нет.
 func compareState(t *testing.T, item golden.Case, localDir, project string, names *normalizer) {
 	t.Helper()
-	want := replaceParseMessages(t, item.Read(t, "state.json"))
-	data, err := os.ReadFile(statePath(project))
+	compareStateFile(t, "запись сценарного прохода", replaceParseMessages(t, item.Read(t, "state.json")), statePath(project), names)
+	compareStateFile(t, "ожидающее предложение", replaceParseMessages(t, item.Read(t, "pending.json")), pendingPath(project), names)
+}
+
+// compareStateFile — один файл записи против эталона want.
+func compareStateFile(t *testing.T, label string, want []byte, path string, names *normalizer) {
+	t.Helper()
+	data, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
 		if strings.TrimSpace(string(want)) != "null" {
-			t.Fatal("нет записи сценарного прохода, в эталоне есть")
+			t.Fatalf("нет файла «%s», в эталоне есть", label)
 		}
 		return
 	}
@@ -539,6 +547,6 @@ func compareState(t *testing.T, item golden.Case, localDir, project string, name
 	got := dynvalue.StringifyIndent(names.tree(value), "  ") + "\n"
 	if got != string(want) {
 		golden.AssertJSON(t, want, []byte(got))
-		t.Fatalf("запись сценарного прохода отличается порядком ключей или форматом:\n%s", got)
+		t.Fatalf("%s отличается порядком ключей или форматом:\n%s", label, got)
 	}
 }

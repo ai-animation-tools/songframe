@@ -452,8 +452,7 @@ export interface ScenarioSaveImpact {
  * Раздел приложения, к которому относятся файлы проекта в истории Git: страница-владелец
  * источника, производные представления (`views`) и прочие файлы (`other`).
  */
-export type ProjectSection =
-  'project' | 'sources' | 'timing' | 'cast' | 'scenario' | 'production' | 'scenes' | 'montage' | 'animatic' | 'prompts' | 'views' | 'other';
+export type ProjectSection = 'project' | 'sources' | 'timing' | 'cast' | 'scenario' | 'production' | 'scenes' | 'montage' | 'animatic' | 'views' | 'other';
 
 /** Разделы, которые можно вернуть к точке: восстанавливаются только их файлы-источники. */
 export type RestorableSection = 'timing' | 'cast' | 'scenario';

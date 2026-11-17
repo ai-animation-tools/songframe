@@ -134,16 +134,19 @@ func TestGoldenCheck(t *testing.T) {
 					t.Fatalf("%s: вид отличается от эталона: %v %s\n%s", label, err, strings.Join(diffs, "\n"), got)
 				}
 			}
-			want := item.Read(t, "record.json")
-			got, err := os.ReadFile(filepath.Join(project, filepath.FromSlash(CheckPath)))
-			if os.IsNotExist(err) {
-				got = []byte("null\n")
-			} else if err != nil {
-				t.Fatal(err)
-			}
-			if string(want) != names.text(string(got)) {
-				golden.AssertJSON(t, want, []byte(names.text(string(got))))
-				t.Fatalf("запись проверки отличается порядком или форматом")
+			// record.json — готовый отчёт в Git, attempt.json — запись попытки вне Git; null — файла нет.
+			for file, path := range map[string]string{"record.json": CheckPath, "attempt.json": CheckAttemptPath} {
+				want := item.Read(t, file)
+				got, err := os.ReadFile(filepath.Join(project, filepath.FromSlash(path)))
+				if os.IsNotExist(err) {
+					got = []byte("null\n")
+				} else if err != nil {
+					t.Fatal(err)
+				}
+				if string(want) != names.text(string(got)) {
+					golden.AssertJSON(t, want, []byte(names.text(string(got))))
+					t.Fatalf("%s: запись проверки отличается порядком или форматом", file)
+				}
 			}
 		})
 	}

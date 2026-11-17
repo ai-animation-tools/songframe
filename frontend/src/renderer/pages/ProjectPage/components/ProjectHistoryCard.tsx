@@ -35,7 +35,6 @@ const SECTION_INFO: Record<ProjectSection, { label: string; to?: string }> = {
   scenes: { label: navigationTexts.pages.scenes, to: '/project/scenes' },
   montage: { label: navigationTexts.pages.montage, to: '/project/montage' },
   animatic: { label: navigationTexts.pages.animatic, to: '/project/animatic' },
-  prompts: { label: navigationTexts.pages.prompts, to: '/project/prompts' },
   views: { label: texts.sections.views, to: '/project/checks' },
   other: { label: texts.sections.other }
 };

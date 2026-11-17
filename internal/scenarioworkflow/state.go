@@ -15,17 +15,23 @@ import (
 )
 
 // Запись сценарного прохода — файл проекта StatePath. В ней утверждение пары (approval),
-// утверждение сцен (scenesApproval), признак needsScenesReview с видами изменившихся входов
-// reviewInputs и ожидающее предложение (pending: proposal, expectedHashes, scaffold, duration и
-// необязательный checkIssue — проблема проверки, из которой запущена доработка).
-// Пути в отпечатках отсчитываются от проекта, поэтому запись переезжает вместе с клипом: копия
-// папки, `git pull` на другом компьютере и откат через Git видят те же утверждения, что и файлы.
-// Сама запись в отпечатки и снимки предложений не входит.
+// утверждение сцен (scenesApproval) и признак needsScenesReview с видами изменившихся входов
+// reviewInputs. Пути в отпечатках отсчитываются от проекта, поэтому запись переезжает вместе с
+// клипом: копия папки, `git pull` на другом компьютере и откат через Git видят те же утверждения,
+// что и файлы. Сама запись в отпечатки и снимки предложений не входит.
+//
+// Ожидающее предложение (pending: proposal, expectedHashes, scaffold, duration и необязательный
+// checkIssue — проблема проверки, из которой запущена доработка) — временное состояние до
+// «Применить» или «Отклонить» с полными снимками сценария и кастинга. Оно лежит отдельно, в
+// PendingPath среди записей предложений производства, вне Git (plan/batches/* в .gitignore
+// шаблона): непринятый ответ агента не меняет отслеживаемых файлов и не попадает в коммиты. В
+// памяти обе части держатся одним деревом с ключом pending; разделяют их readState и writeState.
 //
 // Запись держится деревом dynvalue и меняется на месте: порядок ключей (в том числе message,
 // добавленного после status) и форма JSON зафиксированы эталоном testdata/golden/scenario-workflow.
 // Повреждённая или чужая по форме запись не даёт утверждения: читается как пустая
-// {schemaVersion: 1}, проект при этом не меняется.
+// {schemaVersion: 1}, проект при этом не меняется. Повреждённое предложение читается как его
+// отсутствие и утверждений не снимает.
 
 var sha256Text = regexp.MustCompile(`^[a-f0-9]{64}$`)
 
@@ -37,6 +43,15 @@ var passes = []string{"treatment", "scenes", "revise"}
 
 // StatePath — запись сценарного прохода относительно папки проекта.
 const StatePath = "plan/scenario-workflow.json"
+
+// PendingPath — ожидающее предложение сценарного прохода относительно папки проекта: рядом с
+// записями предложений производства (sceneregistry.ProposalsDir), вне Git.
+const PendingPath = "plan/batches/proposals/scenario.json"
+
+// pendingPath — путь ожидающего предложения проекта (project — реальный путь).
+func pendingPath(project string) string {
+	return filepath.Join(project, filepath.FromSlash(PendingPath))
+}
 
 // statePath — путь записи проекта (project — реальный путь).
 func statePath(project string) string {
@@ -50,31 +65,60 @@ func emptyState() *dynvalue.Object {
 	return state
 }
 
-// readState — проверенная запись или пустая при любой ошибке чтения и формы.
+// readState — проверенная запись с ожидающим предложением под ключом pending. Ошибка чтения или
+// формы записи даёт пустую запись, ошибка предложения — запись без него.
 func readState(project string) *dynvalue.Object {
-	data, err := os.ReadFile(statePath(project))
-	if err != nil {
-		return emptyState()
+	state := emptyState()
+	if value, ok := readJSONFile(statePath(project)); ok {
+		if record, isRecord := dynvalue.AsObject(value); isRecord {
+			record.Delete("pending")
+			if checkStoredState(record) == nil {
+				state = record
+			}
+		}
 	}
-	value, err := dynvalue.Parse([]byte(dynvalue.DecodeUTF8(data)))
-	if err != nil {
-		return emptyState()
+	if pending, ok := readJSONFile(pendingPath(project)); ok {
+		state.Set("pending", pending)
+		if checkStoredState(state) != nil {
+			state.Delete("pending")
+		}
 	}
-	if checkStoredState(value) != nil {
-		return emptyState()
-	}
-	state, _ := dynvalue.AsObject(value)
 	return state
 }
 
-// writeState — JSON с отступом в два пробела и переводом строки, атомарная замена; папка plan/
-// у проекта уже есть. Запись лежит в проекте, поэтому проходит шлюз записи projectfs.CheckWrite,
-// как и остальные файлы: поверх незавершённой многофайловой операции она не пишется.
+// readJSONFile — разобранный JSON файла; false — нет файла или он не JSON.
+func readJSONFile(path string) (any, bool) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, false
+	}
+	value, err := dynvalue.Parse([]byte(dynvalue.DecodeUTF8(data)))
+	return value, err == nil
+}
+
+// writeState — запись без pending в StatePath и предложение в PendingPath (без предложения файл
+// удаляется). JSON с отступом в два пробела и переводом строки, атомарная замена; папка plan/ у
+// проекта уже есть, папку предложений создаёт projectfs.WriteFile. Оба файла лежат в проекте, поэтому запись проходит
+// шлюз projectfs.CheckWrite, как и остальные файлы: поверх незавершённой многофайловой операции она
+// не пишется. Предложение пишется первым: запись утверждений меняется последней.
 func writeState(project string, state *dynvalue.Object) error {
 	if err := projectfs.CheckWrite(project); err != nil {
 		return err
 	}
-	return projectfs.WriteFile(statePath(project), []byte(dynvalue.StringifyIndent(state, "  ")+"\n"), 0o666)
+	record := dynvalue.NewObject()
+	for _, key := range state.Keys() {
+		if key != "pending" {
+			record.Set(key, state.Value(key))
+		}
+	}
+	if pending := state.Value("pending"); pending != dynvalue.Undefined {
+		if err := projectfs.WriteFile(pendingPath(project), []byte(dynvalue.StringifyIndent(pending, "  ")+"\n"), 0o666); err != nil {
+			return err
+		}
+	} else if err := os.Remove(pendingPath(project)); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	return projectfs.WriteFile(statePath(project), []byte(dynvalue.StringifyIndent(record, "  ")+"\n"), 0o666)
 }
 
 // validHashes — hashes() из checkStoredState: объект путь → SHA-256 или null; путь непустой,

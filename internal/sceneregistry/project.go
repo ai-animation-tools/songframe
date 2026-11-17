@@ -33,8 +33,10 @@ const (
 	ProjectPath      = "plan/project.json"
 	ScenesPath       = "plan/scenes.json"
 	ProductionStatus = "plan/production-status.json"
-	// ProposalsDir — записи предложений производства и копии их кандидатов опор
-	// (productionworkflow.Store). Папка лежит среди рабочих пакетов plan/batches и разделяет их
+	// ProposalsDir — непринятые предложения агентов: записи предложений производства и копии их
+	// кандидатов опор (productionworkflow.Store), а также предложение сценарного прохода
+	// scenario.json (scenarioworkflow.PendingPath; записью плана оно не читается: у него нет rules).
+	// Папка лежит среди рабочих пакетов plan/batches и разделяет их
 	// жизненный цикл (вне Git, рядом с попытками), но сама не пакет: обходы пакетов её пропускают.
 	ProposalsDir = "plan/batches/proposals"
 )

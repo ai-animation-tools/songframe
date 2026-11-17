@@ -360,7 +360,7 @@ func (w *Workflow) startCheck(project string) (string, error) {
 	if w.options.CheckImageBudget != nil {
 		budget = w.options.CheckImageBudget()
 	}
-	images, imagesProblem, err := w.prepareCheckImages(initial.project, castImageList(initial.documents.Cast), budget)
+	images, imagesProblem, err := w.prepareCheckImages(initial.project, castImageList(initial.documents.Cast, initial.manifest), budget)
 	if err != nil {
 		return "", err
 	}
@@ -498,6 +498,10 @@ func checkContext(initial *inputs, images []checkImage, imagesProblem string, ac
 		item.Set("id", image.id)
 		item.Set("entity", image.entity)
 		item.Set("name", image.name)
+		item.Set("label", image.label)
+		if image.note != "" {
+			item.Set("note", image.note)
+		}
 		item.Set("path", image.path)
 		item.Set("attached", image.file != "")
 		imageList[index] = item

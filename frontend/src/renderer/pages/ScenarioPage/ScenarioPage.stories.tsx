@@ -200,6 +200,14 @@ export const BriefOutsidePlan: Story = {
     await expect(summary).toHaveAttribute('aria-expanded', 'true');
     await waitFor(() => expect(outside.getByText('Сосед Паша')).toBeVisible());
     await expect(outside.getByText('Старые ворота')).toBeVisible();
+
+    // «Текст для агента» — такой же раздел врезки: раскрывается по заголовку и показывает абзацы промпта.
+    const agentText = screen.getByRole('button', { name: scenarioTexts.brief.agentText });
+    await expect(agentText).toHaveAttribute('aria-expanded', 'false');
+    await expect(screen.queryByText(scenarioTexts.brief.agentTextHint)).not.toBeInTheDocument();
+    await userEvent.click(agentText);
+    await expect(agentText).toHaveAttribute('aria-expanded', 'true');
+    await expect(await screen.findByText(scenarioTexts.brief.agentTextHint)).toBeVisible();
   }
 };
 
@@ -553,12 +561,14 @@ const checkPanel = async (screen: Screen) => {
   return within(heading.closest('.MuiPaper-root') as HTMLElement);
 };
 
-/** Раскрывает свёрнутый по умолчанию отчёт проверки кнопкой в строке статуса. */
+/** Заголовок блока проверки: Accordion, как «Общие правила и части», раскрывается щелчком по заголовку. */
+const checkSummary = (panel: Screen) => panel.getByRole('button', { name: new RegExp(`^${scenarioTexts.check.title}`) });
+
+/** Раскрывает свёрнутый по умолчанию блок проверки щелчком по его заголовку. */
 const expandCheck = async (panel: Screen) => {
-  const toggle = panel.getByRole('button', { name: scenarioTexts.check.expandReport });
-  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-  await userEvent.click(toggle);
-  await expect(panel.getByRole('button', { name: scenarioTexts.check.collapseReport })).toHaveAttribute('aria-expanded', 'true');
+  await expect(checkSummary(panel)).toHaveAttribute('aria-expanded', 'false');
+  await userEvent.click(checkSummary(panel));
+  await expect(checkSummary(panel)).toHaveAttribute('aria-expanded', 'true');
 };
 
 export const CheckReport: Story = {
@@ -569,7 +579,7 @@ export const CheckReport: Story = {
     const screen = await ready(context);
     const panel = await checkPanel(screen);
     await expect(panel.getByText(scenarioTexts.check.statusIssues({ count: 3 }))).toBeInTheDocument();
-    // Готовый отчёт по умолчанию свёрнут до строки статуса и раскрывается кнопкой.
+    // Готовый отчёт по умолчанию свёрнут до заголовка со статусом и раскрывается по заголовку.
     await expect(panel.queryByText('Герой в сухой куртке под дождём')).not.toBeInTheDocument();
     await expandCheck(panel);
     // Важность задаёт порядок: проблема состояния записана в отчёте последней, а показана первой.
@@ -606,7 +616,7 @@ export const CheckRunAndStale: Story = {
     await panel.findByText(scenarioTexts.check.statusIssues({ count: 3 }), undefined, { timeout: 4000 });
     await expect(await screen.findByText(scenarioTexts.check.finished({ count: 3 }))).toBeInTheDocument();
     // Завершившаяся проверка сама раскрывает отчёт.
-    await expect(await panel.findByRole('button', { name: scenarioTexts.check.collapseReport })).toHaveAttribute('aria-expanded', 'true');
+    await waitFor(() => expect(checkSummary(panel)).toHaveAttribute('aria-expanded', 'true'));
     await expect(panel.getByText('Герой в сухой куртке под дождём')).toBeInTheDocument();
     await expect(screen.getByTestId('page-model-agent')).toHaveTextContent('Проверок сценария: 1.');
     await waitFor(() => expect(screen.queryByText(scenarioTexts.page.agentEditingPaused)).not.toBeInTheDocument());
@@ -704,10 +714,11 @@ export const CheckResolve: Story = {
     await userEvent.click(panel.getByRole('button', { name: scenarioTexts.check.unresolve }));
     await expect(await panel.findByText(scenarioTexts.check.statusIssues({ count: 3 }))).toBeInTheDocument();
     await expect(panel.queryByText(scenarioTexts.check.resolvedHint)).not.toBeInTheDocument();
-    // Свёрнутый отчёт оставляет строку статуса и «Проверить заново».
-    await userEvent.click(panel.getByRole('button', { name: scenarioTexts.check.collapseReport }));
+    // Щелчок по заголовку сворачивает блок до заголовка со статусом.
+    await userEvent.click(checkSummary(panel));
     await waitFor(() => expect(panel.queryByText(/Сосед появляется раньше куплета/)).not.toBeInTheDocument());
-    await expect(panel.getByRole('button', { name: scenarioTexts.check.restart })).toBeInTheDocument();
+    await expect(checkSummary(panel)).toHaveAttribute('aria-expanded', 'false');
+    await expect(panel.getByText(scenarioTexts.check.statusIssues({ count: 3 }))).toBeInTheDocument();
   }
 };
 

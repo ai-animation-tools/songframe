@@ -88,6 +88,8 @@ export interface ReferencePageModelOptions {
   generating?: boolean;
   multipleImages?: boolean;
   emptySelection?: boolean;
+  /** У сущности два изображения одного вида: с заметкой и без — подписи чипов различаются без путей. */
+  sameViewImages?: boolean;
   failSourceSaveOnce?: boolean;
   failCastSaveOnce?: boolean;
   failCastRead?: boolean;
@@ -156,6 +158,13 @@ export function referencePageOptions(page: 'sources' | 'cast', options: Referenc
           { ...FILE, sha256: 'd'.repeat(64), path: REFERENCE_PAGE_BACK, view: 'back', note: 'Не выбирать автоматически' }
         );
         savedCast.entities[0].images = [REFERENCE_PAGE_PROFILE, REFERENCE_PAGE_SAVED];
+      }
+      if (options.sameViewImages) {
+        savedManifest.references[0].files.push(
+          { ...FILE, sha256: 'e'.repeat(64), path: REFERENCE_PAGE_PROFILE, view: 'front', note: 'Закрытая дверь. Снято изнутри лестницы' },
+          { ...FILE, sha256: 'f'.repeat(64), path: REFERENCE_PAGE_BACK, view: 'front', note: '' }
+        );
+        savedCast.entities[0].images = [REFERENCE_PAGE_SAVED, REFERENCE_PAGE_PROFILE, REFERENCE_PAGE_BACK];
       }
       if (options.emptySelection) savedCast.entities[0].images = [];
       const snapshot = (): ReferencePageSnapshot => structuredClone({ manifest: savedManifest, cast: savedCast, sourceSaves, castSaves, supplements });

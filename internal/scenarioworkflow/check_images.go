@@ -15,6 +15,7 @@ import (
 	_ "golang.org/x/image/webp" // декодер WebP для image.Decode
 
 	"songframe/internal/dynvalue"
+	"songframe/internal/sources"
 )
 
 // Изображения кастинга для проверки сценария. Агент сверяет образ и начальное состояние с
@@ -39,16 +40,21 @@ const (
 	DefaultCheckImageBudget = 6 * 1024 * 1024
 )
 
-// checkImage — изображение кастинга в контексте проверки.
+// checkImage — изображение кастинга в контексте проверки. id связывает запись списка с файлом
+// вложения, label — то, как изображение видит человек в карточке кастинга: им агент называет
+// изображение в отчёте.
 type checkImage struct {
-	id, entity, name, path string
-	file                   string // путь копии; пусто — не приложено
+	id, entity, name, path, label, note string
+	file                                string // путь копии; пусто — не приложено
 }
 
 // castImageList — изображения сущностей кастинга в порядке вложения: первые изображения всех
-// сущностей, затем остальные по порядку. ID I01… — номер в этом порядке.
-func castImageList(castValue any) []checkImage {
-	type entry struct{ entity, name, path string }
+// сущностей, затем остальные по порядку. ID I01… — номер в этом порядке. Подпись и заметка — из
+// описи исходников (sources.ManifestFiles), как на чипе изображения в карточке кастинга; изображение
+// вне описи подписано именем сущности и номером в её карточке.
+func castImageList(castValue, manifest any) []checkImage {
+	type entry struct{ entity, name, path, label, note string }
+	described := sources.ManifestFiles(manifest)
 	rounds := [][]entry{}
 	for _, entity := range arrayItems(dynvalue.Get(castValue, "entities")) {
 		id := dynvalue.ToString(dynvalue.Get(entity, "id"))
@@ -57,13 +63,18 @@ func castImageList(castValue any) []checkImage {
 			for len(rounds) <= index {
 				rounds = append(rounds, nil)
 			}
-			rounds[index] = append(rounds[index], entry{id, name, dynvalue.ToString(item)})
+			path := dynvalue.ToString(item)
+			info, ok := described[path]
+			if !ok {
+				info.Label = fmt.Sprintf("%s · изображение %d", name, index+1)
+			}
+			rounds[index] = append(rounds[index], entry{id, name, path, info.Label, info.Note})
 		}
 	}
 	result := []checkImage{}
 	for _, round := range rounds {
 		for _, item := range round {
-			result = append(result, checkImage{id: fmt.Sprintf("I%02d", len(result)+1), entity: item.entity, name: item.name, path: item.path})
+			result = append(result, checkImage{id: fmt.Sprintf("I%02d", len(result)+1), entity: item.entity, name: item.name, path: item.path, label: item.label, note: item.note})
 		}
 	}
 	return result

@@ -85,6 +85,21 @@ export const ReferenceIdentity: Story = {
   }
 };
 
+export const SameViewImageLabels: Story = {
+  tags: ['ci'],
+  name: 'Изображения одного вида — подписи по заметке, без путей',
+  parameters: { songframe: referencePageOptions('cast', { sameViewImages: true }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await canvas.findByRole('textbox', { name: castTexts.appearance });
+    // Три изображения «Спереди»: у двух с заметкой подпись по её началу, третье без заметки остаётся с видом.
+    await expect(canvas.getByTitle(REFERENCE_PAGE_SAVED)).toHaveTextContent(`${REFERENCE_PAGE_NAME} — ${REFERENCE_PAGE_NOTE}`);
+    await expect(canvas.getByTitle(REFERENCE_PAGE_PROFILE)).toHaveTextContent(`${REFERENCE_PAGE_NAME} — Закрытая дверь`);
+    await expect(canvas.getByTitle(REFERENCE_PAGE_BACK)).toHaveTextContent(`${REFERENCE_PAGE_NAME} — Спереди`);
+    for (const path of [REFERENCE_PAGE_SAVED, REFERENCE_PAGE_PROFILE, REFERENCE_PAGE_BACK]) await expect(canvas.getByTitle(path)).not.toHaveTextContent('.png');
+  }
+};
+
 export const SupplementPreservesSelection: Story = {
   tags: ['ci'],
   name: 'Дополнение — выбранные виды, порядок и основной сохраняются',

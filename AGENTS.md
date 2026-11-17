@@ -103,7 +103,7 @@ SongFrame — комплекс для производства музыкаль�
 - Commit, push, remote, релиз и платные запросы — только по поручению.
 - Не добавлять в Git приватные документы spec, клипы, веса, аудио, видео, токены, журналы, локальные отчёты и абсолютные машинные пути.
 - Разовые скрипты, отчёты и временные файлы хранить вне репозитория.
-- Проверки: `wails3 task check:all`; после правки только документации достаточно `wails3 task check:docs`. Адресно — по `Taskfile.yml` и `frontend/package.json`. Во время работы гонять тесты изменённой области; после сбоя исправить и перезапустить только упавшее (`go test ./pkg -run Имя`, `yarn test файл`, `yarn test:storybook --grep` после `yarn build-storybook`), а не весь `check:all`. Полный прогон — один раз в конце; при параллельной работе его выполняет основной агент после слияния. Контракты проектов и DTO — по [songframe-project-contract](dev-skills/songframe-project-contract/SKILL.md).
+- Проверки — только относящиеся к изменению, и в работе, и перед коммитом. Изменён Go — тесты изменённых пакетов (`go test ./pkg`); фронтенд — `yarn typecheck`, `yarn format:check`, `yarn test` по файлам изменённой области и `yarn test:storybook --grep "<группа>"` после `yarn build-storybook`; документация — `wails3 task check:docs`. Команды — по `Taskfile.yml` и `frontend/package.json`. После сбоя исправить и перезапустить только упавшее. Полный `wails3 task check:all` — при выпуске ([songframe-release](dev-skills/songframe-release/SKILL.md)) или когда изменение задевает всё приложение (общий контракт `window.api`, сборка, зависимости); ради локальной правки его не запускать. Контракты проектов и DTO — по [songframe-project-contract](dev-skills/songframe-project-contract/SKILL.md).
 
 ## Параллельная работа
 

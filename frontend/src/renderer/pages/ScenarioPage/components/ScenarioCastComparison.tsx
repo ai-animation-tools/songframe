@@ -1,4 +1,5 @@
 import { scenarioTexts } from '@shared/texts/scenario';
+import { castTexts } from '@shared/texts/cast';
 import { commonTexts } from '@shared/texts/common';
 import { navigationTexts } from '@shared/texts/navigation';
 import type { ReactElement } from 'react';
@@ -13,10 +14,10 @@ export function ScenarioCastComparison({ before, after }: { before: CastFile | n
     { key: 'kind', label: scenarioTexts.fields.kind },
     { key: 'name', label: scenarioTexts.fields.name },
     { key: 'short_name', label: scenarioTexts.fields.shortName },
-    { key: 'role', label: scenarioTexts.fields.role },
-    { key: 'appearance', label: scenarioTexts.fields.appearance },
+    { key: 'role', label: castTexts.role },
+    { key: 'appearance', label: castTexts.appearance },
     { key: 'images', label: commonTexts.files.images },
-    { key: 'initial_state', label: scenarioTexts.fields.initialState }
+    { key: 'initial_state', label: castTexts.initialState }
   ];
   return (
     <Stack spacing={2}>

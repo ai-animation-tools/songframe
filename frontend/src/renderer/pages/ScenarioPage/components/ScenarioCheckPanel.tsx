@@ -1,21 +1,7 @@
 import { scenarioTexts } from '@shared/texts/scenario';
 import { commonTexts } from '@shared/texts/common';
 import { useEffect, useRef, useState, type ReactElement } from 'react';
-import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
-  Alert,
-  Box,
-  Button,
-  Checkbox,
-  Chip,
-  Collapse,
-  IconButton,
-  Paper,
-  Stack,
-  Typography
-} from '@mui/material';
+import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Button, Checkbox, Chip, Stack, Typography } from '@mui/material';
 import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import UndoIcon from '@mui/icons-material/Undo';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -59,8 +45,9 @@ const unresolved = (issue: ScenarioCheckIssue): boolean => !issue.fixed && !issu
 const fixable = (issue: ScenarioCheckIssue): boolean => issue.changes.length > 0 && unresolved(issue);
 
 /**
- * Раскрыт ли отчёт: 1 — да, 0 — свёрнут. Это предпочтение вида, общее для всех клипов, поэтому оно
- * хранится в профиле WebView, а не в проекте. По умолчанию отчёт свёрнут: блок не отодвигает редактор.
+ * Раскрыт ли блок: 1 — да, 0 — свёрнут. Это предпочтение вида, общее для всех клипов, поэтому оно
+ * хранится в профиле WebView, а не в проекте. Пока выбора не было (-1), блок раскрыт до первой проверки,
+ * чтобы было видно, зачем она нужна, а с готовым отчётом свёрнут и не отодвигает редактор.
  */
 const REPORT_OPEN_KEY = 'songframe.scenarioCheck.reportOpen';
 
@@ -70,8 +57,9 @@ const REPORT_OPEN_KEY = 'songframe.scenarioCheck.reportOpen';
  * окно с задетыми принятыми планами; остальные — доработка плана агентом с описанием проблемы в замечании.
  * Проблему без правок можно отметить «Решено вручную». Проверка и правки читают сохранённый сценарий,
  * поэтому при несохранённых правках страница сначала предлагает сохранить или отменить их — тем же
- * диалогом, что и проходы агента. Отчёт сворачивается до строки со статусом и кнопкой проверки и
- * раскрывается сам, когда проверка завершилась или пользователь перешёл к проблеме из карточки плана.
+ * диалогом, что и проходы агента. Блок — Accordion, как «Общие правила и части»: в свёрнутом виде виден
+ * заголовок со статусом; раскрывается он сам, когда проверка завершилась или пользователь перешёл к проблеме
+ * из карточки плана.
  */
 export function ScenarioCheckPanel({
   check,
@@ -107,13 +95,11 @@ export function ScenarioCheckPanel({
   const [open, setOpen] = useState<number[]>([]);
   const [chosen, setChosen] = useState<number[]>([]);
   const [fixIssues, setFixIssues] = useState<number[] | null>(null);
-  const [storedOpen, setStoredOpen] = useStoredNumber(REPORT_OPEN_KEY, 0, (value) => value === 0 || value === 1);
+  const [storedOpen, setStoredOpen] = useStoredNumber(REPORT_OPEN_KEY, -1, (value) => value === 0 || value === 1);
   const rootRef = useRef<HTMLDivElement>(null);
   const { view, error, pending } = check;
   const running = view?.status === 'running';
-  // До первой проверки сворачивать нечего: виден текст о назначении блока.
-  const collapsible = !!view && view.status !== 'none';
-  const reportOpen = !collapsible || storedOpen === 1;
+  const reportOpen = storedOpen === 1 || (storedOpen === -1 && (!view || view.status === 'none'));
   // Завершившаяся проверка раскрывает отчёт: пользователь ждёт её итог.
   const lastStatus = useRef(view?.status);
   useEffect(() => {
@@ -169,35 +155,33 @@ export function ScenarioCheckPanel({
   }, [focus, setStoredOpen]);
 
   return (
-    <Paper ref={rootRef} variant="outlined" sx={{ p: 2 }}>
-      <Stack spacing={2}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
-          <Typography variant="h6">{scenarioTexts.check.title}</Typography>
-          {view && <StatusChip view={view} />}
-          {view?.stale && openCount > 0 && (
-            <Typography variant="body2" color="text.secondary">
-              {scenarioTexts.check.openCount({ count: openCount })}
+    <>
+      <Accordion
+        ref={rootRef}
+        expanded={reportOpen}
+        onChange={(_event, next) => setStoredOpen(next ? 1 : 0)}
+        slotProps={{ transition: { unmountOnExit: true } }}
+        disableGutters
+        variant="outlined"
+      >
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}>
+            <Typography variant="subtitle1" component="h2">
+              {scenarioTexts.check.title}
             </Typography>
-          )}
-          {collapsible && (
-            <IconButton
-              size="small"
-              sx={{ ml: 'auto !important' }}
-              aria-expanded={reportOpen}
-              aria-controls="scenario-check-report"
-              aria-label={reportOpen ? scenarioTexts.check.collapseReport : scenarioTexts.check.expandReport}
-              title={reportOpen ? scenarioTexts.check.collapseReport : scenarioTexts.check.expandReport}
-              onClick={() => setStoredOpen(reportOpen ? 0 : 1)}
-            >
-              <ExpandMoreIcon sx={{ transform: reportOpen ? 'rotate(180deg)' : 'none', transition: 'transform 150ms' }} />
-            </IconButton>
-          )}
-        </Stack>
-        {view?.job && (running || view.status === 'failed') && (
-          <AgentJobCard compact job={view.job} onCancel={check.cancel} onRetry={() => !reason && withDrafts(() => void check.start())} />
-        )}
-        <Collapse in={reportOpen} unmountOnExit id="scenario-check-report">
-          <Stack spacing={2}>
+            {view && <StatusChip view={view} />}
+            {view?.stale && openCount > 0 && (
+              <Typography variant="body2" color="text.secondary">
+                {scenarioTexts.check.openCount({ count: openCount })}
+              </Typography>
+            )}
+          </Stack>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Stack spacing={2} sx={{ width: '100%', minWidth: 0 }}>
+            {view?.job && (running || view.status === 'failed') && (
+              <AgentJobCard compact job={view.job} onCancel={check.cancel} onRetry={() => !reason && withDrafts(() => void check.start())} />
+            )}
             <Typography variant="body2" color="text.secondary">
               {scenarioTexts.check.description}
             </Typography>
@@ -242,31 +226,36 @@ export function ScenarioCheckPanel({
                 )}
               </Stack>
             )}
+            {error && (
+              <Alert severity="error">
+                <LinkedText text={error} />
+              </Alert>
+            )}
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              <AgentButton
+                variant="outlined"
+                disabled={!!reason || !view?.canStart}
+                disabledReason={reason}
+                onClick={() => withDrafts(() => void check.start())}
+              >
+                {view && view.status !== 'none' ? scenarioTexts.check.restart : scenarioTexts.check.start}
+              </AgentButton>
+              {anyFixable && (
+                <ActionButton
+                  variant="outlined"
+                  startIcon={<AutoFixHighIcon />}
+                  disabled={!!fixReason || !selectable.length}
+                  disabledReason={fixReason ?? scenarioTexts.check.fixSelectedReason}
+                  title={scenarioTexts.check.fixHint}
+                  onClick={() => withDrafts(() => setFixIssues([...selectable].sort((a, b) => a - b)))}
+                >
+                  {scenarioTexts.check.fixSelected({ count: selectable.length })}
+                </ActionButton>
+              )}
+            </Stack>
           </Stack>
-        </Collapse>
-        {error && (
-          <Alert severity="error">
-            <LinkedText text={error} />
-          </Alert>
-        )}
-        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-          <AgentButton variant="outlined" disabled={!!reason || !view?.canStart} disabledReason={reason} onClick={() => withDrafts(() => void check.start())}>
-            {view && view.status !== 'none' ? scenarioTexts.check.restart : scenarioTexts.check.start}
-          </AgentButton>
-          {anyFixable && reportOpen && (
-            <ActionButton
-              variant="outlined"
-              startIcon={<AutoFixHighIcon />}
-              disabled={!!fixReason || !selectable.length}
-              disabledReason={fixReason ?? scenarioTexts.check.fixSelectedReason}
-              title={scenarioTexts.check.fixHint}
-              onClick={() => withDrafts(() => setFixIssues([...selectable].sort((a, b) => a - b)))}
-            >
-              {scenarioTexts.check.fixSelected({ count: selectable.length })}
-            </ActionButton>
-          )}
-        </Stack>
-      </Stack>
+        </AccordionDetails>
+      </Accordion>
       <ScenarioDraftConflictDialog
         open={afterDrafts !== null}
         busy={resolving || editorBusy}
@@ -285,7 +274,7 @@ export function ScenarioCheckPanel({
           })
         }
       />
-    </Paper>
+    </>
   );
 }
 

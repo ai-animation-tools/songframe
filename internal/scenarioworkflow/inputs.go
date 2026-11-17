@@ -418,7 +418,7 @@ func readInputs(path string) (*inputs, error) {
 		if err != nil {
 			return nil, err
 		}
-		// Проблемы частей уже добавлены при чтении документов (treatment.json: …); здесь — только
+		// Проблемы частей уже добавлены при чтении документов (scenes.json: …); здесь — только
 		// проблемы планов. Сценарий из одних частей планов ещё не имеет.
 		if len(arrayItems(dynvalue.Get(result.documents.Scenes, "scenes"))) > 0 {
 			result.documentProblems = append(result.documentProblems, sceneProblems...)

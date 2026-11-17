@@ -34,11 +34,11 @@ func TestPromptLimitByMode(t *testing.T) {
 // Ключ promptMaxChars появляется в контексте задания только с пределом.
 func TestAgentContextPromptMaxChars(t *testing.T) {
 	c := &Context{Settings: dynvalue.NewObject(), Scene: dynvalue.NewObject(), Cast: &dynvalue.Array{Items: []any{}}, FramePrompts: &dynvalue.Array{Items: []any{}}, References: dynvalue.NewObject()}
-	with := agentContext(c, contextInput{stage: "prompt", briefs: dynvalue.NewObject(), capabilities: &dynvalue.Array{Items: []any{}}, inputFlags: []string{}, promptMaxChars: 2500})
+	with := agentContext(c, contextInput{stage: "prompt", briefs: dynvalue.NewObject(), capabilities: &dynvalue.Array{Items: []any{}}, promptMaxChars: 2500})
 	if !strings.Contains(with, `"promptMaxChars":2500`) {
 		t.Fatalf("нет предела: %s", with)
 	}
-	without := agentContext(c, contextInput{stage: "prompt", briefs: dynvalue.NewObject(), capabilities: &dynvalue.Array{Items: []any{}}, inputFlags: []string{}})
+	without := agentContext(c, contextInput{stage: "prompt", briefs: dynvalue.NewObject(), capabilities: &dynvalue.Array{Items: []any{}}})
 	if strings.Contains(without, "promptMaxChars") {
 		t.Fatalf("лишний ключ: %s", without)
 	}

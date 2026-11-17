@@ -90,6 +90,8 @@ export function unconfiguredStoryApi(): Api {
       generateFrames: async () => unconfigured('productionWorkflow.generateFrames'),
       importFrames: async () => unconfigured('productionWorkflow.importFrames'),
       buildManual: async () => unconfigured('productionWorkflow.buildManual'),
+      prepareRequest: async () => unconfigured('productionWorkflow.prepareRequest'),
+      requestOptions: async () => unconfigured('productionWorkflow.requestOptions'),
       setGenerationMethod: async () => unconfigured('productionWorkflow.setGenerationMethod'),
       saveOwn: async () => unconfigured('productionWorkflow.saveOwn'),
       referenceImages: async () => unconfigured('productionWorkflow.referenceImages')

@@ -32,19 +32,28 @@ export interface ProductionFrameCandidate {
   id: string;
   path: string;
 }
-export interface ProductionRequestDraft {
+/**
+ * Изменение подготовленного запроса на вопросе «Отправить»: модель и значения её выбираемых параметров
+ * (из ProductionRequestOptions). Go собирает запрос заново, длительность и входы остаются по плану.
+ */
+export interface ProductionRequestChange {
   model: string;
-  /** Команда и флаги входов — из объявленных возможностей провайдера видео; `input` со `slot` задаёт именованный слот. */
-  command: string;
   parameters: Record<string, unknown>;
-  inputs: { flag: string; slot?: string; path: string; role?: string }[];
-  outputs: number;
+}
+/**
+ * Модели команды видео провайдера и параметры, которые пользователь выбирает сам, с текущим запросом попытки.
+ * unavailable — почему модель не примет план (опоры, длительность, срез речи, настройки проекта): в окне она выключена.
+ */
+export interface ProductionRequestOptions {
+  models: { id: string; parameters: { name: string; values: unknown[] }[]; unavailable?: string }[];
+  /** Модель и выбираемые параметры текущего запроса попытки. */
+  model: string;
+  parameters: Record<string, unknown>;
 }
 export type ProductionStageProposal =
   | { schemaVersion: 1; stage: 'description'; description: string; requestSeconds: number; keyframes: ProductionFramePrompt[] }
   | { schemaVersion: 1; stage: 'frames'; images: ProductionFrameCandidate[] }
-  | { schemaVersion: 1; stage: 'prompt'; prompt: string }
-  | { schemaVersion: 1; stage: 'request'; request: ProductionRequestDraft };
+  | { schemaVersion: 1; stage: 'prompt'; prompt: string };
 /**
  * Противоречие сценария из отказа агента. Поле состояния: кадр, сущность и свойство с текущим значением и его источником
  * (source.shot null — начальное состояние кастинга) и предложенным значением fix (null — не исправляется в этом плане).
@@ -86,7 +95,8 @@ export interface ProductionWorkflowStart {
   packageDir?: string;
   action: 'prepare' | 'revise' | 'continue';
   note?: string;
-  stage?: Exclude<ProductionPass, 'frames'>;
+  /** Явный этап доработки; запрос видео агент не готовит — его собирает prepareRequest. */
+  stage?: 'description' | 'prompt';
   /** Число опор описания, выбранное пользователем (1…keyframeLimit); 0 — «авто», без поля при доработке — прежний выбор попытки. */
   keyframes?: number;
 }
@@ -99,7 +109,7 @@ export interface ProductionWorkflowView {
   packageDir: string | null;
   busy: boolean;
   stage: string | null;
-  /** Следующий проход агента по попытке: им интерфейс называет следующее действие. */
+  /** Следующий проход по попытке: им интерфейс называет следующее действие; request собирает приложение без агента. */
   nextStage?: ProductionPass | null;
   /** Опора открытого вопроса: её кандидата можно заменить своим файлом без замечания. */
   replaceFrame?: string | null;
@@ -107,7 +117,7 @@ export interface ProductionWorkflowView {
   canContinue: boolean;
   canRevise: boolean;
   /** Этап, который переделает доработка, пока она доступна (canRevise): в его шаге пути она показывается и по нему называется. */
-  reviseStage?: ProductionPass | null;
+  reviseStage?: Exclude<ProductionPass, 'request'> | null;
   canGenerateFrames: boolean;
   /** Попытка пакета уже оплачена: подготовка продолжается только новой попыткой или возвратом с замечанием. */
   paid: boolean;

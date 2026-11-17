@@ -99,6 +99,35 @@ func textProjectParameterMismatch(name, value, expected string) string {
 func textInputNotDeclared(name string) string {
 	return "Вход " + name + " не объявлен для выбранной команды."
 }
+
+// InputNotDeclaredError — вход запроса (слот или короткий флаг), которого модель не объявляет.
+// Тип нужен вызывающему коду, чтобы назвать вход по его назначению (например «Последний кадр»).
+type InputNotDeclaredError struct{ Name string }
+
+func (e *InputNotDeclaredError) Error() string { return textInputNotDeclared(e.Name) }
+
+// DurationMismatchError — длительность запроса не равна той, что модель даёт по правилу
+// длительности проекта. Allowed — все целые длительности модели, Fitting — подходящие правилу.
+type DurationMismatchError struct {
+	Duration float64
+	Allowed  []float64
+	Fitting  []float64
+	message  string
+}
+
+func (e *DurationMismatchError) Error() string { return e.message }
+
+// UnsupportedParameterError — значение параметра вне объявленного перечня модели. Value — текст
+// JSON значения, Allowed — допустимые значения объявления.
+type UnsupportedParameterError struct {
+	Name    string
+	Value   string
+	Allowed []string
+}
+
+func (e *UnsupportedParameterError) Error() string {
+	return textUnsupportedParameter(e.Name, e.Value, strings.Join(e.Allowed, ", "))
+}
 func textInputCountExceeded(name string) string {
 	return "Превышено число входов " + name + "."
 }
@@ -545,7 +574,7 @@ func validatePaid(rules mediaapi.RequestRules, input PaidInput, caps mediaapi.Ca
 		}
 		declaration := declared(declarations, name)
 		if !dynvalue.Truthy(declaration) {
-			return nil, nil, errors.New(textInputNotDeclared(name))
+			return nil, nil, &InputNotDeclaredError{Name: name}
 		}
 		assigned[name]++
 		if float64(assigned[name]) > maxItems(declaration, 1) {
@@ -576,7 +605,7 @@ func validatePaid(rules mediaapi.RequestRules, input PaidInput, caps mediaapi.Ca
 		if allowed, ok := stringList(dynvalue.Get(declaration, "allowed")); ok {
 			for _, entry := range items {
 				if !slices.Contains(allowed, dynvalue.ToString(entry)) {
-					return nil, nil, errors.New(textUnsupportedParameter(name, dynvalue.JSONText(value), strings.Join(allowed, ", ")))
+					return nil, nil, &UnsupportedParameterError{Name: name, Value: dynvalue.JSONText(value), Allowed: allowed}
 				}
 			}
 		}
@@ -586,6 +615,7 @@ func validatePaid(rules mediaapi.RequestRules, input PaidInput, caps mediaapi.Ca
 	}
 	if constraint := input.DurationConstraint; constraint != nil {
 		var supported []float64
+		all := []float64{}
 		if allowed, ok := stringList(dynvalue.Get(item.arguments.Value("duration"), "allowed")); ok {
 			minimum := 0.0
 			if constraint.MinSeconds != nil {
@@ -594,6 +624,9 @@ func validatePaid(rules mediaapi.RequestRules, input PaidInput, caps mediaapi.Ca
 			supported = []float64{}
 			for _, text := range allowed {
 				seconds := dynvalue.ToNumber(text)
+				if dynvalue.IsInteger(seconds) {
+					all = append(all, seconds)
+				}
 				if !dynvalue.IsInteger(seconds) || seconds < minimum {
 					continue
 				}
@@ -613,7 +646,10 @@ func validatePaid(rules mediaapi.RequestRules, input PaidInput, caps mediaapi.Ca
 		}
 		// Согласованную длительность не уменьшаем ради модели; правило проверяем для каждого кандидата.
 		if len(supported) == 0 || dynvalue.ToNumber(parameters.Value("duration")) != slices.Min(supported) {
-			return nil, nil, errors.New(textDurationMismatch(dynvalue.JSONText(parameters.Value("duration")), constraint.Rule, constraint.WindowSeconds, constraint.MinSeconds, supported))
+			return nil, nil, &DurationMismatchError{
+				Duration: dynvalue.ToNumber(parameters.Value("duration")), Allowed: all, Fitting: supported,
+				message: textDurationMismatch(dynvalue.JSONText(parameters.Value("duration")), constraint.Rule, constraint.WindowSeconds, constraint.MinSeconds, supported),
+			}
 		}
 	}
 	if err := combinedLimit(item.limits.Value("combined_item_cap"), values, assigned); err != nil {
@@ -726,24 +762,10 @@ func SelectCheckedPaidRequest(paid Paid, input PaidInput, caps mediaapi.Capabili
 			if position < 0 {
 				return PaidInput{}, errors.New(textCommandModelNotDeclared(id, input.Command))
 			}
-			parameters := input.Parameters
-			if candidate != nil {
-				var err error
-				if parameters, err = candidate(models[position]); err != nil {
-					return PaidInput{}, err
-				}
-			}
-			merged, err := withProjectOptions(paid.Rules, input, parseModel(models[position]), parameters)
+			next, err := candidateRequest(paid, input, caps, models[position], candidate)
 			if err != nil {
 				return PaidInput{}, err
 			}
-			next := input
-			next.Model, next.Parameters = id, merged
-			normalizedParameters, inputs, err := validatePaid(paid.Rules, next, caps)
-			if err != nil {
-				return PaidInput{}, err
-			}
-			next.Parameters, next.Inputs = normalizedParameters, inputs
 			var reason string
 			previous := input.ModelSelection
 			switch {
@@ -774,6 +796,43 @@ func SelectCheckedPaidRequest(paid Paid, input PaidInput, caps mediaapi.Capabili
 		details[index] = entry.id + ": " + entry.reason
 	}
 	return PaidInput{}, errors.New(textCompatibleModelUnavailable(title, input.Command, strings.Join(details, " ")))
+}
+
+// candidateRequest — запрос input моделью item: её параметры (candidate, без него —
+// input.Parameters), настройки проекта и общая проверка validatePaid. Выбор модели и его
+// обоснование — у вызывающего.
+func candidateRequest(paid Paid, input PaidInput, caps mediaapi.Capabilities, item mediaapi.Model, candidate CheckedCandidateParameters) (PaidInput, error) {
+	parameters := input.Parameters
+	if candidate != nil {
+		var err error
+		if parameters, err = candidate(item); err != nil {
+			return PaidInput{}, err
+		}
+	}
+	merged, err := withProjectOptions(paid.Rules, input, parseModel(item), parameters)
+	if err != nil {
+		return PaidInput{}, err
+	}
+	next := input
+	next.Model, next.Parameters = item.ID, merged
+	normalizedParameters, inputs, err := validatePaid(paid.Rules, next, caps)
+	if err != nil {
+		return PaidInput{}, err
+	}
+	next.Parameters, next.Inputs = normalizedParameters, inputs
+	return next, nil
+}
+
+// PaidModelProblem — почему модель item не примет запрос input с параметрами candidate: та же
+// проверка, что у SelectPaidRequest для одного кандидата, без выбора и записи. nil — примет.
+// Им интерфейс заранее выключает неподходящие модели с причиной.
+func PaidModelProblem(paid Paid, input PaidInput, caps mediaapi.Capabilities, item mediaapi.Model, candidate CandidateParameters) error {
+	var checked CheckedCandidateParameters
+	if candidate != nil {
+		checked = func(model mediaapi.Model) (*dynvalue.Object, error) { return candidate(model), nil }
+	}
+	_, err := candidateRequest(paid, input, caps, item, checked)
+	return err
 }
 
 // optionalEqual — сравнение preferredModel (nil — null) с вычисленным предпочтением ("" — null).

@@ -6,6 +6,10 @@ export type {
     OwnInput,
     OwnKeyframe,
     Reasons,
+    RequestChange,
+    RequestModel,
+    RequestOptions,
+    RequestParameter,
     StartInput,
     View
 } from "./models.js";

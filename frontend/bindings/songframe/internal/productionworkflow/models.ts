@@ -57,6 +57,48 @@ export interface Reasons {
 }
 
 /**
+ * RequestChange — изменение запроса пользователем на вопросе request_choice: модель и значения
+ * параметров из её объявлений (RequestOptions).
+ */
+export interface RequestChange {
+    "model": string;
+    "parameters": { [_ in string]: any };
+}
+
+/**
+ * RequestModel — модель команды видео и её выбираемые параметры. Unavailable — почему модель не
+ * подходит плану (опоры, длительность, срез речи, настройки проекта) с её значениями по
+ * умолчанию: такую модель окно показывает выключенной.
+ */
+export interface RequestModel {
+    "id": string;
+    "parameters": RequestParameter[];
+    "unavailable"?: string;
+}
+
+/**
+ * RequestOptions — productionWorkflow.requestOptions: модели команды видео и параметры, которые
+ * пользователь выбирает сам, с текущими моделью и параметрами запроса попытки.
+ */
+export interface RequestOptions {
+    "models": RequestModel[];
+
+    /**
+     * Model и Parameters — текущий запрос попытки; Parameters — только выбираемые параметры.
+     */
+    "model": string;
+    "parameters": { [_ in string]: any };
+}
+
+/**
+ * RequestParameter — параметр с перечнем допустимых значений (JSON-значения: true, 5, "pro").
+ */
+export interface RequestParameter {
+    "name": string;
+    "values": any[];
+}
+
+/**
  * StartInput — ProductionWorkflowStart: действие prepare (новый пакет), revise (доработка с
  * замечанием) или continue (следующий этап пакета); Stage — явный этап, nil — по пакету.
  */

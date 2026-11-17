@@ -4,11 +4,9 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
-	"regexp"
 	"slices"
 
 	"songframe/internal/dynvalue"
-	"songframe/internal/mediaproviders"
 	"songframe/internal/production"
 	"songframe/internal/projectfs"
 	"songframe/internal/providers"
@@ -116,9 +114,6 @@ func (w *Workflow) checkApply(project, shot, packageDir, id string) (*applyPlan,
 	rules.Own = stored.Proposal().Value("own") == true
 	after, err := ParseProposal(raw, rules)
 	if err != nil {
-		return nil, err
-	}
-	if err := CheckCapabilities(after, rules, stored.Capabilities(), c.Settings); err != nil {
 		return nil, err
 	}
 	if imagesChanged(stored) {
@@ -229,14 +224,7 @@ func (w *Workflow) applyStage(ctx context.Context, plan *applyPlan) error {
 		}
 		return ask("prompt_review")
 	}
-	requestName, err := w.applyRequest(ctx, plan)
-	if err != nil {
-		return err
-	}
-	if err := w.run(ctx, project, "shot_workflow", "set-stage", "--dir", target, "request_choice", "--request-dir", requestName); err != nil {
-		return err
-	}
-	return ask("request_choice")
+	return errors.New(textStageUnavailable)
 }
 
 // applyDescription — этап описания: новый пакет (init, при доработке оплаченного — с retry_of),
@@ -341,129 +329,6 @@ func (w *Workflow) applyDescription(ctx context.Context, plan *applyPlan) error 
 		return err
 	}
 	return w.run(ctx, c.Project, "shot_workflow", "set-stage", "--dir", target, "description_review")
-}
-
-// audioSlot — именованный слот звукового входа модели (audio_N).
-var audioSlot = regexp.MustCompile(`(?i)^audio`)
-
-// applyRequest — этап запроса: проверка утверждений и речевого входа, затем подготовка нового
-// request-NN платным адаптером видео проекта (неизменяемый request.json без отправки). Возвращает
-// имя папки запроса. Запрос готовит только адаптер провайдера (Options.VideoMedia); отдельная
-// спецификация запроса рядом с записью предложения не пишется, чтобы там не копились файлы.
-func (w *Workflow) applyRequest(ctx context.Context, plan *applyPlan) (string, error) {
-	c, target := plan.context, plan.stored.Target()
-	if c.Manual {
-		return "", errors.New(textManualNoRequest)
-	}
-	prompt, err := c.PromptApproved()
-	if err != nil {
-		return "", err
-	}
-	frames, err := c.FramesApproved()
-	if err != nil {
-		return "", err
-	}
-	if !prompt || !frames {
-		return "", errors.New(textFrameOrPromptApprovalStale)
-	}
-	request := plan.after.Value("request").(*dynvalue.Object)
-	inputs, _ := dynvalue.AsArray(request.Value("inputs"))
-	lipSync := dynvalue.Truthy(c.Scene.Value("lipsync"))
-	if lipSync {
-		// Звуковой вход — именно подготовленный WAV пакета: отдельным флагом audio или именованным
-		// слотом audio_N.
-		speechInput := false
-		for _, input := range inputs {
-			flag, slot := dynvalue.Get(input, "flag"), dynvalue.Get(input, "slot")
-			slotText, _ := slot.(string)
-			if (flag == "audio" || (flag == "input" && audioSlot.MatchString(slotText))) && c.Speech != nil && dynvalue.Get(input, "path") == c.Speech.Path {
-				speechInput = true
-				break
-			}
-		}
-		if !speechInput {
-			return "", errors.New(textSpeechInputRequired)
-		}
-		// Видео короче среза оборвало бы речь: длительность запроса покрывает весь WAV.
-		length := 0.0
-		if c.Speech != nil {
-			length = c.Speech.length()
-		}
-		if duration := dynvalue.ToNumber(dynvalue.Get(request.Value("parameters"), "duration")); duration < length-1e-6 {
-			return "", errors.New(textRequestShorterThanSpeech(dynvalue.ToFixed(length, 2)))
-		}
-	}
-	number := 1
-	for dynvalue.Exists(filepath.Join(target, "request-"+twoDigits(number))) {
-		number++
-	}
-	requestName := "request-" + twoDigits(number)
-	promptPath, _ := dynvalue.Get(c.workflowValue("prompt"), "path").(string)
-	text, err := readText(filepath.Join(target, promptPath))
-	if err != nil {
-		return "", err
-	}
-	if err := w.prepareVideo(ctx, plan, filepath.Join(target, requestName), text, request, inputs); err != nil {
-		return "", err
-	}
-	return requestName, nil
-}
-
-// prepareVideo — подготовка видеозапроса: доступ к провайдеру видео,
-// его платный адаптер, свежие объявления моделей и локальная подготовка запроса по черновику
-// агента с ограничениями проекта (предпочтительная модель, разрешение, соотношение сторон,
-// options) и правилом длительности окна плана.
-func (w *Workflow) prepareVideo(ctx context.Context, plan *applyPlan, requestDir, prompt string, draft *dynvalue.Object, inputs []any) error {
-	c := plan.context
-	if w.options.RequireVideoAccess != nil {
-		if err := w.options.RequireVideoAccess(ctx, c.Project); err != nil {
-			return err
-		}
-	}
-	settings, err := videoSettings(c.Project)
-	if err != nil {
-		return err
-	}
-	provider, _ := settings.Value("provider").(string)
-	var media *providers.PaidMedia
-	if mediaproviders.Supports(provider, mediaproviders.Video) && w.options.VideoMedia != nil {
-		media, _ = w.options.VideoMedia(provider)
-	}
-	if media == nil {
-		return errors.New(textChooseVideoProvider())
-	}
-	items := make([]providers.PaidInputItem, 0, len(inputs))
-	for _, input := range inputs {
-		flag, _ := dynvalue.Get(input, "flag").(string)
-		slot, _ := dynvalue.Get(input, "slot").(string)
-		path, _ := dynvalue.Get(input, "path").(string)
-		role, _ := dynvalue.Get(input, "role").(string)
-		items = append(items, providers.PaidInputItem{Flag: flag, Slot: slot, Path: path, Role: role})
-	}
-	// Модель из настроек без краевых пробелов; пустая строка или нет поля — «предпочтения нет».
-	preferred := ""
-	if model, isString := settings.Value("model").(string); isString {
-		preferred = dynvalue.Trim(model)
-	}
-	constraint := &providers.DurationConstraint{WindowSeconds: c.Window, Rule: dynvalue.ToString(c.DurationRule)}
-	if limits := plan.stored.Rules().LipSync; limits != nil {
-		minimum := limits.Min
-		constraint.MinSeconds = &minimum
-	}
-	required := dynvalue.NewObject()
-	required.Set("resolution", settings.Value("resolution"))
-	required.Set("aspect_ratio", settings.Value("aspect_ratio"))
-	options, _ := settings.Value("options").(*dynvalue.Object)
-	parameters, _ := draft.Value("parameters").(*dynvalue.Object)
-	command, _ := draft.Value("command").(string)
-	model, _ := draft.Value("model").(string)
-	caps := media.Capabilities(ctx, c.Project)
-	_, err = media.Prepare(ctx, providers.PaidInput{
-		Project: c.Project, WorkDir: requestDir, Shot: plan.shot, Kind: mediaproviders.Video, Command: command, Model: model,
-		PreferredModel: &preferred, DurationConstraint: constraint, RequiredParameters: required, ProjectOptions: options,
-		Prompt: prompt, Parameters: parameters, Inputs: items, Outputs: int(dynvalue.ToNumber(draft.Value("outputs"))),
-	}, caps)
-	return err
 }
 
 // findByID — первый элемент массива документа, чей id строго равен id; Undefined — не найдено.

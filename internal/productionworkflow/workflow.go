@@ -566,7 +566,7 @@ func (w *Workflow) accept(c *Context, stored *Stored, job agents.Job) error {
 		stored.Tree.Set("imageHashes", hashes)
 	}
 	stored.Proposal().Set("after", after)
-	return CheckCapabilities(after, rules, stored.Capabilities(), c.Settings)
+	return nil
 }
 
 // StartInput — ProductionWorkflowStart: действие prepare (новый пакет), revise (доработка с
@@ -592,7 +592,7 @@ type StartInput struct {
 // Доступ к агенту (выбор, программа, вход) проверяет сервис приложения до вызова.
 func (w *Workflow) Start(ctx context.Context, input StartInput) (View, error) {
 	if !slices.Contains([]string{"prepare", "revise", "continue"}, input.Action) ||
-		(input.Stage != nil && !slices.Contains([]string{"description", "prompt", "request"}, *input.Stage)) {
+		(input.Stage != nil && !slices.Contains([]string{"description", "prompt"}, *input.Stage)) {
 		return View{}, errors.New(textStartParametersInvalid)
 	}
 	w.mu.Lock()
@@ -722,10 +722,12 @@ func keyframeChoice(c *Context, stage string, chosen *int, inherit bool) (int, e
 }
 
 // reviseStage — этап, который переделает доработка без явного этапа: следующий проход пакета
-// next, а если его нет — ближайший пройденный (запрос, промпт, иначе описание). Тем же правилом
+// next (кроме запроса: его собирает приложение), а если его нет — ближайший пройденный (промпт,
+// иначе описание). Тем же правилом
 // View.ReviseStage называет доработку в интерфейсе.
 func (c *Context) reviseStage(next string) (string, error) {
-	if next != "" {
+	// Запрос собирает приложение (PrepareRequest): доработка с замечанием начинается с промпта.
+	if next != "" && next != "request" {
 		return next, nil
 	}
 	prompt, err := c.PromptApproved()
@@ -737,8 +739,6 @@ func (c *Context) reviseStage(next string) (string, error) {
 		return "", err
 	}
 	switch {
-	case prompt && !c.Manual:
-		return "request", nil
 	case prompt, frames:
 		return "prompt", nil
 	default:
@@ -766,9 +766,8 @@ func (w *Workflow) continuedStage(c *Context, input StartInput) (string, error) 
 	stage := next
 	if input.Stage != nil {
 		stage = *input.Stage
-	}
-	if stage == "" && input.Action == "revise" {
-		if stage, err = c.reviseStage(""); err != nil {
+	} else if input.Action == "revise" {
+		if stage, err = c.reviseStage(next); err != nil {
 			return "", err
 		}
 	}
@@ -782,12 +781,8 @@ func (w *Workflow) continuedStage(c *Context, input StartInput) (string, error) 
 			return "", err
 		}
 	case "request":
-		if c.Manual {
-			return "", errors.New(textManualNoRequest)
-		}
-		if appropriate, err = c.PromptApproved(); err != nil {
-			return "", err
-		}
+		// Запрос собирает приложение без агента (PrepareRequest).
+		return "", errors.New(textRequestByApp)
 	}
 	if !appropriate || (input.Action == "continue" && stage != next) {
 		return "", errors.New(textStageUnavailable)
@@ -825,20 +820,14 @@ func (w *Workflow) launch(ctx context.Context, input StartInput, prepared *prepa
 		}
 		briefs.Set(phase, brief)
 	}
-	reports, capabilitiesProblem := w.capabilities(ctx, c, stage)
+	reports, capabilitiesProblem := w.capabilities(ctx, c)
 	title := ""
 	if provider, ok := videoProvider(c.Settings); ok {
 		title = provider.Title
 	}
-	if stage == "request" && len(reports) == 0 {
-		return errors.New(textProviderModelsFailed(title, capabilitiesProblem))
-	}
 	// Речевому плану нужен режим со звуковым входом; без него точный липсинк невозможен, и агент
 	// всё равно вернул бы ошибку.
 	if c.Scene.Value("lipsync") == true && !c.Manual {
-		if stage == "request" && c.Speech == nil {
-			return errors.New(textSpeechRequired)
-		}
 		if len(reports) > 0 && !providers.AcceptsAudioInput(reports) {
 			return errors.New(textProviderAudioUnsupported(title))
 		}
@@ -859,7 +848,7 @@ func (w *Workflow) launch(ctx context.Context, input StartInput, prepared *prepa
 	prompt := agentPrompt(stage, c.Settings.Value("provider"), dynvalue.Get(dynvalue.Get(generation, "image"), "provider"))
 	contextInput := contextInput{stage: stage, briefs: briefs, description: nil, prompt: nil, lipSync: rules.LipSync, manual: rules.Manual,
 		manualVideo: c.Manual && !c.SingleFrame, capabilities: capabilities,
-		capabilitiesProblem: capabilitiesProblem, inputFlags: []string{}}
+		capabilitiesProblem: capabilitiesProblem}
 	if stage == "prompt" {
 		contextInput.promptMaxChars = c.PromptLimit()
 	}
@@ -880,14 +869,6 @@ func (w *Workflow) launch(ctx context.Context, input StartInput, prepared *prepa
 			before = description
 		case "prompt":
 			before = videoPrompt
-		}
-	}
-	if stage == "request" {
-		before = dynvalue.Stringify(c.Workflow)
-	}
-	if adapter, ok := providers.PaidAdapter(c.Settings.Value("provider")); ok {
-		for _, flag := range adapter.Rules.InputFlags {
-			contextInput.inputFlags = append(contextInput.inputFlags, flag.Flag)
 		}
 	}
 	contextInput.note = noteFor(c, input.Note)
@@ -933,9 +914,9 @@ func (w *Workflow) launch(ctx context.Context, input StartInput, prepared *prepa
 }
 
 // capabilities — объявления моделей провайдера видео для задания и текст проблем каталога.
-// До этапа запроса план без липсинка видит только черновые команды адаптера; речевому плану
-// нужны все режимы со звуковым входом уже при описании.
-func (w *Workflow) capabilities(ctx context.Context, c *Context, stage string) ([]providers.CatalogReport, string) {
+// План без липсинка видит только черновые команды адаптера (длительности моделей для описания);
+// речевому плану нужны все режимы со звуковым входом.
+func (w *Workflow) capabilities(ctx context.Context, c *Context) ([]providers.CatalogReport, string) {
 	reports := []providers.CatalogReport{}
 	problems := []string{}
 	adapter, ok := providers.PaidAdapter(c.Settings.Value("provider"))
@@ -943,7 +924,7 @@ func (w *Workflow) capabilities(ctx context.Context, c *Context, stage string) (
 		return reports, textProviderCapabilitiesMissing
 	}
 	var draft []string
-	if stage != "request" && c.Scene.Value("lipsync") != true {
+	if c.Scene.Value("lipsync") != true {
 		draft = adapter.Rules.DraftVideoCommands
 	}
 	visible := func(command string) bool { return draft == nil || slices.Contains(draft, command) }

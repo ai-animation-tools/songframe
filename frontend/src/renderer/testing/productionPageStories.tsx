@@ -9,7 +9,7 @@ import type { VideoReviewView } from '@shared/video-review';
 import { videoReviewTexts } from '@shared/texts/video-review';
 import type { Api } from '@shared/api';
 import type { AcceptedKit, AppState, ShotSpend, BrokenPackage, JobInfo, PackageView, ProductionView, ShotProduction } from '@shared/types';
-import type { ProductionFramePrompt, ProductionProposal, ProductionWorkflowView } from '@shared/production-workflow';
+import type { ProductionFramePrompt, ProductionProposal, ProductionRequestOptions, ProductionWorkflowView } from '@shared/production-workflow';
 import { registerMediaProviderForTests } from '@shared/media-providers';
 import { productionTexts } from '@shared/texts/production';
 import { TEST_PROVIDER, testProviderInfo } from '@shared/testing/media-provider';
@@ -60,6 +60,16 @@ export function pageShot(id: string, overrides: Partial<ShotProduction> = {}): S
 
 /** Отказ Go для файла не MP4 (production.CheckManualResult). */
 export const OWN_VIDEO_FORMAT_ERROR = 'Нужно видео в формате MP4, а выбранный файл в другом формате. Перекодируйте его в MP4 и загрузите снова.';
+
+/**
+ * Модели команды видео провайдера test для запроса без агента: первая — по правилам провайдера для двух опор,
+ * вторая — с выбираемым параметром, третья плану не подходит (productionWorkflow.requestOptions).
+ */
+export const REQUEST_MODELS: ProductionRequestOptions['models'] = [
+  { id: 'test-video-fast', parameters: [] },
+  { id: 'test-video-pro', parameters: [{ name: 'enable_audio', values: [false, true] }] },
+  { id: 'test-video-short', parameters: [], unavailable: 'Модель не даёт видео длиной 5 с: доступно 10 с.' }
+];
 
 export interface ProductionPageModelOptions {
   shots: () => ShotProduction[];
@@ -113,6 +123,8 @@ interface PageModel {
   ownSaves: string[];
   /** Выбранные способы генерации попыток по порядку. */
   methodChanges: string[];
+  /** Запросы, собранные приложением без агента: модель и выбранные параметры каждого. */
+  requestBuilds: string[];
   subscribe(listener: () => void): () => void;
   revision(): number;
 }
@@ -180,6 +192,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
         promptReopens: [],
         ownSaves: [],
         methodChanges: [],
+        requestBuilds: [],
         subscribe(listener) {
           listeners.add(listener);
           return () => {
@@ -268,7 +281,17 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
                 ? 'Сначала подготовьте WAV в блоке «Речь».'
                 : null;
         const manual = !!options.manual || chosen;
+        // Как Go: после утверждённых опор и промпта следующий шаг — запрос, его собирает приложение без агента.
+        const requestNext =
+          !!pkg &&
+          !manual &&
+          !pkg.request &&
+          !pkg.pendingDecision &&
+          !!pkg.prompt?.approved &&
+          pkg.keyframes.length > 0 &&
+          pkg.keyframes.every((frame) => frame.approved);
         return workflowView({
+          ...(requestNext ? { nextStage: 'request' as const, canContinue: true } : {}),
           ...(manual ? { manual: true, canBuildManual: !!pkg && !manualReason, videoProvider: TEST_PROVIDER } : {}),
           ...(options.manual ? { singleFrame: true } : {}),
           ...(chosen ? { generationMethod: 'manual' as const } : {}),
@@ -286,7 +309,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
           reasons: packageDir
             ? {
                 prepare: null,
-                continue: 'Сначала ответьте на вопрос пакета.',
+                continue: requestNext ? null : 'Сначала ответьте на вопрос пакета.',
                 frames: nextFrame ? null : 'Сначала ответьте на вопрос пакета.',
                 ...(manual ? { manual: manualReason } : {})
               }
@@ -646,6 +669,61 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
             publish();
             return workflowSnapshot(project, shot, dir);
           },
+          // Как Go: запрос собирает приложение по утверждённым опорам и промпту; «Изменить» — только на вопросе «Отправить».
+          prepareRequest: async (project, shotId, dir, change) => {
+            const { shot, pkg } = find(project, dir);
+            if (change && pkg.pendingDecision?.stage !== 'request_choice') throw new Error('Изменить запрос можно, пока он ждёт решения «Отправить».');
+            if (!change && (pkg.pendingDecision || pkg.request || !pkg.prompt?.approved || !pkg.keyframes.every((frame) => frame.approved)))
+              throw new Error('Сначала утвердите опоры и видеопромпт.');
+            const number = model.requestBuilds.length + 1;
+            const requestDir = `${pkg.dir}/request-0${number}`;
+            const chosen = change?.model ?? REQUEST_MODELS[0].id;
+            const parameters = change?.parameters ?? {};
+            pkg.stage = 'request_choice';
+            pkg.stageLabel = 'Запрос подготовлен';
+            pkg.request = {
+              dir: requestDir,
+              kind: 'video',
+              provider: TEST_PROVIDER,
+              command: 'image_to_video',
+              sha256: String(number).repeat(64),
+              model: chosen,
+              parameters: { duration: pkg.timing?.request_seconds ?? 5, ...parameters },
+              inputs: pkg.keyframes.map((frame, index) => ({
+                slot: index ? 'last_frame' : 'first_frame',
+                role: index ? 'Последний кадр' : 'Первый кадр',
+                path: `inputs/0${index + 1}.png`,
+                imagePath: `${STORY_IMAGE_PATH}?frame=${frame.id}`
+              })),
+              attemptStatus: 'prepared',
+              promptText: pkg.prompt?.text ?? null,
+              generationId: null,
+              manualResult: false,
+              creditsConsumed: null,
+              downloads: []
+            };
+            ask(shot, pkg, {
+              stage: 'request_choice',
+              question: 'Что сделать с подготовленным запросом?',
+              options: ['send', 'park', 'revise'],
+              asked_at: DATE
+            });
+            shot.stageLabel = pkg.stageLabel;
+            const chosenParameters = Object.entries(parameters).map(([name, value]) => `${name}=${String(value)}`);
+            model.requestBuilds = [...model.requestBuilds, [chosen, ...chosenParameters].join(' ')];
+            publish();
+            return workflowSnapshot(project, shotId, dir);
+          },
+          requestOptions: async (project, _shot, dir) => {
+            const { pkg } = find(project, dir);
+            const current = REQUEST_MODELS.find((item) => item.id === pkg.request?.model);
+            const selectable = new Set(current?.parameters.map((item) => item.name));
+            return {
+              models: structuredClone(REQUEST_MODELS),
+              model: pkg.request?.model ?? '',
+              parameters: Object.fromEntries(Object.entries(pkg.request?.parameters ?? {}).filter(([name]) => selectable.has(name)))
+            };
+          },
           buildManual: async (project, shot, dir) => {
             const { pkg } = find(project, dir);
             const chosen = manualMethods.has(dir);
@@ -834,7 +912,7 @@ export function ProductionPageStory({ links = [] }: { links?: StoryLink[] }): Re
             {model.frameNotes.join(', ') || 'нет'}. Созданий опор: {model.frameRuns}. Удалений попыток: {model.discards}. Попыток с теми же опорами:{' '}
             {model.frameRetries}. Пакетов ручной генерации: {model.manualBuilds}. Загрузок видео: {model.manualUploads}. Замен видео: {model.manualReplacements}
             . Своих видео: {model.ownVideos}. Возвратов промпта: {model.promptReopens.join(', ') || 'нет'}. Своих описаний: {model.ownSaves.join(', ') || 'нет'}
-            . Способов генерации: {model.methodChanges.join(', ') || 'нет'}.
+            . Способов генерации: {model.methodChanges.join(', ') || 'нет'}. Запросов приложения: {model.requestBuilds.join(', ') || 'нет'}.
           </Typography>
           <Typography variant="caption" color="text.secondary" data-testid="production-review-model">
             Проверок видео: {model.reviewStarts}. Отмен проверок: {model.reviewCancels}.

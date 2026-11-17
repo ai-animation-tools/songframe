@@ -53,6 +53,31 @@ type ImageRules struct {
 	Series *ImageSeries
 }
 
+// VideoRules — сборка запроса видео плана приложением по утверждённым опорам, без агента. Общий
+// код (internal/productionworkflow) знает о провайдере только эти правила: имена слотов, моделей и
+// параметров принадлежат адаптеру.
+type VideoRules struct {
+	// Command — команда видео по опорам: настоящие кадры плана в заданные моменты.
+	Command string
+	// FrameSlots — именованные слоты count утверждённых опор по порядку плана (count ≥ 1): первая
+	// опора — начальный кадр, последняя — конечный, остальные — промежуточные.
+	FrameSlots func(count int) []string
+	// SpeechSlot — слот точного WAV речевого плана; "" — звуковой вход не передаётся.
+	SpeechSlot string
+	// Models — модели, которые пробуются после предпочтения проекта и до остальных моделей
+	// команды в порядке каталога: при равной пригодности первой стоит более дешёвая.
+	Models []string
+	// Defaults — значения параметров единого плана: объявленный моделью параметр получает
+	// первое из Values, которое допускает объявление (без списка допустимых — первое).
+	Defaults []ParameterDefault
+}
+
+// ParameterDefault — предпочтительные значения параметра Name по порядку.
+type ParameterDefault struct {
+	Name   string
+	Values []any
+}
+
 // FrameDefined — параметры, которые при переданном начальном кадре (слот по шаблону Slots)
 // задаёт сам кадр: их можно не передавать, а настройка проекта сверяется по размерам изображения.
 type FrameDefined struct {
@@ -71,11 +96,13 @@ type RequestRules struct {
 	InputFlags  []InputFlag
 	Enforced    []Enforced
 	Image       ImageRules
-	// DraftVideoCommands — команды видео, которые агент видит до этапа запроса у плана без
-	// липсинка; nil — все команды вида.
+	// DraftVideoCommands — команды видео, которые агент видит при описании плана без липсинка
+	// (длительности моделей для requestSeconds); nil — все команды вида.
 	DraftVideoCommands []string
 	// FrameDefined — nil, если кадр ничего не задаёт.
 	FrameDefined *FrameDefined
+	// Video — nil, если запрос видео приложение не собирает (провайдер без платной отправки видео).
+	Video *VideoRules
 }
 
 // RulesProvider — платный провайдер с правилами запроса для общего платного адаптера

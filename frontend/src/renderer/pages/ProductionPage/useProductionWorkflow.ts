@@ -5,6 +5,7 @@ import type {
   ProductionFrameCandidate,
   ProductionGenerationMethod,
   ProductionOwnText,
+  ProductionRequestChange,
   ProductionWorkflowStart,
   ProductionWorkflowView
 } from '@shared/production-workflow';
@@ -175,6 +176,18 @@ export function useProductionWorkflow(project: string, shot: string, packageDir:
     generateFrames: () => (packageDir ? execute(() => window.api.productionWorkflow.generateFrames(project, shot, packageDir)) : Promise.resolve(false)),
     /** Пакет ручной генерации собирается без агента: после записи попытка перечитывается, как после применения. */
     buildManual: () => (packageDir ? execute(() => window.api.productionWorkflow.buildManual(project, shot, packageDir), true) : Promise.resolve(false)),
+    /**
+     * Запрос видео собирает приложение без агента; change — «Изменить» на вопросе «Отправить». После записи
+     * попытка перечитывается, как после применения: у неё новый запрос и вопрос.
+     */
+    prepareRequest: (change?: ProductionRequestChange) =>
+      packageDir
+        ? execute(
+            () => window.api.productionWorkflow.prepareRequest(project, shot, packageDir, change ?? null),
+            true,
+            change ? productionTexts.useProductionWorkflow.requestChanged : undefined
+          )
+        : Promise.resolve(false),
     /** Способ генерации попытки; страница перечитывает попытку, как после применения. */
     setGenerationMethod: (method: ProductionGenerationMethod) =>
       packageDir

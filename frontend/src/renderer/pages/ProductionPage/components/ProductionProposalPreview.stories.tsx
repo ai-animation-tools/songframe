@@ -94,33 +94,6 @@ export const FirstPrompt: Story = {
   name: 'Первый видеопромпт · пустая левая колонка',
   args: { initialProposal: workflowProposal('prompt', { before: '' }) }
 };
-export const Request: Story = {
-  name: 'Запрос · состояние пакета, входы и параметры',
-  args: {
-    initialProposal: workflowProposal('request', {
-      before: JSON.stringify({
-        stage: 'prompt_review',
-        request_dir: 'requests/предыдущая-подготовка',
-        keyframes: [{ id: 'K01' }, { id: 'K02' }],
-        prompt: { approved: true }
-      }),
-      after: {
-        schemaVersion: 1,
-        stage: 'request',
-        request: {
-          model: 'Демонстрационная модель с подробным названием для сравнения запроса',
-          command: 'image_to_video',
-          parameters: { duration: 8, aspect_ratio: '16:9', camera: { movement: 'Плавное приближение вдоль ворот', keep_identity: true } },
-          inputs: [
-            { flag: 'image', slot: 'first_frame', path: 'assets/старые ворота/опоры/начало/story-image.png', role: 'first' },
-            { flag: 'image', slot: 'last_frame', path: 'assets/старые ворота/опоры/конец/story-image.png', role: 'last' }
-          ],
-          outputs: 1
-        }
-      }
-    })
-  }
-};
 export const Frames: Story = {
   name: 'Кандидаты опор · галерея, повторное открытие и отдельное согласование',
   args: { initialProposal: workflowProposal('frames') },

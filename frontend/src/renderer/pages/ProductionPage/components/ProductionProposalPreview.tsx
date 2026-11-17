@@ -3,17 +3,14 @@ import { productionTexts } from '@shared/texts/production';
 import { useId, useState, type ReactElement, type ReactNode } from 'react';
 import { Alert, Box, Chip, Divider, Paper, Stack, Typography } from '@mui/material';
 import type { AgentSettings } from '@shared/agents';
-import type { ProductionFramePrompt, ProductionProposal, ProductionRequestDraft, ProductionScenarioProblem } from '@shared/production-workflow';
+import type { ProductionFramePrompt, ProductionProposal, ProductionScenarioProblem } from '@shared/production-workflow';
 import { copyShotFrame } from '@shared/production-workflow';
-import { productionInputLabel } from '@shared/production-labels';
-import { mediaCommandLabel } from '@shared/media-providers';
 import { AgentButton, AgentIcon, ImageGallery, ImageThumbnail } from '../../../components';
 import { ActionButton } from '../../../components/ActionButton';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import CheckIcon from '@mui/icons-material/Check';
 import EditIcon from '@mui/icons-material/Edit';
 import { BUSY_REASON, PRODUCTION_PASS_LABELS, PRODUCTION_PROPOSAL_LABELS } from '../constants';
-import { RequestParameters } from './RequestParameters';
 import { Prose } from '../../../components/Prose';
 import { ReadableValue } from '../../../components/ReadableValue';
 
@@ -133,62 +130,9 @@ function FrameCandidates({ images }: { images: { id: string; path: string }[] })
   );
 }
 
-function RequestDraft({ request, videoProvider }: { request: ProductionRequestDraft; videoProvider: string | null }): ReactElement {
-  return (
-    <Stack spacing={1.5}>
-      <Section title={productionTexts.productionProposalPreview.modelAndCommand}>
-        <Typography variant="body2">
-          {productionTexts.productionProposalPreview.requestSummary({
-            model: request.model,
-            command: mediaCommandLabel(videoProvider, request.command),
-            outputs: request.outputs
-          })}
-        </Typography>
-      </Section>
-      <Section title={productionTexts.productionProposalPreview.inputs}>
-        {request.inputs.length ? (
-          <Stack spacing={0.25}>
-            {request.inputs.map((input, index) => (
-              <Typography key={`${input.slot ?? input.flag}-${index}`} variant="body2" sx={{ overflowWrap: 'anywhere' }}>
-                {productionInputLabel(input)}: {fileName(input.path)}
-              </Typography>
-            ))}
-          </Stack>
-        ) : (
-          <Typography variant="body2" color="text.secondary">
-            {productionTexts.productionProposalPreview.noInputs}
-          </Typography>
-        )}
-      </Section>
-      <RequestParameters parameters={request.parameters} provider={videoProvider} />
-    </Stack>
-  );
-}
-
 /** Текущее состояние пакета для сравнения: до первого описания или промпта его ещё нет, и это нормально. */
 function Current({ proposal }: { proposal: ProductionProposal }): ReactElement {
   const before = proposal.before;
-  if (proposal.stage === 'request') {
-    let workflow: { stage?: string; request_dir?: string; keyframes?: unknown[]; prompt?: { approved?: boolean } } | null;
-    try {
-      workflow = before ? JSON.parse(before) : null;
-    } catch {
-      workflow = null;
-    }
-    if (!workflow) return <Paragraphs text={productionTexts.productionProposalPreview.unread} />;
-    return (
-      <Stack spacing={1}>
-        <Typography variant="body2">{productionTexts.productionProposalPreview.stage({ stage: workflow.stage })}</Typography>
-        <Typography variant="body2">
-          {productionTexts.productionProposalPreview.currentState({
-            requestDir: workflow.request_dir,
-            frames: workflow.keyframes?.length ?? 0,
-            approved: workflow.prompt?.approved
-          })}
-        </Typography>
-      </Stack>
-    );
-  }
   if (!before.trim()) {
     return (
       <Alert severity="info">
@@ -253,7 +197,7 @@ function ScenarioProblem({ problem }: { problem: ProductionScenarioProblem }): R
   );
 }
 
-function Proposed({ proposal, videoProvider }: { proposal: ProductionProposal; videoProvider: string | null }): ReactElement {
+function Proposed({ proposal }: { proposal: ProductionProposal }): ReactElement {
   const after = proposal.after;
   if (!after && proposal.refused && proposal.problems?.length)
     // Отказ со списком противоречий: итог агента и по каждому противоречию — было, почему и что станет.
@@ -317,8 +261,6 @@ function Proposed({ proposal, videoProvider }: { proposal: ProductionProposal; v
       );
     case 'prompt':
       return <Paragraphs text={after.prompt} />;
-    case 'request':
-      return <RequestDraft request={after.request} videoProvider={videoProvider} />;
     default:
       return <ReadableValue value={after} />;
   }
@@ -430,7 +372,6 @@ export function ProposalActions({
 export function ProductionProposalPreview({
   proposal,
   provider = null,
-  videoProvider = null,
   busy,
   onApply,
   onDiscard,
@@ -439,8 +380,6 @@ export function ProductionProposalPreview({
 }: {
   proposal: ProductionProposal;
   provider?: AgentSettings['provider'] | null;
-  /** Провайдер видео проекта: подписи команд черновика запроса берутся из реестра. */
-  videoProvider?: string | null;
   busy: boolean;
   onApply(): void;
   onDiscard(): void;
@@ -480,7 +419,7 @@ export function ProductionProposalPreview({
             <Current proposal={proposal} />
           </Column>
           <Column title={productionTexts.productionProposalPreview.proposed} hint={productionTexts.productionProposalPreview.proposedHint}>
-            <Proposed proposal={proposal} videoProvider={videoProvider} />
+            <Proposed proposal={proposal} />
           </Column>
         </Box>
       )}

@@ -1,6 +1,7 @@
 import { productionTexts } from '@shared/texts/production';
 /**
- * Работа агента в шагах пути: задание, предложение, следующее действие и доработка.
+ * Работа агента в шагах пути: задание, предложение, следующее действие и доработка. Запрос видео
+ * (следующий этап request) собирает приложение без агента: кнопка «Подготовить запрос» обычная.
  * Путь показывает панель в нескольких шагах, и каждая часть живёт в шаге своего этапа (parts):
  * задание и его предложение — в шаге этапа задания, доработка — в шаге этапа, который она переделает,
  * следующее действие — в текущем шаге. Предложение решается целиком в окне сравнения; на самом
@@ -10,6 +11,7 @@ import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { Alert, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import EditNoteIcon from '@mui/icons-material/EditNote';
+import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
 import VideoFileOutlinedIcon from '@mui/icons-material/VideoFileOutlined';
 import type { ProductionPass, ProductionWorkflowStart } from '@shared/production-workflow';
 import type { PackageView } from '@shared/types';
@@ -24,8 +26,7 @@ import { BUSY_REASON } from '../constants';
 
 /** Подпись следующего прохода агента: кнопка называет шаг, а не «продолжить». */
 const CONTINUE_LABELS: Partial<Record<ProductionPass, string>> = {
-  prompt: productionTexts.productionWorkflowPanel.continuePrompt,
-  request: productionTexts.productionWorkflowPanel.continueRequest
+  prompt: productionTexts.productionWorkflowPanel.continuePrompt
 };
 
 /** Какие части панели показывает этот её экземпляр; без раскладки — все. */
@@ -131,6 +132,7 @@ export function ProductionWorkflowPanel({
   // Опора агента применяется сама; окно нужно, только если применить её нельзя.
   const quietFrames = proposal?.stage === 'frames' && proposal.status === 'ready' && !proposal.stale && !workflow.error;
   const canAct = !!view && !view.paid && !questionOpen && !view.job?.status.match(/running/) && !reviewable;
+  const requestNext = view?.nextStage === 'request';
   const continueLabel = view?.nextStage ? CONTINUE_LABELS[view.nextStage] : undefined;
   const reason = busy ? BUSY_REASON : !packageDir ? view?.reasons.prepare : view?.reasons.continue;
   const primaryDisabled = busy || !(packageDir ? view?.canContinue : view?.canPrepare);
@@ -179,7 +181,7 @@ export function ProductionWorkflowPanel({
           }}
         />
       ) : null}
-      {parts.current && canAct && (!packageDir || continueLabel) ? (
+      {parts.current && canAct && (!packageDir || continueLabel || requestNext) ? (
         <Stack spacing={0.5} sx={{ alignItems: 'flex-start' }}>
           {packageDir && promptNext && instructionOpen ? (
             <TextField
@@ -198,15 +200,32 @@ export function ProductionWorkflowPanel({
           ) : null}
           {packageDir ? (
             <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              <AgentButton
-                variant="contained"
-                disabled={primaryDisabled}
-                disabledReason={reason ?? productionTexts.productionWorkflowPanel.loadingReason}
-                title={productionTexts.productionWorkflowPanel.continueHint}
-                onClick={() => void start('continue')}
-              >
-                {continueLabel}
-              </AgentButton>
+              {requestNext ? (
+                <ActionButton
+                  variant="contained"
+                  startIcon={<ReceiptLongOutlinedIcon />}
+                  disabled={primaryDisabled}
+                  disabledReason={reason ?? productionTexts.productionWorkflowPanel.loadingReason}
+                  title={productionTexts.productionWorkflowPanel.prepareRequestHint}
+                  onClick={() => {
+                    if (busy) return;
+                    onLaunch?.();
+                    void workflow.prepareRequest();
+                  }}
+                >
+                  {productionTexts.productionWorkflowPanel.prepareRequest}
+                </ActionButton>
+              ) : (
+                <AgentButton
+                  variant="contained"
+                  disabled={primaryDisabled}
+                  disabledReason={reason ?? productionTexts.productionWorkflowPanel.loadingReason}
+                  title={productionTexts.productionWorkflowPanel.continueHint}
+                  onClick={() => void start('continue')}
+                >
+                  {continueLabel}
+                </AgentButton>
+              )}
               {onWriteOwn && promptNext ? (
                 // Свой промпт не требует агента: доступен при той же готовности попытки, что и подготовка промпта.
                 <ActionButton

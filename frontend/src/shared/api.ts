@@ -5,6 +5,8 @@ import type {
   ProductionFrameCandidate,
   ProductionGenerationMethod,
   ProductionOwnInput,
+  ProductionRequestChange,
+  ProductionRequestOptions,
   ProductionWorkflowStart,
   ProductionWorkflowView
 } from './production-workflow';
@@ -124,6 +126,13 @@ export interface Api {
     importFrames(project: string, shot: string, packageDir: string, images: ProductionFrameCandidate[]): Promise<ProductionWorkflowView>;
     /** Ручная попытка: собирает без агента пакет для генерации вне приложения (опоры, у речевого плана срез речи, промпт). */
     buildManual(project: string, shot: string, packageDir: string): Promise<ProductionWorkflowView>;
+    /**
+     * Запрос видео собирает приложение без агента по утверждённым опорам и видеопромпту: модель и параметры — по
+     * правилам провайдера, затем вопрос «Отправить». change — изменение на этом вопросе: запрос собирается заново.
+     */
+    prepareRequest(project: string, shot: string, packageDir: string, change: ProductionRequestChange | null): Promise<ProductionWorkflowView>;
+    /** Модели и выбираемые параметры для изменения подготовленного запроса попытки. */
+    requestOptions(project: string, shot: string, packageDir: string): Promise<ProductionRequestOptions>;
     /** Способ генерации видео попытки: провайдер проекта или вручную вне приложения; до утверждения видеопромпта. */
     setGenerationMethod(project: string, shot: string, packageDir: string, method: ProductionGenerationMethod): Promise<ProductionWorkflowView>;
     /** Своё описание с планом опор или свой видеопромпт без агента; принимает их интерфейс сразу после применения. */

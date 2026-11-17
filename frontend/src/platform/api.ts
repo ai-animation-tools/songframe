@@ -288,7 +288,7 @@ function toProductionWorkflowView({
   return {
     ...view,
     ...(nextStage ? { nextStage: nextStage as ProductionPass } : {}),
-    ...(reviseStage ? { reviseStage: reviseStage as ProductionPass } : {}),
+    ...(reviseStage ? { reviseStage: reviseStage as NonNullable<ProductionWorkflowView['reviseStage']> } : {}),
     ...(generationMethod === 'manual' ? { generationMethod } : {}),
     ...(imageProvider === undefined ? {} : { imageProvider: imageProvider as string }),
     ...(videoProvider === undefined ? {} : { videoProvider: videoProvider as string }),
@@ -883,8 +883,7 @@ export function createApi(b: Bindings): Api {
     call('productionWorkflow.view', async () => productionWorkflow((await b.productionWorkflow()).View(project, shot, packageDir ?? '')));
   api.productionWorkflow.start = (input) =>
     call('productionWorkflow.start', async () => productionWorkflow((await b.productionWorkflow()).Start(input)), false);
-  // apply запускает shot_workflow и для запроса — каталог моделей и media_request prepare, поэтому
-  // тоже без срока ожидания оболочки.
+  // apply запускает shot_workflow, поэтому тоже без срока ожидания оболочки.
   api.productionWorkflow.apply = (project, shot, packageDir, id) =>
     call('productionWorkflow.apply', async () => productionWorkflow((await b.productionWorkflow()).Apply(project, shot, packageDir ?? '', id)), false);
   api.productionWorkflow.discard = (project, shot, packageDir, id) =>
@@ -900,6 +899,15 @@ export function createApi(b: Bindings): Api {
     call('productionWorkflow.importFrames', async () => productionWorkflow((await b.productionWorkflow()).ImportFrames(project, shot, packageDir, images)));
   api.productionWorkflow.buildManual = (project, shot, packageDir) =>
     call('productionWorkflow.buildManual', async () => productionWorkflow((await b.productionWorkflow()).BuildManual(project, shot, packageDir)));
+  // Подготовка читает объявления моделей провайдера и выполняет media_request prepare: срока ожидания оболочки нет.
+  api.productionWorkflow.prepareRequest = (project, shot, packageDir, change) =>
+    call(
+      'productionWorkflow.prepareRequest',
+      async () => productionWorkflow((await b.productionWorkflow()).PrepareRequest(project, shot, packageDir, change)),
+      false
+    );
+  api.productionWorkflow.requestOptions = (project, shot, packageDir) =>
+    call('productionWorkflow.requestOptions', async () => (await b.productionWorkflow()).RequestOptions(project, shot, packageDir), false);
   api.productionWorkflow.setGenerationMethod = (project, shot, packageDir, method) =>
     call('productionWorkflow.setGenerationMethod', async () =>
       productionWorkflow((await b.productionWorkflow()).SetGenerationMethod(project, shot, packageDir, method))

@@ -53,13 +53,40 @@ func RequestRules() mediaapi.RequestRules {
 			ReferenceSlot: func(index int) string { return fmt.Sprintf("image_%d", index+1) },
 			Series:        &mediaapi.ImageSeries{Names: []string{"story_mode", "storyMode"}, Off: false},
 		},
-		// Обычному плану до этапа запроса нужен только режим по опорам; остальные режимы агент
-		// видит при запросе и для липсинка.
+		// Описанию обычного плана нужен только режим по опорам (длительности его моделей);
+		// речевой план видит все режимы со звуковым входом.
 		DraftVideoCommands: []string{"image_to_video"},
 		// Пропорции ролика с начальным кадром задаёт кадр; у части моделей aspect_ratio с кадром
 		// не передаётся.
 		FrameDefined: &mediaapi.FrameDefined{Slots: regexp.MustCompile(`^first_image$`), Parameters: []string{"aspect_ratio"}},
+		Video: &mediaapi.VideoRules{
+			Command:    "image_to_video",
+			FrameSlots: frameSlots,
+			SpeechSlot: "audio_1",
+			// v3_0 по таблице цен дешевле v4_0, но не объявляет промежуточных кадров: план с
+			// тремя и больше опорами её отвергнет и получит v4_0.
+			Models: []string{"kling-video-v3_0", "kling-video-v4_0"},
+			// Единый план без склеек (у v3_0 по умолчанию true; модель, допускающая только true,
+			// получает true) и без звука генератора: звук клипа — исходная песня в монтаже.
+			Defaults: []mediaapi.ParameterDefault{
+				{Name: "prefer_multi_shots", Values: []any{false, true}},
+				{Name: "enable_audio", Values: []any{false}},
+			},
+		},
 	}
+}
+
+// frameSlots — слоты опор видео по порядку плана: начальный кадр first_image, промежуточные
+// keyframe_1…n, конечный tail_image; одна опора — только начальный кадр.
+func frameSlots(count int) []string {
+	slots := []string{"first_image"}
+	for index := 1; index < count-1; index++ {
+		slots = append(slots, fmt.Sprintf("keyframe_%d", index))
+	}
+	if count > 1 {
+		slots = append(slots, "tail_image")
+	}
+	return slots
 }
 
 // Environment — строка страницы «Среда»: клиент входит в поставку (отдельной программы нет),

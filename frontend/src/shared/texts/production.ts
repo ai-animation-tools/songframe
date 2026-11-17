@@ -495,7 +495,7 @@ export const productionTexts = {
     chooseFrame: ({ frame }: { frame: string }) => `создайте опору ${frame} или загрузите свой файл`,
     preparePrompt: 'подготовьте видеопромпт с агентом',
     prepareSpeech: 'подготовьте срез речи',
-    prepareRequest: 'подготовьте запрос с агентом',
+    prepareRequest: 'подготовьте запрос',
     sendRequest: 'проверьте запрос и отправьте',
     waitService: 'ждём сервис, видео генерируется',
     receiveResult: 'получите результат',
@@ -575,7 +575,8 @@ export const productionTexts = {
     proposalCancelled: ({ stage }: { stage: string }) => `${stage}: подготовка остановлена.`,
     applied: commonTexts.proposal.appliedSentence,
     discarded: 'Предложение отклонено.',
-    scenarioFixed: 'Исправления внесены в сценарий.'
+    scenarioFixed: 'Исправления внесены в сценарий.',
+    requestChanged: 'Запрос изменён: проверьте его и стоимость перед отправкой.'
   },
   useRequestQuote: {
     quoteMismatch: 'Оценка относится к другому запросу. Откройте попытку заново.'
@@ -640,6 +641,21 @@ export const productionTexts = {
     placeholder: 'Например: убрать титры, движение камеры — медленный наезд.',
     hint: 'Обязательно. Замечание передаётся агенту при подготовке промпта.',
     unavailable: 'Запрос уже отправлен или попытка в очереди: исправленный промпт делается в новой попытке.'
+  },
+  requestChangeDialog: {
+    open: 'Изменить',
+    openHint: 'Выбрать другую модель или параметры: приложение соберёт запрос заново, агент не нужен',
+    title: ({ shot }: { shot: string }) => `Изменить запрос ${shot}`,
+    description:
+      'Приложение соберёт запрос заново с выбранной моделью и параметрами. Длительность, разрешение, пропорции и входы остаются по плану. Запрос не отправляется: перед отправкой снова будут показаны параметры и стоимость.',
+    model: 'Модель',
+    modelHint: 'Модели, которые не примут опоры, длительность или настройки плана, выключены с причиной.',
+    confirm: 'Изменить запрос',
+    loading: 'Загружаются модели провайдера.',
+    unchanged: 'Выберите другую модель или значение параметра.',
+    noParameters: 'У этой модели нет параметров для выбора.',
+    yes: 'Да',
+    no: 'Нет'
   },
   keyframeReopenDialog: {
     title: ({ frame }: { frame: string }) => `Вернуть опору ${frame} на доработку`,
@@ -924,14 +940,6 @@ export const productionTexts = {
       `${position === 'first' ? 'Первый' : 'Последний'} кадр принятого плана ${shot} кадр в кадр: опору не создают, приложение возьмёт этот кадр при утверждении описания.`,
     candidate: ({ id }: { id: string }) => `${id} · кандидат, не принят`,
     galleryKind: 'Кандидат опоры',
-    modelAndCommand: 'Модель и команда',
-    requestSummary: ({ model, command, outputs }: { model: string; command: string; outputs: number }) => `${model} · ${command} · результатов: ${outputs}`,
-    inputs: labels.inputs,
-    noInputs: `Без входных файлов`,
-    unread: 'Текущий запрос попытки не прочитан.',
-    stage: ({ stage }: { stage: string | undefined }) => `Этап попытки: ${stage ?? 'не задан'}.`,
-    currentState: ({ requestDir, frames, approved }: { requestDir: string | undefined; frames: number; approved: boolean | undefined }) =>
-      `${requestDir ? `Подготовленный запрос: папка ${requestDir}. ` : 'Подготовленного запроса ещё нет. '}Опор в попытке: ${frames}; видеопромпт ${approved ? 'принят' : 'не принят'}.`,
     firstDescription:
       'В попытке ещё нет описания и плана опор: это первое предложение для него. После применения здесь будет текущее описание для сравнения со следующими.',
     firstPrompt: 'В попытке ещё нет видеопромпта: это первое предложение. После применения здесь будет текущий текст.',
@@ -1206,20 +1214,19 @@ export const productionTexts = {
     descriptionRequired: messages.descriptionAndFramePlanRequired,
     prepare: `Подготовить описание`,
     continuePrompt: `Подготовить видеопромпт`,
-    continueRequest: `Подготовить запрос`,
+    prepareRequest: `Подготовить запрос`,
+    prepareRequestHint: 'Приложение соберёт запрос по утверждённым опорам и видеопромпту: модель и параметры — по правилам провайдера. Запрос не отправляется',
     reviseOpen: `Доработать с агентом`,
     /** Доработка называет этап, который агент переделает, а поле замечания — что именно исправить. */
     reviseOpenFor: {
       description: 'Доработать описание',
       frames: 'Доработать с агентом',
-      prompt: 'Доработать видеопромпт',
-      request: 'Доработать запрос'
+      prompt: 'Доработать видеопромпт'
     },
     noteFor: {
       description: 'Что исправить в описании и плане опор',
       frames: 'Что исправить в текущем этапе',
-      prompt: 'Что исправить в видеопромпте',
-      request: 'Что исправить в запросе'
+      prompt: 'Что исправить в видеопромпте'
     },
     instructionOpen: `Добавить указания`,
     instruction: `Указания агенту`,

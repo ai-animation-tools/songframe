@@ -11,9 +11,7 @@ import (
 
 	"songframe/internal/agents"
 	"songframe/internal/dynvalue"
-	"songframe/internal/mediaapi"
 	"songframe/internal/mediaproviders"
-	"songframe/internal/providers"
 )
 
 // Rules — что проверяется в ответе агента. Значения из документов
@@ -264,13 +262,6 @@ func IsAgentRefusal(raw string) bool {
 	return err != nil
 }
 
-// reservedParameters — технические поля, которые нельзя передать параметром запроса.
-var (
-	reservedParameters = []string{"model", "prompt", "poll", "quiet", "q", "help", "version", "base-url", "credentials", "token", "input"}
-	parameterName      = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9_-]*$`)
-	secretParameter    = regexp.MustCompile(`(?i)token|credential|password|base_url`)
-)
-
 // ParseProposal разбирает строгую форму ответа агента для этапа
 // rules.Stage. Пути и технические поля проверяются до изменения пакета; кандидаты опор
 // заменяются разыменованными путями. Возвращает документ предложения (ProductionStageProposal)
@@ -302,13 +293,6 @@ func ParseProposal(raw string, rules Rules) (*dynvalue.Object, error) {
 		}
 		if !isText(value.Value("prompt")) {
 			return nil, errors.New(textVideoPromptRequired)
-		}
-	default:
-		if err := keys(value, "schemaVersion", "stage", "request"); err != nil {
-			return nil, err
-		}
-		if err := parseRequest(value.Value("request"), rules); err != nil {
-			return nil, err
 		}
 	}
 	return value, nil
@@ -394,153 +378,5 @@ func parseDescription(value *dynvalue.Object, rules Rules) error {
 		}
 		previous = time
 	}
-	return nil
-}
-
-// parseRequest — проверка черновика запроса: модель, команда, параметры без технических полей,
-// длительность по плану опор, входы из allowedPaths. Команды и флаги сверяются с возможностями
-// провайдера отдельно (CheckCapabilities).
-func parseRequest(value any, rules Rules) error {
-	request, ok := value.(*dynvalue.Object)
-	if !ok {
-		return errors.New(textRequestSpecificationRequired)
-	}
-	if err := keys(request, "model", "command", "parameters", "inputs", "outputs"); err != nil {
-		return err
-	}
-	parameters, parametersOK := request.Value("parameters").(*dynvalue.Object)
-	inputs, inputsOK := dynvalue.AsArray(request.Value("inputs"))
-	outputs := request.Value("outputs")
-	if !isText(request.Value("model")) || !isText(request.Value("command")) || !parametersOK || !inputsOK || !dynvalue.IsInteger(outputs) ||
-		dynvalue.ToNumber(outputs) < 1 || dynvalue.ToNumber(outputs) > 9 {
-		return errors.New(textRequestStructureInvalid)
-	}
-	for _, name := range parameters.Keys() {
-		if !parameterName.MatchString(name) || slices.Contains(reservedParameters, name) || secretParameter.MatchString(name) {
-			return errors.New(textRequestReservedParameter)
-		}
-	}
-	if !dynvalue.StrictEqual(parameters.Value("duration"), rules.RequestSeconds) {
-		return errors.New(textRequestDurationMismatch)
-	}
-	if rules.RequestSeconds != nil {
-		if err := CheckDuration(rules.RequestSeconds, rules.WindowSeconds, rules.DurationRule); err != nil {
-			return err
-		}
-	}
-	for _, item := range inputs {
-		input, isObject := item.(*dynvalue.Object)
-		if !isObject {
-			return errors.New(textRequestInputInvalid)
-		}
-		if err := keys(input, "flag", "slot", "path", "role"); err != nil {
-			return err
-		}
-		path, _ := input.Value("path").(string)
-		slot, role := input.Value("slot"), input.Value("role")
-		if !isText(input.Value("flag")) || !isText(input.Value("path")) || !slices.Contains(rules.AllowedPaths, path) ||
-			(slot != dynvalue.Undefined && !isText(slot)) || (role != dynvalue.Undefined && !isText(role)) {
-			return errors.New(textRequestInputPathInvalid)
-		}
-		if _, err := ProductionPath(rules.Project, path); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// CheckCapabilities сверяет черновик запроса со свежим
-// объявлением моделей аккаунта (capabilities записи) по правилам адаптера провайдера видео
-// проекта, без встроенного каталога. Совместимая модель подбирается до проверки, иначе ошибочный
-// выбор агента блокировал бы штатную замену; выбранная модель и нормализованные параметры
-// записываются в proposal.request. Другие этапы не проверяются.
-func CheckCapabilities(proposal *dynvalue.Object, rules Rules, capabilities any, settings *dynvalue.Object) error {
-	if proposal.Value("stage") != "request" {
-		return nil
-	}
-	request := proposal.Value("request").(*dynvalue.Object)
-	reports := []any{capabilities}
-	if list, ok := dynvalue.AsArray(capabilities); ok {
-		reports = list
-	}
-	models := []mediaapi.Model{}
-	for _, report := range reports {
-		command, isString := dynvalue.Get(report, "command").(string)
-		declared, isObject := dynvalue.Get(report, "models").(*dynvalue.Object)
-		if !dynvalue.IsRecord(report) || !isString || !isObject {
-			continue
-		}
-		for _, id := range declared.Keys() {
-			model := declared.Value(id)
-			if !dynvalue.IsRecord(model) || !dynvalue.IsRecord(dynvalue.Get(model, "arguments")) {
-				continue
-			}
-			models = append(models, mediaapi.Model{
-				ID: id, Command: command, Arguments: dynvalue.Raw(dynvalue.Get(model, "arguments")),
-				Slots:  dynvalue.Raw(dynvalue.Coalesce(dynvalue.Get(model, "slots"), dynvalue.NewObject())),
-				Limits: dynvalue.Raw(dynvalue.Coalesce(dynvalue.Get(model, "limits"), dynvalue.NewObject())),
-			})
-		}
-	}
-	adapter, ok := providers.PaidAdapter(settings.Value("provider"))
-	if !ok {
-		return errors.New(textVideoAdapterMissing(providers.Title(settings.Value("provider"), textProviderUnspecified)))
-	}
-	// Короткие флаги входов объявляет адаптер провайдера; файл нельзя передать параметром под
-	// именем флага.
-	flags := make([]string, len(adapter.Rules.InputFlags))
-	for index, flag := range adapter.Rules.InputFlags {
-		flags[index] = flag.Flag
-	}
-	parameters := request.Value("parameters").(*dynvalue.Object)
-	for _, name := range parameters.Keys() {
-		if slices.Contains(flags, name) {
-			return errors.New(textRequestReservedParameter)
-		}
-	}
-	inputs, _ := dynvalue.AsArray(request.Value("inputs"))
-	items := make([]providers.PaidInputItem, 0, len(inputs))
-	for _, input := range inputs {
-		flag, _ := dynvalue.Get(input, "flag").(string)
-		if flag != "input" && !slices.Contains(flags, flag) {
-			return errors.New(textInputFlagUnknown(flag, strings.Join(flags, ", ")))
-		}
-		slot, _ := dynvalue.Get(input, "slot").(string)
-		path, _ := dynvalue.Get(input, "path").(string)
-		role, _ := dynvalue.Get(input, "role").(string)
-		items = append(items, providers.PaidInputItem{Flag: flag, Slot: slot, Path: path, Role: role})
-	}
-	caps := mediaapi.Capabilities{Provider: adapter.ID, Kind: mediaproviders.Video, Available: len(models) > 0, Models: models, Problems: []string{}}
-	preferred := ""
-	if model, isString := settings.Value("model").(string); isString {
-		preferred = model
-	}
-	required := dynvalue.NewObject()
-	for _, name := range []string{"resolution", "aspect_ratio"} {
-		if value, isString := settings.Value(name).(string); isString {
-			required.Set(name, value)
-		}
-	}
-	options, _ := settings.Value("options").(*dynvalue.Object)
-	constraint := &providers.DurationConstraint{WindowSeconds: rules.WindowSeconds, Rule: dynvalue.ToString(rules.DurationRule)}
-	if rules.LipSync != nil {
-		minimum := rules.LipSync.Min
-		constraint.MinSeconds = &minimum
-	}
-	model, _ := request.Value("model").(string)
-	command, _ := request.Value("command").(string)
-	selected, err := providers.SelectPaidRequest(adapter, providers.PaidInput{
-		Project: rules.Project, WorkDir: rules.Project, Kind: mediaproviders.Video,
-		// Служебный промпт проверки совместимости передаётся адаптеру; это не сообщение интерфейса.
-		Prompt:  "Проверка совместимости запроса.",
-		Command: command, Model: model, Parameters: parameters, Inputs: items, Outputs: int(dynvalue.ToNumber(request.Value("outputs"))),
-		PreferredModel: &preferred, ProjectOptions: options, DurationConstraint: constraint, RequiredParameters: required,
-	}, caps, nil)
-	if err != nil {
-		return err
-	}
-	// Выбранная модель видна уже в предложении; исходные роли файлов сохраняются до нормализации.
-	request.Set("model", selected.Model)
-	request.Set("parameters", selected.Parameters)
 	return nil
 }

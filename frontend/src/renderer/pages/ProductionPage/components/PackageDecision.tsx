@@ -1,5 +1,8 @@
 import { productionTexts } from '@shared/texts/production';
-/** Вопрос пакета и варианты ответа; ответ сразу выполняет приложение. */
+/**
+ * Вопрос пакета и варианты ответа; ответ сразу выполняет приложение. На вопросе «Отправить» доработка
+ * подготовленного запроса — «Изменить» (onChangeRequest): окно выбора модели и параметров, без агента.
+ */
 import { useState, type ReactElement } from 'react';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EditIcon from '@mui/icons-material/Edit';
@@ -37,6 +40,7 @@ export function PackageDecision({
   busy,
   busyReason = BUSY_REASON,
   revisionByAgent = false,
+  onChangeRequest,
   verdictReasons,
   suggestedNote,
   onDecide
@@ -51,6 +55,8 @@ export function PackageDecision({
   busyReason?: string;
   /** Доработка сразу запускает агента: кнопка с полем замечания становится кнопкой агента. */
   revisionByAgent?: boolean;
+  /** Ответ «доработать» заменяется кнопкой «Изменить»: запрос собирает приложение с выбранной моделью и параметрами. */
+  onChangeRequest?(): void;
   /** Ответы, недоступные по содержанию вопроса, с причиной: например, утверждение промпта сверх предела провайдера. */
   verdictReasons?: Partial<Record<string, string>>;
   /** Замечание, которым заполняется пустое поле при открытии доработки; пользователь может его изменить. */
@@ -69,7 +75,7 @@ export function PackageDecision({
   const hints = frame ? { ...VERDICT_HINTS, ...frameHints(frame) } : VERDICT_HINTS;
   // Поле замечания открывается «Доработать…»: пока решение не про доработку, оно только мешает.
   const [revisingKey, setRevisingKey] = useState<string | null>(null);
-  const revising = revisingKey === questionKey || !!note.trim();
+  const revising = !onChangeRequest && (revisingKey === questionKey || !!note.trim());
   const label = (verdict: string): string =>
     frame && verdict === 'approve'
       ? productionTexts.packageDecision.approve({ frame })
@@ -133,6 +139,22 @@ export function PackageDecision({
                         ? productionTexts.packageDecision.frameNoteRequired({ frame })
                         : productionTexts.packageDecision.noteRequired
                       : null);
+              if (verdict === 'revise' && onChangeRequest)
+                return (
+                  <ActionButton
+                    key={verdict}
+                    size="small"
+                    variant="outlined"
+                    color={VERDICT_LABELS[verdict]?.color ?? 'inherit'}
+                    startIcon={<EditIcon />}
+                    title={productionTexts.requestChangeDialog.openHint}
+                    disabled={busy}
+                    disabledReason={busy ? busyReason : null}
+                    onClick={onChangeRequest}
+                  >
+                    {productionTexts.requestChangeDialog.open}
+                  </ActionButton>
+                );
               if (verdict === 'revise' && revising && revisionByAgent)
                 return (
                   <AgentButton

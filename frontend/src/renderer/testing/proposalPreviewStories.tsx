@@ -27,8 +27,6 @@ function savedText(value: string | ProductionStageProposal): string {
       return value.prompt;
     case 'frames':
       return `Сохранены кандидаты: ${value.images.map((image) => image.id).join(', ')}. Все требуют отдельного утверждения.`;
-    case 'request':
-      return `Подготовлен запрос: ${value.request.model}, результатов ${value.request.outputs}. Отправка не выполнялась.`;
   }
 }
 

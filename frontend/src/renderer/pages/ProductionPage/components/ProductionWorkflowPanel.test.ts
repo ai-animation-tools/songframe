@@ -199,8 +199,7 @@ describe('Части панели в шагах пути', () => {
 
   it.each([
     ['description', 'Доработать описание', 'Что исправить в описании и плане опор'],
-    ['prompt', 'Доработать видеопромпт', 'Что исправить в видеопромпте'],
-    ['request', 'Доработать запрос', 'Что исправить в запросе']
+    ['prompt', 'Доработать видеопромпт', 'Что исправить в видеопромпте']
   ] as const)('называет доработку этапом %s', (stage, button, field) => {
     workflow.view!.reviseStage = stage;
     expect(render({ reviseOpen: false, decision: null })).toContain(button);

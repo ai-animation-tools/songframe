@@ -1,13 +1,13 @@
 /** Общие типизированные снимки предложений: применение записывает материалы, согласование остаётся отдельным действием. */
 import type { AgentJob } from '@shared/agents';
-import type { ProductionPass, ProductionProposal, ProductionStageProposal, ProductionWorkflowView } from '@shared/production-workflow';
+import type { ProductionProposal, ProductionStageProposal, ProductionWorkflowView } from '@shared/production-workflow';
 
 export const WORKFLOW_STORY_PROJECT = '/mock/Клип у старых ворот';
 export const WORKFLOW_STORY_PACKAGE = `${WORKFLOW_STORY_PROJECT}/plan/batches/M02-attempt-01`;
 export const WORKFLOW_STORY_DESCRIPTION = 'Герой останавливается у старых ворот. Вечерний свет падает слева; одежда и положение машины сохраняются.';
 
-export function workflowProposal(stage: ProductionPass = 'description', overrides: Partial<ProductionProposal> = {}): ProductionProposal {
-  const after: Record<ProductionPass, ProductionStageProposal> = {
+export function workflowProposal(stage: ProductionStageProposal['stage'] = 'description', overrides: Partial<ProductionProposal> = {}): ProductionProposal {
+  const after: { [K in ProductionStageProposal['stage']]: Extract<ProductionStageProposal, { stage: K }> } = {
     description: {
       schemaVersion: 1,
       stage: 'description',
@@ -23,18 +23,7 @@ export function workflowProposal(stage: ProductionPass = 'description', override
       stage: 'frames',
       images: ['K01', 'K02'].map((id) => ({ id, path: `${WORKFLOW_STORY_PROJECT}/candidates/${id}/story-image.png` }))
     },
-    prompt: { schemaVersion: 1, stage: 'prompt', prompt: 'Камера плавно приближается к герою. Сохранять тёплый свет слева, одежду и положение машины.' },
-    request: {
-      schemaVersion: 1,
-      stage: 'request',
-      request: {
-        model: 'Демонстрационная модель',
-        command: 'image_to_video',
-        parameters: { duration: 8, aspect_ratio: '16:9' },
-        inputs: [{ flag: 'image', slot: 'first_frame', path: 'frames/K01.png', role: 'first' }],
-        outputs: 1
-      }
-    }
+    prompt: { schemaVersion: 1, stage: 'prompt', prompt: 'Камера плавно приближается к герою. Сохранять тёплый свет слева, одежду и положение машины.' }
   };
   return {
     id: `proposal-${stage}-1`,
@@ -42,14 +31,7 @@ export function workflowProposal(stage: ProductionPass = 'description', override
     stage,
     status: 'ready',
     stale: false,
-    before:
-      stage === 'request'
-        ? JSON.stringify({ stage: 'prompt_review', keyframes: [{ id: 'K01' }, { id: 'K02' }], prompt: { approved: true } })
-        : stage === 'description'
-          ? 'Герой стоит перед воротами.'
-          : stage === 'prompt'
-            ? 'Камера неподвижна, герой перед воротами.'
-            : '',
+    before: stage === 'description' ? 'Герой стоит перед воротами.' : stage === 'prompt' ? 'Камера неподвижна, герой перед воротами.' : '',
     after: after[stage],
     ...overrides
   };

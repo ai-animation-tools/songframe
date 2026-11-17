@@ -54,7 +54,6 @@ const (
 	textStageUnavailable            = "Запрошенный этап ещё не доступен."
 	textContinuityFailed            = "Не удалось получить врезку непрерывности."
 	textProviderCapabilitiesMissing = "Выбранный провайдер видео не объявляет возможности."
-	textSpeechRequired              = "Речевой план: сначала подготовьте WAV речи в блоке «Речь»."
 	textInputsChangedDuringPrep     = "Входные материалы изменились во время подготовки задания."
 	textDiscardUnavailable          = "Предложение недоступно для отклонения; выполняющееся задание сначала отмените."
 	textProposalDiscarded           = "Предложение отклонено пользователем."
@@ -68,38 +67,32 @@ const (
 
 // Тексты проверки ответа агента (productionTexts.main.proposal).
 const (
-	textUnknownFields                = "Ответ содержит неизвестные поля."
-	textPathRequired                 = "Нужен путь файла."
-	textParentMissing                = "Не найден родитель пути."
-	textDurationPositiveInteger      = "Длительность запроса должна быть положительным целым числом секунд."
-	textFrameImageRequired           = "Добавьте изображение хотя бы для одной опоры."
-	textFrameCandidateInvalid        = "Неверный кандидат опоры."
-	textFrameCandidateOrderInvalid   = "Кандидаты должны относиться к неутверждённым опорам плана, без повторов и в порядке плана; нужен абсолютный путь изображения."
-	textProposalVersionOrStage       = "Неверная версия или этап предложения."
-	textDescriptionInvalid           = "Описание требует текст, длительность и минимум две опоры."
-	textManualNoRequest              = "Видео этого плана создаётся вне приложения: вместо запроса соберите пакет для ручной генерации."
-	textManualPackageReady           = "Пакет для ручной генерации уже собран."
-	textManualPromptRequired         = "Сначала утвердите видеопромпт."
-	textManualSpeechRequired         = "Сначала подготовьте WAV в блоке «Речь»."
-	textManualUnavailable            = "Пакет для ручной генерации сейчас собрать нельзя."
-	textManualSpeechRole             = "Срез речи"
-	textMethodSingleFrame            = "Речевой план у провайдера без липсинка всегда создаётся вручную вне приложения."
-	textMethodProjectManual          = "Видео всех планов проекта создаётся вручную вне приложения: так выбрано в настройках проекта."
-	textMethodRequestReady           = "Запрос или пакет уже подготовлен: чтобы сменить способ, верните видеопромпт на доработку."
-	textManualKeyframeCount          = "Видео этого плана создаётся вне приложения по одной опоре: другое число опор выбрать нельзя."
-	textManualSingleFrame            = "Видео этого плана создаётся вне приложения: в описании должна быть ровно одна опора K01 на начале плана."
-	textFrameStructureInvalid        = "Неверная структура опоры."
-	textFramePlanInvalid             = "Неверные ID, роли, порядок, промпт или референсы опор."
-	textFrameBoundariesInvalid       = "Первая опора должна быть на 0, последняя — на границе запроса."
-	textFrameCopyInvalid             = "Копия опоры (copyOf) должна ссылаться на более раннюю опору, которая сама не копия, или на кадр принятого плана из continuityFrames и не иметь своего промпта и референсов."
-	textVideoPromptRequired          = "Нужен непустой видеопромпт."
-	textRequestSpecificationRequired = "Нужна спецификация запроса."
-	textRequestStructureInvalid      = "Неверная модель, команда, параметры, входы или число результатов."
-	textRequestReservedParameter     = "Недопустимое техническое поле параметров; файлы задаются только через inputs, промпт — сохранённым файлом."
-	textRequestDurationMismatch      = "Длительность запроса отличается от согласованного плана опор."
-	textRequestInputInvalid          = "Неверный вход запроса."
-	textRequestInputPathInvalid      = "Вход запроса должен ссылаться на объявленный исходник или утверждённую опору."
-	textProviderUnspecified          = "не указан"
+	textUnknownFields              = "Ответ содержит неизвестные поля."
+	textPathRequired               = "Нужен путь файла."
+	textParentMissing              = "Не найден родитель пути."
+	textDurationPositiveInteger    = "Длительность запроса должна быть положительным целым числом секунд."
+	textFrameImageRequired         = "Добавьте изображение хотя бы для одной опоры."
+	textFrameCandidateInvalid      = "Неверный кандидат опоры."
+	textFrameCandidateOrderInvalid = "Кандидаты должны относиться к неутверждённым опорам плана, без повторов и в порядке плана; нужен абсолютный путь изображения."
+	textProposalVersionOrStage     = "Неверная версия или этап предложения."
+	textDescriptionInvalid         = "Описание требует текст, длительность и минимум две опоры."
+	textManualNoRequest            = "Видео этого плана создаётся вне приложения: вместо запроса соберите пакет для ручной генерации."
+	textManualPackageReady         = "Пакет для ручной генерации уже собран."
+	textManualPromptRequired       = "Сначала утвердите видеопромпт."
+	textManualSpeechRequired       = "Сначала подготовьте WAV в блоке «Речь»."
+	textManualUnavailable          = "Пакет для ручной генерации сейчас собрать нельзя."
+	textManualSpeechRole           = "Срез речи"
+	textMethodSingleFrame          = "Речевой план у провайдера без липсинка всегда создаётся вручную вне приложения."
+	textMethodProjectManual        = "Видео всех планов проекта создаётся вручную вне приложения: так выбрано в настройках проекта."
+	textMethodRequestReady         = "Запрос или пакет уже подготовлен: чтобы сменить способ, верните видеопромпт на доработку."
+	textManualKeyframeCount        = "Видео этого плана создаётся вне приложения по одной опоре: другое число опор выбрать нельзя."
+	textManualSingleFrame          = "Видео этого плана создаётся вне приложения: в описании должна быть ровно одна опора K01 на начале плана."
+	textFrameStructureInvalid      = "Неверная структура опоры."
+	textFramePlanInvalid           = "Неверные ID, роли, порядок, промпт или референсы опор."
+	textFrameBoundariesInvalid     = "Первая опора должна быть на 0, последняя — на границе запроса."
+	textFrameCopyInvalid           = "Копия опоры (copyOf) должна ссылаться на более раннюю опору, которая сама не копия, или на кадр принятого плана из continuityFrames и не иметь своего промпта и референсов."
+	textVideoPromptRequired        = "Нужен непустой видеопромпт."
+	textProviderUnspecified        = "не указан"
 	// textProposalNotJSON — ответ, который не разбирается как JSON: русский текст вместо сообщения
 	// разборщика (осознанное отличие, записанное в README эталонов); распознанный отказ текстом
 	// заменяется на textAgentRefused.
@@ -252,18 +245,6 @@ func textResolveSceneChangedPackageFirst(reason string) string {
 	return "Сначала решите судьбу попытки: " + reason + "."
 }
 
-// textProviderModelsFailed — providerModelsFailed (frontend/src/shared/texts/production.ts):
-// provider "" — провайдер не из реестра, тогда подставляется общее «провайдера видео».
-func textProviderModelsFailed(provider, problem string) string {
-	if provider == "" {
-		provider = "провайдера видео"
-	}
-	if problem == "" {
-		problem = "нет объявлений аккаунта"
-	}
-	return "Не удалось получить актуальные модели " + provider + ": " + problem
-}
-
 func textProviderAudioUnsupported(provider string) string {
 	if provider == "" {
 		provider = "провайдера"
@@ -339,4 +320,35 @@ func textShotFrameName(shot, position string) string {
 		return "Первый кадр плана " + shot
 	}
 	return "Последний кадр плана " + shot
+}
+
+// Тексты сборки запроса видео приложением (request.go).
+const (
+	textRequestChangeUnavailable = "Изменить запрос можно, пока он ждёт решения «Отправить»."
+	textRequestModelRequired     = "Выберите модель запроса."
+	textRequestByApp             = "Запрос готовит приложение: «Подготовить запрос» в шаге «Запрос»."
+	textModelNoSpeech            = "Модель не принимает срез речи."
+)
+
+// textModelNoFrame — модель без входа для опоры плана с назначением role.
+func textModelNoFrame(role string, frames int) string {
+	return "Модель не примет опоры плана (" + fmt.Sprint(frames) + "): у неё нет входа «" + role + "»."
+}
+
+// textModelDuration — модель не даёт видео длительности описания.
+func textModelDuration(duration, allowed string) string {
+	if allowed == "" {
+		return "Модель не даёт видео длиной " + duration + " с."
+	}
+	return "Модель не даёт видео длиной " + duration + " с: доступно " + allowed + " с."
+}
+
+// textModelResolution — модель не даёт разрешение проекта.
+func textModelResolution(value, allowed string) string {
+	return "Модель не даёт разрешение проекта " + value + ": доступно " + allowed + "."
+}
+
+// textModelAspectRatio — модель не даёт пропорции проекта.
+func textModelAspectRatio(value, allowed string) string {
+	return "Модель не даёт пропорции проекта " + value + ": доступно " + allowed + "."
 }

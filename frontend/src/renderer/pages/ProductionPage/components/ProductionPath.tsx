@@ -27,6 +27,7 @@ import { PackageResume } from './PackageResume';
 import { PackageTextSection } from './PackageTextSection';
 import { PromptLimitAlert } from './PromptLimitAlert';
 import { PromptReopenDialog } from './PromptReopenDialog';
+import { RequestChangeDialog } from './RequestChangeDialog';
 import { ActionButton } from '../../../components/ActionButton';
 import { promptOverLimit } from '../promptLimit';
 import ReplayIcon from '@mui/icons-material/Replay';
@@ -151,6 +152,8 @@ export function ProductionPath({
   // Шаг, из которого последний раз запускали агента: ошибка запуска показывается рядом с нажатой кнопкой.
   const [launchStep, setLaunchStep] = useState<PlanStepKey | null>(null);
   const [reopeningPrompt, setReopeningPrompt] = useState(false);
+  // «Изменить» на вопросе «Отправить»: окно выбора модели и параметров запроса.
+  const [changingRequest, setChangingRequest] = useState(false);
   // Своё описание: черновик открытого редактора; null — редактор закрыт.
   const [ownDescription, setOwnDescription] = useState<OwnDescriptionDraft | null>(null);
   // Свой видеопромпт: текст открытого редактора; null — редактор закрыт.
@@ -171,7 +174,7 @@ export function ProductionPath({
   const stageOfProposal = view?.proposal?.stage;
   const acceptProposal = (): Promise<boolean> =>
     workflow.apply(async (applied) => {
-      // Запрос после принятия ждёт отдельного решения об отправке; остальные шаги утверждаются сразу.
+      // Описание и видеопромпт, принятые в окне предложения, утверждаются сразу; опоры решаются на своём вопросе.
       if (applied.packageDir && (stageOfProposal === 'description' || stageOfProposal === 'prompt')) await answerApplied(applied.packageDir, 'approve', '');
     });
   const reviseProposal = (text: string): Promise<boolean> =>
@@ -303,6 +306,8 @@ export function ProductionPath({
     const asked = pending ?? (key === 'result' ? resultQuestion(pkg) : null);
     if (!asked) return null;
     const shown = withoutAgentOptions(asked, pkg);
+    // Подготовленный запрос видео собирает приложение: доработка на его вопросе меняет модель и параметры без агента.
+    const requestChange = shown.stage === 'request_choice' && !manual && pkg.request?.kind !== 'image';
     return (
       <PackageDecision
         aiKind={aiKind}
@@ -315,6 +320,7 @@ export function ProductionPath({
         busy={blocked}
         busyReason={busyReason}
         revisionByAgent={!shown.frame && shown.stage !== 'image_request_choice'}
+        onChangeRequest={requestChange ? () => setChangingRequest(true) : undefined}
         onDecide={(verdict, scope) => {
           // Без открытого вопроса приёмка и повтор не нуждаются в ответе: открываются сразу.
           if (!pending && verdict === 'accept') return onAccept();
@@ -569,6 +575,17 @@ export function ProductionPath({
           error={ownError}
           onClose={() => setOwnDescription(null)}
           onSave={(draft) => void saveOwnDescription(draft)}
+        />
+      ) : null}
+      {changingRequest && pkg ? (
+        <RequestChangeDialog
+          project={project}
+          shot={shot.id}
+          packageDir={pkg.dir}
+          provider={view?.videoProvider}
+          busy={workflow.busy}
+          onClose={() => setChangingRequest(false)}
+          onConfirm={(change) => workflow.prepareRequest(change)}
         />
       ) : null}
       {ownPrompt !== null ? (

@@ -3,8 +3,8 @@
 
 /**
  * ProductionWorkflowService реализует группу window.api.productionWorkflow: проход агента
- * производства одного плана — вид панели подготовки, запуск подготовки описания, видеопромпта или
- * запроса, отклонение предложения. Состояние — записи предложений в каталоге состояния и задания
+ * производства одного плана — вид панели подготовки, запуск подготовки описания или видеопромпта,
+ * отклонение предложения; запрос видео собирает приложение (prepareRequest). Состояние — записи предложений в каталоге состояния и задания
  * менеджера агентов внутри productionworkflow.Workflow; файлы пакета меняет Apply (под журналом
  * замены пакета). Создание следующей опоры и импорт своих опор (generateFrames, importFrames)
  * готовят предложение опор; платная опора готовит запрос и вопрос согласования в пакете.
@@ -70,11 +70,28 @@ export function ImportFrames(project: string, shot: string, packageDir: string, 
 }
 
 /**
+ * PrepareRequest — productionWorkflow.prepareRequest: запрос видео попытки собирает приложение без
+ * агента (change == nil — следующий шаг после утверждённого промпта, иначе «Изменить» на вопросе
+ * «Отправить»). Доступ к провайдеру видео проверяется внутри перед чтением объявлений моделей.
+ */
+export function PrepareRequest(project: string, shot: string, packageDir: string, change: productionworkflow$0.RequestChange | null): $CancellablePromise<productionworkflow$0.View> {
+    return $Call.ByID(460622298, project, shot, packageDir, change);
+}
+
+/**
  * ReferenceImages — productionWorkflow.referenceImages: изображения, которые может назвать опора
  * своего плана опор (разрешённые входы плана).
  */
 export function ReferenceImages(project: string, shot: string): $CancellablePromise<string[]> {
     return $Call.ByID(2855561353, project, shot);
+}
+
+/**
+ * RequestOptions — productionWorkflow.requestOptions: модели и выбираемые параметры для «Изменить»
+ * запрос попытки на вопросе «Отправить».
+ */
+export function RequestOptions(project: string, shot: string, packageDir: string): $CancellablePromise<productionworkflow$0.RequestOptions> {
+    return $Call.ByID(4050143479, project, shot, packageDir);
 }
 
 /**

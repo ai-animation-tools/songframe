@@ -10,8 +10,8 @@ import (
 )
 
 // ProductionWorkflowService реализует группу window.api.productionWorkflow: проход агента
-// производства одного плана — вид панели подготовки, запуск подготовки описания, видеопромпта или
-// запроса, отклонение предложения. Состояние — записи предложений в каталоге состояния и задания
+// производства одного плана — вид панели подготовки, запуск подготовки описания или видеопромпта,
+// отклонение предложения; запрос видео собирает приложение (prepareRequest). Состояние — записи предложений в каталоге состояния и задания
 // менеджера агентов внутри productionworkflow.Workflow; файлы пакета меняет Apply (под журналом
 // замены пакета). Создание следующей опоры и импорт своих опор (generateFrames, importFrames)
 // готовят предложение опор; платная опора готовит запрос и вопрос согласования в пакете.
@@ -49,6 +49,19 @@ func (s *ProductionWorkflowService) Start(ctx context.Context, input productionw
 func (s *ProductionWorkflowService) Apply(ctx context.Context, project, shot, packageDir, id string) (productionworkflow.View, error) {
 	projectgit.Before(ctx, project, projectgit.OperationProductionApply)
 	return wire.Done(s.workflow.Apply(ctx, project, shot, packageDir, id))
+}
+
+// PrepareRequest — productionWorkflow.prepareRequest: запрос видео попытки собирает приложение без
+// агента (change == nil — следующий шаг после утверждённого промпта, иначе «Изменить» на вопросе
+// «Отправить»). Доступ к провайдеру видео проверяется внутри перед чтением объявлений моделей.
+func (s *ProductionWorkflowService) PrepareRequest(ctx context.Context, project, shot, packageDir string, change *productionworkflow.RequestChange) (productionworkflow.View, error) {
+	return wire.Done(s.workflow.PrepareRequest(ctx, project, shot, packageDir, change))
+}
+
+// RequestOptions — productionWorkflow.requestOptions: модели и выбираемые параметры для «Изменить»
+// запрос попытки на вопросе «Отправить».
+func (s *ProductionWorkflowService) RequestOptions(ctx context.Context, project, shot, packageDir string) (productionworkflow.RequestOptions, error) {
+	return wire.Done(s.workflow.RequestOptions(ctx, project, shot, packageDir))
 }
 
 // SaveOwn — productionWorkflow.saveOwn: своё описание с планом опор или свой видеопромпт

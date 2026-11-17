@@ -83,16 +83,7 @@ export function ProductionProposalDialog({
               <PromptLimitAlert over={overLimit} videoProvider={videoProvider} />
             </Box>
           ) : null}
-          <ProductionProposalPreview
-            proposal={proposal}
-            provider={provider}
-            videoProvider={videoProvider}
-            busy={busy}
-            onApply={apply}
-            onDiscard={discard}
-            actions={false}
-            fill
-          />
+          <ProductionProposalPreview proposal={proposal} provider={provider} busy={busy} onApply={apply} onDiscard={discard} actions={false} fill />
         </DialogContent>
         {reviseNote !== null ? (
           <Box sx={{ px: 3, pb: 1 }}>

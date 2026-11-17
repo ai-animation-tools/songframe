@@ -593,6 +593,74 @@ export const GenerationStep: Story = {
   }
 };
 
+/** Опоры и видеопромпт утверждены, запроса ещё нет: следующий шаг собирает приложение без агента. */
+function requestReadyShots(): ShotProduction[] {
+  const source = preparedPackage();
+  const ready = {
+    ...source,
+    stage: 'prompt_review',
+    stageLabel: 'Видеопромпт утверждён',
+    request: null,
+    pendingDecision: null,
+    decision: { stage: 'prompt_review', verdict: 'approve' },
+    keyframes: source.keyframes.map((frame) => ({ ...frame, approved: true })),
+    prompt: source.prompt ? { ...source.prompt, approved: true } : null
+  };
+  return baseShots({ stageLabel: ready.stageLabel, attention: null, packages: [ready] });
+}
+
+/** Кнопка без знака агента: ни значка выбранного агента, ни общего значка робота. */
+async function expectNoAgentIcon(button: HTMLElement): Promise<void> {
+  await expect(button.querySelector('img, [data-testid="SmartToyOutlinedIcon"]')).toBeNull();
+}
+
+export const RequestByApp: Story = {
+  tags: ['ci'],
+  name: 'Запрос без агента · подготовка приложением и «Изменить» модель и параметры',
+  parameters: { songframe: options({ shots: requestReadyShots }) },
+  play: async (context) => {
+    const screen = screenOf(context);
+    const panel = texts.productionWorkflowPanel;
+    const change = texts.requestChangeDialog;
+    await expect(await screen.findByText(steps.now({ text: steps.prepareRequest }), {}, POLL_TIMEOUT)).toBeInTheDocument();
+    const step = within(planStep(context, 'request'));
+    const prepare = await step.findByRole('button', { name: panel.prepareRequest });
+    await expectNoAgentIcon(prepare);
+    await userEvent.click(prepare);
+    await expect(await screen.findByText(steps.now({ text: steps.sendRequest }), {}, POLL_TIMEOUT)).toBeInTheDocument();
+    await waitFor(() => expect(counts(context)).toHaveTextContent('Запросов приложения: test-video-fast.'), POLL_TIMEOUT);
+    // На вопросе «Отправить» доработка — «Изменить» без агента, поля замечания нет.
+    await expect(step.queryByRole('button', { name: panel.reviseNow })).not.toBeInTheDocument();
+    const open = await step.findByRole('button', { name: change.open });
+    await expectNoAgentIcon(open);
+    await userEvent.click(open);
+    const dialog = within(await screen.findByRole('dialog', { name: change.title({ shot: 'M02' }) }));
+    const model = await dialog.findByRole('combobox', { name: change.model });
+    await expect(model).toHaveTextContent('test-video-fast');
+    await expect(dialog.getByText(change.noParameters)).toBeInTheDocument();
+    // Без изменений собирать запрос заново незачем.
+    await expect(dialog.getByRole('button', { name: change.confirm })).toBeDisabled();
+    await userEvent.click(model);
+    // Модель, которая план не примет, выключена с причиной.
+    await expect(await screen.findByRole('option', { name: /test-video-short/ })).toHaveAttribute('aria-disabled', 'true');
+    await userEvent.click(await screen.findByRole('option', { name: 'test-video-pro' }));
+    const audio = await dialog.findByRole('combobox', { name: 'enable_audio' });
+    await expect(audio).toHaveTextContent(change.no);
+    await userEvent.click(audio);
+    await userEvent.click(await screen.findByRole('option', { name: change.yes }));
+    await userEvent.click(dialog.getByRole('button', { name: change.confirm }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: change.title({ shot: 'M02' }) })).not.toBeInTheDocument(), POLL_TIMEOUT);
+    await waitFor(() => expect(counts(context)).toHaveTextContent('Запросов приложения: test-video-fast, test-video-pro enable_audio=true.'), POLL_TIMEOUT);
+    await expect(await screen.findByText(texts.useProductionWorkflow.requestChanged)).toBeInTheDocument();
+    // Повторное открытие показывает уже изменённый запрос.
+    await userEvent.click(await step.findByRole('button', { name: change.open }));
+    const reopened = within(await screen.findByRole('dialog', { name: change.title({ shot: 'M02' }) }));
+    await expect(await reopened.findByRole('combobox', { name: change.model })).toHaveTextContent('test-video-pro');
+    await expect(reopened.getByRole('combobox', { name: 'enable_audio' })).toHaveTextContent(change.yes);
+    await userEvent.click(reopened.getByRole('button', { name: commonTexts.cancel }));
+  }
+};
+
 /** Речевой план у провайдера без липсинка: опора и промпт утверждены, срез речи готов, пакет ещё не собран. */
 function manualShots(): ShotProduction[] {
   const source = preparedPackage();

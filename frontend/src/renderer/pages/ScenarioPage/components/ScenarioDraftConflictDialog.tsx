@@ -10,16 +10,12 @@ import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 /** Несохранённые правки разрешаются явно до запуска, утверждения, обновления и применения. */
 export function ScenarioDraftConflictDialog({
   open,
-  treatmentDirty,
-  scenesDirty,
   busy,
   saveBlockedReason,
   onResolve,
   onClose
 }: {
   open: boolean;
-  treatmentDirty: boolean;
-  scenesDirty: boolean;
   busy: boolean;
   /** Причина, по которой правки нельзя записать перед продолжением (применение предложения): остаётся их отмена. */
   saveBlockedReason?: string;
@@ -53,7 +49,7 @@ export function ScenarioDraftConflictDialog({
       }
     >
       <Stack spacing={2}>
-        <Typography>{scenarioTexts.drafts.changed({ treatment: treatmentDirty, scenes: scenesDirty })}</Typography>
+        <Typography>{scenarioTexts.drafts.changed}</Typography>
         <Alert severity="warning">{saveBlockedReason ?? scenarioTexts.drafts.resolveBeforeAgent}</Alert>
       </Stack>
     </ConfirmationDialog>

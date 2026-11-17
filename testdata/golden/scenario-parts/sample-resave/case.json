@@ -1,0 +1,11 @@
+{
+  "description": "Пересохранение частей образца.",
+  "call": "saveScenes",
+  "project": "project",
+  "covers": [
+    "стабильность"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

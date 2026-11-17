@@ -97,7 +97,7 @@ func validHashes(value any) bool {
 }
 
 // checkDocuments — documents() из checkStoredState: снимок документов проходит те же
-// нормализаторы, что и чтение проекта (трактовка — черновиком, см. readDocuments).
+// нормализаторы, что и чтение проекта (части — черновиком, см. readDocuments).
 func checkDocuments(value any) error {
 	record, ok := dynvalue.AsObject(value)
 	if !ok {

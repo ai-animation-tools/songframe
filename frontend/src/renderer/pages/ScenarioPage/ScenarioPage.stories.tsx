@@ -1,4 +1,4 @@
-/** Целая страница «Сценарий» на локальной модели: переходы к планам, вкладки, закреплённые панели и сохранность черновиков. */
+/** Целая страница «Сценарий» на локальной модели: переходы к планам, блок частей, закреплённые панели и сохранность черновика. */
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { componentsTexts } from '@shared/texts/components';
@@ -73,17 +73,20 @@ async function expectRevealed(context: Context, element: Element): Promise<void>
 }
 
 const unsavedChip = (screen: Screen) => screen.queryByText(commonTexts.unsavedChanges);
-const treatmentTab = (screen: Screen) => screen.getByRole('tab', { name: scenarioTexts.toolbar.treatmentTab({ count: 3 }) });
-const scenesTab = (screen: Screen) => screen.getByRole('tab', { name: scenarioTexts.toolbar.scenesTab({ count: 6 }) });
+/** Заголовок раскрываемого блока «Общие правила и части» (три части у обычного сценария). */
+const partsBlock = (screen: Screen) => screen.getByRole('button', { name: scenarioTexts.treatment.title({ count: 3 }) });
 const saveButton = (screen: Screen) => screen.getByRole('button', { name: commonTexts.save });
 
 export const Overview: Story = {
-  name: 'Обычный реестр · первый план выбран, сохранять нечего',
+  name: 'Обычный сценарий · первый план выбран, части свёрнуты, сохранять нечего',
   play: async (context) => {
     const screen = await ready(context);
     await editorHeading(screen, 'M01');
     await expect(row(context, 'M01')).toHaveAttribute('aria-current', 'true');
-    await expect(scenesTab(screen)).toHaveAttribute('aria-selected', 'true');
+    // С планами блок частей свёрнут: на виду список планов; кнопок построения каркаса нет.
+    await expect(partsBlock(screen)).toHaveAttribute('aria-expanded', 'false');
+    await expect(screen.getByRole('button', { name: scenarioTexts.toolbar.recalculateBounds })).toBeEnabled();
+    await expect(screen.queryByRole('tab')).not.toBeInTheDocument();
     await expect(unsavedChip(screen)).not.toBeInTheDocument();
     await expect(saveButton(screen)).toBeDisabled();
     await expect(saveButton(screen)).toHaveAttribute('title', expect.stringContaining(scenarioTexts.toolbar.noChanges));
@@ -102,7 +105,7 @@ export const OpenShotFromRoute: Story = {
     const reads = screen.getByTestId('page-model-reads').textContent;
     await userEvent.type(field(screen, scenarioTexts.fields.action), ' Правка M03.');
     await expect(unsavedChip(screen)).toBeInTheDocument();
-    // Ссылка на открытой странице только выбирает план в черновике: реестр не перечитывается.
+    // Ссылка на открытой странице только выбирает план в черновике: сценарий не перечитывается.
     await userEvent.click(screen.getByRole('link', { name: 'Ссылка на план M05' }));
     await waitFor(() => expect(screen.getByTestId('story-route')).toHaveTextContent('/project/scenario?shot=M05'));
     await expectRevealed(context, await editorHeading(screen, 'M05'));
@@ -200,50 +203,64 @@ export const BriefOutsidePlan: Story = {
   }
 };
 
-export const TabDrafts: Story = {
-  name: 'Вкладки «Трактовка» и «Реестр» · черновики сохраняются независимо',
+export const PartsWithShots: Story = {
+  name: 'Общие правила и части · правка логлайна и плана — один сценарий, одно сохранение',
   tags: ['!autodocs', 'ci'],
   play: async (context) => {
     const screen = await ready(context);
-    await userEvent.click(treatmentTab(screen));
+    await editorHeading(screen, 'M01');
+    await userEvent.click(partsBlock(screen));
+    await expect(partsBlock(screen)).toHaveAttribute('aria-expanded', 'true');
+    // На код части ссылаются планы: у части с планами он закрыт, удаление тоже.
+    const codes = screen.getAllByRole('textbox', { name: scenarioTexts.fields.code });
+    await expect(codes[0]).toHaveAttribute('readonly');
+    await expect(screen.getAllByText(scenarioTexts.treatment.partShots({ count: 2 }))).toHaveLength(3);
+    await expect(screen.getByRole('button', { name: scenarioTexts.treatment.deletePart({ title: 'Возвращение', id: 'intro' }) })).toBeDisabled();
+
     const logline = field(screen, scenarioTexts.fields.logline);
     await userEvent.clear(logline);
     await userEvent.type(logline, 'Черновик логлайна.');
-    await expect(unsavedChip(screen)).toBeInTheDocument();
-
-    // Сохранение реестра не трогает черновик трактовки.
-    await userEvent.click(scenesTab(screen));
-    await expect(unsavedChip(screen)).not.toBeInTheDocument();
     await userEvent.type(field(screen, scenarioTexts.fields.action), ' Первая правка.');
-    await userEvent.click(saveButton(screen));
-    await waitFor(() => expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений реестра: 1 (production).'));
-    await expect(screen.getByTestId('page-model-shot-M01')).toHaveTextContent('Первая правка.');
-    await userEvent.click(treatmentTab(screen));
-    await expect(field(screen, scenarioTexts.fields.logline)).toHaveValue('Черновик логлайна.');
     await expect(unsavedChip(screen)).toBeInTheDocument();
-    await expect(screen.getByTestId('page-model-logline')).toHaveTextContent('Герой возвращается к старым воротам.');
-
-    // И наоборот: черновик реестра переживает сохранение трактовки.
-    await userEvent.click(scenesTab(screen));
-    await userEvent.type(field(screen, scenarioTexts.fields.action), ' Вторая правка.');
-    await userEvent.click(treatmentTab(screen));
     await expect(screen.getByText(scenarioTexts.workflow.treatmentApproved, { exact: true })).toBeInTheDocument();
     await userEvent.click(saveButton(screen));
-    await waitFor(() => expect(screen.getByTestId('page-model-logline')).toHaveTextContent('Черновик логлайна.'));
+    await waitFor(() => expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений сценария: 1 (production).'));
+    await expect(screen.getByTestId('page-model-logline')).toHaveTextContent('Черновик логлайна.');
+    await expect(screen.getByTestId('page-model-shot-M01')).toHaveTextContent('Первая правка.');
     await expect(unsavedChip(screen)).not.toBeInTheDocument();
-    // Утверждение пары включает трактовку: после её записи пару нужно утвердить заново.
+    // Утверждение пары включает части сценария: после их записи пару нужно утвердить заново.
     await screen.findByText(scenarioTexts.workflow.treatmentUnapproved, { exact: true }, { timeout: 3000 });
     await expect(screen.getByText(scenarioTexts.workflow.scenesNeedReview(['treatment'], 'pair'))).toBeInTheDocument();
-    await userEvent.click(scenesTab(screen));
-    await expect(field(screen, scenarioTexts.fields.action).value).toContain('Первая правка. Вторая правка.');
-    await expect(unsavedChip(screen)).toBeInTheDocument();
-    await expect(screen.getByTestId('page-model-shot-M01')).not.toHaveTextContent('Вторая правка.');
-    await expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений трактовки: 1. Сохранений реестра: 1 (production).');
+  }
+};
+
+export const PartDirectionKeepAccepted: Story = {
+  name: 'Правка части · по каждому принятому плану «Переснять» или «Оставить принятым»',
+  tags: ['!autodocs', 'ci'],
+  parameters: { songframe: scenarioPageOptions({ variant: 'produced' }) },
+  play: async (context) => {
+    const screen = await ready(context);
+    await userEvent.click(partsBlock(screen));
+    // Направление первой части задевает оба её плана; принятые M01 и M02 получают выбор, по умолчанию — переснять.
+    const direction = screen.getAllByRole('textbox', { name: scenarioTexts.treatment.direction })[0];
+    await userEvent.type(direction, ' Дождь стихает.');
+    await userEvent.click(saveButton(screen));
+    const dialog = within(await screen.findByRole('dialog', { name: scenarioTexts.save.productionTitle }));
+    await expect(dialog.getByText(scenarioTexts.save.choiceHint)).toBeInTheDocument();
+    const group = (shot: string) => within(dialog.getByRole('radiogroup', { name: shot }));
+    await expect(group('M01').getByRole('radio', { name: scenarioTexts.check.dialog.reshoot })).toBeChecked();
+    await expect(group('M02').getByRole('radio', { name: scenarioTexts.check.dialog.reshoot })).toBeChecked();
+    await userEvent.click(group('M02').getByRole('radio', { name: scenarioTexts.check.dialog.keep }));
+    await expect(dialog.getByText(scenarioTexts.save.keepHint)).toBeInTheDocument();
+    await userEvent.click(dialog.getByRole('button', { name: commonTexts.save }));
+    await waitFor(() => expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений сценария: 1 (production). Оставлены принятыми: M02.'));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await expect(unsavedChip(screen)).not.toBeInTheDocument();
   }
 };
 
 export const SaveProducedShots: Story = {
-  name: 'Сохранение реестра · принятые планы требуют подтверждения',
+  name: 'Сохранение сценария · принятые планы требуют подтверждения',
   tags: CANVAS_ONLY,
   parameters: { songframe: scenarioPageOptions({ variant: 'produced' }) },
   play: async (context) => {
@@ -255,13 +272,13 @@ export const SaveProducedShots: Story = {
     await expect(production.getByText('M01')).toBeInTheDocument();
     await userEvent.click(production.getByRole('button', { name: commonTexts.cancel }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    await expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений реестра: 0.');
+    await expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений сценария: 0.');
     await expect(unsavedChip(screen)).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: scenarioTexts.toolbar.saveWithoutProduction }));
     const keep = within(await screen.findByRole('dialog', { name: scenarioTexts.save.keepTitle }));
     await userEvent.click(keep.getByRole('button', { name: scenarioTexts.toolbar.saveWithoutProduction }));
-    await waitFor(() => expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений реестра: 1 (keep).'));
+    await waitFor(() => expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений сценария: 1 (keep).'));
     await expect(screen.getByTestId('page-model-shot-M01')).toHaveTextContent('Правка принятого плана.');
 
     // У плана без материалов «без производства» бессмысленно: причина видна в подсказке, обычное сохранение идёт без диалога.
@@ -276,7 +293,7 @@ export const SaveProducedShots: Story = {
       { timeout: 3000 }
     );
     await userEvent.click(saveButton(screen));
-    await waitFor(() => expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений реестра: 2 (keep, production).'));
+    await waitFor(() => expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений сценария: 2 (keep, production).'));
     await expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     await expect(screen.getByTestId('page-model-shot-M03')).toHaveTextContent('Правка нового плана.');
   }
@@ -304,17 +321,17 @@ export const RecalculateBounds: Story = {
     const action = screen.getByTestId('page-model-shot-M01').textContent ?? '';
     await userEvent.click(screen.getByRole('button', { name: scenarioTexts.toolbar.recalculateBounds }));
     await screen.findByText(scenarioTexts.notice.boundsRecalculated({ count: 2 }));
-    await expect(screen.getByTestId('page-model-scaffold')).toHaveTextContent('Построений каркаса: 1 (--dry-run --json).');
+    await expect(screen.getByTestId('page-model-scaffold')).toHaveTextContent('Пересчётов границ: 1 (--json).');
     // Черновик не записан: постановка в модели прежняя, правку нужно сохранить.
     await expect(unsavedChip(screen)).toBeInTheDocument();
-    await expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений реестра: 0.');
+    await expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений сценария: 0.');
     await expect(field(screen, scenarioTexts.fields.action).value).not.toContain('ЗАПОЛНИТЬ');
     await userEvent.click(saveButton(screen));
     const production = within(await screen.findByRole('dialog', { name: scenarioTexts.save.productionTitle }));
     await expect(production.getByText('M01')).toBeInTheDocument();
     await expect(production.getByText('M02')).toBeInTheDocument();
     await userEvent.click(production.getByRole('button', { name: commonTexts.save }));
-    await waitFor(() => expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений реестра: 1 (production).'));
+    await waitFor(() => expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений сценария: 1 (production).'));
     await expect(screen.getByTestId('page-model-shot-M01')).toHaveTextContent(action);
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     // Повторный пересчёт ничего не меняет.
@@ -325,7 +342,7 @@ export const RecalculateBounds: Story = {
 };
 
 export const RecalculateBoundsLeadPause: Story = {
-  name: 'Пересчёт границ · отказ называет паузу перед строкой и совет для трактовки',
+  name: 'Пересчёт границ · отказ называет паузу перед строкой и совет для частей',
   tags: ['ci'],
   parameters: { songframe: scenarioPageOptions({ leadPause: true }) },
   play: async (context) => {
@@ -341,9 +358,9 @@ export const RecalculateBoundsLeadPause: Story = {
         fix: notice.boundsFix.moveStart({ at: '10.6' })
       })
     );
-    // Отказ ничего не меняет: черновик реестра прежний, сохранять нечего.
+    // Отказ ничего не меняет: черновик сценария прежний, сохранять нечего.
     await expect(unsavedChip(screen)).not.toBeInTheDocument();
-    await expect(screen.getByTestId('page-model-scaffold')).toHaveTextContent('Построений каркаса: 1 (--dry-run --json).');
+    await expect(screen.getByTestId('page-model-scaffold')).toHaveTextContent('Пересчётов границ: 1 (--json).');
   }
 };
 
@@ -366,9 +383,9 @@ export const RecalculateBoundsLineMoved: Story = {
         fix: notice.boundsFix.movePartStart({ part: 'Куплет у калитки', at: '7' })
       })
     );
-    // Реестр не тронут: строка осталась в своём плане, сохранять нечего.
+    // Сценарий не тронут: строка осталась в своём плане, сохранять нечего.
     await expect(unsavedChip(screen)).not.toBeInTheDocument();
-    await expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений реестра: 0.');
+    await expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений сценария: 0.');
   }
 };
 
@@ -383,13 +400,13 @@ export const WorkflowWithManualEditing: Story = {
     await expect(await screen.findByRole('button', { name: scenarioTexts.workflow.createScenes })).toBeVisible();
     await userEvent.type(field(screen, scenarioTexts.fields.action), ' Ручная правка.');
     await userEvent.click(saveButton(screen));
-    await waitFor(() => expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений реестра: 1 (production).'));
+    await waitFor(() => expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений сценария: 1 (production).'));
     await expect(screen.getByTestId('page-model-shot-M01')).toHaveTextContent('Ручная правка.');
   }
 };
 
 export const RegistryProblems: Story = {
-  name: 'Проблемы реестра · сохранение заблокировано до исправления',
+  name: 'Проблемы планов · сохранение заблокировано до исправления',
   tags: CANVAS_ONLY,
   play: async (context) => {
     const screen = await ready(context);
@@ -405,7 +422,7 @@ export const RegistryProblems: Story = {
       timeout: 3000
     });
     await expect(saveButton(screen)).toBeEnabled();
-    await expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений реестра: 0.');
+    await expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений сценария: 0.');
   }
 };
 
@@ -416,12 +433,12 @@ export const ReferencesStale: Story = {
   play: async (context) => {
     const screen = await ready(context);
     await editorHeading(screen, 'M01');
-    // Кастинг получил референс после записи реестра: правок нет, но сохранение доступно — только оно обновит карту.
+    // Кастинг получил референс после записи сценария: правок нет, но сохранение доступно — только оно обновит карту.
     await expect(screen.getByText(scenarioTexts.main.referencesRefresh)).toBeVisible();
     await expect(unsavedChip(screen)).not.toBeInTheDocument();
     await expect(saveButton(screen)).toBeEnabled();
     await userEvent.click(saveButton(screen));
-    await waitFor(() => expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений реестра: 1 (production).'));
+    await waitFor(() => expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений сценария: 1 (production).'));
     await waitFor(() => expect(screen.queryByText(scenarioTexts.main.referencesRefresh)).not.toBeInTheDocument());
     await expect(saveButton(screen)).toBeDisabled();
     await expect(saveButton(screen)).toHaveAttribute('title', expect.stringContaining(scenarioTexts.toolbar.noChanges));
@@ -436,7 +453,7 @@ export const AgentWithDrafts: Story = {
     await userEvent.type(field(screen, scenarioTexts.fields.action), ' Правка до агента.');
     await userEvent.click(await screen.findByRole('button', { name: scenarioTexts.workflow.createScenes }));
     const conflict = within(await screen.findByRole('dialog', { name: commonTexts.unsavedChanges }));
-    await expect(conflict.getByText(scenarioTexts.drafts.changed({ treatment: false, scenes: true }))).toBeInTheDocument();
+    await expect(conflict.getByText(scenarioTexts.drafts.changed)).toBeInTheDocument();
     await userEvent.click(conflict.getByRole('button', { name: scenarioTexts.drafts.returnToEditor }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     await expect(screen.getByTestId('page-model-agent')).toHaveTextContent('Запусков агента: 0.');
@@ -449,7 +466,7 @@ export const AgentWithDrafts: Story = {
     // Пока диалог закрывается, остальная страница скрыта от вспомогательных технологий.
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     await expect(screen.getByTestId('page-model-shot-M01')).toHaveTextContent('Правка до агента.');
-    await expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений реестра: 1 (production).');
+    await expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений сценария: 1 (production).');
     await screen.findByText(scenarioTexts.page.agentEditingPaused);
     await expect(field(screen, scenarioTexts.fields.action).closest('[inert]')).not.toBeNull();
 
@@ -474,15 +491,15 @@ async function applyScenes(context: Context): Promise<void> {
 }
 
 export const ApplyScenesProposal: Story = {
-  name: 'Применение прохода сценария · правки отменяются, записывается только реестр',
+  name: 'Применение прохода сценария · правки отменяются, записываются только планы',
   tags: ['!autodocs', 'ci'],
   parameters: { songframe: scenarioPageOptions({ variant: 'proposal' }) },
   play: async (context) => {
     const screen = await ready(context);
-    await userEvent.click(treatmentTab(screen));
+    await userEvent.click(partsBlock(screen));
     const logline = field(screen, scenarioTexts.fields.logline);
     await userEvent.clear(logline);
-    await userEvent.type(logline, 'Правка трактовки до применения.');
+    await userEvent.type(logline, 'Правка логлайна до применения.');
     await applyScenes(context);
     // Запись правок сделала бы предложение устаревшим: остаются только отмена правок или возврат к редактору.
     const dialog = await screen.findByRole('dialog', { name: commonTexts.unsavedChanges });
@@ -497,24 +514,23 @@ export const ApplyScenesProposal: Story = {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     await expect(screen.getByTestId('page-model-shot-M01')).toHaveTextContent(PROPOSAL_ACTION);
     await expect(screen.getByTestId('page-model-logline')).toHaveTextContent('Герой возвращается к старым воротам.');
-    await expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений трактовки: 0. Сохранений реестра: 0.');
+    await expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений сценария: 0.');
     await expect(field(screen, scenarioTexts.fields.logline)).toHaveValue('Герой возвращается к старым воротам.');
     await expect(unsavedChip(screen)).not.toBeInTheDocument();
-    await userEvent.click(scenesTab(screen));
     await waitFor(() => expect(field(screen, scenarioTexts.fields.action)).toHaveValue(PROPOSAL_ACTION));
     await expect(unsavedChip(screen)).not.toBeInTheDocument();
   }
 };
 
 export const ProposalStaleAfterSave: Story = {
-  name: 'Сохранение реестра до применения · предложение устарело, применить нельзя',
+  name: 'Сохранение сценария до применения · предложение устарело, применить нельзя',
   tags: ['!autodocs', 'ci'],
   parameters: { songframe: scenarioPageOptions({ variant: 'proposal' }) },
   play: async (context) => {
     const screen = await ready(context);
     await userEvent.type(field(screen, scenarioTexts.fields.action), ' Правка до применения.');
     await userEvent.click(saveButton(screen));
-    await waitFor(() => expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений реестра: 1 (production).'));
+    await waitFor(() => expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений сценария: 1 (production).'));
     // Опрос панели приносит признак устаревшего предложения из сверки хешей документов.
     await screen.findByText(scenarioTexts.workflow.proposalStale, undefined, { timeout: 3000 });
     await userEvent.click(screen.getByRole('button', { name: scenarioTexts.workflow.reviewProposal }));
@@ -577,7 +593,7 @@ export const CheckReport: Story = {
 };
 
 export const CheckRunAndStale: Story = {
-  name: 'Проверка сценария · запуск, готовый отчёт и устаревание после сохранения реестра',
+  name: 'Проверка сценария · запуск, готовый отчёт и устаревание после сохранения сценария',
   tags: ['!autodocs', 'ci'],
   play: async (context) => {
     const screen = await ready(context);
@@ -596,7 +612,7 @@ export const CheckRunAndStale: Story = {
     await waitFor(() => expect(screen.queryByText(scenarioTexts.page.agentEditingPaused)).not.toBeInTheDocument());
     await userEvent.type(field(screen, scenarioTexts.fields.action), ' Правка после проверки.');
     await userEvent.click(saveButton(screen));
-    await waitFor(() => expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений реестра: 1 (production).'));
+    await waitFor(() => expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений сценария: 1 (production).'));
     await panel.findByText(scenarioTexts.check.statusStale, undefined, { timeout: 3000 });
     await expect(panel.getByText(scenarioTexts.check.stale)).toBeInTheDocument();
     await expect(panel.getByRole('button', { name: scenarioTexts.check.restart })).toBeEnabled();
@@ -684,7 +700,7 @@ export const CheckResolve: Story = {
     // Отметка видна в заголовке проблемы и уменьшает число нерешённых, сценарий не записывается.
     await expect(await panel.findByText(scenarioTexts.check.resolvedHint)).toBeInTheDocument();
     await expect(panel.getByText(scenarioTexts.check.statusIssues({ count: 2 }))).toBeInTheDocument();
-    await expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений реестра: 0');
+    await expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений сценария: 0');
     await userEvent.click(panel.getByRole('button', { name: scenarioTexts.check.unresolve }));
     await expect(await panel.findByText(scenarioTexts.check.statusIssues({ count: 3 }))).toBeInTheDocument();
     await expect(panel.queryByText(scenarioTexts.check.resolvedHint)).not.toBeInTheDocument();
@@ -736,7 +752,7 @@ export const LoadError: Story = {
 };
 
 export const LongRegistry: Story = {
-  name: 'Длинный реестр · закреплённые панель и список, поиск и клавиатура',
+  name: 'Длинный сценарий · закреплённые панель и список, поиск и клавиатура',
   tags: CANVAS_ONLY,
   parameters: { songframe: scenarioPageOptions({ variant: 'long', route: '/project/scenario?shot=M37', links: ['M02', 'M38'] }) },
   play: async (context) => {
@@ -765,7 +781,7 @@ export const LongRegistry: Story = {
     window.scrollTo({ top: grid.getBoundingClientRect().top + window.scrollY + 300, behavior: 'instant' });
     const header = doc.querySelector('header')!;
     const bar = doc.querySelector('[data-page-action-bar="top"]')!;
-    // Реестр делится на две колонки с брейкпоинта lg (1200 px окна): шире список закреплён под панелью, уже — уходит вверх вместе со страницей.
+    // Планы делятся на две колонки с брейкпоинта lg (1200 px окна): шире список закреплён под панелью, уже — уходит вверх вместе со страницей.
     const wide = window.innerWidth >= 1200;
     await waitFor(() => {
       const barBottom = bar.getBoundingClientRect().bottom;
@@ -784,39 +800,35 @@ export const LongRegistry: Story = {
   }
 };
 
-export const NoRegistry: Story = {
-  name: 'Нет реестра · каркас только по сохранённой трактовке',
+export const NoShots: Story = {
+  name: 'Сценарий из одних частей · блок частей раскрыт, планы создаст агент',
   tags: CANVAS_ONLY,
-  parameters: { songframe: scenarioPageOptions({ variant: 'noRegistry' }) },
+  parameters: { songframe: scenarioPageOptions({ variant: 'noShots' }) },
   play: async (context) => {
     const screen = await ready(context);
-    await expect(screen.getByRole('tab', { name: scenarioTexts.toolbar.treatmentTab({ count: 3 }) })).toHaveAttribute('aria-selected', 'true');
-    await expect(screen.getByRole('tab', { name: scenarioTexts.toolbar.scenesTab({ count: null }) })).toBeDisabled();
-    const scaffold = () => screen.getByRole('button', { name: scenarioTexts.toolbar.buildScaffold });
-    await expect(scaffold()).toBeEnabled();
+    await expect(partsBlock(screen)).toHaveAttribute('aria-expanded', 'true');
+    await expect(screen.getByText(scenarioTexts.page.noShots)).toBeVisible();
+    // Без планов пересчитывать нечего, а «без производства» не имеет смысла.
+    await expect(screen.queryByRole('button', { name: scenarioTexts.toolbar.recalculateBounds })).not.toBeInTheDocument();
+    await expect(screen.queryByRole('button', { name: scenarioTexts.toolbar.saveWithoutProduction })).not.toBeInTheDocument();
+    // Пока части не утверждены вместе с кастингом, второй проход закрыт.
+    await expect(await screen.findByRole('button', { name: scenarioTexts.workflow.createScenes })).toBeDisabled();
+    await expect(screen.getAllByRole('textbox', { name: scenarioTexts.fields.code })[0]).not.toHaveAttribute('readonly');
     await userEvent.type(field(screen, scenarioTexts.fields.logline), ' Черновик.');
-    await expect(scaffold()).toBeDisabled();
-    await expect(scaffold()).toHaveAttribute('title', expect.stringContaining(scenarioTexts.prerequisites.savedDrafts));
     await userEvent.click(saveButton(screen));
-    await waitFor(() => expect(scaffold()).toBeEnabled());
-    await userEvent.click(scaffold());
-    await editorHeading(screen, 'M01');
-    await expect(screen.getByRole('tab', { name: scenarioTexts.toolbar.scenesTab({ count: 6 }) })).toHaveAttribute('aria-selected', 'true');
-    await expect(screen.getByTestId('page-model-scaffold')).toHaveTextContent('Построений каркаса: 1 (--json).');
-    await expect(screen.getByTestId('page-model-shots')).toHaveTextContent('Сохранённых планов: 6.');
+    await waitFor(() => expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений сценария: 1 (production).'));
+    await expect(screen.getByTestId('page-model-shots')).toHaveTextContent('Сохранённых планов: 0.');
     await expect(screen.getByTestId('page-model-logline')).toHaveTextContent('Черновик.');
     await expect(unsavedChip(screen)).not.toBeInTheDocument();
   }
 };
 
 export const TreatmentDraftWithProblems: Story = {
-  name: 'Черновик трактовки · общая граница частей · сохраняется с проблемами, каркас недоступен',
+  name: 'Черновик частей · общая граница частей · сохраняется с проблемами',
   tags: ['!autodocs', 'ci'],
-  parameters: { songframe: scenarioPageOptions({ variant: 'noRegistry' }) },
+  parameters: { songframe: scenarioPageOptions({ variant: 'noShots' }) },
   play: async (context) => {
     const screen = await ready(context);
-    const scaffold = () => screen.getByRole('button', { name: scenarioTexts.toolbar.buildScaffold });
-    await expect(scaffold()).toBeEnabled();
     await expect(screen.queryByText(scenarioTexts.treatment.problemsTitle)).not.toBeInTheDocument();
     // Общая граница соседних частей правится одним полем: конец первой части сдвигает начало второй, стык не рвётся.
     const values = (name: string) => screen.getAllByRole('spinbutton', { name }).map((input: HTMLElement) => (input as HTMLInputElement).value);
@@ -846,35 +858,30 @@ export const TreatmentDraftWithProblems: Story = {
     await userEvent.click(saveButton(screen));
     // Сохранение черновика — не ошибка: уведомление объясняет, а список остаётся над частями.
     await screen.findByText(scenarioTexts.notice.treatmentSavedDraft, {}, { timeout: 3000 });
-    await expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений трактовки: 1.');
+    await expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений сценария: 1 (production).');
     await expect(unsavedChip(screen)).not.toBeInTheDocument();
     await expect(screen.getByText(scenarioTexts.treatment.problemsTitle)).toBeVisible();
     await expect(screen.getByRole('button', { name: scenarioTexts.toolbar.problems({ count: 1 }) })).toBeInTheDocument();
-    await expect(scaffold()).toBeDisabled();
-    await expect(scaffold()).toHaveAttribute('title', expect.stringContaining(scenarioTexts.prerequisites.treatmentProblems));
-    await expect(screen.getByTestId('page-model-scaffold')).toHaveTextContent('Построений каркаса: 0.');
-    // Конец последней части снова совпадает с концом трека: список снимается, каркас открывается после сохранения.
+    // Конец последней части снова совпадает с концом трека: список снимается, сохранение проходит обычным образом.
     await userEvent.clear(end);
     await userEvent.type(end, '24');
     await waitFor(() => expect(screen.queryByText(scenarioTexts.treatment.problemsTitle)).not.toBeInTheDocument(), { timeout: 3000 });
     await userEvent.click(saveButton(screen));
-    await screen.findByText(scenarioTexts.notice.treatmentSaved, { exact: true }, { timeout: 3000 });
-    await waitFor(() => expect(scaffold()).toBeEnabled());
+    await screen.findByText(scenarioTexts.notice.scenesSaved, { exact: true }, { timeout: 3000 });
+    await expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений сценария: 2 (production, production).');
   }
 };
 
 export const PartsFromTimingJoined: Story = {
   name: 'Части из разметки · промежутки и перекрытия карты закрываются, части встык',
   tags: ['!autodocs', 'ci'],
-  parameters: { songframe: scenarioPageOptions({ variant: 'noRegistry', gappedTiming: true }) },
+  parameters: { songframe: scenarioPageOptions({ variant: 'noShots', gappedTiming: true }) },
   play: async (context) => {
     const screen = await ready(context);
-    // Сохранённая трактовка скопировала границы карты как есть: проблемы видны сразу, каркас недоступен.
+    // Сохранённые части скопировали границы карты как есть: проблемы видны сразу.
     const title = await screen.findByText(scenarioTexts.treatment.problemsTitle, {}, { timeout: 3000 });
     const alert = (title as HTMLElement).closest('[role="alert"]') as HTMLElement;
     await waitFor(() => expect(within(alert).getAllByRole('listitem')).toHaveLength(4));
-    const scaffold = () => screen.getByRole('button', { name: scenarioTexts.toolbar.buildScaffold });
-    await expect(scaffold()).toBeDisabled();
     await userEvent.click(screen.getByRole('button', { name: scenarioTexts.toolbar.partsFromTiming }));
     const confirm = within(await screen.findByRole('dialog'));
     await userEvent.click(confirm.getByRole('button', { name: scenarioTexts.toolbar.replacePartsConfirm }));
@@ -883,8 +890,7 @@ export const PartsFromTimingJoined: Story = {
     await expect(values(scenarioTexts.fields.startSeconds)).toEqual(['0', '8.1', '16.1']);
     await expect(values(scenarioTexts.fields.endSeconds)).toEqual(['8.1', '16.1', '24']);
     await userEvent.click(saveButton(screen));
-    await screen.findByText(scenarioTexts.notice.treatmentSaved, { exact: true }, { timeout: 3000 });
-    await waitFor(() => expect(scaffold()).toBeEnabled());
+    await screen.findByText(scenarioTexts.notice.scenesSaved, { exact: true }, { timeout: 3000 });
   }
 };
 
@@ -937,18 +943,20 @@ export const StateFieldInheritance: Story = {
   }
 };
 
-/** Пустая трактовка объясняет действие через сущность агента, независимо от текущего каталога исполнителей. */
+/** Пустой сценарий объясняет действие через сущность агента, независимо от текущего каталога исполнителей. */
 export const NeutralAgentTreatment: Story = {
-  name: 'Нейтральная подсказка агента · пустая трактовка · ручное создание',
+  name: 'Нейтральная подсказка агента · сценария нет · ручное создание',
   tags: ['ci', '!autodocs'],
-  parameters: { songframe: scenarioPageOptions({ variant: 'noTreatment' }) },
+  parameters: { songframe: scenarioPageOptions({ variant: 'noScenario' }) },
   play: async (context) => {
     const screen = await ready(context);
     const hint = await screen.findByText(scenarioTexts.treatment.emptyHint);
     await expect(hint).toBeVisible();
-    await expect(hint).toHaveTextContent('поручите первый проход агенту кнопкой «Создать трактовку»');
+    await expect(hint).toHaveTextContent('поручите первый проход агенту кнопкой «Создать части»');
     await expect(hint).not.toHaveTextContent(/Claude|Codex/);
     await userEvent.click(screen.getByRole('button', { name: scenarioTexts.treatment.createManually }));
     await expect(await screen.findByRole('textbox', { name: scenarioTexts.fields.logline })).toBeVisible();
+    await expect(screen.getByRole('button', { name: scenarioTexts.treatment.title({ count: 0 }) })).toHaveAttribute('aria-expanded', 'true');
+    await expect(screen.getByText(scenarioTexts.page.noShots)).toBeVisible();
   }
 };

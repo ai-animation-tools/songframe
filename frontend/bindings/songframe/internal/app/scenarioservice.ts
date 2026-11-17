@@ -3,7 +3,7 @@
 
 /**
  * ScenarioService реализует группу window.api.scenario: просмотр и готовность реестра,
- * сохранение трактовки и реестра (с режимом production/keep и оценкой затронутых планов),
+ * сохранение сценария (с режимом production/keep и оценкой затронутых планов),
  * проверку черновика и врезку непрерывности. Без состояния; запись — через шлюз projectfs.
  * @module
  */
@@ -45,11 +45,12 @@ export function SaveScenes(project: string, input: json$0.RawMessage, mode: stri
 }
 
 /**
- * SaveTreatment — scenario.saveTreatment: структурная нормализация и запись plan/treatment.json
- * черновиком; содержательные проблемы запись не блокируют (их отдаёт ValidateTreatment).
+ * SaveScenesKeeping — запись сценария с выбором по плану: принятые планы из keep остаются
+ * принятыми (видео подходит новой постановке), остальные задетые принятые планы получают
+ * «Постановка изменена». Так правка части или плана спрашивает о каждом принятом плане отдельно.
  */
-export function SaveTreatment(project: string, input: json$0.RawMessage): $CancellablePromise<json$0.RawMessage> {
-    return $Call.ByID(1146575445, project, input);
+export function SaveScenesKeeping(project: string, input: json$0.RawMessage, keep: string[]): $CancellablePromise<json$0.RawMessage> {
+    return $Call.ByID(1947641621, project, input, keep);
 }
 
 /**
@@ -64,14 +65,6 @@ export function Status(project: string): $CancellablePromise<string> {
  */
 export function ValidateScenes(project: string, input: json$0.RawMessage): $CancellablePromise<string[]> {
     return $Call.ByID(165691921, project, input);
-}
-
-/**
- * ValidateTreatment — scenario.validateTreatment: проблемы черновика трактовки (стык частей,
- * длительность трека, коды, названия) без записи, чтобы их можно было показать до сохранения.
- */
-export function ValidateTreatment(project: string, input: json$0.RawMessage): $CancellablePromise<string[]> {
-    return $Call.ByID(1934312932, project, input);
 }
 
 /**

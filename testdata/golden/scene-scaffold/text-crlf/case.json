@@ -7,7 +7,5 @@
     "strip"
   ],
   "stubbedMedia": [],
-  "args": [
-    "--dry-run"
-  ]
+  "args": []
 }

@@ -192,7 +192,7 @@ func write(project string, input any, defaults Defaults) (*dynvalue.Object, erro
 
 // DescriptionPlan — итог PlanDescriptions: опись с обновлёнными описаниями (nil без описи) и
 // кастинг, спроецированный на неё. Используется записью кастинга и применением предложения
-// трактовки.
+// прохода частей.
 type DescriptionPlan struct {
 	Manifest any
 	Cast     *dynvalue.Object

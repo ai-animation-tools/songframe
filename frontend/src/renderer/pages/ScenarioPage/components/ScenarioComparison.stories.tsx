@@ -15,7 +15,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const TreatmentAndCast: Story = {
-  name: 'Кастинг и трактовка · изменения, новое место и отсутствие изображения',
+  name: 'Кастинг и части · изменения, новое место и отсутствие изображения',
   play: async ({ canvasElement }) => {
     const screen = within(canvasElement.ownerDocument.body);
     const dialog = within(await screen.findByRole('dialog', { name: /Предложение для сценария/ }));

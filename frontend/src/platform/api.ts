@@ -558,10 +558,9 @@ export function createApi(b: Bindings): Api {
 
   api.scenario.status = (project) => call('scenario.status', async () => (await (await b.scenario()).Status(project)) as ScenarioStatus);
   api.scenario.view = (project) => call('scenario.view', async () => (await b.scenario()).View(project));
-  api.scenario.saveTreatment = (project, treatment) => call('scenario.saveTreatment', async () => (await b.scenario()).SaveTreatment(project, treatment));
-  api.scenario.validateTreatment = (project, treatment) =>
-    call('scenario.validateTreatment', async () => (await b.scenario()).ValidateTreatment(project, treatment));
   api.scenario.saveScenes = (project, scenes, mode) => call('scenario.saveScenes', async () => (await b.scenario()).SaveScenes(project, scenes, mode));
+  api.scenario.saveScenesKeeping = (project, scenes, keep) =>
+    call('scenario.saveScenesKeeping', async () => (await b.scenario()).SaveScenesKeeping(project, scenes, keep));
   api.scenario.saveImpact = (project, scenes) =>
     call('scenario.saveImpact', async () => {
       const impact = await (await b.scenario()).SaveImpact(project, scenes);

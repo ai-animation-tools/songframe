@@ -1,7 +1,7 @@
 import { scenarioTexts } from '@shared/texts/scenario';
 /**
  * Пересчёт границ планов по разметке песни без новой постановки. Каркас (`scene_scaffold --dry-run`) нарезает окна
- * по сохранённым трактовке и разметке; из него в реестр переносятся только окно плана, его строки песни и отметка
+ * по сохранённым частям и разметке; из него в реестр переносятся только окно плана, его строки песни и отметка
  * трека, а камера, действие, непрерывность, состояние и остальная постановка остаются прежними. Перенос идёт по коду
  * плана, поэтому состав планов должен совпасть: иначе коды сдвинулись бы и постановка попала бы в чужие окна.
  */
@@ -12,7 +12,7 @@ const WINDOW_FIELDS = ['original', 'start_frame', 'end_frame_exclusive'] as cons
 
 export type SceneBoundsResult = { scenes: ScenesFile; changed: string[] } | { problem: string };
 
-/** Сохранённые трактовка и разметка, по которым каркас нарезал окна: из них объясняется расхождение числа планов. */
+/** Сохранённые части и разметка, по которым каркас нарезал окна: из них объясняется расхождение числа планов. */
 export interface SceneBoundsSource {
   treatment: TreatmentFile | null;
   lines: TimingLine[];
@@ -25,11 +25,11 @@ export interface SceneBoundsSource {
 const GAP_SECONDS = 2.5;
 const DEFAULT_MAX_SHOT = 6;
 
-/** Секунды для текста: как в полях трактовки, до сотых без хвостовых нулей. */
+/** Секунды для текста: как в полях частей, до сотых без хвостовых нулей. */
 const seconds = (value: number, digits = 2): string => String(Number(value.toFixed(digits)));
 
 /**
- * Нарезка каркаса по сохранённым трактовке и разметке, нужная для объяснения отказа: какие строки попадают в часть
+ * Нарезка каркаса по сохранённым частям и разметке, нужная для объяснения отказа: какие строки попадают в часть
  * (по середине строки на сетке кадров) и на сколько планов каркас делит часть без строк. Повторяет правила
  * `internal/scenescaffold`; второй шаг каркаса (деление куска длиннее полутора шагов) части без строк не меняет числа
  * планов, потому что куски и так не длиннее шага с округлением.
@@ -57,7 +57,7 @@ function slicing(source: SceneBoundsSource, fps: number) {
 /**
  * «Макс. план, с», при котором часть без строк длиной length делится ровно на count планов: значение строго внутри
  * интервала length/(count+½)…length/(count−½), чтобы округление каркаса дало count. Берётся целое не меньше 2 (как у
- * поля трактовки), иначе — десятые. null — подходящего значения нет.
+ * поля частей), иначе — десятые. null — подходящего значения нет.
  */
 function keepStep(length: number, count: number): number | null {
   const lower = length / (count + 0.5);
@@ -148,7 +148,7 @@ function linesByPart(shots: SceneShot[], lyricTexts: Set<string>): Map<string, M
 
 /**
  * Строка песни, которую каркас отнёс к другой части, чем реестр. Так бывает, когда новая разметка сдвинула строку
- * через границу части трактовки (середина строки решает, чья она), а граница осталась прежней: число планов может
+ * через границу части сценария (середина строки решает, чья она), а граница осталась прежней: число планов может
  * совпасть, и без этой проверки пересчёт молча отдал бы строку плану соседней части с чужой постановкой. Строки
  * узнаются по тексту в `original` планов; повторяющиеся строки сравниваются числом вхождений в каждой части.
  */
@@ -211,8 +211,8 @@ function movedLine(current: ScenesFile, scaffold: ScenesFile, source: SceneBound
 /**
  * Реестр current с окнами каркаса scaffold. changed — коды планов, у которых сдвинулись границы или изменились строки
  * песни. Если строка песни перешла в другую часть, части или число планов в них разошлись, возвращается объяснение
- * вместо реестра: какая строка и куда ушла или причина другого числа планов по сохранённым трактовке и разметке
- * source, и совет, что поправить в трактовке.
+ * вместо реестра: какая строка и куда ушла или причина другого числа планов по сохранённым частям и разметке
+ * source, и совет, что поправить в частях.
  */
 export function recalculateSceneBounds(current: ScenesFile, scaffold: ScenesFile, source: SceneBoundsSource): SceneBoundsResult {
   // Строка, ушедшая в другую часть, — ошибка при любом числе планов: её проверяют первой, когда части те же.
@@ -243,7 +243,9 @@ export function recalculateSceneBounds(current: ScenesFile, scaffold: ScenesFile
     changed.push(shot.id);
     return { ...shot, original: base.original, start_frame: base.start_frame, end_frame_exclusive: base.end_frame_exclusive };
   });
-  const audioChanged = current.audio.end_seconds !== scaffold.audio.end_seconds;
+  // Карта звука есть у сценария с планами; каркас всегда несёт её, поэтому при расхождении берётся конец из каркаса.
+  const audioChanged = !!scaffold.audio && current.audio?.end_seconds !== scaffold.audio.end_seconds;
   if (!changed.length && !audioChanged) return { scenes: current, changed };
-  return { scenes: { ...current, audio: audioChanged ? { ...current.audio, end_seconds: scaffold.audio.end_seconds } : current.audio, scenes }, changed };
+  const audio = audioChanged && scaffold.audio ? { ...(current.audio ?? scaffold.audio), end_seconds: scaffold.audio.end_seconds } : current.audio;
+  return { scenes: { ...current, audio, scenes }, changed };
 }

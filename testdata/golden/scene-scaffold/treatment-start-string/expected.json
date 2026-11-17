@@ -1,9 +1,0 @@
-{
-  "code": 1,
-  "stdout": "",
-  "stderr": "не число: 'восемь'\n",
-  "unhandled": false,
-  "files": {
-    "plan/scenes.json": "unchanged"
-  }
-}

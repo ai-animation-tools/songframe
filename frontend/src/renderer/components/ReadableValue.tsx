@@ -4,7 +4,7 @@ import type { ReactElement } from 'react';
 import { Box, Chip, Stack, Typography } from '@mui/material';
 import { inline, Prose } from './Prose';
 
-/** Подписи известных ключей реестра, кастинга и трактовки; неизвестные ключи показываются как есть. */
+/** Подписи известных ключей сценария, кастинга и частей; неизвестные ключи показываются как есть. */
 const KEY_LABELS: Record<string, string> = componentsTexts.readableValue.keys;
 const PHASES: Record<string, string> = componentsTexts.readableValue.phases;
 

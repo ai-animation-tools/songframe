@@ -19,7 +19,7 @@ import (
 )
 
 // Публикация сценарного предложения.
-// Проход трактовки записывает только пару кастинга и трактовки (и описания в описи); проход
+// Проход частей записывает кастинг и части сценария plan/scenes.json (и описания в описи); проход
 // сцен сначала собирает копию проекта во временной папке (staging), записывает туда новый
 // реестр и прогоняет штатные проверки lint_registry, continuity_brief по каждому плану и фазе,
 // update_scene_views и update_scene_views --check. Только если копия прошла все проверки и
@@ -229,7 +229,7 @@ func lastRune(text string) (rune, int) {
 // publisher — публикация через журнал Store каталога состояния.
 type publisher struct{ store scenarioapply.Store }
 
-// publish — публикация предложения прохода в проект: проход трактовки пишет пару документов,
+// publish — публикация предложения прохода в проект: проход частей пишет кастинг и части сценария,
 // проход сцен — проверенные реестр и производные виды копии.
 func (p publisher) publish(input Publication) error {
 	project, err := filepath.Abs(input.Project)
@@ -264,7 +264,8 @@ func (p publisher) publish(input Publication) error {
 	return p.publishScenes(project, input)
 }
 
-// publishPair — первый проход: кастинг, трактовка и, если изменились, описания в описи.
+// publishPair — первый проход: кастинг, части сценария (логлайн и список частей в plan/scenes.json;
+// без сценария он создаётся из одних частей) и, если изменились, описания в описи.
 func (p publisher) publishPair(project string, input Publication) error {
 	castDocument, castOK := dynvalue.AsObject(input.After.Cast)
 	treatment, treatmentOK := dynvalue.AsObject(input.After.Treatment)
@@ -306,21 +307,28 @@ func (p publisher) publishPair(project string, input Publication) error {
 	if err != nil {
 		return err
 	}
-	candidates := []scenarioapply.Change{
-		{Path: "plan/cast.json", Next: jsonBytes(plan.Cast)},
-		{Path: "plan/treatment.json", Next: jsonBytes(treatment)},
-	}
+	candidates := []scenarioapply.Change{{Path: "plan/cast.json", Next: jsonBytes(plan.Cast)}}
 	if plan.Manifest != nil && dynvalue.Stringify(plan.Manifest) != dynvalue.Stringify(manifest) {
 		candidates = append(candidates, scenarioapply.Change{Path: "source/manifest.json", Next: jsonBytes(plan.Manifest)})
 	}
-	// Карта references реестра сцен выводится из кастинга и публикуется вместе с ним.
-	scenes, err := cast.ScenesWithReferences(project, plan.Cast)
+	// Карта references сценария выводится из кастинга и публикуется вместе с ним, части — из ответа.
+	scenesBytes, err := cast.ScenesWithReferences(project, plan.Cast)
 	if err != nil {
 		return err
 	}
-	if scenes != nil {
-		candidates = append(candidates, scenarioapply.Change{Path: cast.ScenesPath, Next: scenes})
+	if scenesBytes == nil {
+		if scenesBytes, err = scenarioapply.ReadFile(project, cast.ScenesPath); err != nil {
+			return err
+		}
 	}
+	var current any
+	if scenesBytes != nil {
+		if current, err = dynvalue.Parse([]byte(dynvalue.DecodeUTF8(scenesBytes))); err != nil || !dynvalue.IsRecord(current) {
+			current = nil
+		}
+	}
+	scenes := scenario.WithTreatment(current, treatment, scenario.ExpectedFPS(project, dynvalue.Get(current, "fps")))
+	candidates = append(candidates, scenarioapply.Change{Path: cast.ScenesPath, Next: jsonBytes(scenes)})
 	if err := verifyHashes(project, input.ExpectedHashes); err != nil {
 		return err
 	}
@@ -365,7 +373,7 @@ func (p publisher) publishScenes(project string, input Publication) error {
 	if input.After.Scenes == nil {
 		return errors.New(textProposedRegistryMissing)
 	}
-	problems, err := scenario.ValidateScenes(input.After.Scenes, input.After.Cast, scenario.ExpectedFPS(project, input.After.Scenes))
+	problems, err := scenario.ValidateScenes(input.After.Scenes, input.After.Cast, scenario.ExpectedFPS(project, input.After.Scenes), scenario.ProjectDuration(project))
 	if err != nil {
 		return err
 	}

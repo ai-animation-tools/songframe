@@ -23,7 +23,7 @@ var stagingFields = []string{"title", "camera", "action", "continuity", "notes",
 // placeholder — /ЗАПОЛНИТЬ/iu: незаполненное место шаблона в любом регистре.
 var placeholder = regexp.MustCompile(`(?i)ЗАПОЛНИТЬ`)
 
-// Documents — ScenarioDocuments: кастинг, трактовка и реестр как деревья dynvalue; nil — null
+// Documents — ScenarioDocuments: кастинг, части сценария (проекция TreatmentOf) и сценарий как деревья dynvalue; nil — null
 // (документа нет). Значения после проверок не изменяются: при подстановке строится новый документ.
 type Documents struct {
 	Cast      any
@@ -143,6 +143,14 @@ func isFrameRate(value any) bool {
 // ожидает уже типизированный документ. Первая найденная ошибка — отказ.
 func checkScenesShape(value any) error {
 	document, ok := dynvalue.AsObject(value)
+	if ok && len(arrayItems(document.Value("scenes"))) == 0 && dynvalue.IsArray(document.Value("scenes")) {
+		// Сценарий из одних частей: общих правил, звука и карты референсов ещё нет, части проверяет
+		// scenario.NormalizeTreatmentDraft.
+		if !dynvalue.StrictEqual(document.Value("schema_version"), 1.0) || !isFrameRate(document.Value("fps")) || !dynvalue.IsArray(document.Value("sequences")) {
+			return errors.New(textRegistryInvalidDocument)
+		}
+		return nil
+	}
 	audio, audioOK := dynvalue.AsObject(dynvalue.Get(value, "audio"))
 	if !ok || !dynvalue.StrictEqual(document.Value("schema_version"), 1.0) || !isFrameRate(document.Value("fps")) ||
 		!isString(document.Value("visual_direction")) || !audioOK || !isString(audio.Value("path")) || !isString(audio.Value("end_seconds")) ||
@@ -245,7 +253,7 @@ func shotShape(scene *dynvalue.Object) bool {
 func filled(text string) bool { return dynvalue.Trim(text) != "" && !placeholder.MatchString(text) }
 
 // checkTreatmentCast — логлайн и постановка частей заполнены, части
-// ссылаются только на сущности кастинга. Документы уже нормализованы (cast.Normalize, трактовка).
+// ссылаются только на сущности кастинга. Документы уже нормализованы (cast.Normalize, части).
 func checkTreatmentCast(castValue, treatment any) error {
 	entities := map[string]bool{}
 	for _, entity := range arrayItems(dynvalue.Get(castValue, "entities")) {
@@ -282,7 +290,7 @@ func arrayItems(value any) []any {
 // (ручной черновик может быть неполным). Все проблемы — одной ошибкой, по строке на проблему:
 // интерфейс показывает их списком; незаполненные планы сводятся в один первый пункт.
 func checkReadyScenes(scenes, castValue any, duration, fps float64) error {
-	problems, err := scenario.ValidateScenes(scenes, castValue, fps)
+	problems, err := scenario.ValidateScenes(scenes, castValue, fps, duration)
 	if err != nil {
 		return err
 	}
@@ -357,7 +365,7 @@ func checkReadyScenes(scenes, castValue any, duration, fps float64) error {
 }
 
 // proposalDocuments — разбор и проверка ответа агента для прохода
-// pass. treatment заменяет пару кастинга и трактовки; scenes принимает заполненный каркас без
+// pass. treatment заменяет кастинг и части сценария; scenes принимает заполненный каркас без
 // изменения окон; revise применяет патчи постановки выбранных планов. Результат — новые документы;
 // before не изменяется.
 //
@@ -404,6 +412,7 @@ func proposalDocuments(raw, pass string, before Documents, scaffold any, selecte
 		shots := arrayItems(dynvalue.Get(scenes, "scenes"))
 		base := arrayItems(dynvalue.Get(scaffold, "scenes"))
 		if scaffold == nil || !deepEqual(dynvalue.Get(scenes, "audio"), dynvalue.Get(scaffold, "audio")) ||
+			!deepEqual(dynvalue.Get(scenes, "logline"), dynvalue.Get(scaffold, "logline")) ||
 			!deepEqual(dynvalue.Get(scenes, "sequences"), dynvalue.Get(scaffold, "sequences")) || len(shots) != len(base) {
 			return Documents{}, errors.New(textProposalScaffoldChanged)
 		}

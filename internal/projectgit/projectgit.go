@@ -69,7 +69,6 @@ var sectionRules = []sectionRule{
 	{"plan/audio/timing.md", SectionViews},
 	{"plan/audio/", SectionTiming},
 	{"plan/cast.json", SectionCast},
-	{"plan/treatment.json", SectionScenario},
 	{"plan/scenes.json", SectionScenario},
 	{"plan/scenario-workflow.json", SectionScenario},
 	{"plan/scenario-check.json", SectionScenario},

@@ -283,9 +283,8 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
     scenario: {
       status: guardedAsync(merged.scenario.status),
       view: guardedAsync(merged.scenario.view),
-      saveTreatment: guardedAsync(merged.scenario.saveTreatment),
-      validateTreatment: guardedAsync(merged.scenario.validateTreatment),
       saveScenes: guardedAsync(merged.scenario.saveScenes),
+      saveScenesKeeping: guardedAsync(merged.scenario.saveScenesKeeping),
       saveImpact: guardedAsync(merged.scenario.saveImpact),
       validateScenes: guardedAsync(merged.scenario.validateScenes),
       brief: guardedAsync(merged.scenario.brief)

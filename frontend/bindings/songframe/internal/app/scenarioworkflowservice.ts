@@ -3,7 +3,7 @@
 
 /**
  * ScenarioWorkflowService реализует группу window.api.scenarioWorkflow: сценарный проход агента
- * (трактовка, сцены, доработка), утверждения пары и сцен, применение и отклонение предложения.
+ * (кастинг и части, планы, доработка), утверждения пары и сцен, применение и отклонение предложения.
  * Состояние — локальные записи в каталоге состояния и задания менеджера агентов внутри
  * scenarioworkflow.Workflow; файлы проекта меняет только применение через журнал публикаций.
  * @module
@@ -32,7 +32,7 @@ export function ApplyCheckFixes(input: scenarioworkflow$0.CheckFixInput): $Cance
 }
 
 /**
- * ApproveCurrent — scenarioWorkflow.approveCurrent: утверждение сохранённых кастинга и трактовки.
+ * ApproveCurrent — scenarioWorkflow.approveCurrent: утверждение сохранённых кастинга и частей сценария.
  */
 export function ApproveCurrent(project: string): $CancellablePromise<scenarioworkflow$0.View> {
     return $Call.ByID(2315187697, project);

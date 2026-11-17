@@ -36,8 +36,7 @@ const (
 	damagedSources      = "source/manifest.json повреждён."
 	timingLinesMissing  = "plan/audio/timing.json не содержит строк разметки."
 	damagedCast         = "plan/cast.json повреждён."
-	damagedTreatment    = "plan/treatment.json повреждён или пуст."
-	damagedScenes       = "plan/scenes.json повреждён или не содержит планов."
+	damagedScenes       = "plan/scenes.json повреждён или не содержит частей."
 	animaticNotBuilt    = "Все планы приняты, но полный аниматик ещё не собран."
 	staleAnimatic       = "Аниматик собран по устаревшему реестру или входам: нужна пересборка."
 	animaticNotApproved = "Аниматик собран, но не принят в plan/production-status.json."
@@ -55,10 +54,11 @@ func orphanKits(ids []string) string {
 
 // Checks — признаки, из которых выведено состояние; показываются на странице проекта.
 type Checks struct {
-	Marker    bool `json:"marker"`
-	Sources   bool `json:"sources"`
-	Timing    bool `json:"timing"`
-	Cast      bool `json:"cast"`
+	Marker  bool `json:"marker"`
+	Sources bool `json:"sources"`
+	Timing  bool `json:"timing"`
+	Cast    bool `json:"cast"`
+	// Treatment — в сценарии есть части песни (логлайн и список частей первого прохода).
 	Treatment bool `json:"treatment"`
 	Scenes    bool `json:"scenes"`
 	// ShotsTotal — число планов-объектов в реестре.
@@ -198,14 +198,6 @@ func ComputeBase(path string) (ProjectStatus, error) {
 	} else if dynvalue.Exists(castPath) {
 		*problems = append(*problems, damagedCast)
 	}
-	treatmentPath := filepath.Join(path, "plan", "treatment.json")
-	treatment, _ := readJSON(treatmentPath)
-	if sequences, ok := dynvalue.AsArray(dynvalue.Get(treatment, "sequences")); dynvalue.IsRecord(treatment) && ok && len(sequences) > 0 {
-		checks.Treatment = true
-	} else if dynvalue.Exists(treatmentPath) {
-		*problems = append(*problems, damagedTreatment)
-	}
-
 	scenesPath := filepath.Join(path, "plan", "scenes.json")
 	var sceneIDs []string
 	var registry any
@@ -219,6 +211,9 @@ func ComputeBase(path string) (ProjectStatus, error) {
 		if err != nil {
 			scenes = dynvalue.Undefined
 		}
+		// Части сценария — первый шаг: сценарий без планов, но с частями исправен.
+		parts, partsOK := dynvalue.AsArray(dynvalue.Get(scenes, "sequences"))
+		checks.Treatment = dynvalue.IsRecord(scenes) && partsOK && len(parts) > 0
 		if list, ok := dynvalue.AsArray(dynvalue.Get(scenes, "scenes")); dynvalue.IsRecord(scenes) && ok && len(list) > 0 {
 			sceneIDs = []string{}
 			for _, scene := range list {
@@ -228,7 +223,7 @@ func ComputeBase(path string) (ProjectStatus, error) {
 			}
 			registry = scenes
 			checks.Scenes = true
-		} else {
+		} else if !checks.Treatment {
 			*problems = append(*problems, damagedScenes)
 		}
 	}

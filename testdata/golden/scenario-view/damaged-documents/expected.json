@@ -1,6 +1,5 @@
 {
   "scenes": null,
-  "treatment": null,
   "cast": null,
   "timing": null,
   "lyrics": [
@@ -34,7 +33,6 @@
   "trackPath": "<project>/source/track.mp3",
   "problems": [
     "plan/scenes.json повреждён.",
-    "plan/treatment.json повреждён.",
     "plan/audio/timing.json повреждён.",
     "plan/cast.json повреждён."
   ],

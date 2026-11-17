@@ -53,21 +53,19 @@ const scenes: ScenesFile = {
   fps: 30,
   audio: { path: '', end_seconds: '' },
   visual_direction: '',
+  logline: '',
   sequences: [],
   references: {},
   scenes: [shot]
 };
 
 describe('Видимые тексты и границы JSX сценария', () => {
-  it.each([
-    [false, false, 'Изменены: .'],
-    [true, false, 'Изменены: трактовка.'],
-    [false, true, 'Изменены: реестр планов.'],
-    [true, true, 'Изменены: трактовка, реестр планов.']
-  ])('сохраняет целую JSX-фразу конфликта черновиков %s / %s', (treatmentDirty, scenesDirty, expected) => {
-    const dialog = ScenarioDraftConflictDialog({ open: true, treatmentDirty, scenesDirty, busy: false, onResolve: noop, onClose: noop });
+  it('сохраняет целую JSX-фразу конфликта черновиков', () => {
+    const dialog = ScenarioDraftConflictDialog({ open: true, busy: false, onResolve: noop, onClose: noop });
     const props = dialog.props as { children: ReactElement; title: string; confirmLabel: string; cancelLabel: string };
-    expect(text(render(props.children))).toBe(expected + 'Сначала сохраните правки или явно отмените их. Агент получает только сохранённые данные проекта.');
+    expect(text(render(props.children))).toBe(
+      'Изменён сценарий: части или планы.' + 'Сначала сохраните правки или явно отмените их. Агент получает только сохранённые данные проекта.'
+    );
     expect(props.title).toBe('Есть несохранённые правки');
     expect(props.confirmLabel).toBe('Сохранить и продолжить');
     expect(props.cancelLabel).toBe('Вернуться к редактору');
@@ -78,10 +76,10 @@ describe('Видимые тексты и границы JSX сценария', (
       'КастингСущностей нет.Словарь свойствбез измененийПолеСейчас в проектеПредложениеСвойства по типам——'
     );
     expect(text(render(createElement(ScenarioTreatmentComparison, { before: null, after: null })))).toBe(
-      'ТрактовкаЛоглайнбез измененийПолеСейчас в проектеПредложениеО чём клип——'
+      'Части сценарияЛоглайнбез измененийПолеСейчас в проектеПредложениеО чём клип——'
     );
     expect(text(render(createElement(ScenarioScenesComparison, { before: null, after: null, selectedIds: [], changedIds: [] })))).toBe(
-      'Реестр плановОбщие правила и шкалабез измененийПолеСейчас в проектеПредложениеВизуальные правила——Части——Референсы——Аудио——Частота кадров——'
+      'ПланыОбщие правила и шкалабез измененийПолеСейчас в проектеПредложениеВизуальные правила——Части——Референсы——Аудио——Частота кадров——'
     );
   });
 
@@ -170,11 +168,11 @@ describe('Видимые тексты и границы JSX сценария', (
     expect(html).toContain('Это последний план: объединять не с чем.');
   });
 
-  it('сохраняет нулевой счётчик закрытого диалога и не читает null request', () => {
-    const dialog = ScenesSaveDialog({ request: null, busy: false, onConfirm: noop, onClose: noop });
-    const content = dialog.props as { children: ReactElement[]; description: string };
-    expect(text(renderToStaticMarkup(createElement('div', null, content.children)))).toBe('Затронутые планы: 0');
-    expect(content.description).toBe(
+  it('закрытый диалог не читает null request', () => {
+    // Окно с выбором по плану держит состояние в хуках, поэтому отрисовывается как компонент; закрытое — пусто.
+    expect(text(renderToStaticMarkup(createElement(ScenesSaveDialog, { request: null, busy: false, onConfirm: noop, onClose: noop })))).toBe('');
+    expect(scenarioTexts.save.affectedShots({ count: 0 })).toBe('Затронутые планы: 0');
+    expect(scenarioTexts.save.productionDescription()).toBe(
       'Сохранение меняет постановку планов ниже. Принятые из них получат статус «постановка изменена» и потребуют нового производства, а их пакеты — нового согласования. Если правка не меняет сюжет, например исправляет опечатку, выберите «Сохранить без производства». Аниматик после сохранения потребует пересборки — это локальная операция без оплаты.'
     );
   });

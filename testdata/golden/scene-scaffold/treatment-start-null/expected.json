@@ -1,9 +1,0 @@
-{
-  "code": 1,
-  "stdout": "",
-  "stderr": "Ошибка: ожидается число или строка, получено: null\n",
-  "unhandled": true,
-  "files": {
-    "plan/scenes.json": "unchanged"
-  }
-}

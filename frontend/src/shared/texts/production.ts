@@ -250,7 +250,7 @@ export const productionTexts = {
       speechLengthOutOfRange: ({ seconds, min, max }: { seconds: string; min: number; max: number }) =>
         `речевой план: WAV длится ${seconds} с, а провайдер принимает звук от ${min} до ${max} с — обрежьте заново в блоке «Речь»`,
       resolveImageFirst: 'сначала завершите согласование или получение изображения',
-      approveScenarioFirst: 'сценарий не утверждён в приложении: утвердите кастинг, трактовку и планы на странице «Сценарий»',
+      approveScenarioFirst: 'сценарий не утверждён в приложении: утвердите кастинг, части и планы на странице «Сценарий»',
       acceptedDescriptionAndFramesRequired: 'нужна выбранная попытка с принятым описанием и опорами',
       sentAttemptNeedsRetry: 'попытка уже отправлена: дальше только повтор или возврат с замечанием',
       speechRequiredHint: 'речевой план: сначала подготовьте WAV речи в блоке «Речь»',

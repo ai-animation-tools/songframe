@@ -2,8 +2,5 @@
   "code": 1,
   "stdout": "",
   "stderr": "Нет разметки plan/audio/timing.json: сначала этап таймингов.\n",
-  "unhandled": false,
-  "files": {
-    "plan/scenes.json": "unchanged"
-  }
+  "unhandled": false
 }

@@ -1,0 +1,11 @@
+{
+  "description": "Нет logline.",
+  "call": "saveScenes",
+  "project": "project",
+  "covers": [
+    "treatmentInvalidDocument"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

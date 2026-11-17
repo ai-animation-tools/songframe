@@ -1,17 +1,19 @@
-// Package scenescaffold строит детерминированный каркас реестра сцен plan/scenes.json
-// (инструмент scene_scaffold) из сохранённой трактовки (plan/treatment.json), разметки трека
-// (plan/audio/timing.json), текста песни и кастинга.
+// Package scenescaffold строит детерминированный каркас планов сценария (инструмент
+// scene_scaffold) по частям песни сохранённого сценария plan/scenes.json, разметке трека
+// (plan/audio/timing.json), тексту песни и кастингу. Файлов он не пишет: каркас печатается и
+// служит основой прохода «Создать сценарий» (агент заполняет постановку, не меняя окна) и
+// пересчёта границ на странице «Сценарий».
 //
-// Каркас нарезает кадровые окна планов на кадровой сетке частоты проекта по строкам песни и частям трактовки,
-// выводит карту references из кастинга и заполняет поля постановки заготовками; смысл планов
-// (камера, действие, непрерывность, состояние) дописывает агент или редактор сценария. Результат
-// проходит sceneregistry.Validate.
+// Каркас нарезает кадровые окна планов на кадровой сетке частоты проекта по строкам песни и
+// частям, выводит карту references из кастинга и заполняет поля постановки заготовками; смысл
+// планов (камера, действие, непрерывность, состояние) дописывает агент или редактор сценария.
+// Логлайн и части переносятся из сценария как есть. Результат проходит sceneregistry.Validate.
 //
-// Байты файла, вывод --json и текстовый, тексты ошибок и коды завершения (Run) зафиксированы
-// эталоном testdata/golden/scene-scaffold. Значения — модель toolrt: числа трактовки и разметки
-// читаются с различием целых и дробных, а сообщения содержат repr-запись значений toolrt.
-// Трактовка может быть сохранена редактором черновиком с проблемами (scenario.SaveTreatment),
-// поэтому каркас проверяет её сам (ValidateTreatment) и отказывает текстом проблемы.
+// Вывод --json и текстовый, тексты ошибок и коды завершения (Run) зафиксированы эталоном
+// testdata/golden/scene-scaffold. Значения — модель toolrt: числа частей и разметки читаются с
+// различием целых и дробных, а сообщения содержат repr-запись значений toolrt. Сценарий без
+// планов сохраняется черновиком с проблемами частей (scenario.SaveScenes), поэтому каркас
+// проверяет части сам (ValidateParts) и отказывает текстом проблемы.
 package scenescaffold
 
 import (
@@ -25,10 +27,9 @@ import (
 // Пути документов каркаса и правила разбиения. Частота кадров берётся из plan/project.json и
 // записывается в реестр: на ней строятся все границы планов.
 const (
-	TreatmentPath = "plan/treatment.json"
-	TimingPath    = "plan/audio/timing.json"
-	ScenesPath    = "plan/scenes.json"
-	TextPath      = "source/text.md"
+	TimingPath = "plan/audio/timing.json"
+	ScenesPath = "plan/scenes.json"
+	TextPath   = "source/text.md"
 	// MinShotSeconds — наименьшая длина плана при разбиении части (полсекунды).
 	MinShotSeconds = 0.5
 	GapSeconds     = 2.5
@@ -59,13 +60,13 @@ func trueDiv(a, b int64) (float64, error) {
 	return value, nil
 }
 
-// ValidateTreatment — части трактовки покрывают трек без
+// ValidateParts — части сценария покрывают трек без
 // разрывов и наложений (допуск 0,06 с); возвращает части, отсортированные по началу.
-func ValidateTreatment(data any, duration float64) ([]any, error) {
+func ValidateParts(data any, duration float64) ([]any, error) {
 	document, ok := data.(*toolrt.Dict)
 	parts, isList := document.Value("sequences").([]any)
 	if !ok || !toolrt.Equal(document.Value("schema_version"), toolrt.NewInt(1)) || !isList || len(parts) == 0 {
-		return nil, toolrt.Raise(toolrt.ValueError, "plan/treatment.json: нужны schema_version 1 и непустой список sequences.")
+		return nil, toolrt.Raise(toolrt.ValueError, "plan/scenes.json: нужны schema_version 1 и непустой список частей sequences.")
 	}
 	keys := make([]any, len(parts))
 	for index, part := range parts {
@@ -128,7 +129,7 @@ func abs(value float64) float64 {
 	return value
 }
 
-// asDict — часть трактовки как словарь: не-словарь — AttributeError (текст зафиксирован эталоном).
+// asDict — часть сценария как словарь: не-словарь — AttributeError (текст зафиксирован эталоном).
 func asDict(value any) (*toolrt.Dict, error) {
 	dict, ok := value.(*toolrt.Dict)
 	if !ok {
@@ -387,12 +388,12 @@ func partTitle(part *toolrt.Dict) (any, error) {
 	return toolrt.DictGet(part, "title", id)
 }
 
-// BuildScenes — реестр сцен —
-// последовательности из частей трактовки, планы по ShotBoundaries, заготовки полей постановки,
-// references из кастинга и visual_direction из прежнего реестра (existing, может быть nil) или
-// заготовка. initial — начальное состояние кастинга для итоговой проверки Validate.
-func BuildScenes(treatment any, timing *toolrt.Dict, textLines []string, cast *toolrt.Dict, duration float64, existing *toolrt.Dict, initial *toolrt.Dict, fps int64) (*toolrt.Dict, error) {
-	parts, err := ValidateTreatment(treatment, duration)
+// BuildScenes — каркас сценария document: логлайн и части (отсортированные по началу, title по
+// умолчанию — id) переносятся из него, планы строятся по ShotBoundaries с заготовками полей
+// постановки, references — из кастинга, visual_direction — из сценария или заготовка. initial —
+// начальное состояние кастинга для итоговой проверки Validate.
+func BuildScenes(document any, timing *toolrt.Dict, textLines []string, cast *toolrt.Dict, duration float64, initial *toolrt.Dict, fps int64) (*toolrt.Dict, error) {
+	parts, err := ValidateParts(document, duration)
 	if err != nil {
 		return nil, err
 	}
@@ -428,11 +429,11 @@ func BuildScenes(treatment any, timing *toolrt.Dict, textLines []string, cast *t
 		if err != nil {
 			return nil, err
 		}
-		direction, _ := toolrt.DictGet(part, "direction", "")
 		sequence := toolrt.NewDict()
-		sequence.Set("id", part.Value("id"))
+		for _, key := range part.Keys() {
+			sequence.Set(key, part.Value(key))
+		}
 		sequence.Set("title", title)
-		sequence.Set("direction", direction)
 		sequences = append(sequences, sequence)
 	}
 	scenes := []any{}
@@ -520,7 +521,7 @@ func BuildScenes(treatment any, timing *toolrt.Dict, textLines []string, cast *t
 	audio := toolrt.NewDict()
 	audio.Set("path", "source/track.mp3")
 	audio.Set("end_seconds", FormatSeconds(duration))
-	visual := existing.Value("visual_direction")
+	visual := document.(*toolrt.Dict).Value("visual_direction")
 	if !toolrt.Truthy(visual) {
 		visual = Placeholder + ": общие визуальные правила клипа (стиль, формат, возраст героев, сезон, свет)."
 	}
@@ -530,6 +531,9 @@ func BuildScenes(treatment any, timing *toolrt.Dict, textLines []string, cast *t
 	data.Set("audio", audio)
 	data.Set("references", refs)
 	data.Set("visual_direction", visual)
+	if logline := document.(*toolrt.Dict).Value("logline"); logline != nil {
+		data.Set("logline", logline)
+	}
 	data.Set("sequences", sequences)
 	data.Set("scenes", scenes)
 	if refs.Len() == 0 {

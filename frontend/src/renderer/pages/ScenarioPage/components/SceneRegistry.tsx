@@ -5,7 +5,6 @@ import { Alert, Box, Paper, Stack, Typography } from '@mui/material';
 import type { CastFile, CastProperty, ScenesFile } from '@shared/types';
 import { SCENE_PROBLEMS_ID, type EntityOption, type OpenShotState, type ScenarioBrief, type ShotReveal } from '../types';
 import { useSceneDraft } from '../useSceneDraft';
-import { SceneGlobalRules } from './SceneGlobalRules';
 import { SceneTimeline } from './SceneTimeline';
 import { SceneList } from './SceneList';
 import { useShotStates } from '../useShotStates';
@@ -26,7 +25,6 @@ export function SceneRegistry({
   onRevealed,
   onOpenShotState,
   leaveReason,
-  showGlobal,
   problems,
   duration,
   brief,
@@ -52,7 +50,6 @@ export function SceneRegistry({
   onOpenShotState: OpenShotState;
   /** Причина, по которой уход на другую страницу сейчас потеряет правки. */
   leaveReason: string | null;
-  showGlobal: boolean;
   problems: string[];
   duration: number;
   brief: ScenarioBrief;
@@ -90,7 +87,6 @@ export function SceneRegistry({
   }, [revealShot, shot?.id, onRevealed]);
   return (
     <>
-      <SceneGlobalRules scenes={scenes} setScenes={setScenes} showGlobal={showGlobal} />
       {problems.length ? (
         <Alert id={SCENE_PROBLEMS_ID} severity="warning">
           <ul style={{ margin: 0, paddingLeft: 18 }}>

@@ -169,9 +169,8 @@ export function apiSkeleton(): Api {
     scenario: {
       status: stub('scenario.status'),
       view: stub('scenario.view'),
-      saveTreatment: stub('scenario.saveTreatment'),
-      validateTreatment: stub('scenario.validateTreatment'),
       saveScenes: stub('scenario.saveScenes'),
+      saveScenesKeeping: stub('scenario.saveScenesKeeping'),
       saveImpact: stub('scenario.saveImpact'),
       validateScenes: stub('scenario.validateScenes'),
       brief: stub('scenario.brief')

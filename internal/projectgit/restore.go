@@ -21,7 +21,7 @@ import (
 var restorePaths = map[Section][]string{
 	SectionTiming:   {"plan/audio/timing.json"},
 	SectionCast:     {"plan/cast.json"},
-	SectionScenario: {"plan/treatment.json", "plan/scenes.json", "plan/scenario-workflow.json", "plan/scenario-check.json"},
+	SectionScenario: {"plan/scenes.json", "plan/scenario-workflow.json", "plan/scenario-check.json"},
 }
 
 // RestoreResult — итог возврата раздела. ViewsError — почему не удалось пересобрать производные

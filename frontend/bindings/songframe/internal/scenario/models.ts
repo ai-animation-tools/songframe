@@ -39,14 +39,10 @@ export interface Brief {
  */
 export interface View {
     /**
-     * Scenes — plan/scenes.json или null (нет файла, повреждён, ложное значение JSON).
+     * Scenes — plan/scenes.json или null (нет файла, повреждён, ложное значение JSON): логлайн,
+     * части песни и планы одним документом.
      */
     "scenes": json$0.RawMessage;
-
-    /**
-     * Treatment — plan/treatment.json или null.
-     */
-    "treatment": json$0.RawMessage;
 
     /**
      * Cast — кастинг с проекцией описаний (без дополнения словаря) или null.

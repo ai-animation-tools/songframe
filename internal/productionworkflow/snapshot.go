@@ -12,8 +12,8 @@ import (
 )
 
 // snapshotBase — входы, которые есть в снимке любого предложения: настройки, реестр, кастинг,
-// трактовка и опись исходников.
-var snapshotBase = []string{"plan/project.json", "plan/scenes.json", "plan/cast.json", "plan/treatment.json", sourceinputs.ManifestPath}
+// и опись исходников.
+var snapshotBase = []string{"plan/project.json", "plan/scenes.json", "plan/cast.json", sourceinputs.ManifestPath}
 
 // requiredFileDigest — SHA-256 файла через общий кэш filedigest; недоступный файл — ошибка, а не
 // «нет файла»: устаревание тогда определяется явно.

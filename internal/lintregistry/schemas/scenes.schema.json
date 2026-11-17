@@ -1,7 +1,7 @@
 {
-  "title": "plan/scenes.json — реестр постановки и монтажной шкалы",
+  "title": "plan/scenes.json — сценарий: логлайн, части песни, планы постановки и монтажная шкала",
   "type": "object",
-  "required": ["schema_version", "fps", "audio", "references", "visual_direction", "sequences", "scenes"],
+  "required": ["schema_version", "fps", "audio", "references", "visual_direction", "logline", "sequences", "scenes"],
   "additionalProperties": false,
   "properties": {
     "schema_version": {"const": 1},
@@ -13,9 +13,13 @@
       "properties": {"name": {"type": "string", "minLength": 1}, "path": {"type": "string", "pattern": "^source/[^.][^/]*(/[^/]+)*\\.(png|jpg|jpeg|webp)$"},
                      "short_name": {"type": "string", "minLength": 1}}}},
     "visual_direction": {"type": "string", "minLength": 1},
+    "logline": {"type": "string", "minLength": 1},
     "sequences": {"type": "array", "minItems": 1, "items": {
-      "type": "object", "required": ["id", "title", "direction"], "additionalProperties": false,
-      "properties": {"id": {"type": "string", "minLength": 1}, "title": {"type": "string"}, "direction": {"type": "string"}}}},
+      "type": "object", "required": ["id", "title", "direction", "start", "end", "entities"], "additionalProperties": false,
+      "properties": {"id": {"type": "string", "minLength": 1}, "title": {"type": "string"}, "direction": {"type": "string"},
+                     "start": {"type": "number", "minimum": 0}, "end": {"type": "number", "minimum": 0},
+                     "entities": {"type": "array", "items": {"type": "string", "minLength": 1}},
+                     "lipsync": {"type": "boolean"}, "max_shot_seconds": {"type": "number"}}}},
     "scenes": {"type": "array", "minItems": 1, "items": {
       "type": "object",
       "required": ["id", "original", "sequence", "start_frame", "end_frame_exclusive", "camera", "action", "continuity", "references", "lipsync", "card", "state_from", "state_changes"],

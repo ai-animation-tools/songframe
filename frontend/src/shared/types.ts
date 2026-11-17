@@ -316,6 +316,7 @@ export interface CastView {
   problems: string[];
 }
 
+/** Часть песни сценария: время, направление, кто в кадре, липсинк и наибольшая длина плана. */
 export interface TreatmentSequence {
   id: string;
   title: string;
@@ -327,7 +328,8 @@ export interface TreatmentSequence {
   max_shot_seconds?: number;
 }
 
-/** plan/treatment.json: логлайн и части песни первого прохода сценария. */
+/** Части сценария: логлайн и части песни (sequences) plan/scenes.json без планов — документ первого прохода
+ * агента и его сравнения. */
 export interface TreatmentFile {
   schema_version: 1;
   logline: string;
@@ -364,14 +366,16 @@ export interface SceneReference {
   short_name?: string;
 }
 
-/** plan/scenes.json: реестр постановки и монтажной шкалы (кадровая сетка и постановка). */
+/** plan/scenes.json: сценарий одним документом — логлайн, части песни и планы с кадровой сеткой и постановкой.
+ * До построения планов список scenes пуст, а audio и references появляются вместе с каркасом планов. */
 export interface ScenesFile {
   schema_version: 1;
   fps: FrameRate;
-  audio: { path: string; end_seconds: string };
-  references: Record<string, SceneReference>;
-  visual_direction: string;
-  sequences: { id: string; title: string; direction: string }[];
+  audio?: { path: string; end_seconds: string };
+  references?: Record<string, SceneReference>;
+  visual_direction?: string;
+  logline: string;
+  sequences: TreatmentSequence[];
   scenes: SceneShot[];
 }
 
@@ -383,7 +387,6 @@ export interface ResolvedState {
 
 export interface ScenarioView {
   scenes: ScenesFile | null;
-  treatment: TreatmentFile | null;
   cast: CastFile | null;
   timing: TimingFile | null;
   lyrics: LyricsLine[];

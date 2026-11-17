@@ -7,11 +7,11 @@
     "source/description.md": "73740c9758b5cd11ad19bacccc63760d4c63b532bedaff13ed2a2f55bd3d0037",
     "plan/audio/timing.json": "ab47662d81b27a6d6bd2f40d34a85b81a3f2454b3b586473a26ec72f9e492f7d",
     "plan/cast.json": "efbaf4c0b64ed7149577eea0ee06d03adeea24a25af0c9a79da530acf962c8bf",
-    "plan/treatment.json": "ddaedab2b4a066b09b12a4cce29e8003e2367b673569efbec8ad821400b01c1c",
     "source/heroes/mira.png": "0b0835fb8ff731d9ba611e1c9a46bda1788a0f10d2b02bb5d09358039fc02818",
     "source/heroes/lev.png": "04c771634b3f498bfa467560d1e8d22de453226051cf90325b21820399a014d6",
     "source/vehicles/boat.png": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-    "source/locations/pier.png": "d226dce6924121c33e7c79a6a65da395c0d2398e0486033d46484a528c7f900e"
+    "source/locations/pier.png": "d226dce6924121c33e7c79a6a65da395c0d2398e0486033d46484a528c7f900e",
+    "plan/scenes.json#parts": "88e314eba4777aa682b478f77c1556c99a70a8d5b99559ff3c60fd1b48638958"
   },
   "pending": {
     "proposal": {
@@ -384,21 +384,49 @@
             }
           },
           "visual_direction": "Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.",
+          "logline": "Двое друзей украшают причал фонариками и провожают закат.",
           "sequences": [
             {
               "id": "intro",
               "title": "Вечер у воды",
-              "direction": "Общий план причала, спокойный темп."
+              "direction": "Общий план причала, спокойный темп.",
+              "start": 0,
+              "end": 8,
+              "entities": [
+                "boat",
+                "pier"
+              ],
+              "lipsync": false,
+              "max_shot_seconds": 8
             },
             {
               "id": "verse",
               "title": "Фонарики",
-              "direction": "Друзья развешивают фонарики."
+              "direction": "Друзья развешивают фонарики.",
+              "start": 8,
+              "end": 20,
+              "entities": [
+                "mira",
+                "lev",
+                "boat",
+                "pier"
+              ],
+              "lipsync": true,
+              "max_shot_seconds": 6
             },
             {
               "id": "outro",
               "title": "Проигрыш",
-              "direction": "Повтор общего плана как финальная точка."
+              "direction": "Повтор общего плана как финальная точка.",
+              "start": 20,
+              "end": 30,
+              "entities": [
+                "mira",
+                "lev",
+                "boat"
+              ],
+              "lipsync": false,
+              "max_shot_seconds": 10
             }
           ],
           "scenes": [
@@ -909,21 +937,49 @@
             }
           },
           "visual_direction": "Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.",
+          "logline": "Двое друзей украшают причал фонариками и провожают закат.",
           "sequences": [
             {
               "id": "intro",
               "title": "Вечер у воды",
-              "direction": "Общий план причала, спокойный темп."
+              "direction": "Общий план причала, спокойный темп.",
+              "start": 0,
+              "end": 8,
+              "entities": [
+                "boat",
+                "pier"
+              ],
+              "lipsync": false,
+              "max_shot_seconds": 8
             },
             {
               "id": "verse",
               "title": "Фонарики",
-              "direction": "Друзья развешивают фонарики."
+              "direction": "Друзья развешивают фонарики.",
+              "start": 8,
+              "end": 20,
+              "entities": [
+                "mira",
+                "lev",
+                "boat",
+                "pier"
+              ],
+              "lipsync": true,
+              "max_shot_seconds": 6
             },
             {
               "id": "outro",
               "title": "Проигрыш",
-              "direction": "Повтор общего плана как финальная точка."
+              "direction": "Повтор общего плана как финальная точка.",
+              "start": 20,
+              "end": 30,
+              "entities": [
+                "mira",
+                "lev",
+                "boat"
+              ],
+              "lipsync": false,
+              "max_shot_seconds": 10
             }
           ],
           "scenes": [
@@ -1087,8 +1143,7 @@
       "source/description.md": "73740c9758b5cd11ad19bacccc63760d4c63b532bedaff13ed2a2f55bd3d0037",
       "plan/audio/timing.json": "ab47662d81b27a6d6bd2f40d34a85b81a3f2454b3b586473a26ec72f9e492f7d",
       "plan/cast.json": "efbaf4c0b64ed7149577eea0ee06d03adeea24a25af0c9a79da530acf962c8bf",
-      "plan/treatment.json": "ddaedab2b4a066b09b12a4cce29e8003e2367b673569efbec8ad821400b01c1c",
-      "plan/scenes.json": "7a80da73a0f083fc3a9b31862b7b0ea2fe87c6536af966a50c3b1b579417401f",
+      "plan/scenes.json": "21ace587f4d4a1ba7170cacd7d61beee17adc894d0aef818862e8b90a001ef4e",
       "ROADMAP.md": "92799d672bc2e0c28915300592772d33371619b647e0a9952e066010dd931317",
       "assets/shots/M01/README.md": "1dcabe3926e5ea943d9cfd82f5ded98895cb814c43de1b45a97baf2a4db77f72",
       "assets/shots/M02/README.md": "c77b90595a5e693e6adb53b65001efd38db10eb2a5bfaf6e3f047f75ba8d64cf",
@@ -1096,7 +1151,7 @@
       "plan/animatic/cards/M03.png": "d741320b4d54a346bcb537a43bb8eec713c5c6c57005b25dca6af410382412f3",
       "plan/animatic/cards/M04.png": "1f6f73f9c2ee3fe755a199b2f0dea7742876cc0c355f2cc8cbd064fe29013976",
       "plan/animatic/cards/M05.png": "8c0df30d50c5ac7a688840ef13e5448ce42f1e9167557ddb3630bd3725b6738f",
-      "plan/animatic/cards/manifest.json": "ae4497fbebf599f4ff88a933976d2f69b215f7377d21496c0247c3a6e55992de",
+      "plan/animatic/cards/manifest.json": "df2d65d28b45c167a80355e25dcc2b88a0ef8fd09b42280cdde759eaac8856ea",
       "plan/audio/timing.md": "c42a67f3bc6f2990805bf1943b4c69185812eb265ef2a4799a88561ef24073f2",
       "plan/context/characters.md": "5f46e599e8027af03a42a72f528927832040c3c515400a8b27a9e74222394ca8",
       "plan/edit-list.md": "0b473e57b6e92e702a16b6154178a27e061e7b064da61a97591dd5b3adfbc356",
@@ -1132,21 +1187,49 @@
         }
       },
       "visual_direction": "Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.",
+      "logline": "Двое друзей украшают причал фонариками и провожают закат.",
       "sequences": [
         {
           "id": "intro",
           "title": "Вечер у воды",
-          "direction": "Общий план причала, спокойный темп."
+          "direction": "Общий план причала, спокойный темп.",
+          "start": 0,
+          "end": 8,
+          "entities": [
+            "boat",
+            "pier"
+          ],
+          "lipsync": false,
+          "max_shot_seconds": 8
         },
         {
           "id": "verse",
           "title": "Фонарики",
-          "direction": "Друзья развешивают фонарики."
+          "direction": "Друзья развешивают фонарики.",
+          "start": 8,
+          "end": 20,
+          "entities": [
+            "mira",
+            "lev",
+            "boat",
+            "pier"
+          ],
+          "lipsync": true,
+          "max_shot_seconds": 6
         },
         {
           "id": "outro",
           "title": "Проигрыш",
-          "direction": "Повтор общего плана как финальная точка."
+          "direction": "Повтор общего плана как финальная точка.",
+          "start": 20,
+          "end": 30,
+          "entities": [
+            "mira",
+            "lev",
+            "boat"
+          ],
+          "lipsync": false,
+          "max_shot_seconds": 10
         }
       ],
       "scenes": [
@@ -1269,13 +1352,13 @@
       "source/description.md": "73740c9758b5cd11ad19bacccc63760d4c63b532bedaff13ed2a2f55bd3d0037",
       "plan/audio/timing.json": "ab47662d81b27a6d6bd2f40d34a85b81a3f2454b3b586473a26ec72f9e492f7d",
       "plan/cast.json": "efbaf4c0b64ed7149577eea0ee06d03adeea24a25af0c9a79da530acf962c8bf",
-      "plan/treatment.json": "ddaedab2b4a066b09b12a4cce29e8003e2367b673569efbec8ad821400b01c1c",
       "source/heroes/mira.png": "0b0835fb8ff731d9ba611e1c9a46bda1788a0f10d2b02bb5d09358039fc02818",
       "source/heroes/lev.png": "04c771634b3f498bfa467560d1e8d22de453226051cf90325b21820399a014d6",
       "source/vehicles/boat.png": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
-      "source/locations/pier.png": "d226dce6924121c33e7c79a6a65da395c0d2398e0486033d46484a528c7f900e"
+      "source/locations/pier.png": "d226dce6924121c33e7c79a6a65da395c0d2398e0486033d46484a528c7f900e",
+      "plan/scenes.json#parts": "88e314eba4777aa682b478f77c1556c99a70a8d5b99559ff3c60fd1b48638958"
     },
-    "sceneHash": "ca198f3532bae4d08cb4c471845487f9edde2312fa5f5e25c4b42c1c435ce191"
+    "sceneHash": "c88c80d5f639b6f9b8dfa53a6f07b84f10fb73ff15296ad11bd70606f4443eab"
   },
   "needsScenesReview": false
 }

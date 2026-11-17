@@ -1,0 +1,6 @@
+{
+  "code": 1,
+  "stdout": "",
+  "stderr": "plan/scenes.json: нужны schema_version 1 и непустой список частей sequences.\n",
+  "unhandled": false
+}

@@ -20,10 +20,10 @@
   "files": {
     ".gitattributes": "995f7832b99611947ccdd4a276ec07d311d5c7e64c18346d929a22b58b2c065b",
     ".gitignore": "a2ea3a218565954a700f285a9428fee885d705afdd73fadb1eeb908b3f424a1a",
-    "README.md": "5c77f3c8f020922fab489340eb7511091ab9898537db9bae347eb481c844bb21",
+    "README.md": "f1364aac67c05d47e310212824cc664abb62ba24975020a9f8ad7aa60c38f160",
     "assets/README.md": "e7b9112501df4a4067d922787d96a3fcaa06b9d447e06efc34cc5a7ea3057c14",
     "assets/shots/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "plan/README.md": "a10f4267782b7bfbe9d9cc13b87a2bfb48e52cdb2b01341ad63b97aad9f646ed",
+    "plan/README.md": "f82c1d7676a3d802db105ada4da1208774c505a140656e774eb431b94d67eac2",
     "plan/animatic/README.md": "59e0da49cc229dc88ccd696574b3b9f77badfb02a9aa44f643ab3dc67b2eec5c",
     "plan/animatic/cards/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "plan/animatic/latest/README.md": "8617b02aa0a19fa7c4f670c7ee93095a049b9318821d66c1c00f72c541b31aaf",
@@ -34,7 +34,7 @@
     "plan/context/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "plan/production-status.json": "49b08582891d98949467417ea61075f173ec82b5d1df4d0a4c99ced168eeb2e7",
     "plan/project.json": "c90f15a61f153ca8b92efba2669a30ad1e5bb18a4f2ecd527f1da2bc5547ee54",
-    "source/README.md": "caa166ca9645f14f505b75d6e37680fc80d578000db3b8540f80bd4efe2113c9",
+    "source/README.md": "f888f8778ff8628fe36e515029b54e13c431410dd2a8e7f0cea8d0db4c5a4360",
     "source/heroes/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "source/locations/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "source/vehicles/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"

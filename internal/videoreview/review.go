@@ -317,7 +317,7 @@ func (s *Service) source(project, directory string) (*reviewContext, error) {
 	var sequence any = dynvalue.Undefined
 	for _, item := range sequences {
 		if dynvalue.StrictEqual(dynvalue.Get(item, "id"), dynvalue.Get(scene, "sequence")) {
-			sequence = item
+			sequence = scenario.PartDirection(item)
 			break
 		}
 	}

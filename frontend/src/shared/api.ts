@@ -80,8 +80,7 @@ import type {
   TimingFile,
   TimingGenerateOptions,
   TimingView,
-  ToolResult,
-  TreatmentFile
+  ToolResult
 } from './types';
 
 /**
@@ -207,12 +206,11 @@ export interface Api {
     /** Готовность сценария для страниц, которые работают со сценами. */
     status(project: string): Promise<ScenarioStatus>;
     view(project: string): Promise<ScenarioView>;
-    /** Записывает трактовку черновиком: отклоняется только неверная структура, проблемы показывает validateTreatment. */
-    saveTreatment(project: string, treatment: TreatmentFile): Promise<TreatmentFile>;
-    /** Проблемы трактовки без записи: стык частей, длительность трека, коды и названия. Черновик с проблемами сохраняется, поэтому они нужны до записи. */
-    validateTreatment(project: string, treatment: TreatmentFile): Promise<string[]>;
-    /** mode=keep оставляет принятые комплекты и пакеты затронутых планов в силе: правка не относится к сюжету. */
+    /** Записывает сценарий. Сценарий из одних частей сохраняется черновиком и с проблемами частей (их отдаёт validateScenes);
+     * mode=keep оставляет принятые комплекты и пакеты затронутых планов в силе: правка не относится к сюжету. */
     saveScenes(project: string, scenes: ScenesFile, mode: ScenesSaveMode): Promise<ScenesFile>;
+    /** Запись сценария с выбором по плану: принятые планы из keep остаются принятыми, остальные задетые — «Постановка изменена». */
+    saveScenesKeeping(project: string, scenes: ScenesFile, keep: string[]): Promise<ScenesFile>;
     /** Какие планы затронет сохранение черновика: сравнение отпечатков постановки без записи. */
     saveImpact(project: string, scenes: ScenesFile): Promise<ScenarioSaveImpact>;
     /** Проверка реестра без записи: список проблем. */

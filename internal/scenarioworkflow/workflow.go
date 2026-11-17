@@ -1,5 +1,5 @@
 // Package scenarioworkflow ведёт сценарный проход агента: подготовка предложения кастинга
-// и трактовки, реестра сцен или доработки выбранных планов, хранение ожидающего предложения в
+// и частей сценария, планов или доработки выбранных планов, хранение ожидающего предложения в
 // записи прохода plan/scenario-workflow.json, его разбор и проверка, утверждения пары и сцен и
 // применение одной транзакцией, а также проверка сценария агентом с отчётом в
 // plan/scenario-check.json (check.go).
@@ -75,7 +75,7 @@ type View struct {
 	// пара до появления сценария не утверждалась.
 	ChangedInputs []string `json:"changedInputs"`
 	// AcceptedShots — принятые в производстве планы, чья постановка совпадает с принятой (completed):
-	// их правка на странице заблокирована, а новые трактовка, сценарий или доработка этих планов
+	// их правка на странице заблокирована, а новые части, планы или доработка этих планов
 	// спрашивают подтверждения. Планы «Постановка изменена» сюда не входят: им и так нужно новое
 	// производство. Порядок — порядок реестра.
 	AcceptedShots []string  `json:"acceptedShots"`
@@ -93,7 +93,7 @@ type Options struct {
 	// RequireAgentAccess — проверка доступа к агенту перед запуском прохода: сохранённый агент,
 	// найденная программа и вход. nil — проверка у менеджера агентов.
 	RequireAgentAccess func(project string) error
-	// Scaffold — каркас реестра для прохода сцен; nil — scene_scaffold --dry-run --json.
+	// Scaffold — каркас сценария для прохода планов; nil — scene_scaffold --json.
 	Scaffold func(project string) (any, error)
 	// Publish — публикация предложения; nil — штатная публикация (publish) через журнал LocalDir.
 	Publish func(Publication) error
@@ -130,7 +130,7 @@ func New(options Options) *Workflow {
 
 // defaultScaffold — каркас scene_scaffold без записи в проект.
 func defaultScaffold(project string) (any, error) {
-	result, err := tools.Run(project, "scene_scaffold", []string{"--dry-run", "--json"})
+	result, err := tools.Run(project, "scene_scaffold", []string{"--json"})
 	if err != nil {
 		return nil, err
 	}
@@ -589,7 +589,11 @@ func agentContext(initial *inputs, pass string, selected []string, note string, 
 	} else {
 		context.Set("cast", initial.documents.Cast)
 	}
-	context.Set("treatment", initial.documents.Treatment)
+	// Части сценария входят в scenes (каркас или сценарий); отдельно их получает только первый
+	// проход, который их пишет.
+	if pass == "treatment" {
+		context.Set("treatment", initial.documents.Treatment)
+	}
 	if pass == "revise" {
 		context.Set("scenes", initial.documents.Scenes)
 	} else {
@@ -794,7 +798,7 @@ func (w *Workflow) ApproveCurrent(project string) (View, error) {
 }
 
 // ApproveScenes — scenarioWorkflow.approveScenes: ручная постановка требует собственного явного
-// утверждения после изменения трактовки.
+// утверждения после изменения частей.
 func (w *Workflow) ApproveScenes(project string) (View, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()

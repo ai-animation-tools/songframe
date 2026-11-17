@@ -1,201 +1,107 @@
 import { scenarioTexts } from '@shared/texts/scenario';
 import { commonTexts } from '@shared/texts/common';
 import { navigationTexts } from '@shared/texts/navigation';
-import BuildIcon from '@mui/icons-material/Build';
-import TimelineIcon from '@mui/icons-material/Timeline';
 import StraightenIcon from '@mui/icons-material/Straighten';
 import type { ReactElement } from 'react';
-import { Box, Button, Chip, Tab, Tabs, Tooltip, Typography } from '@mui/material';
+import { Box, Chip, Typography } from '@mui/material';
 import { ActionButton } from '../../../components/ActionButton';
 import SaveIcon from '@mui/icons-material/Save';
 import SaveAsIcon from '@mui/icons-material/SaveAs';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import type { ScenesFile, ScenesSaveMode, TreatmentFile } from '@shared/types';
-import { DestructiveButton } from '../../../components/DestructiveButton';
-import { KEEP_NOTHING_REASON, SCENE_PROBLEMS_ID, TREATMENT_PROBLEMS_ID, type ScenarioTab } from '../types';
+import type { ScenesFile, ScenesSaveMode } from '@shared/types';
+import { KEEP_NOTHING_REASON, SCENE_PROBLEMS_ID } from '../types';
 
 const BUSY_REASON = commonTexts.operationPending;
 
-/** Управляет вкладками и доступностью сохранения и построения каркаса. */
+/** Панель сценария: признак правок, число проблем, пересчёт границ и сохранение одного документа. */
 export function ScenarioToolbar({
-  tab,
-  onTabChange,
-  treatment,
   scenes,
   busy,
-  hasTiming,
-  scaffoldProblem,
-  treatmentDirty,
+  hasShots,
   scenesDirty,
   referencesStale,
   problems,
-  treatmentProblems,
-  showGlobal,
-  onToggleGlobal,
-  partsFromTiming,
-  saveTreatment,
   saveScenes,
   keepUseless,
-  scaffold,
+  boundsProblem,
   recalculateBounds
 }: {
-  tab: ScenarioTab;
-  onTabChange(tab: ScenarioTab): void;
-  treatment: TreatmentFile | null;
   scenes: ScenesFile | null;
   busy: boolean;
-  hasTiming: boolean;
-  scaffoldProblem: string | null;
-  treatmentDirty: boolean;
+  /** В сценарии есть планы: без них проблемы частей не мешают сохранению, а пересчитывать нечего. */
+  hasShots: boolean;
   scenesDirty: boolean;
-  /** Карта references реестра устарела после изменения кастинга: сохранение доступно без правок и обновит её. */
+  /** Карта references сценария устарела после изменения кастинга: сохранение доступно без правок и обновит её. */
   referencesStale: boolean;
   problems: string[];
-  /** Проблемы черновика трактовки: не мешают сохранению, но закрывают каркас (причина — в scaffoldProblem). */
-  treatmentProblems: string[];
-  showGlobal: boolean;
-  onToggleGlobal(): void;
-  partsFromTiming(): void;
-  saveTreatment(): Promise<void>;
   /** production — обычное сохранение, keep — «Сохранить без производства»; диалог с затронутыми планами показывает страница. */
   saveScenes(mode: ScenesSaveMode): Promise<void>;
   /** По последнему расчёту черновик не затрагивает планы с принятым комплектом или пакетом. */
   keepUseless: boolean;
-  scaffold(force: boolean): Promise<void>;
-  /** Окна планов по сохранённым трактовке и разметке — в черновик реестра, постановка прежняя. */
+  /** Причина, по которой границы сейчас не пересчитать (нет разметки, кастинга, частей или есть несохранённые правки). */
+  boundsProblem: string | null;
+  /** Окна планов по сохранённым частям и разметке — в черновик сценария, постановка прежняя. */
   recalculateBounds(): Promise<void>;
 }): ReactElement {
-  const dirty = tab === 'treatment' ? treatmentDirty : scenesDirty;
-  // Устаревшая карта референсов — тоже повод сохранить реестр: её обновляет только запись.
-  const scenesSavable = scenesDirty || referencesStale;
-  const savable = tab === 'treatment' ? treatmentDirty : scenesSavable;
-  const sceneProblems = tab === 'scenes' && scenes ? problems.length : 0;
-  const shownProblems = tab === 'treatment' && treatment ? treatmentProblems.length : sceneProblems;
-  const saveDisabled = busy || (tab === 'treatment' ? !treatment || !treatmentDirty : !scenes || !scenesSavable || problems.length > 0);
+  // Устаревшая карта референсов — тоже повод сохранить сценарий: её обновляет только запись.
+  const savable = scenesDirty || (hasShots && referencesStale);
+  const shownProblems = scenes ? problems.length : 0;
+  // Сценарий из одних частей сохраняется черновиком и с проблемами; с планами проблемы надо исправить.
+  const blocking = hasShots ? shownProblems : 0;
+  const saveDisabled = busy || !scenes || !savable || blocking > 0;
   // Причина недоступности сохранения видна в подсказке, даже если список проблем прокручен из вида.
   const saveReason = busy
     ? BUSY_REASON
-    : sceneProblems && scenesSavable
-      ? scenarioTexts.toolbar.fixRegistry({ count: sceneProblems })
+    : blocking && savable
+      ? scenarioTexts.toolbar.fixRegistry({ count: blocking })
       : savable
         ? null
         : scenarioTexts.toolbar.noChanges;
   // «Без производства» имеет смысл, только когда сохранение затрагивает планы с материалами.
   const keepDisabled = saveDisabled || keepUseless;
   const keepReason = saveReason ?? (keepUseless ? KEEP_NOTHING_REASON : null);
-  const timingReason = busy ? BUSY_REASON : scenarioTexts.prerequisites.timing;
-  const scaffoldDisabled = busy || !!scaffoldProblem;
-  const scaffoldReason = busy ? BUSY_REASON : scaffoldProblem;
   return (
     <>
       <Typography variant="h5">{navigationTexts.pages.scenario}</Typography>
-      <Tabs value={tab} onChange={(_e, v) => onTabChange(v)} sx={{ minHeight: 36 }}>
-        <Tab value="treatment" label={scenarioTexts.toolbar.treatmentTab({ count: treatment ? treatment.sequences.length : null })} sx={{ minHeight: 36 }} />
-        <Tab
-          value="scenes"
-          label={scenarioTexts.toolbar.scenesTab({ count: scenes ? scenes.scenes.length : null })}
-          sx={{ minHeight: 36 }}
-          disabled={!scenes}
-        />
-      </Tabs>
-      {dirty ? <Chip size="small" color="warning" label={commonTexts.unsavedChanges} /> : null}
+      {scenesDirty ? <Chip size="small" color="warning" label={commonTexts.unsavedChanges} /> : null}
       {shownProblems ? (
         <Chip
           size="small"
           color="error"
           variant="outlined"
           label={scenarioTexts.toolbar.problems({ count: shownProblems })}
-          onClick={() =>
-            document.getElementById(tab === 'treatment' ? TREATMENT_PROBLEMS_ID : SCENE_PROBLEMS_ID)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-          }
+          onClick={() => document.getElementById(SCENE_PROBLEMS_ID)?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
         />
       ) : null}
       {/* Группа действий прижата вправо и при переносе: «Сохранить» всегда последняя справа. */}
       <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-        {tab === 'treatment' ? (
-          <>
-            {/* Повторное построение заменяет целиком части трактовки, сохраняя только логлайн. */}
-            {treatment ? (
-              <DestructiveButton
-                label={scenarioTexts.toolbar.replaceParts}
-                description={scenarioTexts.toolbar.replacePartsDescription}
-                disabled={busy || !hasTiming}
-                disabledReason={timingReason}
-                size="medium"
-                startIcon={<TimelineIcon />}
-                onConfirm={partsFromTiming}
-                confirmLabel={scenarioTexts.toolbar.replacePartsConfirm}
-              >
-                {scenarioTexts.toolbar.partsFromTiming}
-              </DestructiveButton>
-            ) : (
-              <ActionButton startIcon={<TimelineIcon />} onClick={partsFromTiming} disabled={busy || !hasTiming} disabledReason={timingReason}>
-                {scenarioTexts.toolbar.partsFromTiming}
-              </ActionButton>
-            )}
-            {scenes ? (
-              // Назначение показывается у доступной кнопки; у выключенной подсказку с причиной даёт сама кнопка.
-              <Tooltip title={scaffoldDisabled ? '' : scenarioTexts.toolbar.scaffoldReplacesStaging}>
-                <span>
-                  <DestructiveButton
-                    label={scenarioTexts.toolbar.rebuildScaffold}
-                    description={scenarioTexts.toolbar.rebuildScaffoldDescription}
-                    disabled={scaffoldDisabled}
-                    disabledReason={scaffoldReason}
-                    size="medium"
-                    startIcon={<BuildIcon />}
-                    onConfirm={() => {
-                      void scaffold(true);
-                    }}
-                    confirmLabel={scenarioTexts.toolbar.rebuildConfirm}
-                  />
-                </span>
-              </Tooltip>
-            ) : (
-              <ActionButton
-                title={scenarioTexts.toolbar.buildScaffoldHint}
-                startIcon={<BuildIcon />}
-                disabled={scaffoldDisabled}
-                disabledReason={scaffoldReason}
-                onClick={() => scaffold(false)}
-              >
-                {scenarioTexts.toolbar.buildScaffold}
-              </ActionButton>
-            )}
-          </>
-        ) : (
+        {hasShots ? (
           <>
             <ActionButton
               title={scenarioTexts.toolbar.recalculateBoundsHint}
               startIcon={<StraightenIcon />}
-              disabled={scaffoldDisabled}
-              disabledReason={scaffoldReason}
+              disabled={busy || !!boundsProblem}
+              disabledReason={busy ? BUSY_REASON : boundsProblem}
               onClick={() => void recalculateBounds()}
             >
               {scenarioTexts.toolbar.recalculateBounds}
             </ActionButton>
-            <Button endIcon={<ExpandMoreIcon sx={{ transform: showGlobal ? 'rotate(180deg)' : 'none' }} />} onClick={() => onToggleGlobal()}>
-              {scenarioTexts.toolbar.globalRules}
-            </Button>
+            <ActionButton
+              title={scenarioTexts.toolbar.saveWithoutProductionHint}
+              startIcon={<SaveAsIcon />}
+              disabled={keepDisabled}
+              disabledReason={keepReason}
+              onClick={() => void saveScenes('keep')}
+            >
+              {scenarioTexts.toolbar.saveWithoutProduction}
+            </ActionButton>
           </>
-        )}
-        {tab === 'scenes' ? (
-          <ActionButton
-            title={scenarioTexts.toolbar.saveWithoutProductionHint}
-            startIcon={<SaveAsIcon />}
-            disabled={keepDisabled}
-            disabledReason={keepReason}
-            onClick={() => void saveScenes('keep')}
-          >
-            {scenarioTexts.toolbar.saveWithoutProduction}
-          </ActionButton>
         ) : null}
         <ActionButton
           variant="contained"
           startIcon={<SaveIcon />}
           disabled={saveDisabled}
           disabledReason={saveReason}
-          onClick={() => void (tab === 'treatment' ? saveTreatment() : saveScenes('production'))}
+          onClick={() => void saveScenes('production')}
         >
           {commonTexts.save}
         </ActionButton>

@@ -2,8 +2,5 @@
   "code": 1,
   "stdout": "",
   "stderr": "Ошибка: нельзя использовать как ключ: список\n",
-  "unhandled": true,
-  "files": {
-    "plan/scenes.json": "unchanged"
-  }
+  "unhandled": true
 }

@@ -12,7 +12,7 @@
   "source_audio": "source/track.mp3",
   "source_audio_sha256": "d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640",
   "source_audio_duration": 30.0,
-  "scene_registry_sha256": "7a80da73a0f083fc3a9b31862b7b0ea2fe87c6536af966a50c3b1b579417401f",
+  "scene_registry_sha256": "21ace587f4d4a1ba7170cacd7d61beee17adc894d0aef818862e8b90a001ef4e",
   "project_inputs": {
     "name": "Пробный клип",
     "animatic_video": "sample-animatic.mp4"

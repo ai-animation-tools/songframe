@@ -1,6 +1,7 @@
 /** Параметр плана выбирает только существующий план; уход со страницы не теряет черновики молча. */
 import { describe, expect, it } from 'vitest';
 import type { ScenesFile } from '@shared/types';
+import { scenarioTexts } from '@shared/texts/scenario';
 import { requestedShot, unsavedDraftsReason } from './shotNavigation';
 
 const scenes = { scenes: [{ id: 'M01' }, { id: 'M02' }] } as unknown as ScenesFile;
@@ -19,12 +20,10 @@ describe('requestedShot', () => {
 
 describe('unsavedDraftsReason', () => {
   it('без правок переход доступен', () => {
-    expect(unsavedDraftsReason(false, false)).toBeNull();
+    expect(unsavedDraftsReason(false)).toBeNull();
   });
 
-  it('называет каждый несохранённый черновик', () => {
-    expect(unsavedDraftsReason(false, true)).toContain('реестр планов');
-    expect(unsavedDraftsReason(true, false)).toContain('трактовку');
-    expect(unsavedDraftsReason(true, true)).toContain('трактовку и реестр планов');
+  it('предупреждает о несохранённом сценарии', () => {
+    expect(unsavedDraftsReason(true)).toBe(scenarioTexts.leave.scenesDirty);
   });
 });

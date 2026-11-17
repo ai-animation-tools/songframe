@@ -1,0 +1,10 @@
+{
+  "description": "Без --json: таблица планов.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "текстовый вывод"
+  ],
+  "stubbedMedia": [],
+  "args": []
+}

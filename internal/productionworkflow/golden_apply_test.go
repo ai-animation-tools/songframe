@@ -457,6 +457,12 @@ func (r *applyRun) execute(t *testing.T, step applyStep) (any, error) {
 			perm = info.Mode().Perm()
 		case len(step.JSON) > 0:
 			data = []byte(dynvalue.StringifyIndent(mustParse(t, step.JSON), "  ") + "\n")
+		case step.Append:
+			current, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			data = append(current, *step.Text...)
 		default:
 			data = []byte(*step.Text)
 		}

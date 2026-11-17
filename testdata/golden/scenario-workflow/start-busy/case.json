@@ -7,7 +7,7 @@
     {
       "op": "start",
       "pass": "scenes",
-      "error": "Сначала утвердите актуальные кастинг и трактовку; дождитесь завершения текущего задания."
+      "error": "Сначала утвердите актуальные кастинг и части; дождитесь завершения текущего задания."
     },
     {
       "op": "start",
@@ -18,8 +18,8 @@
         "canStartTreatment": false,
         "canStartScenes": false,
         "canRevise": false,
-        "canApproveScenes": false,
         "canApproveCurrent": false,
+        "canApproveScenes": false,
         "treatmentApproved": false,
         "scenesNeedReview": false,
         "changedInputs": [],
@@ -398,21 +398,49 @@
                 }
               },
               "visual_direction": "Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.",
+              "logline": "Двое друзей украшают причал фонариками и провожают закат.",
               "sequences": [
                 {
                   "id": "intro",
                   "title": "Вечер у воды",
-                  "direction": "Общий план причала, спокойный темп."
+                  "direction": "Общий план причала, спокойный темп.",
+                  "start": 0,
+                  "end": 8,
+                  "entities": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 8
                 },
                 {
                   "id": "verse",
                   "title": "Фонарики",
-                  "direction": "Друзья развешивают фонарики."
+                  "direction": "Друзья развешивают фонарики.",
+                  "start": 8,
+                  "end": 20,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": true,
+                  "max_shot_seconds": 6
                 },
                 {
                   "id": "outro",
                   "title": "Проигрыш",
-                  "direction": "Повтор общего плана как финальная точка."
+                  "direction": "Повтор общего плана как финальная точка.",
+                  "start": 20,
+                  "end": 30,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 10
                 }
               ],
               "scenes": [
@@ -923,21 +951,49 @@
                 }
               },
               "visual_direction": "Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.",
+              "logline": "Двое друзей украшают причал фонариками и провожают закат.",
               "sequences": [
                 {
                   "id": "intro",
                   "title": "Вечер у воды",
-                  "direction": "Общий план причала, спокойный темп."
+                  "direction": "Общий план причала, спокойный темп.",
+                  "start": 0,
+                  "end": 8,
+                  "entities": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 8
                 },
                 {
                   "id": "verse",
                   "title": "Фонарики",
-                  "direction": "Друзья развешивают фонарики."
+                  "direction": "Друзья развешивают фонарики.",
+                  "start": 8,
+                  "end": 20,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": true,
+                  "max_shot_seconds": 6
                 },
                 {
                   "id": "outro",
                   "title": "Проигрыш",
-                  "direction": "Повтор общего плана как финальная точка."
+                  "direction": "Повтор общего плана как финальная точка.",
+                  "start": 20,
+                  "end": 30,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 10
                 }
               ],
               "scenes": [
@@ -1097,7 +1153,7 @@
           "task": "ai-clip-scenario:treatment",
           "permissions": "read-only",
           "inputHashes": {
-            "prompt": "f8c67d5d4aa0b34604e59f666fd5a6e20cfade6bb62aa4d798bc2a33f81784ac",
+            "prompt": "be2beecde39bb62510ff36be6b7e1dc7d2fa6f88fba23b864f552b6e39d3d8a0",
             "context": "5a42aa369867d8ed4e324694600b39a23bf491b5c16ac6841539976c95264672"
           },
           "status": "running",
@@ -1121,7 +1177,7 @@
     {
       "op": "start",
       "pass": "treatment",
-      "error": "Сначала утвердите актуальные кастинг и трактовку; дождитесь завершения текущего задания."
+      "error": "Сначала утвердите актуальные кастинг и части; дождитесь завершения текущего задания."
     },
     {
       "op": "view",
@@ -1131,8 +1187,8 @@
         "canStartTreatment": false,
         "canStartScenes": false,
         "canRevise": false,
-        "canApproveScenes": false,
         "canApproveCurrent": false,
+        "canApproveScenes": false,
         "treatmentApproved": false,
         "scenesNeedReview": false,
         "changedInputs": [],
@@ -1511,21 +1567,49 @@
                 }
               },
               "visual_direction": "Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.",
+              "logline": "Двое друзей украшают причал фонариками и провожают закат.",
               "sequences": [
                 {
                   "id": "intro",
                   "title": "Вечер у воды",
-                  "direction": "Общий план причала, спокойный темп."
+                  "direction": "Общий план причала, спокойный темп.",
+                  "start": 0,
+                  "end": 8,
+                  "entities": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 8
                 },
                 {
                   "id": "verse",
                   "title": "Фонарики",
-                  "direction": "Друзья развешивают фонарики."
+                  "direction": "Друзья развешивают фонарики.",
+                  "start": 8,
+                  "end": 20,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": true,
+                  "max_shot_seconds": 6
                 },
                 {
                   "id": "outro",
                   "title": "Проигрыш",
-                  "direction": "Повтор общего плана как финальная точка."
+                  "direction": "Повтор общего плана как финальная точка.",
+                  "start": 20,
+                  "end": 30,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 10
                 }
               ],
               "scenes": [
@@ -2036,21 +2120,49 @@
                 }
               },
               "visual_direction": "Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.",
+              "logline": "Двое друзей украшают причал фонариками и провожают закат.",
               "sequences": [
                 {
                   "id": "intro",
                   "title": "Вечер у воды",
-                  "direction": "Общий план причала, спокойный темп."
+                  "direction": "Общий план причала, спокойный темп.",
+                  "start": 0,
+                  "end": 8,
+                  "entities": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 8
                 },
                 {
                   "id": "verse",
                   "title": "Фонарики",
-                  "direction": "Друзья развешивают фонарики."
+                  "direction": "Друзья развешивают фонарики.",
+                  "start": 8,
+                  "end": 20,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": true,
+                  "max_shot_seconds": 6
                 },
                 {
                   "id": "outro",
                   "title": "Проигрыш",
-                  "direction": "Повтор общего плана как финальная точка."
+                  "direction": "Повтор общего плана как финальная точка.",
+                  "start": 20,
+                  "end": 30,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 10
                 }
               ],
               "scenes": [
@@ -2210,7 +2322,7 @@
           "task": "ai-clip-scenario:treatment",
           "permissions": "read-only",
           "inputHashes": {
-            "prompt": "f8c67d5d4aa0b34604e59f666fd5a6e20cfade6bb62aa4d798bc2a33f81784ac",
+            "prompt": "be2beecde39bb62510ff36be6b7e1dc7d2fa6f88fba23b864f552b6e39d3d8a0",
             "context": "5a42aa369867d8ed4e324694600b39a23bf491b5c16ac6841539976c95264672"
           },
           "status": "running",

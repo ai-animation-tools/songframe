@@ -8,9 +8,9 @@ import "songframe/internal/dynvalue"
 const (
 	textDamagedCast             = "plan/cast.json повреждён."
 	textReferencesRefresh       = "Карта references реестра расходится с кастингом; при сохранении она будет обновлена."
-	textTreatmentRequiresParts  = "Трактовка: нужны schema_version 1 и хотя бы одна часть."
-	textTreatmentInvalidDoc     = "Трактовка: нужны schema_version 1, logline и sequences."
-	textTreatmentInvalidPart    = "Трактовка: неверная структура части песни."
+	textPartsRequired           = "Сценарий: нужна хотя бы одна часть песни."
+	textPartsInvalidDoc         = "Сценарий: нужны schema_version 1, логлайн и список частей."
+	textPartsInvalidPart        = "Сценарий: неверная структура части песни."
 	textBriefStateUnsetPrefix   = "Состояние не задано"
 	textBriefTitleBefore        = "Состояние на первый кадр"
 	textBriefTitleAfter         = "Состояние на последний кадр"
@@ -32,7 +32,7 @@ func textPartStartMismatch(id string, start float64, previousEnd string) string 
 func textPartEndsBeforeStart(id string) string {
 	return "Часть " + id + ": конец раньше начала."
 }
-func textTreatmentDurationMismatch(end, duration string) string {
+func textPartsDurationMismatch(end, duration string) string {
 	return "Части заканчиваются на " + end + ", а трек длится " + duration + "."
 }
 func textShotCodeInvalid(shot string) string {
@@ -64,13 +64,13 @@ func textShotPrimaryReferenceMissing(shot string) string {
 	return shot + ": главный референс карточки не объявлен."
 }
 
-// textRegistryRequiresScenes — реестр другой схемы, частоты кадров или без сцен.
+// textRegistryRequiresScenes — сценарий другой схемы, частоты кадров или без списка планов.
 func textRegistryRequiresScenes(fps float64) string {
 	rate := "24, 25 или 30"
 	if fps != 0 {
 		rate = dynvalue.ToString(fps)
 	}
-	return "Реестр: нужны schema_version 1, fps " + rate + " и хотя бы один план."
+	return "Сценарий: нужны schema_version 1, fps " + rate + " и список планов."
 }
 
 func textRegistryDurationMismatch(end, duration string) string {

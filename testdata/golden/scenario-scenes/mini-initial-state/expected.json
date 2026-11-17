@@ -19,16 +19,23 @@
       }
     },
     "visual_direction": "Мягкий вечерний свет.",
+    "logline": "Короткий клип для проверки сохранения сценария.",
     "sequences": [
       {
         "id": "verse",
         "title": "Куплет",
-        "direction": "Тревожно."
+        "direction": "Тревожно.",
+        "start": 0,
+        "end": 6,
+        "entities": []
       },
       {
         "id": "chorus",
         "title": "Припев",
-        "direction": "Огни."
+        "direction": "Огни.",
+        "start": 6,
+        "end": 9,
+        "entities": []
       }
     ],
     "scenes": [

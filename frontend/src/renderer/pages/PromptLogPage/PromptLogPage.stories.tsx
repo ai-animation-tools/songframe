@@ -87,7 +87,7 @@ const RECORDS: Record<string, PromptLogRecord> = {
     paid: { request_sha256: 'b'.repeat(64), generation_id: null, amount: null, unit: null },
     response: '{\n  "status": "prepared"\n}'
   }),
-  [SCENARIO.id]: record(SCENARIO, { prompt: 'Задача:\nТрактовка песни.' })
+  [SCENARIO.id]: record(SCENARIO, { prompt: 'Задача:\nЧасти песни.' })
 };
 
 function options(entries: PromptLogSummary[]): StoryOptions {
@@ -130,7 +130,7 @@ export const Journal: Story = {
     await expect(screen.getByText(texts.statuses.interrupted)).toBeInTheDocument();
     // Служебные имена заданий показаны словами страницы, сервис — по реестру.
     await expect(screen.getByText('M02 · Описание')).toBeInTheDocument();
-    await expect(screen.getByText('Сценарий · трактовка')).toBeInTheDocument();
+    await expect(screen.getByText('Сценарий · части')).toBeInTheDocument();
     await expect(screen.getByText(new RegExp(testProviderInfo.title))).toBeInTheDocument();
     await userEvent.click(screen.getByRole('combobox', { name: texts.statusFilter }));
     await userEvent.click(await screen.findByRole('option', { name: texts.statuses.failed }));

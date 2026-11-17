@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "generated_from": "plan/scenes.json",
-  "registry_sha256": "ca198f3532bae4d08cb4c471845487f9edde2312fa5f5e25c4b42c1c435ce191",
+  "registry_sha256": "c88c80d5f639b6f9b8dfa53a6f07b84f10fb73ff15296ad11bd70606f4443eab",
   "project_inputs": {
     "name": "Пробный клип"
   },
@@ -14,15 +14,15 @@
   "cards": {
     "M03": {
       "path": "plan/animatic/cards/M03.png",
-      "sha256": "d741320b4d54a346bcb537a43bb8eec713c5c6c57005b25dca6af410382412f3"
+      "sha256": "baae7332e1f8f7763bb8c42723889903086c0b776f0aa11d3fdcd6f927bf7fd1"
     },
     "M04": {
       "path": "plan/animatic/cards/M04.png",
-      "sha256": "3a73238834f6bfb60f7e161749eb950d7345971f3bd6caf6cd0c18c9d6fea582"
+      "sha256": "ad2ff4017748963db9698051244d425ac2b263bc45453034975566419cd846d7"
     },
     "M05": {
       "path": "plan/animatic/cards/M05.png",
-      "sha256": "8c0df30d50c5ac7a688840ef13e5448ce42f1e9167557ddb3630bd3725b6738f"
+      "sha256": "e6f428a0f0d4a231f2b8940359a5b23b48c45749d2929442b488da0ced63e4d9"
     }
   }
 }

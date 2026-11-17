@@ -2,12 +2,10 @@ package scenescaffold
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
 	"songframe/internal/castregistry"
-	"songframe/internal/projectfs"
 	"songframe/internal/sceneregistry"
 	"songframe/internal/toolcli"
 	"songframe/internal/toolrt"
@@ -21,11 +19,9 @@ type Output = toolcli.Output
 // объявления (от них зависят строка usage и справка, зафиксированные эталонами).
 var Parser = toolrt.ArgParser{
 	Prog:        "scene_scaffold",
-	Description: "Каркас plan/scenes.json из трактовки, разметки и кастинга.",
+	Description: "Каркас планов по частям plan/scenes.json, разметке и кастингу; файлы не пишет.",
 	Flags: []toolrt.Flag{
-		{Name: "--force", Help: "Перезаписать существующий реестр сцен"},
-		{Name: "--dry-run", Help: "Показать планы, файл не писать"},
-		{Name: "--json"},
+		{Name: "--json", Help: "Вывести весь каркас сценария JSON"},
 	},
 }
 
@@ -43,13 +39,13 @@ func failure(err error, caught bool) Output {
 	return Output{Code: 1, Stderr: toolrt.TextMode(toolrt.Unhandled(err))}
 }
 
-// prepare — основная часть Run: чтение входов проекта и построение реестра (её ValueError, OSError
+// prepare — основная часть Run: чтение входов проекта и построение каркаса (её ValueError, OSError
 // и KeyError печатаются текстом).
-func prepare(root string, force, dryRun bool) (*toolrt.Dict, error) {
-	treatment, _ := toolrt.ReadJSON(filepath.Join(root, filepath.FromSlash(TreatmentPath)))
+func prepare(root string) (*toolrt.Dict, error) {
+	document, _ := toolrt.ReadJSON(filepath.Join(root, filepath.FromSlash(ScenesPath)))
 	timingValue, _ := toolrt.ReadJSON(filepath.Join(root, filepath.FromSlash(TimingPath)))
-	if _, ok := treatment.(*toolrt.Dict); !ok {
-		return nil, toolrt.Raise(toolrt.ValueError, "Нет %s: сначала трактовка (первый проход сценария).", TreatmentPath)
+	if _, ok := document.(*toolrt.Dict); !ok {
+		return nil, toolrt.Raise(toolrt.ValueError, "Нет %s: сначала части сценария (первый проход сценария).", ScenesPath)
 	}
 	timing, ok := timingValue.(*toolrt.Dict)
 	if !ok || !toolrt.Truthy(timing.Value("lines")) {
@@ -86,11 +82,6 @@ func prepare(root string, force, dryRun bool) (*toolrt.Dict, error) {
 	if cast == nil {
 		return nil, toolrt.Raise(toolrt.ValueError, "Нет plan/cast.json: создайте кастинг (cast_registry init или страница «Кастинг»).")
 	}
-	existingValue, _ := toolrt.ReadJSON(filepath.Join(root, filepath.FromSlash(ScenesPath)))
-	existing, isDict := existingValue.(*toolrt.Dict)
-	if isDict && !force && !dryRun {
-		return nil, toolrt.Raise(toolrt.ValueError, "%s уже существует: добавьте --force, чтобы заменить его каркасом (постановка будет потеряна).", ScenesPath)
-	}
 	initial, err := sceneregistry.InitialStatesFor(root)
 	if err != nil {
 		return nil, err
@@ -100,53 +91,15 @@ func prepare(root string, force, dryRun bool) (*toolrt.Dict, error) {
 		return nil, err
 	}
 	rate, _ := fps.Int64()
-	return BuildScenes(treatment, timing, textLines, cast, duration, existing, initial, rate)
+	return BuildScenes(document, timing, textLines, cast, duration, initial, rate)
 }
 
-// write — запись plan/scenes.json: JSON с отступом два пробела, не-ASCII без экранирования, перевод
-// строки в конце (toolrt.EncodeIndented). Замена
-// атомарная и проходит шлюз записи проекта, права прежнего файла сохраняются, новый создаётся
-// 0666 с umask. Строка, не кодируемая в UTF-8 (одиночный суррогат), отклоняется до записи, и
-// прежний файл остаётся целым.
-func write(root string, data *toolrt.Dict) error {
-	encoded, err := toolrt.EncodeIndented(data)
-	if err != nil {
-		return err
-	}
-	if err := projectfs.CheckWrite(root); err != nil {
-		return err
-	}
-	path := filepath.Join(root, filepath.FromSlash(ScenesPath))
-	perm := os.FileMode(0o666)
-	if info, err := os.Stat(path); err == nil {
-		perm = info.Mode().Perm()
-	}
-	if err := projectfs.WriteFile(path, []byte(toolrt.TextMode(string(encoded))), perm); err != nil {
-		return err
-	}
-	return nil
-}
-
-// report — вывод в stdout после построения: --json — краткий отчёт (или весь каркас при
-// --dry-run), иначе таблица планов и итог.
-func report(data *toolrt.Dict, dryRun, asJSON bool) (string, error) {
+// report — вывод в stdout после построения: --json — весь каркас, иначе таблица планов и итог.
+func report(data *toolrt.Dict, asJSON bool) (string, error) {
 	scenes := data.Value("scenes").([]any)
 	sequences := data.Value("sequences").([]any)
 	if asJSON {
-		var result any = data
-		if !dryRun {
-			references := []any{}
-			for _, key := range data.Value("references").(*toolrt.Dict).Keys() {
-				references = append(references, key)
-			}
-			summary := toolrt.NewDict()
-			summary.Set("written", true)
-			summary.Set("scenes", toolrt.NewInt(int64(len(scenes))))
-			summary.Set("sequences", toolrt.NewInt(int64(len(sequences))))
-			summary.Set("references", references)
-			result = summary
-		}
-		text, err := toolrt.DumpsJSON(result, toolrt.DumpOptions{})
+		text, err := toolrt.DumpsJSON(data, toolrt.DumpOptions{})
 		return text + "\n", err
 	}
 	var builder strings.Builder
@@ -160,34 +113,23 @@ func report(data *toolrt.Dict, dryRun, asJSON bool) (string, error) {
 		fmt.Fprintf(&builder, "%s %7.2f–%7.2f [%s] %s\n", scene.Value("id"), startSeconds, endSeconds,
 			toolrt.Str(scene.Value("sequence")), scene.Value("original"))
 	}
-	fmt.Fprintf(&builder, "\nПланов: %d, частей: %d.", len(scenes), len(sequences))
-	if !dryRun {
-		builder.WriteString(" Записано: " + ScenesPath)
-	}
-	builder.WriteString("\n")
+	fmt.Fprintf(&builder, "\nПланов: %d, частей: %d.\n", len(scenes), len(sequences))
 	return builder.String(), nil
 }
 
-// Run — запуск инструмента на проекте root (путь уже разрешён вызывающим): разбор
-// аргументов (--force, --dry-run, --json, -h), построение, запись plan/scenes.json (кроме
-// --dry-run) и вывод. Коды: 0 — успех или справка, 1 — отказ с текстом в stderr, 2 — ошибка
-// аргументов.
+// Run — запуск инструмента на проекте root (путь уже разрешён вызывающим): разбор аргументов
+// (--json, -h), построение каркаса и вывод; файлы проекта не меняются. Коды: 0 — успех или
+// справка, 1 — отказ с текстом в stderr, 2 — ошибка аргументов.
 func Run(root string, args []string) Output {
 	flags, exit := Parser.Parse(args)
 	if exit != nil {
 		return Output{Code: exit.Code, Stdout: toolrt.TextMode(exit.Stdout), Stderr: toolrt.TextMode(exit.Stderr)}
 	}
-	force, dryRun, asJSON := flags["--force"], flags["--dry-run"], flags["--json"]
-	data, err := prepare(root, force, dryRun)
+	data, err := prepare(root)
 	if err != nil {
 		return failure(err, true)
 	}
-	if !dryRun {
-		if err := write(root, data); err != nil {
-			return failure(err, false)
-		}
-	}
-	stdout, err := report(data, dryRun, asJSON)
+	stdout, err := report(data, flags["--json"])
 	if err == nil {
 		_, err = toolrt.EncodeUTF8(stdout)
 	}

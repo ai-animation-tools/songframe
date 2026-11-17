@@ -2,8 +2,8 @@ import { scenarioTexts } from '@shared/texts/scenario';
 import { commonTexts } from '@shared/texts/common';
 import { type ReactElement, useState } from 'react';
 import { usePageLoading } from '../../components/PageLoader';
-import { Alert, AlertTitle, Box, Button, Paper, Stack, Typography } from '@mui/material';
-import { ScenarioToolbar, ScenesSaveDialog, TreatmentEditor, SceneRegistry } from './components';
+import { Alert, AlertTitle, Button, Paper, Stack, Typography } from '@mui/material';
+import { ScenarioToolbar, ScenesSaveDialog, ScenarioPartsEditor, SceneRegistry } from './components';
 import { useScenario } from './useScenario';
 import { useScenarioWorkflow } from './useScenarioWorkflow';
 import { useScenarioCheck } from './useScenarioCheck';
@@ -14,26 +14,28 @@ import { ScenarioWorkflowPanel } from './components/ScenarioWorkflowPanel';
 import { PageActionBar } from '../../components/PageActionBar';
 import { useStickyTop } from '../../hooks/useStickyTop';
 import ReplayIcon from '@mui/icons-material/Replay';
+import AddIcon from '@mui/icons-material/Add';
+import TimelineIcon from '@mui/icons-material/Timeline';
 import { LinkedText } from '../../components/LinkedText';
 import { unsavedDraftsReason } from './shotNavigation';
 
-/** Сценарий связывает независимые черновики трактовки и реестра с их редакторами. */
+/**
+ * Страница сценария: один черновик plan/scenes.json — блок «Общие правила и части» над планами. Пока планов нет,
+ * блок частей раскрыт, а на месте планов — подсказка о втором проходе агента.
+ */
 export function ScenarioPage(): ReactElement {
   const scenario = useScenario();
   const workflow = useScenarioWorkflow(scenario.project, scenario.acceptWorkflowUpdate);
   // Правки проверки записывают реестр: страница перечитывает его, как после применения прохода сцен.
   const check = useScenarioCheck(scenario.project, () => scenario.acceptWorkflowUpdate('scenes'));
-  const [showGlobal, setShowGlobal] = useState(false);
+  // Раскрытие блока частей: пока пользователь его не переключал, он раскрыт только у сценария без планов.
+  const [partsOpen, setPartsOpen] = useState<boolean | null>(null);
   const [reviseRequest, setReviseRequest] = useState<{ ids: string[]; note: string; issue: number; seq: number } | null>(null);
   const [checkFocus, setCheckFocus] = useState<CheckIssueFocus | null>(null);
   const {
     view,
     loadError,
     retry,
-    tab,
-    setTab,
-    treatment,
-    setTreatment,
     scenes,
     setScenes,
     selected,
@@ -42,7 +44,7 @@ export function ScenarioPage(): ReactElement {
     clearReveal,
     openShotState,
     problems,
-    treatmentProblems,
+    hasShots,
     brief,
     busy,
     cast,
@@ -51,17 +53,13 @@ export function ScenarioPage(): ReactElement {
     propertiesOf,
     duration,
     scenesDirty,
-    treatmentDirty,
     partsFromTiming,
     updatePart,
-    saveTreatment,
     saveScenes,
     saveRequest,
     confirmSaveScenes,
     cancelSaveScenes,
     keepUseless,
-    scaffold,
-    scaffoldProblem,
     notify
   } = scenario;
 
@@ -105,29 +103,19 @@ export function ScenarioPage(): ReactElement {
     <Stack spacing={2} inert={busy || undefined} aria-busy={busy} sx={{ width: '100%', minWidth: 0, pb: 8 }}>
       <PageActionBar barRef={barRef}>
         <ScenarioToolbar
-          tab={tab}
-          onTabChange={setTab}
-          treatment={treatment}
           scenes={scenes}
           busy={busy || workflow.busy}
-          hasTiming={!!view.timing}
-          scaffoldProblem={scaffoldProblem}
-          treatmentDirty={treatmentDirty}
+          hasShots={hasShots}
           scenesDirty={scenesDirty}
           referencesStale={view.referencesStale}
           problems={problems}
-          treatmentProblems={treatmentProblems}
-          showGlobal={showGlobal}
-          onToggleGlobal={() => setShowGlobal((value) => !value)}
-          partsFromTiming={partsFromTiming}
-          saveTreatment={saveTreatment}
           saveScenes={saveScenes}
           keepUseless={keepUseless}
-          scaffold={scaffold}
+          boundsProblem={scenario.boundsProblem}
           recalculateBounds={scenario.recalculateBounds}
         />
       </PageActionBar>
-      <ScenesSaveDialog request={saveRequest} busy={busy} onConfirm={() => void confirmSaveScenes()} onClose={cancelSaveScenes} />
+      <ScenesSaveDialog request={saveRequest} busy={busy} onConfirm={(keep) => void confirmSaveScenes(keep)} onClose={cancelSaveScenes} />
       {view.problems.length ? (
         <Alert severity="warning">
           <LinkedText text={view.problems.join(' ')} />
@@ -139,8 +127,7 @@ export function ScenarioPage(): ReactElement {
         project={scenario.project}
         workflow={workflow}
         selected={selected}
-        registryOpen={tab !== 'treatment'}
-        treatmentDirty={treatmentDirty}
+        hasShots={hasShots}
         scenesDirty={scenesDirty}
         editorBusy={busy}
         scenesInputProblem={scenario.scenesInputProblem}
@@ -154,7 +141,6 @@ export function ScenarioPage(): ReactElement {
         reviseReason={reviseReason}
         focus={checkFocus}
         onRevise={(ids, note, issue) => setReviseRequest((current) => ({ ids, note, issue, seq: (current?.seq ?? 0) + 1 }))}
-        treatmentDirty={treatmentDirty}
         scenesDirty={scenesDirty}
         editorBusy={busy}
         entityName={(id) => cast?.entities.find((entity) => entity.id === id)?.name ?? id}
@@ -175,17 +161,40 @@ export function ScenarioPage(): ReactElement {
           {workflow.view?.proposal?.status === 'ready' ? scenarioTexts.page.proposalEditingPaused : scenarioTexts.page.agentEditingPaused}
         </Alert>
       )}
-      <Box inert={workflow.busy || undefined} aria-busy={workflow.busy}>
-        {tab === 'treatment' ? (
-          <TreatmentEditor
-            treatment={treatment}
-            setTreatment={setTreatment}
+      <Stack spacing={2} inert={workflow.busy || undefined} aria-busy={workflow.busy} sx={{ minWidth: 0 }}>
+        {!scenes ? (
+          <Paper variant="outlined" sx={{ p: 3 }}>
+            <Typography color="text.secondary">{scenarioTexts.treatment.emptyHint}</Typography>
+            <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: 'wrap' }}>
+              <ActionButton
+                startIcon={<TimelineIcon />}
+                onClick={partsFromTiming}
+                disabled={busy || !view.timing}
+                disabledReason={busy ? commonTexts.operationPending : scenarioTexts.prerequisites.timing}
+              >
+                {scenarioTexts.toolbar.partsFromTiming}
+              </ActionButton>
+              <Button startIcon={<AddIcon />} color="success" onClick={scenario.createScenario}>
+                {scenarioTexts.treatment.createManually}
+              </Button>
+            </Stack>
+          </Paper>
+        ) : (
+          <ScenarioPartsEditor
+            scenes={scenes}
+            setScenes={setScenes}
+            expanded={partsOpen ?? !hasShots}
+            onToggle={setPartsOpen}
             entityOptions={entityOptions}
             duration={duration}
-            problems={treatmentProblems}
+            problems={hasShots ? [] : problems}
+            busy={busy}
+            hasTiming={!!view.timing}
             updatePart={updatePart}
+            partsFromTiming={partsFromTiming}
           />
-        ) : scenes ? (
+        )}
+        {scenes && hasShots ? (
           <SceneRegistry
             resetKey={view.scenes}
             stickyTop={stickyTop}
@@ -196,8 +205,7 @@ export function ScenarioPage(): ReactElement {
             revealShot={revealShot}
             onRevealed={clearReveal}
             onOpenShotState={openShotState}
-            leaveReason={unsavedDraftsReason(treatmentDirty, scenesDirty)}
-            showGlobal={showGlobal}
+            leaveReason={unsavedDraftsReason(scenesDirty)}
             problems={problems}
             duration={duration}
             brief={brief}
@@ -233,12 +241,12 @@ export function ScenarioPage(): ReactElement {
               ) : null
             }
           />
-        ) : (
+        ) : scenes ? (
           <Paper variant="outlined" sx={{ p: 3 }}>
-            <Typography color="text.secondary">{scenarioTexts.page.registryMissing}</Typography>
+            <Typography color="text.secondary">{scenarioTexts.page.noShots}</Typography>
           </Paper>
-        )}
-      </Box>
+        ) : null}
+      </Stack>
     </Stack>
   );
 }

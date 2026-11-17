@@ -28,7 +28,7 @@ func checkStderr(t *testing.T, expected *toolrt.Dict, wantErr, gotErr string, co
 }
 
 // TestSceneScaffoldGolden запускает tools.run("scene_scaffold") на копиях входов эталона
-// scene-scaffold и сверяет код завершения, stdout, stderr и байты plan/scenes.json с ожидаемыми.
+// scene-scaffold и сверяет код завершения, stdout и stderr с ожидаемыми; plan/scenes.json не меняется.
 func TestSceneScaffoldGolden(t *testing.T) {
 	for _, c := range golden.Load(t, "scene-scaffold") {
 		t.Run(c.Name, func(t *testing.T) {
@@ -54,23 +54,10 @@ func TestSceneScaffoldGolden(t *testing.T) {
 			}
 			wantErr, gotErr := golden.ValueString(t, expected, "stderr"), normalize(result.Stderr)
 			checkStderr(t, expected, wantErr, gotErr, nil)
+			// Каркас не пишет файлов: сценарий остаётся байт в байт (отсутствующий — отсутствующим).
 			after, afterErr := os.ReadFile(path)
-			switch state := item(expected, "files").(*toolrt.Dict).Value("plan/scenes.json"); state {
-			case "absent":
-				if afterErr == nil {
-					t.Errorf("plan/scenes.json не должен появляться")
-				}
-			case "unchanged":
-				if beforeErr != nil || string(after) != string(before) {
-					t.Errorf("plan/scenes.json не должен меняться")
-				}
-			default:
-				if afterErr != nil {
-					t.Fatalf("plan/scenes.json (%s): %v", state, afterErr)
-				}
-				if want := c.Read(t, "files/plan/scenes.json"); string(after) != string(want) {
-					t.Errorf("байты plan/scenes.json:\n--- ожидалось\n%s\n--- получено\n%s", want, after)
-				}
+			if (beforeErr == nil) != (afterErr == nil) || string(after) != string(before) {
+				t.Errorf("plan/scenes.json не должен меняться")
 			}
 		})
 	}

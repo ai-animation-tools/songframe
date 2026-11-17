@@ -77,7 +77,6 @@ export function ScenarioCheckPanel({
   check,
   blockedReason,
   reviseReason,
-  treatmentDirty,
   scenesDirty,
   editorBusy,
   focus,
@@ -91,7 +90,6 @@ export function ScenarioCheckPanel({
   blockedReason: string | null;
   /** Почему доработка плана агентом сейчас недоступна. */
   reviseReason: string | null;
-  treatmentDirty: boolean;
   scenesDirty: boolean;
   editorBusy: boolean;
   /** Проблема, к которой перешли из карточки плана: раскрывается и прокручивается в видимую область. */
@@ -131,7 +129,7 @@ export function ScenarioCheckPanel({
   // Новый отчёт или внесённые правки снимают отметки: выбор относится к показанным проблемам.
   useEffect(() => setChosen([]), [reportKey]);
   const withDrafts = (action: () => void): void => {
-    if (treatmentDirty || scenesDirty) setAfterDrafts(() => action);
+    if (scenesDirty) setAfterDrafts(() => action);
     else action();
   };
   const resolve = async (action: 'save' | 'discard'): Promise<void> => {
@@ -271,8 +269,6 @@ export function ScenarioCheckPanel({
       </Stack>
       <ScenarioDraftConflictDialog
         open={afterDrafts !== null}
-        treatmentDirty={treatmentDirty}
-        scenesDirty={scenesDirty}
         busy={resolving || editorBusy}
         onResolve={(action) => void resolve(action)}
         onClose={() => setAfterDrafts(null)}

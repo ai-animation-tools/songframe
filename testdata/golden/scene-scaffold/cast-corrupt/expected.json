@@ -2,8 +2,5 @@
   "code": 1,
   "stdout": "",
   "stderr": "plan/cast.json повреждён.\n",
-  "unhandled": false,
-  "files": {
-    "plan/scenes.json": "unchanged"
-  }
+  "unhandled": false
 }

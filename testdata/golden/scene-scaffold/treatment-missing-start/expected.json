@@ -1,9 +1,0 @@
-{
-  "code": 1,
-  "stdout": "",
-  "stderr": "нет ключа 'start'\n",
-  "unhandled": false,
-  "files": {
-    "plan/scenes.json": "unchanged"
-  }
-}

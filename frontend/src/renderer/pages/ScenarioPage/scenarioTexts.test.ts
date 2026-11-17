@@ -23,9 +23,8 @@ describe('Тексты сценария с числами', () => {
       `Задано свойств в этом блоке: 21; отличаются от унаследованного: ${count}.${count ? ` Совпадают с унаследованным и ничего не меняют: ${count} — их можно убрать.` : ''}`
     );
     expect(scenarioTexts.comparison.changedFields({ count })).toBe(`изменено полей: ${count}`);
-    expect(scenarioTexts.toolbar.fixRegistry({ count })).toBe(`Исправьте проблемы реестра: ${count}.`);
-    expect(scenarioTexts.toolbar.treatmentTab({ count })).toBe(`Трактовка · ${count}`);
-    expect(scenarioTexts.toolbar.scenesTab({ count })).toBe(`Реестр планов · ${count}`);
+    expect(scenarioTexts.toolbar.fixRegistry({ count })).toBe(`Исправьте проблемы сценария: ${count}.`);
+    expect(scenarioTexts.treatment.title({ count })).toBe(`Общие правила и части · ${count}`);
     expect(scenarioTexts.toolbar.problems({ count })).toBe(`Проблем: ${count}`);
     expect(scenarioTexts.workflow.showAllProblems({ count })).toBe(`Показать все (${count})`);
     expect(scenarioTexts.list.foundShots({ shown: count, total: 21 })).toBe(`Найдено планов: ${count} из 21`);
@@ -38,22 +37,15 @@ describe('Тексты сценария с числами', () => {
     expect(scenarioTexts.save.affectedShots({ count })).toBe(`Затронутые планы: ${count}`);
   });
 
-  it('различает отсутствие реестра, нулевой счётчик и строковое undefined', () => {
-    expect(scenarioTexts.toolbar.treatmentTab({ count: null })).toBe('Трактовка');
-    expect(scenarioTexts.toolbar.scenesTab({ count: null })).toBe('Реестр планов');
+  it('различает нулевой счётчик и строковое undefined', () => {
     expect(scenarioTexts.timeline.statusCount({ label: 'Запланирован', count: undefined })).toBe('Запланирован: undefined');
     expect(scenarioTexts.brief.entityChanges({ changes: 0, hidden: 2 })).toBe('без изменений за план · скрыто без изменений: 2 свойства');
   });
 });
 
 describe('Параметры, ветвления и полные фразы сценария', () => {
-  it.each([
-    [false, false, 'Изменены: .'],
-    [true, false, 'Изменены: трактовка.'],
-    [false, true, 'Изменены: реестр планов.'],
-    [true, true, 'Изменены: трактовка, реестр планов.']
-  ])('сохраняет флаги черновиков %s / %s', (treatment, scenes, expected) => {
-    expect(scenarioTexts.drafts.changed({ treatment, scenes })).toBe(expected);
+  it('называет единый черновик сценария', () => {
+    expect(scenarioTexts.drafts.changed).toBe('Изменён сценарий: части или планы.');
   });
 
   it.each([
@@ -119,9 +111,9 @@ describe('Параметры, ветвления и полные фразы сц
     expect(scenarioTexts.shot.mergeDescription({ shot: 'M<&>', next: 'M02' })).toBe(
       'Планы M<&> и M02 станут одним. Камера и действие останутся от M<&>; отдельная запись следующего плана будет удалена. Изменение применяется к черновику.'
     );
-    expect(scenarioTexts.treatment.deletePart({ title: '<&>', id: 'intro' })).toBe('Удалить часть трактовки «<&>»');
-    expect(scenarioTexts.treatment.deletePart({ title: '', id: 'intro' })).toBe('Удалить часть трактовки «intro»');
-    expect(scenarioTexts.treatment.deletePart({ title: '', id: '' })).toBe('Удалить часть трактовки «без названия»');
+    expect(scenarioTexts.treatment.deletePart({ title: '<&>', id: 'intro' })).toBe('Удалить часть «<&>»');
+    expect(scenarioTexts.treatment.deletePart({ title: '', id: 'intro' })).toBe('Удалить часть «intro»');
+    expect(scenarioTexts.treatment.deletePart({ title: '', id: '' })).toBe('Удалить часть «без названия»');
   });
 
   it('сохраняет оба полных предупреждения сохранения и пробел перед примечанием об аниматике', () => {
@@ -129,7 +121,7 @@ describe('Параметры, ветвления и полные фразы сц
       'Сохранение меняет постановку планов ниже. Принятые из них получат статус «постановка изменена» и потребуют нового производства, а их пакеты — нового согласования. Если правка не меняет сюжет, например исправляет опечатку, выберите «Сохранить без производства». Аниматик после сохранения потребует пересборки — это локальная операция без оплаты.'
     );
     expect(scenarioTexts.save.keepDescription()).toBe(
-      'Подходит для опечаток и правок, не меняющих сюжет. Принятые комплекты и пакеты перечисленных планов останутся в силе, хотя их постановка в реестре изменится. Аниматик после сохранения потребует пересборки — это локальная операция без оплаты.'
+      'Подходит для опечаток и правок, не меняющих сюжет. Принятые комплекты и пакеты перечисленных планов останутся в силе, хотя их постановка в сценарии изменится. Аниматик после сохранения потребует пересборки — это локальная операция без оплаты.'
     );
   });
 });

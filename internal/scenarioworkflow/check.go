@@ -18,7 +18,7 @@ import (
 	"songframe/resources"
 )
 
-// Проверка сценария до производства: агент читает трактовку, реестр, кастинг с изображениями и
+// Проверка сценария до производства: агент читает сценарий (логлайн, части и планы), кастинг с изображениями и
 // вычисленное состояние планов и возвращает отчёт о противоречиях для человека. Проект она не
 // меняет: отчёт хранится рядом с записью прохода, в plan/scenario-check.json, вместе с отпечатками
 // проверенных файлов, поэтому страница видит, что сценарий изменился после проверки. Исправления
@@ -56,7 +56,7 @@ type CheckView struct {
 	CanStart bool   `json:"canStart"`
 	// Reason — почему новую проверку запустить нельзя; nil, если можно.
 	Reason *string `json:"reason"`
-	// Stale — трактовка, реестр, кастинг или исходники изменились после проверки.
+	// Stale — сценарий, кастинг или исходники изменились после проверки.
 	Stale   bool         `json:"stale"`
 	Report  *CheckReport `json:"report"`
 	Message *string      `json:"message"`
@@ -180,8 +180,8 @@ func (r *checkRecord) report() *CheckReport {
 	return &report
 }
 
-// checkHashes — отпечатки входов проверки: исходники, разметка, кастинг с изображениями, трактовка
-// и реестр. Производные виды и статус производства в них не входят: их смена не меняет сценарий.
+// checkHashes — отпечатки входов проверки: исходники, разметка, кастинг с изображениями
+// и сценарий. Производные виды и статус производства в них не входят: их смена не меняет сценарий.
 func checkHashes(input *inputs) *hashes {
 	result := newHashes()
 	for _, key := range input.approval.keys {
@@ -434,8 +434,8 @@ func checkPrompt(skill string) string {
 // изменения состояния плана), как во врезке непрерывности, и записано цепочками (addStateRun):
 // значение повторяется от плана к плану, и таблица по планам на клипе в 60 планов не помещалась в
 // предел текста задания. Цепочка к тому же сразу показывает агенту, через какие планы тянется
-// значение, — ровно то, что нужно для поиска застрявшего состояния. Трактовка передаётся только
-// логлайном: её части после появления реестра живут в scenes.sequences.
+// значение, — ровно то, что нужно для поиска застрявшего состояния. Логлайн и части
+// агент видит в самом сценарии: scenes.logline и scenes.sequences.
 func checkContext(initial *inputs, images []checkImage, imagesProblem string, accepted []string) (string, checkKnown, error) {
 	fps, err := projectfile.FrameRate(initial.project)
 	if err != nil {
@@ -509,9 +509,6 @@ func checkContext(initial *inputs, images []checkImage, imagesProblem string, ac
 	context.Set("fps", float64(fps))
 	context.Set("timing", initial.timing)
 	context.Set("cast", castValue)
-	treatment := dynvalue.NewObject()
-	treatment.Set("logline", dynvalue.Get(initial.documents.Treatment, "logline"))
-	context.Set("treatment", treatment)
 	context.Set("scenes", scenes)
 	context.Set("states", states)
 	context.Set("registryWarnings", stringArray(registryWarnings(initial.project)))

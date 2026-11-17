@@ -25,10 +25,9 @@ var sceneID = regexp.MustCompile(`^M\d{2}(\.\d+)?$`)
 // View — ScenarioView контракта frontend/src/shared/types.ts, ответ scenario.view. Документы
 // проекта передаются как есть: их порядок ключей и неизвестные поля сохраняет редактор.
 type View struct {
-	// Scenes — plan/scenes.json или null (нет файла, повреждён, ложное значение JSON).
+	// Scenes — plan/scenes.json или null (нет файла, повреждён, ложное значение JSON): логлайн,
+	// части песни и планы одним документом.
 	Scenes json.RawMessage `json:"scenes"`
-	// Treatment — plan/treatment.json или null.
-	Treatment json.RawMessage `json:"treatment"`
 	// Cast — кастинг с проекцией описаний (без дополнения словаря) или null.
 	Cast json.RawMessage `json:"cast"`
 	// Timing — plan/audio/timing.json или null.
@@ -74,13 +73,12 @@ func rawOrNull(value any) json.RawMessage {
 	return dynvalue.Raw(value)
 }
 
-// ViewProject — реестр, трактовка, кастинг и разметка для страницы «Сценарий» с проблемами
-// проверки реестра. Ничего не пишет. Ошибка — документ другой формы.
+// ViewProject — сценарий, кастинг и разметка для страницы «Сценарий» с проблемами проверки
+// сценария. Ничего не пишет. Ошибка — документ другой формы.
 func ViewProject(project string) (View, error) {
 	problems := []string{}
 	stale := false
 	scenes := readDocument(project, "plan/scenes.json", &problems)
-	treatment := readDocument(project, "plan/treatment.json", &problems)
 	timingDocument := readDocument(project, "plan/audio/timing.json", &problems)
 	read := cast.Read(project)
 	var castValue any
@@ -94,13 +92,18 @@ func ViewProject(project string) (View, error) {
 	if text, err := os.ReadFile(filepath.Join(project, "source", "text.md")); err == nil {
 		lyrics = timing.ParseLyricsLines(dynvalue.DecodeUTF8(text))
 	}
+	duration := dynvalue.Coalesce(dynvalue.Get(timingDocument, "duration_decoded"),
+		dynvalue.Coalesce(dynvalue.GetPath(manifest, "track", "duration_seconds"),
+			dynvalue.Coalesce(dynvalue.Get(timingDocument, "duration_container"), nil)))
 	if scenes != nil {
-		found, err := ValidateScenes(scenes, castValue, ExpectedFPS(project, scenes))
+		found, err := ValidateScenes(scenes, castValue, ExpectedFPS(project, scenes), duration)
 		if err != nil {
 			return View{}, err
 		}
 		problems = append(problems, found...)
-		if dynvalue.Truthy(castValue) {
+		// Карта references нужна планам: у сценария из одних частей её нет, как и при сохранении.
+		plans, _ := dynvalue.AsArray(dynvalue.Get(scenes, "scenes"))
+		if dynvalue.Truthy(castValue) && (len(plans) > 0 || dynvalue.Get(scenes, "references") != dynvalue.Undefined) {
 			references, err := cast.References(castValue)
 			if err != nil {
 				return View{}, err
@@ -111,16 +114,12 @@ func ViewProject(project string) (View, error) {
 			}
 		}
 	}
-	duration := dynvalue.Coalesce(dynvalue.Get(timingDocument, "duration_decoded"),
-		dynvalue.Coalesce(dynvalue.GetPath(manifest, "track", "duration_seconds"),
-			dynvalue.Coalesce(dynvalue.Get(timingDocument, "duration_container"), nil)))
 	var trackPath *string
 	if track := filepath.Join(project, "source", "track.mp3"); dynvalue.Exists(track) {
 		trackPath = &track
 	}
 	return View{
 		Scenes:    rawOrNull(scenes),
-		Treatment: rawOrNull(treatment),
 		Cast:      rawOrNull(castValue),
 		Timing:    rawOrNull(timingDocument),
 		Lyrics:    lyrics,
@@ -132,16 +131,29 @@ func ViewProject(project string) (View, error) {
 	}, nil
 }
 
-// ValidateScenes — структурная проверка реестра, как sceneregistry.Validate, с сообщениями для
-// редактора. castValue — кастинг проекта (его начальное состояние входит в проверку
-// наследования) или nil; fps — частота, которой обязан следовать реестр (ExpectedFPS), 0 —
-// неизвестна. Ошибка — реестр другой формы (части не массив,
-// камера не строка и т. п.); исключение вычисления состояния, напротив, становится проблемой.
-func ValidateScenes(data, castValue any, fps float64) ([]string, error) {
+// ValidateScenes — проверка сценария с сообщениями для редактора: части песни (структура —
+// одной проблемой, затем ValidateTreatment по длительности duration) и, если планы уже есть,
+// планы, как sceneregistry.Validate. Сценарий без планов — допустимое состояние между первым
+// проходом и построением планов. castValue — кастинг проекта (его начальное состояние входит в
+// проверку наследования) или nil; fps — частота, которой обязан следовать сценарий (ExpectedFPS),
+// 0 — неизвестна. Ошибка — сценарий другой формы (камера не строка и т. п.); исключение
+// вычисления состояния, напротив, становится проблемой.
+func ValidateScenes(data, castValue any, fps float64, duration any) ([]string, error) {
 	scenes, isArray := dynvalue.AsArray(dynvalue.Get(data, "scenes"))
-	if !dynvalue.StrictEqual(dynvalue.Get(data, "schema_version"), 1.0) || !dynvalue.StrictEqual(dynvalue.Get(data, "fps"), fps) ||
-		!isArray || len(scenes) == 0 {
+	if !dynvalue.StrictEqual(dynvalue.Get(data, "schema_version"), 1.0) || !dynvalue.StrictEqual(dynvalue.Get(data, "fps"), fps) || !isArray {
 		return []string{textRegistryRequiresScenes(fps)}, nil
+	}
+	treatment, err := NormalizeTreatmentDraft(TreatmentOf(data))
+	if err != nil {
+		return []string{err.Error()}, nil
+	}
+	problems, err := ValidateTreatment(treatment, duration)
+	if err != nil {
+		return nil, err
+	}
+	// Сценарий из одних частей: планы ещё не построены, проверять больше нечего.
+	if len(scenes) == 0 {
+		return problems, nil
 	}
 	sequences, ok := dynvalue.AsArray(dynvalue.Get(data, "sequences"))
 	if !ok {
@@ -156,7 +168,6 @@ func ValidateScenes(data, castValue any, fps float64) ([]string, error) {
 		groups.add(id)
 	}
 	references := dynvalue.Get(data, "references")
-	problems := []string{}
 	seen := &valueSet{}
 	end := 0.0
 	for _, scene := range scenes {

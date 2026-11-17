@@ -1,0 +1,12 @@
+{
+  "description": "Сценарий с планами: каркас строит планы заново, visual_direction и логлайн переносит из сценария.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "visual_direction из прежнего"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ]
+}

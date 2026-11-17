@@ -75,29 +75,47 @@ func readCastValue(project string) any {
 	return read.Value
 }
 
-// ValidateProjectScenes — scenario.validateScenes: проверка черновика с кастингом проекта без записи.
+// ValidateProjectScenes — scenario.validateScenes: проверка черновика сценария с кастингом и
+// длительностью трека проекта без записи.
 func ValidateProjectScenes(project string, data any) ([]string, error) {
-	return ValidateScenes(data, readCastValue(project), ExpectedFPS(project, data))
+	return ValidateScenes(data, readCastValue(project), ExpectedFPS(project, data), ProjectDuration(project))
 }
 
-// SaveScenes — сохранение реестра: карта references заменяется картой из кастинга (без кастинга остаётся
-// из черновика), реестр проверяется ValidateScenes и записывается в plan/scenes.json. Отказ —
-// ошибка с проблемами через пробел, файл не меняется. Возвращает записанный реестр.
+// SaveScenes — сохранение сценария: части нормализуются (NormalizeTreatmentDraft: порядок,
+// обрезка текстов, округление границ), карта references заменяется картой из кастинга (без
+// кастинга остаётся из черновика), сценарий проверяется ValidateScenes и записывается в
+// plan/scenes.json. Сценарий с планами записывается только без проблем. Сценарий из одних
+// частей сохраняется черновиком: содержательные проблемы частей (стык, длительность, коды) запись
+// не блокируют, их показывает проверка, а построение планов недоступно, пока они есть; неверная
+// структура отклоняется. Отказ — ошибка с проблемами через пробел, файл не меняется.
+// Возвращает записанный сценарий.
 func SaveScenes(project string, data any) (*dynvalue.Object, error) {
 	castValue := readCastValue(project)
 	normalized := dynvalue.Spread(data)
-	if castValue != nil {
-		references, err := cast.References(castValue)
-		if err != nil {
-			return nil, err
-		}
-		normalized.Set("references", references)
-	} else {
-		normalized.Set("references", dynvalue.Get(data, "references"))
+	if treatment, err := NormalizeTreatmentDraft(TreatmentOf(data)); err == nil {
+		normalized.Set("logline", treatment.Value("logline"))
+		normalized.Set("sequences", treatment.Value("sequences"))
 	}
-	problems, err := ValidateScenes(normalized, castValue, ExpectedFPS(project, normalized))
+	scenes, _ := dynvalue.AsArray(normalized.Value("scenes"))
+	// Карта references нужна планам; у сценария из одних частей её нет, пока планы не построены.
+	if len(scenes) > 0 || normalized.Value("references") != dynvalue.Undefined {
+		if castValue != nil {
+			references, err := cast.References(castValue)
+			if err != nil {
+				return nil, err
+			}
+			normalized.Set("references", references)
+		} else {
+			normalized.Set("references", dynvalue.Get(data, "references"))
+		}
+	}
+	problems, err := ValidateScenes(normalized, castValue, ExpectedFPS(project, normalized), ProjectDuration(project))
 	if err != nil {
 		return nil, err
+	}
+	// Черновик частей: отклоняется только структура, которую не прочитать как сценарий.
+	if len(scenes) == 0 && len(problems) > 0 && !structural(problems[0], ExpectedFPS(project, normalized)) {
+		problems = nil
 	}
 	if len(problems) > 0 {
 		return nil, errors.New(strings.Join(problems, " "))
@@ -106,4 +124,10 @@ func SaveScenes(project string, data any) (*dynvalue.Object, error) {
 		return nil, err
 	}
 	return normalized, nil
+}
+
+// structural — проблема ValidateScenes о форме сценария, а не о содержании частей: такой
+// сценарий не сохраняется и черновиком.
+func structural(problem string, fps float64) bool {
+	return problem == textRegistryRequiresScenes(fps) || problem == textPartsInvalidDoc || problem == textPartsInvalidPart
 }

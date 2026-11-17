@@ -2,8 +2,5 @@
   "code": 2,
   "stdout": "",
   "stderr": "Папка проекта не найдена: <project> (источник: argument).\n",
-  "unhandled": false,
-  "files": {
-    "plan/scenes.json": "absent"
-  }
+  "unhandled": false
 }

@@ -1,0 +1,12 @@
+{
+  "description": "start строкой «8.0» и «восемь».",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "float из строки"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ]
+}

@@ -1,5 +1,5 @@
 {
-  "description": "--force=1: лишнее значение.",
+  "description": "--json=1: лишнее значение.",
   "call": "scene_scaffold",
   "project": "project",
   "covers": [
@@ -7,6 +7,6 @@
   ],
   "stubbedMedia": [],
   "args": [
-    "--force=1"
+    "--json=1"
   ]
 }

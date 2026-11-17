@@ -73,7 +73,10 @@ export function scenarioDocuments(proposed = false): ScenarioDocuments {
       audio: { path: 'source/track.wav', end_seconds: '8.000' },
       visual_direction: 'Объёмная 3D-анимация, тёплый вечерний свет слева.',
       references: { hero: { name: 'Герой у ворот', path: 'source/heroes/story-image.png' } },
-      sequences: [{ id: 'intro', title: 'Возвращение', direction: 'Герой подходит к воротам.' }],
+      logline: 'Герой возвращается к старым воротам.',
+      sequences: [
+        { id: 'intro', title: 'Возвращение', start: 0, end: 8, entities: ['hero'], direction: 'Герой подходит к воротам.', lipsync: false, max_shot_seconds: 5 }
+      ],
       scenes: [
         {
           id: 'M01',
@@ -117,7 +120,7 @@ export function scenarioProposal(pass: ScenarioPass = 'treatment', overrides: Pa
   const proposed = scenarioDocuments(true);
   const after = structuredClone(before);
   // Следующий проход продолжает сохранённые документы, а не восстанавливает исходную фикстуру.
-  // Как в Go (internal/scenarioworkflow), трактовка владеет парой, а сценарий и доработка — только реестром.
+  // Как в Go (internal/scenarioworkflow), первый проход владеет кастингом и частями, а сценарий и доработка — только планами.
   if (pass === 'treatment') {
     after.cast = proposed.cast;
     after.treatment = proposed.treatment;
@@ -258,7 +261,7 @@ export function scenarioWorkflowOptions(mode: ScenarioStoryMode = 'prepare'): St
               'Нет утверждённой разметки песни.',
               'Для сущности «Ворота» нет изображения.',
               'Разметка должна покрывать весь трек.',
-              'Кастинг и трактовка требуют повторной проверки после исправления входов.'
+              'Кастинг и части требуют повторной проверки после исправления входов.'
             ];
           }
           // Как в «Огороде»: после утверждения изменилась только разметка песни.
@@ -376,7 +379,7 @@ export function scenarioWorkflowOptions(mode: ScenarioStoryMode = 'prepare'): St
           },
           approveCurrent: async (project) => {
             validate(project);
-            if (!model.view.canApproveCurrent) throw new Error('Трактовка пока не готова к согласованию.');
+            if (!model.view.canApproveCurrent) throw new Error('Части пока не готовы к согласованию.');
             model.approvals++;
             model.view.treatmentApproved = true;
             model.view.canApproveCurrent = false;
@@ -460,7 +463,7 @@ function SavedScenarioSnapshot({ model }: { model: ScenarioModel }) {
   );
 }
 
-function ScenarioPanelContent({ model, registryOpen }: { model: ScenarioModel; registryOpen: boolean }) {
+function ScenarioPanelContent({ model, hasShots }: { model: ScenarioModel; hasShots: boolean }) {
   const onApplied = useCallback(
     async (_pass: ScenarioPass) => {
       model.callbacks++;
@@ -474,8 +477,7 @@ function ScenarioPanelContent({ model, registryOpen }: { model: ScenarioModel; r
       project={SCENARIO_STORY_PROJECT}
       workflow={workflow}
       selected="M01"
-      registryOpen={registryOpen}
-      treatmentDirty={model.dirty}
+      hasShots={hasShots}
       scenesDirty={model.dirty}
       editorBusy={false}
       scenesInputProblem={model.inputsReady ? null : 'Согласуйте разметку и добавьте изображения кастинга.'}
@@ -489,13 +491,13 @@ function ScenarioPanelContent({ model, registryOpen }: { model: ScenarioModel; r
   );
 }
 
-/** registryOpen — открыт реестр планов; на вкладке трактовки доработки выбранного плана нет. */
-export function ScenarioWorkflowStory({ registryOpen = true }: { registryOpen?: boolean }) {
+/** hasShots — в сценарии есть планы; без них доработки выбранного плана нет. */
+export function ScenarioWorkflowStory({ hasShots = true }: { hasShots?: boolean }) {
   const model = useModel();
   const [epoch, setEpoch] = useState(0);
   return (
     <Stack spacing={2}>
-      <ScenarioPanelContent key={epoch} model={model} registryOpen={registryOpen} />
+      <ScenarioPanelContent key={epoch} model={model} hasShots={hasShots} />
       <Typography data-testid="scenario-counts">
         Запусков: {model.starts}. Применений: {model.applies}. Отклонений: {model.discards}. Согласований: {model.approvals}. Обновлений редакторов:{' '}
         {model.callbacks}.

@@ -2,8 +2,5 @@
   "code": 1,
   "stdout": "",
   "stderr": "Ошибка: индекс списка должен быть целым числом, получено: дробное число\n",
-  "unhandled": true,
-  "files": {
-    "plan/scenes.json": "unchanged"
-  }
+  "unhandled": true
 }

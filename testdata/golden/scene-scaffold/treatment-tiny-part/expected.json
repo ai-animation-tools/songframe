@@ -1,9 +1,0 @@
-{
-  "code": 1,
-  "stdout": "",
-  "stderr": "M02: повтор, разрыв или неверная граница плана.\n",
-  "unhandled": false,
-  "files": {
-    "plan/scenes.json": "unchanged"
-  }
-}

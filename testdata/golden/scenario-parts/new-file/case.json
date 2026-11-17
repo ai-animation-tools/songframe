@@ -1,0 +1,12 @@
+{
+  "description": "Сценария нет; без разметки и описи длительность не проверяется.",
+  "call": "saveScenes",
+  "project": "project",
+  "covers": [
+    "создание файла",
+    "duration=null"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

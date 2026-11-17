@@ -10,7 +10,7 @@ import (
 	"songframe/internal/wire"
 )
 
-// Документы сценария (кастинг, трактовка, реестр) передаются как json.RawMessage: Go разбирает
+// Документы сценария (кастинг, сценарий с частями и планами) передаются как json.RawMessage: Go разбирает
 // их в упорядоченное дерево dynvalue, чтобы проверки и записанные байты совпадали с эталонами
 // (порядок ключей, лишние поля, числа), и возвращает записанный документ тем же JSON.
 
@@ -59,7 +59,7 @@ func (s *CastService) Save(project string, input json.RawMessage) (json.RawMessa
 }
 
 // ScenarioService реализует группу window.api.scenario: просмотр и готовность реестра,
-// сохранение трактовки и реестра (с режимом production/keep и оценкой затронутых планов),
+// сохранение сценария (с режимом production/keep и оценкой затронутых планов),
 // проверку черновика и врезку непрерывности. Без состояния; запись — через шлюз projectfs.
 type ScenarioService struct{}
 
@@ -76,26 +76,6 @@ func (s *ScenarioService) View(project string) (scenario.View, error) {
 	return wire.Done(scenario.ViewProject(project))
 }
 
-// SaveTreatment — scenario.saveTreatment: структурная нормализация и запись plan/treatment.json
-// черновиком; содержательные проблемы запись не блокируют (их отдаёт ValidateTreatment).
-func (s *ScenarioService) SaveTreatment(project string, input json.RawMessage) (json.RawMessage, error) {
-	value, err := parseDocument(input)
-	if err != nil {
-		return json.RawMessage("null"), err
-	}
-	return wire.Done(document(scenario.SaveTreatment(project, value)))
-}
-
-// ValidateTreatment — scenario.validateTreatment: проблемы черновика трактовки (стык частей,
-// длительность трека, коды, названия) без записи, чтобы их можно было показать до сохранения.
-func (s *ScenarioService) ValidateTreatment(project string, input json.RawMessage) ([]string, error) {
-	value, err := parseDocument(input)
-	if err != nil {
-		return []string{}, err
-	}
-	return wire.Done(scenario.ValidateProjectTreatment(project, value))
-}
-
 // SaveScenes — scenario.saveScenes: запись реестра; mode=keep переносит новые отпечатки в
 // принятые комплекты и пакеты затронутых планов.
 func (s *ScenarioService) SaveScenes(project string, input json.RawMessage, mode string) (json.RawMessage, error) {
@@ -104,6 +84,17 @@ func (s *ScenarioService) SaveScenes(project string, input json.RawMessage, mode
 		return json.RawMessage("null"), err
 	}
 	return wire.Done(document(scenesave.SaveScenesWithMode(project, value, mode)))
+}
+
+// SaveScenesKeeping — запись сценария с выбором по плану: принятые планы из keep остаются
+// принятыми (видео подходит новой постановке), остальные задетые принятые планы получают
+// «Постановка изменена». Так правка части или плана спрашивает о каждом принятом плане отдельно.
+func (s *ScenarioService) SaveScenesKeeping(project string, input json.RawMessage, keep []string) (json.RawMessage, error) {
+	value, err := parseDocument(input)
+	if err != nil {
+		return json.RawMessage("null"), err
+	}
+	return wire.Done(document(scenesave.SaveScenesKeeping(project, value, keep)))
 }
 
 // SaveImpact — scenario.saveImpact: какие планы затронет сохранение черновика, без записи.

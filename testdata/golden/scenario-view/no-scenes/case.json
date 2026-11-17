@@ -1,10 +1,11 @@
 {
-  "description": "Нет реестра.",
+  "description": "Сценарий из одних частей: планы ещё не построены.",
   "call": "viewScenario + readScenarioRegistry + validateScenes",
   "project": "project",
   "covers": [
-    "status=missing",
-    "scenes=null"
+    "status=empty",
+    "части без планов",
+    "references без планов не требуются"
   ],
   "stubbedMedia": [
     "source/track.mp3"

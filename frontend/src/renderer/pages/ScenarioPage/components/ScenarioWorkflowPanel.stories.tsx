@@ -65,7 +65,7 @@ export const InconsistentInputs: Story = {
     await expect(screen.getByRole('button', { name: scenarioTexts.revise.title })).toBeDisabled();
     await expect(screen.queryByRole('button', { name: scenarioTexts.workflow.approveTreatment })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: scenarioTexts.workflow.showAllProblems({ count: 4 }) }));
-    await expect(screen.getByText('Кастинг и трактовка требуют повторной проверки после исправления входов.')).toBeVisible();
+    await expect(screen.getByText('Кастинг и части требуют повторной проверки после исправления входов.')).toBeVisible();
     await userEvent.click(screen.getByRole('button', { name: 'Согласовать демонстрационные входы' }));
     await waitFor(() => expect(screen.getByRole('button', { name: scenarioTexts.workflow.approveTreatment })).toBeEnabled());
     // Исправление входов не утверждает существующую пару автоматически.
@@ -96,19 +96,19 @@ export const Ready: Story = {
     await expect(screen.getByRole('button', { name: scenarioTexts.workflow.approveScenes })).toBeEnabled();
   }
 };
-export const TreatmentTab: Story = {
-  name: 'Вкладка трактовки · без доработки выбранного плана',
-  args: { registryOpen: false },
+export const NoShots: Story = {
+  name: 'Сценарий без планов · без доработки выбранного плана',
+  args: { hasShots: false },
   play: async (context) => {
     const screen = await ready(context);
-    // План выбирается только в реестре; статус обновляет опрос, отдельной кнопки нет.
+    // Доработка нужна выбранному плану, а планов ещё нет; статус обновляет опрос, отдельной кнопки нет.
     await expect(screen.queryByRole('button', { name: scenarioTexts.revise.title })).not.toBeInTheDocument();
     await expect(screen.queryByRole('button', { name: 'Обновить статус' })).not.toBeInTheDocument();
     await expect(screen.getByRole('button', { name: scenarioTexts.workflow.createScenes })).toBeInTheDocument();
   }
 };
 export const SequentialPasses: Story = {
-  name: 'Трактовка → сценарий · второй проход сохраняет новую пару',
+  name: 'Части → планы · второй проход сохраняет новую пару',
   parameters: { songframe: scenarioWorkflowOptions('ready') },
   play: async (context) => {
     const screen = await ready(context);
@@ -201,7 +201,7 @@ export const ReadFailure: Story = {
   }
 };
 export const ManualApproval: Story = {
-  name: 'Ручное согласование · трактовка и сценарий отдельно',
+  name: 'Ручное согласование · части и планы отдельно',
   parameters: { songframe: scenarioWorkflowOptions('manual') },
   play: async (context) => {
     const screen = await ready(context);

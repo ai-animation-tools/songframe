@@ -1,0 +1,12 @@
+{
+  "description": "--json: полный каркас в stdout, файлы не меняются.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "--dry-run --json"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ]
+}

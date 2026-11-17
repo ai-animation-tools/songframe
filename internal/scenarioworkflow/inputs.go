@@ -76,7 +76,7 @@ func (h *hashes) object() *dynvalue.Object {
 
 // changedCategories — виды входов утверждения, чьи хеши в current отличаются хотя бы от одного
 // снимка: "sources" (любой файл source/*, включая добавленные и удалённые), "timing", "cast",
-// "treatment" в этом порядке.
+// "treatment" (части сценария, partsKey) в этом порядке.
 func changedCategories(current *hashes, snapshots ...*hashes) []string {
 	found := map[string]bool{}
 	mark := func(path string) {
@@ -87,7 +87,7 @@ func changedCategories(current *hashes, snapshots ...*hashes) []string {
 			found["timing"] = true
 		case path == "plan/cast.json":
 			found["cast"] = true
-		case path == "plan/treatment.json":
+		case path == partsKey:
 			found["treatment"] = true
 		}
 	}
@@ -161,15 +161,39 @@ func digestText(data []byte) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// fileHash — для source/manifest.json — отпечаток входов, для остальных путей — SHA-256 байтов;
-// nil — файла нет. Ошибка чтения существующего файла возвращается ошибкой, а не «нет файла».
+// partsKey — ключ снимка для частей сценария: логлайна и списка частей plan/scenes.json без
+// планов. Утверждение пары «кастинг и части» опирается на него, а не на хеш всего сценария:
+// правка планов не отменяет утверждение частей.
+const partsKey = "plan/scenes.json#parts"
+
+// partsDigest — SHA-256 проекции частей (scenario.TreatmentOf) сценария data в записи Encode;
+// nil, если сценарий не читается как объект JSON (тогда частей нет).
+func partsDigest(data []byte) *string {
+	value, err := dynvalue.Parse([]byte(dynvalue.DecodeUTF8(data)))
+	if err != nil || !dynvalue.IsRecord(value) {
+		return nil
+	}
+	text := digestText(scenario.Encode(scenario.TreatmentOf(value)))
+	return &text
+}
+
+// fileHash — для source/manifest.json — отпечаток входов, для partsKey — отпечаток частей
+// сценария, для остальных путей — SHA-256 байтов; nil — файла нет. Ошибка чтения существующего
+// файла возвращается ошибкой, а не «нет файла».
 func fileHash(project, relative string) (*string, error) {
-	data, err := os.ReadFile(filepath.Join(project, filepath.FromSlash(relative)))
+	file := relative
+	if relative == partsKey {
+		file = "plan/scenes.json"
+	}
+	data, err := os.ReadFile(filepath.Join(project, filepath.FromSlash(file)))
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil, nil
 	}
 	if err != nil {
-		return nil, dynvalue.FsError("open", filepath.Join(project, filepath.FromSlash(relative)), err)
+		return nil, dynvalue.FsError("open", filepath.Join(project, filepath.FromSlash(file)), err)
+	}
+	if relative == partsKey {
+		return partsDigest(data), nil
 	}
 	var text string
 	if relative == "source/manifest.json" {
@@ -299,14 +323,14 @@ type inputs struct {
 	duration *float64
 	hashes   *hashes
 	// approval — часть снимка, на которую опирается утверждение пары: исходники, разметка,
-	// кастинг и трактовка.
+	// кастинг и части сценария (partsKey).
 	approval *hashes
-	// problems — препятствия запуску прохода трактовки (исходники, разметка); documentProblems —
+	// problems — препятствия запуску прохода частей (исходники, разметка); documentProblems —
 	// проблемы документов сценария.
 	problems, documentProblems []string
 	pairValid, scenesValid     bool
 	scenesReady                bool
-	// treatmentDraft — трактовка прочитана черновиком с проблемами validateTreatment.
+	// treatmentDraft — части сценария прочитаны черновиком с проблемами ValidateTreatment.
 	treatmentDraft bool
 }
 
@@ -350,7 +374,7 @@ func readInputs(path string) (*inputs, error) {
 	result := &inputs{project: project, problems: []string{}, documentProblems: []string{}}
 	paths := &orderedSet{}
 	for _, item := range []string{"plan/project.json", "plan/production-status.json", "source/manifest.json", "source/track.mp3", "source/text.md",
-		"source/description.md", "plan/audio/timing.json", "plan/cast.json", "plan/treatment.json", "plan/scenes.json"} {
+		"source/description.md", "plan/audio/timing.json", "plan/cast.json", "plan/scenes.json"} {
 		paths.add(item)
 	}
 	outputs, err := scenarioOutputPaths(project)
@@ -390,12 +414,16 @@ func readInputs(path string) (*inputs, error) {
 		}
 	}
 	if result.documents.Scenes != nil {
-		sceneProblems, err := scenario.ValidateScenes(result.documents.Scenes, result.documents.Cast, scenario.ExpectedFPS(project, result.documents.Scenes))
+		sceneProblems, err := scenario.ValidateScenes(result.documents.Scenes, result.documents.Cast, scenario.ExpectedFPS(project, result.documents.Scenes), durationValue(result.duration))
 		if err != nil {
 			return nil, err
 		}
-		result.documentProblems = append(result.documentProblems, sceneProblems...)
-		result.scenesValid = len(sceneProblems) == 0
+		// Проблемы частей уже добавлены при чтении документов (treatment.json: …); здесь — только
+		// проблемы планов. Сценарий из одних частей планов ещё не имеет.
+		if len(arrayItems(dynvalue.Get(result.documents.Scenes, "scenes"))) > 0 {
+			result.documentProblems = append(result.documentProblems, sceneProblems...)
+			result.scenesValid = len(sceneProblems) == 0
+		}
 		if result.scenesValid && result.documents.Cast != nil && result.duration != nil {
 			if err := checkReadyScenes(result.documents.Scenes, result.documents.Cast, *result.duration, scenario.ExpectedFPS(project, result.documents.Scenes)); err != nil {
 				result.documentProblems = append(result.documentProblems, strings.Split(err.Error(), "\n")...)
@@ -412,10 +440,15 @@ func readInputs(path string) (*inputs, error) {
 			return nil, err
 		}
 		result.hashes.set(item, value)
-		if strings.HasPrefix(item, "source/") || item == "plan/audio/timing.json" || item == "plan/cast.json" || item == "plan/treatment.json" {
+		if strings.HasPrefix(item, "source/") || item == "plan/audio/timing.json" || item == "plan/cast.json" {
 			result.approval.set(item, value)
 		}
 	}
+	parts, err := fileHash(project, partsKey)
+	if err != nil {
+		return nil, err
+	}
+	result.approval.set(partsKey, parts)
 	return result, nil
 }
 
@@ -568,15 +601,15 @@ func validTiming(document *dynvalue.Object) bool {
 	return true
 }
 
-// readDocuments — разбор plan/cast.json, plan/treatment.json и plan/scenes.json. Проблема
-// документа — «<имя>.json: <текст>», документ тогда считается отсутствующим.
+// readDocuments — разбор plan/cast.json и plan/scenes.json. Проблема документа — «<имя>.json:
+// <текст>», документ тогда считается отсутствующим.
 //
-// Трактовка читается черновиком (структурная нормализация), как её сохраняет редактор; проблемы
-// scenario.ValidateTreatment добавляются текстом «treatment.json: …», но черновик остаётся в
-// документах. Так проход трактовки агентом начинается с черновика пользователя, а ручное
-// утверждение пары и проход сцен требуют трактовки без проблем (pairValid).
+// Части сценария (scenario.TreatmentOf) читаются черновиком (структурная нормализация), как их
+// сохраняет редактор; проблемы scenario.ValidateTreatment добавляются текстом «scenes.json: …»,
+// но черновик остаётся в документах. Так первый проход агентом начинается с черновика
+// пользователя, а ручное утверждение пары и проход планов требуют частей без проблем (pairValid).
 func readDocuments(result *inputs) {
-	for _, key := range []string{"cast", "treatment", "scenes"} {
+	for _, key := range []string{"cast", "scenes"} {
 		raw, err := readJSON(result.project, "plan/"+key+".json")
 		if err == nil && raw != nil {
 			switch key {
@@ -590,10 +623,14 @@ func readDocuments(result *inputs) {
 					}
 					result.documents.Cast, err = cast.ProjectDescriptions(normalized, manifest)
 				}
-			case "treatment":
+			case "scenes":
 				var draft *dynvalue.Object
-				draft, err = scenario.NormalizeTreatmentDraft(raw)
+				draft, err = scenario.NormalizeTreatmentDraft(scenario.TreatmentOf(raw))
 				if err == nil {
+					err = checkScenesShape(raw)
+				}
+				if err == nil {
+					result.documents.Scenes = raw
 					result.documents.Treatment = draft
 					var problems []string
 					problems, err = scenario.ValidateTreatment(draft, durationValue(result.duration))
@@ -601,11 +638,6 @@ func readDocuments(result *inputs) {
 						err = errors.New(strings.Join(problems, " "))
 					}
 					result.treatmentDraft = err != nil
-				}
-			case "scenes":
-				err = checkScenesShape(raw)
-				if err == nil {
-					result.documents.Scenes = raw
 				}
 			}
 		}

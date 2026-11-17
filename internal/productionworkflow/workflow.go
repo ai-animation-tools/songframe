@@ -69,7 +69,7 @@ type Options struct {
 	Run Runner
 	// Catalog — каталог моделей провайдера видео; nil — собственный providers.Catalogs.
 	Catalog CatalogReader
-	// IsScenarioApproved — сценарий утверждён: трактовка утверждена и сцены не требуют проверки.
+	// IsScenarioApproved — сценарий утверждён: кастинг и части утверждены, планы не требуют проверки.
 	IsScenarioApproved func(project string) bool
 	// IsPackageBusy — над пакетом идёт производственная операция (production.Service.IsBusy).
 	IsPackageBusy func(project, packageDir string) bool

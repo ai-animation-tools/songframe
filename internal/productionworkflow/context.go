@@ -17,6 +17,7 @@ import (
 	"songframe/internal/mediaproviders"
 	"songframe/internal/production"
 	"songframe/internal/projectfile"
+	"songframe/internal/scenario"
 	"songframe/internal/speech"
 )
 
@@ -290,7 +291,7 @@ func ReadContext(path, shot, requested string) (*Context, error) {
 		sequence = dynvalue.Undefined
 		for _, item := range sequences {
 			if dynvalue.IsRecord(item) && dynvalue.Get(item, "id") == scene.Value("sequence") {
-				sequence = item
+				sequence = scenario.PartDirection(item)
 				break
 			}
 		}

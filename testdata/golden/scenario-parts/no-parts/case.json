@@ -1,0 +1,12 @@
+{
+  "description": "Пустой список частей: черновик сохраняется, validateScenes возвращает проблему.",
+  "call": "saveScenes",
+  "project": "project",
+  "covers": [
+    "treatmentRequiresParts",
+    "черновик записывается"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

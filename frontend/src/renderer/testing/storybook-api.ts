@@ -160,9 +160,8 @@ export function unconfiguredStoryApi(): Api {
     scenario: {
       status: async () => unconfigured('scenario.status'),
       view: async () => unconfigured('scenario.view'),
-      saveTreatment: async () => unconfigured('scenario.saveTreatment'),
-      validateTreatment: async () => unconfigured('scenario.validateTreatment'),
       saveScenes: async () => unconfigured('scenario.saveScenes'),
+      saveScenesKeeping: async () => unconfigured('scenario.saveScenesKeeping'),
       saveImpact: async () => unconfigured('scenario.saveImpact'),
       validateScenes: async () => unconfigured('scenario.validateScenes'),
       brief: async () => unconfigured('scenario.brief')

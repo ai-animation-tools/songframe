@@ -8,16 +8,16 @@
     "after": "3a73238834f6bfb60f7e161749eb950d7345971f3bd6caf6cd0c18c9d6fea582"
   },
   "plan/animatic/cards/manifest.json": {
-    "before": "ae4497fbebf599f4ff88a933976d2f69b215f7377d21496c0247c3a6e55992de",
-    "after": "34c6ba75e85f315b741a743522eb90decf6cf8e3f38c47b62276fa5ad54b42e1"
+    "before": "df2d65d28b45c167a80355e25dcc2b88a0ef8fd09b42280cdde759eaac8856ea",
+    "after": "2a860f6eeee4e90481f8f070fbc46d8305a7dc07d7f7996e94cf616f1937cdde"
   },
   "plan/edit-list.md": {
     "before": "0b473e57b6e92e702a16b6154178a27e061e7b064da61a97591dd5b3adfbc356",
     "after": "04ae7db9d561a1423d501e4d43d893ffe9328b4db1c897ad261cec8515af3507"
   },
   "plan/scenes.json": {
-    "before": "7a80da73a0f083fc3a9b31862b7b0ea2fe87c6536af966a50c3b1b579417401f",
-    "after": "ca198f3532bae4d08cb4c471845487f9edde2312fa5f5e25c4b42c1c435ce191"
+    "before": "21ace587f4d4a1ba7170cacd7d61beee17adc894d0aef818862e8b90a001ef4e",
+    "after": "c88c80d5f639b6f9b8dfa53a6f07b84f10fb73ff15296ad11bd70606f4443eab"
   },
   "plan/storyboard.md": {
     "before": "7f0154e12c063ec4e9dc21006ad1f825d8f510bc7f20755d0dec996ae723401b",

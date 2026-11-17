@@ -9,6 +9,10 @@ export interface Checks {
     "sources": boolean;
     "timing": boolean;
     "cast": boolean;
+
+    /**
+     * Treatment — в сценарии есть части песни (логлайн и список частей первого прохода).
+     */
     "treatment": boolean;
     "scenes": boolean;
 

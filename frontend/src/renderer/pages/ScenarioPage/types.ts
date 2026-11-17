@@ -7,7 +7,6 @@ export interface EntityOption {
 }
 
 export type ScenarioBrief = { before: BriefResult; after: BriefResult } | null;
-export type ScenarioTab = 'treatment' | 'scenes';
 
 /** План, к которому нужно прокрутить реестр: к редактору постановки (переход с другой страницы) или к блоку состояния (источник значения врезки). */
 export interface ShotReveal {
@@ -21,12 +20,10 @@ export interface ShotReveal {
 /** Переход из врезки к месту правки значения: план, сущность и блок состояния. */
 export type OpenShotState = (shot: string, entity?: string, phase?: 'before' | 'after') => void;
 
-/** Якорь списка проблем реестра: чип панели прокручивает к нему. */
+/** Якорь списка проблем сценария (над частями, пока планов нет, иначе над планами): чип панели прокручивает к нему. */
 export const SCENE_PROBLEMS_ID = 'scenario-scene-problems';
-/** Якорь постоянного списка проблем трактовки для перехода из панели действий. */
-export const TREATMENT_PROBLEMS_ID = 'scenario-treatment-problems';
 
-/** Сохранение реестра, ждущее подтверждения: черновик и затронутые планы на момент расчёта. */
+/** Сохранение сценария, ждущее подтверждения: черновик и затронутые планы на момент расчёта. */
 export interface ScenesSaveRequest {
   mode: ScenesSaveMode;
   scenes: ScenesFile;

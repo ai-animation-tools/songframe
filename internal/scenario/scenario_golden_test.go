@@ -92,31 +92,32 @@ type writeExpectation struct {
 	} `json:"resave"`
 }
 
-// treatmentExpectation — expected.json scenario-treatment: общий формат записи и strictError —
-// текст отказа строгой проверки для случаев, которые сохраняются черновиком (см. README эталонов).
-type treatmentExpectation struct {
+// partsExpectation — expected.json scenario-parts: общий формат записи и strictError — текст
+// отказа строгой проверки для случаев, которые сохраняются черновиком (см. README эталонов).
+type partsExpectation struct {
 	writeExpectation
 	StrictError *string `json:"strictError"`
 }
 
-// TestSaveTreatmentMatchesGolden сверяет saveTreatment: ошибка, результат, байты файла и повтор,
-// а также проблемы ValidateProjectTreatment того же входа. Содержательные проблемы не отклоняют
-// сохранение; у таких случаев проблемы через пробел равны тексту строгого отказа (strictError),
-// у корректных трактовок — пусты, у неверной структуры — один текст отказа.
-func TestSaveTreatmentMatchesGolden(t *testing.T) {
-	for _, item := range golden.Load(t, "scenario-treatment") {
+// TestSavePartsMatchesGolden сверяет сохранение сценария из одних частей (SaveScenes): ошибка,
+// результат, байты файла и повтор, а также проблемы ValidateProjectScenes того же входа.
+// Содержательные проблемы частей черновик не отклоняют; у таких случаев проблемы через пробел
+// равны тексту строгого отказа (strictError), у верных частей — пусты, у неверной структуры —
+// один текст отказа.
+func TestSavePartsMatchesGolden(t *testing.T) {
+	for _, item := range golden.Load(t, "scenario-parts") {
 		t.Run(item.Name, func(t *testing.T) {
 			project := item.CopyProject(t)
-			input, err := dynvalue.Parse(item.Read(t, "treatment-input.json"))
+			input, err := dynvalue.Parse(item.Read(t, "scenes-input.json"))
 			if err != nil {
 				t.Fatal(err)
 			}
-			var want treatmentExpectation
+			var want partsExpectation
 			if err := json.Unmarshal(item.Expected(t), &want); err != nil {
 				t.Fatal(err)
 			}
 			before := treeFiles(t, project)
-			problems, err := ValidateProjectTreatment(project, dynvalue.DeepClone(input))
+			problems, err := ValidateProjectScenes(project, dynvalue.DeepClone(input))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -130,16 +131,16 @@ func TestSaveTreatmentMatchesGolden(t *testing.T) {
 					t.Fatalf("проблемы черновика\n  получено: %s\n  эталон:   %s", got, *want.StrictError)
 				}
 			case len(problems) != 0:
-				t.Fatalf("эталон принял трактовку, Go нашёл проблемы: %q", problems)
+				t.Fatalf("эталон принял части, Go нашёл проблемы: %q", problems)
 			}
 			if diff := changes(before, treeFiles(t, project)); len(diff) > 0 {
 				t.Fatalf("проверка черновика изменила файлы: %v", diff)
 			}
-			result, err := SaveTreatment(project, input)
+			result, err := SaveScenes(project, input)
 			after := treeFiles(t, project)
 			AssertWrite(t, item.Dir, want.Error, want.Result, want.Files, err, result, before, after)
 			if want.Resave != nil {
-				again, err := SaveTreatment(project, dynvalue.DeepClone(result))
+				again, err := SaveScenes(project, dynvalue.DeepClone(result))
 				if err != nil || (dynvalue.Stringify(again) == dynvalue.Stringify(result)) != want.Resave.SameResult {
 					t.Fatalf("повторное сохранение: %v", err)
 				}
@@ -149,24 +150,20 @@ func TestSaveTreatmentMatchesGolden(t *testing.T) {
 	}
 }
 
-// TestNormalizeTreatmentRejectsProblems — строгая нормализация (ответ агента) отклоняет
-// трактовку с содержательными проблемами текстом strictError эталона.
+// TestNormalizeTreatmentRejectsProblems — строгая нормализация частей (ответ агента первого
+// прохода) отклоняет части с содержательными проблемами текстом strictError эталона.
 func TestNormalizeTreatmentRejectsProblems(t *testing.T) {
-	for _, item := range golden.Load(t, "scenario-treatment") {
+	for _, item := range golden.Load(t, "scenario-parts") {
 		t.Run(item.Name, func(t *testing.T) {
-			var want treatmentExpectation
+			var want partsExpectation
 			if err := json.Unmarshal(item.Expected(t), &want); err != nil {
 				t.Fatal(err)
 			}
-			input, err := dynvalue.Parse(item.Read(t, "treatment-input.json"))
+			input, err := dynvalue.Parse(item.Read(t, "scenes-input.json"))
 			if err != nil {
 				t.Fatal(err)
 			}
-			duration, err := projectDuration(item.ProjectPath())
-			if err != nil {
-				t.Fatal(err)
-			}
-			_, err = NormalizeTreatment(input, duration)
+			_, err = NormalizeTreatment(TreatmentOf(input), ProjectDuration(item.ProjectPath()))
 			expected := want.Error
 			if expected == nil {
 				expected = want.StrictError

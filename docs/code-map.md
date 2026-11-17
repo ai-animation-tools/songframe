@@ -106,16 +106,16 @@
 | [`internal/scenario`](../internal/scenario) | Вычисляет данные по реестру сцен plan/scenes.json: наследование состояния сущностей по state_from (ResolveStates) и отпечаток постановки плана (SceneFingerprints). |
 | [`internal/sceneregistry`](../internal/sceneregistry) | Проверяет реестр сцен и проект для инструментов tools.run: единственный источник постановки и монтажного времени инструментов. |
 | [`internal/scenesave`](../internal/scenesave) | Сохраняет реестр планов с учётом производства: определяет, какие планы меняют отпечаток постановки при сохранении черновика, с какой формальной причиной и что с ними станет. |
-| [`internal/scenescaffold`](../internal/scenescaffold) | Строит детерминированный каркас реестра сцен plan/scenes.json (инструмент scene_scaffold) из сохранённой трактовки (plan/treatment.json), разметки трека (plan/audio/timing.json), текста песни и кастинга. |
+| [`internal/scenescaffold`](../internal/scenescaffold) | Строит детерминированный каркас планов сценария (инструмент scene_scaffold) по частям песни сохранённого сценария plan/scenes.json, разметке трека (plan/audio/timing.json), тексту песни и кастингу. |
 | [`internal/sceneviews`](../internal/sceneviews) | Обновляет и проверяет производные представления единого реестра сцен (инструмент update_scene_views): документы internal/projectviews, PNG-карточки аниматика plan/animatic/cards/<план>.png (и .last.png последней опоры) и их квитанцию plan/animatic/cards/manifest.json. |
-| [`internal/scenarioworkflow`](../internal/scenarioworkflow) | Ведёт сценарный проход агента: подготовка предложения кастинга и трактовки, реестра сцен или доработки выбранных планов, хранение ожидающего предложения в записи прохода plan/scenario-workflow.json, его разбор и проверка, утверждения пары и сцен и применение одной транзакцией, а также проверка сценария агентом с отчётом в plan/scenario-check.json (check.go). |
-| [`internal/scenarioapply`](../internal/scenarioapply) | Хранилище многофайловой публикации семейства «сценарий» (кастинг, трактовка, реестр, опись исходников и их производные виды) с журналом и восстановлением после сбоя. |
+| [`internal/scenarioworkflow`](../internal/scenarioworkflow) | Ведёт сценарный проход агента: подготовка предложения кастинга и частей сценария, планов или доработки выбранных планов, хранение ожидающего предложения в записи прохода plan/scenario-workflow.json, его разбор и проверка, утверждения пары и сцен и применение одной транзакцией, а также проверка сценария агентом с отчётом в plan/scenario-check.json (check.go). |
+| [`internal/scenarioapply`](../internal/scenarioapply) | Хранилище многофайловой публикации семейства «сценарий» (кастинг, сценарий, опись исходников и их производные виды) с журналом и восстановлением после сбоя. |
 | [`internal/continuitybrief`](../internal/continuitybrief) | Строит врезку непрерывности для плана (инструмент continuity_brief): состояние мира и сущностей плана словами на первый или последний кадр и чек-лист «да или нет» для проверки полученного изображения. |
 | [`internal/lintregistry`](../internal/lintregistry) | Проверяет plan/scenes.json, кастинг, описание, комплекты assets, файл принятия и рабочие пакеты по встроенным JSON-схемам (подмножество JSON Schema) и правилам владения сведениями (хроника принятий и технические рецепты не хранятся в постановке), а также предупреждает о состоянии обстановки, унаследованном через смену места (stale_state.go). |
 
 | Страница | Назначение |
 | --- | --- |
-| [`ScenarioPage`](../frontend/src/renderer/pages/ScenarioPage/ScenarioPage.tsx) | Сценарий связывает независимые черновики трактовки и реестра с их редакторами. |
+| [`ScenarioPage`](../frontend/src/renderer/pages/ScenarioPage/ScenarioPage.tsx) | Страница сценария: один черновик plan/scenes.json — блок «Общие правила и части» над планами. |
 
 Ещё: [`resources/skills/ai-clip-scenario`](../resources/skills/ai-clip-scenario).
 

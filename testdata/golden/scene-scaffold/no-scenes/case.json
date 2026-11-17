@@ -1,0 +1,12 @@
+{
+  "description": "Нет сценария: каркасу не из чего брать части.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "Нет plan/treatment.json"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ]
+}

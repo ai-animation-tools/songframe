@@ -35,6 +35,28 @@ export const Production: Story = {
   }
 };
 
+export const ProductionKeepOne: Story = {
+  name: 'Обычное сохранение · M01 оставлен принятым, M02 переснимается',
+  tags: ['ci'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const screen = within(canvasElement.ownerDocument.body);
+    const dialog = within(await screen.findByRole('dialog', { name: scenarioTexts.save.productionTitle }));
+    await expect(dialog.getByText(scenarioTexts.save.choiceHint)).toBeInTheDocument();
+    const group = (shot: string) => within(dialog.getByRole('radiogroup', { name: shot }));
+    // По умолчанию каждый принятый план переснимается; выбор меняет пояснение под ним.
+    await expect(group('M01').getByRole('radio', { name: scenarioTexts.check.dialog.reshoot })).toBeChecked();
+    await expect(dialog.getAllByText(scenarioTexts.check.dialog.reshootHint)).toHaveLength(3);
+    await userEvent.click(group('M01').getByRole('radio', { name: scenarioTexts.check.dialog.keep }));
+    await expect(dialog.getByText(scenarioTexts.save.keepHint)).toBeInTheDocument();
+    await userEvent.click(dialog.getByRole('button', { name: commonTexts.save }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await expect(canvas.getByTestId('kept')).toHaveTextContent('Оставлены принятыми: M01.');
+    await expect(canvas.getByText(SHOT_STATE_LABELS.completed.label, { exact: true })).toBeInTheDocument();
+    await expect(canvas.getByTestId('package-state')).toHaveTextContent('требуется новое согласование');
+  }
+};
+
 export const Keep: Story = {
   name: 'Без производства · комплект и пакет сохраняют силу',
   args: { mode: 'keep' },
@@ -78,7 +100,7 @@ export const CancelAndReopen: Story = {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     await expect(canvas.getByRole('textbox', { name: 'Черновик постановки' })).toHaveValue(SCENARIO_DRAFT);
     await expect(canvas.getByTestId('save-count')).toHaveTextContent('0');
-    await expect(canvas.getByTestId('animatic-state')).toHaveTextContent('соответствует сохранённому реестру');
+    await expect(canvas.getByTestId('animatic-state')).toHaveTextContent('соответствует сохранённому сценарию');
     await userEvent.click(canvas.getByRole('button', { name: 'Открыть подтверждение сохранения' }));
     await screen.findByRole('dialog');
     await userEvent.keyboard('{Escape}');

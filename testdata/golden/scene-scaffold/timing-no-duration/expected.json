@@ -2,8 +2,5 @@
   "code": 1,
   "stdout": "",
   "stderr": "В разметке нет длительности трека.\n",
-  "unhandled": false,
-  "files": {
-    "plan/scenes.json": "unchanged"
-  }
+  "unhandled": false
 }

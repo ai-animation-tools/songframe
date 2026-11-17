@@ -99,8 +99,8 @@
   },
   {
     "domain": "status",
-    "name": "no-scenes-damaged-cast-treatment",
-    "description": "Без scenes.json, cast.json и treatment.json битые, комплекты остались.",
+    "name": "damaged-cast-no-parts",
+    "description": "cast.json битый, в сценарии нет частей, комплекты остались.",
     "covers": [
       "damagedCast",
       "damagedTreatment (пустой sequences)",
@@ -1589,16 +1589,15 @@
     ]
   },
   {
-    "domain": "scenario-treatment",
+    "domain": "scenario-parts",
     "name": "sample-resave",
-    "description": "Пересохранение трактовки образца.",
+    "description": "Пересохранение частей образца.",
     "covers": [
-      "стабильность",
-      "числа 0.0 → 0"
+      "стабильность"
     ]
   },
   {
-    "domain": "scenario-treatment",
+    "domain": "scenario-parts",
     "name": "normalize",
     "description": "Сортировка частей, округление, trim, пустые сущности отбрасываются, неизвестные поля сохраняются.",
     "covers": [
@@ -1607,11 +1606,11 @@
       "trim",
       "entities.filter(Boolean)",
       "лишние поля части сохраняются",
-      "лишние поля документа отбрасываются"
+      "лишние поля документа сохраняются"
     ]
   },
   {
-    "domain": "scenario-treatment",
+    "domain": "scenario-parts",
     "name": "invalid-document",
     "description": "Нет logline.",
     "covers": [
@@ -1619,7 +1618,7 @@
     ]
   },
   {
-    "domain": "scenario-treatment",
+    "domain": "scenario-parts",
     "name": "invalid-part",
     "description": "max_shot_seconds = 0.",
     "covers": [
@@ -1627,9 +1626,9 @@
     ]
   },
   {
-    "domain": "scenario-treatment",
+    "domain": "scenario-parts",
     "name": "validation-problems",
-    "description": "Код, повтор, название, стык, конец раньше начала, длительность: черновик сохраняется, validateTreatment возвращает эти проблемы.",
+    "description": "Код, повтор, название, стык, конец раньше начала, длительность: черновик сохраняется, validateScenes возвращает эти проблемы.",
     "covers": [
       "partCodeLatin",
       "duplicatePartCode",
@@ -1641,18 +1640,18 @@
     ]
   },
   {
-    "domain": "scenario-treatment",
+    "domain": "scenario-parts",
     "name": "no-parts",
-    "description": "Пустой список частей: черновик сохраняется, validateTreatment возвращает проблему.",
+    "description": "Пустой список частей: черновик сохраняется, validateScenes возвращает проблему.",
     "covers": [
       "treatmentRequiresParts",
       "черновик записывается"
     ]
   },
   {
-    "domain": "scenario-treatment",
+    "domain": "scenario-parts",
     "name": "new-file",
-    "description": "Трактовки нет; без разметки и описи длительность не проверяется.",
+    "description": "Сценария нет; без разметки и описи длительность не проверяется.",
     "covers": [
       "создание файла",
       "duration=null"
@@ -2092,50 +2091,24 @@
   },
   {
     "domain": "scene-scaffold",
-    "name": "new",
-    "description": "Реестра нет: каркас записан, краткий JSON-отчёт.",
+    "name": "existing-visual",
+    "description": "Сценарий с планами: каркас строит планы заново, visual_direction и логлайн переносит из сценария.",
     "covers": [
-      "written",
-      "--json"
-    ]
-  },
-  {
-    "domain": "scene-scaffold",
-    "name": "exists",
-    "description": "Реестр есть, без --force: отказ, файл не меняется.",
-    "covers": [
-      "уже существует"
-    ]
-  },
-  {
-    "domain": "scene-scaffold",
-    "name": "force",
-    "description": "--force заменяет реестр, visual_direction сохраняется.",
-    "covers": [
-      "--force",
       "visual_direction из прежнего"
     ]
   },
   {
     "domain": "scene-scaffold",
-    "name": "force-existing-corrupt",
-    "description": "Повреждённый прежний реестр не мешает записи и не даёт visual_direction.",
-    "covers": [
-      "existing False"
-    ]
-  },
-  {
-    "domain": "scene-scaffold",
-    "name": "dry-run-json",
-    "description": "--dry-run --json: полный каркас в stdout без записи.",
+    "name": "json",
+    "description": "--json: полный каркас в stdout, файлы не меняются.",
     "covers": [
       "--dry-run --json"
     ]
   },
   {
     "domain": "scene-scaffold",
-    "name": "dry-run-text",
-    "description": "--dry-run без --json: таблица планов.",
+    "name": "text-table",
+    "description": "Без --json: таблица планов.",
     "covers": [
       "текстовый вывод"
     ]
@@ -2143,7 +2116,7 @@
   {
     "domain": "scene-scaffold",
     "name": "text-output",
-    "description": "Без флагов при отсутствии реестра: запись и таблица.",
+    "description": "Без флагов: таблица планов и итог.",
     "covers": [
       "текстовый вывод",
       "Записано"
@@ -2151,39 +2124,39 @@
   },
   {
     "domain": "scene-scaffold",
-    "name": "no-treatment",
-    "description": "Нет трактовки.",
+    "name": "no-scenes",
+    "description": "Нет сценария: каркасу не из чего брать части.",
     "covers": [
       "Нет plan/treatment.json"
     ]
   },
   {
     "domain": "scene-scaffold",
-    "name": "treatment-corrupt",
-    "description": "Повреждённая трактовка.",
+    "name": "parts-corrupt",
+    "description": "Повреждённый сценарий.",
     "covers": [
       "read_json False"
     ]
   },
   {
     "domain": "scene-scaffold",
-    "name": "treatment-null",
-    "description": "Трактовка null.",
+    "name": "parts-null",
+    "description": "Сценарий null.",
     "covers": [
       "read_json None"
     ]
   },
   {
     "domain": "scene-scaffold",
-    "name": "treatment-draft-gap",
-    "description": "Черновик трактовки с разрывом между частями (сохранён редактором).",
+    "name": "parts-draft-gap",
+    "description": "Черновик частей с разрывом между частями (сохранён редактором).",
     "covers": [
       "стык частей"
     ]
   },
   {
     "domain": "scene-scaffold",
-    "name": "treatment-draft-overlap",
+    "name": "parts-draft-overlap",
     "description": "Черновик: части накладываются, конец раньше начала.",
     "covers": [
       "конец раньше начала"
@@ -2191,7 +2164,7 @@
   },
   {
     "domain": "scene-scaffold",
-    "name": "treatment-draft-duration",
+    "name": "parts-draft-duration",
     "description": "Черновик: части короче трека.",
     "covers": [
       "Части заканчиваются"
@@ -2199,7 +2172,7 @@
   },
   {
     "domain": "scene-scaffold",
-    "name": "treatment-draft-empty",
+    "name": "parts-draft-empty",
     "description": "Черновик без частей.",
     "covers": [
       "непустой список sequences"
@@ -2207,7 +2180,7 @@
   },
   {
     "domain": "scene-scaffold",
-    "name": "treatment-draft-empty-id",
+    "name": "parts-draft-empty-id",
     "description": "Черновик с пустым кодом части: repr части в сообщении.",
     "covers": [
       "repr словаря"
@@ -2215,7 +2188,7 @@
   },
   {
     "domain": "scene-scaffold",
-    "name": "treatment-duplicate-id",
+    "name": "parts-duplicate-id",
     "description": "Повтор кода части.",
     "covers": [
       "уникальный id"
@@ -2223,7 +2196,7 @@
   },
   {
     "domain": "scene-scaffold",
-    "name": "treatment-unsorted",
+    "name": "parts-unsorted",
     "description": "Части не по порядку: сортировка по началу.",
     "covers": [
       "sorted"
@@ -2231,7 +2204,7 @@
   },
   {
     "domain": "scene-scaffold",
-    "name": "treatment-schema",
+    "name": "parts-schema",
     "description": "schema_version 2.",
     "covers": [
       "schema"
@@ -2239,7 +2212,7 @@
   },
   {
     "domain": "scene-scaffold",
-    "name": "treatment-missing-start",
+    "name": "parts-missing-start",
     "description": "Часть без start: KeyError.",
     "covers": [
       "KeyError"
@@ -2247,7 +2220,7 @@
   },
   {
     "domain": "scene-scaffold",
-    "name": "treatment-start-string",
+    "name": "parts-start-string",
     "description": "start строкой «8.0» и «восемь».",
     "covers": [
       "float из строки"
@@ -2255,7 +2228,7 @@
   },
   {
     "domain": "scene-scaffold",
-    "name": "treatment-start-null",
+    "name": "parts-start-null",
     "description": "start null: TypeError — необработанная ошибка.",
     "covers": [
       "TypeError"
@@ -2263,8 +2236,8 @@
   },
   {
     "domain": "scene-scaffold",
-    "name": "treatment-floats",
-    "description": "Числа трактовки float и строковые заголовки-числа.",
+    "name": "parts-floats",
+    "description": "Числа частей float и строковые заголовки-числа.",
     "covers": [
       "repr float",
       "title не строка"
@@ -2272,7 +2245,7 @@
   },
   {
     "domain": "scene-scaffold",
-    "name": "treatment-tiny-part",
+    "name": "parts-tiny-part",
     "description": "Две границы в одном кадре: пустое окно и отказ validate.",
     "covers": [
       "validate после каркаса"
@@ -2506,7 +2479,7 @@
   {
     "domain": "scene-scaffold",
     "name": "args-prefix",
-    "description": "Сокращения --fo --j.",
+    "description": "Сокращение --j.",
     "covers": [
       "allow_abbrev"
     ]
@@ -2514,7 +2487,7 @@
   {
     "domain": "scene-scaffold",
     "name": "args-explicit",
-    "description": "--force=1: лишнее значение.",
+    "description": "--json=1: лишнее значение.",
     "covers": [
       "explicit argument"
     ]
@@ -2545,8 +2518,8 @@
   },
   {
     "domain": "scene-scaffold",
-    "name": "fps-24-dry-run",
-    "description": "Проект 24 кадров/с: каркас переносит частоту проекта в реестр и строит границы планов на её сетке.",
+    "name": "fps-24",
+    "description": "Проект 24 кадров/с: каркас переносит частоту проекта в сценарий и строит границы планов на её сетке.",
     "covers": [
       "fps проекта 24",
       "границы планов на сетке 24 кадров/с"

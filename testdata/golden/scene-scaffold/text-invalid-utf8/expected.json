@@ -2,8 +2,5 @@
   "code": 1,
   "stdout": "",
   "stderr": "текст не в UTF-8: байт 0xff в позиции 0, неверный начальный байт\n",
-  "unhandled": false,
-  "files": {
-    "plan/scenes.json": "unchanged"
-  }
+  "unhandled": false
 }

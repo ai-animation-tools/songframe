@@ -45,7 +45,9 @@
         "canApproveCurrent": true,
         "treatmentApproved": false,
         "scenesNeedReview": true,
-        "changedInputs": ["cast"],
+        "changedInputs": [
+          "cast"
+        ],
         "acceptedShots": [
           "M01",
           "M02"
@@ -67,7 +69,9 @@
         "canApproveCurrent": false,
         "treatmentApproved": true,
         "scenesNeedReview": true,
-        "changedInputs": ["cast"],
+        "changedInputs": [
+          "cast"
+        ],
         "acceptedShots": [
           "M01",
           "M02"
@@ -79,7 +83,7 @@
     },
     {
       "op": "approveCurrent",
-      "error": "Нет корректной неутверждённой пары кастинга и трактовки."
+      "error": "Нет корректной неутверждённой пары кастинга и частей."
     },
     {
       "op": "approveScenes",

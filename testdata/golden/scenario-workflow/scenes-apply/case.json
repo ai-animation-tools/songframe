@@ -57,8 +57,8 @@
         "canStartTreatment": false,
         "canStartScenes": false,
         "canRevise": false,
-        "canApproveScenes": false,
         "canApproveCurrent": false,
+        "canApproveScenes": false,
         "treatmentApproved": true,
         "scenesNeedReview": false,
         "changedInputs": [],
@@ -437,21 +437,49 @@
                 }
               },
               "visual_direction": "Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.",
+              "logline": "Двое друзей украшают причал фонариками и провожают закат.",
               "sequences": [
                 {
                   "id": "intro",
                   "title": "Вечер у воды",
-                  "direction": "Общий план причала, спокойный темп."
+                  "direction": "Общий план причала, спокойный темп.",
+                  "start": 0,
+                  "end": 8,
+                  "entities": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 8
                 },
                 {
                   "id": "verse",
                   "title": "Фонарики",
-                  "direction": "Друзья развешивают фонарики."
+                  "direction": "Друзья развешивают фонарики.",
+                  "start": 8,
+                  "end": 20,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": true,
+                  "max_shot_seconds": 6
                 },
                 {
                   "id": "outro",
                   "title": "Проигрыш",
-                  "direction": "Повтор общего плана как финальная точка."
+                  "direction": "Повтор общего плана как финальная точка.",
+                  "start": 20,
+                  "end": 30,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 10
                 }
               ],
               "scenes": [
@@ -962,21 +990,49 @@
                 }
               },
               "visual_direction": "Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.",
+              "logline": "Двое друзей украшают причал фонариками и провожают закат.",
               "sequences": [
                 {
                   "id": "intro",
                   "title": "Вечер у воды",
-                  "direction": "Общий план причала, спокойный темп."
+                  "direction": "Общий план причала, спокойный темп.",
+                  "start": 0,
+                  "end": 8,
+                  "entities": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 8
                 },
                 {
                   "id": "verse",
                   "title": "Фонарики",
-                  "direction": "Друзья развешивают фонарики."
+                  "direction": "Друзья развешивают фонарики.",
+                  "start": 8,
+                  "end": 20,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": true,
+                  "max_shot_seconds": 6
                 },
                 {
                   "id": "outro",
                   "title": "Проигрыш",
-                  "direction": "Повтор общего плана как финальная точка."
+                  "direction": "Повтор общего плана как финальная точка.",
+                  "start": 20,
+                  "end": 30,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 10
                 }
               ],
               "scenes": [
@@ -1136,8 +1192,8 @@
           "task": "ai-clip-scenario:scenes",
           "permissions": "read-only",
           "inputHashes": {
-            "prompt": "9194058e592fdaa8b5fc3e114169585cd8443c5122edb450ba7980a6f27371c3",
-            "context": "3a8406e45d99cb1dae5aa72424beb5651059ab385e8220f802201df4b8740973"
+            "prompt": "7497623727878299b151c96706f3457810532ad9be2a85dc90be33dedb06ea4a",
+            "context": "df4a6745191744bacf6152c83f474ad01962e71478b60f0d9741f90f29b446fa"
           },
           "status": "running",
           "phase": "работает",
@@ -1160,7 +1216,7 @@
     {
       "op": "finish",
       "proposal": "scenes",
-      "result": "{\"schemaVersion\":1,\"pass\":\"scenes\",\"scenes\":{\"schema_version\":1,\"fps\":30,\"audio\":{\"path\":\"source/track.mp3\",\"end_seconds\":\"30\"},\"references\":{\"mira\":{\"name\":\"Мира\",\"path\":\"source/heroes/mira.png\"},\"lev\":{\"name\":\"Лев\",\"path\":\"source/heroes/lev.png\"},\"boat\":{\"name\":\"Лодка\",\"path\":\"source/vehicles/boat.png\"},\"pier\":{\"name\":\"Причал\",\"path\":\"source/locations/pier.png\"}},\"visual_direction\":\"Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.\",\"sequences\":[{\"id\":\"intro\",\"title\":\"Вечер у воды\",\"direction\":\"Общий план причала, спокойный темп.\"},{\"id\":\"verse\",\"title\":\"Фонарики\",\"direction\":\"Друзья развешивают фонарики.\"},{\"id\":\"outro\",\"title\":\"Проигрыш\",\"direction\":\"Повтор общего плана как финальная точка.\"}],\"scenes\":[{\"id\":\"M01\",\"original\":\"Инструментал: Вечер у воды\",\"sequence\":\"intro\",\"start_frame\":0,\"end_frame_exclusive\":240,\"camera\":\"Общий план с воздуха, медленный наезд\",\"action\":\"Лодка покачивается у причала.\",\"continuity\":\"Начало клипа; лодка у причала.\",\"references\":[\"boat\",\"pier\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"boat\"},\"state_from\":null,\"state_changes\":{\"after\":{\"boat\":{\"dirt\":\"с каплями воды\"}}},\"title\":\"Вечер у воды\"},{\"id\":\"M02\",\"original\":\"Вечер зажёг фонари у воды\",\"sequence\":\"verse\",\"start_frame\":240,\"end_frame_exclusive\":360,\"camera\":\"Средний план на причале\",\"action\":\"Мира держит фонарик, Лев смотрит на воду.\",\"continuity\":\"Продолжение вечера из M01.\",\"references\":[\"mira\",\"lev\",\"boat\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"boat\"},\"state_from\":\"M01\",\"state_changes\":{\"after\":{\"boat\":{\"sink\":\"у края причала\"}}}},{\"id\":\"M03\",\"original\":\"Ветер качает бумажные огни\",\"sequence\":\"verse\",\"start_frame\":360,\"end_frame_exclusive\":480,\"camera\":\"Общий план сбоку\",\"action\":\"Фонарики качаются на ветру.\",\"continuity\":\"Лодка остаётся у причала.\",\"references\":[\"boat\",\"pier\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"pier\"},\"state_from\":\"M02\",\"state_changes\":{\"after\":{\"boat\":{\"dirt\":\"покрыта каплями\",\"sink\":\"у края причала\"}}}},{\"id\":\"M04\",\"original\":\"Мы отпускаем огни в небеса\",\"sequence\":\"verse\",\"start_frame\":480,\"end_frame_exclusive\":600,\"camera\":\"Крупный план Миры\",\"action\":\"Друзья отпускают фонарики, огни уходят вверх над водой.\",\"continuity\":\"Мира стоит у воды.\",\"references\":[\"mira\",\"lev\",\"boat\",\"pier\"],\"lipsync\":true,\"card\":{\"primary_reference\":\"mira\"},\"state_from\":\"M03\",\"state_changes\":{\"before\":{\"mira\":{\"position\":\"стоит у края причала\"}},\"after\":{\"mira\":{\"clothes_condition\":\"яркая куртка\"}}}},{\"id\":\"M05\",\"original\":\"Инструментал: Проигрыш\",\"sequence\":\"outro\",\"start_frame\":600,\"end_frame_exclusive\":900,\"camera\":\"Как в M02, статика\",\"action\":\"Повтор кадра у воды как финальная точка.\",\"continuity\":\"Состояние как в M02: повтор, не продолжение.\",\"references\":[\"mira\",\"lev\",\"boat\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"boat\"},\"state_from\":{\"scene\":\"M02\",\"phase\":\"same\"},\"state_changes\":{},\"title\":\"Финальный повтор\",\"derived_from\":{\"shot\":\"M02\"}}]}}"
+      "result": "{\"schemaVersion\":1,\"pass\":\"scenes\",\"scenes\":{\"schema_version\":1,\"fps\":30,\"audio\":{\"path\":\"source/track.mp3\",\"end_seconds\":\"30\"},\"references\":{\"mira\":{\"name\":\"Мира\",\"path\":\"source/heroes/mira.png\"},\"lev\":{\"name\":\"Лев\",\"path\":\"source/heroes/lev.png\"},\"boat\":{\"name\":\"Лодка\",\"path\":\"source/vehicles/boat.png\"},\"pier\":{\"name\":\"Причал\",\"path\":\"source/locations/pier.png\"}},\"visual_direction\":\"Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.\",\"logline\":\"Двое друзей украшают причал фонариками и провожают закат.\",\"sequences\":[{\"id\":\"intro\",\"title\":\"Вечер у воды\",\"direction\":\"Общий план причала, спокойный темп.\",\"start\":0,\"end\":8,\"entities\":[\"boat\",\"pier\"],\"lipsync\":false,\"max_shot_seconds\":8},{\"id\":\"verse\",\"title\":\"Фонарики\",\"direction\":\"Друзья развешивают фонарики.\",\"start\":8,\"end\":20,\"entities\":[\"mira\",\"lev\",\"boat\",\"pier\"],\"lipsync\":true,\"max_shot_seconds\":6},{\"id\":\"outro\",\"title\":\"Проигрыш\",\"direction\":\"Повтор общего плана как финальная точка.\",\"start\":20,\"end\":30,\"entities\":[\"mira\",\"lev\",\"boat\"],\"lipsync\":false,\"max_shot_seconds\":10}],\"scenes\":[{\"id\":\"M01\",\"original\":\"Инструментал: Вечер у воды\",\"sequence\":\"intro\",\"start_frame\":0,\"end_frame_exclusive\":240,\"camera\":\"Общий план с воздуха, медленный наезд\",\"action\":\"Лодка покачивается у причала.\",\"continuity\":\"Начало клипа; лодка у причала.\",\"references\":[\"boat\",\"pier\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"boat\"},\"state_from\":null,\"state_changes\":{\"after\":{\"boat\":{\"dirt\":\"с каплями воды\"}}},\"title\":\"Вечер у воды\"},{\"id\":\"M02\",\"original\":\"Вечер зажёг фонари у воды\",\"sequence\":\"verse\",\"start_frame\":240,\"end_frame_exclusive\":360,\"camera\":\"Средний план на причале\",\"action\":\"Мира держит фонарик, Лев смотрит на воду.\",\"continuity\":\"Продолжение вечера из M01.\",\"references\":[\"mira\",\"lev\",\"boat\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"boat\"},\"state_from\":\"M01\",\"state_changes\":{\"after\":{\"boat\":{\"sink\":\"у края причала\"}}}},{\"id\":\"M03\",\"original\":\"Ветер качает бумажные огни\",\"sequence\":\"verse\",\"start_frame\":360,\"end_frame_exclusive\":480,\"camera\":\"Общий план сбоку\",\"action\":\"Фонарики качаются на ветру.\",\"continuity\":\"Лодка остаётся у причала.\",\"references\":[\"boat\",\"pier\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"pier\"},\"state_from\":\"M02\",\"state_changes\":{\"after\":{\"boat\":{\"dirt\":\"покрыта каплями\",\"sink\":\"у края причала\"}}}},{\"id\":\"M04\",\"original\":\"Мы отпускаем огни в небеса\",\"sequence\":\"verse\",\"start_frame\":480,\"end_frame_exclusive\":600,\"camera\":\"Крупный план Миры\",\"action\":\"Друзья отпускают фонарики, огни уходят вверх над водой.\",\"continuity\":\"Мира стоит у воды.\",\"references\":[\"mira\",\"lev\",\"boat\",\"pier\"],\"lipsync\":true,\"card\":{\"primary_reference\":\"mira\"},\"state_from\":\"M03\",\"state_changes\":{\"before\":{\"mira\":{\"position\":\"стоит у края причала\"}},\"after\":{\"mira\":{\"clothes_condition\":\"яркая куртка\"}}}},{\"id\":\"M05\",\"original\":\"Инструментал: Проигрыш\",\"sequence\":\"outro\",\"start_frame\":600,\"end_frame_exclusive\":900,\"camera\":\"Как в M02, статика\",\"action\":\"Повтор кадра у воды как финальная точка.\",\"continuity\":\"Состояние как в M02: повтор, не продолжение.\",\"references\":[\"mira\",\"lev\",\"boat\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"boat\"},\"state_from\":{\"scene\":\"M02\",\"phase\":\"same\"},\"state_changes\":{},\"title\":\"Финальный повтор\",\"derived_from\":{\"shot\":\"M02\"}}]}}"
     },
     {
       "op": "view",
@@ -1170,8 +1226,8 @@
         "canStartTreatment": true,
         "canStartScenes": true,
         "canRevise": true,
-        "canApproveScenes": false,
         "canApproveCurrent": false,
+        "canApproveScenes": false,
         "treatmentApproved": true,
         "scenesNeedReview": false,
         "changedInputs": [],
@@ -1550,21 +1606,49 @@
                 }
               },
               "visual_direction": "Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.",
+              "logline": "Двое друзей украшают причал фонариками и провожают закат.",
               "sequences": [
                 {
                   "id": "intro",
                   "title": "Вечер у воды",
-                  "direction": "Общий план причала, спокойный темп."
+                  "direction": "Общий план причала, спокойный темп.",
+                  "start": 0,
+                  "end": 8,
+                  "entities": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 8
                 },
                 {
                   "id": "verse",
                   "title": "Фонарики",
-                  "direction": "Друзья развешивают фонарики."
+                  "direction": "Друзья развешивают фонарики.",
+                  "start": 8,
+                  "end": 20,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": true,
+                  "max_shot_seconds": 6
                 },
                 {
                   "id": "outro",
                   "title": "Проигрыш",
-                  "direction": "Повтор общего плана как финальная точка."
+                  "direction": "Повтор общего плана как финальная точка.",
+                  "start": 20,
+                  "end": 30,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 10
                 }
               ],
               "scenes": [
@@ -2075,21 +2159,49 @@
                 }
               },
               "visual_direction": "Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.",
+              "logline": "Двое друзей украшают причал фонариками и провожают закат.",
               "sequences": [
                 {
                   "id": "intro",
                   "title": "Вечер у воды",
-                  "direction": "Общий план причала, спокойный темп."
+                  "direction": "Общий план причала, спокойный темп.",
+                  "start": 0,
+                  "end": 8,
+                  "entities": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 8
                 },
                 {
                   "id": "verse",
                   "title": "Фонарики",
-                  "direction": "Друзья развешивают фонарики."
+                  "direction": "Друзья развешивают фонарики.",
+                  "start": 8,
+                  "end": 20,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": true,
+                  "max_shot_seconds": 6
                 },
                 {
                   "id": "outro",
                   "title": "Проигрыш",
-                  "direction": "Повтор общего плана как финальная точка."
+                  "direction": "Повтор общего плана как финальная точка.",
+                  "start": 20,
+                  "end": 30,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 10
                 }
               ],
               "scenes": [
@@ -2253,15 +2365,15 @@
           "task": "ai-clip-scenario:scenes",
           "permissions": "read-only",
           "inputHashes": {
-            "prompt": "9194058e592fdaa8b5fc3e114169585cd8443c5122edb450ba7980a6f27371c3",
-            "context": "3a8406e45d99cb1dae5aa72424beb5651059ab385e8220f802201df4b8740973"
+            "prompt": "7497623727878299b151c96706f3457810532ad9be2a85dc90be33dedb06ea4a",
+            "context": "df4a6745191744bacf6152c83f474ad01962e71478b60f0d9741f90f29b446fa"
           },
           "status": "completed",
           "phase": "работает",
           "startedAt": "2026-11-04T12:00:00.000Z",
           "finishedAt": "2026-11-04T12:00:00.000Z",
           "exitCode": 0,
-          "result": "{\"schemaVersion\":1,\"pass\":\"scenes\",\"scenes\":{\"schema_version\":1,\"fps\":30,\"audio\":{\"path\":\"source/track.mp3\",\"end_seconds\":\"30\"},\"references\":{\"mira\":{\"name\":\"Мира\",\"path\":\"source/heroes/mira.png\"},\"lev\":{\"name\":\"Лев\",\"path\":\"source/heroes/lev.png\"},\"boat\":{\"name\":\"Лодка\",\"path\":\"source/vehicles/boat.png\"},\"pier\":{\"name\":\"Причал\",\"path\":\"source/locations/pier.png\"}},\"visual_direction\":\"Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.\",\"sequences\":[{\"id\":\"intro\",\"title\":\"Вечер у воды\",\"direction\":\"Общий план причала, спокойный темп.\"},{\"id\":\"verse\",\"title\":\"Фонарики\",\"direction\":\"Друзья развешивают фонарики.\"},{\"id\":\"outro\",\"title\":\"Проигрыш\",\"direction\":\"Повтор общего плана как финальная точка.\"}],\"scenes\":[{\"id\":\"M01\",\"original\":\"Инструментал: Вечер у воды\",\"sequence\":\"intro\",\"start_frame\":0,\"end_frame_exclusive\":240,\"camera\":\"Общий план с воздуха, медленный наезд\",\"action\":\"Лодка покачивается у причала.\",\"continuity\":\"Начало клипа; лодка у причала.\",\"references\":[\"boat\",\"pier\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"boat\"},\"state_from\":null,\"state_changes\":{\"after\":{\"boat\":{\"dirt\":\"с каплями воды\"}}},\"title\":\"Вечер у воды\"},{\"id\":\"M02\",\"original\":\"Вечер зажёг фонари у воды\",\"sequence\":\"verse\",\"start_frame\":240,\"end_frame_exclusive\":360,\"camera\":\"Средний план на причале\",\"action\":\"Мира держит фонарик, Лев смотрит на воду.\",\"continuity\":\"Продолжение вечера из M01.\",\"references\":[\"mira\",\"lev\",\"boat\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"boat\"},\"state_from\":\"M01\",\"state_changes\":{\"after\":{\"boat\":{\"sink\":\"у края причала\"}}}},{\"id\":\"M03\",\"original\":\"Ветер качает бумажные огни\",\"sequence\":\"verse\",\"start_frame\":360,\"end_frame_exclusive\":480,\"camera\":\"Общий план сбоку\",\"action\":\"Фонарики качаются на ветру.\",\"continuity\":\"Лодка остаётся у причала.\",\"references\":[\"boat\",\"pier\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"pier\"},\"state_from\":\"M02\",\"state_changes\":{\"after\":{\"boat\":{\"dirt\":\"покрыта каплями\",\"sink\":\"у края причала\"}}}},{\"id\":\"M04\",\"original\":\"Мы отпускаем огни в небеса\",\"sequence\":\"verse\",\"start_frame\":480,\"end_frame_exclusive\":600,\"camera\":\"Крупный план Миры\",\"action\":\"Друзья отпускают фонарики, огни уходят вверх над водой.\",\"continuity\":\"Мира стоит у воды.\",\"references\":[\"mira\",\"lev\",\"boat\",\"pier\"],\"lipsync\":true,\"card\":{\"primary_reference\":\"mira\"},\"state_from\":\"M03\",\"state_changes\":{\"before\":{\"mira\":{\"position\":\"стоит у края причала\"}},\"after\":{\"mira\":{\"clothes_condition\":\"яркая куртка\"}}}},{\"id\":\"M05\",\"original\":\"Инструментал: Проигрыш\",\"sequence\":\"outro\",\"start_frame\":600,\"end_frame_exclusive\":900,\"camera\":\"Как в M02, статика\",\"action\":\"Повтор кадра у воды как финальная точка.\",\"continuity\":\"Состояние как в M02: повтор, не продолжение.\",\"references\":[\"mira\",\"lev\",\"boat\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"boat\"},\"state_from\":{\"scene\":\"M02\",\"phase\":\"same\"},\"state_changes\":{},\"title\":\"Финальный повтор\",\"derived_from\":{\"shot\":\"M02\"}}]}}",
+          "result": "{\"schemaVersion\":1,\"pass\":\"scenes\",\"scenes\":{\"schema_version\":1,\"fps\":30,\"audio\":{\"path\":\"source/track.mp3\",\"end_seconds\":\"30\"},\"references\":{\"mira\":{\"name\":\"Мира\",\"path\":\"source/heroes/mira.png\"},\"lev\":{\"name\":\"Лев\",\"path\":\"source/heroes/lev.png\"},\"boat\":{\"name\":\"Лодка\",\"path\":\"source/vehicles/boat.png\"},\"pier\":{\"name\":\"Причал\",\"path\":\"source/locations/pier.png\"}},\"visual_direction\":\"Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.\",\"logline\":\"Двое друзей украшают причал фонариками и провожают закат.\",\"sequences\":[{\"id\":\"intro\",\"title\":\"Вечер у воды\",\"direction\":\"Общий план причала, спокойный темп.\",\"start\":0,\"end\":8,\"entities\":[\"boat\",\"pier\"],\"lipsync\":false,\"max_shot_seconds\":8},{\"id\":\"verse\",\"title\":\"Фонарики\",\"direction\":\"Друзья развешивают фонарики.\",\"start\":8,\"end\":20,\"entities\":[\"mira\",\"lev\",\"boat\",\"pier\"],\"lipsync\":true,\"max_shot_seconds\":6},{\"id\":\"outro\",\"title\":\"Проигрыш\",\"direction\":\"Повтор общего плана как финальная точка.\",\"start\":20,\"end\":30,\"entities\":[\"mira\",\"lev\",\"boat\"],\"lipsync\":false,\"max_shot_seconds\":10}],\"scenes\":[{\"id\":\"M01\",\"original\":\"Инструментал: Вечер у воды\",\"sequence\":\"intro\",\"start_frame\":0,\"end_frame_exclusive\":240,\"camera\":\"Общий план с воздуха, медленный наезд\",\"action\":\"Лодка покачивается у причала.\",\"continuity\":\"Начало клипа; лодка у причала.\",\"references\":[\"boat\",\"pier\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"boat\"},\"state_from\":null,\"state_changes\":{\"after\":{\"boat\":{\"dirt\":\"с каплями воды\"}}},\"title\":\"Вечер у воды\"},{\"id\":\"M02\",\"original\":\"Вечер зажёг фонари у воды\",\"sequence\":\"verse\",\"start_frame\":240,\"end_frame_exclusive\":360,\"camera\":\"Средний план на причале\",\"action\":\"Мира держит фонарик, Лев смотрит на воду.\",\"continuity\":\"Продолжение вечера из M01.\",\"references\":[\"mira\",\"lev\",\"boat\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"boat\"},\"state_from\":\"M01\",\"state_changes\":{\"after\":{\"boat\":{\"sink\":\"у края причала\"}}}},{\"id\":\"M03\",\"original\":\"Ветер качает бумажные огни\",\"sequence\":\"verse\",\"start_frame\":360,\"end_frame_exclusive\":480,\"camera\":\"Общий план сбоку\",\"action\":\"Фонарики качаются на ветру.\",\"continuity\":\"Лодка остаётся у причала.\",\"references\":[\"boat\",\"pier\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"pier\"},\"state_from\":\"M02\",\"state_changes\":{\"after\":{\"boat\":{\"dirt\":\"покрыта каплями\",\"sink\":\"у края причала\"}}}},{\"id\":\"M04\",\"original\":\"Мы отпускаем огни в небеса\",\"sequence\":\"verse\",\"start_frame\":480,\"end_frame_exclusive\":600,\"camera\":\"Крупный план Миры\",\"action\":\"Друзья отпускают фонарики, огни уходят вверх над водой.\",\"continuity\":\"Мира стоит у воды.\",\"references\":[\"mira\",\"lev\",\"boat\",\"pier\"],\"lipsync\":true,\"card\":{\"primary_reference\":\"mira\"},\"state_from\":\"M03\",\"state_changes\":{\"before\":{\"mira\":{\"position\":\"стоит у края причала\"}},\"after\":{\"mira\":{\"clothes_condition\":\"яркая куртка\"}}}},{\"id\":\"M05\",\"original\":\"Инструментал: Проигрыш\",\"sequence\":\"outro\",\"start_frame\":600,\"end_frame_exclusive\":900,\"camera\":\"Как в M02, статика\",\"action\":\"Повтор кадра у воды как финальная точка.\",\"continuity\":\"Состояние как в M02: повтор, не продолжение.\",\"references\":[\"mira\",\"lev\",\"boat\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"boat\"},\"state_from\":{\"scene\":\"M02\",\"phase\":\"same\"},\"state_changes\":{},\"title\":\"Финальный повтор\",\"derived_from\":{\"shot\":\"M02\"}}]}}",
           "log": ""
         }
       }
@@ -2274,8 +2386,8 @@
         "canStartTreatment": true,
         "canStartScenes": true,
         "canRevise": true,
-        "canApproveScenes": false,
         "canApproveCurrent": false,
+        "canApproveScenes": false,
         "treatmentApproved": true,
         "scenesNeedReview": false,
         "changedInputs": [],
@@ -2653,21 +2765,49 @@
                 }
               },
               "visual_direction": "Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.",
+              "logline": "Двое друзей украшают причал фонариками и провожают закат.",
               "sequences": [
                 {
                   "id": "intro",
                   "title": "Вечер у воды",
-                  "direction": "Общий план причала, спокойный темп."
+                  "direction": "Общий план причала, спокойный темп.",
+                  "start": 0,
+                  "end": 8,
+                  "entities": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 8
                 },
                 {
                   "id": "verse",
                   "title": "Фонарики",
-                  "direction": "Друзья развешивают фонарики."
+                  "direction": "Друзья развешивают фонарики.",
+                  "start": 8,
+                  "end": 20,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": true,
+                  "max_shot_seconds": 6
                 },
                 {
                   "id": "outro",
                   "title": "Проигрыш",
-                  "direction": "Повтор общего плана как финальная точка."
+                  "direction": "Повтор общего плана как финальная точка.",
+                  "start": 20,
+                  "end": 30,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 10
                 }
               ],
               "scenes": [
@@ -3178,21 +3318,49 @@
                 }
               },
               "visual_direction": "Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.",
+              "logline": "Двое друзей украшают причал фонариками и провожают закат.",
               "sequences": [
                 {
                   "id": "intro",
                   "title": "Вечер у воды",
-                  "direction": "Общий план причала, спокойный темп."
+                  "direction": "Общий план причала, спокойный темп.",
+                  "start": 0,
+                  "end": 8,
+                  "entities": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 8
                 },
                 {
                   "id": "verse",
                   "title": "Фонарики",
-                  "direction": "Друзья развешивают фонарики."
+                  "direction": "Друзья развешивают фонарики.",
+                  "start": 8,
+                  "end": 20,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": true,
+                  "max_shot_seconds": 6
                 },
                 {
                   "id": "outro",
                   "title": "Проигрыш",
-                  "direction": "Повтор общего плана как финальная точка."
+                  "direction": "Повтор общего плана как финальная точка.",
+                  "start": 20,
+                  "end": 30,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 10
                 }
               ],
               "scenes": [
@@ -3356,15 +3524,15 @@
           "task": "ai-clip-scenario:scenes",
           "permissions": "read-only",
           "inputHashes": {
-            "prompt": "9194058e592fdaa8b5fc3e114169585cd8443c5122edb450ba7980a6f27371c3",
-            "context": "3a8406e45d99cb1dae5aa72424beb5651059ab385e8220f802201df4b8740973"
+            "prompt": "7497623727878299b151c96706f3457810532ad9be2a85dc90be33dedb06ea4a",
+            "context": "df4a6745191744bacf6152c83f474ad01962e71478b60f0d9741f90f29b446fa"
           },
           "status": "completed",
           "phase": "работает",
           "startedAt": "2026-11-04T12:00:00.000Z",
           "finishedAt": "2026-11-04T12:00:00.000Z",
           "exitCode": 0,
-          "result": "{\"schemaVersion\":1,\"pass\":\"scenes\",\"scenes\":{\"schema_version\":1,\"fps\":30,\"audio\":{\"path\":\"source/track.mp3\",\"end_seconds\":\"30\"},\"references\":{\"mira\":{\"name\":\"Мира\",\"path\":\"source/heroes/mira.png\"},\"lev\":{\"name\":\"Лев\",\"path\":\"source/heroes/lev.png\"},\"boat\":{\"name\":\"Лодка\",\"path\":\"source/vehicles/boat.png\"},\"pier\":{\"name\":\"Причал\",\"path\":\"source/locations/pier.png\"}},\"visual_direction\":\"Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.\",\"sequences\":[{\"id\":\"intro\",\"title\":\"Вечер у воды\",\"direction\":\"Общий план причала, спокойный темп.\"},{\"id\":\"verse\",\"title\":\"Фонарики\",\"direction\":\"Друзья развешивают фонарики.\"},{\"id\":\"outro\",\"title\":\"Проигрыш\",\"direction\":\"Повтор общего плана как финальная точка.\"}],\"scenes\":[{\"id\":\"M01\",\"original\":\"Инструментал: Вечер у воды\",\"sequence\":\"intro\",\"start_frame\":0,\"end_frame_exclusive\":240,\"camera\":\"Общий план с воздуха, медленный наезд\",\"action\":\"Лодка покачивается у причала.\",\"continuity\":\"Начало клипа; лодка у причала.\",\"references\":[\"boat\",\"pier\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"boat\"},\"state_from\":null,\"state_changes\":{\"after\":{\"boat\":{\"dirt\":\"с каплями воды\"}}},\"title\":\"Вечер у воды\"},{\"id\":\"M02\",\"original\":\"Вечер зажёг фонари у воды\",\"sequence\":\"verse\",\"start_frame\":240,\"end_frame_exclusive\":360,\"camera\":\"Средний план на причале\",\"action\":\"Мира держит фонарик, Лев смотрит на воду.\",\"continuity\":\"Продолжение вечера из M01.\",\"references\":[\"mira\",\"lev\",\"boat\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"boat\"},\"state_from\":\"M01\",\"state_changes\":{\"after\":{\"boat\":{\"sink\":\"у края причала\"}}}},{\"id\":\"M03\",\"original\":\"Ветер качает бумажные огни\",\"sequence\":\"verse\",\"start_frame\":360,\"end_frame_exclusive\":480,\"camera\":\"Общий план сбоку\",\"action\":\"Фонарики качаются на ветру.\",\"continuity\":\"Лодка остаётся у причала.\",\"references\":[\"boat\",\"pier\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"pier\"},\"state_from\":\"M02\",\"state_changes\":{\"after\":{\"boat\":{\"dirt\":\"покрыта каплями\",\"sink\":\"у края причала\"}}}},{\"id\":\"M04\",\"original\":\"Мы отпускаем огни в небеса\",\"sequence\":\"verse\",\"start_frame\":480,\"end_frame_exclusive\":600,\"camera\":\"Крупный план Миры\",\"action\":\"Друзья отпускают фонарики, огни уходят вверх над водой.\",\"continuity\":\"Мира стоит у воды.\",\"references\":[\"mira\",\"lev\",\"boat\",\"pier\"],\"lipsync\":true,\"card\":{\"primary_reference\":\"mira\"},\"state_from\":\"M03\",\"state_changes\":{\"before\":{\"mira\":{\"position\":\"стоит у края причала\"}},\"after\":{\"mira\":{\"clothes_condition\":\"яркая куртка\"}}}},{\"id\":\"M05\",\"original\":\"Инструментал: Проигрыш\",\"sequence\":\"outro\",\"start_frame\":600,\"end_frame_exclusive\":900,\"camera\":\"Как в M02, статика\",\"action\":\"Повтор кадра у воды как финальная точка.\",\"continuity\":\"Состояние как в M02: повтор, не продолжение.\",\"references\":[\"mira\",\"lev\",\"boat\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"boat\"},\"state_from\":{\"scene\":\"M02\",\"phase\":\"same\"},\"state_changes\":{},\"title\":\"Финальный повтор\",\"derived_from\":{\"shot\":\"M02\"}}]}}",
+          "result": "{\"schemaVersion\":1,\"pass\":\"scenes\",\"scenes\":{\"schema_version\":1,\"fps\":30,\"audio\":{\"path\":\"source/track.mp3\",\"end_seconds\":\"30\"},\"references\":{\"mira\":{\"name\":\"Мира\",\"path\":\"source/heroes/mira.png\"},\"lev\":{\"name\":\"Лев\",\"path\":\"source/heroes/lev.png\"},\"boat\":{\"name\":\"Лодка\",\"path\":\"source/vehicles/boat.png\"},\"pier\":{\"name\":\"Причал\",\"path\":\"source/locations/pier.png\"}},\"visual_direction\":\"Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.\",\"logline\":\"Двое друзей украшают причал фонариками и провожают закат.\",\"sequences\":[{\"id\":\"intro\",\"title\":\"Вечер у воды\",\"direction\":\"Общий план причала, спокойный темп.\",\"start\":0,\"end\":8,\"entities\":[\"boat\",\"pier\"],\"lipsync\":false,\"max_shot_seconds\":8},{\"id\":\"verse\",\"title\":\"Фонарики\",\"direction\":\"Друзья развешивают фонарики.\",\"start\":8,\"end\":20,\"entities\":[\"mira\",\"lev\",\"boat\",\"pier\"],\"lipsync\":true,\"max_shot_seconds\":6},{\"id\":\"outro\",\"title\":\"Проигрыш\",\"direction\":\"Повтор общего плана как финальная точка.\",\"start\":20,\"end\":30,\"entities\":[\"mira\",\"lev\",\"boat\"],\"lipsync\":false,\"max_shot_seconds\":10}],\"scenes\":[{\"id\":\"M01\",\"original\":\"Инструментал: Вечер у воды\",\"sequence\":\"intro\",\"start_frame\":0,\"end_frame_exclusive\":240,\"camera\":\"Общий план с воздуха, медленный наезд\",\"action\":\"Лодка покачивается у причала.\",\"continuity\":\"Начало клипа; лодка у причала.\",\"references\":[\"boat\",\"pier\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"boat\"},\"state_from\":null,\"state_changes\":{\"after\":{\"boat\":{\"dirt\":\"с каплями воды\"}}},\"title\":\"Вечер у воды\"},{\"id\":\"M02\",\"original\":\"Вечер зажёг фонари у воды\",\"sequence\":\"verse\",\"start_frame\":240,\"end_frame_exclusive\":360,\"camera\":\"Средний план на причале\",\"action\":\"Мира держит фонарик, Лев смотрит на воду.\",\"continuity\":\"Продолжение вечера из M01.\",\"references\":[\"mira\",\"lev\",\"boat\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"boat\"},\"state_from\":\"M01\",\"state_changes\":{\"after\":{\"boat\":{\"sink\":\"у края причала\"}}}},{\"id\":\"M03\",\"original\":\"Ветер качает бумажные огни\",\"sequence\":\"verse\",\"start_frame\":360,\"end_frame_exclusive\":480,\"camera\":\"Общий план сбоку\",\"action\":\"Фонарики качаются на ветру.\",\"continuity\":\"Лодка остаётся у причала.\",\"references\":[\"boat\",\"pier\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"pier\"},\"state_from\":\"M02\",\"state_changes\":{\"after\":{\"boat\":{\"dirt\":\"покрыта каплями\",\"sink\":\"у края причала\"}}}},{\"id\":\"M04\",\"original\":\"Мы отпускаем огни в небеса\",\"sequence\":\"verse\",\"start_frame\":480,\"end_frame_exclusive\":600,\"camera\":\"Крупный план Миры\",\"action\":\"Друзья отпускают фонарики, огни уходят вверх над водой.\",\"continuity\":\"Мира стоит у воды.\",\"references\":[\"mira\",\"lev\",\"boat\",\"pier\"],\"lipsync\":true,\"card\":{\"primary_reference\":\"mira\"},\"state_from\":\"M03\",\"state_changes\":{\"before\":{\"mira\":{\"position\":\"стоит у края причала\"}},\"after\":{\"mira\":{\"clothes_condition\":\"яркая куртка\"}}}},{\"id\":\"M05\",\"original\":\"Инструментал: Проигрыш\",\"sequence\":\"outro\",\"start_frame\":600,\"end_frame_exclusive\":900,\"camera\":\"Как в M02, статика\",\"action\":\"Повтор кадра у воды как финальная точка.\",\"continuity\":\"Состояние как в M02: повтор, не продолжение.\",\"references\":[\"mira\",\"lev\",\"boat\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"boat\"},\"state_from\":{\"scene\":\"M02\",\"phase\":\"same\"},\"state_changes\":{},\"title\":\"Финальный повтор\",\"derived_from\":{\"shot\":\"M02\"}}]}}",
           "log": ""
         }
       }
@@ -3377,8 +3545,8 @@
         "canStartTreatment": true,
         "canStartScenes": true,
         "canRevise": true,
-        "canApproveScenes": false,
         "canApproveCurrent": false,
+        "canApproveScenes": false,
         "treatmentApproved": true,
         "scenesNeedReview": false,
         "changedInputs": [],
@@ -3756,21 +3924,49 @@
                 }
               },
               "visual_direction": "Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.",
+              "logline": "Двое друзей украшают причал фонариками и провожают закат.",
               "sequences": [
                 {
                   "id": "intro",
                   "title": "Вечер у воды",
-                  "direction": "Общий план причала, спокойный темп."
+                  "direction": "Общий план причала, спокойный темп.",
+                  "start": 0,
+                  "end": 8,
+                  "entities": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 8
                 },
                 {
                   "id": "verse",
                   "title": "Фонарики",
-                  "direction": "Друзья развешивают фонарики."
+                  "direction": "Друзья развешивают фонарики.",
+                  "start": 8,
+                  "end": 20,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": true,
+                  "max_shot_seconds": 6
                 },
                 {
                   "id": "outro",
                   "title": "Проигрыш",
-                  "direction": "Повтор общего плана как финальная точка."
+                  "direction": "Повтор общего плана как финальная точка.",
+                  "start": 20,
+                  "end": 30,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 10
                 }
               ],
               "scenes": [
@@ -4281,21 +4477,49 @@
                 }
               },
               "visual_direction": "Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.",
+              "logline": "Двое друзей украшают причал фонариками и провожают закат.",
               "sequences": [
                 {
                   "id": "intro",
                   "title": "Вечер у воды",
-                  "direction": "Общий план причала, спокойный темп."
+                  "direction": "Общий план причала, спокойный темп.",
+                  "start": 0,
+                  "end": 8,
+                  "entities": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 8
                 },
                 {
                   "id": "verse",
                   "title": "Фонарики",
-                  "direction": "Друзья развешивают фонарики."
+                  "direction": "Друзья развешивают фонарики.",
+                  "start": 8,
+                  "end": 20,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": true,
+                  "max_shot_seconds": 6
                 },
                 {
                   "id": "outro",
                   "title": "Проигрыш",
-                  "direction": "Повтор общего плана как финальная точка."
+                  "direction": "Повтор общего плана как финальная точка.",
+                  "start": 20,
+                  "end": 30,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 10
                 }
               ],
               "scenes": [
@@ -4459,15 +4683,15 @@
           "task": "ai-clip-scenario:scenes",
           "permissions": "read-only",
           "inputHashes": {
-            "prompt": "9194058e592fdaa8b5fc3e114169585cd8443c5122edb450ba7980a6f27371c3",
-            "context": "3a8406e45d99cb1dae5aa72424beb5651059ab385e8220f802201df4b8740973"
+            "prompt": "7497623727878299b151c96706f3457810532ad9be2a85dc90be33dedb06ea4a",
+            "context": "df4a6745191744bacf6152c83f474ad01962e71478b60f0d9741f90f29b446fa"
           },
           "status": "completed",
           "phase": "работает",
           "startedAt": "2026-11-04T12:00:00.000Z",
           "finishedAt": "2026-11-04T12:00:00.000Z",
           "exitCode": 0,
-          "result": "{\"schemaVersion\":1,\"pass\":\"scenes\",\"scenes\":{\"schema_version\":1,\"fps\":30,\"audio\":{\"path\":\"source/track.mp3\",\"end_seconds\":\"30\"},\"references\":{\"mira\":{\"name\":\"Мира\",\"path\":\"source/heroes/mira.png\"},\"lev\":{\"name\":\"Лев\",\"path\":\"source/heroes/lev.png\"},\"boat\":{\"name\":\"Лодка\",\"path\":\"source/vehicles/boat.png\"},\"pier\":{\"name\":\"Причал\",\"path\":\"source/locations/pier.png\"}},\"visual_direction\":\"Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.\",\"sequences\":[{\"id\":\"intro\",\"title\":\"Вечер у воды\",\"direction\":\"Общий план причала, спокойный темп.\"},{\"id\":\"verse\",\"title\":\"Фонарики\",\"direction\":\"Друзья развешивают фонарики.\"},{\"id\":\"outro\",\"title\":\"Проигрыш\",\"direction\":\"Повтор общего плана как финальная точка.\"}],\"scenes\":[{\"id\":\"M01\",\"original\":\"Инструментал: Вечер у воды\",\"sequence\":\"intro\",\"start_frame\":0,\"end_frame_exclusive\":240,\"camera\":\"Общий план с воздуха, медленный наезд\",\"action\":\"Лодка покачивается у причала.\",\"continuity\":\"Начало клипа; лодка у причала.\",\"references\":[\"boat\",\"pier\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"boat\"},\"state_from\":null,\"state_changes\":{\"after\":{\"boat\":{\"dirt\":\"с каплями воды\"}}},\"title\":\"Вечер у воды\"},{\"id\":\"M02\",\"original\":\"Вечер зажёг фонари у воды\",\"sequence\":\"verse\",\"start_frame\":240,\"end_frame_exclusive\":360,\"camera\":\"Средний план на причале\",\"action\":\"Мира держит фонарик, Лев смотрит на воду.\",\"continuity\":\"Продолжение вечера из M01.\",\"references\":[\"mira\",\"lev\",\"boat\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"boat\"},\"state_from\":\"M01\",\"state_changes\":{\"after\":{\"boat\":{\"sink\":\"у края причала\"}}}},{\"id\":\"M03\",\"original\":\"Ветер качает бумажные огни\",\"sequence\":\"verse\",\"start_frame\":360,\"end_frame_exclusive\":480,\"camera\":\"Общий план сбоку\",\"action\":\"Фонарики качаются на ветру.\",\"continuity\":\"Лодка остаётся у причала.\",\"references\":[\"boat\",\"pier\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"pier\"},\"state_from\":\"M02\",\"state_changes\":{\"after\":{\"boat\":{\"dirt\":\"покрыта каплями\",\"sink\":\"у края причала\"}}}},{\"id\":\"M04\",\"original\":\"Мы отпускаем огни в небеса\",\"sequence\":\"verse\",\"start_frame\":480,\"end_frame_exclusive\":600,\"camera\":\"Крупный план Миры\",\"action\":\"Друзья отпускают фонарики, огни уходят вверх над водой.\",\"continuity\":\"Мира стоит у воды.\",\"references\":[\"mira\",\"lev\",\"boat\",\"pier\"],\"lipsync\":true,\"card\":{\"primary_reference\":\"mira\"},\"state_from\":\"M03\",\"state_changes\":{\"before\":{\"mira\":{\"position\":\"стоит у края причала\"}},\"after\":{\"mira\":{\"clothes_condition\":\"яркая куртка\"}}}},{\"id\":\"M05\",\"original\":\"Инструментал: Проигрыш\",\"sequence\":\"outro\",\"start_frame\":600,\"end_frame_exclusive\":900,\"camera\":\"Как в M02, статика\",\"action\":\"Повтор кадра у воды как финальная точка.\",\"continuity\":\"Состояние как в M02: повтор, не продолжение.\",\"references\":[\"mira\",\"lev\",\"boat\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"boat\"},\"state_from\":{\"scene\":\"M02\",\"phase\":\"same\"},\"state_changes\":{},\"title\":\"Финальный повтор\",\"derived_from\":{\"shot\":\"M02\"}}]}}",
+          "result": "{\"schemaVersion\":1,\"pass\":\"scenes\",\"scenes\":{\"schema_version\":1,\"fps\":30,\"audio\":{\"path\":\"source/track.mp3\",\"end_seconds\":\"30\"},\"references\":{\"mira\":{\"name\":\"Мира\",\"path\":\"source/heroes/mira.png\"},\"lev\":{\"name\":\"Лев\",\"path\":\"source/heroes/lev.png\"},\"boat\":{\"name\":\"Лодка\",\"path\":\"source/vehicles/boat.png\"},\"pier\":{\"name\":\"Причал\",\"path\":\"source/locations/pier.png\"}},\"visual_direction\":\"Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.\",\"logline\":\"Двое друзей украшают причал фонариками и провожают закат.\",\"sequences\":[{\"id\":\"intro\",\"title\":\"Вечер у воды\",\"direction\":\"Общий план причала, спокойный темп.\",\"start\":0,\"end\":8,\"entities\":[\"boat\",\"pier\"],\"lipsync\":false,\"max_shot_seconds\":8},{\"id\":\"verse\",\"title\":\"Фонарики\",\"direction\":\"Друзья развешивают фонарики.\",\"start\":8,\"end\":20,\"entities\":[\"mira\",\"lev\",\"boat\",\"pier\"],\"lipsync\":true,\"max_shot_seconds\":6},{\"id\":\"outro\",\"title\":\"Проигрыш\",\"direction\":\"Повтор общего плана как финальная точка.\",\"start\":20,\"end\":30,\"entities\":[\"mira\",\"lev\",\"boat\"],\"lipsync\":false,\"max_shot_seconds\":10}],\"scenes\":[{\"id\":\"M01\",\"original\":\"Инструментал: Вечер у воды\",\"sequence\":\"intro\",\"start_frame\":0,\"end_frame_exclusive\":240,\"camera\":\"Общий план с воздуха, медленный наезд\",\"action\":\"Лодка покачивается у причала.\",\"continuity\":\"Начало клипа; лодка у причала.\",\"references\":[\"boat\",\"pier\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"boat\"},\"state_from\":null,\"state_changes\":{\"after\":{\"boat\":{\"dirt\":\"с каплями воды\"}}},\"title\":\"Вечер у воды\"},{\"id\":\"M02\",\"original\":\"Вечер зажёг фонари у воды\",\"sequence\":\"verse\",\"start_frame\":240,\"end_frame_exclusive\":360,\"camera\":\"Средний план на причале\",\"action\":\"Мира держит фонарик, Лев смотрит на воду.\",\"continuity\":\"Продолжение вечера из M01.\",\"references\":[\"mira\",\"lev\",\"boat\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"boat\"},\"state_from\":\"M01\",\"state_changes\":{\"after\":{\"boat\":{\"sink\":\"у края причала\"}}}},{\"id\":\"M03\",\"original\":\"Ветер качает бумажные огни\",\"sequence\":\"verse\",\"start_frame\":360,\"end_frame_exclusive\":480,\"camera\":\"Общий план сбоку\",\"action\":\"Фонарики качаются на ветру.\",\"continuity\":\"Лодка остаётся у причала.\",\"references\":[\"boat\",\"pier\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"pier\"},\"state_from\":\"M02\",\"state_changes\":{\"after\":{\"boat\":{\"dirt\":\"покрыта каплями\",\"sink\":\"у края причала\"}}}},{\"id\":\"M04\",\"original\":\"Мы отпускаем огни в небеса\",\"sequence\":\"verse\",\"start_frame\":480,\"end_frame_exclusive\":600,\"camera\":\"Крупный план Миры\",\"action\":\"Друзья отпускают фонарики, огни уходят вверх над водой.\",\"continuity\":\"Мира стоит у воды.\",\"references\":[\"mira\",\"lev\",\"boat\",\"pier\"],\"lipsync\":true,\"card\":{\"primary_reference\":\"mira\"},\"state_from\":\"M03\",\"state_changes\":{\"before\":{\"mira\":{\"position\":\"стоит у края причала\"}},\"after\":{\"mira\":{\"clothes_condition\":\"яркая куртка\"}}}},{\"id\":\"M05\",\"original\":\"Инструментал: Проигрыш\",\"sequence\":\"outro\",\"start_frame\":600,\"end_frame_exclusive\":900,\"camera\":\"Как в M02, статика\",\"action\":\"Повтор кадра у воды как финальная точка.\",\"continuity\":\"Состояние как в M02: повтор, не продолжение.\",\"references\":[\"mira\",\"lev\",\"boat\"],\"lipsync\":false,\"card\":{\"primary_reference\":\"boat\"},\"state_from\":{\"scene\":\"M02\",\"phase\":\"same\"},\"state_changes\":{},\"title\":\"Финальный повтор\",\"derived_from\":{\"shot\":\"M02\"}}]}}",
           "log": ""
         }
       }

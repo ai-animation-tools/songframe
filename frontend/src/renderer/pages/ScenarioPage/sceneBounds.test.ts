@@ -26,9 +26,10 @@ const registry = (shots: SceneShot[], end = '12'): ScenesFile => ({
   audio: { path: 'source/track.mp3', end_seconds: end },
   references: { hero: { name: 'Герой', path: 'source/hero.png' } },
   visual_direction: 'Осень.',
+  logline: 'Проверка границ.',
   sequences: [
-    { id: 'S01', title: 'Начало', direction: '' },
-    { id: 'S02', title: 'Припев', direction: '' }
+    { id: 'S01', title: 'Начало', direction: '', start: 0, end: 6, entities: [] },
+    { id: 'S02', title: 'Припев', direction: '', start: 6, end: 12, entities: [] }
   ],
   scenes: shots
 });
@@ -68,7 +69,7 @@ describe('recalculateSceneBounds', () => {
   it('новая длительность трека переносится в audio', () => {
     const result = recalculateSceneBounds(current, registry(structuredClone(current.scenes), '12.5'), plain);
     if ('problem' in result) throw new Error(result.problem);
-    expect(result.scenes.audio.end_seconds).toBe('12.5');
+    expect(result.scenes.audio?.end_seconds).toBe('12.5');
     expect(result.changed).toEqual([]);
   });
 
@@ -128,7 +129,7 @@ describe('recalculateSceneBounds', () => {
     );
   });
 
-  it('без сохранённой трактовки причина не выдумывается, совет остаётся', () => {
+  it('без сохранённых частей причина не выдумывается, совет остаётся', () => {
     expect(problem({ treatment: null, lines: [], lyrics: [], duration: 12 })).toBe(
       notice.boundsCountChanged({ part: 'Начало', was: 2, now: 1, fix: notice.boundsFix.lines })
     );
@@ -199,7 +200,7 @@ describe('recalculateSceneBounds', () => {
     expect('problem' in recalculateSceneBounds(current, structuredClone(current), { ...plain, lyrics })).toBe(false);
   });
 
-  it('другие части трактовки объясняются отдельно', () => {
+  it('другие части сценария объясняются отдельно', () => {
     const scaffold = registry([shot('M01', 'S01', 0, 90, 'Раз'), shot('M02', 'S01', 90, 180, 'Два'), shot('M03', 'S03', 180, 360, 'Три')]);
     expect(recalculateSceneBounds(current, scaffold, plain)).toEqual({ problem: scenarioTexts.notice.boundsPartsChanged });
   });

@@ -1,0 +1,6 @@
+{
+  "code": 1,
+  "stdout": "",
+  "stderr": "Нет plan/scenes.json: сначала части сценария (первый проход сценария).\n",
+  "unhandled": false
+}

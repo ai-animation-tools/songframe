@@ -4,7 +4,7 @@ import { Stack, Typography } from '@mui/material';
 import type { TreatmentFile, TreatmentSequence } from '@shared/types';
 import { ScenarioComparison } from './ScenarioComparison';
 
-/** Сравнение трактовки раскрывает действие и состав каждой части песни. */
+/** Сравнение частей раскрывает действие и состав каждой части песни. */
 export function ScenarioTreatmentComparison({ before, after }: { before: TreatmentFile | null; after: TreatmentFile | null }): ReactElement {
   const ids = [...new Set([...(before?.sequences ?? []).map((part) => part.id), ...(after?.sequences ?? []).map((part) => part.id)])];
   const fields: { key: keyof TreatmentSequence; label: string }[] = [

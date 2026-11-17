@@ -1,9 +1,9 @@
 {
-  "description": "scenes.json с пустым scenes.",
+  "description": "Сценарий из одних частей: планов ещё нет, и это не проблема.",
   "call": "computeStatus",
   "project": "project",
   "covers": [
-    "damagedScenes для пустого списка"
+    "части без планов — не повреждение"
   ],
   "stubbedMedia": [
     "assets/shots/M01/video.mp4",

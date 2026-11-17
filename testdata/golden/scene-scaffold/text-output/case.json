@@ -1,5 +1,5 @@
 {
-  "description": "Без флагов при отсутствии реестра: запись и таблица.",
+  "description": "Без флагов: таблица планов и итог.",
   "call": "scene_scaffold",
   "project": "project",
   "covers": [

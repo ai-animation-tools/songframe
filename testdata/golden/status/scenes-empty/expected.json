@@ -17,7 +17,5 @@
     "animaticFresh": false,
     "animaticApproved": false
   },
-  "problems": [
-    "plan/scenes.json повреждён или не содержит планов."
-  ]
+  "problems": []
 }

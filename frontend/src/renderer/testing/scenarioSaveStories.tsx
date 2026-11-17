@@ -11,12 +11,10 @@ import { SHOT_STATE_LABELS } from '../components/shotState';
 import { ScenesSaveDialog } from '../pages/ScenarioPage/components/ScenesSaveDialog';
 import { ScenarioDraftConflictDialog } from '../pages/ScenarioPage/components/ScenarioDraftConflictDialog';
 
-export const SCENARIO_SAVE_ERROR = 'Не удалось сохранить реестр. Черновик и принятые материалы сохранены: повторите действие.';
-export const SCENARIO_CONFLICT_ERROR = 'Не удалось сохранить правки. Оба черновика сохранены, продолжение не выполнено.';
+export const SCENARIO_SAVE_ERROR = 'Не удалось сохранить сценарий. Черновик и принятые материалы сохранены: повторите действие.';
+export const SCENARIO_CONFLICT_ERROR = 'Не удалось сохранить правки. Черновик сохранён, продолжение не выполнено.';
 export const SCENARIO_DRAFT = 'Олег осторожно открывает калитку и замечает следы на мокрой дорожке.';
 const SAVED_ACTION = 'Олег открывает калитку.';
-const TREATMENT_SAVED = 'Олег приезжает на дачу.';
-const TREATMENT_DRAFT = 'Олег приезжает на дачу и слышит подозрительный скрип.';
 const WAIT_REASON = scenarioTexts.save.wait;
 
 export function scenarioSaveShots(longList = false, stale = false): ScenarioImpactShot[] {
@@ -40,12 +38,13 @@ function sceneDraft(action: string): ScenesFile {
     audio: { path: 'source/track.mp3', end_seconds: '00:00:05.000' },
     visual_direction: 'Мягкий вечерний свет у старых ворот.',
     references: {},
-    sequences: [{ id: 'S01', title: 'У ворот', direction: 'Тихое возвращение домой.' }],
+    logline: 'Олег возвращается на дачу.',
+    sequences: [{ id: 's01', title: 'У ворот', direction: 'Тихое возвращение домой.', start: 0, end: 5, entities: [] }],
     scenes: [
       {
         id: 'M01',
         original: 'Куплет',
-        sequence: 'S01',
+        sequence: 's01',
         start_frame: 0,
         end_frame_exclusive: 150,
         camera: 'Средний план',
@@ -118,6 +117,7 @@ export function ScenesSaveStory({ mode = 'production', stale = false, longList =
   const [animaticStale, setAnimaticStale] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [writes, setWrites] = useState(0);
+  const [kept, setKept] = useState<string[]>([]);
   const failed = useRef(false);
   const write = useStoryWrite();
   const locked = busy || write.running;
@@ -131,10 +131,12 @@ export function ScenesSaveStory({ mode = 'production', stale = false, longList =
     setAnimaticStale(false);
     setError(null);
     setWrites(0);
+    setKept([]);
     failed.current = false;
     setOpen(true);
   };
-  const save = () => {
+  // keep — планы, оставленные принятыми в окне обычного сохранения: их комплект и пакет сохраняют силу.
+  const save = (keep: string[]) => {
     if (locked) return;
     setError(null);
     write.run(() => {
@@ -147,9 +149,10 @@ export function ScenesSaveStory({ mode = 'production', stale = false, longList =
       setSaved(draft);
       setAnimaticStale(true);
       setWrites((value) => value + 1);
+      setKept(keep);
       if (mode === 'production') {
-        setState('stale');
-        setPackageStale(true);
+        if (!keep.includes('M01')) setState('stale');
+        if (!keep.includes('M02')) setPackageStale(true);
       }
       setOpen(false);
     }, delay);
@@ -169,6 +172,7 @@ export function ScenesSaveStory({ mode = 'production', stale = false, longList =
         />
         <Typography data-testid="saved-scenes">Сохранённая постановка: {saved}</Typography>
         <Typography data-testid="save-count">Успешных сохранений: {writes}</Typography>
+        <Typography data-testid="kept">Оставлены принятыми: {kept.join(', ') || 'нет'}.</Typography>
         <Stack direction="row" spacing={1} alignItems="center">
           <Typography>Принятый M01:</Typography>
           <Chip label={SHOT_STATE_LABELS[state].label} color={SHOT_STATE_LABELS[state].color} />
@@ -179,7 +183,7 @@ export function ScenesSaveStory({ mode = 'production', stale = false, longList =
         <Typography data-testid="old-stale">Ранее устаревший M03: постановка изменена; прежнее утверждение не восстановлено.</Typography>
         <Typography data-testid="media-history">Медиа: assets/M01.mp4, source/M01-original.mp4. История: 3 попытки. Сохранены.</Typography>
         <Alert severity={animaticStale ? 'warning' : 'info'} data-testid="animatic-state">
-          Аниматик: {animaticStale ? 'устарел, требуется локальная пересборка' : 'соответствует сохранённому реестру'}.
+          Аниматик: {animaticStale ? 'устарел, требуется локальная пересборка' : 'соответствует сохранённому сценарию'}.
         </Alert>
         <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
           <ActionButton
@@ -212,37 +216,25 @@ export function ScenesSaveStory({ mode = 'production', stale = false, longList =
 }
 
 export interface ScenarioDraftConflictStoryProps {
-  treatmentDirty?: boolean;
-  scenesDirty?: boolean;
   busy?: boolean;
   failFirst?: boolean;
   delay?: number;
 }
 
-export function ScenarioDraftConflictStory({
-  treatmentDirty = true,
-  scenesDirty = true,
-  busy = false,
-  failFirst = false,
-  delay = 180
-}: ScenarioDraftConflictStoryProps) {
+export function ScenarioDraftConflictStory({ busy = false, failFirst = false, delay = 180 }: ScenarioDraftConflictStoryProps) {
   const [open, setOpen] = useState(true);
-  const [treatment, setTreatment] = useState(treatmentDirty ? TREATMENT_DRAFT : TREATMENT_SAVED);
-  const [scenes, setScenes] = useState(scenesDirty ? SCENARIO_DRAFT : SAVED_ACTION);
-  const [savedTreatment, setSavedTreatment] = useState(TREATMENT_SAVED);
+  const [scenes, setScenes] = useState(SCENARIO_DRAFT);
   const [savedScenes, setSavedScenes] = useState(SAVED_ACTION);
   const [continued, setContinued] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const failed = useRef(false);
   const write = useStoryWrite();
   const locked = busy || write.running;
-  const dirtyTreatment = treatment !== savedTreatment;
   const dirtyScenes = scenes !== savedScenes;
   const resolve = (action: 'save' | 'discard') => {
     if (locked) return;
     setError(null);
     if (action === 'discard') {
-      setTreatment(savedTreatment);
       setScenes(savedScenes);
       setOpen(false);
       setContinued((value) => value + 1);
@@ -254,7 +246,6 @@ export function ScenarioDraftConflictStory({
         setError(SCENARIO_CONFLICT_ERROR);
         return;
       }
-      setSavedTreatment(treatment);
       setSavedScenes(scenes);
       setOpen(false);
       setContinued((value) => value + 1);
@@ -267,29 +258,19 @@ export function ScenarioDraftConflictStory({
           Локальное разрешение черновиков. Продолжение только увеличивает счётчик; агент и API не запускаются.
         </Typography>
         <TextField
-          label="Черновик трактовки"
-          multiline
-          value={treatment}
-          onChange={(event) => setTreatment(event.target.value)}
-          slotProps={{ input: { readOnly: locked } }}
-        />
-        <TextField
-          label="Черновик реестра"
+          label="Черновик сценария"
           multiline
           value={scenes}
           onChange={(event) => setScenes(event.target.value)}
           slotProps={{ input: { readOnly: locked } }}
         />
-        <Typography data-testid="saved-treatment">Сохранённая трактовка: {savedTreatment}</Typography>
-        <Typography data-testid="saved-scenes">Сохранённый реестр: {savedScenes}</Typography>
-        <Typography data-testid="dirty-state">
-          Несохранённые правки: трактовка — {dirtyTreatment ? 'да' : 'нет'}, реестр — {dirtyScenes ? 'да' : 'нет'}.
-        </Typography>
+        <Typography data-testid="saved-scenes">Сохранённый сценарий: {savedScenes}</Typography>
+        <Typography data-testid="dirty-state">Несохранённые правки: {dirtyScenes ? 'да' : 'нет'}.</Typography>
         <Typography data-testid="continue-count">Продолжений: {continued}. Запусков агента: 0.</Typography>
         <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
           <ActionButton
             startIcon={<OpenInNewIcon />}
-            disabled={locked || (!dirtyTreatment && !dirtyScenes)}
+            disabled={locked || !dirtyScenes}
             disabledReason={locked ? scenarioTexts.drafts.waitSaving : 'Нет несохранённых правок.'}
             onClick={() => {
               setError(null);
@@ -302,9 +283,7 @@ export function ScenarioDraftConflictStory({
             startIcon={<RefreshIcon />}
             onClick={() => {
               write.cancel();
-              setTreatment(treatmentDirty ? TREATMENT_DRAFT : TREATMENT_SAVED);
-              setScenes(scenesDirty ? SCENARIO_DRAFT : SAVED_ACTION);
-              setSavedTreatment(TREATMENT_SAVED);
+              setScenes(SCENARIO_DRAFT);
               setSavedScenes(SAVED_ACTION);
               setContinued(0);
               setError(null);
@@ -317,8 +296,6 @@ export function ScenarioDraftConflictStory({
         </Stack>
         <ScenarioDraftConflictDialog
           open={open}
-          treatmentDirty={dirtyTreatment}
-          scenesDirty={dirtyScenes}
           busy={locked}
           onResolve={resolve}
           onClose={() => {

@@ -8,9 +8,6 @@ export function requestedShot(scenes: ScenesFile | null, shot: string | null): s
 }
 
 /** Уход со страницы сбрасывает черновики: переход к другому плану недоступен, пока правки не сохранены. */
-export function unsavedDraftsReason(treatmentDirty: boolean, scenesDirty: boolean): string | null {
-  if (treatmentDirty && scenesDirty) return scenarioTexts.leave.bothDirty;
-  if (scenesDirty) return scenarioTexts.leave.scenesDirty;
-  if (treatmentDirty) return scenarioTexts.leave.treatmentDirty;
-  return null;
+export function unsavedDraftsReason(scenesDirty: boolean): string | null {
+  return scenesDirty ? scenarioTexts.leave.scenesDirty : null;
 }

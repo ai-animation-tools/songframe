@@ -40,11 +40,13 @@ type goldenFile struct {
 
 // goldenStep — вход шага (op и параметры) и ожидаемый исход.
 type goldenStep struct {
-	Op          string                     `json:"op"`
-	Path        string                     `json:"path"`
-	JSON        json.RawMessage            `json:"json"`
-	Text        *string                    `json:"text"`
-	Copy        string                     `json:"copy"`
+	Op   string          `json:"op"`
+	Path string          `json:"path"`
+	JSON json.RawMessage `json:"json"`
+	Text *string         `json:"text"`
+	Copy string          `json:"copy"`
+	// Append — op write дописывает text в конец файла: байты входа меняются, содержание — нет.
+	Append      bool                       `json:"append"`
 	Config      map[string]json.RawMessage `json:"config"`
 	Shot        string                     `json:"shot"`
 	PackageDir  string                     `json:"packageDir"`
@@ -144,6 +146,8 @@ type captureConfig struct {
 	MutateOnBrief      *struct {
 		Path string `json:"path"`
 		Text string `json:"text"`
+		// Append — дописать Text в конец файла: меняются байты входа, но не его содержание.
+		Append bool `json:"append"`
 	} `json:"mutateOnBrief"`
 }
 
@@ -308,7 +312,16 @@ func (r *goldenRun) runTool(ctx context.Context, project, name string, args []st
 	}
 	result, err := tools.RunContext(ctx, project, name, args)
 	if err == nil && r.config.MutateOnBrief != nil && slices.Contains(args, "after") {
-		if err := os.WriteFile(filepath.Join(r.project, r.config.MutateOnBrief.Path), []byte(r.config.MutateOnBrief.Text), 0o644); err != nil {
+		path := filepath.Join(r.project, r.config.MutateOnBrief.Path)
+		text := []byte(r.config.MutateOnBrief.Text)
+		if r.config.MutateOnBrief.Append {
+			current, err := os.ReadFile(path)
+			if err != nil {
+				return result, err
+			}
+			text = append(current, text...)
+		}
+		if err := os.WriteFile(path, text, 0o644); err != nil {
 			return result, err
 		}
 		r.config.MutateOnBrief = nil

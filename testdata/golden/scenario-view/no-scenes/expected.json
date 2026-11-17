@@ -1,7 +1,7 @@
 {
-  "scenes": null,
-  "treatment": {
+  "scenes": {
     "schema_version": 1,
+    "fps": 25,
     "logline": "Двое друзей украшают причал фонариками и провожают закат.",
     "sequences": [
       {
@@ -46,7 +46,8 @@
         "lipsync": false,
         "max_shot_seconds": 10
       }
-    ]
+    ],
+    "scenes": []
   },
   "cast": {
     "schema_version": 1,

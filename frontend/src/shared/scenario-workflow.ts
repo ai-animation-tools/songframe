@@ -34,7 +34,7 @@ export interface ScenarioProposal {
   changedIds: string[];
 }
 
-/** Вид входа утверждения: исходники, разметка песни, кастинг, трактовка. */
+/** Вид входа утверждения: исходники, разметка песни, кастинг, части сценария. */
 export type ScenarioInput = 'sources' | 'timing' | 'cast' | 'treatment';
 
 export interface ScenarioWorkflowView {
@@ -56,7 +56,7 @@ export interface ScenarioWorkflowView {
   job: AgentJob | null;
 }
 
-/** Группа проблемы проверки сценария: состояние героев и мира, сюжет и трактовка, кастинг и референсы, стыки планов. */
+/** Группа проблемы проверки сценария: состояние героев и мира, сюжет и части, кастинг и референсы, стыки планов. */
 export type ScenarioCheckGroup = 'state' | 'story' | 'cast' | 'joins';
 
 /** Важность проблемы: high — испортит видео, medium — заметное расхождение, low — мелочь или сомнение. */

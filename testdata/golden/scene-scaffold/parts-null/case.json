@@ -1,0 +1,12 @@
+{
+  "description": "Сценарий null.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "read_json None"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ]
+}

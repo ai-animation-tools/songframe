@@ -1,5 +1,5 @@
 // Package scenarioapply — хранилище многофайловой публикации семейства «сценарий» (кастинг,
-// трактовка, реестр, опись исходников и их производные виды) с журналом и восстановлением после
+// сценарий, опись исходников и их производные виды) с журналом и восстановлением после
 // сбоя. Само применение предложений агента (проверка в копии, штатные инструменты) выполняет
 // internal/scenarioworkflow и публикует через Store.Publish.
 //
@@ -46,7 +46,7 @@ var fixedViews = []string{
 }
 
 // canonical — канонические документы семейства «сценарий».
-var canonical = []string{"plan/cast.json", "plan/treatment.json", "plan/scenes.json", "source/manifest.json"}
+var canonical = []string{"plan/cast.json", "plan/scenes.json", "source/manifest.json"}
 
 var (
 	shotReadme   = regexp.MustCompile(`^assets/shots/M\d{2}(?:\.\d+)?/README\.md$`)

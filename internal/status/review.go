@@ -15,7 +15,7 @@ import (
 
 // Тексты applicationTexts и scenarioTexts.main, участвующие в проверке актуальности сценария.
 const (
-	scenarioReviewRequired = "Кастинг, трактовка или исходники изменились: проверьте и утвердите актуальный сценарий на странице «Сценарий»."
+	scenarioReviewRequired = "Кастинг, части сценария или исходники изменились: проверьте и утвердите актуальный сценарий на странице «Сценарий»."
 	cardsDirectoryRequired = "plan/animatic/cards: нужна обычная папка."
 	shotsDirectoryRequired = "assets/shots: нужна обычная папка."
 )
@@ -46,7 +46,6 @@ var fixedInputs = []string{
 	"source/description.md",
 	"plan/audio/timing.json",
 	"plan/cast.json",
-	"plan/treatment.json",
 	"plan/scenes.json",
 }
 

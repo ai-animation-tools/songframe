@@ -13,7 +13,9 @@ import (
 	"testing"
 	"time"
 
+	"songframe/internal/dynvalue"
 	"songframe/internal/golden"
+	"songframe/internal/scenario"
 	"songframe/internal/scenarioapply"
 	"songframe/internal/tools"
 )
@@ -99,20 +101,24 @@ func prepare(t *testing.T, pass, result string, configure func(*Options)) prepar
 	return prepared{project: project, localDir: options.LocalDir, agents: agents, workflow: workflow, id: view.Proposal.ID}
 }
 
-// treatmentAnswer — ответ прохода трактовки: текущие документы с новым логлайном и описанием.
+// treatmentAnswer — ответ прохода частей: текущие кастинг и части сценария с новым логлайном и описанием.
 func treatmentAnswer(t *testing.T, project string) string {
 	t.Helper()
 	castData, err := os.ReadFile(filepath.Join(project, "plan", "cast.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	treatment, err := os.ReadFile(filepath.Join(project, "plan", "treatment.json"))
+	scenes, err := os.ReadFile(filepath.Join(project, "plan", "scenes.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	value, err := dynvalue.Parse(scenes)
 	if err != nil {
 		t.Fatal(err)
 	}
 	// Новое описание сущности меняет и опись исходников: публикация пишет три файла.
 	castText := strings.Replace(string(castData), `"appearance": "Музыкант, держит фонарик"`, `"appearance": "Музыкант с фонариком"`, 1)
-	text := strings.Replace(string(treatment), `"logline": "`, `"logline": "Новый логлайн. `, 1)
+	text := strings.Replace(dynvalue.Stringify(scenario.TreatmentOf(value)), `"logline":"`, `"logline":"Новый логлайн. `, 1)
 	return `{"schemaVersion":1,"pass":"treatment","cast":` + castText + `,"treatment":` + text + `}`
 }
 
@@ -453,7 +459,7 @@ func TestApprovalTravelsWithProject(t *testing.T) {
 
 // TestContextCarriesProjectFrameRate — контекст задания называет частоту кадров проекта из
 // plan/project.json: проект на 24 кадрах/с без реестра сцен получает "fps":24 в контексте
-// прохода трактовки, а промпт не требует фиксированной частоты.
+// прохода частей, а промпт не требует фиксированной частоты.
 func TestContextCarriesProjectFrameRate(t *testing.T) {
 	project := sampleProject(t)
 	marker := filepath.Join(project, "plan", "project.json")
@@ -468,7 +474,7 @@ func TestContextCarriesProjectFrameRate(t *testing.T) {
 	if err := os.WriteFile(marker, []byte(changed), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	// Реестр образца построен на 30 кадрах/с; трактовка новой частоты начинается без него.
+	// Планы образца построены на 30 кадрах/с; части новой частоты начинаются без них.
 	if err := os.Remove(filepath.Join(project, "plan", "scenes.json")); err != nil {
 		t.Fatal(err)
 	}

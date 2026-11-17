@@ -7,7 +7,6 @@
   ],
   "stubbedMedia": [],
   "args": [
-    "--json",
-    "--force"
+    "--json"
   ]
 }

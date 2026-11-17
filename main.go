@@ -220,7 +220,7 @@ func run() error {
 	productionService := production.New(production.Options{Jobs: jobManager, Layer: providerLayer})
 	// Проход агента производства: записи предложений в каталоге состояния, тот же каталог моделей,
 	// что у настроек, и занятость пакета производственной операцией. Сценарий утверждён, когда
-	// утверждена трактовка и сцены не требуют проверки.
+	// утверждены кастинг и части, планы не требуют проверки.
 	productionWorkflow := productionworkflow.New(productionworkflow.Options{
 		LocalDir: profilePath, Agents: agentManager, Catalog: providerLayer.Catalogs(), Media: providerLayer,
 		IsScenarioApproved: func(project string) bool {

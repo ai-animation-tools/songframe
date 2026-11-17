@@ -2,8 +2,5 @@
   "code": 1,
   "stdout": "",
   "stderr": "a: нет названия.\n",
-  "unhandled": false,
-  "files": {
-    "plan/scenes.json": "unchanged"
-  }
+  "unhandled": false
 }

@@ -1,0 +1,12 @@
+{
+  "description": "Части не по порядку: сортировка по началу.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "sorted"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ]
+}

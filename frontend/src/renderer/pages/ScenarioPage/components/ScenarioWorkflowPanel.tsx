@@ -22,8 +22,7 @@ export function ScenarioWorkflowPanel({
   project,
   workflow,
   selected,
-  registryOpen,
-  treatmentDirty,
+  hasShots,
   scenesDirty,
   editorBusy,
   scenesInputProblem,
@@ -33,9 +32,8 @@ export function ScenarioWorkflowPanel({
   project: string;
   workflow: ReturnType<typeof useScenarioWorkflow>;
   selected: string | null;
-  /** Открыт реестр планов: только там выбирается план, который дорабатывает агент. */
-  registryOpen: boolean;
-  treatmentDirty: boolean;
+  /** В сценарии есть планы: только тогда выбирается план, который дорабатывает агент. */
+  hasShots: boolean;
   scenesDirty: boolean;
   editorBusy: boolean;
   /** Чего не хватает для подробного сценария: разметки или кастинга с изображениями. */
@@ -51,7 +49,7 @@ export function ScenarioWorkflowPanel({
   // Проблема отчёта, из которой открыта доработка: применённое предложение отметит её исправленной.
   const [reviseIssue, setReviseIssue] = useState<number | undefined>(undefined);
   const [pendingAction, setPendingAction] = useState<(() => Promise<unknown>) | null>(null);
-  // Новая трактовка или сценарий при принятых планах запускаются только после подтверждения последствий.
+  // Новые части или сценарий при принятых планах запускаются только после подтверждения последствий.
   const [acceptedPass, setAcceptedPass] = useState<'treatment' | 'scenes' | null>(null);
   // Предложение сверяется с хешами сохранённых документов: запись правок перед применением сделала бы его устаревшим.
   const [saveBlocked, setSaveBlocked] = useState(false);
@@ -76,7 +74,7 @@ export function ScenarioWorkflowPanel({
   // Причина для обычных кнопок панели: их блокирует только выполняемая операция.
   const operationReason = disabled ? commonTexts.operationPending : null;
   const guard = (action: () => Promise<unknown>, blockSave = false): void => {
-    if (!treatmentDirty && !scenesDirty) {
+    if (!scenesDirty) {
       void action();
       return;
     }
@@ -219,7 +217,7 @@ export function ScenarioWorkflowPanel({
             >
               {scenarioTexts.workflow.createScenes}
             </AgentButton>
-            {registryOpen && (
+            {hasShots && (
               <AgentButton
                 variant="outlined"
                 disabled={disabled || !view?.canRevise || !selected}
@@ -252,8 +250,6 @@ export function ScenarioWorkflowPanel({
         </Stack>
         <ScenarioDraftConflictDialog
           open={!!pendingAction}
-          treatmentDirty={treatmentDirty}
-          scenesDirty={scenesDirty}
           busy={resolving || editorBusy}
           saveBlockedReason={saveBlocked ? scenarioTexts.drafts.applyNeedsSaved : undefined}
           onResolve={(action) => void resolve(action)}

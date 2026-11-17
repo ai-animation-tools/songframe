@@ -30,15 +30,15 @@ import { productionShot } from './productionQueueStories';
 export const SCENARIO_PAGE_PROJECT = SCENARIO_STORY_PROJECT;
 export const SCENARIO_PAGE_READ_ERROR = 'Не удалось прочитать plan/scenes.json: файл занят другой программой. Закройте её и повторите чтение.';
 export const SCENARIO_PAGE_LOAD_DELAY = 1200;
-/** Действие, которое модель считает незаполненным: проверка реестра требует описания каждого плана. */
+/** Действие, которое модель считает незаполненным: проверка сценария требует описания каждого плана. */
 export const scenarioPageActionProblem = (shot: string): string => `${shot}: опишите действие плана.`;
 
 /**
- * regular — шесть планов и утверждённая трактовка; long — сорок планов с длинными текстами; produced — у M01 и M02 есть
- * принятые материалы; proposal — готовое предложение прохода сценария; noRegistry — трактовка без реестра;
- * loading и loadError — отложенное и ошибочное первое чтение.
+ * regular — шесть планов и утверждённые части; long — сорок планов с длинными текстами; produced — у M01 и M02 есть
+ * принятые материалы; proposal — готовое предложение прохода сценария; noShots — сценарий из одних частей;
+ * noScenario — сценария ещё нет; loading и loadError — отложенное и ошибочное первое чтение.
  */
-export type ScenarioPageVariant = 'regular' | 'long' | 'produced' | 'proposal' | 'noRegistry' | 'noTreatment' | 'loading' | 'loadError';
+export type ScenarioPageVariant = 'regular' | 'long' | 'produced' | 'proposal' | 'noShots' | 'noScenario' | 'loading' | 'loadError';
 
 export interface ScenarioPageOptions {
   variant?: ScenarioPageVariant;
@@ -48,11 +48,11 @@ export interface ScenarioPageOptions {
   /** Планы, для которых под страницей есть демонстрационные ссылки ?shot= (переход на уже открытой странице). */
   links?: string[];
   /**
-   * Музыкальная карта с промежутками и перекрытием секций, как у автоматической разметки; сохранённая трактовка
-   * скопировала эти границы как есть и поэтому не стыкуется (проблемы видны сразу после открытия).
+   * Музыкальная карта с промежутками и перекрытием секций, как у автоматической разметки; сохранённые части
+   * скопировали эти границы как есть и поэтому не стыкуются (проблемы видны сразу после открытия).
    */
   gappedTiming?: boolean;
-  /** Кастинг получил референс после сохранения реестра: карта references устарела, обновит её только запись реестра. */
+  /** Кастинг получил референс после сохранения сценария: карта references устарела, обновит её только запись сценария. */
   referencesStale?: boolean;
   /**
    * Новая разметка сдвинула первую строку второй части (строка 3) с 8 на 10.6 с, а граница части осталась 8: пауза
@@ -94,7 +94,7 @@ export const STORY_CHECK_REPORT: ScenarioCheckReport = {
       shots: ['M04'],
       entities: ['neighbor'],
       title: 'Сосед появляется раньше куплета',
-      problem: 'Трактовка части «Куплет у калитки» вводит соседа Пашу, а в M04 «Действие» уже показывает его разговор с героем в части «Возвращение».',
+      problem: 'Направление части «Куплет у калитки» вводит соседа Пашу, а в M04 «Действие» уже показывает его разговор с героем в части «Возвращение».',
       why: 'Разговор начнётся до строки песни о калитке, и сюжет части сдвинется.',
       fix: 'Перенесите разговор в первый план части «Куплет у калитки» или уберите соседа из «В кадре (референсы)» у M04.',
       changes: [],
@@ -124,11 +124,16 @@ const GAPPED_SECTIONS: ReadonlyArray<{ start: number; end: number }> = [
   { start: 8.1, end: 16.4 },
   { start: 16.1, end: 22.8 }
 ];
-/** Код части латиницей, как SLUG проверки трактовки в Go. */
-const PART_CODE = /^[a-z][a-z0-9_]*$/;
+/** Код части латиницей, как в проверке частей Go. */
+const PART_CODE = /^[a-z0-9][a-z0-9_]*$/;
+
+/** Части сценария отдельным документом — как scenario.TreatmentOf в Go: по ним проверяются части и утверждение пары. */
+function partsOf(scenes: ScenesFile | null): TreatmentFile | null {
+  return scenes && { schema_version: 1, logline: scenes.logline, sequences: scenes.sequences };
+}
 
 /**
- * Упрощённая проверка трактовки для витрины (полная — ValidateTreatment в Go): пустой список, код, повтор, название,
+ * Упрощённая проверка частей для витрины (полная — ValidateTreatment в Go): пустой список, код, повтор, название,
  * стык с допуском 0.06 с, конец раньше начала и конец по длительности трека; тексты — из словаря сценария.
  */
 function storyTreatmentProblems(treatment: TreatmentFile, duration: number | null): string[] {
@@ -302,10 +307,12 @@ function longShots(): SceneShot[] {
 function pageScenes(long: boolean): ScenesFile {
   const shots = long ? longShots() : regularShots();
   const base = scenarioDocuments().scenes!;
+  const parts = pageTreatment(long);
   return {
     ...base,
     audio: { path: 'source/track.wav', end_seconds: (shots.at(-1)!.end_frame_exclusive / DEFAULT_FPS).toFixed(3) },
-    sequences: (long ? PARTS : PARTS.slice(0, 3)).map((part) => ({ ...part })),
+    logline: parts.logline,
+    sequences: parts.sequences,
     references: {
       hero: { name: 'Герой у ворот', path: 'source/heroes/story-image.png' },
       neighbor: { name: 'Сосед Паша', path: 'source/heroes/story-image.png' }
@@ -356,49 +363,23 @@ function pageTiming(duration: number, scenes: ScenesFile | null, treatment: Trea
 
 function pageView(variant: ScenarioPageVariant, gapped: boolean): ScenarioView {
   const long = variant === 'long';
-  const scenes = pageScenes(long);
+  const full = pageScenes(long);
   const plain = pageTreatment(long);
-  const treatment: TreatmentFile = gapped
-    ? { ...plain, sequences: plain.sequences.map((part, index) => ({ ...part, ...(GAPPED_SECTIONS[index] ?? {}) })) }
-    : plain;
-  const duration = scenes.scenes.at(-1)!.end_frame_exclusive / DEFAULT_FPS;
+  const sequences = gapped ? plain.sequences.map((part, index) => ({ ...part, ...(GAPPED_SECTIONS[index] ?? {}) })) : plain.sequences;
+  const scenes: ScenesFile = { ...full, sequences };
+  // Сценарий из одних частей — как после первого прохода или ручного заполнения: без audio, references и планов.
+  const partsOnly: ScenesFile = { schema_version: 1, fps: DEFAULT_FPS, logline: plain.logline, sequences, scenes: [] };
+  const duration = full.scenes.at(-1)!.end_frame_exclusive / DEFAULT_FPS;
   return {
-    scenes: variant === 'noRegistry' || variant === 'noTreatment' ? null : scenes,
-    treatment: variant === 'noTreatment' ? null : treatment,
+    scenes: variant === 'noScenario' ? null : variant === 'noShots' ? partsOnly : scenes,
     cast: pageCast(long),
-    timing: pageTiming(duration, variant === 'noRegistry' ? null : scenes, treatment),
+    timing: pageTiming(duration, variant === 'noShots' || variant === 'noScenario' ? null : full, { schema_version: 1, logline: plain.logline, sequences }),
     lyrics: scenes.scenes.map((shot, index) => ({ number: index + 1, text: shot.original, header: false })),
     duration,
     trackPath: STORY_TRACK_PATH,
     problems: [],
     referencesStale: false
   };
-}
-
-/** Каркас по сохранённой трактовке: по одному незаполненному плану на каждые четыре секунды части. */
-function scaffoldScenes(treatment: TreatmentFile): ScenesFile {
-  const shots: SceneShot[] = [];
-  for (const part of treatment.sequences)
-    for (let start = part.start; start < part.end - 0.01; start += SHOT_SECONDS) {
-      const index = shots.length;
-      shots.push({
-        id: id(index),
-        title: '',
-        original: '',
-        sequence: part.id,
-        start_frame: Math.round(start * DEFAULT_FPS),
-        end_frame_exclusive: Math.round(Math.min(part.end, start + SHOT_SECONDS) * DEFAULT_FPS),
-        camera: 'ЗАПОЛНИТЬ: камера',
-        action: 'ЗАПОЛНИТЬ: действие',
-        continuity: '',
-        references: ['hero'],
-        lipsync: !!part.lipsync,
-        card: { primary_reference: 'hero' },
-        state_from: index === 0 ? null : id(index - 1),
-        state_changes: {}
-      });
-    }
-  return { ...pageScenes(false), sequences: treatment.sequences.map(({ id: part, title, direction }) => ({ id: part, title, direction })), scenes: shots };
 }
 
 interface ResolvedBrief {
@@ -484,8 +465,10 @@ interface PageModel {
   checkIssue: number | null;
   links: string[];
   reads: number;
-  treatmentSaves: number;
   scenesSaves: ScenesSaveMode[];
+  /** Принятые планы, оставленные принятыми при обычных сохранениях с выбором по плану. */
+  kept: string[];
+  /** Аргументы scene_scaffold при «Пересчитать границы». */
   scaffolds: string[][];
   starts: number;
   applies: number;
@@ -533,13 +516,13 @@ export function scenarioPageOptions({
       if (pausedLine) pausedLine.start = LEAD_PAUSE_LINE_START;
       const movedLine = lineMoved ? saved.timing?.lines.find((line) => line.source_line === 3) : undefined;
       if (movedLine) Object.assign(movedLine, { start: 7, end: 8.8 });
-      const approved = variant !== 'noRegistry' && variant !== 'noTreatment';
+      const approved = variant !== 'noShots' && variant !== 'noScenario';
       const workflow: ScenarioWorkflowView = {
         project: SCENARIO_PAGE_PROJECT,
         busy: false,
         canStartTreatment: true,
         canStartScenes: approved,
-        canRevise: approved && !!saved.scenes,
+        canRevise: approved && !!saved.scenes?.scenes.length,
         canApproveCurrent: !approved,
         canApproveScenes: false,
         treatmentApproved: approved,
@@ -551,7 +534,7 @@ export function scenarioPageOptions({
         job: null
       };
       if (variant === 'proposal') {
-        workflow.proposal = scenarioProposal('scenes', { before: { cast: saved.cast, treatment: saved.treatment, scenes: saved.scenes } });
+        workflow.proposal = scenarioProposal('scenes', { before: { cast: saved.cast, treatment: partsOf(saved.scenes), scenes: saved.scenes } });
         workflow.job = scenarioJob('completed');
       }
       const model: PageModel = {
@@ -571,8 +554,8 @@ export function scenarioPageOptions({
         checkIssue: null,
         links,
         reads: 0,
-        treatmentSaves: 0,
         scenesSaves: [],
+        kept: [],
         scaffolds: [],
         starts: 0,
         applies: 0,
@@ -590,6 +573,22 @@ export function scenarioPageOptions({
         }
       };
       let failedSceneSave = false;
+      // Запись сценария: части в нём — тоже входы утверждения пары, их изменение снимает утверждение.
+      const write = (scenes: ScenesFile, mode: ScenesSaveMode, keep: string[]): ScenesFile => {
+        if (failScenesSaveOnce && !failedSceneSave) {
+          failedSceneSave = true;
+          throw new Error('Не удалось сохранить сценарий. Изменения состояния остались в форме.');
+        }
+        const partsChanged = JSON.stringify(partsOf(model.saved.scenes)) !== JSON.stringify(partsOf(scenes));
+        model.scenesSaves.push(mode);
+        model.kept.push(...keep);
+        model.saved.scenes = structuredClone(scenes);
+        // Как saveScenes в Go: запись заменяет карту references картой кастинга.
+        Object.assign(model.saved, { referencesStale: false, problems: [] });
+        documentsWritten(partsChanged);
+        model.publish();
+        return structuredClone(scenes);
+      };
       const fixPreview = (issues: number[]): ScenarioCheckFixPreview => {
         const report = model.check.report;
         if (!report) throw new Error('Нет готового отчёта проверки: запустите проверку сценария.');
@@ -620,11 +619,11 @@ export function scenarioPageOptions({
         Object.assign(view, {
           canStartTreatment: !view.busy,
           canStartScenes: !view.busy && view.treatmentApproved,
-          canRevise: !view.busy && view.treatmentApproved && !!model.saved.scenes
+          canRevise: !view.busy && view.treatmentApproved && !!model.saved.scenes?.scenes.length
         });
       };
       // Как в Go: предложение хранит хеши сохранённых документов, любая запись делает неприменённое предложение устаревшим,
-      // а утверждение пары включает трактовку и снимается её записью.
+      // а утверждение пары включает части сценария и снимается записью, которая их меняет.
       const documentsWritten = (treatment: boolean): void => {
         const view = model.workflow;
         if (view.proposal && view.proposal.status !== 'applied') view.proposal.stale = true;
@@ -635,7 +634,7 @@ export function scenarioPageOptions({
             treatmentApproved: false,
             canApproveCurrent: true,
             canApproveScenes: false,
-            scenesNeedReview: !!model.saved.scenes,
+            scenesNeedReview: !!model.saved.scenes?.scenes.length,
             changedInputs: ['treatment']
           });
           capabilities();
@@ -660,23 +659,30 @@ export function scenarioPageOptions({
             }
             return structuredClone(model.saved);
           },
+          // Как в Go: сначала части, затем планы; сценарий из одних частей проверяется только по частям.
           validateScenes: async (project, scenes) => {
             validate(project);
-            return scenes.scenes.filter((shot) => !shot.action.trim()).map((shot) => scenarioPageActionProblem(shot.id));
+            return [
+              ...storyTreatmentProblems(partsOf(scenes)!, model.saved.duration),
+              ...scenes.scenes.filter((shot) => !shot.action.trim()).map((shot) => scenarioPageActionProblem(shot.id))
+            ];
           },
-          validateTreatment: async (project, treatment) => {
-            validate(project);
-            return storyTreatmentProblems(treatment, model.saved.duration);
-          },
+          // Как в Go: план задевает своя постановка или направление его части.
           saveImpact: async (project, scenes) => {
             validate(project);
             const before = new Map((model.saved.scenes?.scenes ?? []).map((shot) => [shot.id, JSON.stringify(shot)]));
+            const directions = new Map((model.saved.scenes?.sequences ?? []).map((part) => [part.id, part.direction]));
+            const partChanged = (part: string): boolean =>
+              directions.has(part) && directions.get(part) !== scenes.sequences.find((item) => item.id === part)?.direction;
             return {
               shots: scenes.scenes
-                .filter((shot) => before.get(shot.id) !== JSON.stringify(shot))
+                .filter((shot) => before.get(shot.id) !== JSON.stringify(shot) || partChanged(shot.sequence))
                 .map((shot) => ({
                   id: shot.id,
-                  reason: 'Изменена собственная постановка плана: действие, камера или состояние героев.',
+                  reason:
+                    before.get(shot.id) !== JSON.stringify(shot)
+                      ? 'Изменена собственная постановка плана: действие, камера или состояние героев.'
+                      : scenarioTexts.main.impactGlobalRules,
                   state: produced.has(shot.id) ? 'completed' : 'planned',
                   produced: produced.has(shot.id)
                 }))
@@ -684,25 +690,11 @@ export function scenarioPageOptions({
           },
           saveScenes: async (project, scenes, mode) => {
             validate(project);
-            if (failScenesSaveOnce && !failedSceneSave) {
-              failedSceneSave = true;
-              throw new Error('Не удалось сохранить сценарий. Изменения состояния остались в форме.');
-            }
-            model.scenesSaves.push(mode);
-            model.saved.scenes = structuredClone(scenes);
-            // Как saveScenes в Go: запись заменяет карту references картой кастинга.
-            Object.assign(model.saved, { referencesStale: false, problems: [] });
-            documentsWritten(false);
-            model.publish();
-            return structuredClone(scenes);
+            return write(scenes, mode, []);
           },
-          saveTreatment: async (project, treatment) => {
+          saveScenesKeeping: async (project, scenes, keep) => {
             validate(project);
-            model.treatmentSaves++;
-            model.saved.treatment = structuredClone(treatment);
-            documentsWritten(true);
-            model.publish();
-            return structuredClone(treatment);
+            return write(scenes, 'production', keep);
           },
           brief: async (project, scenes, shot, phase) => {
             validate(project);
@@ -712,33 +704,28 @@ export function scenarioPageOptions({
         tools: {
           run: async (project, tool, args = []) => {
             validate(project);
-            if (tool !== 'scene_scaffold' || !model.saved.treatment) throw new Error(`Инструмент ${tool} не моделируется на этой странице.`);
+            if (tool !== 'scene_scaffold' || !model.saved.scenes?.scenes.length || !args.includes('--json'))
+              throw new Error(`Инструмент ${tool} не моделируется на этой странице.`);
             model.scaffolds.push(args);
             // Каркас без записи — как после правки разметки: стык M01 и M02 на полсекунды позже исходного, остальные окна прежние.
-            if (args.includes('--dry-run') && model.saved.scenes) {
-              const shifted = structuredClone(model.saved.scenes);
-              shifted.scenes.forEach((shot) => Object.assign(shot, { camera: 'ЗАПОЛНИТЬ', action: 'ЗАПОЛНИТЬ' }));
-              shifted.scenes[0].end_frame_exclusive = shifted.scenes[1].start_frame = SHOT_SECONDS * DEFAULT_FPS + DEFAULT_FPS / 2;
-              if (lineMoved) {
-                // Строка M03 по середине уже в первой части: её текст переходит в последний план первой части.
-                shifted.scenes[1].original = `${shifted.scenes[1].original} / ${shifted.scenes[2].original}`;
-                shifted.scenes[2].original = `Инструментал: ${shifted.sequences[1].title}`;
-              }
-              if (leadPause) {
-                // Пауза перед сдвинутой строкой 3 — отдельный план в начале второй части; коды следующих планов сдвигаются.
-                const split = Math.round(LEAD_PAUSE_LINE_START * DEFAULT_FPS);
-                const third = shifted.scenes[2];
-                shifted.scenes.splice(2, 1, { ...third, end_frame_exclusive: split }, { ...third, start_frame: split });
-                shifted.scenes.forEach((shot, index) => Object.assign(shot, { id: id(index) }));
-              }
-              // Сохранённое не меняется: публикация только обновляет счётчик построений в панели модели.
-              model.publish();
-              return { code: 0, stdout: JSON.stringify(shifted), stderr: '', command: `scene_scaffold ${args.join(' ')}` };
+            const shifted = structuredClone(model.saved.scenes);
+            shifted.scenes.forEach((shot) => Object.assign(shot, { camera: 'ЗАПОЛНИТЬ', action: 'ЗАПОЛНИТЬ' }));
+            shifted.scenes[0].end_frame_exclusive = shifted.scenes[1].start_frame = SHOT_SECONDS * DEFAULT_FPS + DEFAULT_FPS / 2;
+            if (lineMoved) {
+              // Строка M03 по середине уже в первой части: её текст переходит в последний план первой части.
+              shifted.scenes[1].original = `${shifted.scenes[1].original} / ${shifted.scenes[2].original}`;
+              shifted.scenes[2].original = `Инструментал: ${shifted.sequences[1].title}`;
             }
-            model.saved.scenes = scaffoldScenes(model.saved.treatment);
-            documentsWritten(false);
+            if (leadPause) {
+              // Пауза перед сдвинутой строкой 3 — отдельный план в начале второй части; коды следующих планов сдвигаются.
+              const split = Math.round(LEAD_PAUSE_LINE_START * DEFAULT_FPS);
+              const third = shifted.scenes[2];
+              shifted.scenes.splice(2, 1, { ...third, end_frame_exclusive: split }, { ...third, start_frame: split });
+              shifted.scenes.forEach((shot, index) => Object.assign(shot, { id: id(index) }));
+            }
+            // Сохранённое не меняется: публикация только обновляет счётчик построений в панели модели.
             model.publish();
-            return { code: 0, stdout: JSON.stringify({ shots: model.saved.scenes.scenes.length }), stderr: '', command: `scene_scaffold ${args.join(' ')}` };
+            return { code: 0, stdout: JSON.stringify(shifted), stderr: '', command: `scene_scaffold ${args.join(' ')}` };
           }
         },
         production: {
@@ -771,7 +758,7 @@ export function scenarioPageOptions({
               id: `scenario-proposal-${model.starts + 1}`,
               status: 'running',
               selectedIds: selectedIds ?? [],
-              before: { cast: model.saved.cast, treatment: model.saved.treatment, scenes: model.saved.scenes },
+              before: { cast: model.saved.cast, treatment: partsOf(model.saved.scenes), scenes: model.saved.scenes },
               after: { cast: null, treatment: null, scenes: null },
               warnings: [],
               message: note ? `Агент дорабатывает план: ${note}` : 'Агент готовит предложение по сохранённым документам.'
@@ -797,10 +784,12 @@ export function scenarioPageOptions({
               throw new Error(scenarioTexts.main.proposalNotApplicable);
             if (proposal.pass !== 'treatment' && !model.workflow.treatmentApproved) throw new Error(scenarioTexts.main.pairApprovalStale);
             model.applies++;
-            // Как в Go: трактовка владеет кастингом и трактовкой, сценарий и доработка — только реестром.
+            // Как в Go: первый проход владеет кастингом и частями сценария (планы остаются), сценарий и доработка — планами.
             if (proposal.pass === 'treatment') {
+              const parts = proposal.after.treatment!;
+              const base = model.saved.scenes ?? { schema_version: 1, fps: DEFAULT_FPS, logline: '', sequences: [], scenes: [] };
               model.saved.cast = structuredClone(proposal.after.cast);
-              model.saved.treatment = structuredClone(proposal.after.treatment);
+              model.saved.scenes = { ...structuredClone(base), logline: parts.logline, sequences: structuredClone(parts.sequences) };
             } else model.saved.scenes = structuredClone(proposal.after.scenes);
             // Как в Go: доработка из проблемы отчёта отмечает её исправленной, если отчёт тот же.
             const linked = model.checkIssue === null ? undefined : model.check.report?.issues[model.checkIssue];
@@ -962,19 +951,19 @@ function ScenarioPageModelPanel(): ReactElement {
           Чтений сценария: {model.reads}.
         </Typography>
         <Typography variant="body2" data-testid="page-model-saves">
-          Сохранений трактовки: {model.treatmentSaves}. Сохранений реестра: {model.scenesSaves.length}
-          {model.scenesSaves.length ? ` (${model.scenesSaves.join(', ')})` : ''}.
+          Сохранений сценария: {model.scenesSaves.length}
+          {model.scenesSaves.length ? ` (${model.scenesSaves.join(', ')})` : ''}. Оставлены принятыми: {model.kept.join(', ') || 'нет'}.
         </Typography>
         <Typography variant="body2" data-testid="page-model-agent">
           Запусков агента: {model.starts}. Применений: {model.applies}. Остановок: {model.cancels}. Проверок сценария: {model.checkStarts}. Правок проверки:{' '}
           {model.checkFixes.length ? model.checkFixes.map((fix) => `${fix.issues.join(',')} (оставлены: ${fix.keep.join(',') || 'нет'})`).join('; ') : 'нет'}.
         </Typography>
         <Typography variant="body2" data-testid="page-model-scaffold">
-          Построений каркаса: {model.scaffolds.length}
+          Пересчётов границ: {model.scaffolds.length}
           {model.scaffolds.length ? ` (${model.scaffolds.map((args) => args.join(' ')).join('; ')})` : ''}.
         </Typography>
         <Typography variant="body2" data-testid="page-model-logline" sx={{ overflowWrap: 'anywhere' }}>
-          Сохранённый логлайн: {model.saved.treatment?.logline}
+          Сохранённый логлайн: {model.saved.scenes?.logline}
         </Typography>
         <Typography variant="body2" data-testid="page-model-shots">
           Сохранённых планов: {scenes.length}.

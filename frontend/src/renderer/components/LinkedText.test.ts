@@ -127,7 +127,7 @@ describe('LinkedText', () => {
 
 describe('linkSegments и linkLocation', () => {
   it('делит текст на части без потерь', () => {
-    const text = 'Проверьте «Тайминги» и «Кастинг», затем нажмите «Создать трактовку».';
+    const text = 'Проверьте «Тайминги» и «Кастинг», затем нажмите «Создать части».';
     const segments = linkSegments(text, '/project');
     expect(segments.map((segment) => segment.text).join('')).toBe(text);
     expect(segments.filter((segment) => segment.target).map((segment) => segment.target?.path)).toEqual(['/project/timing', '/project/cast']);

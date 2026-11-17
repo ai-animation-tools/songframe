@@ -20,7 +20,7 @@ const (
 	textPackageBusy            = "Для этого пакета уже выполняется задание. Дождитесь завершения."
 	textOwnVideoUnavailable    = "Своё видео плана недоступно: проход производства не подключён."
 	textShotBusy               = "Для этого кадра уже выполняется задание. Дождитесь завершения."
-	textScenarioReviewRequired = "Кастинг, трактовка или исходники изменились: проверьте и утвердите актуальный сценарий на странице «Сценарий»."
+	textScenarioReviewRequired = "Кастинг, части сценария или исходники изменились: проверьте и утвердите актуальный сценарий на странице «Сценарий»."
 )
 
 func textScenarioReviewFailed(reason string) string {
@@ -64,7 +64,7 @@ func NewProductionService(service *production.Service, access *agents.AccessChec
 }
 
 // reviewProblem возвращает проблему актуальности сценария: он требует проверки после правки
-// кастинга, трактовки или исходников.
+// кастинга, частей сценария или исходников.
 func reviewProblem(workflow *scenarioworkflow.Workflow, project string) string {
 	if workflow == nil {
 		return ""

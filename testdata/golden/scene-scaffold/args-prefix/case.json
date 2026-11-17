@@ -1,5 +1,5 @@
 {
-  "description": "Сокращения --fo --j.",
+  "description": "Сокращение --j.",
   "call": "scene_scaffold",
   "project": "project",
   "covers": [
@@ -7,7 +7,6 @@
   ],
   "stubbedMedia": [],
   "args": [
-    "--fo",
     "--j"
   ]
 }

@@ -12,10 +12,12 @@
     }
   },
   "visual_direction": "Мягкий вечерний свет.",
+  "logline": "",
   "sequences": [
     {
       "id": "verse",
       "title": "Куплет",
+      "summary": "Мира у воды.",
       "direction": "Спокойно."
     }
   ],

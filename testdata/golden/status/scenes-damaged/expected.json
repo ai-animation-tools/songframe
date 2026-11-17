@@ -9,7 +9,7 @@
     "sources": true,
     "timing": true,
     "cast": true,
-    "treatment": true,
+    "treatment": false,
     "scenes": false,
     "shotsTotal": 0,
     "shotsDone": 2,
@@ -18,6 +18,6 @@
     "animaticApproved": false
   },
   "problems": [
-    "plan/scenes.json повреждён или не содержит планов."
+    "plan/scenes.json повреждён или не содержит частей."
   ]
 }

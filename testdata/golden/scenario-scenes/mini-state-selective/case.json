@@ -1,0 +1,15 @@
+{
+  "description": "Изменение итога M01 меняет наследников M02 и M03; выбор по плану оставляет принятым только M02: его отпечаток и пакет переписываются, M01 устаревает, пакет M03 не трогается.",
+  "call": "scenesSaveImpact + validateScenes + saveScenesKeeping",
+  "project": "project",
+  "mode": "selective",
+  "covers": [
+    "impactInheritedState",
+    "restampPackage",
+    "keep выбранных"
+  ],
+  "stubbedMedia": [],
+  "keep": [
+    "M02"
+  ]
+}

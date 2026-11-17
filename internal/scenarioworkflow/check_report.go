@@ -23,6 +23,10 @@ const (
 	checkTitleMaxLength = 160
 	// checkTextMaxLength — наибольшая длина problem, why и fix.
 	checkTextMaxLength = 1500
+	// checkChangesMax — наибольшее число структурных правок одной проблемы.
+	checkChangesMax = 20
+	// checkValueMaxLength — наибольшая длина нового значения свойства в правке.
+	checkValueMaxLength = 300
 )
 
 // Группы и важность проблемы — допустимые значения group и severity в порядке показа.
@@ -42,6 +46,33 @@ type CheckIssue struct {
 	Problem  string   `json:"problem"`
 	Why      string   `json:"why"`
 	Fix      string   `json:"fix"`
+	// Changes — правки состояния, которые приложение вносит само по «Исправить»; пусто, если
+	// исправление требует доработки текста плана или решения автора.
+	Changes []CheckChange `json:"changes"`
+	// Fixed — правки проблемы внесены приложением или применённой доработкой, запущенной из неё;
+	// Resolved — пользователь отметил проблему решённой сам. Оба признака не часть ответа агента,
+	// а хранятся в записи проверки.
+	Fixed    bool `json:"fixed"`
+	Resolved bool `json:"resolved"`
+}
+
+// CheckChange — одна правка состояния: в плане Shot на кадре Phase (before — первый, after —
+// последний) свойству Property сущности Entity задаётся Value; nil убирает значение, как null в
+// state_changes. Правка записывается в state_changes этого плана, следующие планы наследуют её.
+type CheckChange struct {
+	Shot     string  `json:"shot"`
+	Phase    string  `json:"phase"`
+	Entity   string  `json:"entity"`
+	Property string  `json:"property"`
+	Value    *string `json:"value"`
+}
+
+// checkKnown — ID проверенного сценария, на которые может ссылаться ответ: планы, сущности и
+// свойства состояния каждой сущности по словарю кастинга.
+type checkKnown struct {
+	shots      []string
+	entities   []string
+	properties map[string][]string
 }
 
 // CheckReport — отчёт проверки после разбора.
@@ -53,13 +84,14 @@ type CheckReport struct {
 // checkKeys — ровно эти ключи у ответа и у проблемы.
 var (
 	checkReportKeys = []string{"schemaVersion", "summary", "issues"}
-	checkIssueKeys  = []string{"group", "severity", "shots", "entities", "title", "problem", "why", "fix"}
+	checkIssueKeys  = []string{"group", "severity", "shots", "entities", "title", "problem", "why", "fix", "changes"}
+	checkChangeKeys = []string{"shot", "phase", "entity", "property", "value"}
 )
 
 // parseCheckReport — разбор ответа агента: JSON-объект schemaVersion 1 с полями и пределами из
-// промпта, ID планов и сущностей — только из проверенного сценария (shots, entities). Любое
-// нарушение отклоняет весь ответ: текст отказа называет первое нарушенное правило и номер проблемы.
-func parseCheckReport(result string, shots, entities []string) (CheckReport, error) {
+// промпта, ID планов, сущностей и свойств — только из проверенного сценария (known). Любое нарушение
+// отклоняет весь ответ: текст отказа называет первое нарушенное правило и номер проблемы.
+func parseCheckReport(result string, known checkKnown) (CheckReport, error) {
 	value, err := dynvalue.Parse([]byte(strings.TrimSpace(result)))
 	object, ok := dynvalue.AsObject(value)
 	if err != nil || !ok {
@@ -81,7 +113,7 @@ func parseCheckReport(result string, shots, entities []string) (CheckReport, err
 	}
 	report := CheckReport{Summary: summary, Issues: []CheckIssue{}}
 	for index, item := range items {
-		issue, err := parseCheckIssue(item, shots, entities)
+		issue, err := parseCheckIssue(item, known)
 		if err != nil {
 			return CheckReport{}, errors.New(textCheckIssue(index+1, err.Error()))
 		}
@@ -91,7 +123,7 @@ func parseCheckReport(result string, shots, entities []string) (CheckReport, err
 }
 
 // parseCheckIssue — одна проблема ответа.
-func parseCheckIssue(value any, shots, entities []string) (CheckIssue, error) {
+func parseCheckIssue(value any, known checkKnown) (CheckIssue, error) {
 	object, ok := dynvalue.AsObject(value)
 	if !ok || !onlyKeys(object, checkIssueKeys) {
 		return CheckIssue{}, errors.New(textCheckIssueShape)
@@ -106,10 +138,10 @@ func parseCheckIssue(value any, shots, entities []string) (CheckIssue, error) {
 		return CheckIssue{}, errors.New(textCheckIssueSeverity)
 	}
 	var err error
-	if issue.Shots, err = knownIDs(object.Value("shots"), shots, textCheckIssueShot); err != nil {
+	if issue.Shots, err = knownIDs(object.Value("shots"), known.shots, textCheckIssueShot); err != nil {
 		return CheckIssue{}, err
 	}
-	if issue.Entities, err = knownIDs(object.Value("entities"), entities, textCheckIssueEntity); err != nil {
+	if issue.Entities, err = knownIDs(object.Value("entities"), known.entities, textCheckIssueEntity); err != nil {
 		return CheckIssue{}, err
 	}
 	fields := []struct {
@@ -122,7 +154,59 @@ func parseCheckIssue(value any, shots, entities []string) (CheckIssue, error) {
 			return CheckIssue{}, errors.New(textCheckIssueField(field.key, err.Error()))
 		}
 	}
+	if issue.Changes, err = parseCheckChanges(object.Value("changes"), issue.Shots, known); err != nil {
+		return CheckIssue{}, err
+	}
 	return issue, nil
+}
+
+// parseCheckChanges — правки проблемы: не больше checkChangesMax, план — из shots проблемы, свойство —
+// из словаря сущности, значение — непустая строка до checkValueMaxLength или null, одно место
+// (план, кадр, сущность, свойство) — не больше одного раза.
+func parseCheckChanges(value any, shots []string, known checkKnown) ([]CheckChange, error) {
+	items, ok := dynvalue.AsArray(value)
+	if !ok {
+		return nil, errors.New(textCheckIssueShape)
+	}
+	if len(items) > checkChangesMax {
+		return nil, errors.New(textCheckChangesTooMany(len(items), checkChangesMax))
+	}
+	result := []CheckChange{}
+	for index, item := range items {
+		object, ok := dynvalue.AsObject(item)
+		if !ok || !onlyKeys(object, checkChangeKeys) {
+			return nil, errors.New(textCheckChange(index+1, textCheckChangeShape))
+		}
+		change := CheckChange{}
+		change.Shot, _ = object.Value("shot").(string)
+		change.Phase, _ = object.Value("phase").(string)
+		change.Entity, _ = object.Value("entity").(string)
+		change.Property, _ = object.Value("property").(string)
+		switch {
+		case !slices.Contains(shots, change.Shot):
+			return nil, errors.New(textCheckChange(index+1, textCheckChangeShot(change.Shot)))
+		case change.Phase != "before" && change.Phase != "after":
+			return nil, errors.New(textCheckChange(index+1, textCheckChangePhase))
+		case !slices.Contains(known.entities, change.Entity):
+			return nil, errors.New(textCheckChange(index+1, textCheckIssueEntity(change.Entity)))
+		case !slices.Contains(known.properties[change.Entity], change.Property):
+			return nil, errors.New(textCheckChange(index+1, textCheckChangeProperty(change.Entity, change.Property)))
+		}
+		if raw := object.Value("value"); raw != nil {
+			text, err := checkText(raw, checkValueMaxLength)
+			if err != nil {
+				return nil, errors.New(textCheckChange(index+1, textCheckIssueField("value", err.Error())))
+			}
+			change.Value = &text
+		}
+		if slices.ContainsFunc(result, func(other CheckChange) bool {
+			return other.Shot == change.Shot && other.Phase == change.Phase && other.Entity == change.Entity && other.Property == change.Property
+		}) {
+			return nil, errors.New(textCheckChange(index+1, textCheckChangeRepeated))
+		}
+		result = append(result, change)
+	}
+	return result, nil
 }
 
 // knownIDs — массив строк без повторов, каждая из known; problem — отказ с неизвестным ID.

@@ -37,6 +37,9 @@ type StartInput struct {
 	Pass        string   `json:"pass"`
 	Note        *string  `json:"note,omitempty"`
 	SelectedIDs []string `json:"selectedIds,omitempty"`
+	// CheckIssue — номер проблемы отчёта проверки, из которой запущена доработка: после применения
+	// предложения проблема отмечается исправленной.
+	CheckIssue *int `json:"checkIssue,omitempty"`
 }
 
 // Proposal — ScenarioProposal для renderer. Before и After — документы { cast, treatment, scenes }
@@ -531,6 +534,11 @@ func (w *Workflow) start(input StartInput) (string, error) {
 	stored.Set("expectedHashes", initial.hashes.object())
 	stored.Set("scaffold", scaffold)
 	stored.Set("duration", *initial.duration)
+	if input.Pass == "revise" {
+		if link := checkIssueLink(initial.project, input.CheckIssue); link != nil {
+			stored.Set("checkIssue", link)
+		}
+	}
 	state := readState(initial.project)
 	state.Set("pending", stored)
 	return initial.project, writeState(initial.project, state)
@@ -713,7 +721,13 @@ func (w *Workflow) apply(project, id string) (string, error) {
 	}
 	proposal.Set("status", "applied")
 	proposal.Set("after", after.object())
-	return view.Project, writeState(view.Project, state)
+	if err := writeState(view.Project, state); err != nil {
+		return "", err
+	}
+	if link := stored.Value("checkIssue"); link != dynvalue.Undefined {
+		markCheckIssueFixed(view.Project, link)
+	}
+	return view.Project, nil
 }
 
 // markScenesReview — новое утверждение пары при существующем сценарии: сцены требуют пересмотра,

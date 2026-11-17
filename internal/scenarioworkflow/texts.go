@@ -255,3 +255,62 @@ func textCheckImagesProblem(unreadable []string, skipped int) string {
 	}
 	return strings.Join(parts, " ")
 }
+
+// textCheckTooLarge — контекст проверки больше предела задания агента: сценарий слишком велик для
+// одной проверки.
+func textCheckTooLarge(size, limit int) string {
+	return "Сценарий слишком большой для одной проверки: " + strconv.Itoa(size/1024) + " КБ данных при пределе задания агента " + strconv.Itoa(limit/1024) + " КБ."
+}
+
+// Тексты структурных правок проверки (check_report.go, check_fixes.go).
+const (
+	textCheckChangeShape    = "поля правки не того вида"
+	textCheckChangePhase    = "кадр правки — before или after"
+	textCheckChangeRepeated = "то же место правится дважды"
+	textCheckFixNoReport    = "Нет готового отчёта проверки: запустите проверку сценария."
+	textCheckFixNone        = "Выберите проблемы, которые нужно исправить."
+)
+
+func textCheckChangesTooMany(count, limit int) string {
+	return "changes: " + strconv.Itoa(count) + " правок при пределе " + strconv.Itoa(limit)
+}
+
+func textCheckChange(number int, reason string) string {
+	return "правка " + strconv.Itoa(number) + ": " + reason
+}
+
+func textCheckChangeShot(id string) string {
+	return "план " + id + " не указан в shots проблемы"
+}
+
+func textCheckChangeProperty(entity, property string) string {
+	return "у сущности " + entity + " нет свойства " + property
+}
+
+// textCheckFixUnknown — номер проблемы не из отчёта: интерфейс показывал другой отчёт.
+func textCheckFixUnknown(number int) string {
+	return "Проблемы " + strconv.Itoa(number) + " нет в отчёте проверки. Обновите страницу."
+}
+
+func textCheckFixNoChanges(title string) string {
+	return "«" + title + "»: приложение не может исправить это само. Доработайте план с агентом или исправьте вручную."
+}
+
+func textCheckFixDone(title string) string {
+	return "«" + title + "»: правки уже внесены."
+}
+
+// textCheckFixConflict — две выбранные проблемы задают разные значения одному месту.
+func textCheckFixConflict(shot, entity, property string) string {
+	return "Выбранные проблемы задают разные значения одному свойству (" + shot + ", " + entity + ", «" + property + "»). Исправьте их по одной."
+}
+
+// textCheckFixMissing — план или сущность правки исчезли из сценария после проверки.
+func textCheckFixMissing(shot, entity string) string {
+	return "В сценарии больше нет плана " + shot + " или сущности " + entity + ". Запустите проверку снова."
+}
+
+// textCheckFixKeepInvalid — план из «оставить принятым» не принят или правка его не задевает.
+func textCheckFixKeepInvalid(shot string) string {
+	return "План " + shot + " не принят или не задет этими правками. Откройте исправление снова."
+}

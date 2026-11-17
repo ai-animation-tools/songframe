@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"songframe/internal/agents"
 	"songframe/internal/cast"
 	"songframe/internal/dynvalue"
 	"songframe/internal/projectfile"
@@ -21,7 +22,8 @@ import (
 // вычисленное состояние планов и возвращает отчёт о противоречиях для человека. Проект она не
 // меняет: отчёт хранится рядом с записью прохода, в plan/scenario-check.json, вместе с отпечатками
 // проверенных файлов, поэтому страница видит, что сценарий изменился после проверки. Исправления
-// выбирает пользователь; применяются они обычной доработкой планов (revise).
+// выбирает пользователь: правки состояния из отчёта вносит приложение (check_fixes.go), остальное —
+// обычная доработка планов (revise).
 //
 // Владение: запись проверки принадлежит Workflow и меняется под mu, как запись прохода; задание —
 // менеджеру агентов. Проверка и сценарный проход не идут одновременно: оба запускаются, только
@@ -61,9 +63,11 @@ type CheckView struct {
 	Job     *AgentJob    `json:"job"`
 }
 
-// checkRecord — запись plan/scenario-check.json (schemaVersion 1): status, jobId, shots и
-// entities (ID проверенного сценария — по ним проверяется ответ), hashes (отпечатки входов),
-// report и message. Повреждённая запись читается как отсутствующая.
+// checkRecord — запись plan/scenario-check.json (schemaVersion 1): status, jobId, shots, entities и
+// properties (ID проверенного сценария и свойства состояния каждой сущности — по ним проверяется
+// ответ), hashes (отпечатки входов), report, message, fixed (номера проблем отчёта с 0, чьи правки
+// внесены) и resolved (номера проблем, отмеченных решёнными вручную; пустой список можно не писать).
+// Повреждённая запись читается как отсутствующая.
 type checkRecord struct{ doc *dynvalue.Object }
 
 func checkRecordPath(project string) string {
@@ -85,8 +89,22 @@ func readCheck(project string) *checkRecord {
 	if !slices.Contains(checkStatuses, status) || !validHashes(doc.Value("hashes")) {
 		return nil
 	}
-	for _, key := range []string{"shots", "entities"} {
+	for _, key := range []string{"shots", "entities", "fixed"} {
 		if _, ok := dynvalue.AsArray(doc.Value(key)); !ok {
+			return nil
+		}
+	}
+	properties, ok := dynvalue.AsObject(doc.Value("properties"))
+	if !ok {
+		return nil
+	}
+	if resolved := doc.Value("resolved"); resolved != dynvalue.Undefined {
+		if _, ok := dynvalue.AsArray(resolved); !ok {
+			return nil
+		}
+	}
+	for _, entity := range properties.Keys() {
+		if _, ok := dynvalue.AsArray(properties.Value(entity)); !ok {
 			return nil
 		}
 	}
@@ -103,14 +121,61 @@ func writeCheck(project string, record *checkRecord) error {
 
 func (r *checkRecord) status() string { text, _ := r.doc.Value("status").(string); return text }
 
-// report — сохранённый отчёт; nil, если его нет или он не читается.
+// known — ID проверенного сценария, по которым принимается ответ агента.
+func (r *checkRecord) known() checkKnown {
+	known := checkKnown{shots: stringItems(r.doc.Value("shots")), entities: stringItems(r.doc.Value("entities")), properties: map[string][]string{}}
+	properties, _ := dynvalue.AsObject(r.doc.Value("properties"))
+	for _, entity := range properties.Keys() {
+		known.properties[entity] = stringItems(properties.Value(entity))
+	}
+	return known
+}
+
+// fixed — номера проблем отчёта, чьи правки уже внесены.
+func (r *checkRecord) fixed() []int { return r.numbers("fixed") }
+
+// resolved — номера проблем отчёта, отмеченных решёнными вручную.
+func (r *checkRecord) resolved() []int { return r.numbers("resolved") }
+
+// numbers — список номеров проблем записи по ключу; отсутствующий ключ — пустой список.
+func (r *checkRecord) numbers(key string) []int {
+	result := []int{}
+	for _, item := range arrayItems(r.doc.Value(key)) {
+		if number, ok := item.(float64); ok {
+			result = append(result, int(number))
+		}
+	}
+	return result
+}
+
+// setNumbers — отсортированный список номеров проблем под ключом key.
+func (r *checkRecord) setNumbers(key string, numbers []int) {
+	slices.Sort(numbers)
+	items := make([]any, len(numbers))
+	for index, number := range numbers {
+		items[index] = float64(number)
+	}
+	r.doc.Set(key, &dynvalue.Array{Items: items})
+}
+
+// report — сохранённый отчёт с отметками внесённых правок; nil, если его нет или он не читается.
 func (r *checkRecord) report() *CheckReport {
 	if !dynvalue.Truthy(r.doc.Value("report")) {
 		return nil
 	}
-	report, err := parseCheckReport(dynvalue.Stringify(r.doc.Value("report")), stringItems(r.doc.Value("shots")), stringItems(r.doc.Value("entities")))
+	report, err := parseCheckReport(dynvalue.Stringify(r.doc.Value("report")), r.known())
 	if err != nil {
 		return nil
+	}
+	for _, index := range r.fixed() {
+		if index >= 0 && index < len(report.Issues) {
+			report.Issues[index].Fixed = true
+		}
+	}
+	for _, index := range r.resolved() {
+		if index >= 0 && index < len(report.Issues) {
+			report.Issues[index].Resolved = true
+		}
 	}
 	return &report
 }
@@ -199,7 +264,7 @@ func (w *Workflow) refreshCheck(project string, record *checkRecord) (*AgentJob,
 			message = textCheckAgentFailed
 		}
 	default:
-		report, err := parseCheckReport(job.Result, stringItems(record.doc.Value("shots")), stringItems(record.doc.Value("entities")))
+		report, err := parseCheckReport(job.Result, record.known())
 		if err != nil {
 			record.doc.Set("status", CheckInvalid)
 			message = err.Error()
@@ -232,6 +297,21 @@ func reportTree(report CheckReport) *dynvalue.Object {
 		item.Set("problem", issue.Problem)
 		item.Set("why", issue.Why)
 		item.Set("fix", issue.Fix)
+		changes := make([]any, len(issue.Changes))
+		for position, change := range issue.Changes {
+			entry := dynvalue.NewObject()
+			entry.Set("shot", change.Shot)
+			entry.Set("phase", change.Phase)
+			entry.Set("entity", change.Entity)
+			entry.Set("property", change.Property)
+			if change.Value != nil {
+				entry.Set("value", *change.Value)
+			} else {
+				entry.Set("value", nil)
+			}
+			changes[position] = entry
+		}
+		item.Set("changes", &dynvalue.Array{Items: changes})
 		issues[index] = item
 	}
 	tree.Set("issues", &dynvalue.Array{Items: issues})
@@ -284,7 +364,7 @@ func (w *Workflow) startCheck(project string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	context, shots, entities, err := checkContext(initial, images, imagesProblem, acceptedShots(initial.project, initial.documents.Scenes))
+	context, known, err := checkContext(initial, images, imagesProblem, acceptedShots(initial.project, initial.documents.Scenes))
 	if err != nil {
 		return "", err
 	}
@@ -297,6 +377,9 @@ func (w *Workflow) startCheck(project string) (string, error) {
 	}
 	if !initial.hashes.matches(current.hashes) {
 		return "", errors.New(textInputsChanged)
+	}
+	if len(context) > agents.TextLimit {
+		return "", errors.New(textCheckTooLarge(len(context), agents.TextLimit))
 	}
 	attachments := []string{}
 	for _, image := range images {
@@ -319,11 +402,18 @@ func (w *Workflow) startCheck(project string) (string, error) {
 	doc.Set("schemaVersion", 1.0)
 	doc.Set("status", CheckRunning)
 	doc.Set("jobId", job.ID)
-	doc.Set("shots", stringArray(shots))
-	doc.Set("entities", stringArray(entities))
+	doc.Set("shots", stringArray(known.shots))
+	doc.Set("entities", stringArray(known.entities))
+	properties := dynvalue.NewObject()
+	for _, entity := range known.entities {
+		properties.Set(entity, stringArray(known.properties[entity]))
+	}
+	doc.Set("properties", properties)
 	doc.Set("hashes", checkHashes(initial).object())
 	doc.Set("report", nil)
 	doc.Set("message", nil)
+	doc.Set("fixed", &dynvalue.Array{Items: []any{}})
+	doc.Set("resolved", &dynvalue.Array{Items: []any{}})
 	return initial.project, writeCheck(initial.project, &checkRecord{doc: doc})
 }
 
@@ -334,36 +424,40 @@ func checkPrompt(skill string) string {
 		"{{issuesMax}}", strconv.Itoa(checkIssuesMax),
 		"{{titleMaxLength}}", strconv.Itoa(checkTitleMaxLength),
 		"{{textMaxLength}}", strconv.Itoa(checkTextMaxLength),
+		"{{changesMax}}", strconv.Itoa(checkChangesMax),
+		"{{valueMaxLength}}", strconv.Itoa(checkValueMaxLength),
 	).Replace(skill)
 }
 
-// checkContext — контекст задания проверки (JSON без отступов) и ID планов и сущностей, на которые
-// может ссылаться ответ. Состояние планов — только первого кадра и только сущностей плана (мир,
-// «В кадре» и изменения состояния плана), как во врезке непрерывности: итог плана агент видит в
-// его изменениях и в первом кадре следующих планов, а полная таблица всех сущностей по всем планам
-// раздула бы контекст в разы.
-func checkContext(initial *inputs, images []checkImage, imagesProblem string, accepted []string) (string, []string, []string, error) {
+// checkContext — контекст задания проверки (JSON без отступов) и ID планов, сущностей и свойств, на
+// которые может ссылаться ответ. Состояние — только первого кадра и только сущностей плана (мир, «В кадре» и
+// изменения состояния плана), как во врезке непрерывности, и записано цепочками (addStateRun):
+// значение повторяется от плана к плану, и таблица по планам на клипе в 60 планов не помещалась в
+// предел текста задания. Цепочка к тому же сразу показывает агенту, через какие планы тянется
+// значение, — ровно то, что нужно для поиска застрявшего состояния. Трактовка передаётся только
+// логлайном: её части после появления реестра живут в scenes.sequences.
+func checkContext(initial *inputs, images []checkImage, imagesProblem string, accepted []string) (string, checkKnown, error) {
 	fps, err := projectfile.FrameRate(initial.project)
 	if err != nil {
-		return "", nil, nil, err
+		return "", checkKnown{}, err
 	}
 	idea, err := readText(initial.project, "source", dynvalue.ToString(dynvalue.GetPath(initial.manifest, "idea", "path")))
 	if err != nil {
-		return "", nil, nil, err
+		return "", checkKnown{}, err
 	}
 	lyrics, err := readText(initial.project, "source/text.md")
 	if err != nil {
-		return "", nil, nil, err
+		return "", checkKnown{}, err
 	}
 	castValue := initial.documents.Cast
 	scenes := initial.documents.Scenes
 	initialStates, err := cast.InitialStates(castValue)
 	if err != nil {
-		return "", nil, nil, err
+		return "", checkKnown{}, err
 	}
 	details, err := scenario.ResolveDetailed(scenes, initialStates)
 	if err != nil {
-		return "", nil, nil, err
+		return "", checkKnown{}, err
 	}
 	shots := []string{}
 	states := dynvalue.NewObject()
@@ -371,30 +465,28 @@ func checkContext(initial *inputs, images []checkImage, imagesProblem string, ac
 		id := dynvalue.ToString(dynvalue.Get(scene, "id"))
 		shots = append(shots, id)
 		detail, ok := details[id]
-		if !ok {
+		if !ok || detail.State.Before == nil {
 			continue
 		}
 		scope := scenario.PlanEntities(scene)
-		before, sources := dynvalue.NewObject(), dynvalue.NewObject()
-		if detail.State.Before != nil {
-			for _, entity := range detail.State.Before.Keys() {
-				if !scope[entity] {
-					continue
+		for _, entity := range detail.State.Before.Keys() {
+			values, _ := dynvalue.AsObject(detail.State.Before.Value(entity))
+			if !scope[entity] || values == nil {
+				continue
+			}
+			bySource, _ := dynvalue.AsObject(detail.Sources["before"].Value(entity))
+			for _, property := range values.Keys() {
+				from := "cast"
+				if bySource != nil {
+					from = scenario.SourceLabel(bySource.Value(property))
 				}
-				before.Set(entity, detail.State.Before.Value(entity))
-				if bySource, ok := dynvalue.AsObject(detail.Sources["before"].Value(entity)); ok {
-					labels := dynvalue.NewObject()
-					for _, property := range bySource.Keys() {
-						labels.Set(property, scenario.SourceLabel(bySource.Value(property)))
-					}
-					sources.Set(entity, labels)
-				}
+				addStateRun(states, entity, property, values.Value(property), from, id)
 			}
 		}
-		state := dynvalue.NewObject()
-		state.Set("before", before)
-		state.Set("sources", sources)
-		states.Set(id, state)
+	}
+	properties, err := castProperties(castValue)
+	if err != nil {
+		return "", checkKnown{}, err
 	}
 	entities := []string{}
 	for _, entity := range arrayItems(dynvalue.Get(castValue, "entities")) {
@@ -417,14 +509,41 @@ func checkContext(initial *inputs, images []checkImage, imagesProblem string, ac
 	context.Set("fps", float64(fps))
 	context.Set("timing", initial.timing)
 	context.Set("cast", castValue)
-	context.Set("treatment", initial.documents.Treatment)
+	treatment := dynvalue.NewObject()
+	treatment.Set("logline", dynvalue.Get(initial.documents.Treatment, "logline"))
+	context.Set("treatment", treatment)
 	context.Set("scenes", scenes)
 	context.Set("states", states)
 	context.Set("registryWarnings", stringArray(registryWarnings(initial.project)))
 	context.Set("acceptedShots", stringArray(accepted))
 	context.Set("castImages", &dynvalue.Array{Items: imageList})
 	context.Set("castImagesProblem", imagesProblem)
-	return dynvalue.Stringify(context), shots, entities, nil
+	return dynvalue.Stringify(context), checkKnown{shots: shots, entities: entities, properties: properties}, nil
+}
+
+// addStateRun — значение свойства на первом кадре плана shot в цепочки states: сущность → свойство →
+// [{value, from, shots}]. Если последняя цепочка свойства держит то же значение из того же источника,
+// план добавляется к ней, иначе начинается новая. Планы без сущности в кадре цепочку не прерывают.
+func addStateRun(states *dynvalue.Object, entity, property string, value any, from, shot string) {
+	byProperty, _ := dynvalue.AsObject(states.Value(entity))
+	if byProperty == nil {
+		byProperty = dynvalue.NewObject()
+		states.Set(entity, byProperty)
+	}
+	runs, _ := dynvalue.AsArray(byProperty.Value(property))
+	if count := len(runs); count > 0 {
+		last, _ := dynvalue.AsObject(runs[count-1])
+		if dynvalue.StrictEqual(last.Value("value"), value) && dynvalue.StrictEqual(last.Value("from"), from) {
+			list, _ := last.Value("shots").(*dynvalue.Array)
+			list.Items = append(list.Items, shot)
+			return
+		}
+	}
+	run := dynvalue.NewObject()
+	run.Set("value", value)
+	run.Set("from", from)
+	run.Set("shots", &dynvalue.Array{Items: []any{shot}})
+	byProperty.Set(property, &dynvalue.Array{Items: append(runs, run)})
 }
 
 // registryWarnings — предупреждения проверки реестра («место: текст»): механические подсказки,

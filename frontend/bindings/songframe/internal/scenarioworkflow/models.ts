@@ -16,6 +16,65 @@ import * as agents$0 from "../agents/models.js";
 export type AgentJob = agents$0.Job;
 
 /**
+ * CheckChange — одна правка состояния: в плане Shot на кадре Phase (before — первый, after —
+ * последний) свойству Property сущности Entity задаётся Value; nil убирает значение, как null в
+ * state_changes. Правка записывается в state_changes этого плана, следующие планы наследуют её.
+ */
+export interface CheckChange {
+    "shot": string;
+    "phase": string;
+    "entity": string;
+    "property": string;
+    "value": string | null;
+}
+
+/**
+ * CheckFixChange — правка в предпросмотре: где, текущее значение вычисленного состояния и новое.
+ * Current и Value равны nil, если значения нет или правка его убирает.
+ */
+export interface CheckFixChange {
+    "issue": number;
+    "shot": string;
+    "phase": string;
+    "entity": string;
+    "entityName": string;
+    "property": string;
+    "propertyLabel": string;
+    "current": string | null;
+    "value": string | null;
+}
+
+/**
+ * CheckFixInput — ScenarioCheckFixInput: проблемы отчёта по номерам с 0 в порядке отчёта и
+ * принятые планы, которые остаются принятыми после правки.
+ */
+export interface CheckFixInput {
+    "project": string;
+    "issues": number[];
+    "keep": string[];
+}
+
+/**
+ * CheckFixPreview — ScenarioCheckFixPreview: правки выбранных проблем, задетые принятые планы
+ * (выбор «переснять» или «оставить принятым») и прочие планы с начатым производством, которые
+ * станут устаревшими.
+ */
+export interface CheckFixPreview {
+    "changes": CheckFixChange[];
+    "accepted": CheckFixShot[];
+    "stale": string[];
+}
+
+/**
+ * CheckFixShot — принятый план, который правки задевают; Direct — правка в самом плане, иначе он
+ * меняется через наследование состояния.
+ */
+export interface CheckFixShot {
+    "id": string;
+    "direct": boolean;
+}
+
+/**
  * CheckIssue — одна проблема отчёта. Shots и Entities — ID планов реестра и сущностей кастинга,
  * которых она касается; тексты написаны для человека без путей и ключей файлов.
  */
@@ -28,6 +87,20 @@ export interface CheckIssue {
     "problem": string;
     "why": string;
     "fix": string;
+
+    /**
+     * Changes — правки состояния, которые приложение вносит само по «Исправить»; пусто, если
+     * исправление требует доработки текста плана или решения автора.
+     */
+    "changes": CheckChange[];
+
+    /**
+     * Fixed — правки проблемы внесены приложением или применённой доработкой, запущенной из неё;
+     * Resolved — пользователь отметил проблему решённой сам. Оба признака не часть ответа агента,
+     * а хранятся в записи проверки.
+     */
+    "fixed": boolean;
+    "resolved": boolean;
 }
 
 /**
@@ -36,6 +109,16 @@ export interface CheckIssue {
 export interface CheckReport {
     "summary": string;
     "issues": CheckIssue[];
+}
+
+/**
+ * CheckResolveInput — ScenarioCheckResolveInput: проблема отчёта по номеру с 0 и отметка «решено
+ * вручную» (Resolved=false снимает её).
+ */
+export interface CheckResolveInput {
+    "project": string;
+    "issue": number;
+    "resolved": boolean;
 }
 
 /**
@@ -89,6 +172,12 @@ export interface StartInput {
     "pass": string;
     "note"?: string | null;
     "selectedIds"?: string[];
+
+    /**
+     * CheckIssue — номер проблемы отчёта проверки, из которой запущена доработка: после применения
+     * предложения проблема отмечается исправленной.
+     */
+    "checkIssue"?: number | null;
 }
 
 /**

@@ -60,3 +60,21 @@ func (s *ScenarioWorkflowService) CheckView(project string) (scenarioworkflow.Ch
 func (s *ScenarioWorkflowService) StartCheck(project string) (scenarioworkflow.CheckView, error) {
 	return wire.Done(s.workflow.StartCheck(project))
 }
+
+// CheckFixPreview — scenarioWorkflow.checkFixPreview: правки выбранных проблем проверки и задетые
+// ими планы, без записи.
+func (s *ScenarioWorkflowService) CheckFixPreview(project string, issues []int) (scenarioworkflow.CheckFixPreview, error) {
+	return wire.Done(s.workflow.CheckFixPreview(project, issues))
+}
+
+// ApplyCheckFixes — scenarioWorkflow.applyCheckFixes: запись правок проблем проверки в сценарий.
+func (s *ScenarioWorkflowService) ApplyCheckFixes(input scenarioworkflow.CheckFixInput) (scenarioworkflow.CheckView, error) {
+	// Сценарий до правок уходит в точку Git, как перед публикацией прохода.
+	projectgit.Before(context.Background(), input.Project, projectgit.OperationScenarioApply)
+	return wire.Done(s.workflow.ApplyCheckFixes(input))
+}
+
+// ResolveCheckIssue — scenarioWorkflow.resolveCheckIssue: отметка проблемы проверки «решено вручную».
+func (s *ScenarioWorkflowService) ResolveCheckIssue(input scenarioworkflow.CheckResolveInput) (scenarioworkflow.CheckView, error) {
+	return wire.Done(s.workflow.ResolveCheckIssue(input))
+}

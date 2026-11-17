@@ -13,7 +13,8 @@ import (
 )
 
 // TestSaveMatchesGolden повторяет вызовы страницы сценария на эталонах scenario-scenes: оценку
-// сохранения и проверку черновика до записи, затем saveScenesWithMode в режиме случая и повторное
+// сохранения и проверку черновика до записи, затем saveScenesWithMode в режиме случая (selective —
+// SaveScenesKeeping с планами keep) и повторное
 // сохранение результата. Сверяются ответы, тексты ошибок, состав и байты изменённых файлов
 // (plan/scenes.json, plan/production-status.json, workflow.json пакетов).
 func TestSaveMatchesGolden(t *testing.T) {
@@ -21,7 +22,8 @@ func TestSaveMatchesGolden(t *testing.T) {
 		t.Run(item.Name, func(t *testing.T) {
 			project := item.CopyProject(t)
 			var spec struct {
-				Mode string `json:"mode"`
+				Mode string   `json:"mode"`
+				Keep []string `json:"keep"`
 			}
 			if err := json.Unmarshal(item.Read(t, "case.json"), &spec); err != nil {
 				t.Fatal(err)
@@ -53,11 +55,18 @@ func TestSaveMatchesGolden(t *testing.T) {
 			if err := json.Unmarshal(item.Expected(t), &want); err != nil {
 				t.Fatal(err)
 			}
-			saved, err := SaveScenesWithMode(project, dynvalue.DeepClone(input), spec.Mode)
+			// Режим selective — выбор по плану (SaveScenesKeeping): принятыми остаются планы keep.
+			save := func(data any) (*dynvalue.Object, error) {
+				if spec.Mode == "selective" {
+					return SaveScenesKeeping(project, data, spec.Keep)
+				}
+				return SaveScenesWithMode(project, data, spec.Mode)
+			}
+			saved, err := save(dynvalue.DeepClone(input))
 			after := treeFiles(t, project)
 			assertWrite(t, item.Dir, want.Error, want.Result, want.Files, err, saved, before, after)
 			if want.Resave != nil {
-				again, err := SaveScenesWithMode(project, dynvalue.DeepClone(saved), spec.Mode)
+				again, err := save(dynvalue.DeepClone(saved))
 				gotError := ""
 				if err != nil {
 					gotError = err.Error()

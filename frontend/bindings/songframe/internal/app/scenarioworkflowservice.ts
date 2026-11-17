@@ -25,6 +25,13 @@ export function Apply(project: string, id: string): $CancellablePromise<scenario
 }
 
 /**
+ * ApplyCheckFixes — scenarioWorkflow.applyCheckFixes: запись правок проблем проверки в сценарий.
+ */
+export function ApplyCheckFixes(input: scenarioworkflow$0.CheckFixInput): $CancellablePromise<scenarioworkflow$0.CheckView> {
+    return $Call.ByID(3323488678, input);
+}
+
+/**
  * ApproveCurrent — scenarioWorkflow.approveCurrent: утверждение сохранённых кастинга и трактовки.
  */
 export function ApproveCurrent(project: string): $CancellablePromise<scenarioworkflow$0.View> {
@@ -39,6 +46,14 @@ export function ApproveScenes(project: string): $CancellablePromise<scenariowork
 }
 
 /**
+ * CheckFixPreview — scenarioWorkflow.checkFixPreview: правки выбранных проблем проверки и задетые
+ * ими планы, без записи.
+ */
+export function CheckFixPreview(project: string, issues: number[]): $CancellablePromise<scenarioworkflow$0.CheckFixPreview> {
+    return $Call.ByID(2379780048, project, issues);
+}
+
+/**
  * CheckView — scenarioWorkflow.checkView: последняя проверка сценария агентом и доступность новой.
  */
 export function CheckView(project: string): $CancellablePromise<scenarioworkflow$0.CheckView> {
@@ -50,6 +65,13 @@ export function CheckView(project: string): $CancellablePromise<scenarioworkflow
  */
 export function Discard(project: string, id: string): $CancellablePromise<scenarioworkflow$0.View> {
     return $Call.ByID(3147291939, project, id);
+}
+
+/**
+ * ResolveCheckIssue — scenarioWorkflow.resolveCheckIssue: отметка проблемы проверки «решено вручную».
+ */
+export function ResolveCheckIssue(input: scenarioworkflow$0.CheckResolveInput): $CancellablePromise<scenarioworkflow$0.CheckView> {
+    return $Call.ByID(719275922, input);
 }
 
 /**

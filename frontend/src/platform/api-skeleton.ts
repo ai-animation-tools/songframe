@@ -110,7 +110,10 @@ export function apiSkeleton(): Api {
       approveScenes: stub('scenarioWorkflow.approveScenes'),
       discard: stub('scenarioWorkflow.discard'),
       checkView: stub('scenarioWorkflow.checkView'),
-      startCheck: stub('scenarioWorkflow.startCheck')
+      startCheck: stub('scenarioWorkflow.startCheck'),
+      checkFixPreview: stub('scenarioWorkflow.checkFixPreview'),
+      applyCheckFixes: stub('scenarioWorkflow.applyCheckFixes'),
+      resolveCheckIssue: stub('scenarioWorkflow.resolveCheckIssue')
     },
     agents: {
       getSettings: stub('agents.getSettings'),

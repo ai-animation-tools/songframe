@@ -1,0 +1,2 @@
+{"schema_version": 1, "shot": "M02", "stage": "prompt_review",
+  "scene_sha256":   "b492094943e018d3484546c6791d03b6ff6b50d1638d96696e9f1dbaae7127f8", "keyframes": [], "prompt": {"path": "video-prompt.txt", "approved": false}}

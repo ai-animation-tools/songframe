@@ -53,7 +53,7 @@ import type { ReferenceImageGenerationInput } from '@shared/reference-image-gene
 import type { AiAccess } from '@shared/ai-access';
 import type { UpdateView } from '@shared/updates';
 import type * as scenarioworkflow from '../../bindings/songframe/internal/scenarioworkflow/models';
-import type { ScenarioCheckView, ScenarioDocuments, ScenarioProposal, ScenarioWorkflowView } from '@shared/scenario-workflow';
+import type { ScenarioCheckFixPreview, ScenarioCheckView, ScenarioDocuments, ScenarioProposal, ScenarioWorkflowView } from '@shared/scenario-workflow';
 import type * as productionworkflow from '../../bindings/songframe/internal/productionworkflow/models';
 import type { ProductionFramePrompt, ProductionPass, ProductionProposal, ProductionWorkflowView } from '@shared/production-workflow';
 import type { VocalModelId, VocalPreparationView } from '@shared/vocals';
@@ -668,7 +668,13 @@ export function createApi(b: Bindings): Api {
     discard: (project, id) => call('scenarioWorkflow.discard', async () => workflow((await b.scenarioWorkflow()).Discard(project, id)), false),
     checkView: (project) => call('scenarioWorkflow.checkView', async () => toCheckView(await (await b.scenarioWorkflow()).CheckView(project))),
     // Подготовка уменьшает изображения кастинга (несколько секунд на клипе), поэтому без срока оболочки.
-    startCheck: (project) => call('scenarioWorkflow.startCheck', async () => toCheckView(await (await b.scenarioWorkflow()).StartCheck(project)), false)
+    startCheck: (project) => call('scenarioWorkflow.startCheck', async () => toCheckView(await (await b.scenarioWorkflow()).StartCheck(project)), false),
+    checkFixPreview: (project, issues) =>
+      call('scenarioWorkflow.checkFixPreview', async () => (await (await b.scenarioWorkflow()).CheckFixPreview(project, issues)) as ScenarioCheckFixPreview),
+    applyCheckFixes: (input) =>
+      call('scenarioWorkflow.applyCheckFixes', async () => toCheckView(await (await b.scenarioWorkflow()).ApplyCheckFixes(input)), false),
+    resolveCheckIssue: (input) =>
+      call('scenarioWorkflow.resolveCheckIssue', async () => toCheckView(await (await b.scenarioWorkflow()).ResolveCheckIssue(input)))
   };
 
   api.jobs.list = () => call('jobs.list', async () => (await (await b.jobs()).List()).map(toJob));

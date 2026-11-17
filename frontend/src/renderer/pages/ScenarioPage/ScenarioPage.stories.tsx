@@ -16,7 +16,15 @@ import {
 const meta = {
   title: 'Страницы/Сценарий',
   component: ScenarioPageStory,
-  parameters: { songframe: scenarioPageOptions(), controls: { disable: true } }
+  parameters: { songframe: scenarioPageOptions(), controls: { disable: true } },
+  // Свёрнутость отчёта проверки хранится в окне: каждая история начинает с выбора по умолчанию.
+  beforeEach: () => {
+    try {
+      localStorage.removeItem('songframe.scenarioCheck.reportOpen');
+    } catch {
+      // Хранилище недоступно: значение и так по умолчанию.
+    }
+  }
 } satisfies Meta<typeof ScenarioPageStory>;
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -529,6 +537,14 @@ const checkPanel = async (screen: Screen) => {
   return within(heading.closest('.MuiPaper-root') as HTMLElement);
 };
 
+/** Раскрывает свёрнутый по умолчанию отчёт проверки кнопкой в строке статуса. */
+const expandCheck = async (panel: Screen) => {
+  const toggle = panel.getByRole('button', { name: scenarioTexts.check.expandReport });
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await userEvent.click(toggle);
+  await expect(panel.getByRole('button', { name: scenarioTexts.check.collapseReport })).toHaveAttribute('aria-expanded', 'true');
+};
+
 export const CheckReport: Story = {
   name: 'Проверка сценария · отчёт: важные проблемы первыми, переход к блоку состояния плана',
   tags: ['!autodocs', 'ci'],
@@ -537,6 +553,9 @@ export const CheckReport: Story = {
     const screen = await ready(context);
     const panel = await checkPanel(screen);
     await expect(panel.getByText(scenarioTexts.check.statusIssues({ count: 3 }))).toBeInTheDocument();
+    // Готовый отчёт по умолчанию свёрнут до строки статуса и раскрывается кнопкой.
+    await expect(panel.queryByText('Герой в сухой куртке под дождём')).not.toBeInTheDocument();
+    await expandCheck(panel);
     // Важность задаёт порядок: проблема состояния записана в отчёте последней, а показана первой.
     const summaries = panel.getAllByRole('button', { expanded: false });
     await expect(summaries[0]).toHaveTextContent('Герой в сухой куртке под дождём');
@@ -570,6 +589,9 @@ export const CheckRunAndStale: Story = {
     await screen.findByText(scenarioTexts.page.agentEditingPaused, undefined, { timeout: 3000 });
     await panel.findByText(scenarioTexts.check.statusIssues({ count: 3 }), undefined, { timeout: 4000 });
     await expect(await screen.findByText(scenarioTexts.check.finished({ count: 3 }))).toBeInTheDocument();
+    // Завершившаяся проверка сама раскрывает отчёт.
+    await expect(await panel.findByRole('button', { name: scenarioTexts.check.collapseReport })).toHaveAttribute('aria-expanded', 'true');
+    await expect(panel.getByText('Герой в сухой куртке под дождём')).toBeInTheDocument();
     await expect(screen.getByTestId('page-model-agent')).toHaveTextContent('Проверок сценария: 1.');
     await waitFor(() => expect(screen.queryByText(scenarioTexts.page.agentEditingPaused)).not.toBeInTheDocument());
     await userEvent.type(field(screen, scenarioTexts.fields.action), ' Правка после проверки.');
@@ -581,12 +603,105 @@ export const CheckRunAndStale: Story = {
   }
 };
 
+export const CheckFix: Story = {
+  name: 'Проверка сценария · исправить: правка состояния, M02 переснять, M03 оставить принятым',
+  tags: ['!autodocs', 'ci'],
+  parameters: { songframe: scenarioPageOptions({ check: 'report', accepted: ['M02', 'M03'] }) },
+  play: async (context) => {
+    const screen = await ready(context);
+    const panel = await checkPanel(screen);
+    await expandCheck(panel);
+    // Отметить можно только проблему с правками, а без отметки «Исправить выбранные» недоступна.
+    await expect(panel.getByRole('button', { name: scenarioTexts.check.fixSelected({ count: 0 }) })).toBeDisabled();
+    await userEvent.click(panel.getByRole('checkbox', { name: scenarioTexts.check.select({ title: 'Герой в сухой куртке под дождём' }) }));
+    await expect(panel.queryAllByRole('checkbox')).toHaveLength(1);
+    await userEvent.click(panel.getByRole('button', { name: scenarioTexts.check.fixSelected({ count: 1 }) }));
+    const dialog = within(await screen.findByRole('dialog', { name: scenarioTexts.check.dialog.title }));
+    const table = within(await dialog.findByRole('table', { name: scenarioTexts.check.dialog.changes }));
+    await expect(table.getByText('сухая')).toBeInTheDocument();
+    await expect(table.getByText('мокрая, тёмная от дождя')).toBeInTheDocument();
+    await expect(table.getByText(scenarioTexts.check.dialog.phases.before)).toBeInTheDocument();
+    await expect(dialog.getByText(`M02 · ${scenarioTexts.check.dialog.direct}`)).toBeInTheDocument();
+    await expect(dialog.getByText(`M03 · ${scenarioTexts.check.dialog.inherited}`)).toBeInTheDocument();
+    // По умолчанию задетые принятые планы переснимаются; M03 пользователь оставляет принятым.
+    const m03 = within(dialog.getByRole('radiogroup', { name: `M03 · ${scenarioTexts.check.dialog.inherited}` }));
+    await expect(m03.getByRole('radio', { name: scenarioTexts.check.dialog.reshoot })).toBeChecked();
+    await userEvent.click(m03.getByRole('radio', { name: scenarioTexts.check.dialog.keep }));
+    await expect(dialog.getByText(scenarioTexts.check.dialog.keepHint)).toBeInTheDocument();
+    await userEvent.click(dialog.getByRole('button', { name: scenarioTexts.check.dialog.apply }));
+    await waitFor(() => expect(screen.getByTestId('page-model-agent')).toHaveTextContent('Правок проверки: 2 (оставлены: M03).'));
+    await expect(await screen.findByText(scenarioTexts.check.applied({ count: 1 }))).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: scenarioTexts.check.dialog.title })).not.toBeInTheDocument());
+    // Исправленная проблема остаётся в отчёте с отметкой, отчёт не устаревает, а число нерешённых уменьшается.
+    await expect(await panel.findByText(scenarioTexts.check.fixed)).toBeInTheDocument();
+    await expect(panel.getByText(scenarioTexts.check.statusIssues({ count: 2 }))).toBeInTheDocument();
+    await expect(panel.queryByText(scenarioTexts.check.stale)).not.toBeInTheDocument();
+    await expect(panel.queryByRole('button', { name: /Исправить выбранные/ })).not.toBeInTheDocument();
+  }
+};
+
+export const CheckRevise: Story = {
+  name: 'Проверка сценария · плашка проблем у плана, переход к отчёту и доработка с агентом',
+  tags: ['!autodocs', 'ci'],
+  parameters: { songframe: scenarioPageOptions({ check: 'report', route: '/project/scenario?shot=M04' }) },
+  play: async (context) => {
+    const screen = await ready(context);
+    const panel = await checkPanel(screen);
+    await editorHeading(screen, 'M04');
+    const notice = (await screen.findByText(scenarioTexts.check.shotNotice({ shot: 'M04' }))).closest('[role="alert"]') as HTMLElement;
+    await expect(within(notice).getByText(/Сосед появляется раньше куплета/)).toBeInTheDocument();
+    await userEvent.click(within(notice).getByRole('button', { name: scenarioTexts.check.toReport }));
+    // Переход раскрывает проблему в отчёте: у проблемы сюжета нет правок, вместо «Исправить» — доработка агентом.
+    const revise = await panel.findByRole('button', { name: scenarioTexts.check.revise });
+    await expect(panel.queryByRole('button', { name: scenarioTexts.check.fixButton })).not.toBeInTheDocument();
+    await userEvent.click(revise);
+    const dialog = within(await screen.findByRole('dialog', { name: scenarioTexts.revise.title }));
+    await expect(dialog.getByText(scenarioTexts.revise.context({ ids: ['M04'] }))).toBeInTheDocument();
+    const note = dialog.getByRole('textbox', { name: scenarioTexts.revise.note }) as HTMLTextAreaElement;
+    await expect(note.value).toContain('Сосед появляется раньше куплета');
+    await expect(note.value).toContain('Что сделать: Перенесите разговор');
+    await userEvent.click(dialog.getByRole('button', { name: scenarioTexts.revise.prepare }));
+    await waitFor(() => expect(screen.getByTestId('page-model-agent')).toHaveTextContent('Запусков агента: 1.'));
+    // Применённая доработка, запущенная из проблемы, отмечает её исправленной: плашка у плана исчезает.
+    await applyScenes(context);
+    await waitFor(() => expect(screen.getByTestId('page-model-agent')).toHaveTextContent('Применений: 1.'));
+    await expect(await panel.findByText(scenarioTexts.check.fixed)).toBeInTheDocument();
+    await expect(panel.getByText(scenarioTexts.check.statusIssues({ count: 2 }))).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText(scenarioTexts.check.shotNotice({ shot: 'M04' }))).not.toBeInTheDocument());
+  }
+};
+
+export const CheckResolve: Story = {
+  name: 'Проверка сценария · «Решено вручную» закрывает проблему, «Вернуть в работу» открывает снова',
+  tags: ['!autodocs', 'ci'],
+  parameters: { songframe: scenarioPageOptions({ check: 'report' }) },
+  play: async (context) => {
+    const screen = await ready(context);
+    const panel = await checkPanel(screen);
+    await expandCheck(panel);
+    await userEvent.click(panel.getByRole('button', { name: /Сосед появляется раньше куплета/ }));
+    await userEvent.click(await panel.findByRole('button', { name: scenarioTexts.check.resolve }));
+    // Отметка видна в заголовке проблемы и уменьшает число нерешённых, сценарий не записывается.
+    await expect(await panel.findByText(scenarioTexts.check.resolvedHint)).toBeInTheDocument();
+    await expect(panel.getByText(scenarioTexts.check.statusIssues({ count: 2 }))).toBeInTheDocument();
+    await expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений реестра: 0');
+    await userEvent.click(panel.getByRole('button', { name: scenarioTexts.check.unresolve }));
+    await expect(await panel.findByText(scenarioTexts.check.statusIssues({ count: 3 }))).toBeInTheDocument();
+    await expect(panel.queryByText(scenarioTexts.check.resolvedHint)).not.toBeInTheDocument();
+    // Свёрнутый отчёт оставляет строку статуса и «Проверить заново».
+    await userEvent.click(panel.getByRole('button', { name: scenarioTexts.check.collapseReport }));
+    await waitFor(() => expect(panel.queryByText(/Сосед появляется раньше куплета/)).not.toBeInTheDocument());
+    await expect(panel.getByRole('button', { name: scenarioTexts.check.restart })).toBeInTheDocument();
+  }
+};
+
 export const CheckClean: Story = {
   name: 'Проверка сценария · проблем не найдено',
   parameters: { songframe: scenarioPageOptions({ check: 'clean' }) },
   play: async (context) => {
     const panel = await checkPanel(await ready(context));
     await expect(panel.getByText(scenarioTexts.check.statusClean)).toBeInTheDocument();
+    await expandCheck(panel);
     await expect(panel.getByText(scenarioTexts.check.clean)).toBeInTheDocument();
   }
 };

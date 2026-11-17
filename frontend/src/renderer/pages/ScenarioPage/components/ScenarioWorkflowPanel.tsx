@@ -27,6 +27,7 @@ export function ScenarioWorkflowPanel({
   scenesDirty,
   editorBusy,
   scenesInputProblem,
+  reviseRequest = null,
   onResolveDrafts
 }: {
   project: string;
@@ -39,12 +40,16 @@ export function ScenarioWorkflowPanel({
   editorBusy: boolean;
   /** Чего не хватает для подробного сценария: разметки или кастинга с изображениями. */
   scenesInputProblem?: string | null;
+  /** Доработка, открытая из отчёта проверки: планы, замечание и номер проблемы; seq различает повторные запросы. */
+  reviseRequest?: { ids: string[]; note: string; issue: number; seq: number } | null;
   onResolveDrafts(action: 'save' | 'discard'): Promise<boolean>;
 }): ReactElement {
   const [preview, setPreview] = useState(false);
   const [revise, setRevise] = useState(false);
   const [reviseIds, setReviseIds] = useState<string[]>([]);
   const [note, setNote] = useState('');
+  // Проблема отчёта, из которой открыта доработка: применённое предложение отметит её исправленной.
+  const [reviseIssue, setReviseIssue] = useState<number | undefined>(undefined);
   const [pendingAction, setPendingAction] = useState<(() => Promise<unknown>) | null>(null);
   // Новая трактовка или сценарий при принятых планах запускаются только после подтверждения последствий.
   const [acceptedPass, setAcceptedPass] = useState<'treatment' | 'scenes' | null>(null);
@@ -81,6 +86,7 @@ export function ScenarioWorkflowPanel({
   const acceptedShots = view?.acceptedShots ?? [];
   const begin = (pass: ScenarioPass, ids?: string[]): void => {
     if (pass === 'revise') {
+      setReviseIssue(undefined);
       setReviseIds(ids?.length ? ids : selected ? [selected] : []);
       setRevise(true);
     } else if (acceptedShots.length) setAcceptedPass(pass);
@@ -99,6 +105,14 @@ export function ScenarioWorkflowPanel({
       if (activeProject.current === project) setResolving(false);
     }
   };
+  // Запрос из отчёта проверки открывает то же окно доработки с планами проблемы и её описанием.
+  useEffect(() => {
+    if (!reviseRequest) return;
+    setReviseIds(reviseRequest.ids);
+    setNote(reviseRequest.note);
+    setReviseIssue(reviseRequest.issue);
+    setRevise(true);
+  }, [reviseRequest]);
   const proposal = view?.proposal;
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
@@ -275,7 +289,9 @@ export function ScenarioWorkflowPanel({
           onStart={() => {
             if (!note.trim() || !reviseIds.length) return;
             setRevise(false);
-            guard(() => workflow.start('revise', note.trim(), reviseIds));
+            const issue = reviseIssue;
+            setReviseIssue(undefined);
+            guard(() => workflow.start('revise', note.trim(), reviseIds, issue));
           }}
         />
         {proposal && preview && (

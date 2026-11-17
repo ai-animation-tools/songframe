@@ -16,6 +16,56 @@
     "boat",
     "pier"
   ],
+  "properties": {
+    "world": [
+      "time_of_day",
+      "weather",
+      "season",
+      "road_axis",
+      "left_side",
+      "right_side",
+      "ahead"
+    ],
+    "mira": [
+      "position",
+      "contact",
+      "posture",
+      "facing",
+      "clothes_condition",
+      "face_condition",
+      "marks",
+      "holding",
+      "emotion",
+      "fatigue"
+    ],
+    "lev": [
+      "position",
+      "contact",
+      "posture",
+      "facing",
+      "clothes_condition",
+      "face_condition",
+      "marks",
+      "holding",
+      "emotion",
+      "fatigue"
+    ],
+    "boat": [
+      "position",
+      "orientation",
+      "sink",
+      "dirt",
+      "mobility",
+      "doors",
+      "cargo",
+      "occupants"
+    ],
+    "pier": [
+      "ground",
+      "layout",
+      "condition"
+    ]
+  },
   "hashes": {
     "source/manifest.json": "9003b4e856f2fd18ee7449c3a04a7c28253c7bc722162ec55d1eca4b91af29dc",
     "source/track.mp3": "d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640",
@@ -31,5 +81,7 @@
     "plan/scenes.json": "7a80da73a0f083fc3a9b31862b7b0ea2fe87c6536af966a50c3b1b579417401f"
   },
   "report": null,
-  "message": "Проблема 1 отчёта агента не принята: неизвестный план M99. Запустите проверку снова."
+  "message": "Проблема 1 отчёта агента не принята: неизвестный план M99. Запустите проверку снова.",
+  "fixed": [],
+  "resolved": []
 }

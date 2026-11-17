@@ -15,6 +15,8 @@ export interface ScenarioWorkflowStart {
   pass: ScenarioPass;
   note?: string;
   selectedIds?: string[];
+  /** Номер проблемы отчёта проверки, из которой запущена доработка: применённое предложение отметит её исправленной. */
+  checkIssue?: number;
 }
 
 export interface ScenarioProposal {
@@ -70,6 +72,51 @@ export interface ScenarioCheckIssue {
   problem: string;
   why: string;
   fix: string;
+  /** Правки состояния, которые приложение вносит само по «Исправить»; пусто — нужна доработка плана. */
+  changes: ScenarioCheckChange[];
+  /** Правки проблемы внесены приложением или применённой доработкой, запущенной из неё. */
+  fixed: boolean;
+  /** Пользователь отметил проблему решённой сам: исправил вручную или решил не исправлять. */
+  resolved: boolean;
+}
+
+/** Правка состояния: свойству сущности в первом (before) или последнем (after) кадре плана — новое значение; null убирает его. */
+export interface ScenarioCheckChange {
+  shot: string;
+  phase: 'before' | 'after';
+  entity: string;
+  property: string;
+  value: string | null;
+}
+
+/** Правка в предпросмотре: подписи по текущему кастингу, текущее и новое значение. */
+export interface ScenarioCheckFixChange extends ScenarioCheckChange {
+  /** Номер проблемы в отчёте с 0. */
+  issue: number;
+  entityName: string;
+  propertyLabel: string;
+  current: string | null;
+}
+
+/** Что изменят правки выбранных проблем: задетые принятые планы (direct — правка в самом плане) и прочие планы с начатым производством. */
+export interface ScenarioCheckFixPreview {
+  changes: ScenarioCheckFixChange[];
+  accepted: { id: string; direct: boolean }[];
+  stale: string[];
+}
+
+/** Отметка «Решено вручную» у проблемы отчёта; resolved=false снимает её. */
+export interface ScenarioCheckResolveInput {
+  project: string;
+  issue: number;
+  resolved: boolean;
+}
+
+/** Применение правок: проблемы по номерам отчёта и принятые планы, которые остаются принятыми. */
+export interface ScenarioCheckFixInput {
+  project: string;
+  issues: number[];
+  keep: string[];
 }
 
 export interface ScenarioCheckReport {

@@ -91,8 +91,8 @@ export function useScenarioWorkflow(project: string, onApplied: (pass: ScenarioP
     error: error ?? pollError,
     pending,
     busy: pending || !!view?.busy,
-    start: (pass: ScenarioPass, note?: string, selectedIds?: string[]) =>
-      execute(() => window.api.scenarioWorkflow.start({ project, pass, note, selectedIds })),
+    start: (pass: ScenarioPass, note?: string, selectedIds?: string[], checkIssue?: number) =>
+      execute(() => window.api.scenarioWorkflow.start({ project, pass, note, selectedIds, ...(checkIssue === undefined ? {} : { checkIssue }) })),
     approve: () => execute(() => window.api.scenarioWorkflow.approveCurrent(project), undefined, scenarioTexts.workflow.treatmentApproved),
     approveScenes: () => execute(() => window.api.scenarioWorkflow.approveScenes(project), undefined, scenarioTexts.workflow.scenesApproved),
     apply: () => {

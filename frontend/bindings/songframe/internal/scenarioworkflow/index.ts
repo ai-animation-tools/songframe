@@ -3,8 +3,14 @@
 
 export type {
     AgentJob,
+    CheckChange,
+    CheckFixChange,
+    CheckFixInput,
+    CheckFixPreview,
+    CheckFixShot,
     CheckIssue,
     CheckReport,
+    CheckResolveInput,
     CheckView,
     Proposal,
     StartInput,

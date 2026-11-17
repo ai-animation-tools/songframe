@@ -1,6 +1,6 @@
 import { scenarioTexts } from '@shared/texts/scenario';
 import { useEffect, useRef, type ReactElement } from 'react';
-import type { Dispatch, SetStateAction } from 'react';
+import type { Dispatch, ReactNode, SetStateAction } from 'react';
 import { Alert, Box, Paper, Stack, Typography } from '@mui/material';
 import type { CastFile, CastProperty, ScenesFile } from '@shared/types';
 import { SCENE_PROBLEMS_ID, type EntityOption, type OpenShotState, type ScenarioBrief, type ShotReveal } from '../types';
@@ -35,7 +35,8 @@ export function SceneRegistry({
   referenceOptions,
   propertiesOf,
   notify,
-  acceptedShots = []
+  acceptedShots = [],
+  shotNotice = null
 }: {
   resetKey?: object | null;
   scenes: ScenesFile;
@@ -62,6 +63,8 @@ export function SceneRegistry({
   notify(message: string, severity: 'warning'): void;
   /** Планы с принятым видео: их постановка и состояние закрыты для правки. */
   acceptedShots?: string[];
+  /** Сообщение над карточкой выбранного плана, например о его проблемах в отчёте проверки. */
+  shotNotice?: ReactNode;
 }): ReactElement {
   const { shot, shotIndex, updateShot, setBoundary, split, mergeNext, setDelta } = useSceneDraft(scenes, selected, setScenes, setSelected, notify);
   const locked = !!shot && acceptedShots.includes(shot.id);
@@ -112,6 +115,7 @@ export function SceneRegistry({
         </Box>
         {shot ? (
           <Stack spacing={2} sx={{ minWidth: 0 }}>
+            {shotNotice}
             <Box ref={editorRef} sx={{ minWidth: 0 }}>
               <SceneShotEditor
                 shot={shot}

@@ -134,18 +134,60 @@ describe('window.api.scenarioWorkflow', () => {
     const report = {
       summary: 'Одна проблема.',
       issues: [
-        { group: 'state', severity: 'high', shots: ['M08'], entities: ['artem'], title: 'Часы на улице', problem: 'Где.', why: 'Почему.', fix: 'Что сделать.' }
+        {
+          group: 'state',
+          severity: 'high',
+          shots: ['M08'],
+          entities: ['artem'],
+          title: 'Часы на улице',
+          problem: 'Где.',
+          why: 'Почему.',
+          fix: 'Что сделать.',
+          changes: [{ shot: 'M08', phase: 'before', entity: 'artem', property: 'facing', value: 'на дверь' }],
+          fixed: false,
+          resolved: false
+        }
       ]
     };
     const checkView = { status: 'ready', canStart: true, reason: null, stale: false, report, message: null, job: null };
     const methods = {
       CheckView: vi.fn(async () => checkView),
-      StartCheck: vi.fn(async () => ({ ...checkView, status: 'running', report: null, canStart: false, reason: 'Занято.' }))
+      StartCheck: vi.fn(async () => ({ ...checkView, status: 'running', report: null, canStart: false, reason: 'Занято.' })),
+      CheckFixPreview: vi.fn(async () => preview),
+      ApplyCheckFixes: vi.fn(async () => ({ ...checkView, report: { ...report, issues: [{ ...report.issues[0], fixed: true }] } })),
+      ResolveCheckIssue: vi.fn(async () => ({ ...checkView, report: { ...report, issues: [{ ...report.issues[0], resolved: true }] } }))
+    };
+    const preview = {
+      changes: [
+        {
+          issue: 0,
+          shot: 'M08',
+          phase: 'before',
+          entity: 'artem',
+          entityName: 'Артём',
+          property: 'facing',
+          propertyLabel: 'Взгляд',
+          current: 'на часы',
+          value: 'на дверь'
+        }
+      ],
+      accepted: [{ id: 'M08', direct: true }],
+      stale: []
     };
     const api = createApi(bindings(methods));
     await expect(api.scenarioWorkflow.checkView('/клип')).resolves.toEqual(checkView);
     await expect(api.scenarioWorkflow.startCheck('/клип')).resolves.toMatchObject({ status: 'running', report: null, reason: 'Занято.' });
     expect(methods.CheckView).toHaveBeenCalledWith('/клип');
     expect(methods.StartCheck).toHaveBeenCalledWith('/клип');
+    await expect(api.scenarioWorkflow.checkFixPreview('/клип', [0])).resolves.toEqual(preview);
+    await expect(api.scenarioWorkflow.applyCheckFixes({ project: '/клип', issues: [0], keep: ['M08'] })).resolves.toMatchObject({
+      report: { issues: [{ fixed: true }] }
+    });
+    expect(methods.CheckFixPreview).toHaveBeenCalledWith('/клип', [0]);
+    expect(methods.ApplyCheckFixes).toHaveBeenCalledWith({ project: '/клип', issues: [0], keep: ['M08'] });
+    await expect(api.scenarioWorkflow.resolveCheckIssue({ project: '/клип', issue: 0, resolved: true })).resolves.toMatchObject({
+      report: { issues: [{ resolved: true }] }
+    });
+    expect(methods.ResolveCheckIssue).toHaveBeenCalledWith({ project: '/клип', issue: 0, resolved: true });
   });
 });

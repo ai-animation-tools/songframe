@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"unicode/utf16"
 
@@ -423,7 +424,27 @@ func SaveScenesWithMode(project string, data any, mode string) (*dynvalue.Object
 	if mode != ModeProduction && mode != ModeKeep {
 		return nil, errors.New(textInvalidSaveMode)
 	}
-	if mode == ModeKeep {
+	if mode == ModeProduction {
+		return saveKeeping(project, data, nil)
+	}
+	return saveKeeping(project, data, func(string) bool { return true })
+}
+
+// SaveScenesKeeping — сохранение с выбором по плану: принятые планы из keep сохраняют принятие, как
+// в режиме keep, остальные задетые принятые планы становятся устаревшими, как в режиме production.
+// Так исправление проверки сценария переснимает один принятый план и оставляет другой, чьё видео
+// уже соответствует исправленным записям. Пустой keep равен режиму production.
+func SaveScenesKeeping(project string, data any, keep []string) (*dynvalue.Object, error) {
+	if len(keep) == 0 {
+		return saveKeeping(project, data, nil)
+	}
+	return saveKeeping(project, data, func(id string) bool { return slices.Contains(keep, id) })
+}
+
+// saveKeeping — запись реестра и перенос отпечатков принятия и пакетов на новые для планов, которые
+// keep оставляет принятыми; nil keep — без переноса (production).
+func saveKeeping(project string, data any, keep func(string) bool) (*dynvalue.Object, error) {
+	if keep != nil {
 		if _, err := writableStatus(project); err != nil {
 			return nil, err
 		}
@@ -434,7 +455,7 @@ func SaveScenesWithMode(project string, data any, mode string) (*dynvalue.Object
 	if err != nil {
 		return nil, err
 	}
-	if mode == ModeProduction || previous == nil {
+	if keep == nil || previous == nil {
 		return saved, nil
 	}
 	next := fingerprintsOf(project, saved)
@@ -450,7 +471,7 @@ func SaveScenesWithMode(project string, data any, mode string) (*dynvalue.Object
 	ids := []string{}
 	updates := map[string]string{}
 	for _, shot := range shots {
-		if set[shot.id] {
+		if set[shot.id] || !keep(shot.id) {
 			continue
 		}
 		set[shot.id] = true

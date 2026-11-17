@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "shot": "M03",
+  "stage": "keyframes_review",
+  "scene_sha256": "96df3dae6685593404c899c70e604efca86ab820a3e41e65df225defbed34cd3",
+  "keyframes": [],
+  "prompt": {
+    "path": "video-prompt.txt",
+    "approved": false
+  }
+}

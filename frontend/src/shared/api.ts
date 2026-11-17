@@ -9,7 +9,14 @@ import type {
   ProductionWorkflowView
 } from './production-workflow';
 import type { MediaCapabilities, MediaKind, ProviderAuth } from './media-providers';
-import type { ScenarioCheckView, ScenarioWorkflowStart, ScenarioWorkflowView } from './scenario-workflow';
+import type {
+  ScenarioCheckFixInput,
+  ScenarioCheckFixPreview,
+  ScenarioCheckResolveInput,
+  ScenarioCheckView,
+  ScenarioWorkflowStart,
+  ScenarioWorkflowView
+} from './scenario-workflow';
 import type { NotificationTarget } from './notifications';
 import type { DerivedShotApi } from './derived-shot';
 import type { MontageApi } from './montage';
@@ -131,6 +138,12 @@ export interface Api {
     checkView(project: string): Promise<ScenarioCheckView>;
     /** Запуск проверки сценария агентом; сценарий не меняется. */
     startCheck(project: string): Promise<ScenarioCheckView>;
+    /** Правки выбранных проблем проверки и задетые ими планы, без записи. */
+    checkFixPreview(project: string, issues: number[]): Promise<ScenarioCheckFixPreview>;
+    /** Запись правок проблем проверки в сценарий; принятые планы из keep остаются принятыми. */
+    applyCheckFixes(input: ScenarioCheckFixInput): Promise<ScenarioCheckView>;
+    /** Отметка проблемы проверки «решено вручную» или её снятие; сценарий не меняется. */
+    resolveCheckIssue(input: ScenarioCheckResolveInput): Promise<ScenarioCheckView>;
   };
   agents: {
     getSettings(): Promise<AgentSettings | null>;

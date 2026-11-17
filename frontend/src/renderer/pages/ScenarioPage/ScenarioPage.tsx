@@ -2,12 +2,14 @@ import { scenarioTexts } from '@shared/texts/scenario';
 import { commonTexts } from '@shared/texts/common';
 import { type ReactElement, useState } from 'react';
 import { usePageLoading } from '../../components/PageLoader';
-import { Alert, Box, Button, Paper, Stack, Typography } from '@mui/material';
+import { Alert, AlertTitle, Box, Button, Paper, Stack, Typography } from '@mui/material';
 import { ScenarioToolbar, ScenesSaveDialog, TreatmentEditor, SceneRegistry } from './components';
 import { useScenario } from './useScenario';
 import { useScenarioWorkflow } from './useScenarioWorkflow';
 import { useScenarioCheck } from './useScenarioCheck';
-import { ScenarioCheckPanel } from './components/ScenarioCheckPanel';
+import { ScenarioCheckPanel, type CheckIssueFocus } from './components/ScenarioCheckPanel';
+import { ActionButton } from '../../components/ActionButton';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import { ScenarioWorkflowPanel } from './components/ScenarioWorkflowPanel';
 import { PageActionBar } from '../../components/PageActionBar';
 import { useStickyTop } from '../../hooks/useStickyTop';
@@ -19,8 +21,11 @@ import { unsavedDraftsReason } from './shotNavigation';
 export function ScenarioPage(): ReactElement {
   const scenario = useScenario();
   const workflow = useScenarioWorkflow(scenario.project, scenario.acceptWorkflowUpdate);
-  const check = useScenarioCheck(scenario.project);
+  // Правки проверки записывают реестр: страница перечитывает его, как после применения прохода сцен.
+  const check = useScenarioCheck(scenario.project, () => scenario.acceptWorkflowUpdate('scenes'));
   const [showGlobal, setShowGlobal] = useState(false);
+  const [reviseRequest, setReviseRequest] = useState<{ ids: string[]; note: string; issue: number; seq: number } | null>(null);
+  const [checkFocus, setCheckFocus] = useState<CheckIssueFocus | null>(null);
   const {
     view,
     loadError,
@@ -79,6 +84,23 @@ export function ScenarioPage(): ReactElement {
     );
   if (!view) return <></>;
 
+  // Нерешённые проблемы отчёта проверки у выбранного плана — плашкой над его карточкой.
+  const shotIssues = selected
+    ? (check.view?.report?.issues ?? [])
+        .map((issue, index) => ({ issue, index }))
+        .filter(({ issue }) => !issue.fixed && !issue.resolved && issue.shots.includes(selected))
+    : [];
+  const workflowView = workflow.view;
+  const reviseReason = !workflowView
+    ? commonTexts.operationPending
+    : workflowView.canRevise
+      ? null
+      : !workflowView.treatmentApproved
+        ? scenarioTexts.workflow.approveTreatmentReason
+        : workflowView.proposal?.status === 'ready'
+          ? scenarioTexts.workflow.resolveProposal
+          : scenarioTexts.workflow.agentBusy;
+
   return (
     <Stack spacing={2} inert={busy || undefined} aria-busy={busy} sx={{ width: '100%', minWidth: 0, pb: 8 }}>
       <PageActionBar barRef={barRef}>
@@ -122,12 +144,16 @@ export function ScenarioPage(): ReactElement {
         scenesDirty={scenesDirty}
         editorBusy={busy}
         scenesInputProblem={scenario.scenesInputProblem}
+        reviseRequest={reviseRequest}
         onResolveDrafts={scenario.resolveWorkflowDrafts}
       />
       <ScenarioCheckPanel
         key={`check-${scenario.project}`}
         check={check}
         blockedReason={busy || workflow.pending ? commonTexts.operationPending : null}
+        reviseReason={reviseReason}
+        focus={checkFocus}
+        onRevise={(ids, note, issue) => setReviseRequest((current) => ({ ids, note, issue, seq: (current?.seq ?? 0) + 1 }))}
         treatmentDirty={treatmentDirty}
         scenesDirty={scenesDirty}
         editorBusy={busy}
@@ -181,6 +207,31 @@ export function ScenarioPage(): ReactElement {
             propertiesOf={propertiesOf}
             notify={notify}
             acceptedShots={workflow.view?.acceptedShots}
+            shotNotice={
+              selected && shotIssues.length ? (
+                <Alert
+                  severity="warning"
+                  action={
+                    <ActionButton
+                      size="small"
+                      color="inherit"
+                      startIcon={<ArrowUpwardIcon />}
+                      title={scenarioTexts.check.toReportHint}
+                      onClick={() => setCheckFocus((current) => ({ index: shotIssues[0].index, seq: (current?.seq ?? 0) + 1 }))}
+                    >
+                      {scenarioTexts.check.toReport}
+                    </ActionButton>
+                  }
+                >
+                  <AlertTitle>{scenarioTexts.check.shotNotice({ shot: selected })}</AlertTitle>
+                  {shotIssues.map(({ issue, index }) => (
+                    <Typography key={index} variant="body2">
+                      {scenarioTexts.check.severities[issue.severity]} · {issue.title}
+                    </Typography>
+                  ))}
+                </Alert>
+              ) : null
+            }
           />
         ) : (
           <Paper variant="outlined" sx={{ p: 3 }}>

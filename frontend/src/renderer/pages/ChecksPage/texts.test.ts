@@ -32,6 +32,7 @@ function render(overrides: Partial<ComponentProps<typeof ReviewPanel>> = {}): st
       planOnly: false,
       disabled: false,
       disabledReason: null,
+      job: null,
       reviews: [],
       openReview: null,
       deletingReview: null,
@@ -106,7 +107,7 @@ describe('текст панели пробы', () => {
     expect(html).toContain(
       'Для диапазона выберите первый план, затем последний с зажатым Shift. Диапазон добавится к выбранным планам. С клавиатуры: Shift + Enter.'
     );
-    expect(html).toContain('Планы появятся после сборки реестра планов.');
+    expect(html).toContain('Планы появятся, когда в сценарии будут планы.');
     expect(html).toContain('title="Выберите планы для пробы."');
     expect(html).toMatch(/<button[^>]*disabled[^>]*>[\s\S]*?Собрать<\/button>/);
   });

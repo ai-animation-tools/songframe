@@ -235,7 +235,7 @@ func textDecisionPending(question string) string {
 	return "ждёт вашего решения: " + question
 }
 func textOrphanPackages(packages string) string {
-	return "Пакеты планов, которых нет в реестре: " + packages + "."
+	return "Пакеты планов, которых нет в сценарии: " + packages + "."
 }
 func textBrokenPackageBlocksQueue(path, reason string) string {
 	return path + ": " + reason + ". Папка мешает сохранению в очередь; удалите её в очереди или у плана."

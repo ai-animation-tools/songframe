@@ -7,14 +7,14 @@ export const animaticTexts = {
   main: {
     videoMissing: ({ filename }: { filename: string | null | undefined }) =>
       `MP4 сборки не найден: ${filename ?? 'имя не записано'}. Соберите аниматик заново.`,
-    registryChanged: 'Реестр планов изменился после сборки: аниматик устарел, нужна пересборка.',
+    registryChanged: 'Сценарий изменился после сборки: аниматик устарел, нужна пересборка.',
     manifestCorrupt: 'plan/animatic/latest/manifest.json повреждён.',
     updateViewsStep: commonTexts.runtime.updateViewsStep,
     checkInputsStep: 'проверка входов',
     buildStep: 'сборка аниматика',
     buildTitle: 'Сборка аниматика',
     buildRequired: 'Нет собранного аниматика: сначала соберите его.',
-    freshBuildRequired: 'Аниматик собран по устаревшему реестру или входам: пересоберите перед принятием.',
+    freshBuildRequired: 'Аниматик собран по устаревшему сценарию или входам: пересоберите перед принятием.',
     inputHashMissing: ({ name }: { name: string }) => `Нет сохранённого хеша входа ${name}: пересоберите аниматик для проверки свежести.`,
     inputChanged: ({ name }: { name: string }) => `Вход аниматика изменён или отсутствует: ${name}. Нужна пересборка.`,
     projectInputsMissing: 'В манифесте аниматика отсутствует обязательное поле project_inputs; пересоберите аниматик.',

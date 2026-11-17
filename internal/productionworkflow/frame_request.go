@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
+	"slices"
 	"strconv"
 
 	"songframe/internal/agents"
@@ -62,7 +63,10 @@ func sameMediaProvider(left any, right string) bool {
 // options изображений проекта; разрешение, пропорции и число результатов — из настроек или
 // значений провайдера по умолчанию (явный параметр provider-а сохраняется, конфликт выявит общий
 // валидатор). Серия изображений для одной опоры запрещена, объявленная моделью серия выключается.
-// Референсы — изображения внутри проекта в именованных слотах. Модель выбирает общий селектор до
+// Референсы — изображения внутри проекта в именованных слотах. За референсами описания идут
+// утверждённые опоры пакета (input.ApprovedFrames): промпт называет их слоты, чтобы модель сохранила
+// внешность, одежду, свет и расстановку. Если модель не принимает столько входов, опоры
+// отбрасываются с последней — до запроса без них, как прежде. Модель выбирает общий селектор до
 // показа платного подтверждения; settings — generation.image проекта как есть.
 func frameImageRequest(paid providers.Paid, input mediaapi.ImagesInput, settings any, caps mediaapi.Capabilities, validate func(string) bool) (providers.PaidInput, error) {
 	info, _ := mediaproviders.Lookup(paid.ID)
@@ -115,8 +119,8 @@ func frameImageRequest(paid providers.Paid, input mediaapi.ImagesInput, settings
 			}
 		}
 	}
-	inputs := make([]providers.PaidInputItem, len(frame.ReferencePaths))
-	for index, path := range frame.ReferencePaths {
+	references := make([]string, 0, len(frame.ReferencePaths))
+	for _, path := range frame.ReferencePaths {
 		full, err := ProductionPath(input.Project, path)
 		if err != nil {
 			return providers.PaidInput{}, err
@@ -124,7 +128,16 @@ func frameImageRequest(paid providers.Paid, input mediaapi.ImagesInput, settings
 		if !mediafile.IsImage(full) || !validate(full) {
 			return providers.PaidInput{}, errors.New(textReferenceUnavailable(path))
 		}
-		inputs[index] = providers.PaidInputItem{Flag: "input", Slot: rules.Image.ReferenceSlot(index), Path: full, Role: "reference"}
+		references = append(references, full)
+	}
+	approved := []string{}
+	if input.ApprovedFrames != nil {
+		for _, item := range *input.ApprovedFrames {
+			if !mediafile.IsImage(item.Path) || !validate(item.Path) {
+				return providers.PaidInput{}, errors.New(textReferenceUnavailable(item.ID))
+			}
+			approved = append(approved, item.Path)
+		}
 	}
 	number := 1
 	for dynvalue.Exists(filepath.Join(input.PackageDir, "image-"+frame.ID+"-"+strconv.Itoa(number))) {
@@ -138,11 +151,41 @@ func frameImageRequest(paid providers.Paid, input mediaapi.ImagesInput, settings
 	} else if outputs == 0 {
 		outputs = 1
 	}
-	request := providers.PaidInput{
-		Project: input.Project, WorkDir: filepath.Join(input.PackageDir, "image-"+frame.ID+"-"+strconv.Itoa(number)), Shot: input.Shot,
-		Kind: mediaproviders.Image, Command: rules.Image.Command(len(frame.ReferencePaths)), Model: model, PreferredModel: &model,
-		Prompt: frame.Prompt, Parameters: parameters, Outputs: outputs, FrameID: frame.ID, Inputs: inputs,
+	// candidate — запрос с первыми count утверждёнными опорами после референсов описания.
+	candidate := func(count int) providers.PaidInput {
+		paths := append(slices.Clone(references), approved[:count]...)
+		inputs := make([]providers.PaidInputItem, len(paths))
+		slots := []string{}
+		for index, path := range paths {
+			slot := rules.Image.ReferenceSlot(index)
+			inputs[index] = providers.PaidInputItem{Flag: "input", Slot: slot, Path: path, Role: "reference"}
+			if index >= len(references) {
+				slots = append(slots, slot)
+			}
+		}
+		prompt := frame.Prompt
+		if len(slots) > 0 {
+			prompt += framesApprovedLabel(slots)
+		}
+		return providers.PaidInput{
+			Project: input.Project, WorkDir: filepath.Join(input.PackageDir, "image-"+frame.ID+"-"+strconv.Itoa(number)), Shot: input.Shot,
+			Kind: mediaproviders.Image, Command: rules.Image.Command(len(paths)), Model: model, PreferredModel: &model,
+			Prompt: prompt, Parameters: parameters, Outputs: outputs, FrameID: frame.ID, Inputs: inputs,
+		}
 	}
+	// Отказ из-за числа входов не должен лишать опору запроса: опоры отбрасываются с последней, а
+	// ошибка запроса без них — прежняя ошибка селектора.
+	for count := len(approved); count > 0; count-- {
+		if request, err := selectFrameRequest(paid, candidate(count), caps, parameters, series); err == nil {
+			return request, nil
+		}
+	}
+	return selectFrameRequest(paid, candidate(0), caps, parameters, series)
+}
+
+// selectFrameRequest — общий селектор модели для черновика опоры; объявленная моделью серия
+// изображений выключается, если её не задали явно.
+func selectFrameRequest(paid providers.Paid, request providers.PaidInput, caps mediaapi.Capabilities, parameters *dynvalue.Object, series *mediaapi.ImageSeries) (providers.PaidInput, error) {
 	return providers.SelectPaidRequest(paid, request, caps, func(item mediaapi.Model) *dynvalue.Object {
 		candidate := parameters.Clone()
 		// Неявный обычный режим добавляем только при наличии объявления; пользовательские options не удаляем.

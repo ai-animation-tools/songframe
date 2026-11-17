@@ -1,4 +1,4 @@
-// Package sceneviews обновляет и проверяет производные представления единого реестра сцен
+// Package sceneviews обновляет и проверяет производные представления сценария
 // (инструмент update_scene_views): документы internal/projectviews, PNG-карточки аниматика
 // plan/animatic/cards/<план>.png (и .last.png последней опоры) и их квитанцию
 // plan/animatic/cards/manifest.json.
@@ -42,7 +42,7 @@ import (
 // Parser — разбор аргументов toolrt.ArgParser: единственный флаг --check.
 var Parser = toolrt.ArgParser{
 	Prog:        "update_scene_views",
-	Description: "Обновляет производные представления единого реестра; @link README.md",
+	Description: "Обновляет производные представления сценария; @link README.md",
 	Flags: []toolrt.Flag{
 		{Name: "--check"},
 	},

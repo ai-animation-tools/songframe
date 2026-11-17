@@ -7,7 +7,7 @@ import "songframe/internal/dynvalue"
 // вместе с эталонами.
 const (
 	textDamagedCast             = "plan/cast.json повреждён."
-	textReferencesRefresh       = "Карта references реестра расходится с кастингом; при сохранении она будет обновлена."
+	textReferencesRefresh       = "Карта референсов сценария расходится с кастингом; при сохранении она будет обновлена."
 	textPartsRequired           = "Сценарий: нужна хотя бы одна часть песни."
 	textPartsInvalidDoc         = "Сценарий: нужны schema_version 1, логлайн и список частей."
 	textPartsInvalidPart        = "Сценарий: неверная структура части песни."
@@ -89,5 +89,5 @@ func textDerivedChainedSource(shot, source string) string {
 	return shot + ": источник " + source + " сам собирается из другого плана; укажите исходный план."
 }
 func textBriefShotMissing(shot string) string {
-	return shot + ": план отсутствует в реестре."
+	return shot + ": плана нет в сценарии."
 }

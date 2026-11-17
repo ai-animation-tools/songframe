@@ -601,13 +601,13 @@
             "stdout": "M01 из кэша\nM02 из кэша\n{\n  \"status\": \"passed\",\n  \"video_sha256\": \"0e73ce4e2cc23162d2deac17415a7fa75fce59fab92ad9da90685ba4f4240c9f\",\n  \"shots\": 2,\n  \"video\": 1,\n  \"cards\": 1,\n  \"keyframes\": 0,\n  \"segments_created\": 0,\n  \"segments_reused\": 2,\n  \"seconds\": \"<seconds>\"\n}\n",
             "stderr": "",
             "changes": {
-              "ROADMAP.md": "5fc6cfdb371e9aec045f8ae941de4e617b2e475a75a581334db7b55a1eb25356",
+              "ROADMAP.md": "0f245fcd1b9e467bbfe88a28ed925e2e82e5673cd7adb846da6640b767ef5bbc",
               "plan/animatic/latest/README.md": "424b47dff10e34f54dc76c0093d8d4790b232c4a4d362865aefcf486eea6e712",
               "plan/animatic/latest/another-output.mp4": "0e73ce4e2cc23162d2deac17415a7fa75fce59fab92ad9da90685ba4f4240c9f",
               "plan/animatic/latest/manifest.json": "8b9cca5114ea27a0cf4980fb8dd077841e1b70cdcbd503bb33f7237863623cb5",
               "plan/animatic/latest/test-output.mp4": null,
-              "plan/edit-list.md": "021917b83cf88dbcabac61cbfb62a9a5f930e2291b5fcb483386ae5722dd5f44",
-              "plan/storyboard.md": "6ac21f86d1745d8e57448bab11b843f83445e8d8e1197e16b6c917511ef279fc"
+              "plan/edit-list.md": "23bd9a34d237c89533e23a1bc02ff8fece7de5d81c684ab0bfc68131486ea135",
+              "plan/storyboard.md": "88e884d5c570309dde05ecd0dfd61f1b1a8c5fae73d2a6505763ab62d830c87a"
             },
             "texts": {
               "plan/animatic/latest/manifest.json": "{\n  \"schema_version\": 1,\n  \"version\": \"latest\",\n  \"path_base\": \"project_root\",\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"fps\": 30,\n  \"total_frames\": 24,\n  \"video_duration\": 0.8,\n  \"source_audio\": \"source/track.mp3\",\n  \"source_audio_sha256\": \"f935fb9e6a2b71d7407e3d5cce9f50e9ced5a79b6ae5a07649ff3bd703a53613\",\n  \"source_audio_duration\": 0.8,\n  \"scene_registry_sha256\": \"efb10a5d2a6c810f69ccf714d71f6d69bb017e5377ece62aad8bb5e02e3771c5\",\n  \"project_inputs\": {\n    \"name\": \"Клип <A>&;#=\\\\\",\n    \"animatic_video\": \"another-output.mp4\"\n  },\n  \"shots\": [\n    {\n      \"id\": \"M01\",\n      \"original\": \"M01\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 0,\n      \"end_frame_exclusive\": 12,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0\",\n      \"end\": \"0.4\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.0–00:00.4\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"video\",\n      \"path\": \"assets/shots/M01/accepted-edit.mp4\",\n      \"sha256\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\"\n    },\n    {\n      \"id\": \"M02\",\n      \"original\": \"M02\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 12,\n      \"end_frame_exclusive\": 24,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0.4\",\n      \"end\": \"0.8\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.4–00:00.8\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"card\",\n      \"path\": \"plan/animatic/cards/M02.png\",\n      \"card_sources\": {\n        \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n      },\n      \"sha256\": \"b2d3f411f1ca05feeb59296eebe5b1d5a263f2282d22a706f44527ff3ceb0769\"\n    }\n  ],\n  \"source_hashes\": {\n    \"assets/shots/M01/accepted-edit.mp4\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\",\n    \"plan/animatic/cards/M02.png\": \"b2d3f411f1ca05feeb59296eebe5b1d5a263f2282d22a706f44527ff3ceb0769\",\n    \"source/track.mp3\": \"f935fb9e6a2b71d7407e3d5cce9f50e9ced5a79b6ae5a07649ff3bd703a53613\",\n    \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n  },\n  \"video_file\": \"another-output.mp4\",\n  \"toolchain_sha256\": \"dcdc2caec0716ea42c33d61266dacd086191742b545966a7332c73ec066503ab\",\n  \"video_sha256\": \"0e73ce4e2cc23162d2deac17415a7fa75fce59fab92ad9da90685ba4f4240c9f\"\n}\n",
@@ -997,7 +997,7 @@
           "expected": {
             "code": 1,
             "stdout": "",
-            "stderr": "Карточки устарели; обновите представления реестра планов.\n",
+            "stderr": "Карточки устарели; обновите представления сценария.\n",
             "changes": {},
             "texts": {},
             "probe": {}
@@ -1026,7 +1026,7 @@
           "expected": {
             "code": 1,
             "stdout": "",
-            "stderr": "Источники карточки изменились; обновите представления реестра планов.\n",
+            "stderr": "Источники карточки изменились; обновите представления сценария.\n",
             "changes": {},
             "texts": {},
             "probe": {}
@@ -1572,7 +1572,7 @@
           "expected": {
             "code": 1,
             "stdout": "",
-            "stderr": "Нет манифеста карточек; обновите представления реестра планов.\n",
+            "stderr": "Нет манифеста карточек; обновите представления сценария.\n",
             "changes": {},
             "texts": {},
             "probe": {}
@@ -1626,7 +1626,7 @@
           "expected": {
             "code": 1,
             "stdout": "",
-            "stderr": "Карточки устарели; обновите представления реестра планов.\n",
+            "stderr": "Карточки устарели; обновите представления сценария.\n",
             "changes": {},
             "texts": {},
             "probe": {}
@@ -1653,7 +1653,7 @@
           "expected": {
             "code": 1,
             "stdout": "",
-            "stderr": "Карточки устарели; обновите представления реестра планов.\n",
+            "stderr": "Карточки устарели; обновите представления сценария.\n",
             "changes": {},
             "texts": {},
             "probe": {}
@@ -1709,7 +1709,7 @@
           "expected": {
             "code": 1,
             "stdout": "",
-            "stderr": "Карточки устарели; обновите представления реестра планов.\n",
+            "stderr": "Карточки устарели; обновите представления сценария.\n",
             "changes": {},
             "texts": {},
             "probe": {}
@@ -1736,7 +1736,7 @@
           "expected": {
             "code": 1,
             "stdout": "",
-            "stderr": "Карточки устарели; обновите представления реестра планов.\n",
+            "stderr": "Карточки устарели; обновите представления сценария.\n",
             "changes": {},
             "texts": {},
             "probe": {}
@@ -1789,7 +1789,7 @@
           "expected": {
             "code": 1,
             "stdout": "",
-            "stderr": "Карточки устарели; обновите представления реестра планов.\n",
+            "stderr": "Карточки устарели; обновите представления сценария.\n",
             "changes": {},
             "texts": {},
             "probe": {}

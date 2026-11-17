@@ -41,7 +41,7 @@ func LoadMotion(root string) (map[string]Motion, error) {
 	for _, path := range manifests {
 		sid := toolrt.PathName(filepath.Dir(path))
 		if !scenes.Contains(sid) {
-			return nil, toolrt.New(toolrt.ValueError, sid+": ассет отсутствует в реестре планов.")
+			return nil, toolrt.New(toolrt.ValueError, sid+": ассета нет в сценарии.")
 		}
 		document, err := assetpackage.ValidatePackage(path, sid, root)
 		if err != nil {

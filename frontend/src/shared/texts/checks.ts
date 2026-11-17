@@ -5,10 +5,9 @@ const REVIEW_PLAN_ONLY_SUFFIX = ' (проверка без видео)';
 
 export const checksTexts = {
   sceneDataLabel: 'Данные планов',
-  sceneDataDescription:
-    'Проверить формат реестра планов, комплектов и рабочих пакетов. Постановка, исходники и результаты должны храниться в отведённых им файлах.',
+  sceneDataDescription: 'Проверить формат сценария, комплектов и рабочих пакетов. Постановка, исходники и результаты должны храниться в отведённых им файлах.',
   viewsLabel: 'Карточки и списки',
-  viewsDescription: 'Проверить, что монтажный список, раскадровка, карточки и список принятых материалов соответствуют реестру планов.',
+  viewsDescription: 'Проверить, что монтажный список, раскадровка, карточки и список принятых материалов соответствуют сценарию.',
   assetsLabel: 'Комплекты планов',
   assetsDescription: 'Проверить сохранность файлов принятых планов и совпадение длительности монтажа с данными о приёмке.',
   workspaceLabel: 'Порядок в папке проекта',
@@ -44,7 +43,7 @@ export const checksTexts = {
   generationOptionsInvalid: (kind: 'video' | 'image') => `generation.${kind}: options должен быть объектом.`,
   generationOutputsInvalid: (kind: 'video' | 'image') => `generation.${kind}: outputs должен быть положительным целым числом.`,
   jobPending: 'Дождитесь окончания текущего задания.',
-  scenesRequired: 'Сначала соберите реестр планов.',
+  scenesRequired: 'Сначала создайте сценарий.',
   jobsFailed: (titles: readonly string[]) => `Завершено с ошибками: ${titles.join(', ')}. Подробности — в журнале заданий.`,
   jobsDone: (titles: readonly string[]) => `Готово: ${titles.join(', ')}`,
   reviewRemoved: 'Проба и её рецепт удалены',
@@ -53,7 +52,7 @@ export const checksTexts = {
   checkRunning: (label: string) => `${label}: выполняется проверка`,
   strictMode: 'Предупреждения считать ошибками',
   nextShotAndQueue: 'Следующий план и очередь',
-  rebuildViewsHint: 'Пересобрать монтажный список, раскадровку и карточки по реестру планов',
+  rebuildViewsHint: 'Пересобрать монтажный список, раскадровку и карточки по сценарию',
   rebuildViews: 'Пересобрать карточки',
   runAll: 'Запустить все',
   reviewDuration: (seconds: number) => `${seconds.toFixed(1)} с`,
@@ -70,7 +69,7 @@ export const checksTexts = {
   reviewShotLabel: ({ id, missingVideo }: { id: string; missingVideo: boolean }) => `${id}${missingVideo ? ' · видео отсутствует' : ''}`,
   reviewShotHint: ({ title, stage, hasVideo }: { title: string; stage: string; hasVideo: boolean }) =>
     `${title} · ${stage}${hasVideo ? '' : ' · пойдёт карточкой'}`,
-  shotsUnavailable: 'Планы появятся после сборки реестра планов.',
+  shotsUnavailable: 'Планы появятся, когда в сценарии будут планы.',
   reviewPlanOnly: 'Только проверить, без создания видео',
   reviewChipLegend: 'Заливка: принятое видео доступно; контур: пойдёт карточкой.'
 } as const;

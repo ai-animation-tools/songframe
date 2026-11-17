@@ -79,7 +79,7 @@ export const productionTexts = {
       notStarted: 'постановка есть, работа не начата',
       acceptedDecisionPending: ({ question }: { question: string }) => `принят; новая попытка ждёт решения: ${question}`,
       decisionPending: ({ question }: { question: string }) => `ждёт вашего решения: ${question}`,
-      orphanPackages: ({ packages }: { packages: string }) => `Пакеты планов, которых нет в реестре: ${packages}.`,
+      orphanPackages: ({ packages }: { packages: string }) => `Пакеты планов, которых нет в сценарии: ${packages}.`,
       brokenPackageBlocksQueue: ({ path, reason }: { path: string; reason: string }) =>
         `${path}: ${reason}. Папка мешает сохранению в очередь; удалите её в очереди или у плана.`,
       adapterMissing: ({ provider }: { provider: string | null | undefined }) => `Для провайдера ${provider ?? 'не указан'} не подключён исполнитель.`,
@@ -231,7 +231,7 @@ export const productionTexts = {
       packageLink: ({ path }: { path: string }) => `Пакет содержит ссылку: ${path}`,
       shotIdRequired: 'Укажите один явный ID плана Mxx.',
       sceneRegistryInvalid: 'Нет корректного plan/scenes.json.',
-      shotMissing: ({ shot }: { shot: string }) => `План ${shot} отсутствует в реестре.`,
+      shotMissing: ({ shot }: { shot: string }) => `Плана ${shot} нет в сценарии.`,
       shotWindowInvalid: 'Неверное кадровое окно плана.',
       videoSettingsRequired: ({ providers }: { providers: string }) => `${videoSettingsIncomplete} проекта: поддерживается провайдер ${providers}.`,
       providerLipSyncUnsupported: ({ provider }: { provider: string }) =>
@@ -363,8 +363,8 @@ export const productionTexts = {
       productionStatusCorrupt: ({ path }: { path: string }) => `${path} повреждён: исправьте файл, чтобы записать принятые отпечатки.`
     },
     speech: {
-      sceneRegistryUnreadable: 'Не удалось прочитать реестр планов.',
-      shotMissing: ({ shot }: { shot: string }) => `${shot}: план отсутствует в реестре планов.`
+      sceneRegistryUnreadable: 'Не удалось прочитать сценарий.',
+      shotMissing: ({ shot }: { shot: string }) => `${shot}: плана нет в сценарии.`
     }
   },
   verdictLabels: {
@@ -395,7 +395,7 @@ export const productionTexts = {
     queued: navigationTexts.blocks.productionQueue
   },
   filterEmptyHints: {
-    all: 'Реестр планов пуст. Создайте сценарий на странице «Сценарий».',
+    all: 'Сценарий пуст. Создайте его на странице «Сценарий».',
     attention:
       'Ни одна попытка не ждёт вашего действия. Здесь появятся планы с открытым вопросом, подготовленным запросом, незапущенной доработкой или полученным результатом.',
     progress: 'Нет планов в работе. Они появятся после подготовки описания или повтора по сохранённому запросу.',

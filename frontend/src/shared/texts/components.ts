@@ -30,6 +30,10 @@ export const componentsTexts = {
     enterPrompt: 'Введите запрос для нового задания.',
     starting: 'Запуск'
   },
+  videoFullscreen: {
+    video: commonTexts.media.video,
+    exit: 'Выйти из полноэкранного режима'
+  },
   gallery: {
     image: commonTexts.media.image,
     position: ({ kind, position, total }: { kind: string; position: number; total: number }) => `${kind} · ${position} / ${total}`,
@@ -45,7 +49,7 @@ export const componentsTexts = {
     states: { planned: 'не начат', progress: commonTexts.shot.progress, completed: 'принят', stale: commonTexts.shot.stale, unknown: 'проблема' },
     pages: {
       production: { label: 'В производстве', title: 'на странице «Производство»' },
-      scenario: { label: 'В сценарии', title: 'в реестре планов на странице «Сценарий»' }
+      scenario: { label: 'В сценарии', title: 'на странице «Сценарий»' }
     },
     openPlan: ({ shot, title }: { shot: string; title: string }) => `Открыть план ${shot} ${title}`
   },

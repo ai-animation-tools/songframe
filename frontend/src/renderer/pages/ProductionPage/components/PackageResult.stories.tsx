@@ -2,6 +2,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { productionTexts } from '@shared/texts/production';
+import { componentsTexts } from '@shared/texts/components';
 import { receivedPackage, RESULT_ERROR, resultStoryOptions, ResultStory } from '../../../testing/resultStories';
 
 const meta = {
@@ -129,11 +130,29 @@ export const Review: Story = {
 };
 
 export const FullScreen: Story = {
-  name: 'Оригинал · кнопка «На весь экран» у плеера',
+  name: 'Оригинал · «На весь экран» открывает просмотр приложения с той же позиции',
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByRole('button', { name: productionTexts.videoPlayer.fullscreen })).toBeEnabled();
-    await expect(canvasElement.querySelector('video')).toHaveAttribute('controls');
+    const screen = within(canvasElement.ownerDocument.body);
+    const video = canvasElement.querySelector('video');
+    await expect(video).toHaveAttribute('controls');
+    await waitFor(() => expect(video?.duration).toBe(8));
+    if (video) video.currentTime = 3;
+    await waitFor(() => expect(video?.currentTime).toBe(3));
+    await userEvent.click(canvas.getByRole('button', { name: productionTexts.videoPlayer.fullscreen }));
+    const dialog = await screen.findByRole('dialog');
+    const full = dialog.querySelector('video');
+    await expect(full).toHaveAttribute('src', video?.getAttribute('src'));
+    await waitFor(() => expect(full?.currentTime).toBe(3));
+    if (full) full.currentTime = 5;
+    await waitFor(() => expect(full?.currentTime).toBe(5));
+    await userEvent.click(within(dialog).getByRole('button', { name: componentsTexts.videoFullscreen.exit }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await waitFor(() => expect(video?.currentTime).toBe(5));
+    await userEvent.click(canvas.getByRole('button', { name: productionTexts.videoPlayer.fullscreen }));
+    await screen.findByRole('dialog');
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   }
 };
 

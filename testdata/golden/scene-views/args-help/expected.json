@@ -1,6 +1,6 @@
 {
   "code": 0,
-  "stdout": "использование: update_scene_views [-h] [--check]\n\nОбновляет производные представления единого реестра; @link README.md\n\nпараметры:\n  -h, --help  показать справку и выйти\n  --check\n",
+  "stdout": "использование: update_scene_views [-h] [--check]\n\nОбновляет производные представления сценария; @link README.md\n\nпараметры:\n  -h, --help  показать справку и выйти\n  --check\n",
   "stderr": "",
   "unhandled": false,
   "files": {},

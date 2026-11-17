@@ -103,7 +103,7 @@ export const SingleCheckFailure: Story = {
 };
 
 export const NoShotsYet: Story = {
-  name: 'Сценарий без планов · проверки ждут реестр',
+  name: 'Сценарий без планов · проверки ждут планы',
   tags: ['ci'],
   parameters: { songframe: checksPageOptions({ noShots: true }) },
   play: async ({ canvasElement }) => {
@@ -143,14 +143,18 @@ export const ReviewBuild: Story = {
     await expect(panel.getByRole('button', { name: 'M04' })).toHaveAttribute('aria-pressed', 'false');
     await userEvent.click(build());
     await expect(checksPageInspection().reviews).toEqual([{ shots: ['M01', 'M02', 'M03'], planOnly: false }]);
-    // Пока задание идёт, повторная сборка и проверки ждут его.
+    // Пока задание идёт, повторная сборка и проверки ждут его, а ход сборки виден карточкой под кнопкой.
     await waitFor(() => expect(build()).toBeDisabled());
     await expect(build()).toHaveAttribute('title', expect.stringContaining(checksTexts.jobPending));
     const screen = within(canvasElement.ownerDocument.body);
     const title = checksTexts.reviewJobTitle({ shots: ['M01', 'M02', 'M03'], planOnly: false });
+    const progress = within(await panel.findByRole('status'));
+    await expect(progress.getByText(title)).toBeVisible();
     await screen.findByText(checksTexts.jobsDone([title]), undefined, { timeout: 5000 });
     // Готовая проба появляется в списке plan/batches рядом с прежней.
     await panel.findByText('M01 M02 M03');
+    // Завершённая сборка не оставляет карточку хода: итог — уведомление и проба в списке.
+    await waitFor(() => expect(panel.queryByRole('status')).not.toBeInTheDocument());
     await expect(panel.getByText('M01 M02')).toBeVisible();
     await waitFor(() => expect(build()).toBeEnabled());
   }

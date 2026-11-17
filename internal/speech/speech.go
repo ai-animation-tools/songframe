@@ -19,10 +19,10 @@ import (
 )
 
 // Текст ошибки чтения реестра для речевого плана.
-const textSceneRegistryUnreadable = "Не удалось прочитать реестр планов."
+const textSceneRegistryUnreadable = "Не удалось прочитать сценарий."
 
 func textShotMissing(shot string) string {
-	return shot + ": план отсутствует в реестре планов."
+	return shot + ": плана нет в сценарии."
 }
 
 // Line — SpeechLine: строка песни (текст из source/text.md или null) и её границы в секундах.

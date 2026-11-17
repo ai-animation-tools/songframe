@@ -60,11 +60,11 @@ const (
 	textAudioStart   = "Для непоследовательных планов явно задайте audio.start_frame."
 	textNoAudio      = "Нет звуковой дорожки."
 	textSongShort    = "Участок песни короче пробы."
-	textRegistryPrep = "Реестр изменился при подготовке пробы."
+	textRegistryPrep = "Сценарий изменился при подготовке пробы."
 	textBadFormat    = "Проба имеет неверную длину или формат."
 	textBadSong      = "Песня в пробе имеет неверную длину."
 	textInputChanged = "Вход изменился во время сборки."
-	textRegistryRun  = "Реестр изменился во время сборки пробы."
+	textRegistryRun  = "Сценарий изменился во время сборки пробы."
 	textOutsideAsset = "Файл комплекта находится вне папки ассета."
 )
 
@@ -672,7 +672,7 @@ func acceptedEdit(packagePath, sid string, sceneFrames *big.Int, rate int64) (st
 	if err != nil {
 		return "", err
 	}
-	mismatch := valueError(sid + ": принятый монтаж не совпадает с реестром или хешем.")
+	mismatch := valueError(sid + ": принятый монтаж не совпадает со сценарием или хешем.")
 	shot, err := toolrt.Item(pkg, "shot")
 	if err != nil {
 		return "", err

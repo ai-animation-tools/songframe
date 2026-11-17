@@ -1519,7 +1519,7 @@
   {
     "domain": "scenario-view",
     "name": "references-mismatch",
-    "description": "Карта references реестра расходится с кастингом.",
+    "description": "Карта референсов сценария расходится с кастингом.",
     "covers": [
       "referencesRefresh",
       "shotUnknownReference"

@@ -193,7 +193,7 @@ export const projectTexts = {
     continueProduction: 'Продолжайте принимать планы; после последней соберите и примите аниматик.',
     toAnimatic: 'К аниматику',
     completeTitle: 'Клип завершён',
-    completeText: 'Все планы приняты, аниматик собран по актуальному реестру и принят. Пакет для монтажёра собирается ниже на этой странице.'
+    completeText: 'Все планы приняты, аниматик собран по актуальному сценарию и принят. Пакет для монтажёра собирается ниже на этой странице.'
   },
   checks: {
     shots: (count: number) => countLabel(count, 'план', 'плана', 'планов'),
@@ -204,7 +204,7 @@ export const projectTexts = {
     treatment: 'Части сценария (plan/scenes.json)',
     scenes: 'Планы сценария (plan/scenes.json)',
     accepted: 'Принятые планы (assets/shots)',
-    animaticBuilt: 'Аниматик собран по текущему реестру',
+    animaticBuilt: 'Аниматик собран по текущему сценарию',
     stale: 'устарел',
     animaticApproved: 'Аниматик принят',
     previousApproved: 'принято прежнее состояние',

@@ -383,6 +383,7 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
       openExternal: guardedAsync(merged.shell.openExternal),
       readText: guardedAsync(merged.shell.readText),
       clipboardText: guardedAsync(merged.shell.clipboardText),
+      setFullscreen: guardedAsync(merged.shell.setFullscreen),
       fileUrl: guardedSync(merged.shell.fileUrl),
       onFilesDropped: guardedSync(merged.shell.onFilesDropped)
     },

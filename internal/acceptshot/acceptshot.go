@@ -704,7 +704,7 @@ func Accept(ctx context.Context, root, shot string, options Options) (*toolrt.Di
 		}
 	}
 	if scene == nil {
-		return nil, valueError(shot + ": план отсутствует в реестре планов.")
+		return nil, valueError(shot + ": плана нет в сценарии.")
 	}
 	end, err := toolrt.Item(scene, "end_frame_exclusive")
 	if err != nil {

@@ -129,7 +129,7 @@ func Validate(data any, initial *toolrt.Dict) (*toolrt.Dict, error) {
 	}
 	document := data.(*toolrt.Dict)
 	if !toolrt.Equal(schema, toolrt.NewInt(1)) || !RegistryFPS(document.Value("fps")) || !toolrt.Truthy(document.Value("scenes")) {
-		return nil, valueError("Неизвестная схема или пустой реестр планов.")
+		return nil, valueError("Неизвестная схема или пустой сценарий.")
 	}
 	seen := map[string]bool{}
 	end := toolrt.NewInt(0)

@@ -46,7 +46,7 @@ const (
 	textWaitForJob                  = "Дождитесь завершения текущего задания."
 	textResolveProposalFirstError   = "Сначала примените или отклоните текущее предложение."
 	textOwnVideoNoAgent             = "У попытки своего видео нет описания, опор и промпта: начните новую попытку."
-	textOwnVideoUnavailable         = "В реестре нет способа «вручную вне приложения»: своё видео поставить нельзя."
+	textOwnVideoUnavailable         = "Способ «вручную вне приложения» недоступен: своё видео поставить нельзя."
 	textScenarioAndSettingsRequired = "Сначала утвердите актуальный сценарий и настройки генерации."
 	textPackageUnavailable          = "Выберите доступную попытку."
 	textResolveQuestionFirst        = "Сначала ответьте на текущий вопрос согласования."
@@ -211,7 +211,7 @@ func textFileUnreadable(path string) string {
 func textPackageLink(path string) string { return "Пакет содержит ссылку: " + path }
 
 func textShotMissing(shot string) string {
-	return "План " + shot + " отсутствует в реестре."
+	return "Плана " + shot + " нет в сценарии."
 }
 
 // providerTitles — названия провайдеров вида медиа в порядке реестра

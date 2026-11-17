@@ -6,7 +6,6 @@ import { navigationTexts } from '@shared/texts/navigation';
 import type { ReactElement } from 'react';
 import { Box, Button, Stack, Typography } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import { JobStatus } from '../../components';
 import { ProjectChecksPanel, ReviewPanel } from './components';
 import { useChecksPage } from './useChecksPage';
 import { PageActionBar } from '../../components/PageActionBar';
@@ -21,8 +20,7 @@ export function ChecksPage(): ReactElement {
     <Stack spacing={2} sx={{ width: '100%', minWidth: 0 }}>
       <PageActionBar>
         <Typography variant="h5">{navigationTexts.pages.checks}</Typography>
-        {/* Индикатор задания стоит в закреплённой панели, чтобы был виден при любой прокрутке. */}
-        <JobStatus running={page.running} />
+        {/* Ход заданий показывают их блоки: строки проверок и карточка сборки под «Собрать». */}
         <Box sx={{ flex: 1 }} />
         <Button startIcon={<RefreshIcon />} onClick={() => Promise.all([page.loadJobs(), page.loadReviews()])}>
           {commonTexts.refresh}
@@ -58,6 +56,7 @@ export function ChecksPage(): ReactElement {
           planOnly={page.planOnly}
           disabled={page.running}
           disabledReason={reviewReason}
+          job={page.reviewJob}
           reviews={page.reviews}
           openReview={page.openReview}
           deletingReview={page.deletingReview}

@@ -269,6 +269,7 @@ export function apiSkeleton(): Api {
       openExternal: stub('shell.openExternal'),
       readText: stub('shell.readText'),
       clipboardText: stub('shell.clipboardText'),
+      setFullscreen: stub('shell.setFullscreen'),
       fileUrl: stub('shell.fileUrl'),
       onFilesDropped: stub('shell.onFilesDropped')
     },

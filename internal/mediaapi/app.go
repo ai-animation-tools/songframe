@@ -183,7 +183,8 @@ type ApprovedFrame struct {
 	Path string `json:"path"`
 }
 
-// ImagesInput — ProductionImagesInput контракта: запрос опор провайдеру-агенту. Notes и
+// ImagesInput — ProductionImagesInput контракта: запрос опор провайдеру-агенту или одной опоры
+// платному провайдеру (ему ApprovedFrames уходят входами после референсов описания). Notes и
 // ApprovedFrames — nil, если поля нет; пустой список и отсутствие различаются, потому
 // что входят в SHA запроса.
 type ImagesInput struct {

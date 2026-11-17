@@ -7,10 +7,11 @@ import MovieFilterIcon from '@mui/icons-material/MovieFilter';
 import ClearIcon from '@mui/icons-material/Clear';
 import BuildIcon from '@mui/icons-material/Build';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
-import type { ReviewInfo, ShotProduction } from '@shared/types';
+import type { JobInfo, ReviewInfo, ShotProduction } from '@shared/types';
 import { ReviewList } from './ReviewList';
 import { ANCHORS } from '../../../components/linkTargets';
 import { ActionButton } from '../../../components/ActionButton';
+import { JobCard } from '../../../components/JobCard';
 
 interface ReviewPanelProps {
   shots: ShotProduction[];
@@ -19,6 +20,8 @@ interface ReviewPanelProps {
   disabled: boolean;
   /** Почему пробу сейчас нельзя собрать независимо от выбора сцен. */
   disabledReason: string | null;
+  /** Идущая сборка пробы: её ход виден под кнопкой запуска, а не только в шапке страницы. */
+  job: JobInfo | null;
   reviews: ReviewInfo[];
   openReview: ReviewInfo | null;
   deletingReview: string | null;
@@ -38,6 +41,7 @@ export function ReviewPanel({
   planOnly,
   disabled,
   disabledReason,
+  job,
   reviews,
   openReview,
   deletingReview,
@@ -120,6 +124,11 @@ export function ReviewPanel({
           </Button>
         ) : null}
       </Box>
+      {job ? (
+        <Box role="status" sx={{ mt: 1.5 }}>
+          <JobCard job={job} lines={6} />
+        </Box>
+      ) : null}
     </Paper>
   );
 }

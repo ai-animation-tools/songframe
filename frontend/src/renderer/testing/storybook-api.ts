@@ -276,6 +276,8 @@ export function unconfiguredStoryApi(): Api {
       openExternal: async () => unconfigured('shell.openExternal'),
       readText: async () => unconfigured('shell.readText'),
       clipboardText: async () => unconfigured('shell.clipboardText'),
+      // Режим окна в витрине ни на что не влияет: полноэкранный просмотр видео проверяется без него.
+      setFullscreen: async () => undefined,
       fileUrl: () => unconfigured('shell.fileUrl'),
       onFilesDropped: () => unconfigured('shell.onFilesDropped')
     },

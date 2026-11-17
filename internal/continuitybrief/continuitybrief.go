@@ -431,7 +431,7 @@ func build(root, shot, phase string) (*toolrt.Dict, error) {
 		}
 	}
 	if !found {
-		return nil, toolrt.Raise(toolrt.ValueError, "%s: план отсутствует в реестре.", shot)
+		return nil, toolrt.Raise(toolrt.ValueError, "%s: плана нет в сценарии.", shot)
 	}
 	// Начальное состояние сущностей берётся из кастинга проекта.
 	initial, err := sceneregistry.InitialStatesFor(root)

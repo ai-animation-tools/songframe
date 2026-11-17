@@ -393,7 +393,7 @@ export interface ScenarioView {
   duration: number | null;
   trackPath: string | null;
   problems: string[];
-  /** Карта references реестра расходится с кастингом: сохранение доступно без правок и обновит её. */
+  /** Карта референсов сценария расходится с кастингом: сохранение доступно без правок и обновит её. */
   referencesStale: boolean;
 }
 

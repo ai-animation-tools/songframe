@@ -137,7 +137,7 @@ func run(ctx context.Context, root string, args toolrt.Namespace, out *toolcli.P
 		return 0, err
 	}
 	if !found.lipsync {
-		stderr.WriteString("Предупреждение: у " + shot + " в реестре lipsync=false.\n")
+		stderr.WriteString("Предупреждение: у " + shot + " в сценарии lipsync=false.\n")
 	}
 	start, end := args["start"], args["end"]
 	if start == nil || end == nil {

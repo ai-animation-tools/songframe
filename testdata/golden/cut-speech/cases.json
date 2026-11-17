@@ -233,7 +233,7 @@
           ],
           "code": 0,
           "stdout": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.0,\n    0.75\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 0,\n  \"end_sample_exclusive\": 33075,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"e36426eb2a41dc2c6946bef1641a5032d79450437e5f70e8e19e0ba69ed01437\",\n    \"bytes\": 132344\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M01\",\n  \"timing_lines\": [\n    {\n      \"id\": 1,\n      \"source_line\": 1,\n      \"text\": \"Первая строка\",\n      \"start\": 0,\n      \"end\": 0.25,\n      \"note\": \"оценка\"\n    }\n  ]\n}\n",
-          "stderr": "Предупреждение: у M01 в реестре lipsync=false.\n"
+          "stderr": "Предупреждение: у M01 в сценарии lipsync=false.\n"
         }
       ],
       "files": {
@@ -508,7 +508,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "stderr": "M09: план отсутствует в реестре планов.\n"
+          "stderr": "M09: плана нет в сценарии.\n"
         }
       ],
       "files": {}
@@ -799,7 +799,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "stderr": "Неизвестная схема или пустой реестр планов.\n"
+          "stderr": "Неизвестная схема или пустой сценарий.\n"
         }
       ],
       "files": {}

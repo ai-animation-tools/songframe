@@ -1,4 +1,4 @@
-// Package scenario вычисляет данные по реестру сцен plan/scenes.json: наследование состояния
+// Package scenario вычисляет данные по сценарию plan/scenes.json: наследование состояния
 // сущностей по state_from (ResolveStates) и отпечаток постановки плана (SceneFingerprints).
 //
 // Отпечаток сравнивается с scene_sha256, записанным при приёмке комплекта; он должен совпадать

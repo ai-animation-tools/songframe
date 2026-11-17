@@ -18,7 +18,7 @@ const (
 	labelDraft               = "монтажный черновик"
 	textSceneCard            = "Карточка плана"
 	textInvalidDraft         = "Некорректная структура монтажного черновика."
-	textSnapshotMissing      = "Черновик не содержит снимок реестра и манифестов."
+	textSnapshotMissing      = "Черновик не содержит снимок сценария и манифестов."
 	textInvalidAudioBounds   = "Некорректные кадровые границы музыки."
 	textDuplicateClip        = "Коды планов и идентификаторы фрагментов должны быть неповторяющимися."
 	textTotalLengthExceeded  = "Суммарная длина монтажа слишком велика."
@@ -26,7 +26,7 @@ const (
 	textAudioChanged         = "Выбранная музыка не совпадает с текущим треком проекта."
 	textAudioBoundsExceeded  = "Выбранный участок выходит за пределы музыки."
 	textExportStep           = "Сборка ручной пробы"
-	textRegistryChanged      = "Реестр планов изменился: заново откройте материалы перед применением."
+	textRegistryChanged      = "Сценарий изменился: заново откройте материалы перед применением."
 	textManifestsChanged     = "Манифесты комплектов изменились: заново откройте материалы перед применением."
 	textApplyStep            = "Применение ручного монтажа к планам"
 	textExportVideoMissing   = "Готовая видеопроба не найдена. Дождитесь успешного экспорта."
@@ -78,7 +78,7 @@ func textSourceBoundsExceeded(scene string) string {
 	return scene + ": выбранный участок выходит за пределы исходника."
 }
 func textSceneMissing(scene string) string {
-	return "В реестре больше нет плана " + scene + "."
+	return "В сценарии больше нет плана " + scene + "."
 }
 func textExportTitle(name string) string { return "Ручная проба: " + name }
 func textApplyTitle(name string) string  { return "Применение монтажа: " + name }

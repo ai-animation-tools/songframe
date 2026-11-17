@@ -10,6 +10,7 @@ import type { AnimaticShot, AnimaticView } from '@shared/types';
 import { formatClock } from '../../../format';
 import { DateTime } from '../../../components/DateTime';
 import { MEDIA_COLORS, MEDIA_LABELS } from '../media';
+import { useVideoFullscreen } from '../../../components/VideoFullscreen';
 
 export function AnimaticPlayer({
   built,
@@ -39,6 +40,8 @@ export function AnimaticPlayer({
   /** Запуск или перемотка во встроенных элементах видео: после этого карточка показывает текущий план. */
   onEngage: () => void;
 }): ReactElement {
+  // Кнопка полного экрана встроенных элементов управления открывает общий просмотр приложения.
+  const fullscreen = useVideoFullscreen(() => videoRef.current);
   return (
     <Paper variant="outlined" sx={{ p: 1.5 }}>
       <video
@@ -106,6 +109,7 @@ export function AnimaticPlayer({
           {commonTexts.openFolder}
         </Button>
       </Stack>
+      {fullscreen.dialog}
     </Paper>
   );
 }

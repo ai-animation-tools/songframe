@@ -1,5 +1,5 @@
 {
-  "description": "Карта references реестра расходится с кастингом.",
+  "description": "Карта референсов сценария расходится с кастингом.",
   "call": "viewScenario + readScenarioRegistry + validateScenes",
   "project": "project",
   "covers": [

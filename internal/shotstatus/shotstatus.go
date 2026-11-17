@@ -1,4 +1,4 @@
-// Package shotstatus считает статусы планов (инструмент shot_status) по реестру сцен,
+// Package shotstatus считает статусы планов (инструмент shot_status) по сценарию,
 // выбранным комплектам assets, очереди plan/awaiting и рабочим попыткам
 // plan/batches; кандидат next, таблица для человека, JSON для приложения и проверка независимости
 // партии планов (--independent).
@@ -22,7 +22,7 @@ import (
 // Parser — аргументы инструмента shot_status (toolrt.ArgParser).
 var Parser = toolrt.ArgParser{
 	Prog:        "shot_status",
-	Description: "Статусы планов по реестру, assets, очереди и рабочим попыткам; @link README.md",
+	Description: "Статусы планов по сценарию, assets, очереди и рабочим попыткам; @link README.md",
 	Flags: []toolrt.Flag{
 		{Name: "--filter", Value: true, Choices: []string{"all", "planned", "progress", "completed", "stale", "unknown"}},
 		{Name: "--json", Help: "Машиночитаемый вывод для приложения."},
@@ -438,7 +438,7 @@ func collect(root string) (*result, error) {
 		case len(own) > 0:
 			status, stage = "progress", own[0].stage
 		default:
-			status, stage = "planned", "постановка в реестре, работа не начата"
+			status, stage = "planned", "постановка в сценарии, работа не начата"
 		}
 		output.rows = append(output.rows, row{
 			id: sid, interval: scene.Value("interval"), duration: scene.Value("duration"),
@@ -538,7 +538,7 @@ func (r *result) table(filter string) string {
 		for _, path := range r.unassigned.Value(key).([]any) {
 			paths = append(paths, path.(string))
 		}
-		lines = append(lines, "Пакет без плана в реестре: "+key+" — "+strings.Join(paths, ", ")+".")
+		lines = append(lines, "Пакет без плана в сценарии: "+key+" — "+strings.Join(paths, ", ")+".")
 	}
 	return strings.Join(lines, "\n")
 }

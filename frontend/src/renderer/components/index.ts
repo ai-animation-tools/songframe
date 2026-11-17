@@ -8,6 +8,7 @@ export { AiProblemAlert } from './AiProblemAlert';
 export { DateTime } from './DateTime';
 export { ImageGallery } from './ImageGallery';
 export { ImageThumbnail } from './ImageThumbnail';
+export { useVideoFullscreen } from './VideoFullscreen';
 export { Prose } from './Prose';
 export { ReadableValue } from './ReadableValue';
 export { ShotCard } from './ShotCard';

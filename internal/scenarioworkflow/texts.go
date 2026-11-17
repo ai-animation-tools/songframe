@@ -12,16 +12,16 @@ import (
 // входов, отказ действия, сообщение предложения), поэтому меняются только вместе с эталонами
 // testdata/golden/scenario-workflow.
 const (
-	textRegistryInvalidDocument    = "Реестр: неверная структура документа."
-	textRegistryInvalidReferences  = "Реестр: неверная карта референсов."
-	textRegistryInvalidParts       = "Реестр: неверные части песни."
+	textRegistryInvalidDocument    = "Сценарий: неверная структура документа."
+	textRegistryInvalidReferences  = "Сценарий: неверная карта референсов."
+	textRegistryInvalidParts       = "Сценарий: неверные части песни."
 	textTreatmentLoglineMissing    = "Сценарий: заполните логлайн."
-	textRegistryDecodedDuration    = "Конец реестра расходится с decoded duration."
+	textRegistryDecodedDuration    = "Конец сценария расходится с длительностью декодированного звука."
 	textRegistryReferencesMismatch = "Карта референсов должна соответствовать кастингу."
 	textRegistryDirectionMissing   = "Заполните общую визуальную постановку."
 	textProposalInvalidDocument    = "Нужен один JSON-документ с schemaVersion 1 и ожидаемым pass."
 	textProposalUnknownFields      = "В ответе есть поля вне контракта предложения."
-	textProposalCastMissing        = "Нет кастинга для проверки реестра."
+	textProposalCastMissing        = "Нет кастинга для проверки сценария."
 	textProposalScaffoldChanged    = "Ответ изменил исходный каркас сценария."
 	textProposalPatchesMissing     = "Нужен непустой список patches выбранных планов."
 	textProposalPatchesInvalid     = "patches может менять только постановку выбранных неповторяющихся ID."
@@ -58,24 +58,24 @@ const (
 	textShotsDirectoryRequired     = "assets/shots: нужна обычная папка."
 	textSnapshotMissing            = "Нет исходного снимка файлов сценарного предложения. Повторите подготовку."
 	textApplyPairRequired          = "Для применения нужны кастинг и части."
-	textProposedRegistryMissing    = "Нет предложенного реестра планов."
+	textProposedRegistryMissing    = "Нет предложенного сценария."
 	textStaleMaterials             = "Предложение устарело: изменился состав материалов или производных файлов проекта. Подготовьте новое предложение."
 	textRecoveryPending            = "Не завершено восстановление прошлого применения сценария. Перезапустите приложение."
 )
 
 func textRegistryInvalidShot(id *string) string {
 	if id == nil {
-		return "Реестр: неверная структура плана."
+		return "Сценарий: неверная структура плана."
 	}
-	return "Реестр, " + *id + ": неверная структура плана."
+	return "Сценарий, " + *id + ": неверная структура плана."
 }
 
 func textRegistryInvalidStateFrom(id string) string {
-	return "Реестр, " + id + ": неверный state_from."
+	return "Сценарий, " + id + ": неверный state_from."
 }
 
 func textRegistryInvalidStatePhases(id string, phases []string) string {
-	text := "Реестр, " + id + ": в state_changes допустимы только фазы before и after"
+	text := "Сценарий, " + id + ": в state_changes допустимы только фазы before и after"
 	if phases != nil {
 		text += ", получено: " + strings.Join(phases, ", ")
 	}
@@ -83,11 +83,11 @@ func textRegistryInvalidStatePhases(id string, phases []string) string {
 }
 
 func textRegistryInvalidStateChanges(id string) string {
-	return "Реестр, " + id + ": изменения состояния должны быть объектом."
+	return "Сценарий, " + id + ": изменения состояния должны быть объектом."
 }
 
 func textRegistryInvalidStateProperties(id string) string {
-	return "Реестр, " + id + ": неверные свойства состояния."
+	return "Сценарий, " + id + ": неверные свойства состояния."
 }
 
 func textPartDirectionMissing(id string) string {

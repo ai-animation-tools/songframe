@@ -11,6 +11,7 @@ import { DateTime } from '../../../components/DateTime';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import { ActionButton } from '../../../components/ActionButton';
 import { useProjectFps } from '../../../hooks/useProjectFps';
+import { useVideoFullscreen } from '../../../components/VideoFullscreen';
 
 interface ReviewItemProps {
   review: ReviewInfo;
@@ -25,6 +26,8 @@ interface ReviewItemProps {
 export function ReviewItem({ review, openReview, deletingReview, setOpenReview, openDirectory, removeReview }: ReviewItemProps): ReactElement {
   const fps = useProjectFps();
   const videoRef = useRef<HTMLVideoElement>(null);
+  // Кнопка полного экрана встроенных элементов управления открывает общий просмотр приложения.
+  const fullscreen = useVideoFullscreen(() => videoRef.current);
 
   const remove = (): void => {
     // Освобождаем MP4 до вызова Go, чтобы Windows могла удалить файл ещё до размонтирования плеера.
@@ -80,6 +83,7 @@ export function ReviewItem({ review, openReview, deletingReview, setOpenReview, 
           style={{ width: '100%', maxWidth: 720, marginTop: 8, borderRadius: 4, background: '#000' }}
         />
       ) : null}
+      {fullscreen.dialog}
     </Box>
   );
 }

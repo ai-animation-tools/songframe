@@ -42,6 +42,8 @@ export function useChecksPage() {
   }, [project, loadJobs, loadReviews]);
 
   const running = jobs.some((j) => j.status === 'running');
+  // Идущая сборка пробы: её ход показывает панель пробы под кнопкой запуска.
+  const reviewJob = jobs.find((j) => j.kind === 'review' && j.status === 'running') ?? null;
   useEffect(() => {
     if (!running) return;
     const handle = setInterval(async () => {
@@ -148,6 +150,7 @@ export function useChecksPage() {
     openReview,
     deletingReview,
     running,
+    reviewJob,
     scenesReady,
     setStrict,
     setNext,

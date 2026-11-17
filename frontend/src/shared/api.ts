@@ -374,6 +374,8 @@ export interface Api {
     readText(path: string): Promise<string>;
     /** Текст буфера обмена ОС для «Вставить» контекстного меню: WebKit не даёт странице читать его сам. */
     clipboardText(): Promise<string>;
+    /** Полноэкранный режим окна приложения: полноэкранный просмотр видео растягивает видео сам. */
+    setFullscreen(fullscreen: boolean): Promise<void>;
     /** Абсолютный путь в URL локального медиасервера Go для <img>, <audio> и <video>; синхронно. */
     fileUrl(path: string): string;
     /**

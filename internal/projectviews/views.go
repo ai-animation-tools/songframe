@@ -104,7 +104,7 @@ func ProjectInputsMatch(record, project any, animatic bool) (bool, error) {
 // banner — общая плашка производных документов с относительной ссылкой registry на реестр.
 func banner(registry string) string {
 	return "> Автоматическое представление [plan/scenes.json](" + registry + "). " +
-		"Изменять только реестр; этот файл не является отдельным " +
+		"Изменять только сценарий; этот файл не является отдельным " +
 		"источником постановки.\n"
 }
 
@@ -241,7 +241,7 @@ func storyboard(prepared *Prepared, name string) (string, error) {
 		"# Постановка сцен клипа «" + name + "»",
 		"",
 		banner("scenes.json"),
-		"Общая история — в [сценарии](../source/description.md); " +
+		"Общая история — в [идее клипа](../source/description.md); " +
 			"роли, внешность и начальное состояние персонажей — в кастинге " +
 			"[plan/cast.json](cast.json) (страница «Кастинг»); общие визуальные " +
 			"правила и речевые планы — в [визуальном справочнике](context/characters.md).",
@@ -492,8 +492,8 @@ func packageReadme(sid string, manifest any) (string, error) {
 		return "", err
 	}
 	return "# " + sid + " — технический комплект\n\n> Автоматическое " +
-		"представление. Постановка и тайминг — только в [реестре " +
-		"сцен](../../../plan/scenes.json) и его " +
+		"представление. Постановка и тайминг — только в " +
+		"[сценарии](../../../plan/scenes.json) и его " +
 		"[представлении](../../../plan/storyboard.md#" + strings.ToLower(sid) + ").\n\n" +
 		strings.Join(links, " · ") +
 		"\n\n[manifest.json](manifest.json) хранит файлы, хеши и рецепт " +
@@ -522,8 +522,8 @@ func timingView(sources *Sources) (string, error) {
 		"# Речевые и музыкальные оценки",
 		"",
 		"> Автоматическое представление [timing.json](timing.json). Эти " +
-			"оценки не задают монтажные границы: они принадлежат [реестру " +
-			"сцен](../scenes.json).",
+			"оценки не задают монтажные границы: они принадлежат " +
+			"[сценарию](../scenes.json).",
 		"",
 		status,
 		"",

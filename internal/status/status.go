@@ -38,7 +38,7 @@ const (
 	damagedCast         = "plan/cast.json повреждён."
 	damagedScenes       = "plan/scenes.json повреждён или не содержит частей."
 	animaticNotBuilt    = "Все планы приняты, но полный аниматик ещё не собран."
-	staleAnimatic       = "Аниматик собран по устаревшему реестру или входам: нужна пересборка."
+	staleAnimatic       = "Аниматик собран по устаревшему сценарию или входам: нужна пересборка."
 	animaticNotApproved = "Аниматик собран, но не принят в plan/production-status.json."
 )
 
@@ -49,7 +49,7 @@ func derivedShotsNeedReview(ids []string) string {
 	return "Не подтверждена актуальность производных планов: " + strings.Join(ids, ", ") + ". Проверьте версию источника и приёмку этих планов."
 }
 func orphanKits(ids []string) string {
-	return "Комплекты без плана в реестре: " + strings.Join(ids, ", ") + "."
+	return "Комплекты без плана в сценарии: " + strings.Join(ids, ", ") + "."
 }
 
 // Checks — признаки, из которых выведено состояние; показываются на странице проекта.

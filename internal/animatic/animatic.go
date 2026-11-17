@@ -1,5 +1,5 @@
 // Package animatic проверяет сборку аниматика plan/animatic/latest: собрана ли она, свежа ли по
-// реестру сцен и фактическим входам и принята ли именно она в plan/production-status.json.
+// сценарию и фактическим входам и принята ли именно она в plan/production-status.json.
 //
 // Один разбор (inspect) даёт и вид страницы «Аниматик», и признаки built/fresh/approved статуса
 // проекта; порядок проверок и ошибки (например, нестроковый путь в манифесте) зафиксированы
@@ -25,7 +25,7 @@ var sha256Pattern = regexp.MustCompile(`^[a-f0-9]{64}$`)
 // scenarioRequired — и отказ задания сборки без реестра.
 const (
 	scenarioRequired     = "Сначала нужен сценарий. Создайте его на странице «Сценарий»."
-	registryChanged      = "Реестр планов изменился после сборки: аниматик устарел, нужна пересборка."
+	registryChanged      = "Сценарий изменился после сборки: аниматик устарел, нужна пересборка."
 	manifestCorrupt      = "plan/animatic/latest/manifest.json повреждён."
 	projectInputsMissing = "В манифесте аниматика отсутствует обязательное поле project_inputs; пересоберите аниматик."
 	projectInputsChanged = "Значимые поля plan/project.json изменены или snapshot project_inputs повреждён; нужна пересборка аниматика."

@@ -69,7 +69,7 @@
 | [`internal/cast`](../internal/cast) | Читает, проверяет и сохраняет кастинг plan/cast.json: сущности проекта нужны вычислениям (начальное состояние сущностей входит в отпечаток постановки каждого плана) и странице кастинга. |
 | [`internal/castregistry`](../internal/castregistry) | Читает кастинг для инструментов tools.run (scene_registry, scene_scaffold, проверки): загрузка (Load), проверка (Validate), проекция описаний из source/manifest.json, начальные состояния (InitialStates) и карта референсов (References). |
 | [`internal/covergen`](../internal/covergen) | Генерирует обложку проекта и изображения референсов. |
-| [`internal/projectviews`](../internal/projectviews) | Строит производные Markdown/JSON-представления реестра сцен и технических комплектов — монтажный список, раскадровка, индекс комплектов assets, ROADMAP с готовностью, справочник визуальных правил с речевыми планами, README комплектов и таблица разметки трека. |
+| [`internal/projectviews`](../internal/projectviews) | Строит производные Markdown/JSON-представления сценария и технических комплектов — монтажный список, раскадровка, индекс комплектов assets, ROADMAP с готовностью, справочник визуальных правил с речевыми планами, README комплектов и таблица разметки трека. |
 
 | Страница | Назначение |
 | --- | --- |
@@ -103,11 +103,11 @@
 
 | Пакет | Назначение |
 | --- | --- |
-| [`internal/scenario`](../internal/scenario) | Вычисляет данные по реестру сцен plan/scenes.json: наследование состояния сущностей по state_from (ResolveStates) и отпечаток постановки плана (SceneFingerprints). |
-| [`internal/sceneregistry`](../internal/sceneregistry) | Проверяет реестр сцен и проект для инструментов tools.run: единственный источник постановки и монтажного времени инструментов. |
-| [`internal/scenesave`](../internal/scenesave) | Сохраняет реестр планов с учётом производства: определяет, какие планы меняют отпечаток постановки при сохранении черновика, с какой формальной причиной и что с ними станет. |
+| [`internal/scenario`](../internal/scenario) | Вычисляет данные по сценарию plan/scenes.json: наследование состояния сущностей по state_from (ResolveStates) и отпечаток постановки плана (SceneFingerprints). |
+| [`internal/sceneregistry`](../internal/sceneregistry) | Проверяет сценарий и проект для инструментов tools.run: единственный источник постановки и монтажного времени инструментов. |
+| [`internal/scenesave`](../internal/scenesave) | Сохраняет сценарий с учётом производства: определяет, какие планы меняют отпечаток постановки при сохранении черновика, с какой формальной причиной и что с ними станет. |
 | [`internal/scenescaffold`](../internal/scenescaffold) | Строит детерминированный каркас планов сценария (инструмент scene_scaffold) по частям песни сохранённого сценария plan/scenes.json, разметке трека (plan/audio/timing.json), тексту песни и кастингу. |
-| [`internal/sceneviews`](../internal/sceneviews) | Обновляет и проверяет производные представления единого реестра сцен (инструмент update_scene_views): документы internal/projectviews, PNG-карточки аниматика plan/animatic/cards/<план>.png (и .last.png последней опоры) и их квитанцию plan/animatic/cards/manifest.json. |
+| [`internal/sceneviews`](../internal/sceneviews) | Обновляет и проверяет производные представления сценария (инструмент update_scene_views): документы internal/projectviews, PNG-карточки аниматика plan/animatic/cards/<план>.png (и .last.png последней опоры) и их квитанцию plan/animatic/cards/manifest.json. |
 | [`internal/scenarioworkflow`](../internal/scenarioworkflow) | Ведёт сценарный проход агента: подготовка предложения кастинга и частей сценария, планов или доработки выбранных планов, хранение ожидающего предложения в записи прохода plan/scenario-workflow.json, его разбор и проверка, утверждения пары и сцен и применение одной транзакцией, а также проверка сценария агентом с отчётом в plan/scenario-check.json (check.go). |
 | [`internal/scenarioapply`](../internal/scenarioapply) | Хранилище многофайловой публикации семейства «сценарий» (кастинг, сценарий, опись исходников и их производные виды) с журналом и восстановлением после сбоя. |
 | [`internal/continuitybrief`](../internal/continuitybrief) | Строит врезку непрерывности для плана (инструмент continuity_brief): состояние мира и сущностей плана словами на первый или последний кадр и чек-лист «да или нет» для проверки полученного изображения. |
@@ -128,7 +128,7 @@
 | [`internal/production`](../internal/production) | Ведёт страницу «Производство»: вид планов и рабочих пакетов по файлам проекта, решения пользователя (через shot_workflow), согласование стоимости и платную отправку зафиксированного запроса, получение результата, повтор по сохранённому запросу и приёмку в assets. |
 | [`internal/productionworkflow`](../internal/productionworkflow) | Ведёт проход агента производства: один план и один пакет проходят подготовку предложений описания, видеопромпта и запроса; проект меняется только отдельным Apply. |
 | [`internal/shotworkflow`](../internal/shotworkflow) | Ведёт workflow.json рабочего пакета одного плана (инструмент shot_workflow): создание, план опор, кандидаты и принятие опор, промпт, вопросы и ответы приложения, этапы, image-ветка платных опор, перенос в очередь plan/awaiting и проверка целостности. |
-| [`internal/shotstatus`](../internal/shotstatus) | Считает статусы планов (инструмент shot_status) по реестру сцен, выбранным комплектам assets, очереди plan/awaiting и рабочим попыткам plan/batches; кандидат next, таблица для человека, JSON для приложения и проверка независимости партии планов (--independent). |
+| [`internal/shotstatus`](../internal/shotstatus) | Считает статусы планов (инструмент shot_status) по сценарию, выбранным комплектам assets, очереди plan/awaiting и рабочим попыткам plan/batches; кандидат next, таблица для человека, JSON для приложения и проверка независимости партии планов (--independent). |
 | [`internal/regenerateshot`](../internal/regenerateshot) | Повторяет генерацию плана по сохранённому запросу без нового согласования (инструмент regenerate_shot). |
 | [`internal/requestsnapshot`](../internal/requestsnapshot) | Готовит неизменяемый запрос генерации локально, без отправки: снимок спецификации, промпта и входов в новой папке попытки и атомарная запись его JSON. |
 | [`internal/costcheck`](../internal/costcheck) | Оценивает стоимость запроса генерации и сверяет её с остатком кредитов до таблицы согласования (check), а после отправки записывает фактический расход наблюдением (learn); это инструмент cost_check. |
@@ -139,7 +139,7 @@
 | [`internal/verifyassetreplay`](../internal/verifyassetreplay) | Проверяет воспроизведение всех принятых комплектов планов из индекса assets/shots/manifest.json (инструмент verify_asset_replay). |
 | [`internal/videoreview`](../internal/videoreview) | Проверяет полученное видео агентом: кадры по PTS, сверка с утверждёнными опорами и отчёт с наблюдениями (videoReview.view/start/cancel). |
 | [`internal/contactsheet`](../internal/contactsheet) | Собирает техническую сводку полученного видео для быстрого просмотра (инструмент contact_sheet). |
-| [`internal/dashboard`](../internal/dashboard) | Собирает дашборд сцен: по каждому плану реестра собирается всё, что о нём известно в проекте, в одну карточку: постановка и строка песни, положение на шкале, комплект в assets (оригинал против принятого монтажа, рецепт, промпт, входы), пакеты с опорами (production.ViewProduction), карточка аниматика, состояние героев до и после (scenario.ProjectBrief). |
+| [`internal/dashboard`](../internal/dashboard) | Собирает дашборд сцен: по каждому плану сценария собирается всё, что о нём известно в проекте, в одну карточку: постановка и строка песни, положение на шкале, комплект в assets (оригинал против принятого монтажа, рецепт, промпт, входы), пакеты с опорами (production.ViewProduction), карточка аниматика, состояние героев до и после (scenario.ProjectBrief). |
 | [`internal/checks`](../internal/checks) | Запускает проверки проекта (checks.list/run/runAll) заданиями общего менеджера с журналом и кодом завершения. |
 | [`internal/checkassets`](../internal/checkassets) | Проверяет все выбранные комплекты assets/shots/M*/manifest.json проекта (validate_package, internal/assetpackage) и печатает сводку по их числу. |
 | [`internal/checkworkspace`](../internal/checkworkspace) | Проверяет согласованность рабочего дерева проекта после приёмки: карточки и квитанция карточек, лишние пакеты plan/batches и plan/awaiting, пустые папки; готовые экспорты, пробы и материалы ручного монтажа не считаются остатками. |
@@ -159,7 +159,7 @@
 
 | Пакет | Назначение |
 | --- | --- |
-| [`internal/animatic`](../internal/animatic) | Проверяет сборку аниматика plan/animatic/latest: собрана ли она, свежа ли по реестру сцен и фактическим входам и принята ли именно она в plan/production-status.json. |
+| [`internal/animatic`](../internal/animatic) | Проверяет сборку аниматика plan/animatic/latest: собрана ли она, свежа ли по сценарию и фактическим входам и принята ли именно она в plan/production-status.json. |
 | [`internal/animaticcards`](../internal/animaticcards) | Рисует условные PNG-карточки аниматика для планов без видео. |
 | [`internal/buildanimatic`](../internal/buildanimatic) | Детерминированно собирает единственный полный аниматик plan/animatic/latest (инструмент build_animatic) с кэшем проверенных фрагментов. |
 | [`internal/buildreview`](../internal/buildreview) | Собирает временную видеопробу стыков из соседних сцен (инструмент build_review). |
@@ -168,7 +168,7 @@
 | [`internal/derivedshot`](../internal/derivedshot) | Определяет производный план по сценарию: план, материал которого собирается из принятого видео другого плана (derived_from.shot). |
 | [`internal/derivedworkflow`](../internal/derivedworkflow) | Обслуживает страницу производного плана. |
 | [`internal/deriveshot`](../internal/deriveshot) | Локально собирает производный план из принятого клипа другого плана без платной генерации и принимает показанные байты (инструмент derive_shot). |
-| [`internal/exportbundle`](../internal/exportbundle) | Собирает пакет для монтажёра из реестра сцен, манифестов комплектов и разметки песни (инструмент export_edit_bundle). |
+| [`internal/exportbundle`](../internal/exportbundle) | Собирает пакет для монтажёра из сценария, манифестов комплектов и разметки песни (инструмент export_edit_bundle). |
 | [`internal/builtoutput`](../internal/builtoutput) | Задаёт границы удаления готовых результатов: удалять можно только обычные папки и файлы непосредственно в plan/batches выбранного проекта. |
 
 | Страница | Назначение |

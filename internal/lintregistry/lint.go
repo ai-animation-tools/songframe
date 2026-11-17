@@ -30,7 +30,7 @@ var schemaFiles embed.FS
 // Parser — разбор аргументов lint_registry; Prog и описание видны в справке и ошибках разбора.
 var Parser = toolrt.ArgParser{
 	Prog:        "lint_registry",
-	Description: "Проверка реестра, комплектов и пакетов по схемам и правилам владения сведениями; @link README.md",
+	Description: "Проверка сценария, комплектов и пакетов по схемам и правилам владения сведениями; @link README.md",
 	Flags: []toolrt.Flag{
 		{Name: "--json"},
 		{Name: "--strict", Help: "Предупреждения тоже считать ошибками"},
@@ -105,7 +105,7 @@ const (
 	textNoWorld          = "нет сущности world: время суток, погода и стороны дороги негде хранить"
 	textReferencesDrift  = "карта references расходится с кастингом: сохраните кастинг, и карта обновится."
 	textCardReference    = "главный референс карточки не объявлен"
-	textAcceptedNoScene  = "отпечаток принятия плана, которого нет в реестре"
+	textAcceptedNoScene  = "отпечаток принятия плана, которого нет в сценарии"
 	textAcceptedNoKit    = "отпечаток принятия плана без комплекта в assets"
 )
 

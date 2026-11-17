@@ -1,4 +1,4 @@
-// Package scenesave сохраняет реестр планов с учётом производства: определяет,
+// Package scenesave сохраняет сценарий с учётом производства: определяет,
 // какие планы меняют отпечаток постановки при сохранении черновика, с какой формальной причиной
 // и что с ними станет. Обычное сохранение (production) делает принятые комплекты затронутых планов
 // устаревшими само — по несовпадению отпечатков. Режим keep («правка не меняет результат»)
@@ -34,12 +34,12 @@ const (
 
 // Тексты scenarioTexts.main и productionTexts.main.acceptance (frontend/src/shared/texts).
 const (
-	textImpactNewShot      = "новый план в реестре"
+	textImpactNewShot      = "новый план в сценарии"
 	textImpactStaging      = "изменена постановка плана"
 	textImpactBounds       = "сдвинуты границы плана"
 	textImpactInitialState = "изменилось начальное состояние"
 	textImpactGlobalRules  = "изменены общие правила или направление части"
-	textInvalidSaveMode    = "Неизвестный режим сохранения реестра."
+	textInvalidSaveMode    = "Неизвестный режим сохранения сценария."
 )
 
 func textImpactInherited(source string) string {

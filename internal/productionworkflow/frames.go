@@ -164,6 +164,22 @@ func (w *Workflow) GenerateFrames(ctx context.Context, project, shot, packageDir
 		w.mu.Unlock()
 		return View{}, errors.New(textImageAdapterMissing(plan.info.Title))
 	}
+	// Утверждённые опоры этого пакета — референсы согласованности: внешность, одежда, свет и
+	// расстановка следующего кадра. Их получают и агент, и платный провайдер.
+	approved := []mediaapi.ApprovedFrame{}
+	for _, item := range keyframes(c.Workflow) {
+		if !dynvalue.Truthy(dynvalue.Get(item, "approved")) || !dynvalue.Truthy(dynvalue.Get(item, "path")) {
+			continue
+		}
+		path, err := packageFile(c, dynvalue.Get(item, "path"))
+		if err != nil {
+			w.mu.Unlock()
+			return View{}, err
+		}
+		id, _ := dynvalue.Get(item, "id").(string)
+		role, _ := dynvalue.Get(item, "role").(string)
+		approved = append(approved, mediaapi.ApprovedFrame{ID: id, Role: role, Path: path})
+	}
 	// Провайдер без исполнителя-агента готовит платный запрос на одну опору.
 	if plan.info.Executor == "" {
 		if len(plan.notes) > 0 {
@@ -172,7 +188,7 @@ func (w *Workflow) GenerateFrames(ctx context.Context, project, shot, packageDir
 		planKey := key(c.Project, shot)
 		w.busy[planKey] = true
 		w.mu.Unlock()
-		err := w.prepareImageRequest(ctx, mediaapi.ImagesInput{Project: c.Project, Shot: shot, PackageDir: c.PackageDir, Frames: []mediaapi.FramePrompt{frame}})
+		err := w.prepareImageRequest(ctx, mediaapi.ImagesInput{Project: c.Project, Shot: shot, PackageDir: c.PackageDir, Frames: []mediaapi.FramePrompt{frame}, ApprovedFrames: &approved})
 		w.mu.Lock()
 		defer w.mu.Unlock()
 		delete(w.busy, planKey)
@@ -182,21 +198,6 @@ func (w *Workflow) GenerateFrames(ctx context.Context, project, shot, packageDir
 		return w.view(c.Project, shot, packageDir)
 	}
 	defer w.mu.Unlock()
-	// Утверждённые опоры этого пакета — референсы согласованности: внешность, одежда, свет и
-	// расстановка следующего кадра.
-	approved := []mediaapi.ApprovedFrame{}
-	for _, item := range keyframes(c.Workflow) {
-		if !dynvalue.Truthy(dynvalue.Get(item, "approved")) || !dynvalue.Truthy(dynvalue.Get(item, "path")) {
-			continue
-		}
-		path, err := packageFile(c, dynvalue.Get(item, "path"))
-		if err != nil {
-			return View{}, err
-		}
-		id, _ := dynvalue.Get(item, "id").(string)
-		role, _ := dynvalue.Get(item, "role").(string)
-		approved = append(approved, mediaapi.ApprovedFrame{ID: id, Role: role, Path: path})
-	}
 	notes := slices.Clone(plan.notes)
 	job, err := w.generateImages(c.Project, mediaapi.ImagesInput{
 		Project: c.Project, Shot: shot, PackageDir: c.PackageDir, Frames: []mediaapi.FramePrompt{frame}, Notes: &notes, ApprovedFrames: &approved,

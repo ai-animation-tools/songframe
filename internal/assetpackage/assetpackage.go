@@ -475,10 +475,10 @@ func ValidatePackage(path, shotID, root string) (*toolrt.Dict, error) {
 		}
 	}
 	if scene == nil {
-		return nil, toolrt.New(toolrt.ValueError, toolrt.Str(shotValue)+": ассет отсутствует в реестре планов.")
+		return nil, toolrt.New(toolrt.ValueError, toolrt.Str(shotValue)+": ассета нет в сценарии.")
 	}
 	if !toolrt.Equal(fps, registry.Value("fps")) {
-		return nil, toolrt.New(toolrt.ValueError, toolrt.Str(shot)+": FPS принятого клипа расходится с реестром планов.")
+		return nil, toolrt.New(toolrt.ValueError, toolrt.Str(shot)+": FPS принятого клипа расходится со сценарием.")
 	}
 	window, err := toolrt.Sub(scene.Value("end_frame_exclusive"), scene.Value("start_frame"))
 	if err != nil {

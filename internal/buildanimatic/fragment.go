@@ -27,7 +27,7 @@ const (
 
 // textFragmentUnknown — план фрагмента не найден в реестре.
 func textFragmentUnknown(id string) string {
-	return "План " + id + " не найден в реестре планов."
+	return "План " + id + " не найден в сценарии."
 }
 
 // fragmentRange — индексы первого и последнего плана фрагмента [from, to] в порядке реестра.

@@ -1,9 +1,12 @@
 package app
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/url"
+
+	"github.com/wailsapp/wails/v3/pkg/application"
 
 	"songframe/internal/desktop"
 )
@@ -81,4 +84,30 @@ func (s *ShellService) ReadText(path string) (string, error) {
 		s.files.AllowFile(path)
 	}
 	return text, err
+}
+
+// fullscreenWindow — часть окна Wails, которой нужен SetFullscreen; в тестах подменяется.
+type fullscreenWindow interface {
+	Fullscreen() application.Window
+	UnFullscreen()
+}
+
+// SetFullscreen переводит вызвавшее окно в полноэкранный режим или возвращает из него. Им
+// пользуется полноэкранный просмотр видео: WebKitGTK на части видеокарт показывает в полноэкранном
+// режиме самого элемента <video> чёрный кадр, поэтому страница растягивает видео сама, а окно
+// разворачивает Go. Вызов не из окна — ошибка.
+func (s *ShellService) SetFullscreen(ctx context.Context, fullscreen bool) error {
+	var target fullscreenWindow
+	if ctx != nil {
+		target, _ = ctx.Value(application.WindowKey).(fullscreenWindow)
+	}
+	if target == nil {
+		return errors.New("полноэкранный режим доступен только окну приложения")
+	}
+	if fullscreen {
+		target.Fullscreen()
+	} else {
+		target.UnFullscreen()
+	}
+	return nil
 }

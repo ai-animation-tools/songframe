@@ -70,7 +70,7 @@ describe('window.api.cast и window.api.scenario', () => {
   });
 
   it('показывает отказ Go-сервиса его текстом', async () => {
-    const error = Object.assign(new Error('Неизвестный режим сохранения реестра.'), { name: 'RuntimeError' });
+    const error = Object.assign(new Error('Неизвестный режим сохранения сценария.'), { name: 'RuntimeError' });
     const api = createApi(bindings({ SaveScenes: async () => Promise.reject(error) }));
     await expect(api.scenario.saveScenes('/клип', {} as ScenesFile, 'production')).rejects.toMatchObject({ code: 'SERVICE_FAILED', message: error.message });
   });

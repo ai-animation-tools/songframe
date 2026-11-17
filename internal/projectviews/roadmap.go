@@ -403,8 +403,8 @@ func Render(sources *Sources, prepared *Prepared) (string, error) {
 	}
 	lines = append(lines,
 		"",
-		"Изменять постановку и монтажные границы только в [реестре "+
-			"сцен](plan/scenes.json). [Сценарий](source/description.md) "+
+		"Изменять постановку и монтажные границы только в "+
+			"[сценарии](plan/scenes.json). [Идея клипа](source/description.md) "+
 			"описывает общую историю. Генерации и обработка сохраняются в "+
 			"локальных манифестах assets. Незавершённая работа — в рабочих "+
 			"пакетах `plan/batches` и `plan/awaiting` (страница «Производство»).",

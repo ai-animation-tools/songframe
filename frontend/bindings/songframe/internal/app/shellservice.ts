@@ -51,3 +51,13 @@ export function OpenPath(path: string): $CancellablePromise<void> {
 export function ReadText(path: string): $CancellablePromise<string> {
     return $Call.ByID(2247688915, path);
 }
+
+/**
+ * SetFullscreen переводит вызвавшее окно в полноэкранный режим или возвращает из него. Им
+ * пользуется полноэкранный просмотр видео: WebKitGTK на части видеокарт показывает в полноэкранном
+ * режиме самого элемента <video> чёрный кадр, поэтому страница растягивает видео сама, а окно
+ * разворачивает Go. Вызов не из окна — ошибка.
+ */
+export function SetFullscreen(fullscreen: boolean): $CancellablePromise<void> {
+    return $Call.ByID(3304731953, fullscreen);
+}

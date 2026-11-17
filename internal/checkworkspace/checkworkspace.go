@@ -384,7 +384,7 @@ func Collect(root string) (Result, error) {
 			if accepted.Contains(sid) {
 				add("card_of_accepted", relative(png), "карточка принятого плана "+sid+"; обновите представления")
 			} else if !idSet.Contains(sid) {
-				add("card_unknown", relative(png), "карточка плана, которого нет в реестре")
+				add("card_unknown", relative(png), "карточка плана, которого нет в сценарии")
 			}
 		}
 	}
@@ -443,7 +443,7 @@ func Collect(root string) (Result, error) {
 			case owners.Len() == 0:
 				add("package_unowned", relative(folder), "папка без плана-владельца; проверьте вручную")
 			case unknown.Len() > 0:
-				add("package_unknown", relative(folder), "пакет планов, которых нет в реестре: "+strings.Join(sortedStrings(unknown), ", "))
+				add("package_unknown", relative(folder), "пакет планов, которых нет в сценарии: "+strings.Join(sortedStrings(unknown), ", "))
 			case owners.SubsetOf(accepted) && !newAttempt(folder, root):
 				// Проба нескольких планов нужна, пока хотя бы один из них не принят.
 				add("package_of_accepted", relative(folder), "рабочий пакет принятых планов "+strings.Join(sortedStrings(owners), ", ")+"; приёмка без --clean")

@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ProductionWorkflowView } from '@shared/production-workflow';
 import type { PackageView, ShotProduction } from '@shared/types';
-import { attemptLabel, defaultAttempt, planPath } from './planPath';
+import { attemptLabel, canRetryWithFrames, defaultAttempt, planPath } from './planPath';
 
 const shot = (overrides: Partial<ShotProduction> = {}): ShotProduction =>
   ({ id: 'M07', lipsync: false, asset: null, packages: [], ...overrides }) as unknown as ShotProduction;
@@ -155,5 +155,27 @@ describe('выбор попытки', () => {
   it('называет попытку по номеру папки, папку очереди — её путём', () => {
     expect(attemptLabel(pkg())).toBe('Попытка 2');
     expect(attemptLabel(pkg({ relative: 'plan/awaiting/M07' }))).toBe('plan/awaiting/M07');
+  });
+});
+
+describe('новая попытка с теми же опорами', () => {
+  const frames = [frame('K01', true), frame('K02', true)];
+  const request = (overrides: Partial<NonNullable<PackageView['request']>>) => ({ attemptStatus: 'downloaded', ...overrides }) as PackageView['request'];
+
+  it('доступна после запроса, когда все опоры утверждены и отправка завершена', () => {
+    expect(canRetryWithFrames(pkg({ stage: 'downloaded', keyframes: frames, request: request({}) }))).toBe(true);
+    expect(canRetryWithFrames(pkg({ stage: 'request_choice', keyframes: frames }))).toBe(true);
+  });
+
+  it('не нужна, пока опору и промпт можно вернуть на месте', () => {
+    for (const stage of ['description_review', 'keyframes_review', 'prompt_review', 'image_request_choice', 'needs_revision'])
+      expect(canRetryWithFrames(pkg({ stage, keyframes: frames }))).toBe(false);
+  });
+
+  it('недоступна без всех утверждённых опор, во время отправки и у своего видео', () => {
+    expect(canRetryWithFrames(pkg({ stage: 'downloaded', keyframes: [] }))).toBe(false);
+    expect(canRetryWithFrames(pkg({ stage: 'downloaded', keyframes: [frame('K01', true), frame('K02', false)] }))).toBe(false);
+    expect(canRetryWithFrames(pkg({ stage: 'submitted', keyframes: frames, request: request({ attemptStatus: 'submission_unknown' }) }))).toBe(false);
+    expect(canRetryWithFrames(pkg({ stage: 'downloaded', keyframes: frames, request: request({ ownVideo: true }) }))).toBe(false);
   });
 });

@@ -420,6 +420,19 @@ export function useProductionPage() {
     );
   };
 
+  /** Новая попытка с теми же опорами создаётся в Go и сразу выбирается: дальше пользователь правит опору или промпт в ней. */
+  const retryWithFrames = (pkg: PackageView): void => {
+    void act(
+      productionTexts.useProductionPage.attemptRetried({ relative: pkg.relative }),
+      async () => {
+        const created = await window.api.productionWorkflow.retryWithFrames(project, pkg.shot, pkg.dir);
+        if (created.packageDir) selectPackage(created.packageDir);
+      },
+      pkg.dir,
+      pkg.shot
+    );
+  };
+
   /** Повреждённая папка не является пакетом: удаление не трогает выбор и просто обновляет сводку. */
   const discardBroken = (item: BrokenPackage): void => {
     void act(
@@ -473,6 +486,7 @@ export function useProductionPage() {
     // (например, после перезапуска): у принятого плана её путь показывается вместо принятого комплекта.
     newAttempt: rememberedPackage === '__new__' || (currentPackage === undefined && proposalSelection === '__new__'),
     selectPackage,
+    retryWithFrames,
     reportWorkflowBusy,
     workflowBusyFor
   };

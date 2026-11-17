@@ -507,6 +507,9 @@ export const productionTexts = {
     resultQuestion: 'Что делаем с результатом?',
     moreActions: 'Другие действия',
     newAttempt: 'Новая попытка с описания',
+    retryWithFrames: 'Новая попытка с теми же опорами',
+    retryWithFramesHint:
+      'Описание, утверждённые опоры и срез речи переносятся в новую попытку, видеопромпт — для повторного утверждения. В ней можно вернуть опору на доработку или изменить промпт. Эта попытка не меняется.',
     ownVideo: 'Загрузить своё видео',
     retryFromRequest: 'Повторить по сохранённому запросу',
     deleteAttempt: 'Удалить попытку',
@@ -556,6 +559,7 @@ export const productionTexts = {
     candidateSelected: 'Изображение выбрано как опора. Утвердите опоры отдельно.',
     requestSubmitted: ({ shot }: { shot: string }) => `Запрос ${shot} отправлен. Результат придёт уведомлением, когда сервис его вернёт.`,
     attemptDeleted: ({ relative }: { relative: string }) => `Попытка ${relative} удалена`,
+    attemptRetried: ({ relative }: { relative: string }) => `Новая попытка с опорами из ${relative} создана`,
     folderDeleted: ({ relative }: { relative: string }) => `Папка ${relative} удалена`
   },
   useProductionWorkflow: {

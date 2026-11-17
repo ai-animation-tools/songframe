@@ -66,6 +66,7 @@ export function ProductionPage(): ReactElement {
     confirmRegenerate,
     setConfirmRegenerate,
     discardPackage,
+    retryWithFrames,
     discardBroken,
     load,
     shot,
@@ -165,6 +166,7 @@ export function ProductionPage(): ReactElement {
                     onNewAttempt={shot.derivedFrom || (!shot.packages.length && !shot.asset) ? undefined : () => selectPackage('__new__')}
                     onOwnVideo={shot.derivedFrom ? undefined : () => setOwnVideo({ shot: shot.id, busy: false, error: null })}
                     onDiscardAttempt={discardPackage}
+                    onRetryWithFrames={retryWithFrames}
                     onFragment={() => setFragmentOpen(true)}
                     project={project}
                     onSpendChanged={() => void load()}

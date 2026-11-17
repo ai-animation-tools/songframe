@@ -496,6 +496,31 @@ export const AttemptMenu: Story = {
   }
 };
 
+export const RetryWithFrames: Story = {
+  tags: ['ci'],
+  name: 'Меню плана · новая попытка с теми же опорами открывается на видеопромпте',
+  parameters: { songframe: options({ shots: multipleShots }) },
+  play: async (context) => {
+    const screen = screenOf(context);
+    await screen.findByText('Утвердить опору K02?', {}, POLL_TIMEOUT);
+    // Опору первой попытки ещё можно вернуть на месте: пункта нет.
+    const menu = await openMenu(context);
+    await expect(menu.queryByRole('menuitem', { name: steps.retryWithFrames })).not.toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    await userEvent.click(attemptSelect(context));
+    await userEvent.click(await screen.findByRole('option', { name: attemptName(steps.attempt({ number: '2' }), 'Запрос подготовлен') }));
+    await userEvent.click((await openMenu(context)).getByRole('menuitem', { name: steps.retryWithFrames }));
+    await waitFor(() => expect(counts(context)).toHaveTextContent('Попыток с теми же опорами: 1.'));
+    await waitFor(
+      () => expect(attemptSelect(context)).toHaveTextContent(attemptName(steps.attempt({ number: '4' }), 'Видеопромпт на согласовании')),
+      POLL_TIMEOUT
+    );
+    await expect(await screen.findByText('Утвердить видеопромпт?', {}, POLL_TIMEOUT)).toBeInTheDocument();
+    await expect(screen.getByText(texts.useProductionPage.attemptRetried({ relative: 'plan/batches/M02-attempt-02' }))).toBeInTheDocument();
+    await expect(counts(context)).toHaveTextContent('Отправок генерации: 0.');
+  }
+};
+
 /** Попытка без вопроса и кандидатов: следующую опору создают или ставят своим файлом. */
 const noCandidates = () =>
   keyframePackage({

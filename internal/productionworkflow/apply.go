@@ -254,6 +254,20 @@ func (w *Workflow) applyDescription(ctx context.Context, plan *applyPlan) error 
 		if err := w.run(ctx, c.Project, "shot_workflow", args...); err != nil {
 			return err
 		}
+		// Повтор оплаченной попытки: утверждённые опоры прежней переносятся теми же файлами, и
+		// plan-keyframes с проверкой ниже сохраняет неизменённые, как в той же попытке.
+		if c.PackageDir != "" && c.Workflow != nil {
+			fresh, err := packageDocument(target, textWorkflowNotCreated)
+			if err != nil {
+				return err
+			}
+			if err := carryApprovedFrames(c.PackageDir, target, c.Workflow, fresh); err != nil {
+				return err
+			}
+			if err := writeProjectJSON(filepath.Join(target, "workflow.json"), fresh); err != nil {
+				return err
+			}
+		}
 	}
 	keyframes, _ := dynvalue.AsArray(after.Value("keyframes"))
 	// Кадры других планов, которые опоры назвали референсами, — в пакет до остальных файлов: без

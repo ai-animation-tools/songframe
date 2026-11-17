@@ -146,6 +146,11 @@ const (
 	textRecoveryRecordInvalid          = "Неверная запись восстановления."
 	textProtectedImagesSnapshotInvalid = "Неверный снимок защищённых image-попыток."
 	textRecoveryPathMismatch           = "Путь восстановления не совпадает с журналом."
+	textRetryFramesUnavailable         = "Новая попытка с теми же опорами доступна только для попытки с описанием и опорами."
+	textRetryFramesInPlace             = "Опору и промпт этой попытки можно вернуть на доработку в ней самой."
+	textRetryFramesInFlight            = "Дождитесь завершения отправки и получения видео."
+	textRetryFramesNotApproved         = "Не все опоры попытки утверждены или их файлы изменились."
+	textRetryFramesBusy                = "План занят: дождитесь завершения задания."
 )
 
 // textToolExitCode — toolExitCode: инструмент завершился без текста ошибки; code nil — null.

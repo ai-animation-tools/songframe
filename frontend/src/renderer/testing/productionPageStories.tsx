@@ -99,6 +99,8 @@ interface PageModel {
   frameNotes: string[];
   frameRuns: number;
   discards: number;
+  /** Новых попыток с теми же опорами (productionWorkflow.retryWithFrames). */
+  frameRetries: number;
   reviewStarts: number;
   reviewCancels: number;
   manualBuilds: number;
@@ -168,6 +170,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
         frameNotes: [],
         frameRuns: 0,
         discards: 0,
+        frameRetries: 0,
         reviewStarts: 0,
         reviewCancels: 0,
         manualBuilds: 0,
@@ -596,6 +599,31 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
         productionWorkflow: {
           // Подготовка агентом показана отдельной группой историй; здесь есть только свой файл опоры, идущий мимо агента.
           view: async (project, shot, packageDir) => workflowSnapshot(project, shot, packageDir),
+          // Как Go: следующая попытка плана получает описание и утверждённые опоры, промпт — на повторное утверждение.
+          retryWithFrames: async (project, shotId, dir) => {
+            const { shot, pkg } = find(project, dir);
+            if (!pkg.keyframes.length || !pkg.keyframes.every((frame) => frame.approved))
+              throw new Error('Не все опоры попытки утверждены или их файлы изменились.');
+            const relative = `plan/batches/${shot.id}-attempt-0${shot.packages.length + 1}`;
+            const created: PackageView = {
+              ...structuredClone(pkg),
+              dir: `${PAGE_PROJECT}/${relative}`,
+              relative,
+              retryOf: pkg.dir,
+              stage: 'prompt_review',
+              stageLabel: 'Видеопромпт на согласовании',
+              prompt: pkg.prompt ? { ...pkg.prompt, path: `${PAGE_PROJECT}/${relative}/video-prompt.txt`, approved: false } : null,
+              request: null,
+              decision: null,
+              pendingDecision: null
+            };
+            shot.packages = [...shot.packages, created];
+            ask(shot, created, { stage: 'prompt_review', question: 'Утвердить видеопромпт?', options: ['approve', 'revise'], asked_at: DATE });
+            shot.stageLabel = created.stageLabel;
+            model.frameRetries++;
+            publish();
+            return workflowSnapshot(project, shotId, created.dir);
+          },
           generateFrames: async (project, shot, dir) => {
             find(project, dir);
             model.frameRuns++;
@@ -803,10 +831,10 @@ export function ProductionPageStory({ links = [] }: { links?: StoryLink[] }): Re
           <Typography variant="caption" color="text.secondary" data-testid="production-model">
             Чтений: {model.reads}. Ответов: {model.decisions}. Выборов оригинала: {model.selections}. Утверждено опор: {approved.join(', ') || 'нет'}. Приёмок
             комплекта: {model.accepts}. Отправок генерации: {model.submissions}. Своих файлов опор: {model.frameImports}. Указаний к опорам:{' '}
-            {model.frameNotes.join(', ') || 'нет'}. Созданий опор: {model.frameRuns}. Удалений попыток: {model.discards}. Пакетов ручной генерации:{' '}
-            {model.manualBuilds}. Загрузок видео: {model.manualUploads}. Замен видео: {model.manualReplacements}. Своих видео: {model.ownVideos}. Возвратов
-            промпта: {model.promptReopens.join(', ') || 'нет'}. Своих описаний: {model.ownSaves.join(', ') || 'нет'}. Способов генерации:{' '}
-            {model.methodChanges.join(', ') || 'нет'}.
+            {model.frameNotes.join(', ') || 'нет'}. Созданий опор: {model.frameRuns}. Удалений попыток: {model.discards}. Попыток с теми же опорами:{' '}
+            {model.frameRetries}. Пакетов ручной генерации: {model.manualBuilds}. Загрузок видео: {model.manualUploads}. Замен видео: {model.manualReplacements}
+            . Своих видео: {model.ownVideos}. Возвратов промпта: {model.promptReopens.join(', ') || 'нет'}. Своих описаний: {model.ownSaves.join(', ') || 'нет'}
+            . Способов генерации: {model.methodChanges.join(', ') || 'нет'}.
           </Typography>
           <Typography variant="caption" color="text.secondary" data-testid="production-review-model">
             Проверок видео: {model.reviewStarts}. Отмен проверок: {model.reviewCancels}.

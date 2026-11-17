@@ -40,6 +40,25 @@ export const REQUEST_IN_FLIGHT = [
   'polling'
 ];
 
+/** Этапы, на которых утверждённую опору возвращают на доработку в самой попытке (shot_workflow reopen). */
+export const FRAME_REOPEN_STAGES = ['keyframes_review', 'prompt_review', 'image_request_choice', 'needs_revision'];
+
+/**
+ * Из попытки можно начать новую с теми же опорами (productionWorkflow.retryWithFrames): все опоры
+ * утверждены, а вернуть опору на месте уже нельзя; не своё видео и не во время отправки. Go
+ * проверяет то же и дополнительно — файлы опор.
+ */
+export function canRetryWithFrames(pkg: PackageView): boolean {
+  return (
+    !pkg.request?.ownVideo &&
+    pkg.stage !== 'description_review' &&
+    !FRAME_REOPEN_STAGES.includes(pkg.stage) &&
+    pkg.keyframes.length > 0 &&
+    pkg.keyframes.every((frame) => frame.approved) &&
+    !REQUEST_IN_FLIGHT.includes(pkg.request?.attemptStatus ?? '')
+  );
+}
+
 const QUESTION_STEPS: Record<string, PlanStepKey> = {
   description_review: 'description',
   keyframes_review: 'frames',

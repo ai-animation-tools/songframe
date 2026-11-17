@@ -88,6 +88,13 @@ func (s *ProductionWorkflowService) FixScenario(ctx context.Context, project, sh
 	return wire.Done(s.workflow.FixScenario(project, shot, packageDir, id))
 }
 
+// RetryWithFrames — productionWorkflow.retryWithFrames: новая попытка плана с описанием, опорами и
+// срезом речи выбранной попытки и неутверждённым промптом. Попытки лежат вне Git, поэтому точка
+// истории проекта не нужна.
+func (s *ProductionWorkflowService) RetryWithFrames(ctx context.Context, project, shot, packageDir string) (productionworkflow.View, error) {
+	return wire.Done(s.workflow.RetryWithFrames(ctx, project, shot, packageDir))
+}
+
 // GenerateFrames — productionWorkflow.generateFrames: сначала проверка доступа KindImage —
 // выбранный провайдер изображений, его программа-агент или вход в платного провайдера, затем
 // следующая опора плана. Внутри генерации выбор второй раз не проверяется.

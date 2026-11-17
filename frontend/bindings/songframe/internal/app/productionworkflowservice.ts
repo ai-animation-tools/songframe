@@ -78,6 +78,15 @@ export function ReferenceImages(project: string, shot: string): $CancellableProm
 }
 
 /**
+ * RetryWithFrames — productionWorkflow.retryWithFrames: новая попытка плана с описанием, опорами и
+ * срезом речи выбранной попытки и неутверждённым промптом. Попытки лежат вне Git, поэтому точка
+ * истории проекта не нужна.
+ */
+export function RetryWithFrames(project: string, shot: string, packageDir: string): $CancellablePromise<productionworkflow$0.View> {
+    return $Call.ByID(245515918, project, shot, packageDir);
+}
+
+/**
  * SaveOwn — productionWorkflow.saveOwn: своё описание с планом опор или свой видеопромпт
  * применяются без агента; доступ к ИИ и провайдеру не нужен.
  */

@@ -13,12 +13,11 @@ import { ImageGallery } from '../../../components/ImageGallery';
 import { ImageThumbnail } from '../../../components/ImageThumbnail';
 import { ActionButton } from '../../../components/ActionButton';
 import { BUSY_REASON } from '../constants';
+import { FRAME_REOPEN_STAGES } from '../planPath';
 import { KeyframeNotes } from './KeyframeNotes';
 import { KeyframeReopenDialog } from './KeyframeReopenDialog';
 
 const ROLE_LABELS: Record<string, string> = productionTexts.frameRoleLabels;
-/** Этапы пакета, на которых инструмент принимает возврат утверждённой опоры (shot_workflow reopen). */
-const REOPEN_STAGES = ['keyframes_review', 'prompt_review', 'image_request_choice', 'needs_revision'];
 
 type FrameState = 'missing' | 'candidate' | 'asked' | 'approved';
 
@@ -50,7 +49,7 @@ function copyReopenReason(id: string, source: string): string {
 function reopenFrameReason(pkg: PackageView): string | null {
   if (pkg.prompt?.approved) return productionTexts.packageKeyframes.promptApproved;
   if (pkg.request && pkg.request.kind !== 'image') return productionTexts.packageKeyframes.requestPrepared;
-  if (!REOPEN_STAGES.includes(pkg.stage)) return productionTexts.packageKeyframes.imagePending;
+  if (!FRAME_REOPEN_STAGES.includes(pkg.stage)) return productionTexts.packageKeyframes.imagePending;
   return null;
 }
 

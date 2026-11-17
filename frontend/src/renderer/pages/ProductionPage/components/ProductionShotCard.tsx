@@ -3,6 +3,7 @@ import { productionTexts } from '@shared/texts/production';
 import { useState, type ReactElement } from 'react';
 import { Alert, Box, Button, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Paper, TextField, Tooltip, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import ReplayIcon from '@mui/icons-material/Replay';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
@@ -16,7 +17,7 @@ import { formatClock } from '../../../format';
 import { JobStatus } from '../../../components/JobStatus';
 import { BUSY_REASON } from '../constants';
 import { isQueuedPackage } from '../decisions';
-import { attemptLabel, REQUEST_IN_FLIGHT, type PlanTone } from '../planPath';
+import { attemptLabel, canRetryWithFrames, REQUEST_IN_FLIGHT, type PlanTone } from '../planPath';
 import { AcceptedAsset } from './AcceptedAsset';
 import { DerivedShotNotice } from './DerivedShotNotice';
 import { ShotSpendSummary } from './ShotSpendSummary';
@@ -38,6 +39,7 @@ export function ProductionShotCard({
   onNewAttempt,
   onOwnVideo,
   onDiscardAttempt,
+  onRetryWithFrames,
   onFragment,
   project,
   onSpendChanged
@@ -55,6 +57,8 @@ export function ProductionShotCard({
   /** Фраза пути плана: что происходит и чей ход. */
   now?: { text: string; tone: PlanTone } | null;
   onNewAttempt?(): void;
+  /** Новая попытка с описанием, опорами и срезом речи выбранной; после отправки видео. */
+  onRetryWithFrames?(pkg: PackageView): void;
   /** Загрузить своё видео плана новой попыткой без описания, опор и промпта. */
   onOwnVideo?(): void;
   /** Удалить попытку целиком; доступно вне незавершённой отправки. */
@@ -71,6 +75,7 @@ export function ProductionShotCard({
   const attempts = shot.derivedFrom ? [] : shot.packages;
   const attempt = attempts.find((pkg) => pkg.dir === selectedPackage) ?? null;
   const canDiscard = !!onDiscardAttempt && !!attempt && attempt.stage !== 'accepted' && !REQUEST_IN_FLIGHT.includes(attempt.request?.attemptStatus ?? '');
+  const retryFrom = onRetryWithFrames && attempt && canRetryWithFrames(attempt) ? attempt : null;
   const paidAttempt = !!attempt?.request?.generationId || (attempt?.request?.creditsConsumed ?? null) !== null;
   const canRetry = !shot.derivedFrom && (shot.state === 'completed' || shot.packages.length > 0);
   const waiting = (shot.derivedFrom ? [] : shot.packages).filter((pkg) => pkg.pendingDecision && pkg.dir !== selectedPackage);
@@ -99,7 +104,7 @@ export function ProductionShotCard({
             {productionTexts.fragmentPreview.open}
           </Button>
         ) : null}
-        {canRetry || onNewAttempt || onOwnVideo || canDiscard ? (
+        {canRetry || onNewAttempt || retryFrom || onOwnVideo || canDiscard ? (
           <Tooltip title={productionTexts.planPath.moreActions}>
             <IconButton size="small" aria-label={productionTexts.planPath.moreActions} onClick={(event) => setMenu(event.currentTarget)}>
               <MoreVertIcon fontSize="small" />
@@ -119,6 +124,21 @@ export function ProductionShotCard({
               <AddIcon fontSize="small" />
             </ListItemIcon>
             {productionTexts.planPath.newAttempt}
+          </MenuItem>
+        ) : null}
+        {retryFrom ? (
+          <MenuItem
+            disabled={busy}
+            title={productionTexts.planPath.retryWithFramesHint}
+            onClick={() => {
+              setMenu(null);
+              onRetryWithFrames?.(retryFrom);
+            }}
+          >
+            <ListItemIcon>
+              <ContentCopyIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText primary={productionTexts.planPath.retryWithFrames} secondary={busy ? BUSY_REASON : null} />
           </MenuItem>
         ) : null}
         {onOwnVideo ? (

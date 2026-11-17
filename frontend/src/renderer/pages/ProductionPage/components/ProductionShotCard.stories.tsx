@@ -152,6 +152,29 @@ export const NewAttempt: Story = {
     await expect(canvas.getByTestId('shot-model')).toHaveTextContent('Попыток: 1.');
   }
 };
+const framesReview = { ...preparedPackage(), stage: 'keyframes_review', stageLabel: 'Опоры на согласовании', pendingDecision: null };
+export const RetryWithFrames: Story = {
+  tags: ['ci'],
+  name: 'Меню · новая попытка с теми же опорами выбирает её, прежняя остаётся',
+  args: { initialShot: productionShot({ packages: [waiting] }), initialSelected: waiting.dir },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const item = (await openMenu(canvasElement)).getByRole('menuitem', { name: path.retryWithFrames });
+    await expect(item).toHaveAttribute('title', path.retryWithFramesHint);
+    await userEvent.click(item);
+    await expect(canvas.getByText(/Открыт пакет: plan\/batches\/M02-attempt-02/)).toBeInTheDocument();
+    await expect(canvas.getByTestId('shot-model')).toHaveTextContent('Попыток: 2.');
+  }
+};
+export const RetryWithFramesInPlace: Story = {
+  name: 'Меню · пока опору можно вернуть на месте, новой попытки с опорами нет',
+  args: { initialShot: productionShot({ packages: [framesReview] }), initialSelected: framesReview.dir },
+  play: async ({ canvasElement }) => {
+    const menu = await openMenu(canvasElement);
+    await expect(menu.getByRole('menuitem', { name: path.newAttempt })).toBeInTheDocument();
+    await expect(menu.queryByRole('menuitem', { name: path.retryWithFrames })).not.toBeInTheDocument();
+  }
+};
 export const DeleteAttempt: Story = {
   name: 'Меню · удаление попытки только после подтверждения',
   args: { initialShot: productionShot({ packages: [waiting] }), initialSelected: waiting.dir },

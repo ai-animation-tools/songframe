@@ -1,0 +1,217 @@
+{
+  "schema_version": 1,
+  "fps": 30,
+  "audio": {
+    "path": "source/track.mp3",
+    "end_seconds": "30"
+  },
+  "references": {
+    "mira": {
+      "name": "Мира",
+      "path": "source/heroes/mira.png"
+    },
+    "lev": {
+      "name": "Лев",
+      "path": "source/heroes/lev.png"
+    },
+    "boat": {
+      "name": "Лодка",
+      "path": "source/vehicles/boat.png"
+    },
+    "pier": {
+      "name": "Причал",
+      "path": "source/locations/pier.png"
+    },
+    "garage": {
+      "name": "Гараж",
+      "path": "source/locations/garage.png"
+    }
+  },
+  "visual_direction": "Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.",
+  "sequences": [
+    {
+      "id": "intro",
+      "title": "Вечер у воды",
+      "direction": "Общий план причала, спокойный темп."
+    },
+    {
+      "id": "verse",
+      "title": "Фонарики",
+      "direction": "Друзья развешивают фонарики."
+    },
+    {
+      "id": "outro",
+      "title": "Проигрыш",
+      "direction": "Повтор общего плана как финальная точка."
+    }
+  ],
+  "scenes": [
+    {
+      "id": "M01",
+      "original": "Вступление",
+      "sequence": "intro",
+      "title": "Вечер у воды",
+      "start_frame": 0,
+      "end_frame_exclusive": 240,
+      "camera": "Общий план с воздуха, медленный наезд",
+      "action": "Лодка покачивается у причала.",
+      "continuity": "Начало клипа; лодка у причала.",
+      "references": [
+        "boat",
+        "pier"
+      ],
+      "lipsync": false,
+      "card": {
+        "primary_reference": "boat"
+      },
+      "state_from": null,
+      "state_changes": {
+        "after": {
+          "boat": {
+            "dirt": "с каплями воды"
+          }
+        }
+      }
+    },
+    {
+      "id": "M02",
+      "original": "Вечер зажёг фонари у воды",
+      "sequence": "verse",
+      "start_frame": 240,
+      "end_frame_exclusive": 360,
+      "camera": "Средний план на причале",
+      "action": "Мира держит фонарик, Лев смотрит на воду.",
+      "continuity": "Продолжение вечера из M01.",
+      "references": [
+        "mira",
+        "lev",
+        "boat",
+        "pier"
+      ],
+      "lipsync": false,
+      "card": {
+        "primary_reference": "boat"
+      },
+      "state_from": "M01",
+      "state_changes": {
+        "after": {
+          "boat": {
+            "sink": "у края причала"
+          }
+        }
+      }
+    },
+    {
+      "id": "M03",
+      "original": "Ветер качает бумажные огни",
+      "sequence": "verse",
+      "start_frame": 360,
+      "end_frame_exclusive": 480,
+      "camera": "Общий план сбоку",
+      "action": "Фонарики качаются на ветру.",
+      "continuity": "Лодка остаётся у причала.",
+      "references": [
+        "boat",
+        "pier"
+      ],
+      "lipsync": false,
+      "card": {
+        "primary_reference": "pier"
+      },
+      "state_from": "M02",
+      "state_changes": {
+        "after": {
+          "boat": {
+            "dirt": "покрыта каплями",
+            "sink": "у края причала"
+          }
+        }
+      }
+    },
+    {
+      "id": "M04",
+      "original": "Мы отпускаем огни в небеса",
+      "sequence": "verse",
+      "start_frame": 480,
+      "end_frame_exclusive": 600,
+      "camera": "Крупный план Миры",
+      "action": "Мира поднимает фонарик, Лев улыбается.",
+      "continuity": "Мира стоит у воды.",
+      "references": [
+        "mira",
+        "lev",
+        "boat",
+        "pier"
+      ],
+      "lipsync": true,
+      "card": {
+        "primary_reference": "mira"
+      },
+      "state_from": "M03",
+      "state_changes": {
+        "before": {
+          "mira": {
+            "position": "стоит у края причала"
+          },
+          "lev": {
+            "holding": "фонарь в левой руке"
+          },
+          "boat": {
+            "position": "рядом с Мирой"
+          }
+        },
+        "after": {
+          "mira": {
+            "clothes_condition": "яркая куртка"
+          }
+        }
+      }
+    },
+    {
+      "id": "M05",
+      "original": "Проигрыш: лодку закатывают в гараж",
+      "sequence": "outro",
+      "title": "В гараже",
+      "start_frame": 600,
+      "end_frame_exclusive": 750,
+      "camera": "Общий план от ворот, статика",
+      "action": "Мира и Лев закатывают лодку в гараж.",
+      "continuity": "Сразу после M04, место сменилось на гараж.",
+      "references": [
+        "mira",
+        "lev",
+        "boat",
+        "garage"
+      ],
+      "lipsync": false,
+      "card": {
+        "primary_reference": "boat"
+      },
+      "state_from": "M04",
+      "state_changes": {}
+    },
+    {
+      "id": "M06",
+      "original": "Проигрыш: в гараже",
+      "sequence": "outro",
+      "title": "Лодка на месте",
+      "start_frame": 750,
+      "end_frame_exclusive": 900,
+      "camera": "Общий план от ворот, статика",
+      "action": "Лодка стоит у верстака, Мира и Лев отходят.",
+      "continuity": "Продолжение M05 в гараже.",
+      "references": [
+        "mira",
+        "lev",
+        "boat",
+        "garage"
+      ],
+      "lipsync": false,
+      "card": {
+        "primary_reference": "boat"
+      },
+      "state_from": "M05",
+      "state_changes": {}
+    }
+  ]
+}

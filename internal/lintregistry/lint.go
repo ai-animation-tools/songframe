@@ -1,6 +1,7 @@
 // Package lintregistry проверяет plan/scenes.json, кастинг, описание, комплекты assets, файл
 // принятия и рабочие пакеты по встроенным JSON-схемам (подмножество JSON Schema) и правилам
-// владения сведениями (хроника принятий и технические рецепты не хранятся в постановке).
+// владения сведениями (хроника принятий и технические рецепты не хранятся в постановке), а также
+// предупреждает о состоянии обстановки, унаследованном через смену места (stale_state.go).
 //
 // Вывод зафиксирован эталоном testdata/golden/lint-registry: строки «ОШИБКА/предупреждение  файл · место: текст»
 // и итог, либо JSON {errors, warnings} с --json; код 1 при ошибках (и предупреждениях с --strict).
@@ -823,6 +824,7 @@ func Lint(root string) (*Report, error) {
 	if err := lintDescription(root, data, r); err != nil {
 		return nil, err
 	}
+	lintStaleState(root, r)
 	if err := lintAssets(root, r); err != nil {
 		return nil, err
 	}

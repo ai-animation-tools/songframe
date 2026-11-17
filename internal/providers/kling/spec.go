@@ -39,10 +39,12 @@ var secretWords = []string{"token", "credential", "password", "base_url"}
 // требуется явное значение.
 var explicitResolutionModels = map[string]bool{"kling-video-v4_0": true}
 
-// PromptWarningChars — документированный предел промпта API Kling. Поведение сервера при
-// превышении не проверено, поэтому приложение не утверждает видеопромпт длиннее предела
-// (mediaadapters.PromptLimit), а подготовка запроса по-прежнему лишь предупреждает (ValidatePrompt).
-const PromptWarningChars = 2500
+// PromptWarningChars — предел видеопромпта Kling в приложении. Документация API Kling 3.0
+// называет 3072 символа максимумом (2500 — рекомендацией), а MCP-сервер предел не объявляет; запас
+// до 3072 оставлен, пока поведение сервера на длинных промптах не проверено. Приложение не
+// утверждает видеопромпт длиннее предела (mediaadapters.PromptLimit), подготовка запроса лишь
+// предупреждает (ValidatePrompt).
+const PromptWarningChars = 3000
 
 var (
 	identifierPattern = toolregex.MustCompile(`[A-Za-z0-9_.-]+`, 0)

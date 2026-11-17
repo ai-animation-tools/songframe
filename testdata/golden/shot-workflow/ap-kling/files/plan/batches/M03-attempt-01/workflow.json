@@ -41,9 +41,9 @@
   "prompt": {
     "path": "video-prompt.txt",
     "approved": true,
-    "chars": 2501
+    "chars": 3001
   },
-  "approved_prompt_sha256": "f551370d3700acf918a3f11082b7e71f0c8e6976d1909b066c3a35220717108c",
+  "approved_prompt_sha256": "d9b7e7a3f0d400e2ed6b70c369df7c721e5b95f68becf044d250d75ebf511d0c",
   "retry_of": null,
   "frame_source": null,
   "model": null,

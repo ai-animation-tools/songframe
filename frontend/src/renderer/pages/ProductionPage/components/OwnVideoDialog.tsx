@@ -3,6 +3,8 @@
  * опор и видеопромпта: они нужны только генерации, а видео уже готово. Форма та же, что у ручной генерации: файл,
  * обязательный источник, стоимость и примечание.
  * Формат и запись проверяет Go до создания попытки; отказ остаётся в окне, черновик закрывается только кнопкой отмены.
+ * После загрузки страница сама открывает приёмку; если в другой попытке плана ждёт непринятый результат, окно
+ * предупреждает: приёмка этого видео удалит его вместе с остальными рабочими попытками.
  */
 import { useState, type ReactElement } from 'react';
 import { Alert, Stack, Typography } from '@mui/material';
@@ -18,6 +20,7 @@ const texts = productionTexts.ownVideo;
 export function OwnVideoDialog({
   shot,
   replace = false,
+  unaccepted = null,
   busy,
   error,
   onClose,
@@ -26,6 +29,8 @@ export function OwnVideoDialog({
   shot: string;
   /** Замена уже загруженного вручную видео попытки, а не новая попытка своего видео. */
   replace?: boolean;
+  /** Непринятые результаты других попыток плана одной строкой («Попытка 1 (оплаченная генерация)»); null — нет. */
+  unaccepted?: string | null;
   /** Загрузка запускается: окно ждёт ответа Go. */
   busy: boolean;
   /** Отказ Go при последней попытке загрузить. */
@@ -42,7 +47,7 @@ export function OwnVideoDialog({
       explicitCancelOnly
       title={replace ? texts.replaceTitle({ shot }) : texts.title({ shot })}
       contentLabel={replace ? texts.replaceTitle({ shot }) : texts.title({ shot })}
-      confirmLabel={replace ? texts.replace : productionTexts.manualGeneration.upload}
+      confirmLabel={productionTexts.manualGeneration.upload}
       confirmIcon={<UploadFileIcon />}
       confirmDisabled={busy || !state.video}
       confirmDisabledReason={reason}
@@ -56,6 +61,7 @@ export function OwnVideoDialog({
         <Typography variant="body2" color="text.secondary">
           {replace ? texts.replaceIntro : texts.intro}
         </Typography>
+        {unaccepted ? <Alert severity="warning">{texts.unaccepted({ attempts: unaccepted })}</Alert> : null}
         <Alert severity="info">{texts.format}</Alert>
         {error ? (
           <Alert severity="error">

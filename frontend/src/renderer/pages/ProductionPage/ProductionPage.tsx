@@ -20,7 +20,7 @@ import { OwnVideoDialog } from './components/OwnVideoDialog';
 import type { ManualVideo } from '@shared/types';
 import { useApp } from '../../state';
 import { useProductionPage } from './useProductionPage';
-import { acceptShownResult } from './decisions';
+import { acceptShownResult, unacceptedResults } from './decisions';
 import type { PlanPath } from './planPath';
 import { PageActionBar } from '../../components/PageActionBar';
 import { ProductionQueue } from './components/ProductionQueue';
@@ -58,6 +58,7 @@ export function ProductionPage(): ReactElement {
     acceptDialog,
     setAcceptDialog,
     openAccept,
+    acceptAfterUpload,
     acceptOptions,
     setAcceptOptions,
     confirmSend,
@@ -89,7 +90,10 @@ export function ProductionPage(): ReactElement {
   if (!view) return <></>;
   // Смена плана или попытки сбрасывает черновики пути и устаревшую фразу шапки.
   const pathKey = `${project}:${shot?.id ?? ''}:${packageSelection}`;
-  /** Своё видео: отказ Go (не MP4, план занят) остаётся в окне; после запуска открывается новая попытка. */
+  /**
+   * Своё видео: отказ Go (не MP4, план занят) остаётся в окне; после запуска открывается новая попытка,
+   * а по завершении загрузки — окно приёмки (с заменой принятого комплекта, если он есть).
+   */
   const uploadOwnVideo = async (video: ManualVideo): Promise<void> => {
     if (!ownVideo) return;
     const target = ownVideo.shot;
@@ -99,12 +103,14 @@ export function ProductionPage(): ReactElement {
       if (replaceDir) {
         const job = await window.api.production.replaceManual(project, replaceDir, video);
         setOwnVideo(null);
+        acceptAfterUpload(job, replaceDir, target);
         await act(productionTexts.ownVideo.replaceStarted, async () => job, replaceDir, target);
         return;
       }
       const started = await window.api.production.attachOwnVideo(project, target, video);
       setOwnVideo(null);
       selectPackage(started.packageDir);
+      acceptAfterUpload(started.job, started.packageDir, target);
       await act(productionTexts.ownVideo.started, async () => started.job, started.packageDir, target);
     } catch (error) {
       setOwnVideo({ shot: target, busy: false, error: describeError(error), replaceDir });
@@ -233,7 +239,11 @@ export function ProductionPage(): ReactElement {
                           selectedPackage &&
                           act(
                             productionTexts.manualGeneration.started,
-                            () => window.api.production.attachManual(project, selectedPackage.dir, video),
+                            async () => {
+                              const job = await window.api.production.attachManual(project, selectedPackage.dir, video);
+                              acceptAfterUpload(job, selectedPackage.dir, shot.id);
+                              return job;
+                            },
                             selectedPackage.dir
                           )
                         }
@@ -268,6 +278,7 @@ export function ProductionPage(): ReactElement {
           key={`${project}:${ownVideo.shot}`}
           shot={ownVideo.shot}
           replace={!!ownVideo.replaceDir}
+          unaccepted={unacceptedResults(view.shots.find((item) => item.id === ownVideo.shot)?.packages ?? [], ownVideo.replaceDir)}
           busy={ownVideo.busy}
           error={ownVideo.error}
           onClose={() => setOwnVideo(null)}

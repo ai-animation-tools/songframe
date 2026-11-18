@@ -12,6 +12,7 @@ import {
   reviewShots,
   sendConfirmedRequest,
   defaultAcceptOptions,
+  unacceptedResults,
   withResultMedia
 } from './decisions';
 
@@ -253,5 +254,26 @@ describe('withResultMedia', () => {
   });
   it('без сведений ffprobe цель не меняется', () => {
     expect(withResultMedia(target, null)).toBe(target);
+  });
+});
+
+describe('непринятые результаты других попыток', () => {
+  it('называет скачанные непринятые результаты, отмечает оплаченные и пропускает выбранную попытку', () => {
+    const paid = fixture({
+      dir: '/p/01',
+      relative: 'plan/batches/S01-attempt-01',
+      stage: 'downloaded',
+      request: { attemptStatus: 'downloaded', generationId: 'gen-1', creditsConsumed: 60 } as PackageView['request']
+    });
+    const own = fixture({
+      dir: '/p/02',
+      relative: 'plan/batches/S01-attempt-02',
+      stage: 'downloaded',
+      request: { attemptStatus: 'downloaded', generationId: null, creditsConsumed: null } as PackageView['request']
+    });
+    const prepared = fixture({ dir: '/p/03', relative: 'plan/batches/S01-attempt-03', stage: 'request_choice' });
+    expect(unacceptedResults([paid, own, prepared])).toBe('Попытка 1 (оплаченная генерация), Попытка 2');
+    expect(unacceptedResults([paid, own, prepared], '/p/02')).toBe('Попытка 1 (оплаченная генерация)');
+    expect(unacceptedResults([prepared])).toBeNull();
   });
 });

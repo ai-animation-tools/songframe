@@ -541,6 +541,8 @@ export function ProductionPath({
           <>
             {pkg?.request?.kind !== 'image' ? result : null}
             {pkg?.request?.manualGeneration ? <ManualGenerationInfo record={pkg.request.manualGeneration} /> : null}
+            {/* Решение о результате — сразу под ним: прежний принятый комплект ниже лишь для сравнения. */}
+            {current ? decision(key) : null}
             {pkg?.request?.manualResult && pkg.stage !== 'accepted' && onReplaceVideo ? (
               <ActionButton
                 size="small"
@@ -555,7 +557,6 @@ export function ProductionPath({
               </ActionButton>
             ) : null}
             {shot.asset ? <AcceptedAsset asset={shot.asset} /> : null}
-            {current ? decision(key) : null}
           </>
         );
     }

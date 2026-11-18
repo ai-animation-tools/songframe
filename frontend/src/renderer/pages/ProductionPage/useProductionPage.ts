@@ -89,6 +89,10 @@ export function useProductionPage() {
     },
     [fps, project]
   );
+  // Видео, загруженное пользователем (своё или ручной генерации), ждёт приёмки: окно «Принять результат»
+  // открывается само, когда задание загрузки завершилось и снимок попытки показывает скачанный результат.
+  // Ожидание одно на страницу: новая загрузка заменяет прежнюю, отказ задания или смена проекта его снимают.
+  const [acceptAfter, setAcceptAfter] = useState<{ project: string; job: JobInfo; dir: string; shot: string } | null>(null);
   const [confirmSend, setConfirmSend] = useState<PackageView | null>(null);
   const [confirmRegenerate, setConfirmRegenerate] = useState<string | null>(null);
   const projectScope = useRef(new RequestScope()).current;
@@ -144,6 +148,7 @@ export function useProductionPage() {
     setConfirmSend(null);
     setConfirmRegenerate(null);
     setAcceptDialog(null);
+    setAcceptAfter(null);
   }, [project]);
 
   useEffect(() => {
@@ -192,6 +197,27 @@ export function useProductionPage() {
       );
     }
   }, [jobs, operations, notify, project]);
+
+  // Загрузка своего видео или видео ручной генерации — намерение поставить его в план: после задания
+  // сразу открывается приёмка (с заменой, если комплект уже принят). Снимок страницы может отставать
+  // от завершения задания на один опрос, поэтому окно ждёт скачанного результата в самой попытке.
+  // Отмена окна оставляет вопрос попытки открытым: «Принять» на шаге «Результат» открывает его снова.
+  useEffect(() => {
+    if (!acceptAfter || !view || acceptAfter.project !== project) return;
+    const job = jobs.find((item) => item.id === acceptAfter.job.id) ?? acceptAfter.job;
+    if (job.status === 'running') return;
+    const target = view.shots.find((item) => item.id === acceptAfter.shot);
+    const pkg = target?.packages.find((item) => item.dir === acceptAfter.dir);
+    // Новая попытка своего видео может ещё не попасть в снимок: ждём её, пока задание не отказало.
+    const ready = !!target && !!pkg && pkg.request?.attemptStatus === 'downloaded' && !!pkg.resultToken;
+    if (job.status === 'done' && !ready) return;
+    setAcceptAfter(null);
+    if (!ready) return;
+    setSelected(target.id);
+    setSelectedPackages((current) => ({ ...current, [`${project}\0${target.id}`]: pkg.dir }));
+    openAccept(pkg, !!target.asset, target.lipsync);
+  }, [acceptAfter, view, jobs, project, openAccept]);
+  const acceptAfterUpload = useCallback((job: JobInfo, dir: string, shotId: string) => setAcceptAfter({ project, job, dir, shot: shotId }), [project]);
 
   const shot = view?.shots.find((item) => item.id === selected) ?? null;
   // После выбора пакет закреплён: появление новой попытки не переключает текущий просмотр.
@@ -460,6 +486,7 @@ export function useProductionPage() {
     acceptDialog,
     setAcceptDialog,
     openAccept,
+    acceptAfterUpload,
     acceptOptions,
     setAcceptOptions,
     confirmSend,

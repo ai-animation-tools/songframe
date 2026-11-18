@@ -705,7 +705,11 @@ export const ManualGeneration: Story = {
     await userEvent.type(step.getByRole('textbox', { name: new RegExp(manual.source) }), 'Тестовый сервис на сайте');
     await userEvent.type(step.getByRole('spinbutton', { name: manual.cost }), '75');
     await userEvent.click(step.getByRole('button', { name: manual.upload }));
-    // После загрузки — обычный вопрос о результате, сведения о видео остаются у результата.
+    // После загрузки сразу открывается приёмка; отмена оставляет вопрос о результате открытым.
+    const offer = await screen.findByRole('dialog', { name: texts.acceptResultDialog.title({ shot: 'M02' }) }, POLL_TIMEOUT);
+    await userEvent.click(within(offer).getByRole('button', { name: commonTexts.cancel }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    // Сведения о видео остаются у результата, «Принять» — сразу под ним.
     await expect(await screen.findByText(steps.now({ text: steps.reviewResult }), {}, POLL_TIMEOUT)).toBeInTheDocument();
     await expect(await within(planStep(context, 'result')).findByText(/Источник: Тестовый сервис на сайте · Стоимость: 75 кредитов/)).toBeInTheDocument();
     await expect(counts(context)).toHaveTextContent('Отправок генерации: 0.');
@@ -715,7 +719,7 @@ export const ManualGeneration: Story = {
 
 export const OwnVideo: Story = {
   tags: ['ci'],
-  name: 'Своё видео · новая попытка без описания, опор и промпта сразу получает результат',
+  name: 'Своё видео · новая попытка сразу получает результат, приёмка открывается сама',
   parameters: { songframe: options({}, '/project/production?shot=M04') },
   play: async (context) => {
     const screen = screenOf(context);
@@ -737,7 +741,10 @@ export const OwnVideo: Story = {
     await waitFor(() => expect(dialog.getByRole('button', { name: manual.upload })).toBeEnabled());
     await userEvent.click(dialog.getByRole('button', { name: manual.upload }));
     await waitFor(() => expect(counts(context)).toHaveTextContent('Своих видео: 1.'), POLL_TIMEOUT);
-    await expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    // Загрузка закончена — сразу предлагается приёмка. Отмена не принимает и не снимает вопрос о результате.
+    const offer = await screen.findByRole('dialog', { name: texts.acceptResultDialog.title({ shot: 'M04' }) }, POLL_TIMEOUT);
+    await userEvent.click(within(offer).getByRole('button', { name: commonTexts.cancel }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     // Путь короткий: «Своё видео» и «Результат»; описания, опор и промпта нет.
     await expect(await screen.findByText(steps.now({ text: steps.reviewResult }), {}, POLL_TIMEOUT)).toBeInTheDocument();
     await expect(planStep(context, 'description')).toBeNull();
@@ -752,16 +759,23 @@ export const OwnVideo: Story = {
     await expect(result.queryByRole('button', { name: texts.verdictLabels.retry })).not.toBeInTheDocument();
     await expect(result.queryByRole('button', { name: texts.verdictLabels.revise })).not.toBeInTheDocument();
     await expect(counts(context)).toHaveTextContent('Отправок генерации: 0.');
-    // Не то видео: «Заменить видео» до приёмки загружает другое, источник берётся из новой формы.
+    // Решение стоит сразу под загруженным видео, раньше кнопки другого файла.
+    const order = result.getByRole('button', { name: texts.verdictLabels.accept }).compareDocumentPosition(result.getByRole('button', { name: own.replace }));
+    await expect(order & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // Не то видео: «Загрузить другой файл» до приёмки меняет загруженное, источник берётся из новой формы.
     await userEvent.click(result.getByRole('button', { name: own.replace }));
     const replace = within(await screen.findByRole('dialog', { name: own.replaceTitle({ shot: 'M04' }) }));
     await expect(replace.getByText(own.replaceIntro)).toBeVisible();
     await userEvent.click(replace.getByRole('button', { name: new RegExp(manual.zone) }));
     await replace.findByText(manual.chosen({ name: STORY_VIDEO_PATH.split('/').pop()! }));
     await userEvent.type(replace.getByRole('textbox', { name: new RegExp(manual.source) }), 'Нужный дубль');
-    await waitFor(() => expect(replace.getByRole('button', { name: own.replace })).toBeEnabled());
-    await userEvent.click(replace.getByRole('button', { name: own.replace }));
+    await waitFor(() => expect(replace.getByRole('button', { name: manual.upload })).toBeEnabled());
+    await userEvent.click(replace.getByRole('button', { name: manual.upload }));
     await waitFor(() => expect(counts(context)).toHaveTextContent('Замен видео: 1.'), POLL_TIMEOUT);
+    // После замены файла приёмка снова открывается сама; здесь её тоже откладывают.
+    const again = await screen.findByRole('dialog', { name: texts.acceptResultDialog.title({ shot: 'M04' }) }, POLL_TIMEOUT);
+    await userEvent.click(within(again).getByRole('button', { name: commonTexts.cancel }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     await expect(await within(planStep(context, 'result')).findByText(/Источник: Нужный дубль/, {}, POLL_TIMEOUT)).toBeInTheDocument();
     // Сводка заменённого видео пересобрана под тем же именем: адрес кадра несёт новый токен результата.
     await waitFor(() => {

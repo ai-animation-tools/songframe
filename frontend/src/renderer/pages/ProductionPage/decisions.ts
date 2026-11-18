@@ -1,6 +1,7 @@
 import { productionTexts } from '@shared/texts/production';
 /** Черновик замечания и платное подтверждение относятся к показанному вопросу, а не ко всему плану. */
 import type { Api } from '@shared/api';
+import { attemptLabel } from './planPath';
 import type { AcceptOptions, JobInfo, PackageView, ProductionView, ResultMedia } from '@shared/types';
 
 export function decisionNoteKey(pkg: PackageView): string {
@@ -138,4 +139,19 @@ export function relocatedPackage(pkg: PackageView, view: ProductionView): Packag
     .flatMap((shot) => shot.packages)
     .filter((candidate) => isQueuedPackage(candidate) && candidate.request?.sha256 === pkg.request?.sha256);
   return candidates.length === 1 ? candidates[0] : null;
+}
+
+/** Попытка с оплаченной генерацией: у сервиса есть номер задания или списание. Её удаление кредиты не возвращает. */
+export function isPaidAttempt(pkg: PackageView): boolean {
+  return !!pkg.request?.generationId || (pkg.request?.creditsConsumed ?? null) !== null;
+}
+
+/**
+ * Непринятые результаты попыток плана, кроме exceptDir, одной строкой для предупреждения: приёмка другого видео
+ * очищает рабочие попытки плана вместе с ними. null — таких нет.
+ */
+export function unacceptedResults(packages: PackageView[], exceptDir?: string): string | null {
+  const waiting = packages.filter((pkg) => pkg.dir !== exceptDir && pkg.stage !== 'accepted' && pkg.request?.attemptStatus === 'downloaded');
+  if (!waiting.length) return null;
+  return waiting.map((pkg) => productionTexts.ownVideo.unacceptedAttempt({ label: attemptLabel(pkg), paid: isPaidAttempt(pkg) })).join(', ');
 }

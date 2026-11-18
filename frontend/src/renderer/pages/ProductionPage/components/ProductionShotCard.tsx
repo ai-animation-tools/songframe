@@ -16,7 +16,7 @@ import { DestructiveButton } from '../../../components/DestructiveButton';
 import { formatClock } from '../../../format';
 import { JobStatus } from '../../../components/JobStatus';
 import { BUSY_REASON } from '../constants';
-import { isQueuedPackage } from '../decisions';
+import { isPaidAttempt, isQueuedPackage } from '../decisions';
 import { attemptLabel, canRetryWithFrames, REQUEST_IN_FLIGHT, type PlanTone } from '../planPath';
 import { AcceptedAsset } from './AcceptedAsset';
 import { DerivedShotNotice } from './DerivedShotNotice';
@@ -76,7 +76,10 @@ export function ProductionShotCard({
   const attempt = attempts.find((pkg) => pkg.dir === selectedPackage) ?? null;
   const canDiscard = !!onDiscardAttempt && !!attempt && attempt.stage !== 'accepted' && !REQUEST_IN_FLIGHT.includes(attempt.request?.attemptStatus ?? '');
   const retryFrom = onRetryWithFrames && attempt && canRetryWithFrames(attempt) ? attempt : null;
-  const paidAttempt = !!attempt?.request?.generationId || (attempt?.request?.creditsConsumed ?? null) !== null;
+  const paidAttempt = !!attempt && isPaidAttempt(attempt);
+  // Видео, загруженное пользователем, удаляется с попыткой, а его стоимость уходит из расхода: подтверждение называет обе.
+  const uploadedCost = attempt?.request?.manualGeneration?.cost;
+  const uploaded = attempt?.request?.manualGeneration ? { cost: uploadedCost ? productionTexts.manualGeneration.costValue(uploadedCost) : null } : null;
   const canRetry = !shot.derivedFrom && (shot.state === 'completed' || shot.packages.length > 0);
   const waiting = (shot.derivedFrom ? [] : shot.packages).filter((pkg) => pkg.pendingDecision && pkg.dir !== selectedPackage);
   const sending = shot.packages.some((pkg) => ['submission_unknown', 'submitting'].includes(pkg.request?.attemptStatus ?? ''));
@@ -204,7 +207,7 @@ export function ProductionShotCard({
             onDiscardAttempt?.(attempt);
           }}
         >
-          <Typography variant="body2">{productionTexts.packageCard.discardFolder({ relative: attempt.relative, paid: paidAttempt })}</Typography>
+          <Typography variant="body2">{productionTexts.packageCard.discardFolder({ relative: attempt.relative, paid: paidAttempt, uploaded })}</Typography>
         </ConfirmationDialog>
       ) : null}
       {attempts.length || now ? (

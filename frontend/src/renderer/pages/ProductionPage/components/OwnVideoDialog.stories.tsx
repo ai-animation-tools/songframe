@@ -16,7 +16,7 @@ const manual = productionTexts.manualGeneration;
 const MOV_PATH = '/mock/phone.mov';
 
 /** Модель страницы: Go отклоняет не MP4 до создания попытки, MP4 с источником — загружает. */
-function OwnVideoStory({ file }: { file: string }) {
+function OwnVideoStory({ file, unaccepted = null }: { file: string; unaccepted?: string | null }) {
   const [open, setOpen] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [uploaded, setUploaded] = useState<string | null>(null);
@@ -33,7 +33,7 @@ function OwnVideoStory({ file }: { file: string }) {
       <Alert severity={uploaded ? 'success' : 'info'} data-testid="own-video-result">
         {uploaded ?? `Файл диалога: ${file}`}
       </Alert>
-      {open ? <OwnVideoDialog shot="M04" busy={false} error={error} onClose={() => setOpen(false)} onUpload={upload} /> : null}
+      {open ? <OwnVideoDialog shot="M04" unaccepted={unaccepted} busy={false} error={error} onClose={() => setOpen(false)} onUpload={upload} /> : null}
     </Stack>
   );
 }
@@ -72,6 +72,8 @@ export const Upload: Story = {
     await expectImplicitCloseBlocked(await dialog(context));
     await expect(body.getByText(texts.intro)).toBeVisible();
     await expect(body.getByText(texts.format)).toBeVisible();
+    // Других непринятых результатов нет — и предупреждения нет.
+    await expect(body.queryByText(/Непринятый результат/)).not.toBeInTheDocument();
     const upload = body.getByRole('button', { name: manual.upload });
     await expect(upload).toBeDisabled();
     await userEvent.hover(upload.parentElement!);
@@ -87,6 +89,18 @@ export const Upload: Story = {
     await userEvent.click(body.getByRole('button', { name: manual.upload }));
     await waitFor(() => expect(screen.getByTestId('own-video-result')).toHaveTextContent('story-video.mp4 · Снято на телефон · 300'));
     await expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  }
+};
+
+export const UnacceptedResult: Story = {
+  name: 'Другая попытка ждёт решения · предупреждение об удалении её результата при приёмке',
+  tags: ['ci'],
+  args: { unaccepted: texts.unacceptedAttempt({ label: 'Попытка 1', paid: true }) },
+  play: async (context) => {
+    const body = within(await dialog(context));
+    const warning = body.getByText(texts.unaccepted({ attempts: 'Попытка 1 (оплаченная генерация)' }));
+    await expect(warning).toBeVisible();
+    await expect(warning.closest('[role="alert"]')).not.toBeNull();
   }
 };
 

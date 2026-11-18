@@ -193,6 +193,40 @@ export const DeleteAttempt: Story = {
     await expect(canvas.getByTestId('shot-model')).toHaveTextContent('Попыток: 0.');
   }
 };
+// Своё видео ждёт приёмки: при удалении пропадают и файл, и указанная пользователем стоимость.
+const uploaded = {
+  ...waiting,
+  stage: 'downloaded',
+  pendingDecision: null,
+  request: {
+    ...waiting.request!,
+    mode: 'manual' as const,
+    manualResult: true,
+    attemptStatus: 'downloaded',
+    manualGeneration: {
+      source: 'Сайт сервиса',
+      original_name: 'take.mp4',
+      attached_at: '2026-11-18T10:08:34Z',
+      cost: { amount: 120, unit: 'credits' as const },
+      description: null
+    }
+  }
+};
+export const DeleteUploadedVideo: Story = {
+  name: 'Меню · удаление попытки с загруженным видео называет видео и стоимость',
+  tags: ['ci'],
+  args: { initialShot: productionShot({ packages: [uploaded] }), initialSelected: uploaded.dir },
+  play: async ({ canvasElement }) => {
+    const screen = within(canvasElement.ownerDocument.body);
+    await userEvent.click((await openMenu(canvasElement)).getByRole('menuitem', { name: (name) => name.startsWith(path.deleteAttempt) }));
+    const dialog = within(await screen.findByRole('dialog', { name: productionTexts.packageCard.discard }));
+    await expect(
+      dialog.getByText(productionTexts.packageCard.discardFolder({ relative: uploaded.relative, paid: false, uploaded: { cost: '120 кредитов' } }))
+    ).toBeVisible();
+    await userEvent.click(dialog.getByRole('button', { name: commonTexts.cancel }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  }
+};
 const unknown = queuedPackage();
 const unknownAttempt = {
   ...unknown,

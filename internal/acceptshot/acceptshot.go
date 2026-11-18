@@ -912,6 +912,18 @@ func buildKit(ctx context.Context, root, shot string, frames toolrt.Int, fps int
 	if err := copyFile(promptFile, toolrt.JoinPath(staging, "generation-prompt.txt")); err != nil {
 		return nil, "", err
 	}
+	// Второй вариант видеопромпта попытки (оригинал или перевод, не отправленный в генерацию)
+	// сохраняется рядом: пользователь видит в комплекте оба текста.
+	counterpart := promptCounterpart(data)
+	var counterpartDesc *toolrt.Dict
+	if counterpart != nil {
+		if err := copyFile(counterpart.source, toolrt.JoinPath(staging, counterpart.name)); err != nil {
+			return nil, "", err
+		}
+		if counterpartDesc, err = descriptor(staging, counterpart.name); err != nil {
+			return nil, "", err
+		}
+	}
 	var audioEntry any
 	if options.Audio != "" {
 		if err := copyFile(options.Audio, toolrt.JoinPath(staging, "speech.wav")); err != nil {
@@ -1069,15 +1081,16 @@ func buildKit(ctx context.Context, root, shot string, frames toolrt.Int, fps int
 	if !toolrt.Equal(sourceFPS, grid) {
 		conversion = "Выбор кадров без интерполяции движения."
 	}
+	// Неотправленный вариант видеопромпта стоит в generation сразу после отправленного prompt.
+	promptPairs := []any{"source_shot", shot, "original", originalDesc, "original_media", originalMedia, "prompt", promptDesc}
+	if counterpartDesc != nil {
+		promptPairs = append(promptPairs, counterpart.key, counterpartDesc)
+	}
 	manifest := toolcli.Record(
 		"schema_version", toolrt.NewInt(1),
 		"shot", shot,
 		"kind", "generated_video",
-		"generation", toolcli.Record(
-			"source_shot", shot,
-			"original", originalDesc,
-			"original_media", originalMedia,
-			"prompt", promptDesc,
+		"generation", toolcli.Record(append(promptPairs,
 			"request", requestDesc,
 			"generation_id", attempt.Value("generation_id"),
 			"inputs", inputs,
@@ -1085,7 +1098,7 @@ func buildKit(ctx context.Context, root, shot string, frames toolrt.Int, fps int
 			"audio", audioEntry,
 			"auxiliary_references", []any{},
 			"preparation", toolcli.Record("index", prepDesc, "files", files),
-		),
+		)...),
 		"accepted_edit", toolcli.Record(
 			"video", video,
 			"fps", toolrt.NewInt(fps),
@@ -1250,4 +1263,40 @@ func Run(ctx context.Context, root string, args []string, localDir string) toolc
 		return printer.Crash(err)
 	}
 	return printer.Exit(0)
+}
+
+// promptVariant — неотправленный вариант видеопромпта попытки для комплекта: файл пакета source,
+// имя name в комплекте и ключ key в manifest.generation.
+type promptVariant struct {
+	source, name, key string
+}
+
+// promptCounterpart — вариант видеопромпта пакета, который не ушёл в генерацию: при отправленном
+// переводе (prompt.path = prompt.translation) — оригинал как generation-prompt.original.txt
+// (generation.prompt_original), иначе перевод как generation-prompt.translation.txt
+// (generation.prompt_translation). nil — пакета нет, у записи prompt нет вариантов или файла
+// второго варианта нет.
+func promptCounterpart(data attemptData) *promptVariant {
+	if data.workflow == nil || data.packageDir == "" {
+		return nil
+	}
+	record := dict(data.workflow.Value("prompt"))
+	if record == nil {
+		return nil
+	}
+	original, _ := record.Value("original").(string)
+	translation, _ := record.Value("translation").(string)
+	if original == "" || translation == "" {
+		return nil
+	}
+	variant := &promptVariant{source: translation, name: "generation-prompt.translation.txt", key: "prompt_translation"}
+	if toolrt.Equal(record.Value("path"), translation) {
+		variant = &promptVariant{source: original, name: "generation-prompt.original.txt", key: "prompt_original"}
+	}
+	source := toolrt.ResolvePath(toolrt.JoinPath(data.packageDir, variant.source))
+	if !toolrt.IsRelativeTo(source, data.packageDir) || !toolrt.IsFile(source) {
+		return nil
+	}
+	variant.source = source
+	return variant
 }

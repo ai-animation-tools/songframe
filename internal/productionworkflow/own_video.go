@@ -11,6 +11,7 @@ import (
 	"songframe/internal/agents"
 	"songframe/internal/derivedshot"
 	"songframe/internal/mediaproviders"
+	"songframe/internal/production"
 	"songframe/internal/requestsnapshot"
 	"songframe/internal/shotworkflow"
 )
@@ -19,14 +20,19 @@ import (
 const ownVideoRequest = "request-01"
 
 // CreateOwnVideo создаёт попытку своего видео плана: новая папка Mxx-attempt-NN (shot_workflow
-// init даёт окно и отпечаток постановки), пакет ручной генерации без промпта и входов с провайдером
-// способа «вручную вне приложения» и этап request_choice. Видео в неё загружает production
+// init даёт окно и отпечаток постановки), пакет ручной генерации с провайдером способа «вручную вне
+// приложения» и этап request_choice. generation — необязательные входы (изображения с ролями
+// first/middle/last по порядку) и промпт, по которым пользователь сделал видео: они попадают в пакет
+// и при приёмке в комплект; проверяются production.CheckOwnVideoGeneration до создания папки. Видео в неё загружает production
 // AttachManual, после чего попытка идёт к результату и приёмке, как ручная генерация. Описание, опоры
 // и видеопромпт не нужны: это выбор пользователя, который сделал видео сам. Производный план, занятый
 // план, неприменённое предложение и неутверждённый сценарий отклоняются; неполные настройки видео
 // проекта не мешают — сервис здесь не участвует. Возвращает папку попытки; при ошибке после init
 // недособранная попытка удаляется.
-func (w *Workflow) CreateOwnVideo(ctx context.Context, project, shot string) (string, error) {
+func (w *Workflow) CreateOwnVideo(ctx context.Context, project, shot string, generation production.OwnVideoGeneration) (string, error) {
+	if err := production.CheckOwnVideoGeneration(generation); err != nil {
+		return "", err
+	}
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	c, err := ReadContext(project, shot, "")
@@ -55,7 +61,7 @@ func (w *Workflow) CreateOwnVideo(ctx context.Context, project, shot string) (st
 		return "", err
 	}
 	if _, err := requestsnapshot.PrepareManual(filepath.Join(directory, ownVideoRequest), requestsnapshot.ManualSpec{
-		Shot: shot, Provider: provider, OwnVideo: true,
+		Shot: shot, Provider: provider, OwnVideo: true, Prompt: generation.Prompt, Inputs: ownVideoInputs(generation),
 	}); err != nil {
 		_ = os.RemoveAll(directory)
 		return "", err
@@ -65,4 +71,14 @@ func (w *Workflow) CreateOwnVideo(ctx context.Context, project, shot string) (st
 		return "", err
 	}
 	return directory, nil
+}
+
+// ownVideoInputs — входы пакета своего видео: изображения в слоте image с ролью из окна; подпись
+// роли в манифесте комплекта ставит приёмка (acceptshot roleLabels).
+func ownVideoInputs(generation production.OwnVideoGeneration) []requestsnapshot.ManualInput {
+	inputs := []requestsnapshot.ManualInput{}
+	for _, input := range generation.Inputs {
+		inputs = append(inputs, requestsnapshot.ManualInput{Path: input.File, Slot: "image", Role: input.Role})
+	}
+	return inputs
 }

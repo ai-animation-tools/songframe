@@ -736,11 +736,16 @@ export const OwnVideo: Story = {
     await expect(await screen.findByRole('tooltip')).toHaveTextContent(manual.fileRequired);
     await userEvent.click(dialog.getByRole('button', { name: new RegExp(manual.zone) }));
     await dialog.findByText(manual.chosen({ name: STORY_VIDEO_PATH.split('/').pop()! }));
-    await userEvent.type(dialog.getByRole('textbox', { name: new RegExp(manual.source) }), 'Снято на телефон');
+    await userEvent.type(dialog.getByRole('textbox', { name: new RegExp(manual.source) }), 'Сайт сервиса');
     await userEvent.type(dialog.getByRole('spinbutton', { name: manual.cost }), '300');
+    // Видео сделано по одной опоре: вход и промпт из раздела «Как сделано видео» уходят в Go вместе с видео.
+    await userEvent.click(dialog.getByRole('button', { name: new RegExp(own.generation.heading) }));
+    await userEvent.click(await dialog.findByRole('button', { name: new RegExp(`^${own.generation.zone}`) }));
+    await expect(await dialog.findByRole('listitem', { name: new RegExp(`^${own.generation.input({ index: 1 })}:`) })).toBeInTheDocument();
+    await userEvent.type(dialog.getByRole('textbox', { name: own.generation.prompt }), 'Камера наезжает');
     await waitFor(() => expect(dialog.getByRole('button', { name: manual.upload })).toBeEnabled());
     await userEvent.click(dialog.getByRole('button', { name: manual.upload }));
-    await waitFor(() => expect(counts(context)).toHaveTextContent('Своих видео: 1.'), POLL_TIMEOUT);
+    await waitFor(() => expect(counts(context)).toHaveTextContent('Своих видео: 1. Входов своих видео: first:story-image.png + промпт.'), POLL_TIMEOUT);
     // Загрузка закончена — сразу предлагается приёмка. Отмена не принимает и не снимает вопрос о результате.
     const offer = await screen.findByRole('dialog', { name: texts.acceptResultDialog.title({ shot: 'M04' }) }, POLL_TIMEOUT);
     await userEvent.click(within(offer).getByRole('button', { name: commonTexts.cancel }));
@@ -752,7 +757,7 @@ export const OwnVideo: Story = {
     await expect(planStep(context, 'prompt')).toBeNull();
     await expect(within(planStep(context, 'request')).getByText(steps.titles.ownVideo)).toBeInTheDocument();
     const result = within(planStep(context, 'result'));
-    await expect(await result.findByText(/Источник: Снято на телефон · Стоимость: 300 кредитов/)).toBeInTheDocument();
+    await expect(await result.findByText(/Источник: Сайт сервиса · Стоимость: 300 кредитов/)).toBeInTheDocument();
     // Своё видео не повторяется по запросу и не дорабатывается агентом.
     await expect(result.getByRole('button', { name: texts.verdictLabels.accept })).toBeEnabled();
     await expect(result.getByRole('button', { name: texts.verdictLabels.review })).toBeEnabled();
@@ -766,6 +771,8 @@ export const OwnVideo: Story = {
     await userEvent.click(result.getByRole('button', { name: own.replace }));
     const replace = within(await screen.findByRole('dialog', { name: own.replaceTitle({ shot: 'M04' }) }));
     await expect(replace.getByText(own.replaceIntro)).toBeVisible();
+    // Замена файла входы генерации и промпт попытки не меняет: раздела о них нет.
+    await expect(replace.queryByRole('button', { name: new RegExp(own.generation.heading) })).not.toBeInTheDocument();
     await userEvent.click(replace.getByRole('button', { name: new RegExp(manual.zone) }));
     await replace.findByText(manual.chosen({ name: STORY_VIDEO_PATH.split('/').pop()! }));
     await userEvent.type(replace.getByRole('textbox', { name: new RegExp(manual.source) }), 'Нужный дубль');
@@ -974,6 +981,8 @@ export const AcceptedProviderPlan: Story = {
     await expect(await screen.findByText(kit.heading, {}, POLL_TIMEOUT)).toBeInTheDocument();
     await expect(await screen.findByText(kit.provider({ provider: testProviderInfo.title, id: 'gen-42' }))).toBeInTheDocument();
     await expect(screen.getByText('Камера плавно приближается к старым воротам.')).toBeInTheDocument();
+    // Без перевода — один текст, без переключателя вариантов.
+    await expect(screen.queryByRole('group', { name: texts.promptVariants.view })).not.toBeInTheDocument();
     await expect(screen.queryByText(kit.images)).not.toBeInTheDocument();
     await expect(screen.queryByText(/^Срез речи/)).not.toBeInTheDocument();
     // Расход плана бейджем в карточке: попытки удалены приёмкой, но отправки учтены журналом.
@@ -987,6 +996,42 @@ export const AcceptedProviderPlan: Story = {
     await expect(dialog.getByText(spend.acceptedTotal({ seconds: '5,00', rejected: 1 }))).toBeInTheDocument();
     await expect(dialog.getByText(`${spend.perSecond}: 5,2 кредита (${testProviderInfo.title})`)).toBeInTheDocument();
     await userEvent.click(dialog.getByRole('button', { name: spend.close }));
+  }
+};
+export const AcceptedPromptVariants: Story = {
+  tags: ['ci'],
+  name: 'Принятый план · отправлен перевод видеопромпта, оригинал рядом, копируется показанный',
+  parameters: {
+    songframe: acceptedOptions({
+      acceptedKit: () => ({
+        provider: TEST_PROVIDER,
+        generationId: 'gen-43',
+        prompt: STORY_PROMPT_TRANSLATION,
+        promptVariants: { original: STORY_PROMPT_ORIGINAL, translation: STORY_PROMPT_TRANSLATION, selected: 'translation' },
+        images: [],
+        speech: null
+      })
+    })
+  },
+  play: async (context) => {
+    const screen = screenOf(context);
+    const kit = texts.acceptedKit;
+    const variants = texts.promptVariants;
+    await expect(await screen.findByText(kit.heading, {}, POLL_TIMEOUT)).toBeInTheDocument();
+    // Сначала показан отправленный вариант с отметкой.
+    await expect(await screen.findByText(STORY_PROMPT_TRANSLATION)).toBeInTheDocument();
+    await expect(screen.getByText(variants.sent({ translation: true }))).toBeInTheDocument();
+    const writes: string[] = [];
+    const original = navigator.clipboard?.writeText;
+    if (navigator.clipboard) navigator.clipboard.writeText = async (text: string) => void writes.push(text);
+    try {
+      await userEvent.click(screen.getByRole('button', { name: variants.original }));
+      await expect(screen.getByText(STORY_PROMPT_ORIGINAL)).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: kit.copy }));
+      await waitFor(() => expect(writes).toEqual([STORY_PROMPT_ORIGINAL]));
+    } finally {
+      if (navigator.clipboard && original) navigator.clipboard.writeText = original;
+    }
   }
 };
 export const AcceptedOwnVideo: Story = {
@@ -1026,6 +1071,36 @@ export const AcceptedOwnVideo: Story = {
     await expect(screen.queryByText(kit.images)).not.toBeInTheDocument();
     await expect(screen.queryByText(kit.prompt)).not.toBeInTheDocument();
     await expect(screen.queryByRole('button', { name: kit.copy })).not.toBeInTheDocument();
+  }
+};
+export const AcceptedOwnVideoGenerated: Story = {
+  tags: ['ci'],
+  name: 'Принятый план · своё видео по одной опоре с промптом, указанными при загрузке',
+  parameters: {
+    songframe: acceptedOptions({
+      acceptedKit: () => ({
+        provider: 'manual',
+        generationId: null,
+        ownVideo: true,
+        manualGeneration: { source: 'Сайт сервиса', original_name: 'site.mp4', attached_at: '2026-11-12T19:00:00Z', cost: null, description: null },
+        prompt: 'Камера медленно наезжает на героя',
+        images: [STORY_IMAGE_PATH],
+        speech: null
+      })
+    })
+  },
+  play: async (context) => {
+    const screen = screenOf(context);
+    const kit = texts.acceptedKit;
+    await expect(await screen.findByText(kit.heading, {}, POLL_TIMEOUT)).toBeInTheDocument();
+    // Опора и промпт своего видео показываются, как у обычной генерации; подпись источника их не отрицает.
+    await expect(await screen.findByText(kit.ownVideoGenerated)).toBeInTheDocument();
+    await expect(screen.queryByText(kit.ownVideo)).not.toBeInTheDocument();
+    await expect(screen.getByText(kit.images)).toBeInTheDocument();
+    await expect(screen.getByRole('button', { name: componentsTexts.gallery.openLarge({ label: kit.image({ index: 1 }) }) })).toBeInTheDocument();
+    await expect(screen.getByText(kit.prompt)).toBeInTheDocument();
+    await expect(screen.getByText('Камера медленно наезжает на героя')).toBeInTheDocument();
+    await expect(screen.getByRole('button', { name: kit.copy })).toBeInTheDocument();
   }
 };
 export const Empty: Story = {
@@ -1219,6 +1294,9 @@ export const PromptOverLimit: Story = {
     const chars = Array.from('Камера плавно приближается к старым воротам, свет в окне медленно разгорается.').length;
     const over = { chars, limit: STORY_PROMPT_LIMIT };
     await expect(step.getByText(texts.promptLimit.description({ ...over, provider: testProviderInfo.title }))).toBeInTheDocument();
+    // Без перевода нет ни переключателя вариантов, ни выбора отправки.
+    await expect(step.queryByRole('group', { name: texts.promptVariants.view })).not.toBeInTheDocument();
+    await expect(step.queryByRole('radiogroup', { name: texts.promptVariants.send })).not.toBeInTheDocument();
     // Утверждение недоступно с причиной; доработка открывает поле с готовым замечанием о сокращении.
     await expect(step.getByRole('button', { name: texts.verdictLabels.approve })).toBeDisabled();
     await userEvent.click(step.getByRole('button', { name: texts.verdictLabels.revise }));
@@ -1256,6 +1334,96 @@ export const OwnPromptOverLimit: Story = {
     await waitFor(() => expect(counts(context)).toHaveTextContent('Ответов: 1.'), POLL_TIMEOUT);
     await expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     await waitFor(() => expect(screen.queryByText(texts.promptLimit.title)).not.toBeInTheDocument(), POLL_TIMEOUT);
+  }
+};
+
+/** Видеопромпт агента с русским переводом на согласовании: оригинал короче предела провайдера, перевод длиннее. */
+const STORY_PROMPT_ORIGINAL = 'Camera slowly pushes in to the old gate.';
+const STORY_PROMPT_TRANSLATION = 'Камера медленно приближается к старым воротам, свет в окне разгорается.';
+function translatedPromptShots(): ShotProduction[] {
+  return overLimitShots().map((shot) => {
+    const [review] = shot.packages;
+    if (!review?.prompt) return shot;
+    const prompt = {
+      ...review.prompt,
+      text: STORY_PROMPT_ORIGINAL,
+      variants: { original: STORY_PROMPT_ORIGINAL, translation: STORY_PROMPT_TRANSLATION, selected: 'original' as const }
+    };
+    return { ...shot, packages: [{ ...review, prompt }] };
+  });
+}
+
+/** Блок выбора варианта к отправке на вопросе о промпте (у шага может быть и выбор способа генерации). */
+function sendChoice(step: ReturnType<typeof within>): ReturnType<typeof within> {
+  return within(step.getByRole('radiogroup', { name: texts.promptVariants.send }));
+}
+
+export const PromptTranslation: Story = {
+  tags: ['ci'],
+  name: 'Видеопромпт с переводом · оригинал и перевод переключателем, отправить перевод',
+  parameters: { songframe: options({ shots: translatedPromptShots }) },
+  play: async (context) => {
+    const variants = texts.promptVariants;
+    const step = within(
+      await waitFor(() => {
+        const found = planStep(context, 'prompt');
+        if (!found || !within(found).queryByText(STORY_PROMPT_ORIGINAL)) throw new Error('Видеопромпт ещё не показан.');
+        return found;
+      }, POLL_TIMEOUT)
+    );
+    // По умолчанию показан и выбран к отправке оригинал.
+    await expect(step.getByRole('button', { name: variants.original })).toHaveAttribute('aria-pressed', 'true');
+    await expect(step.getByText(variants.selected({ translation: false }))).toBeInTheDocument();
+    await expect(sendChoice(step).getByRole('radio', { name: variants.sendOriginal })).toBeChecked();
+    // Переключатель показывает перевод, не меняя выбора отправки.
+    await userEvent.click(step.getByRole('button', { name: variants.translation }));
+    await expect(step.getByText(STORY_PROMPT_TRANSLATION)).toBeInTheDocument();
+    await expect(step.queryByText(STORY_PROMPT_ORIGINAL)).not.toBeInTheDocument();
+    await expect(step.getByText(variants.selected({ translation: false }))).toBeInTheDocument();
+    await userEvent.click(step.getByRole('button', { name: variants.original }));
+    // Выбор «перевод» показывает его текст и уходит в утверждение.
+    await userEvent.click(sendChoice(step).getByRole('radio', { name: variants.sendTranslation }));
+    await expect(step.getByText(variants.selected({ translation: true }))).toBeInTheDocument();
+    await expect(step.getByText(STORY_PROMPT_TRANSLATION)).toBeInTheDocument();
+    await userEvent.click(step.getByRole('button', { name: texts.verdictLabels.approve }));
+    await waitFor(() => expect(counts(context)).toHaveTextContent('Вариантов промпта к отправке: translation.'), POLL_TIMEOUT);
+    // Пройденный шаг свёрнут: открытый, он помнит выбранный вариант, а выбора отправки больше нет.
+    const done = within(planStep(context, 'prompt')!);
+    await userEvent.click(await done.findByRole('button', { name: new RegExp(steps.titles.prompt) }, POLL_TIMEOUT));
+    await expect(await done.findByText(variants.selected({ translation: true }), {}, POLL_TIMEOUT)).toBeInTheDocument();
+    await expect(done.queryByRole('radiogroup', { name: variants.send })).not.toBeInTheDocument();
+  }
+};
+
+export const PromptTranslationOverLimit: Story = {
+  tags: ['ci'],
+  name: 'Видеопромпт с переводом · предел провайдера для выбранного варианта',
+  parameters: { songframe: options({ shots: translatedPromptShots, promptMaxChars: STORY_PROMPT_LIMIT }) },
+  play: async (context) => {
+    const screen = screenOf(context);
+    const variants = texts.promptVariants;
+    const step = within(
+      await waitFor(() => {
+        const found = planStep(context, 'prompt');
+        if (!found || !within(found).queryByRole('radiogroup', { name: variants.send })) throw new Error('Выбор варианта ещё не показан.');
+        return found;
+      }, POLL_TIMEOUT)
+    );
+    // Оригинал в пределе: предупреждения нет, утвердить можно.
+    await expect(screen.queryByText(texts.promptLimit.title)).not.toBeInTheDocument();
+    await expect(step.getByRole('button', { name: texts.verdictLabels.approve })).toBeEnabled();
+    // Перевод длиннее предела: утверждение с ним недоступно.
+    await userEvent.click(sendChoice(step).getByRole('radio', { name: variants.sendTranslation }));
+    await expect(await screen.findByText(texts.promptLimit.title)).toBeInTheDocument();
+    const over = { chars: Array.from(STORY_PROMPT_TRANSLATION).length, limit: STORY_PROMPT_LIMIT };
+    await expect(step.getByText(texts.promptLimit.description({ ...over, provider: testProviderInfo.title }))).toBeInTheDocument();
+    await waitFor(() => expect(step.getByRole('button', { name: texts.verdictLabels.approve })).toBeDisabled());
+    // Снова оригинал: предупреждение уходит, утверждение отправляет оригинал.
+    await userEvent.click(sendChoice(step).getByRole('radio', { name: variants.sendOriginal }));
+    await waitFor(() => expect(screen.queryByText(texts.promptLimit.title)).not.toBeInTheDocument());
+    await waitFor(() => expect(step.getByRole('button', { name: texts.verdictLabels.approve })).toBeEnabled());
+    await userEvent.click(step.getByRole('button', { name: texts.verdictLabels.approve }));
+    await waitFor(() => expect(counts(context)).toHaveTextContent('Вариантов промпта к отправке: original.'), POLL_TIMEOUT);
   }
 };
 

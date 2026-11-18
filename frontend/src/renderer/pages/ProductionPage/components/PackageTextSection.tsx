@@ -1,9 +1,12 @@
-/** Текстовая часть пакета: описание плана или видеопромпт с ограничением высоты, разметка показана словами. */
+/**
+ * Текстовая часть пакета: описание плана или видеопромпт с ограничением высоты, разметка показана словами. Без maxHeight
+ * текст не ограничивается: его прокручивает родитель.
+ */
 import type { ReactElement } from 'react';
 import { Box, Typography } from '@mui/material';
 import { Prose } from '../../../components/Prose';
 
-export function PackageTextSection({ title, text, maxHeight }: { title: string; text: string; maxHeight: number }): ReactElement {
+export function PackageTextSection({ title, text, maxHeight }: { title: string; text: string; maxHeight?: number }): ReactElement {
   return (
     <Box sx={{ mb: 2 }}>
       <Typography variant="subtitle2" gutterBottom>

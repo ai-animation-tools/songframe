@@ -284,3 +284,114 @@ func TestReplaceManualVideo(t *testing.T) {
 		t.Fatal("замена после приёмки выполнена")
 	}
 }
+
+// TestOwnVideoInputsCycle — своё видео со сведениями о генерации: изображение-опора с ролью «первый
+// кадр» и промпт попадают в пакет попытки, а после приёмки — в комплект как у обычной генерации
+// (generation-input-1 с подписью роли и generation-prompt.txt); проверка проекта ошибок не находит.
+// Неверные входы отклоняются до записей.
+func TestOwnVideoInputsCycle(t *testing.T) {
+	ffmpeg, _ := realMedia(t)
+	e := newEnv(t, "test-video")
+	files := t.TempDir()
+	original := filepath.Join(files, "site.mp4")
+	frame := filepath.Join(files, "K01.png")
+	for _, args := range [][]string{
+		{"-v", "error", "-f", "lavfi", "-i", "testsrc2=size=1920x1080:rate=30:duration=5", "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p", original},
+		{"-v", "error", "-f", "lavfi", "-i", "testsrc2=size=640x360", "-frames:v", "1", frame},
+	} {
+		if output, err := exec.Command(ffmpeg, args...).CombinedOutput(); err != nil {
+			t.Fatalf("файлы пробы: %v %s", err, output)
+		}
+	}
+	text := filepath.Join(files, "notes.txt")
+	if err := os.WriteFile(text, []byte("не изображение"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for name, generation := range map[string]production.OwnVideoGeneration{
+		"не изображение":       {Inputs: []production.OwnVideoInput{{File: text, Role: "first"}}},
+		"относительный путь":   {Inputs: []production.OwnVideoInput{{File: "K01.png", Role: "first"}}},
+		"неизвестная роль":     {Inputs: []production.OwnVideoInput{{File: frame, Role: "tail"}}},
+		"первый кадр вторым":   {Inputs: []production.OwnVideoInput{{File: frame, Role: "middle"}, {File: frame, Role: "first"}}},
+		"последний не в конце": {Inputs: []production.OwnVideoInput{{File: frame, Role: "last"}, {File: frame, Role: "middle"}}},
+		"нулевой символ":       {Prompt: "a\x00b"},
+	} {
+		if err := production.CheckOwnVideoGeneration(generation); err == nil {
+			t.Fatalf("%s: входы приняты", name)
+		}
+	}
+	generation := production.OwnVideoGeneration{Inputs: []production.OwnVideoInput{{File: frame, Role: "first"}}, Prompt: "图片1 starts the shot."}
+	if err := production.CheckOwnVideoGeneration(generation); err != nil {
+		t.Fatal(err)
+	}
+
+	// Попытка своего видео: те же шаги, что productionworkflow.CreateOwnVideo.
+	dir := filepath.Join(e.project, "plan", "batches", "M04-attempt-01")
+	e.tool("shot_workflow", "init", "M04", "--dir", dir, "--mode", "shot")
+	if _, err := requestsnapshot.PrepareManual(filepath.Join(dir, "request-01"), requestsnapshot.ManualSpec{
+		Shot: "M04", Provider: mediaproviders.ManualID(), OwnVideo: true, Prompt: generation.Prompt,
+		Inputs: []requestsnapshot.ManualInput{{Path: frame, Slot: "image", Role: "first"}},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := shotworkflow.StartOwnVideo(dir, "request-01"); err != nil {
+		t.Fatal(err)
+	}
+	info, err := e.prod.AttachManual(e.project, dir, production.ManualResult{File: original, Source: "Сайт сервиса"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if finished := e.wait(info); finished.Status != jobs.StatusDone {
+		t.Fatalf("загрузка своего видео: %s", finished.Log)
+	}
+	view, err := production.ReadPackage(e.project, dir)
+	if err != nil || view == nil || view.ResultToken == "" || len(view.Request.Inputs) != 1 {
+		t.Fatalf("попытка своего видео со входами: %+v %v", view, err)
+	}
+	start, end := 0.0, 4.0
+	accepted, err := e.prod.Accept(e.project, "M04", dir, production.AcceptOptions{Mode: "cut", ExpectedResultToken: view.ResultToken, CutStart: &start, CutEnd: &end})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if finished := e.wait(accepted); finished.Status != jobs.StatusDone {
+		t.Fatalf("приёмка своего видео: %s", finished.Log)
+	}
+	kit := filepath.Join(e.project, "assets", "shots", "M04")
+	raw, err := os.ReadFile(filepath.Join(kit, "manifest.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var manifest struct {
+		Generation struct {
+			OwnVideo bool `json:"own_video"`
+			Inputs   []struct {
+				Path string `json:"path"`
+				Slot string `json:"slot"`
+				Role string `json:"role"`
+			} `json:"inputs"`
+			Prompt struct {
+				Path string `json:"path"`
+			} `json:"prompt"`
+		} `json:"generation"`
+	}
+	if err := json.Unmarshal(raw, &manifest); err != nil {
+		t.Fatal(err)
+	}
+	inputs := manifest.Generation.Inputs
+	if !manifest.Generation.OwnVideo || len(inputs) != 1 || inputs[0].Path != "generation-input-1.png" || inputs[0].Slot != "image" || inputs[0].Role != "Первый кадр" {
+		t.Fatalf("входы в манифесте своего видео: %s", raw)
+	}
+	if prompt, err := os.ReadFile(filepath.Join(kit, manifest.Generation.Prompt.Path)); err != nil || string(prompt) != generation.Prompt {
+		t.Fatalf("промпт комплекта своего видео: %q %v", prompt, err)
+	}
+	result, err := tools.Run(e.project, "lint_registry", []string{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if report := result.Stdout + result.Stderr; strings.Contains(report, "M04") {
+		t.Fatalf("проверка проекта нашла ошибки в комплекте своего видео со входами:\n%s", report)
+	}
+	kitView, err := production.AcceptedKitFor(e.project, "M04")
+	if err != nil || kitView == nil || !kitView.OwnVideo || len(kitView.Images) != 1 || kitView.Prompt == nil || *kitView.Prompt != generation.Prompt {
+		t.Fatalf("принятый комплект своего видео со входами: %+v %v", kitView, err)
+	}
+}

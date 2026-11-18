@@ -319,6 +319,28 @@ const (
 	textAttachManualStep    = "Загрузка видео ручной генерации"
 )
 
+// Входы своего видео: изображения, по которым видео сделано вне приложения.
+const (
+	textOwnVideoFirstRole     = "Первый кадр — только первым входом."
+	textOwnVideoLastRole      = "Последний кадр — только последним входом."
+	textOwnVideoPromptInvalid = "Промпт содержит недопустимые символы."
+)
+
+// textOwnVideoInputsLimit — входов больше предела.
+func textOwnVideoInputsLimit(limit int) string {
+	return fmt.Sprintf("Входов генерации не больше %d.", limit)
+}
+
+// textOwnVideoInputImage — вход number не изображение PNG, JPEG или WebP по абсолютному пути.
+func textOwnVideoInputImage(number int) string {
+	return fmt.Sprintf("Вход %d: нужен файл изображения PNG, JPEG или WebP.", number)
+}
+
+// textOwnVideoInputRole — у входа number неизвестная роль.
+func textOwnVideoInputRole(number int) string {
+	return fmt.Sprintf("У входа %d укажите роль: первый, промежуточный или последний кадр.", number)
+}
+
 // number — число в кратчайшей десятичной записи без экспоненты и лишних нулей.
 func number(value float64) string { return strconv.FormatFloat(value, 'f', -1, 64) }
 

@@ -42,7 +42,7 @@ func paidAttempt(t *testing.T, run *goldenRun, status string) string {
 		t.Fatal(err)
 	}
 	workflow.Set("description_approved", true)
-	prompt := promptRecord()
+	prompt := proposedPrompt(false)
 	prompt.Set("approved", true)
 	workflow.Set("prompt", prompt)
 	workflow.Set("request_dir", "request-01")

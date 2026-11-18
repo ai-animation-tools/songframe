@@ -53,7 +53,8 @@ export interface ProductionRequestOptions {
 export type ProductionStageProposal =
   | { schemaVersion: 1; stage: 'description'; description: string; requestSeconds: number; keyframes: ProductionFramePrompt[] }
   | { schemaVersion: 1; stage: 'frames'; images: ProductionFrameCandidate[] }
-  | { schemaVersion: 1; stage: 'prompt'; prompt: string };
+  /** prompt — на языке провайдера видео; translation — тот же промпт по-русски, если агент его предложил. */
+  | { schemaVersion: 1; stage: 'prompt'; prompt: string; translation?: string };
 /**
  * Противоречие сценария из отказа агента. Поле состояния: кадр, сущность и свойство с текущим значением и его источником
  * (source.shot null — начальное состояние кастинга) и предложенным значением fix (null — не исправляется в этом плане).

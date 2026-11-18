@@ -1,0 +1,22 @@
+{
+  "description": "Ответ approve с --prompt-variant translation утверждает к отправке перевод; ключи вариантов сохраняются.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "--prompt-variant translation",
+    "варианты промпта"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "decide",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "--verdict",
+    "approve",
+    "--prompt-variant",
+    "translation"
+  ],
+  "remove": [],
+  "mkdir": []
+}

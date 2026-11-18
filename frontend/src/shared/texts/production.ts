@@ -631,6 +631,19 @@ export const productionTexts = {
     reviseNote: ({ chars, limit }: { chars: number; limit: number }) =>
       `Сократи видеопромпт до ${limit} символов (сейчас ${chars}), сохранив действие, опоры и важные детали.`
   },
+  promptVariants: {
+    view: 'Вариант видеопромпта',
+    original: 'Оригинал',
+    translation: 'Перевод',
+    originalHint: 'Промпт на языке провайдера видео, как его написал агент',
+    translationHint: 'Тот же промпт по-русски',
+    send: 'Отправить',
+    sendOriginal: 'оригинал',
+    sendTranslation: 'перевод',
+    sendHint: 'Какой текст уйдёт в запрос видео. По умолчанию — оригинал: на языке провайдера модель понимает промпт точнее.',
+    selected: ({ translation }: { translation: boolean }) => `К отправке: ${translation ? 'перевод' : 'оригинал'}`,
+    sent: ({ translation }: { translation: boolean }) => `Отправлен: ${translation ? 'перевод' : 'оригинал'}`
+  },
   promptReopenDialog: {
     title: 'Вернуть видеопромпт на доработку',
     description: ({ request }: { request: string | null }) =>
@@ -934,6 +947,7 @@ export const productionTexts = {
     close: `Закрыть, решу позже`
   },
   productionProposalPreview: {
+    promptTitle: ({ characters }: { characters: number }) => `Видеопромпт · ${countLabel(characters, 'символ', 'символа', 'символов')}`,
     time: ({ timeSeconds }: { timeSeconds: number }) => `${timeSeconds} с от начала плана`,
     references: ({ filenames }: { filenames: string }) => `Референсы: ${filenames}`,
     copyOf: ({ source }: { source: string }) => `Копия ${source} кадр в кадр: опору не создают, приложение возьмёт файл ${source} после его утверждения.`,
@@ -1043,11 +1057,13 @@ export const productionTexts = {
     provider: ({ provider, id }: { provider: string; id: string | null }) => `Сервис: ${provider}${id ? ` · генерация ${id}` : ''}`,
     noSource: 'Сведений об источнике в комплекте нет.',
     ownVideo: 'Своё видео плана: снято или сделано вне приложения, без описания, опор и видеопромпта.',
+    /** Своё видео, для которого при загрузке указаны входы генерации или промпт. */
+    ownVideoGenerated: 'Своё видео плана: сделано вне приложения; опоры и видеопромпт указаны при загрузке.',
     images: 'Опоры',
     image: ({ index }: { index: number }) => `Опора ${index}`,
     prompt: 'Видеопромпт',
     copy: 'Скопировать',
-    copyHint: 'Скопировать видеопромпт принятого плана',
+    copyHint: 'Скопировать показанный вариант видеопромпта принятого плана',
     speech: 'Срез речи',
     loadFailed: ({ reason }: { reason: string }) => `Не удалось прочитать принятый комплект: ${reason}`
   },
@@ -1150,7 +1166,34 @@ export const productionTexts = {
     unaccepted: ({ attempts }: { attempts: string }) =>
       `Непринятый результат есть и в другой попытке плана: ${attempts}. После приёмки этого видео остальные попытки плана удаляются вместе с ним; если тот результат нужен, сначала посмотрите его.`,
     unacceptedAttempt: ({ label, paid }: { label: string; paid: boolean }) => (paid ? `${label} (оплаченная генерация)` : label),
-    replaceStarted: 'Замена видео запущена'
+    replaceStarted: 'Замена видео запущена',
+    /** Необязательный раздел окна: входы генерации и промпт, по которым видео сделано вне приложения. */
+    generation: {
+      heading: 'Как сделано видео',
+      optional: 'необязательно',
+      intro:
+        'Если видео сделано по изображениям, например на сайте сервиса генерации, укажите их по порядку и промпт: комплект плана сохранит их как у обычной генерации. Для видео, снятого на телефон, раздел не нужен.',
+      /** Заметный статус в заголовке раздела: что уже указано. */
+      filled: ({ inputs, prompt }: { inputs: number; prompt: boolean }) =>
+        [inputs ? countLabel(inputs, 'изображение', 'изображения', 'изображений') : '', prompt ? 'промпт' : ''].filter(Boolean).join(' и '),
+      inputs: 'Входы генерации',
+      input: ({ index }: { index: number }) => `Вход ${index}`,
+      role: 'Роль',
+      roles: { first: 'Первый кадр', middle: 'Промежуточный', last: 'Последний кадр' },
+      add: 'Добавить изображение',
+      addHint: 'Изображения PNG, JPG или WebP, по которым сделано видео; новые встают в конец списка',
+      zone: 'Добавить изображение',
+      moveUp: ({ name }: { name: string }) => `Поднять ${name}`,
+      moveDown: ({ name }: { name: string }) => `Опустить ${name}`,
+      alreadyFirst: 'Вход уже первый',
+      alreadyLast: 'Вход уже последний',
+      remove: ({ name }: { name: string }) => `Убрать ${name}`,
+      limit: ({ limit }: { limit: number }) => `Входов генерации не больше ${limit}`,
+      firstNotFirst: '«Первый кадр» может быть только у первого входа: поменяйте роль или порядок',
+      lastNotLast: '«Последний кадр» может быть только у последнего входа: поменяйте роль или порядок',
+      prompt: 'Промпт',
+      promptHint: 'Текст, по которому сделано видео; можно оставить пустым'
+    }
   },
   productionToolbar: {
     heading: navigationTexts.pages.production,

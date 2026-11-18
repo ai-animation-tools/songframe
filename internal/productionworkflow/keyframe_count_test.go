@@ -25,8 +25,8 @@ func framesProposal(count int) string {
 	return `{"schemaVersion":1,"stage":"description","description":"Герой идёт.","requestSeconds":6,"keyframes":[` + frames + `]}`
 }
 
-// TestKeyframeCountRules — выбранное число опор соблюдается точно, одна опора допустима и в
-// обычном плане, «авто» сохраняет прежние 2–20; выбор переживает запись правил.
+// TestKeyframeCountRules — выбранное число опор соблюдается точно; в «авто» агент выбирает от
+// одной до 20 опор; выбор переживает запись правил.
 func TestKeyframeCountRules(t *testing.T) {
 	auto := Rules{Stage: "description", WindowSeconds: 5.5, DurationRule: "min_supported_strictly_greater_than_window"}
 	three, single := auto, auto
@@ -40,8 +40,11 @@ func TestKeyframeCountRules(t *testing.T) {
 	if _, err := ParseProposal(framesProposal(1), single); err != nil {
 		t.Fatalf("одна опора при выборе 1: %v", err)
 	}
-	if _, err := ParseProposal(framesProposal(1), auto); err == nil || err.Error() != textDescriptionInvalid {
+	if _, err := ParseProposal(framesProposal(1), auto); err != nil {
 		t.Fatalf("одна опора в «авто»: %v", err)
+	}
+	if _, err := ParseProposal(framesProposal(21), auto); err == nil || err.Error() != textDescriptionInvalid {
+		t.Fatalf("21 опора в «авто»: %v", err)
 	}
 	if _, err := ParseProposal(framesProposal(4), auto); err != nil {
 		t.Fatalf("четыре опоры в «авто»: %v", err)

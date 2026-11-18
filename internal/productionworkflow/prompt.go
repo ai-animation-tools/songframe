@@ -15,7 +15,7 @@ import (
 // testdata/golden/production-workflow.
 const promptContract = "" +
 	"Форма: description={\"schemaVersion\":1,\"stage\":\"description\",\"description\":\"текст\",\"requestSeconds\":целое,\"keyframes\":[{\"id\":\"K01\",\"role\":\"first\",\"timeSeconds\":0,\"prompt\":\"полный промпт изображения\",\"referencePaths\":[\"source/...\"]},...,{\"id\":\"KNN\",\"role\":\"last\",\"timeSeconds\":requestSeconds,\"prompt\":\"...\",\"referencePaths\":[]}]}; " +
-	"prompt={\"schemaVersion\":1,\"stage\":\"prompt\",\"prompt\":\"полный видеопромпт\"}. " +
+	"prompt={\"schemaVersion\":1,\"stage\":\"prompt\",\"prompt\":\"полный видеопромпт на языке указаний провайдера\",\"translation\":\"тот же промпт по-русски\"}. " +
 	"Никаких других полей, кроме необязательного copyOf опоры. ID опор K01,K02,... подряд, first на 0 и last на requestSeconds, middle строго между. " +
 	"Опора, которая кадр в кадр повторяет более раннюю (удержание без видимых изменений), — копия: {\"id\":\"K03\",\"role\":\"last\",\"timeSeconds\":requestSeconds,\"prompt\":\"\",\"referencePaths\":[],\"copyOf\":\"K02\"}; источник — более ранняя опора, не копия; приложение не создаёт копию, а берёт файл источника после его утверждения. Источником копии может быть и кадр из continuityFrames (copyOf — его path): так первая опора плана, продолжающего кадр принятого плана без смены точки, становится самим этим кадром. Сохраняй утверждённую постановку, внешность и непрерывность. " +
 	"Запрос видео (модель, параметры, входы) по утверждённым опорам и видеопромпту собирает приложение; settings.model — предпочтение модели для него. " +
@@ -27,12 +27,17 @@ const promptContract = "" +
 	"На этапе description противоречие сценария, из-за которого непротиворечивые опоры не подготовить, — не текст, а отказ blocked={\"schemaVersion\":1,\"stage\":\"blocked\",\"reason\":\"итог одной фразой\",\"problems\":[{\"phase\":\"before|after\",\"entity\":\"ID сущности\",\"property\":\"ключ свойства\",\"conflict\":\"текущее значение и его источник из stateSources, с чем и почему оно расходится\",\"fix\":\"новое значение свойства или null\"},{\"field\":\"action|camera|continuity|references\",\"conflict\":\"...\"}]} по разделу «Противоречия сценария»."
 
 // skillText — скилл ai-clip-scene и указания провайдеров, выбранных в проекте: SKILL.md,
-// references/app-proposal.md, references/prompt-template.md, раздел «Указания агенту» документа
-// провайдера видео и изображений. Пустые части пропускаются, части разделены пустой строкой.
-// Файлы встроены в бинарник вместо чтения из корня комплекса.
-func skillText(videoProvider, imageProvider any) string {
+// references/app-proposal.md, references/prompt-template.md, на этапе prompt — примеры принятых
+// видеопромптов (описанию они не нужны и только удлинили бы его задание), раздел «Указания агенту»
+// документа провайдера видео и изображений. Пустые части пропускаются, части разделены пустой
+// строкой. Файлы встроены в бинарник вместо чтения из корня комплекса.
+func skillText(stage string, videoProvider, imageProvider any) string {
 	parts := []string{}
-	for _, file := range []string{"SKILL.md", "references/app-proposal.md", "references/prompt-template.md"} {
+	files := []string{"SKILL.md", "references/app-proposal.md", "references/prompt-template.md"}
+	if stage == "prompt" {
+		files = append(files, "references/video-prompt-examples.md")
+	}
+	for _, file := range files {
 		if text, err := resources.SkillFile(resources.SkillScene, file); err == nil && text != "" {
 			parts = append(parts, text)
 		}
@@ -49,8 +54,8 @@ func skillText(videoProvider, imageProvider any) string {
 
 // agentPrompt — промпт задания этапа stage: скилл и режим приложения output=proposal.
 func agentPrompt(stage string, videoProvider, imageProvider any) string {
-	return skillText(videoProvider, imageProvider) + "\n\nРежим приложения: output=proposal, stage=" + stage +
-		". Верни ровно один JSON без Markdown, записей файлов, shell и вызовов инструментов. " + promptContract
+	return skillText(stage, videoProvider, imageProvider) + "\n\nРежим приложения: output=proposal, stage=" + stage +
+		". Верни ровно один JSON без Markdown. Файлы не записывай; материалы клипа по путям из контекста можно открывать и смотреть. " + promptContract
 }
 
 // readText — содержимое файла или "" без файла; ошибка чтения возвращается.
@@ -88,6 +93,10 @@ type contextInput struct {
 	// stateSources — источники значений врезок этапа description (stateSourcesTree); nil — ключ
 	// не пишется.
 	stateSources *dynvalue.Object
+	// attachedFrames и materials — опоры, приложенные к заданию prompt, и пути к материалам клипа
+	// (promptAttachments); nil — ключ не пишется.
+	attachedFrames *dynvalue.Array
+	materials      *dynvalue.Object
 }
 
 // agentContext — JSON контекста задания (порядок ключей зафиксирован эталоном): план, кастинг, врезки,
@@ -148,6 +157,13 @@ func agentContext(c *Context, input contextInput) string {
 	// противоречивое значение. Контекст остальных этапов не меняется.
 	if input.stateSources != nil {
 		value.Set("stateSources", input.stateSources)
+	}
+	// Опоры и материалы передаются только этапу prompt: контекст описания не меняется.
+	if input.attachedFrames != nil {
+		value.Set("attachedFrames", input.attachedFrames)
+	}
+	if input.materials != nil {
+		value.Set("materials", input.materials)
 	}
 	return dynvalue.Stringify(value)
 }

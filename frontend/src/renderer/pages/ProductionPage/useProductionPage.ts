@@ -2,7 +2,7 @@ import { productionTexts } from '@shared/texts/production';
 /** Состояние производства и действия выбранного пакета; платная отправка требует подтверждения снимка. */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import type { AcceptOptions, BrokenPackage, JobInfo, KeyframeNoteScope, PackageView, ProductionView } from '@shared/types';
+import type { AcceptOptions, BrokenPackage, JobInfo, KeyframeNoteScope, PackageView, ProductionView, PromptVariant } from '@shared/types';
 import { useApp } from '../../state';
 import { VERDICT_LABELS, type ProductionFilter } from './constants';
 import { defaultAttempt } from './planPath';
@@ -292,18 +292,21 @@ export function useProductionPage() {
 
   const noteFor = (pkg: PackageView): string => notes[decisionNoteKey(pkg)] ?? '';
   const setNoteFor = (pkg: PackageView, value: string): void => setNotes((current) => ({ ...current, [decisionNoteKey(pkg)]: value }));
-  /** Вопрос задан применением предложения: токен берётся из свежего снимка попытки. */
+  /** Вопрос задан применением предложения: токен берётся из свежего снимка попытки; promptVariant — вариант видеопромпта к отправке. */
   const answerApplied = useCallback(
-    async (dir: string, verdict: 'approve' | 'revise', note: string): Promise<void> => {
+    async (dir: string, verdict: 'approve' | 'revise', note: string, promptVariant?: PromptVariant): Promise<void> => {
       const next = await window.api.production.view(project);
       const pkg = next.shots.flatMap((item) => item.packages).find((item) => item.dir === dir);
-      if (pkg?.pendingDecision) await window.api.production.decide(project, dir, verdict, note, pkg.decisionToken);
+      if (pkg?.pendingDecision) await window.api.production.decide(project, dir, verdict, note, pkg.decisionToken, undefined, promptVariant);
     },
     [project]
   );
 
-  /** after выполняется после записи ответа в той же операции: так доработка сразу запускает агента. */
-  const decide = (pkg: PackageView, verdict: string, noteScope?: KeyframeNoteScope, after?: () => Promise<void>): void => {
+  /**
+   * after выполняется после записи ответа в той же операции: так доработка сразу запускает агента. promptVariant —
+   * вариант видеопромпта к отправке при его утверждении.
+   */
+  const decide = (pkg: PackageView, verdict: string, noteScope?: KeyframeNoteScope, after?: () => Promise<void>, promptVariant?: PromptVariant): void => {
     const note = noteFor(pkg).trim();
     const frame = pkg.pendingDecision?.frame;
     if (verdict === 'revise' && !note) {
@@ -343,7 +346,7 @@ export function useProductionPage() {
         const token = pkg.pendingDecision
           ? pkg.decisionToken
           : (await window.api.production.view(project)).shots.flatMap((item) => item.packages).find((item) => item.dir === pkg.dir)?.decisionToken;
-        await window.api.production.decide(project, pkg.dir, verdict, note, token, frame && verdict === 'revise' ? noteScope : undefined);
+        await window.api.production.decide(project, pkg.dir, verdict, note, token, frame && verdict === 'revise' ? noteScope : undefined, promptVariant);
         if (verdict === 'park') {
           await window.api.production.park(project, pkg.dir);
           if (!current()) return;

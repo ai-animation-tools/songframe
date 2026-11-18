@@ -1,7 +1,7 @@
 {
   "code": 2,
   "stdout": "",
-  "stderr": "использование: shot_workflow decide [-h] --dir DIR --verdict\n                                    {approve,revise,send,park,accept,retry,review}\n                                    [--note NOTE]\n                                    [--note-scope {frame,following}] [--json]\nshot_workflow decide: ошибка: аргумент --note-scope: недопустимое значение 'all' (допустимо: 'frame', 'following')\n",
+  "stderr": "использование: shot_workflow decide [-h] --dir DIR --verdict\n                                    {approve,revise,send,park,accept,retry,review}\n                                    [--note NOTE]\n                                    [--note-scope {frame,following}]\n                                    [--prompt-variant {original,translation}]\n                                    [--json]\nshot_workflow decide: ошибка: аргумент --note-scope: недопустимое значение 'all' (допустимо: 'frame', 'following')\n",
   "unhandled": false,
   "files": {},
   "dirs": {},

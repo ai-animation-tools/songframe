@@ -37,7 +37,7 @@ const (
 	textSelectionReason  = "reason должен быть непустой строкой с причиной выбора модели."
 	textDirectoryExists  = "Нужна новая папка попытки; существующая не перезаписывается."
 	textEmptyPrompt      = "Промпт пуст."
-	textOwnVideoInputs   = "У своего видео плана нет промпта и входов."
+	textOwnVideoInputs   = "Входы своего видео плана — только изображения."
 	textInputHashChanged = "Хеш входа отличается от указанного в запросе."
 	textInputChanged     = "Вход изменился при подготовке."
 )

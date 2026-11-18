@@ -537,6 +537,24 @@ export interface ManualVideo {
   note: string;
 }
 
+/** Роль изображения во входах генерации: первый кадр, промежуточный или последний. */
+export type OwnVideoInputRole = 'first' | 'middle' | 'last';
+
+/** Изображение, по которому своё видео сделано вне приложения: абсолютный путь файла и роль во входах. */
+export interface OwnVideoInput {
+  file: string;
+  role: OwnVideoInputRole;
+}
+
+/**
+ * Как своё видео плана получено вне приложения: входы генерации по порядку и промпт. Комплект хранит их как у
+ * обычной генерации; видео без них (снятое на телефон) передаёт пустой список и пустой промпт.
+ */
+export interface OwnVideoGeneration {
+  inputs: OwnVideoInput[];
+  prompt: string;
+}
+
 /** attempt.json manual_generation: откуда видео ручной генерации и что о нём записал пользователь. */
 export interface ManualGeneration {
   source: string;
@@ -544,6 +562,16 @@ export interface ManualGeneration {
   attached_at: string;
   cost: { amount: number; unit: ManualCostUnit } | null;
   description: string | null;
+}
+
+/** Вариант видеопромпта: оригинал на языке провайдера видео или русский перевод. */
+export type PromptVariant = 'original' | 'translation';
+
+/** Оригинал и перевод видеопромпта и вариант, выбранный к отправке (или отправленный). */
+export interface PromptVariants {
+  original: string;
+  translation: string;
+  selected: PromptVariant;
 }
 
 /**
@@ -557,9 +585,12 @@ export interface AcceptedKit {
   generationId: string | null;
   /** Видео создано вне приложения: источник, стоимость, примечание. */
   manualGeneration?: ManualGeneration;
-  /** Своё видео плана: описания, опор и видеопромпта у комплекта нет. */
+  /** Своё видео плана: описания нет; опоры и видеопромпт — только если пользователь указал их при загрузке. */
   ownVideo?: boolean;
+  /** Видеопромпт, переданный в генерацию. */
   prompt: string | null;
+  /** Оригинал и перевод видеопромпта, если попытка их предлагала; selected — отправленный вариант. */
+  promptVariants?: PromptVariants;
   /** Изображения, переданные в генерацию (опоры). */
   images: string[];
   /** Срез речи речевого плана и его границы в песне. */
@@ -772,7 +803,8 @@ export interface PackageView {
   keyframes: PackageKeyframe[];
   /** Описание этапа 1 из description.md пакета, если агент его записал. */
   description: string | null;
-  prompt: { path: string; approved: boolean; text: string } | null;
+  /** Видеопромпт попытки: path и text — вариант, выбранный к отправке; variants — оригинал и перевод, если агент предложил перевод. */
+  prompt: { path: string; approved: boolean; text: string; variants?: PromptVariants } | null;
   request: {
     dir: string;
     kind?: 'image' | 'video';

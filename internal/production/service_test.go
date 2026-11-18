@@ -214,7 +214,7 @@ func TestSubmitRequiresQuote(t *testing.T) {
 	if _, err := e.prod.Submit(e.project, e.pkg, *view.Request.SHA256, view.DecisionToken, "", ""); err == nil || !strings.Contains(err.Error(), "стоимость") {
 		t.Fatalf("отправка без оценки: %v", err)
 	}
-	if err := e.prod.Decide(e.project, e.pkg, "send", "", view.DecisionToken, ""); err == nil {
+	if err := e.prod.Decide(e.project, e.pkg, "send", "", view.DecisionToken, "", ""); err == nil {
 		t.Fatal("send через decide должен отклоняться")
 	}
 	if _, err := e.prod.Quote(e.project, e.pkg, strings.Repeat("0", 64), view.DecisionToken); err == nil {

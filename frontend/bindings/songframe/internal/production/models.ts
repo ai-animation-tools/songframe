@@ -49,7 +49,8 @@ export interface AcceptedKit {
     "manualGeneration"?: json$0.RawMessage;
 
     /**
-     * OwnVideo — своё видео плана (generation.own_video): описания, опор и промпта у комплекта нет.
+     * OwnVideo — своё видео плана (generation.own_video): описания нет, входы и промпт — только если их
+     * указал пользователь при загрузке.
      */
     "ownVideo"?: boolean;
 
@@ -57,6 +58,13 @@ export interface AcceptedKit {
      * Prompt — текст видеопромпта, переданного в генерацию.
      */
     "prompt": string | null;
+
+    /**
+     * PromptVariants — оригинал и перевод видеопромпта, если попытка их предлагала: отправленный
+     * текст (generation.prompt) и второй вариант (generation.prompt_translation или
+     * prompt_original); без второго варианта поля нет.
+     */
+    "promptVariants"?: PromptVariants | null;
 
     /**
      * Images — изображения, переданные в генерацию (опоры), в порядке входов.
@@ -168,6 +176,25 @@ export interface ManualResult {
 }
 
 /**
+ * OwnVideoGeneration — необязательные сведения о том, как своё видео плана получено: входы генерации
+ * по порядку и промпт. Комплект хранит их как у обычной генерации (generation-input-N с ролями и
+ * generation-prompt.txt); видео без входов и промпта (снятое на телефон) их не указывает.
+ */
+export interface OwnVideoGeneration {
+    "inputs": OwnVideoInput[];
+    "prompt": string;
+}
+
+/**
+ * OwnVideoInput — изображение, по которому своё видео сделано вне приложения: абсолютный путь файла и
+ * роль во входах генерации (first — первый кадр, middle — промежуточный, last — последний).
+ */
+export interface OwnVideoInput {
+    "file": string;
+    "role": string;
+}
+
+/**
  * PackageView — вид рабочего пакета плана. Документы workflow.json без
  * схемы (timing, pendingDecision, decision, keyframeNotes) передаются как есть.
  */
@@ -249,12 +276,39 @@ export interface ProjectTotal {
 }
 
 /**
- * Prompt — редактируемый видеопромпт пакета (video-prompt.txt) и его утверждение.
+ * Prompt — редактируемый видеопромпт пакета и его утверждение. Path и Text — файл, выбранный к
+ * отправке (prompt.path, обычно video-prompt.txt).
  */
 export interface Prompt {
     "path": string;
     "approved": boolean;
     "text": string;
+
+    /**
+     * Variants — оригинал и русский перевод, если агент предложил перевод (ключи original и
+     * translation записи prompt и оба файла на месте); без перевода поля нет.
+     */
+    "variants"?: PromptVariants | null;
+}
+
+/**
+ * PromptVariants — тексты вариантов видеопромпта попытки и какой из них выбран к отправке.
+ */
+export interface PromptVariants {
+    /**
+     * Original — промпт на языке провайдера видео.
+     */
+    "original": string;
+
+    /**
+     * Translation — тот же промпт по-русски.
+     */
+    "translation": string;
+
+    /**
+     * Selected — выбранный к отправке вариант: original или translation (по prompt.path).
+     */
+    "selected": string;
 }
 
 /**
@@ -303,7 +357,8 @@ export interface Request {
     "manualGeneration"?: json$0.RawMessage;
 
     /**
-     * OwnVideo — своё видео плана (request.json own_video): попытка без описания, опор и промпта,
+     * OwnVideo — своё видео плана (request.json own_video): попытка без описания и опор попытки (входы
+     * и промпт — только указанные пользователем),
      * видео пользователь сделал сам; поле опускается у остальных запросов.
      */
     "ownVideo"?: boolean;

@@ -22,10 +22,15 @@ type AcceptedKit struct {
 	GenerationID *string `json:"generationId"`
 	// ManualGeneration — manual_generation снимка запроса как есть: видео создано вне приложения.
 	ManualGeneration json.RawMessage `json:"manualGeneration,omitempty"`
-	// OwnVideo — своё видео плана (generation.own_video): описания, опор и промпта у комплекта нет.
+	// OwnVideo — своё видео плана (generation.own_video): описания нет, входы и промпт — только если их
+	// указал пользователь при загрузке.
 	OwnVideo bool `json:"ownVideo,omitempty"`
 	// Prompt — текст видеопромпта, переданного в генерацию.
 	Prompt *string `json:"prompt"`
+	// PromptVariants — оригинал и перевод видеопромпта, если попытка их предлагала: отправленный
+	// текст (generation.prompt) и второй вариант (generation.prompt_translation или
+	// prompt_original); без второго варианта поля нет.
+	PromptVariants *PromptVariants `json:"promptVariants,omitempty"`
 	// Images — изображения, переданные в генерацию (опоры), в порядке входов.
 	Images []string `json:"images"`
 	// Speech — срез речи речевого плана; null без него.
@@ -79,6 +84,9 @@ func AcceptedKitFor(project, shot string) (*AcceptedKit, error) {
 		}
 		text := string(data)
 		kit.Prompt = &text
+		if kit.PromptVariants, err = acceptedPromptVariants(dir, generation, text); err != nil {
+			return nil, err
+		}
 	}
 	inputs, _ := dynvalue.AsArray(dynvalue.Get(generation, "inputs"))
 	for _, input := range inputs {
@@ -132,4 +140,28 @@ func withJournalCost(project, shot string, manual json.RawMessage) json.RawMessa
 		return manual
 	}
 	return data
+}
+
+// acceptedPromptVariants — варианты видеопромпта комплекта: sent — отправленный текст
+// (generation.prompt), второй — файл generation.prompt_translation (отправлен оригинал) или
+// generation.prompt_original (отправлен перевод). nil — второго варианта нет.
+func acceptedPromptVariants(dir string, generation any, sent string) (*PromptVariants, error) {
+	for _, variant := range []struct{ key, selected string }{{"prompt_translation", "original"}, {"prompt_original", "translation"}} {
+		path, err := existingAssetFile(dir, dynvalue.GetPath(generation, variant.key, "path"))
+		if err != nil {
+			return nil, err
+		}
+		if path == nil {
+			continue
+		}
+		data, err := os.ReadFile(*path)
+		if err != nil {
+			return nil, err
+		}
+		if variant.selected == "original" {
+			return &PromptVariants{Original: sent, Translation: string(data), Selected: "original"}, nil
+		}
+		return &PromptVariants{Original: string(data), Translation: sent, Selected: "translation"}, nil
+	}
+	return nil, nil
 }

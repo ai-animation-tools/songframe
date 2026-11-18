@@ -20,6 +20,7 @@ import (
 	"songframe/internal/builtoutput"
 	"songframe/internal/dynvalue"
 	"songframe/internal/jobs"
+	"songframe/internal/mediafile"
 	"songframe/internal/mediaproviders"
 	"songframe/internal/mediarequest"
 	"songframe/internal/projectfile"
@@ -436,8 +437,10 @@ func (s *Service) askNextFrame(project, directory string) error {
 }
 
 // Decide — ответ пользователя на вопрос пакета через shot_workflow decide. send отклоняется:
-// отправка требует отдельного подтверждения со стоимостью (Submit).
-func (s *Service) Decide(project, packageDir, verdict, note, decisionToken, noteScope string) error {
+// отправка требует отдельного подтверждения со стоимостью (Submit). promptVariant (original или
+// translation) при утверждении видеопромпта выбирает вариант к отправке; пусто — оригинал или
+// уже выбранный в записи prompt.
+func (s *Service) Decide(project, packageDir, verdict, note, decisionToken, noteScope, promptVariant string) error {
 	directory, err := s.available(project, packageDir)
 	if err != nil {
 		return err
@@ -473,6 +476,9 @@ func (s *Service) Decide(project, packageDir, verdict, note, decisionToken, note
 			scope = "frame"
 		}
 		args = append(args, "--note-scope", scope)
+	}
+	if verdict == "approve" && pending != nil && pending.Stage == "prompt_review" && promptVariant != "" {
+		args = append(args, "--prompt-variant", promptVariant)
 	}
 	result, err := s.run(project, "shot_workflow", args...)
 	if err != nil {
@@ -1282,6 +1288,55 @@ func CheckManualResult(result ManualResult) error {
 	}
 	if amount := result.CostAmount; amount != nil && (*amount < 0 || *amount != math.Trunc(*amount)) {
 		return errors.New(textManualCostInvalid)
+	}
+	return nil
+}
+
+// OwnVideoInput — изображение, по которому своё видео сделано вне приложения: абсолютный путь файла и
+// роль во входах генерации (first — первый кадр, middle — промежуточный, last — последний).
+type OwnVideoInput struct {
+	File string `json:"file"`
+	Role string `json:"role"`
+}
+
+// OwnVideoGeneration — необязательные сведения о том, как своё видео плана получено: входы генерации
+// по порядку и промпт. Комплект хранит их как у обычной генерации (generation-input-N с ролями и
+// generation-prompt.txt); видео без входов и промпта (снятое на телефон) их не указывает.
+type OwnVideoGeneration struct {
+	Inputs []OwnVideoInput `json:"inputs"`
+	Prompt string          `json:"prompt"`
+}
+
+// CheckOwnVideoGeneration — проверка входов и промпта своего видео до любых записей: каждый вход —
+// обычный файл изображения по абсолютному пути, роль из first/middle/last, первый кадр только первым,
+// последний только последним, не больше mediaproviders.DefaultKeyframeLimit входов; в промпте нет
+// нулевых символов.
+func CheckOwnVideoGeneration(generation OwnVideoGeneration) error {
+	if len(generation.Inputs) > mediaproviders.DefaultKeyframeLimit {
+		return errors.New(textOwnVideoInputsLimit(mediaproviders.DefaultKeyframeLimit))
+	}
+	last := len(generation.Inputs) - 1
+	for index, input := range generation.Inputs {
+		info, err := os.Stat(input.File)
+		if !filepath.IsAbs(input.File) || err != nil || !info.Mode().IsRegular() || !mediafile.IsImage(input.File) {
+			return errors.New(textOwnVideoInputImage(index + 1))
+		}
+		switch input.Role {
+		case "first":
+			if index != 0 {
+				return errors.New(textOwnVideoFirstRole)
+			}
+		case "last":
+			if index != last {
+				return errors.New(textOwnVideoLastRole)
+			}
+		case "middle":
+		default:
+			return errors.New(textOwnVideoInputRole(index + 1))
+		}
+	}
+	if strings.Contains(generation.Prompt, "\x00") {
+		return errors.New(textOwnVideoPromptInvalid)
 	}
 	return nil
 }

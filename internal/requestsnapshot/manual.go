@@ -3,6 +3,7 @@ package requestsnapshot
 import (
 	"os"
 	"path/filepath"
+	"slices"
 
 	"songframe/internal/toolrt"
 )
@@ -14,8 +15,9 @@ type ManualInput struct {
 }
 
 // ManualSpec — пакет ручной генерации: план, провайдер видео проекта, длительность запроса,
-// текст утверждённого видеопромпта и входы. OwnVideo — своё видео плана без описания, опор и
-// промпта: prompt.txt пуст, входов и длительности нет, request.json получает own_video: true.
+// текст утверждённого видеопромпта и входы. OwnVideo — своё видео плана без описания и опор
+// попытки: длительности нет, request.json получает own_video: true; входы (только изображения) и
+// промпт — необязательные сведения пользователя о том, как видео сделано, без них prompt.txt пуст.
 type ManualSpec struct {
 	Shot, Provider string
 	Seconds        int64
@@ -34,7 +36,7 @@ func PrepareManual(directory string, spec ManualSpec) (*toolrt.Dict, error) {
 	if toolrt.Exists(directory) {
 		return nil, toolrt.New(toolrt.ValueError, textDirectoryExists)
 	}
-	if spec.OwnVideo && (spec.Prompt != "" || len(spec.Inputs) > 0) {
+	if spec.OwnVideo && slices.ContainsFunc(spec.Inputs, func(input ManualInput) bool { return input.Slot != "image" }) {
 		return nil, toolrt.New(toolrt.ValueError, textOwnVideoInputs)
 	}
 	if !spec.OwnVideo && toolrt.Strip(spec.Prompt) == "" {

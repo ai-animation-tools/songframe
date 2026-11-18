@@ -90,6 +90,51 @@ export const Prompt: Story = {
   name: 'Видеопромпт · сравнение текстов',
   args: { initialProposal: workflowProposal('prompt') }
 };
+/** Видеопромпт на языке провайдера с русским переводом. */
+const translatedPrompt = (): ProductionProposal =>
+  workflowProposal('prompt', {
+    after: {
+      schemaVersion: 1,
+      stage: 'prompt',
+      prompt: 'Camera slowly pushes in to the old gate, the window light warms up.',
+      translation: 'Камера медленно приближается к старым воротам, свет в окне теплеет.'
+    }
+  });
+export const PromptTranslation: Story = {
+  tags: ['ci'],
+  name: 'Видеопромпт с переводом · переключатель вариантов, принять с переводом к отправке',
+  args: { initialProposal: translatedPrompt(), dialog: true },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(document.body);
+    const variants = productionTexts.promptVariants;
+    const after = translatedPrompt().after;
+    if (after?.stage !== 'prompt' || !after.translation) throw new Error('В истории нет перевода.');
+    await userEvent.click(canvas.getByRole('button', { name: dialogLabels.open }));
+    const dialog = within(await body.findByRole('dialog'));
+    const proposed = within(dialog.getByRole('region', { name: labels.proposed }));
+    // По умолчанию показан и выбран к отправке оригинал.
+    await expect(proposed.getByText(after.prompt)).toBeInTheDocument();
+    await expect(proposed.getByRole('radio', { name: variants.sendOriginal })).toBeChecked();
+    await userEvent.click(proposed.getByRole('button', { name: variants.translation }));
+    await expect(proposed.getByText(after.translation)).toBeInTheDocument();
+    await userEvent.click(proposed.getByRole('radio', { name: variants.sendTranslation }));
+    await expect(proposed.getByText(variants.selected({ translation: true }))).toBeInTheDocument();
+    await userEvent.click(dialog.getByRole('button', { name: labels.apply }));
+    await waitFor(() => expect(body.queryByRole('dialog')).not.toBeInTheDocument());
+    await expect(canvas.getByTestId('send-variant')).toHaveTextContent('Вариант видеопромпта к отправке: translation.');
+  }
+};
+export const PromptTranslationPreview: Story = {
+  name: 'Видеопромпт с переводом · превью без выбора отправки',
+  args: { initialProposal: translatedPrompt() },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const variants = productionTexts.promptVariants;
+    await expect(canvas.getByRole('group', { name: variants.view })).toBeInTheDocument();
+    await expect(canvas.queryByRole('radiogroup', { name: variants.send })).not.toBeInTheDocument();
+  }
+};
 export const FirstPrompt: Story = {
   name: 'Первый видеопромпт · пустая левая колонка',
   args: { initialProposal: workflowProposal('prompt', { before: '' }) }
@@ -326,6 +371,8 @@ export const PromptOverLimit: Story = {
     const over = { chars, limit: 40 };
     await expect(dialog.getByText(productionTexts.promptLimit.title)).toBeInTheDocument();
     await expect(dialog.getByRole('button', { name: labels.apply })).toBeDisabled();
+    // Без перевода — один текст, без переключателя и выбора отправки.
+    await expect(dialog.queryByRole('group', { name: productionTexts.promptVariants.view })).not.toBeInTheDocument();
     await userEvent.click(dialog.getByRole('button', { name: productionTexts.verdictLabels.revise }));
     await expect(dialog.getByRole('textbox', { name: productionTexts.productionWorkflowPanel.note })).toHaveValue(productionTexts.promptLimit.reviseNote(over));
   }

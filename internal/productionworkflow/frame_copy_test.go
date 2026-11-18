@@ -115,7 +115,7 @@ func TestFrameCopyFollowsSource(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := service.Decide(run.project, dir, "approve", "", pkg.DecisionToken, ""); err != nil {
+		if err := service.Decide(run.project, dir, "approve", "", pkg.DecisionToken, "", ""); err != nil {
 			t.Fatalf("утверждение %s: %v", id, err)
 		}
 	}

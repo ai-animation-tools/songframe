@@ -32,6 +32,7 @@ import type { UpdatesApi } from './updates';
 import type { ComponentsApi } from './components';
 import type {
   KeyframeNoteScope,
+  PromptVariant,
   AcceptOptions,
   PackageView,
   SpeechPlan,
@@ -66,6 +67,7 @@ import type {
   EnvironmentCheck,
   JobInfo,
   ManualVideo,
+  OwnVideoGeneration,
   PickOptions,
   PreviousSessionInfo,
   RendererErrorReport,
@@ -233,8 +235,19 @@ export interface Api {
   };
   production: {
     view(project: string): Promise<ProductionView>;
-    /** Ответ пользователя на вопрос пакета: пишется через shot_workflow decide. */
-    decide(project: string, packageDir: string, verdict: string, note?: string, decisionToken?: string, noteScope?: KeyframeNoteScope): Promise<void>;
+    /**
+     * Ответ пользователя на вопрос пакета: пишется через shot_workflow decide. promptVariant при утверждении
+     * видеопромпта выбирает вариант к отправке (оригинал или перевод); без него — оригинал.
+     */
+    decide(
+      project: string,
+      packageDir: string,
+      verdict: string,
+      note?: string,
+      decisionToken?: string,
+      noteScope?: KeyframeNoteScope,
+      promptVariant?: PromptVariant
+    ): Promise<void>;
     /** Вернуть утверждённую опору на доработку с замечанием, пока видеопромпт не утверждён. */
     reopenFrame(project: string, packageDir: string, frame: string, note: string, noteScope: KeyframeNoteScope): Promise<void>;
     /** Вернуть утверждённый видеопромпт на доработку с замечанием, пока запрос видео не отправлен; описание и опоры остаются. */
@@ -265,8 +278,11 @@ export interface Api {
     attachManual(project: string, packageDir: string, result: ManualVideo): Promise<JobInfo>;
     /** Другое видео вместо загруженного вручную и ещё не принятого: прежняя копия в попытке заменяется. */
     replaceManual(project: string, packageDir: string, result: ManualVideo): Promise<JobInfo>;
-    /** Своё видео плана: новая попытка без описания, опор и промпта, видео MP4 сразу становится её результатом; packageDir — папка попытки. */
-    attachOwnVideo(project: string, shot: string, result: ManualVideo): Promise<{ packageDir: string; job: JobInfo }>;
+    /**
+     * Своё видео плана: новая попытка без описания и опор попытки, видео MP4 сразу становится её результатом; packageDir — папка
+     * попытки. generation — входы генерации и промпт, по которым видео сделано вне приложения; пустые — видео без них.
+     */
+    attachOwnVideo(project: string, shot: string, result: ManualVideo, generation: OwnVideoGeneration): Promise<{ packageDir: string; job: JobInfo }>;
     /** Выбирает кандидат опоры; художественное утверждение кадра выполняется отдельно. */
     selectImage(project: string, packageDir: string, index: number, expectedResultToken: string): Promise<void>;
     regenerate(project: string, shot: string): Promise<JobInfo>;

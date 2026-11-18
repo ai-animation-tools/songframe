@@ -5,11 +5,13 @@ import { useId, useState, type ReactElement } from 'react';
 import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, LinearProgress, TextField } from '@mui/material';
 import type { AgentSettings } from '@shared/agents';
 import type { ProductionProposal } from '@shared/production-workflow';
+import type { PromptVariant } from '@shared/types';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import { PRODUCTION_PASS_LABELS } from '../constants';
 import { ProductionProposalPreview, ProposalActions } from './ProductionProposalPreview';
 import { PromptLimitAlert } from './PromptLimitAlert';
 import { promptOverLimit } from '../promptLimit';
+import { promptVariantText } from './PromptVariantsText';
 
 export function ProductionProposalDialog({
   proposal,
@@ -31,7 +33,8 @@ export function ProductionProposalDialog({
   error?: string | null;
   /** Предел длины видеопромпта провайдера: предложенный промпт длиннее него принять нельзя. */
   promptMaxChars?: number;
-  onApply(): Promise<boolean>;
+  /** Принять предложение; у видеопромпта с переводом — с вариантом, выбранным к отправке. */
+  onApply(promptVariant?: PromptVariant): Promise<boolean>;
   /** Замечание и запуск доработки агентом: одно действие над этим предложением. */
   onRevise(note: string): Promise<boolean>;
   onDiscard(): Promise<boolean>;
@@ -42,10 +45,13 @@ export function ProductionProposalDialog({
   const [open, setOpen] = useState(false);
   const [reviseNote, setReviseNote] = useState<string | null>(null);
   const titleId = useId();
+  // К отправке по умолчанию выбран оригинал; выбор перевода есть, только если агент его предложил.
+  const [sendVariant, setSendVariant] = useState<PromptVariant>('original');
   const after = proposal.after;
-  const overLimit = after?.stage === 'prompt' ? promptOverLimit(after.prompt, promptMaxChars) : null;
+  const variants = after?.stage === 'prompt' && after.translation ? { original: after.prompt, translation: after.translation } : undefined;
+  const overLimit = after?.stage === 'prompt' ? promptOverLimit(promptVariantText(after.prompt, variants, sendVariant), promptMaxChars) : null;
   const apply = async (): Promise<void> => {
-    if (await onApply()) setOpen(false);
+    if (await onApply(variants ? sendVariant : undefined)) setOpen(false);
   };
   const revise = async (): Promise<void> => {
     if (reviseNote?.trim() && (await onRevise(reviseNote.trim()))) setOpen(false);
@@ -83,7 +89,17 @@ export function ProductionProposalDialog({
               <PromptLimitAlert over={overLimit} videoProvider={videoProvider} />
             </Box>
           ) : null}
-          <ProductionProposalPreview proposal={proposal} provider={provider} busy={busy} onApply={apply} onDiscard={discard} actions={false} fill />
+          <ProductionProposalPreview
+            proposal={proposal}
+            provider={provider}
+            busy={busy}
+            onApply={apply}
+            onDiscard={discard}
+            actions={false}
+            fill
+            sendVariant={sendVariant}
+            onSendVariant={setSendVariant}
+          />
         </DialogContent>
         {reviseNote !== null ? (
           <Box sx={{ px: 3, pb: 1 }}>

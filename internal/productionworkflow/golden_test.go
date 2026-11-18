@@ -329,6 +329,45 @@ func (r *goldenRun) runTool(ctx context.Context, project, name string, args []st
 	return result, err
 }
 
+// compareAttachedFrames — на этапе prompt агент получает изображениями ровно те кадры, что
+// attachedFrames контекста отмечает приложенными, в том же порядке: уменьшенные JPEG в каталоге
+// вложений, а не исходные файлы проекта.
+func (r *goldenRun) compareAttachedFrames(t *testing.T, label string, start agents.StartInput) {
+	t.Helper()
+	var context struct {
+		AttachedFrames []struct {
+			ID       string `json:"id"`
+			Shot     string `json:"shot"`
+			Position string `json:"position"`
+			Attached bool   `json:"attached"`
+		} `json:"attachedFrames"`
+	}
+	if err := json.Unmarshal([]byte(start.Context), &context); err != nil || context.AttachedFrames == nil {
+		return
+	}
+	names := []string{}
+	for _, frame := range context.AttachedFrames {
+		if !frame.Attached {
+			continue
+		}
+		if frame.ID != "" {
+			names = append(names, "frame-"+frame.ID+".jpg")
+		} else {
+			names = append(names, frame.Shot+"-"+frame.Position+".jpg")
+		}
+	}
+	got := []string{}
+	for _, image := range start.Images {
+		if strings.HasPrefix(image, r.project) {
+			t.Fatalf("%s: вложение %s — файл проекта, а не уменьшенная копия", label, image)
+		}
+		got = append(got, filepath.Base(image))
+	}
+	if !slices.Equal(got, names) {
+		t.Fatalf("%s: вложения %v, ожидались %v", label, got, names)
+	}
+}
+
 // normalize — маркеры путей и UUID, как в эталоне.
 func (r *goldenRun) normalize(text string) string {
 	text = strings.ReplaceAll(text, r.local, "<local>")
@@ -388,6 +427,7 @@ func (r *goldenRun) step(t *testing.T, index int, step goldenStep) {
 		if got := r.normalize(start.Context); got != r.blobs[want.Context] {
 			t.Fatalf("%s: контекст отличается\n%s", label(), firstDifference(got, r.blobs[want.Context]))
 		}
+		r.compareAttachedFrames(t, label(), start)
 	}
 	calls := r.calls[callsBefore:]
 	gotCalls, _ := json.Marshal(calls)

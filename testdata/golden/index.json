@@ -7192,6 +7192,39 @@
   },
   {
     "domain": "shot-workflow",
+    "name": "decide-prompt-translation",
+    "description": "Ответ approve с --prompt-variant translation утверждает к отправке перевод; ключи вариантов сохраняются.",
+    "covers": [
+      "--prompt-variant translation",
+      "варианты промпта"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "decide-prompt-variant-missing",
+    "description": "Перевод выбран, а у промпта его нет.",
+    "covers": [
+      "нет перевода"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "reopen-prompt-translation",
+    "description": "Утверждённый перевод возвращается на доработку: к отправке снова выбран оригинал, ключи вариантов сохраняются.",
+    "covers": [
+      "reopen-prompt: path к оригиналу"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ap-file-not-variant",
+    "description": "У промпта с вариантами утверждается только оригинал или перевод.",
+    "covers": [
+      "--file вне вариантов"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
     "name": "decide-send",
     "description": "send только записывается.",
     "covers": [
@@ -8815,6 +8848,17 @@
       "projectUnavailable",
       "packageFolderRequired журнала",
       "paidBackupBlocksRecovery"
+    ]
+  },
+  {
+    "domain": "production-workflow-apply",
+    "name": "apply-prompt-translation",
+    "description": "Видеопромпт с переводом: оригинал и перевод в двух файлах попытки, утверждение перевода к отправке, возврат на доработку к оригиналу и новый промпт без перевода, удаляющий прежний перевод.",
+    "covers": [
+      "apply prompt: video-prompt.ru.txt и ключи original/translation",
+      "decide --prompt-variant translation",
+      "reopen-prompt: path к оригиналу",
+      "apply prompt без перевода удаляет video-prompt.ru.txt"
     ]
   },
   {

@@ -5,6 +5,7 @@ import (
 	"songframe/internal/projectgit"
 
 	"songframe/internal/agents"
+	"songframe/internal/production"
 	"songframe/internal/productionworkflow"
 	"songframe/internal/wire"
 )
@@ -142,8 +143,8 @@ func (f productionFlow) Busy(project, shot, packageDir string) bool {
 }
 
 // CreateOwnVideo — попытка своего видео плана (productionworkflow.Workflow.CreateOwnVideo).
-func (f productionFlow) CreateOwnVideo(ctx context.Context, project, shot string) (string, error) {
-	return f.workflow.CreateOwnVideo(ctx, project, shot)
+func (f productionFlow) CreateOwnVideo(ctx context.Context, project, shot string, generation production.OwnVideoGeneration) (string, error) {
+	return f.workflow.CreateOwnVideo(ctx, project, shot, generation)
 }
 
 // Proposals — непринятые предложения агента по планам с подписью proposalAttention.

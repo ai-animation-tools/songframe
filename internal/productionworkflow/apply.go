@@ -3,6 +3,7 @@ package productionworkflow
 import (
 	"context"
 	"errors"
+	"os"
 	"path/filepath"
 	"slices"
 
@@ -206,14 +207,24 @@ func (w *Workflow) applyStage(ctx context.Context, plan *applyPlan) error {
 		if !approved {
 			return errors.New(textAcceptedFramesChanged)
 		}
-		if err := writeProjectFile(filepath.Join(target, "video-prompt.txt"), []byte(dynvalue.ToString(plan.after.Value("prompt")))); err != nil {
+		// Оригинал на языке провайдера и русский перевод — два файла попытки; отправляется выбранный
+		// при утверждении (prompt.path). Перевод прежнего предложения к новому оригиналу не относится.
+		if err := writeProjectFile(filepath.Join(target, promptOriginalFile), []byte(dynvalue.ToString(plan.after.Value("prompt")))); err != nil {
+			return err
+		}
+		translation, translated := plan.after.Value("translation").(string)
+		if translated {
+			if err := writeProjectFile(filepath.Join(target, promptTranslationFile), []byte(translation)); err != nil {
+				return err
+			}
+		} else if err := removePackageFile(filepath.Join(target, promptTranslationFile)); err != nil {
 			return err
 		}
 		workflow, err := packageDocument(target, textWorkflowMissing)
 		if err != nil {
 			return err
 		}
-		workflow.Set("prompt", promptRecord())
+		workflow.Set("prompt", proposedPrompt(translated))
 		workflow.Set("approved_prompt_sha256", nil)
 		workflow.Set("request_dir", nil)
 		if err := writeProjectJSON(filepath.Join(target, "workflow.json"), workflow); err != nil {
@@ -322,7 +333,7 @@ func (w *Workflow) applyDescription(ctx context.Context, plan *applyPlan) error 
 	if current := production.CurrentShotFingerprint(c.Project, plan.shot); current != "" {
 		workflow.Set("scene_sha256", current)
 	}
-	workflow.Set("prompt", promptRecord())
+	workflow.Set("prompt", unapprovedPrompt(workflow.Value("prompt")))
 	workflow.Set("request_dir", nil)
 	workflow.Set("approved_prompt_sha256", nil)
 	if err := writeProjectJSON(filepath.Join(target, "workflow.json"), workflow); err != nil {
@@ -341,12 +352,70 @@ func findByID(items []any, id any) any {
 	return dynvalue.Undefined
 }
 
-// promptRecord — { path: 'video-prompt.txt', approved: false }: промпт требует согласования.
-func promptRecord() *dynvalue.Object {
+// Файлы видеопромпта попытки: оригинал на языке провайдера (его пишет и «Написать самому») и
+// русский перевод из предложения агента. Запись prompt в workflow.json называет их ключами
+// original и translation, а path — тот, что выбран для отправки.
+const (
+	promptOriginalFile    = "video-prompt.txt"
+	promptTranslationFile = "video-prompt.ru.txt"
+)
+
+// proposedPrompt — запись только что применённого видеопромпта: на согласовании, к отправке
+// выбран оригинал; translation — только при записанном переводе.
+func proposedPrompt(translated bool) *dynvalue.Object {
 	prompt := dynvalue.NewObject()
-	prompt.Set("path", "video-prompt.txt")
+	prompt.Set("path", promptOriginalFile)
 	prompt.Set("approved", false)
+	prompt.Set("original", promptOriginalFile)
+	if translated {
+		prompt.Set("translation", promptTranslationFile)
+	}
 	return prompt
+}
+
+// unapprovedPrompt — запись видеопромпта, снова требующего согласования (новое описание, повтор
+// попытки): к отправке выбирается оригинал, ключи вариантов previous сохраняются. Без вариантов —
+// { path: 'video-prompt.txt', approved: false }.
+func unapprovedPrompt(previous any) *dynvalue.Object {
+	prompt := dynvalue.NewObject()
+	original, hasOriginal := dynvalue.Get(previous, "original").(string)
+	if !hasOriginal || original == "" {
+		prompt.Set("path", promptOriginalFile)
+		prompt.Set("approved", false)
+		return prompt
+	}
+	prompt.Set("path", original)
+	prompt.Set("approved", false)
+	prompt.Set("original", original)
+	if translation, ok := dynvalue.Get(previous, "translation").(string); ok && translation != "" {
+		prompt.Set("translation", translation)
+	}
+	return prompt
+}
+
+// promptVariantFiles — файлы вариантов видеопромпта записи prompt: оригинал и перевод, если они
+// названы; без ключа original — только path (запись без вариантов).
+func promptVariantFiles(prompt any) []string {
+	files := []string{}
+	for _, field := range []string{"original", "translation"} {
+		if name, ok := dynvalue.Get(prompt, field).(string); ok && name != "" {
+			files = append(files, name)
+		}
+	}
+	if len(files) == 0 {
+		if path, ok := dynvalue.Get(prompt, "path").(string); ok && path != "" {
+			files = append(files, path)
+		}
+	}
+	return files
+}
+
+// removePackageFile — удаление файла пакета; отсутствующий файл — не ошибка.
+func removePackageFile(path string) error {
+	if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	return nil
 }
 
 // packageDocument — workflow.json пакета объектом; отсутствующий или не объект — ошибка missing.

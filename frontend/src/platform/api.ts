@@ -794,8 +794,12 @@ export function createApi(b: Bindings): Api {
   // получение, приёмка и повтор ждут оценку и сервис провайдера: без срока ожидания оболочки.
   const production = async () => b.production();
   api.production.view = (project) => call('production.view', async () => (await (await production()).View(project)) as unknown as ProductionView);
-  api.production.decide = (project, packageDir, verdict, note, decisionToken, noteScope) =>
-    call('production.decide', async () => (await production()).Decide(project, packageDir, verdict, note ?? '', decisionToken ?? '', noteScope ?? ''), false);
+  api.production.decide = (project, packageDir, verdict, note, decisionToken, noteScope, promptVariant) =>
+    call(
+      'production.decide',
+      async () => (await production()).Decide(project, packageDir, verdict, note ?? '', decisionToken ?? '', noteScope ?? '', promptVariant ?? ''),
+      false
+    );
   api.production.reopenFrame = (project, packageDir, frame, note, noteScope) =>
     call('production.reopenFrame', async () => (await production()).ReopenFrame(project, packageDir, frame, note, noteScope), false);
   api.production.reopenPrompt = (project, packageDir, note) =>
@@ -829,11 +833,11 @@ export function createApi(b: Bindings): Api {
     call('production.attachManual', async () => toJob(await (await production()).AttachManual(project, packageDir, result)), false);
   api.production.replaceManual = (project, packageDir, result) =>
     call('production.replaceManual', async () => toJob(await (await production()).ReplaceManual(project, packageDir, result)), false);
-  api.production.attachOwnVideo = (project, shot, result) =>
+  api.production.attachOwnVideo = (project, shot, result, generation) =>
     call(
       'production.attachOwnVideo',
       async () => {
-        const started = await (await production()).AttachOwnVideo(project, shot, result);
+        const started = await (await production()).AttachOwnVideo(project, shot, result, generation);
         return { packageDir: started.packageDir, job: toJob(started.job) };
       },
       false

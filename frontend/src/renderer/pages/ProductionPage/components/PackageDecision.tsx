@@ -3,7 +3,7 @@ import { productionTexts } from '@shared/texts/production';
  * Вопрос пакета и варианты ответа; ответ сразу выполняет приложение. На вопросе «Отправить» доработка
  * подготовленного запроса — «Изменить» (onChangeRequest): окно выбора модели и параметров, без агента.
  */
-import { useState, type ReactElement } from 'react';
+import { useState, type ReactElement, type ReactNode } from 'react';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EditIcon from '@mui/icons-material/Edit';
 import SendIcon from '@mui/icons-material/Send';
@@ -43,7 +43,8 @@ export function PackageDecision({
   onChangeRequest,
   verdictReasons,
   suggestedNote,
-  onDecide
+  onDecide,
+  children
 }: {
   pending: PackageView['pendingDecision'];
   aiKind: AiActionKind;
@@ -63,6 +64,8 @@ export function PackageDecision({
   suggestedNote?: string;
   /** Для вопроса об опоре передаётся охват замечания: только эта опора или и следующие. */
   onDecide(verdict: string, noteScope?: KeyframeNoteScope): void;
+  /** Выбор, уточняющий ответ, над кнопками: например, какой вариант видеопромпта отправить. */
+  children?: ReactNode;
 }): ReactElement {
   const { aiAccess } = useApp();
   const problem = aiActionProblem(aiAccess, aiKind);
@@ -103,6 +106,7 @@ export function PackageDecision({
               {productionTexts.packageDecision.workflowHint}
             </Typography>
           )}
+          {children ? <Box sx={{ mb: 1 }}>{children}</Box> : null}
           {options.includes('revise') && revising ? (
             <TextField
               size="small"

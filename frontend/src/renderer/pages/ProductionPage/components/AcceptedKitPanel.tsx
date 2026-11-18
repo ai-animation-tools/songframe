@@ -2,8 +2,9 @@
  * Принятый план без рабочей попытки: вместо пути шагов — один блок «Принятый комплект». Приёмка удаляет пакет
  * попытки, и шаги пути считались бы по пустоте («опор 0»), поэтому показывается то, что сохранено в комплекте
  * assets/shots/Mxx: принятое видео, как оно получено (сервис или ручная генерация с источником и примечанием),
- * опоры, видеопромпт и срез речи. Сведения читает Go (production.acceptedKit) при показе; новая попытка
- * возвращает обычный путь шагов.
+ * опоры, видеопромпт (с переводом — оба варианта переключателем, «Скопировать» копирует показанный) и срез речи. Сведения читает Go (production.acceptedKit) при показе; новая попытка
+ * возвращает обычный путь шагов. У своего видео опоры и промпт есть, только если их указали при загрузке; тогда они
+ * показываются так же, как у генерации, а пустой промпт не показывается.
  */
 import { useEffect, useState, type ReactElement } from 'react';
 import { Alert, Box, Button, Paper, Stack, Typography } from '@mui/material';
@@ -11,14 +12,14 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { commonTexts } from '@shared/texts/common';
 import { productionTexts } from '@shared/texts/production';
 import { mediaProviderInfo } from '@shared/media-providers';
-import type { AcceptedKit, ShotProduction } from '@shared/types';
+import type { AcceptedKit, PromptVariant, ShotProduction } from '@shared/types';
 import { useApp } from '../../../state';
 import { AudioPlayer } from '../../../components/AudioPlayer';
 import { ImageGallery } from '../../../components/ImageGallery';
 import { ImageThumbnail } from '../../../components/ImageThumbnail';
 import { AcceptedAsset } from './AcceptedAsset';
 import { ManualGenerationInfo } from './ManualGeneration';
-import { PackageTextSection } from './PackageTextSection';
+import { PromptVariantsText, promptVariantText } from './PromptVariantsText';
 import { SpeechSlice } from './ProductionSpeechPanel';
 
 const texts = productionTexts.acceptedKit;
@@ -35,6 +36,8 @@ export function AcceptedKitPanel({ project, shot }: { project: string; shot: Sho
   const [kit, setKit] = useState<AcceptedKit | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [active, setActive] = useState<number | null>(null);
+  // Показанный вариант видеопромпта: сначала отправленный в генерацию.
+  const [shownPrompt, setShownPrompt] = useState<{ shot: string; variant: PromptVariant } | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -63,6 +66,9 @@ export function AcceptedKitPanel({ project, shot }: { project: string; shot: Sho
     }
   };
   const speech = kit?.speech ?? null;
+  const variants = kit?.promptVariants;
+  const promptShown: PromptVariant = shownPrompt?.shot === shot.id ? shownPrompt.variant : (variants?.selected ?? 'original');
+  const visiblePrompt = kit?.prompt ? promptVariantText(kit.prompt, variants, promptShown) : '';
   const gallery = (kit?.images ?? []).map((imagePath, index) => ({ imagePath, label: texts.image({ index: index + 1 }) }));
 
   return (
@@ -77,7 +83,8 @@ export function AcceptedKitPanel({ project, shot }: { project: string; shot: Sho
           <>
             <Stack spacing={0.5}>
               <Typography variant="subtitle2">{texts.source}</Typography>
-              {kit.ownVideo ? <Typography variant="body2">{texts.ownVideo}</Typography> : null}
+              {/* Своё видео показывает опоры и промпт, как обычная генерация, только если их указали при загрузке. */}
+              {kit.ownVideo ? <Typography variant="body2">{kit.images.length || kit.prompt ? texts.ownVideoGenerated : texts.ownVideo}</Typography> : null}
               <KitSource kit={kit} />
             </Stack>
             {kit.images.length ? (
@@ -94,12 +101,19 @@ export function AcceptedKitPanel({ project, shot }: { project: string; shot: Sho
               </Stack>
             ) : null}
             {kit.prompt ? (
-              <Box>
-                <PackageTextSection title={texts.prompt} text={kit.prompt} maxHeight={220} />
-                <Button size="small" startIcon={<ContentCopyIcon />} title={texts.copyHint} onClick={() => void copy(kit.prompt!)} sx={{ mt: -1 }}>
+              <PromptVariantsText
+                text={kit.prompt}
+                variants={variants}
+                title={() => texts.prompt}
+                status={variants ? productionTexts.promptVariants.sent({ translation: variants.selected === 'translation' }) : undefined}
+                shown={promptShown}
+                onShownChange={(variant) => setShownPrompt({ shot: shot.id, variant })}
+                maxHeight={220}
+              >
+                <Button size="small" startIcon={<ContentCopyIcon />} title={texts.copyHint} onClick={() => void copy(visiblePrompt)} sx={{ mt: -1 }}>
                   {texts.copy}
                 </Button>
-              </Box>
+              </PromptVariantsText>
             ) : null}
             {speech ? (
               <Stack spacing={1}>

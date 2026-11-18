@@ -13,6 +13,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import { BUSY_REASON, PRODUCTION_PASS_LABELS, PRODUCTION_PROPOSAL_LABELS } from '../constants';
 import { Prose } from '../../../components/Prose';
 import { ReadableValue } from '../../../components/ReadableValue';
+import type { PromptVariant } from '@shared/types';
+import { PromptSendChoice, PromptVariantsText } from './PromptVariantsText';
 
 const FRAME_ROLES: Record<ProductionFramePrompt['role'], string> = productionTexts.inputRoles;
 
@@ -231,7 +233,19 @@ function ScenarioProblem({ problem }: { problem: ProductionScenarioProblem }): R
   );
 }
 
-function Proposed({ proposal }: { proposal: ProductionProposal }): ReactElement {
+/**
+ * Предложенный текст этапа. Видеопромпт с переводом показывается переключателем «Оригинал / Перевод», а при
+ * onSendVariant под ним — выбор варианта к отправке, с которым окно примет предложение.
+ */
+function Proposed({
+  proposal,
+  sendVariant = 'original',
+  onSendVariant
+}: {
+  proposal: ProductionProposal;
+  sendVariant?: PromptVariant;
+  onSendVariant?(variant: PromptVariant): void;
+}): ReactElement {
   const after = proposal.after;
   if (!after && proposal.refused && proposal.problems?.length)
     // Отказ со списком противоречий: итог агента и по каждому противоречию — было, почему и что станет.
@@ -294,7 +308,17 @@ function Proposed({ proposal }: { proposal: ProductionProposal }): ReactElement 
         </Stack>
       );
     case 'prompt':
-      return <Paragraphs text={after.prompt} />;
+      if (!after.translation) return <Paragraphs text={after.prompt} />;
+      return (
+        <PromptVariantsText
+          text={after.prompt}
+          variants={{ original: after.prompt, translation: after.translation }}
+          title={(characters) => productionTexts.productionProposalPreview.promptTitle({ characters })}
+          status={onSendVariant ? productionTexts.promptVariants.selected({ translation: sendVariant === 'translation' }) : undefined}
+        >
+          {onSendVariant ? <PromptSendChoice value={sendVariant} onChange={onSendVariant} /> : null}
+        </PromptVariantsText>
+      );
     default:
       return <ReadableValue value={after} />;
   }
@@ -410,7 +434,9 @@ export function ProductionProposalPreview({
   onApply,
   onDiscard,
   actions = true,
-  fill = false
+  fill = false,
+  sendVariant,
+  onSendVariant
 }: {
   proposal: ProductionProposal;
   provider?: AgentSettings['provider'] | null;
@@ -421,6 +447,9 @@ export function ProductionProposalPreview({
   actions?: boolean;
   /** Занять всю высоту контейнера: колонки прокручиваются внутри себя. */
   fill?: boolean;
+  /** Вариант видеопромпта с переводом к отправке и его выбор; без обработчика выбора нет. */
+  sendVariant?: PromptVariant;
+  onSendVariant?(variant: PromptVariant): void;
 }): ReactElement {
   const after = proposal.after;
   return (
@@ -453,7 +482,7 @@ export function ProductionProposalPreview({
             <Current proposal={proposal} />
           </Column>
           <Column title={productionTexts.productionProposalPreview.proposed} hint={productionTexts.productionProposalPreview.proposedHint}>
-            <Proposed proposal={proposal} />
+            <Proposed proposal={proposal} sendVariant={sendVariant} onSendVariant={onSendVariant} />
           </Column>
         </Box>
       )}

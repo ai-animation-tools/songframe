@@ -17,7 +17,7 @@ import {
   SendRequestDialog
 } from './components';
 import { OwnVideoDialog } from './components/OwnVideoDialog';
-import type { ManualVideo } from '@shared/types';
+import type { ManualVideo, OwnVideoGeneration } from '@shared/types';
 import { useApp } from '../../state';
 import { useProductionPage } from './useProductionPage';
 import { acceptShownResult, unacceptedResults } from './decisions';
@@ -92,9 +92,10 @@ export function ProductionPage(): ReactElement {
   const pathKey = `${project}:${shot?.id ?? ''}:${packageSelection}`;
   /**
    * Своё видео: отказ Go (не MP4, план занят) остаётся в окне; после запуска открывается новая попытка,
-   * а по завершении загрузки — окно приёмки (с заменой принятого комплекта, если он есть).
+   * а по завершении загрузки — окно приёмки (с заменой принятого комплекта, если он есть). Входы генерации и промпт
+   * передаются только новой попытке: замена загруженного видео их не меняет.
    */
-  const uploadOwnVideo = async (video: ManualVideo): Promise<void> => {
+  const uploadOwnVideo = async (video: ManualVideo, generation: OwnVideoGeneration): Promise<void> => {
     if (!ownVideo) return;
     const target = ownVideo.shot;
     const replaceDir = ownVideo.replaceDir;
@@ -107,7 +108,7 @@ export function ProductionPage(): ReactElement {
         await act(productionTexts.ownVideo.replaceStarted, async () => job, replaceDir, target);
         return;
       }
-      const started = await window.api.production.attachOwnVideo(project, target, video);
+      const started = await window.api.production.attachOwnVideo(project, target, video, generation);
       setOwnVideo(null);
       selectPackage(started.packageDir);
       acceptAfterUpload(started.job, started.packageDir, target);
@@ -202,7 +203,9 @@ export function ProductionPage(): ReactElement {
                         }}
                         onPath={(value) => setPath({ key: pathKey, value })}
                         answerApplied={answerApplied}
-                        onDecide={(verdict, noteScope, after) => selectedPackage && decide(selectedPackage, verdict, noteScope, after)}
+                        onDecide={(verdict, noteScope, after, promptVariant) =>
+                          selectedPackage && decide(selectedPackage, verdict, noteScope, after, promptVariant)
+                        }
                         onReopenFrame={(frame, note, scope) => selectedPackage && reopenFrame(selectedPackage, frame, note, scope)}
                         onReopenPrompt={(note) => selectedPackage && reopenPrompt(selectedPackage, note)}
                         onKeepForScene={() => selectedPackage && keepPackageForScene(selectedPackage)}
@@ -282,7 +285,7 @@ export function ProductionPage(): ReactElement {
           busy={ownVideo.busy}
           error={ownVideo.error}
           onClose={() => setOwnVideo(null)}
-          onUpload={(video) => void uploadOwnVideo(video)}
+          onUpload={(video, generation) => void uploadOwnVideo(video, generation)}
         />
       ) : null}
 

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 
@@ -658,17 +659,20 @@ func (t *workflowTool) approvePromptData(directory string, data *toolrt.Dict, fi
 		}
 		return nil, valueError("Сначала примите все опоры: " + joined)
 	}
+	prompt, err := get(data, "prompt", toolrt.NewDict())
+	if err != nil {
+		return nil, err
+	}
+	variants := promptVariants(prompt)
 	var name any
 	if file != nil && *file != "" {
 		name = *file
-	} else {
-		prompt, err := get(data, "prompt", toolrt.NewDict())
-		if err != nil {
-			return nil, err
+		// У промпта с вариантами отправить можно только оригинал или перевод попытки.
+		if len(variants) > 0 && !slices.ContainsFunc(variants, func(pair [2]string) bool { return pair[1] == *file }) {
+			return nil, valueError("Файл промпта — оригинал или перевод попытки.")
 		}
-		if name, err = get(prompt, "path", "video-prompt.txt"); err != nil {
-			return nil, err
-		}
+	} else if name, err = get(prompt, "path", "video-prompt.txt"); err != nil {
+		return nil, err
 	}
 	joined, err := pathPart(directory, name)
 	if err != nil {
@@ -694,12 +698,47 @@ func (t *workflowTool) approvePromptData(directory string, data *toolrt.Dict, fi
 	if limit := t.promptLimit(data); limit > 0 && chars > limit {
 		return nil, valueError(textPromptOverLimit(chars, limit))
 	}
-	data.Set("prompt", record("path", relative, "approved", true, "chars", toolrt.NewInt(int64(chars))))
+	approved := record("path", relative, "approved", true, "chars", toolrt.NewInt(int64(chars)))
+	for _, pair := range variants {
+		approved.Set(pair[0], pair[1])
+	}
+	data.Set("prompt", approved)
 	data.Set("approved_prompt_sha256", digest)
 	if stage := data.Value("stage"); is(stage, "description_review") || is(stage, "keyframes_review") {
 		data.Set("stage", "prompt_review")
 	}
 	return save(directory, data)
+}
+
+// promptVariantKeys — ключи записи prompt с файлами вариантов видеопромпта: оригинал на языке
+// провайдера и русский перевод. path называет тот из них, что выбран для отправки.
+var promptVariantKeys = []string{"original", "translation"}
+
+// promptVariants — пары (ключ, файл) вариантов видеопромпта записи prompt в порядке
+// promptVariantKeys; пусто — запись без вариантов (отправляется path).
+func promptVariants(prompt any) [][2]string {
+	dict, ok := prompt.(*toolrt.Dict)
+	if !ok {
+		return nil
+	}
+	pairs := [][2]string{}
+	for _, key := range promptVariantKeys {
+		if name, ok := dict.Value(key).(string); ok && name != "" {
+			pairs = append(pairs, [2]string{key, name})
+		}
+	}
+	return pairs
+}
+
+// unapprovedPrompt — запись prompt, возвращённая на согласование: approved снимается, к отправке
+// снова выбирается оригинал, если он назван; остальные ключи сохраняются.
+func unapprovedPrompt(prompt *toolrt.Dict) *toolrt.Dict {
+	merged := prompt.Clone()
+	merged.Set("approved", false)
+	if original, ok := merged.Value("original").(string); ok && original != "" {
+		merged.Set("path", original)
+	}
+	return merged
 }
 
 // promptLimit — предел длины видеопромпта провайдера generation.video для пакета data; 0 — предела
@@ -853,9 +892,10 @@ func (t *workflowTool) askData(directory string, data *toolrt.Dict, stage string
 
 // decide — ответ приложения. На keyframes_review approve
 // принимает кандидатов (или одну опору вопроса), revise снимает их и сохраняет замечание; на
-// prompt_review approve принимает промпт. Остальные ответы только записываются: отправку,
-// очередь, приёмку и повтор выполняет приложение.
-func (t *workflowTool) decide(dirArg, verdict, note, scope string) (*toolrt.Dict, error) {
+// prompt_review approve принимает промпт: variant (original или translation) выбирает вариант
+// видеопромпта к отправке, пусто — выбранный в записи prompt. Остальные ответы только
+// записываются: отправку, очередь, приёмку и повтор выполняет приложение.
+func (t *workflowTool) decide(dirArg, verdict, note, scope, variant string) (*toolrt.Dict, error) {
 	directory, err := t.packageDir(dirArg, true)
 	if err != nil {
 		return nil, err
@@ -1010,11 +1050,19 @@ func (t *workflowTool) decide(dirArg, verdict, note, scope string) (*toolrt.Dict
 			return nil, err
 		}
 	case verdict == "approve" && is(stageValue, "prompt_review"):
+		var file *string
+		if variant != "" {
+			index := slices.IndexFunc(promptVariants(data.Value("prompt")), func(pair [2]string) bool { return pair[0] == variant })
+			if index < 0 {
+				return nil, valueError(textPromptVariantMissing(variant))
+			}
+			file = &promptVariants(data.Value("prompt"))[index][1]
+		}
 		if _, err := save(directory, data); err != nil {
 			return nil, err
 		}
 		// approvePrompt заново читает пакет с диска, поэтому изменения сначала сохраняются.
-		data, err = t.approvePrompt(dirArg, nil)
+		data, err = t.approvePrompt(dirArg, file)
 		if err != nil {
 			return nil, err
 		}
@@ -1084,11 +1132,10 @@ func (t *workflowTool) reopen(dirArg, frame, note, scope string) (*toolrt.Dict, 
 		return nil, err
 	}
 	// Промпт строился по прежним опорам и согласуется заново.
-	merged := record("path", "video-prompt.txt")
+	merged := record("path", "video-prompt.txt", "approved", false)
 	if dict, ok := data.Value("prompt").(*toolrt.Dict); ok && dict.Len() > 0 {
-		merged = dict.Clone()
+		merged = unapprovedPrompt(dict)
 	}
-	merged.Set("approved", false)
 	data.Set("prompt", merged)
 	data.Set("approved_prompt_sha256", nil)
 	data.Set("stage", "keyframes_review")
@@ -1128,9 +1175,7 @@ func (t *workflowTool) reopenPrompt(dirArg, note string) (*toolrt.Dict, error) {
 	if !contains(reopenPromptStages, stage) {
 		return nil, valueError("На этапе " + stage + " видеопромпт вернуть нельзя: запрос уже отправлен или пакет в очереди; исправленный промпт делается в новой попытке.")
 	}
-	merged := prompt.Clone()
-	merged.Set("approved", false)
-	data.Set("prompt", merged)
+	data.Set("prompt", unapprovedPrompt(prompt))
 	data.Set("approved_prompt_sha256", nil)
 	data.Set("request_dir", nil)
 	data.Set("stage", "prompt_review")

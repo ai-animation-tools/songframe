@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { Alert, Paper, Stack, Typography } from '@mui/material';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import type { ProductionProposal, ProductionStageProposal } from '@shared/production-workflow';
+import type { PromptVariant } from '@shared/types';
 import { ActionButton } from '../components/ActionButton';
 import { ProductionProposalPreview } from '../pages/ProductionPage/components/ProductionProposalPreview';
 import { ProductionProposalDialog } from '../pages/ProductionPage/components/ProductionProposalDialog';
@@ -43,6 +44,8 @@ export function ProposalPreviewStory({
   const [running, setRunning] = useState(false);
   const [epoch, setEpoch] = useState(0);
   const [notice, setNotice] = useState<{ error: boolean; text: string } | null>(null);
+  // Вариант видеопромпта, с которым окно приняло предложение (как answerApplied с promptVariant).
+  const [sentVariant, setSentVariant] = useState<PromptVariant | null>(null);
   const pending = useRef<{ timer: ReturnType<typeof setTimeout>; resolve(value: boolean): void } | null>(null);
   const failed = useRef(false);
   const savedTitleId = useId();
@@ -56,7 +59,7 @@ export function ProposalPreviewStory({
     []
   );
   // Ошибка и отмена не меняют сохранённый снимок; повтор использует то же готовое предложение.
-  const run = (action: 'apply' | 'discard'): Promise<boolean> => {
+  const run = (action: 'apply' | 'discard', promptVariant?: PromptVariant): Promise<boolean> => {
     if (!proposal || busy || pending.current || proposal.status === 'running' || proposal.status === 'applied') return Promise.resolve(false);
     if (action === 'apply' && (proposal.status !== 'ready' || proposal.stale || !proposal.after)) return Promise.resolve(false);
     setRunning(true);
@@ -76,6 +79,7 @@ export function ProposalPreviewStory({
           setNotice({ error: false, text: 'Предложение отклонено. Сохранённые материалы не изменены.' });
         } else if (proposal.after) {
           setSaved(structuredClone(proposal.after));
+          setSentVariant(promptVariant ?? null);
           setProposal({ ...proposal, status: 'applied' });
           setNotice({ error: false, text: 'Материалы записаны. Согласование требуется отдельно; генерация и отправка не запускались.' });
         }
@@ -106,7 +110,7 @@ export function ProposalPreviewStory({
             promptMaxChars={promptMaxChars}
             busy={locked}
             error={notice?.error ? notice.text : null}
-            onApply={() => run('apply')}
+            onApply={(promptVariant) => run('apply', promptVariant)}
             onRevise={() => Promise.resolve(false)}
             onDiscard={() => run('discard')}
           />
@@ -145,6 +149,9 @@ export function ProposalPreviewStory({
         >
           {savedText(saved)}
         </Typography>
+        <Typography variant="caption" color="text.secondary" data-testid="send-variant" display="block">
+          Вариант видеопромпта к отправке: {sentVariant ?? 'не выбран'}.
+        </Typography>
         <Typography variant="caption" color="text.secondary">
           Согласование в этой модели не выполнялось.
         </Typography>
@@ -162,6 +169,7 @@ export function ProposalPreviewStory({
           setSaved((initialProposal ?? workflowProposal()).before);
           setRunning(false);
           setNotice(null);
+          setSentVariant(null);
           failed.current = false;
           setEpoch((value) => value + 1);
         }}

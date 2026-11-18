@@ -118,6 +118,8 @@ interface PageModel {
   manualReplacements: number;
   /** Загрузок своего видео плана (production.attachOwnVideo). */
   ownVideos: number;
+  /** Входы генерации своего видео по загрузкам: «роль:имя файла» через запятую и «промпт», если он указан. */
+  ownVideoGenerations: string[];
   promptReopens: string[];
   /** Свои описания, сохранённые без агента: описание и число опор каждого. */
   ownSaves: string[];
@@ -125,6 +127,8 @@ interface PageModel {
   methodChanges: string[];
   /** Запросы, собранные приложением без агента: модель и выбранные параметры каждого. */
   requestBuilds: string[];
+  /** Варианты видеопромпта, утверждённые к отправке (production.decide с promptVariant), по порядку. */
+  promptVariants: string[];
   subscribe(listener: () => void): () => void;
   revision(): number;
 }
@@ -189,10 +193,12 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
         manualUploads: 0,
         manualReplacements: 0,
         ownVideos: 0,
+        ownVideoGenerations: [],
         promptReopens: [],
         ownSaves: [],
         methodChanges: [],
         requestBuilds: [],
+        promptVariants: [],
         subscribe(listener) {
           listeners.add(listener);
           return () => {
@@ -376,7 +382,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
               shots: model.view.shots.map((shot) => ({ ...shot, spend: shot.derivedFrom ? null : spends.badge(shot.id) }))
             });
           },
-          decide: async (project, dir, verdict, note, decisionToken) => {
+          decide: async (project, dir, verdict, note, decisionToken, _noteScope, promptVariant) => {
             const { shot, pkg } = find(project, dir);
             const pending = pkg.pendingDecision;
             if (!pending?.options.includes(verdict)) throw new Error('Этот ответ отсутствует в показанном вопросе.');
@@ -391,10 +397,17 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
             // Как Go: принятое описание переводит попытку к опорам, первая из них становится следующей.
             // Как approve-prompt: утверждённый промпт ведёт к запросу; предел провайдера Go проверяет и здесь, кроме ручной попытки.
             if (pending.stage === 'prompt_review' && verdict === 'approve' && pkg.prompt) {
-              if (options.promptMaxChars && !manualMethods.has(pkg.dir) && Array.from(pkg.prompt.text).length > options.promptMaxChars)
+              // Как decide --prompt-variant: к отправке выбирается оригинал или перевод, path и text — выбранного.
+              const variants = pkg.prompt.variants;
+              if (promptVariant === 'translation' && !variants) throw new Error('У видеопромпта попытки нет перевода.');
+              const selected = promptVariant ?? variants?.selected ?? 'original';
+              const text = variants ? (selected === 'translation' ? variants.translation : variants.original) : pkg.prompt.text;
+              if (options.promptMaxChars && !manualMethods.has(pkg.dir) && Array.from(text).length > options.promptMaxChars)
                 throw new Error('Промпт длиннее предела провайдера: верните его на доработку.');
               pkg.decision = { stage: pending.stage, verdict, note, at: DATE };
-              pkg.prompt = { ...pkg.prompt, approved: true };
+              const path = variants && selected === 'translation' ? pkg.prompt.path.replace(/video-prompt\.txt$/, 'video-prompt.ru.txt') : pkg.prompt.path;
+              pkg.prompt = { ...pkg.prompt, approved: true, path, text, ...(variants ? { variants: { ...variants, selected } } : {}) };
+              if (promptVariant) model.promptVariants.push(promptVariant);
               ask(shot, pkg, null);
               pkg.stageLabel = 'Видеопромпт утверждён';
               shot.stageLabel = pkg.stageLabel;
@@ -512,14 +525,20 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
             publish();
             return deliveryJob('submit', { id: `manual-${shot.id}-${model.manualUploads}`, project: PAGE_PROJECT, status: 'done', code: 0, finishedAt: DATE });
           },
-          // Как Go: своё видео — новая попытка без описания, опор и промпта; вопрос о результате тот же, что после загрузки.
-          attachOwnVideo: async (project, shotId, video) => {
+          // Как Go: своё видео — новая попытка без описания и опор попытки; входы генерации и промпт, если их указали, попадают
+          // в пакет. Вопрос о результате тот же, что после загрузки.
+          attachOwnVideo: async (project, shotId, video, generation) => {
             checked(project);
             const shot = model.view.shots.find((item) => item.id === shotId);
             if (!shot) throw new Error('План не найден.');
             if (!/\.mp4$/i.test(video.file)) throw new Error(OWN_VIDEO_FORMAT_ERROR);
             if (!video.source.trim()) throw new Error('Укажите источник видео.');
             model.ownVideos++;
+            model.ownVideoGenerations.push(
+              [generation.inputs.map((input) => `${input.role}:${input.file.split('/').pop()}`).join(', '), generation.prompt ? 'промпт' : '']
+                .filter(Boolean)
+                .join(' + ') || 'нет'
+            );
             const relative = `plan/batches/${shot.id}-attempt-0${shot.packages.length + 1}`;
             const dir = `${PAGE_PROJECT}/${relative}`;
             const pkg = keyframePackage({
@@ -542,9 +561,9 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
                 sha256: 'c'.repeat(64),
                 model: '',
                 parameters: {},
-                inputs: [],
+                inputs: generation.inputs.map((input) => ({ slot: 'image', role: input.role, path: input.file, imagePath: input.file })),
                 attemptStatus: 'downloaded',
-                promptText: '',
+                promptText: generation.prompt,
                 generationId: null,
                 manualResult: true,
                 creditsConsumed: null,
@@ -911,8 +930,10 @@ export function ProductionPageStory({ links = [] }: { links?: StoryLink[] }): Re
             комплекта: {model.accepts}. Отправок генерации: {model.submissions}. Своих файлов опор: {model.frameImports}. Указаний к опорам:{' '}
             {model.frameNotes.join(', ') || 'нет'}. Созданий опор: {model.frameRuns}. Удалений попыток: {model.discards}. Попыток с теми же опорами:{' '}
             {model.frameRetries}. Пакетов ручной генерации: {model.manualBuilds}. Загрузок видео: {model.manualUploads}. Замен видео: {model.manualReplacements}
-            . Своих видео: {model.ownVideos}. Возвратов промпта: {model.promptReopens.join(', ') || 'нет'}. Своих описаний: {model.ownSaves.join(', ') || 'нет'}
-            . Способов генерации: {model.methodChanges.join(', ') || 'нет'}. Запросов приложения: {model.requestBuilds.join(', ') || 'нет'}.
+            . Своих видео: {model.ownVideos}. Входов своих видео: {model.ownVideoGenerations.join('; ') || 'нет'}. Возвратов промпта:{' '}
+            {model.promptReopens.join(', ') || 'нет'}. Своих описаний: {model.ownSaves.join(', ') || 'нет'}. Способов генерации:{' '}
+            {model.methodChanges.join(', ') || 'нет'}. Запросов приложения: {model.requestBuilds.join(', ') || 'нет'}. Вариантов промпта к отправке:{' '}
+            {model.promptVariants.join(', ') || 'нет'}.
           </Typography>
           <Typography variant="caption" color="text.secondary" data-testid="production-review-model">
             Проверок видео: {model.reviewStarts}. Отмен проверок: {model.reviewCancels}.

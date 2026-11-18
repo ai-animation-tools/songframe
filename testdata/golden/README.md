@@ -59,7 +59,7 @@
 | `kling-request/` | `internal/providers/kling` и `internal/providers/kling/mcp` | 225 + 90 + 32 + 9 |
 | `media-providers/cases.json` | слой `internal/providers` и `internal/providers/codex` | 53 + 10 + 18 + 1 + 7 + 9 |
 | `cover-generation/cases.json` | `covergen.Generator`, проверка и чтение референсов | 21 + 8 + 11 |
-| `shot-workflow/` | инструмент `shot_workflow` (все 15 команд) | 263 |
+| `shot-workflow/` | инструмент `shot_workflow` (все 15 команд) | 267 |
 | `verify-asset-replay/` | инструмент `verify_asset_replay` | 9 |
 | `cut-speech/` | инструмент `cut_speech` (`cut`, `verify`) и подготовка речи `production.Service` | 38 + 12 шагов |
 | `production-view/` | `production.ViewProduction` и `dashboard.ViewDashboard` | 5 |
@@ -69,7 +69,7 @@
 | `build-review/checks/cases.json` | `checks.Service.BuildReview`, `ListReviews`, `RemoveReview` | 48 шагов |
 | `production-workflow/cases.json` | `productionworkflow.Workflow`: вид, запуск, отказ, ожидающие предложения | 12 сценариев |
 | `production-frames/cases.json` | `productionworkflow.Workflow`: `GenerateFrames`, `ImportFrames` | 7 сценариев |
-| `production-workflow-apply/cases.json` | `productionworkflow.Workflow.Apply`, журнал и восстановление применений | 9 сценариев |
+| `production-workflow-apply/cases.json` | `productionworkflow.Workflow.Apply`, журнал и восстановление применений | 10 сценариев |
 | `build-animatic/` | инструмент `build_animatic` | 44 |
 | `animatic-view/cases.json` | `animatic.ViewAnimatic`, `animatic.SetStatus`, `animatic.Service.Build` | 41 |
 | `montage-window-bounds/cases.json` | положение окна плеера монтажа (`internal/app`) | 31 |

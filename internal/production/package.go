@@ -30,11 +30,25 @@ type Keyframe struct {
 	Approved    bool            `json:"approved"`
 }
 
-// Prompt — редактируемый видеопромпт пакета (video-prompt.txt) и его утверждение.
+// Prompt — редактируемый видеопромпт пакета и его утверждение. Path и Text — файл, выбранный к
+// отправке (prompt.path, обычно video-prompt.txt).
 type Prompt struct {
 	Path     string `json:"path"`
 	Approved bool   `json:"approved"`
 	Text     string `json:"text"`
+	// Variants — оригинал и русский перевод, если агент предложил перевод (ключи original и
+	// translation записи prompt и оба файла на месте); без перевода поля нет.
+	Variants *PromptVariants `json:"variants,omitempty"`
+}
+
+// PromptVariants — тексты вариантов видеопромпта попытки и какой из них выбран к отправке.
+type PromptVariants struct {
+	// Original — промпт на языке провайдера видео.
+	Original string `json:"original"`
+	// Translation — тот же промпт по-русски.
+	Translation string `json:"translation"`
+	// Selected — выбранный к отправке вариант: original или translation (по prompt.path).
+	Selected string `json:"selected"`
 }
 
 // RequestInput — вход зафиксированного запроса: slot и role как в request.json, ImagePath —
@@ -69,7 +83,8 @@ type Request struct {
 	// обычного запроса. ManualGeneration — attempt.json manual_generation загруженного видео как есть.
 	Mode             string          `json:"mode,omitempty"`
 	ManualGeneration json.RawMessage `json:"manualGeneration,omitempty"`
-	// OwnVideo — своё видео плана (request.json own_video): попытка без описания, опор и промпта,
+	// OwnVideo — своё видео плана (request.json own_video): попытка без описания и опор попытки (входы
+	// и промпт — только указанные пользователем),
 	// видео пользователь сделал сам; поле опускается у остальных запросов.
 	OwnVideo bool `json:"ownVideo,omitempty"`
 	// Downloads — абсолютные пути существующих скачанных оригиналов.
@@ -319,6 +334,9 @@ func readPackage(project, dir string, fingerprint fingerprintFunc) (*PackageView
 			return nil, err
 		}
 		prompt = &Prompt{Path: promptPath, Approved: dynvalue.Truthy(dynvalue.GetPath(parsed, "prompt", "approved")), Text: text}
+		if prompt.Variants, err = promptVariants(dir, dynvalue.Get(parsed, "prompt")); err != nil {
+			return nil, err
+		}
 	}
 	stage, ok := dynvalue.Get(parsed, "stage").(string)
 	if !ok {
@@ -606,6 +624,14 @@ func packageToken(project, directory string, workflow any, stage, resultToken st
 			return "", err
 		}
 	}
+	// Оба варианта видеопромпта: решение об утверждении принимается по показанным текстам обоих.
+	for _, field := range []string{"original", "translation"} {
+		if value, ok := dynvalue.GetPath(workflow, "prompt", field).(string); ok && value != "" {
+			if err := add(value); err != nil {
+				return "", err
+			}
+		}
+	}
 	frames, _ := dynvalue.AsArray(dynvalue.Coalesce(dynvalue.Get(workflow, "keyframes"), &dynvalue.Array{}))
 	for _, frame := range frames {
 		if path := dynvalue.Get(frame, "path"); dynvalue.Truthy(path) {
@@ -764,4 +790,33 @@ func packageResultToken(requestDir string, downloads []string) (string, error) {
 		hash.Write([]byte(filepath.ToSlash(dynvalue.Relative(requestDir, file)) + "\x00" + digest + "\x00"))
 	}
 	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+// promptVariants — варианты видеопромпта записи prompt пакета dir: тексты оригинала и перевода и
+// выбранный к отправке. nil — у записи нет ключей original и translation или файла одного из них
+// нет: тогда показывается только текст path.
+func promptVariants(dir string, record any) (*PromptVariants, error) {
+	original, hasOriginal := dynvalue.Get(record, "original").(string)
+	translation, hasTranslation := dynvalue.Get(record, "translation").(string)
+	if !hasOriginal || !hasTranslation || original == "" || translation == "" {
+		return nil, nil
+	}
+	texts := [2]string{}
+	for index, name := range []string{original, translation} {
+		path, err := joinArg(dir, name)
+		if err != nil {
+			return nil, err
+		}
+		if !dynvalue.Exists(path) {
+			return nil, nil
+		}
+		if texts[index], err = readText(path); err != nil {
+			return nil, err
+		}
+	}
+	selected := "original"
+	if dynvalue.Get(record, "path") == translation {
+		selected = "translation"
+	}
+	return &PromptVariants{Original: texts[0], Translation: texts[1], Selected: selected}, nil
 }

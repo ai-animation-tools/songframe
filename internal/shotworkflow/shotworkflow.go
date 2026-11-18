@@ -122,6 +122,8 @@ func Parser() *toolrt.Command {
 				toolrt.Action{Name: "--verdict", Required: true, Choices: verdicts},
 				toolrt.Action{Name: "--note", Default: ""},
 				toolrt.Action{Name: "--note-scope", Choices: noteScopes, Default: "following"},
+				toolrt.Action{Name: "--prompt-variant", Choices: promptVariantKeys, Default: "",
+					Help: "Вариант видеопромпта к отправке при утверждении (prompt_review)"},
 				toolrt.Action{Name: "--json", Kind: toolrt.StoreTrue}),
 			sub("reopen", dir, toolrt.Action{Name: "keyframe"},
 				toolrt.Action{Name: "--note", Required: true},
@@ -241,7 +243,7 @@ func Run(root string, argv []string) toolcli.Output {
 			return out.Print("Вопрос записан для приложения: " + toolrt.Str(pending.Value("question")) + " (" + strings.Join(parts, ", ") + ").")
 		case "decide":
 			note := args["note"].(string)
-			data, err := tool.decide(dir, args["verdict"].(string), note, args["note_scope"].(string))
+			data, err := tool.decide(dir, args["verdict"].(string), note, args["note_scope"].(string), args["prompt_variant"].(string))
 			if err != nil {
 				return err
 			}

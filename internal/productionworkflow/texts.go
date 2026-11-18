@@ -67,32 +67,33 @@ const (
 
 // Тексты проверки ответа агента (productionTexts.main.proposal).
 const (
-	textUnknownFields              = "Ответ содержит неизвестные поля."
-	textPathRequired               = "Нужен путь файла."
-	textParentMissing              = "Не найден родитель пути."
-	textDurationPositiveInteger    = "Длительность запроса должна быть положительным целым числом секунд."
-	textFrameImageRequired         = "Добавьте изображение хотя бы для одной опоры."
-	textFrameCandidateInvalid      = "Неверный кандидат опоры."
-	textFrameCandidateOrderInvalid = "Кандидаты должны относиться к неутверждённым опорам плана, без повторов и в порядке плана; нужен абсолютный путь изображения."
-	textProposalVersionOrStage     = "Неверная версия или этап предложения."
-	textDescriptionInvalid         = "Описание требует текст, длительность и минимум две опоры."
-	textManualNoRequest            = "Видео этого плана создаётся вне приложения: вместо запроса соберите пакет для ручной генерации."
-	textManualPackageReady         = "Пакет для ручной генерации уже собран."
-	textManualPromptRequired       = "Сначала утвердите видеопромпт."
-	textManualSpeechRequired       = "Сначала подготовьте WAV в блоке «Речь»."
-	textManualUnavailable          = "Пакет для ручной генерации сейчас собрать нельзя."
-	textManualSpeechRole           = "Срез речи"
-	textMethodSingleFrame          = "Речевой план у провайдера без липсинка всегда создаётся вручную вне приложения."
-	textMethodProjectManual        = "Видео всех планов проекта создаётся вручную вне приложения: так выбрано в настройках проекта."
-	textMethodRequestReady         = "Запрос или пакет уже подготовлен: чтобы сменить способ, верните видеопромпт на доработку."
-	textManualKeyframeCount        = "Видео этого плана создаётся вне приложения по одной опоре: другое число опор выбрать нельзя."
-	textManualSingleFrame          = "Видео этого плана создаётся вне приложения: в описании должна быть ровно одна опора K01 на начале плана."
-	textFrameStructureInvalid      = "Неверная структура опоры."
-	textFramePlanInvalid           = "Неверные ID, роли, порядок, промпт или референсы опор."
-	textFrameBoundariesInvalid     = "Первая опора должна быть на 0, последняя — на границе запроса."
-	textFrameCopyInvalid           = "Копия опоры (copyOf) должна ссылаться на более раннюю опору, которая сама не копия, или на кадр принятого плана из continuityFrames и не иметь своего промпта и референсов."
-	textVideoPromptRequired        = "Нужен непустой видеопромпт."
-	textProviderUnspecified        = "не указан"
+	textUnknownFields                 = "Ответ содержит неизвестные поля."
+	textPathRequired                  = "Нужен путь файла."
+	textParentMissing                 = "Не найден родитель пути."
+	textDurationPositiveInteger       = "Длительность запроса должна быть положительным целым числом секунд."
+	textFrameImageRequired            = "Добавьте изображение хотя бы для одной опоры."
+	textFrameCandidateInvalid         = "Неверный кандидат опоры."
+	textFrameCandidateOrderInvalid    = "Кандидаты должны относиться к неутверждённым опорам плана, без повторов и в порядке плана; нужен абсолютный путь изображения."
+	textProposalVersionOrStage        = "Неверная версия или этап предложения."
+	textDescriptionInvalid            = "Описание требует текст, длительность и минимум две опоры."
+	textManualNoRequest               = "Видео этого плана создаётся вне приложения: вместо запроса соберите пакет для ручной генерации."
+	textManualPackageReady            = "Пакет для ручной генерации уже собран."
+	textManualPromptRequired          = "Сначала утвердите видеопромпт."
+	textManualSpeechRequired          = "Сначала подготовьте WAV в блоке «Речь»."
+	textManualUnavailable             = "Пакет для ручной генерации сейчас собрать нельзя."
+	textManualSpeechRole              = "Срез речи"
+	textMethodSingleFrame             = "Речевой план у провайдера без липсинка всегда создаётся вручную вне приложения."
+	textMethodProjectManual           = "Видео всех планов проекта создаётся вручную вне приложения: так выбрано в настройках проекта."
+	textMethodRequestReady            = "Запрос или пакет уже подготовлен: чтобы сменить способ, верните видеопромпт на доработку."
+	textManualKeyframeCount           = "Видео этого плана создаётся вне приложения по одной опоре: другое число опор выбрать нельзя."
+	textManualSingleFrame             = "Видео этого плана создаётся вне приложения: в описании должна быть ровно одна опора K01 на начале плана."
+	textFrameStructureInvalid         = "Неверная структура опоры."
+	textFramePlanInvalid              = "Неверные ID, роли, порядок, промпт или референсы опор."
+	textFrameBoundariesInvalid        = "Первая опора должна быть на 0, последняя — на границе запроса."
+	textFrameCopyInvalid              = "Копия опоры (copyOf) должна ссылаться на более раннюю опору, которая сама не копия, или на кадр принятого плана из continuityFrames и не иметь своего промпта и референсов."
+	textVideoPromptRequired           = "Нужен непустой видеопромпт."
+	textVideoPromptTranslationInvalid = "Перевод видеопромпта должен быть непустым текстом."
+	textProviderUnspecified           = "не указан"
 	// textProposalNotJSON — ответ, который не разбирается как JSON: русский текст вместо сообщения
 	// разборщика (осознанное отличие, записанное в README эталонов); распознанный отказ текстом
 	// заменяется на textAgentRefused.
@@ -294,6 +295,12 @@ func textMethodPromptOverLimit(chars, limit int) string {
 
 // textShotFramesFailed — кадры других планов не извлечены: задание описания идёт без них, причину
 // агент получает в continuityFrames.problem.
+// textPromptFramesFailed — опоры или кадр предшественника не удалось приложить к заданию
+// видеопромпта; агент смотрит их по путям сам.
+func textPromptFramesFailed(reason string) string {
+	return "Не удалось приложить кадры: " + reason + ". Открой их по путям из attachedFrames."
+}
+
 func textShotFramesFailed(reason string) string {
 	if reason == "" {
 		return "Не удалось извлечь кадры других планов."

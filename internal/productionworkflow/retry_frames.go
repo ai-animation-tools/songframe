@@ -104,11 +104,14 @@ func (w *Workflow) copyAttempt(ctx context.Context, c *Context, target string) e
 	if err := w.run(ctx, c.Project, "shot_workflow", "init", c.Shot, "--dir", target, "--mode", mode, "--retry-of", c.PackageDir); err != nil {
 		return err
 	}
-	prompt := dynvalue.ToString(dynvalue.Get(c.workflowValue("prompt"), "path"))
-	if prompt == "" {
-		prompt = "video-prompt.txt"
+	// Видеопромпт переносится обоими вариантами (оригинал и перевод), запись без вариантов — файлом path.
+	previous := c.workflowValue("prompt")
+	prompts := promptVariantFiles(previous)
+	if len(prompts) == 0 {
+		prompts = []string{promptOriginalFile}
 	}
-	for _, name := range []string{"description.md", "keyframe-prompts.json", prompt, "continuity", "audio"} {
+	names := append([]string{"description.md", "keyframe-prompts.json"}, prompts...)
+	for _, name := range append(names, "continuity", "audio") {
 		if err := copyPackageEntry(c.PackageDir, target, name); err != nil {
 			return err
 		}
@@ -126,12 +129,12 @@ func (w *Workflow) copyAttempt(ctx context.Context, c *Context, target string) e
 			workflow.Set(field, dynvalue.DeepClone(value))
 		}
 	}
-	workflow.Set("prompt", promptRecord())
+	workflow.Set("prompt", unapprovedPrompt(previous))
 	workflow.Set("approved_prompt_sha256", nil)
 	// Опоры уже утверждены: попытка начинается с промпта, если он перенесён, иначе с опор. Этап
 	// пишется сразу — set-stage переводит только на соседний этап вперёд.
 	stage := "keyframes_review"
-	if dynvalue.Exists(filepath.Join(target, prompt)) {
+	if dynvalue.Exists(filepath.Join(target, prompts[0])) {
 		stage = "prompt_review"
 	}
 	workflow.Set("stage", stage)

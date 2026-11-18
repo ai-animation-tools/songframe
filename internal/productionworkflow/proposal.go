@@ -288,11 +288,16 @@ func ParseProposal(raw string, rules Rules) (*dynvalue.Object, error) {
 		}
 		value.Set("images", candidatesTree(images))
 	case "prompt":
-		if err := keys(value, "schemaVersion", "stage", "prompt"); err != nil {
+		if err := keys(value, "schemaVersion", "stage", "prompt", "translation"); err != nil {
 			return nil, err
 		}
 		if !isText(value.Value("prompt")) {
 			return nil, errors.New(textVideoPromptRequired)
+		}
+		// Перевод для пользователя необязателен (своё и прежние предложения без него), но если он есть,
+		// это полный промпт: пользователь может отправить его вместо оригинала.
+		if value.Has("translation") && !isText(value.Value("translation")) {
+			return nil, errors.New(textVideoPromptTranslationInvalid)
 		}
 	}
 	return value, nil
@@ -320,7 +325,9 @@ func parseDescription(value *dynvalue.Object, rules Rules) error {
 	if !rules.Manual && rules.Keyframes > 0 && len(frames) != rules.Keyframes {
 		return errors.New(textKeyframeCountMismatch(rules.Keyframes, len(frames)))
 	}
-	if !rules.Manual && rules.Keyframes != 1 && (len(frames) < 2 || len(frames) > mediaproviders.DefaultKeyframeLimit) {
+	// Одна опора допустима и без явного выбора: агент выбирает её, когда конечную опору не согласовать
+	// с первой (правило числа опор скилла ai-clip-scene).
+	if !rules.Manual && (len(frames) < 1 || len(frames) > mediaproviders.DefaultKeyframeLimit) {
 		return errors.New(textDescriptionInvalid)
 	}
 	if err := CheckDuration(seconds, rules.WindowSeconds, rules.DurationRule); err != nil {

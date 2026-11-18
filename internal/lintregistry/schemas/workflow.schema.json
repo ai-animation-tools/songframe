@@ -37,7 +37,7 @@
                      "note": {"type": "string", "minLength": 1, "pattern": "\\S"}, "scope": {"enum": ["frame", "following"]},
                      "active": {"type": "boolean"}, "at": {"type": "string"}}}},
     "approved_prompt_sha256": {"type": ["string", "null"]},
-    "prompt": {"type": "object"},
+    "prompt": {"type": "object", "properties": {"path": {"type": "string"}, "approved": {"type": "boolean"}, "chars": {"type": "integer"}, "original": {"type": "string"}, "translation": {"type": "string"}}},
     "retry_of": {"type": ["string", "null"]},
     "frame_source": {"type": ["string", "null"]},
     "model": {"type": ["object", "string", "null"]},

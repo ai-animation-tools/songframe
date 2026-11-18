@@ -881,6 +881,9 @@ func (w *Workflow) launch(ctx context.Context, input StartInput, prepared *prepa
 		images = attachments
 		contextInput.shotFrames = shotFramesTree(c.Project, prepared.target, prepared.shotFrames, attached, prepared.missingFrames, problem)
 	}
+	if stage == "prompt" && c.PackageDir != "" {
+		images, contextInput.attachedFrames, contextInput.materials = w.promptAttachments(ctx, c, input.Shot)
+	}
 	task := agents.StartInput{
 		Project: c.Project, Task: "ai-clip-scene:" + input.Shot + ":" + stage, Prompt: prompt, Context: agentContext(c, contextInput),
 		Images: images, Place: &agents.Place{Page: "production", Shot: input.Shot},

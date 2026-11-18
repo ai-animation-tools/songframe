@@ -7,7 +7,7 @@ import { productionTexts } from '@shared/texts/production';
 import { useEffect, useRef, useState, type ReactElement, type ReactNode } from 'react';
 import { Box, Chip, LinearProgress, Paper, Stack, Step, StepButton, StepContent, StepLabel, Stepper, Typography } from '@mui/material';
 import { keyframeLimit, mediaProviderInfo, normalizeMediaProvider } from '@shared/media-providers';
-import type { KeyframeNoteScope, ManualVideo, PackageView, ShotProduction } from '@shared/types';
+import type { KeyframeNoteScope, ManualVideo, PackageView, PromptVariant, ShotProduction } from '@shared/types';
 import type { ProductionPass } from '@shared/production-workflow';
 import { BUSY_REASON } from '../constants';
 import { manualGeneration, planPath, questionStep, REQUEST_IN_FLIGHT, type PlanPath, type PlanStepKey } from '../planPath';
@@ -27,6 +27,7 @@ import { PackageResume } from './PackageResume';
 import { PackageTextSection } from './PackageTextSection';
 import { PromptLimitAlert } from './PromptLimitAlert';
 import { PromptReopenDialog } from './PromptReopenDialog';
+import { PromptSendChoice, PromptVariantsText, promptVariantText } from './PromptVariantsText';
 import { RequestChangeDialog } from './RequestChangeDialog';
 import { ActionButton } from '../../../components/ActionButton';
 import { promptOverLimit } from '../promptLimit';
@@ -113,9 +114,12 @@ export function ProductionPath({
   /** Шапка плана показывает фразу «Сейчас»: путь сообщает её наверх. */
   onPath(path: PlanPath): void;
   /** Ответ на вопрос, который задало применение предложения: токен берётся из свежего снимка попытки. */
-  answerApplied(packageDir: string, verdict: 'approve' | 'revise', note: string): Promise<void>;
-  /** after выполняется после записи ответа: доработка запускает агента той же кнопкой. */
-  onDecide(verdict: string, noteScope?: KeyframeNoteScope, after?: () => Promise<void>): void;
+  answerApplied(packageDir: string, verdict: 'approve' | 'revise', note: string, promptVariant?: PromptVariant): Promise<void>;
+  /**
+   * after выполняется после записи ответа: доработка запускает агента той же кнопкой. promptVariant — вариант
+   * видеопромпта к отправке при его утверждении.
+   */
+  onDecide(verdict: string, noteScope?: KeyframeNoteScope, after?: () => Promise<void>, promptVariant?: PromptVariant): void;
   onSubmit(): void;
   onAccept(): void;
   onRegenerate(): void;
@@ -159,8 +163,23 @@ export function ProductionPath({
   // Свой видеопромпт: текст открытого редактора; null — редактор закрыт.
   const [ownPrompt, setOwnPrompt] = useState<string | null>(null);
   const [ownError, setOwnError] = useState<string | null>(null);
-  // Промпт на согласовании длиннее предела провайдера: утвердить нельзя, только вернуть агенту.
-  const overLimit = pkg?.prompt && !pkg.prompt.approved ? promptOverLimit(pkg.prompt.text, view?.promptMaxChars) : null;
+  // Видеопромпт с переводом: к отправке выбирается оригинал или перевод, выбор относится к показанным текстам.
+  const variants = pkg?.prompt?.variants;
+  const variantsKey = `${pkg?.dir ?? ''}\0${variants?.original ?? ''}\0${variants?.translation ?? ''}`;
+  const [sendChoice, setSendChoice] = useState<{ key: string; variant: PromptVariant }>({ key: variantsKey, variant: 'original' });
+  const sendVariant: PromptVariant = !variants
+    ? 'original'
+    : pkg?.prompt?.approved
+      ? variants.selected
+      : sendChoice.key === variantsKey
+        ? sendChoice.variant
+        : 'original';
+  // Показанный вариант: по умолчанию — выбранный к отправке, новый выбор отправки показывает свой текст.
+  const [shownChoice, setShownChoice] = useState<{ key: string; variant: PromptVariant } | null>(null);
+  const shownVariant = shownChoice?.key === variantsKey ? shownChoice.variant : sendVariant;
+  // Промпт на согласовании длиннее предела провайдера: утвердить нельзя, только вернуть агенту. Предел — для выбранного варианта.
+  const overLimit =
+    pkg?.prompt && !pkg.prompt.approved ? promptOverLimit(promptVariantText(pkg.prompt.text, variants, sendVariant), view?.promptMaxChars) : null;
   const reportBusy = useRef(onBusyChange);
   reportBusy.current = onBusyChange;
   useEffect(() => reportBusy.current(workflow.busy), [workflow.busy]);
@@ -172,10 +191,12 @@ export function ProductionPath({
   useEffect(() => reportPath.current(path), [pathKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const stageOfProposal = view?.proposal?.stage;
-  const acceptProposal = (): Promise<boolean> =>
+  const acceptProposal = (promptVariant?: PromptVariant): Promise<boolean> =>
     workflow.apply(async (applied) => {
       // Описание и видеопромпт, принятые в окне предложения, утверждаются сразу; опоры решаются на своём вопросе.
-      if (applied.packageDir && (stageOfProposal === 'description' || stageOfProposal === 'prompt')) await answerApplied(applied.packageDir, 'approve', '');
+      // Видеопромпт утверждается с вариантом, выбранным к отправке в окне предложения.
+      if (applied.packageDir && (stageOfProposal === 'description' || stageOfProposal === 'prompt'))
+        await answerApplied(applied.packageDir, 'approve', '', stageOfProposal === 'prompt' ? promptVariant : undefined);
     });
   const reviseProposal = (text: string): Promise<boolean> =>
     workflow.apply(async (applied) => {
@@ -207,7 +228,8 @@ export function ProductionPath({
   };
   const openOwnPrompt = (): void => {
     setOwnError(null);
-    setOwnPrompt(pkg?.prompt?.text ?? '');
+    // Свой промпт заменяет оригинал: редактор начинается с него, даже если к отправке выбран перевод.
+    setOwnPrompt(pkg?.prompt?.variants?.original ?? pkg?.prompt?.text ?? '');
   };
   // Свой промпт тоже утверждается сразу; запрос после него готовится заново.
   const saveOwnPrompt = async (prompt: string): Promise<void> => {
@@ -327,9 +349,21 @@ export function ProductionPath({
           if (!pending && verdict === 'retry') return onRegenerate();
           const agentRevision = verdict === 'revise' && !shown.frame && shown.stage !== 'image_request_choice';
           const text = note.trim();
-          onDecide(verdict, scope, agentRevision ? () => workflow.start('revise', text).then(() => undefined) : undefined);
+          const promptVariant = shown.stage === 'prompt_review' && verdict === 'approve' && variants ? sendVariant : undefined;
+          onDecide(verdict, scope, agentRevision ? () => workflow.start('revise', text).then(() => undefined) : undefined, promptVariant);
         }}
-      />
+      >
+        {shown.stage === 'prompt_review' && variants && !pkg.prompt?.approved ? (
+          <PromptSendChoice
+            value={sendVariant}
+            disabled={blocked}
+            onChange={(variant) => {
+              setSendChoice({ key: variantsKey, variant });
+              setShownChoice({ key: variantsKey, variant });
+            }}
+          />
+        ) : null}
+      </PackageDecision>
     );
   };
 
@@ -443,9 +477,13 @@ export function ProductionPath({
             ) : null}
             {overLimit ? <PromptLimitAlert over={overLimit} videoProvider={view?.videoProvider} /> : null}
             {pkg?.prompt ? (
-              <PackageTextSection
-                title={productionTexts.packageCard.promptTitle({ approved: pkg.prompt.approved, characters: pkg.prompt.text.length })}
+              <PromptVariantsText
                 text={pkg.prompt.text}
+                variants={variants}
+                title={(characters) => productionTexts.packageCard.promptTitle({ approved: !!pkg.prompt?.approved, characters })}
+                status={variants ? productionTexts.promptVariants.selected({ translation: sendVariant === 'translation' }) : undefined}
+                shown={shownVariant}
+                onShownChange={(variant) => setShownChoice({ key: variantsKey, variant })}
                 maxHeight={220}
               />
             ) : null}

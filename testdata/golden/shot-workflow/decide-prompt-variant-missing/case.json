@@ -1,0 +1,21 @@
+{
+  "description": "Перевод выбран, а у промпта его нет.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "нет перевода"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "decide",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "--verdict",
+    "approve",
+    "--prompt-variant",
+    "translation"
+  ],
+  "remove": [],
+  "mkdir": []
+}

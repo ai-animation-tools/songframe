@@ -122,7 +122,7 @@ func promptReady(t *testing.T, run *goldenRun, frames int) string {
 		t.Fatal(err)
 	}
 	digest := sha256.Sum256(prompt)
-	record := promptRecord()
+	record := proposedPrompt(false)
 	record.Set("approved", true)
 	workflow.Set("description_approved", true)
 	workflow.Set("prompt", record)

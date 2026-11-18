@@ -3,7 +3,7 @@ package productionworkflow
 import "testing"
 
 // TestManualDescriptionSingleFrame — в ручном режиме описание принимает ровно одну опору K01 на
-// начале плана, а обычный план по-прежнему требует не меньше двух.
+// начале плана; обычный план тоже допускает одну опору, но не требует её.
 func TestManualDescriptionSingleFrame(t *testing.T) {
 	single := `{"schemaVersion":1,"stage":"description","description":"Парень поёт.","requestSeconds":5,` +
 		`"keyframes":[{"id":"K01","role":"first","timeSeconds":0,"prompt":"Кадр.","referencePaths":[]}]}`
@@ -24,8 +24,11 @@ func TestManualDescriptionSingleFrame(t *testing.T) {
 	if _, err := ParseProposal(late, manual); err == nil || err.Error() != textFrameBoundariesInvalid {
 		t.Fatalf("опора не на начале: %v", err)
 	}
-	if _, err := ParseProposal(single, ordinary); err == nil || err.Error() != textDescriptionInvalid {
+	if _, err := ParseProposal(single, ordinary); err != nil {
 		t.Fatalf("одна опора в обычном плане: %v", err)
+	}
+	if _, err := ParseProposal(pair, ordinary); err != nil {
+		t.Fatalf("две опоры в обычном плане: %v", err)
 	}
 	if !RulesFromTree(manual.Tree()).Manual || RulesFromTree(ordinary.Tree()).Manual || ordinary.Tree().Has("manualGeneration") {
 		t.Fatal("признак ручного режима в записи правил")

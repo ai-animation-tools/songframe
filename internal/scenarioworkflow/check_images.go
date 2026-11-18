@@ -1,20 +1,14 @@
 package scenarioworkflow
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"image"
-	"image/jpeg"
-	_ "image/png" // декодер PNG для image.Decode
 	"os"
 	"path/filepath"
 
-	"golang.org/x/image/draw"
-	_ "golang.org/x/image/webp" // декодер WebP для image.Decode
-
 	"songframe/internal/dynvalue"
+	"songframe/internal/mediafile"
 	"songframe/internal/sources"
 )
 
@@ -136,28 +130,5 @@ func (w *Workflow) prepareCheckImages(project string, images []checkImage, budge
 
 // shrinkImage — JPEG-копия изображения, вписанная в checkImageSide без увеличения.
 func shrinkImage(path string) ([]byte, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-	source, _, err := image.Decode(file)
-	if err != nil {
-		return nil, err
-	}
-	bounds := source.Bounds()
-	width, height := bounds.Dx(), bounds.Dy()
-	if width <= 0 || height <= 0 {
-		return nil, fmt.Errorf("пустое изображение")
-	}
-	scale := min(1, float64(checkImageSide)/float64(max(width, height)))
-	target := image.NewRGBA(image.Rect(0, 0, max(1, int(float64(width)*scale+0.5)), max(1, int(float64(height)*scale+0.5))))
-	// Прозрачный фон PNG становится белым, а не чёрным: так выглядит картинка в интерфейсе.
-	draw.Draw(target, target.Bounds(), image.White, image.Point{}, draw.Src)
-	draw.CatmullRom.Scale(target, target.Bounds(), source, bounds, draw.Over, nil)
-	var buffer bytes.Buffer
-	if err := jpeg.Encode(&buffer, target, &jpeg.Options{Quality: checkImageQuality}); err != nil {
-		return nil, err
-	}
-	return buffer.Bytes(), nil
+	return mediafile.ShrinkJPEG(path, checkImageSide, checkImageQuality)
 }

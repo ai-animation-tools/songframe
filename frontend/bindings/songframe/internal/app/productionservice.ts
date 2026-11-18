@@ -62,13 +62,13 @@ export function AttachManual(project: string, packageDir: string, result: produc
 }
 
 /**
- * AttachOwnVideo — своё видео плана: файл и источник проверяются до записей, затем проход создаёт
- * попытку без описания, опор и промпта, а видео загружается в неё тем же заданием, что результат
- * ручной генерации. Сервис провайдера не участвует, вход в него не нужен. Если задание не
+ * AttachOwnVideo — своё видео плана: файл, источник, входы и промпт проверяются до записей, затем
+ * проход создаёт попытку без описания и опор попытки (с входами и промптом, если пользователь их
+ * указал), а видео загружается в неё тем же заданием, что результат ручной генерации. Сервис провайдера не участвует, вход в него не нужен. Если задание не
  * запустилось, попытка остаётся ждать видео: загрузить его можно на её шаге «Своё видео».
  */
-export function AttachOwnVideo(project: string, shot: string, result: production$0.ManualResult): $CancellablePromise<$models.OwnVideoStart> {
-    return $Call.ByID(2060569673, project, shot, result);
+export function AttachOwnVideo(project: string, shot: string, result: production$0.ManualResult, generation: production$0.OwnVideoGeneration): $CancellablePromise<$models.OwnVideoStart> {
+    return $Call.ByID(2060569673, project, shot, result, generation);
 }
 
 /**
@@ -86,10 +86,11 @@ export function ContactSheet(project: string, packageDir: string): $CancellableP
 }
 
 /**
- * Decide — ответ на вопрос пакета (кроме send).
+ * Decide — ответ на вопрос пакета (кроме send); promptVariant — вариант видеопромпта к отправке
+ * при его утверждении (original, translation или пусто).
  */
-export function Decide(project: string, packageDir: string, verdict: string, note: string, decisionToken: string, noteScope: string): $CancellablePromise<void> {
-    return $Call.ByID(1469446007, project, packageDir, verdict, note, decisionToken, noteScope);
+export function Decide(project: string, packageDir: string, verdict: string, note: string, decisionToken: string, noteScope: string, promptVariant: string): $CancellablePromise<void> {
+    return $Call.ByID(1469446007, project, packageDir, verdict, note, decisionToken, noteScope, promptVariant);
 }
 
 /**

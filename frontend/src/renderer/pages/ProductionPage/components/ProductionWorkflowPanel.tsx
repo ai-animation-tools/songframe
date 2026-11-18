@@ -14,7 +14,7 @@ import EditNoteIcon from '@mui/icons-material/EditNote';
 import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
 import VideoFileOutlinedIcon from '@mui/icons-material/VideoFileOutlined';
 import type { ProductionPass, ProductionWorkflowStart } from '@shared/production-workflow';
-import type { PackageView } from '@shared/types';
+import type { PackageView, PromptVariant } from '@shared/types';
 import { keyframeLimit, mediaProviderInfo } from '@shared/media-providers';
 import { AgentButton } from '../../../components';
 import { ActionButton } from '../../../components/ActionButton';
@@ -68,7 +68,8 @@ export function ProductionWorkflowPanel({
   questionOpen?: boolean;
   reviseOpen: boolean;
   onReviseOpen(open: boolean): void;
-  onAcceptProposal(): Promise<boolean>;
+  /** Принять предложение; у видеопромпта с переводом — с вариантом, выбранным к отправке. */
+  onAcceptProposal(promptVariant?: PromptVariant): Promise<boolean>;
   onReviseProposal(note: string): Promise<boolean>;
   /**
    * Свой текст без агента: описание для плана без попытки (рядом с «Подготовить описание») или видеопромпт,

@@ -71,7 +71,7 @@ func TestShotFrameCopy(t *testing.T) {
 		t.Fatal(err)
 	}
 	service := production.New(production.Options{})
-	if err := service.Decide(run.project, dir, "approve", "", pkg.DecisionToken, ""); err != nil {
+	if err := service.Decide(run.project, dir, "approve", "", pkg.DecisionToken, "", ""); err != nil {
 		t.Fatalf("утверждение описания: %v", err)
 	}
 	workflow, err := readJSON(filepath.Join(folder, "workflow.json"))

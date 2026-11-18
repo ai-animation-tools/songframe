@@ -35,8 +35,9 @@ type ProductionFlow interface {
 	Busy(project, shot, packageDir string) bool
 	// Proposals — непринятые предложения агента по планам и подпись «Ждут вашего действия».
 	Proposals(project string) map[string]Proposal
-	// CreateOwnVideo — новая попытка своего видео плана без описания, опор и промпта; возвращает её папку.
-	CreateOwnVideo(ctx context.Context, project, shot string) (string, error)
+	// CreateOwnVideo — новая попытка своего видео плана без описания и опор попытки, с необязательными
+	// входами и промптом пользователя; возвращает её папку.
+	CreateOwnVideo(ctx context.Context, project, shot string, generation production.OwnVideoGeneration) (string, error)
 }
 
 // Proposal — непринятое предложение агента для плана: сам документ и его подпись внимания.
@@ -127,12 +128,13 @@ func (s *ProductionService) View(project string) (production.View, error) {
 	return wire.Done(view, nil)
 }
 
-// Decide — ответ на вопрос пакета (кроме send).
-func (s *ProductionService) Decide(project, packageDir, verdict, note, decisionToken, noteScope string) error {
+// Decide — ответ на вопрос пакета (кроме send); promptVariant — вариант видеопромпта к отправке
+// при его утверждении (original, translation или пусто).
+func (s *ProductionService) Decide(project, packageDir, verdict, note, decisionToken, noteScope, promptVariant string) error {
 	if err := s.idle(project, packageDir); err != nil {
 		return err
 	}
-	return s.production.Decide(project, packageDir, verdict, note, decisionToken, noteScope)
+	return s.production.Decide(project, packageDir, verdict, note, decisionToken, noteScope, promptVariant)
 }
 
 // ReopenFrame — вернуть утверждённую опору на доработку.
@@ -236,18 +238,21 @@ type OwnVideoStart struct {
 	Job        jobs.Info `json:"job"`
 }
 
-// AttachOwnVideo — своё видео плана: файл и источник проверяются до записей, затем проход создаёт
-// попытку без описания, опор и промпта, а видео загружается в неё тем же заданием, что результат
-// ручной генерации. Сервис провайдера не участвует, вход в него не нужен. Если задание не
+// AttachOwnVideo — своё видео плана: файл, источник, входы и промпт проверяются до записей, затем
+// проход создаёт попытку без описания и опор попытки (с входами и промптом, если пользователь их
+// указал), а видео загружается в неё тем же заданием, что результат ручной генерации. Сервис провайдера не участвует, вход в него не нужен. Если задание не
 // запустилось, попытка остаётся ждать видео: загрузить его можно на её шаге «Своё видео».
-func (s *ProductionService) AttachOwnVideo(ctx context.Context, project, shot string, result production.ManualResult) (OwnVideoStart, error) {
+func (s *ProductionService) AttachOwnVideo(ctx context.Context, project, shot string, result production.ManualResult, generation production.OwnVideoGeneration) (OwnVideoStart, error) {
 	if s.flow == nil {
 		return OwnVideoStart{}, errors.New(textOwnVideoUnavailable)
 	}
 	if err := production.CheckManualResult(result); err != nil {
 		return OwnVideoStart{}, err
 	}
-	directory, err := s.flow.CreateOwnVideo(ctx, project, shot)
+	if err := production.CheckOwnVideoGeneration(generation); err != nil {
+		return OwnVideoStart{}, err
+	}
+	directory, err := s.flow.CreateOwnVideo(ctx, project, shot, generation)
 	if err != nil {
 		return OwnVideoStart{}, err
 	}

@@ -16,6 +16,8 @@
         "original": {"$ref": "#/$defs/file"},
         "original_media": {"type": "object"},
         "prompt": {"$ref": "#/$defs/file"},
+        "prompt_translation": {"$ref": "#/$defs/file"},
+        "prompt_original": {"$ref": "#/$defs/file"},
         "request": {"$ref": "#/$defs/file"},
         "generation_id": {"type": ["string", "null"]},
         "inputs": {"type": "array", "items": {"$ref": "#/$defs/file"}},

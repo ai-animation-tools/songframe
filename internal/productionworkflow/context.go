@@ -18,6 +18,7 @@ import (
 	"songframe/internal/production"
 	"songframe/internal/projectfile"
 	"songframe/internal/scenario"
+	"songframe/internal/sources"
 	"songframe/internal/speech"
 )
 
@@ -244,6 +245,7 @@ func ReadContext(path, shot, requested string) (*Context, error) {
 	if err != nil {
 		return nil, err
 	}
+	context.Cast.Items = withImageNotes(context.Cast.Items, sources.ManifestFiles(manifest))
 	if dynvalue.IsRecord(manifest) {
 		for _, key := range []string{"track", "lyrics", "idea"} {
 			if entry := dynvalue.Get(manifest, key); dynvalue.IsRecord(entry) {
@@ -588,4 +590,37 @@ func generationMethod(c *Context) string {
 func isFrameCopy(prompt any) bool {
 	object, ok := prompt.(*dynvalue.Object)
 	return ok && object.Has("copyOf")
+}
+
+// withImageNotes — копии сущностей кастинга с imageNotes: примечания пользователя к изображениям
+// сущности из описи source/manifest.json ({path, note} в порядке images, только непустые). По ним
+// задание выбирает из нескольких изображений то, что подходит плану (ракурс, свет, состояние):
+// кастинг хранит одни пути, а примечания живут в описи. Сущность без примечаний не меняется;
+// исходные объекты кастинга не изменяются.
+func withImageNotes(entities []any, files map[string]sources.FileInfo) []any {
+	result := make([]any, 0, len(entities))
+	for _, entity := range entities {
+		images, ok := dynvalue.AsArray(dynvalue.Get(entity, "images"))
+		notes := []any{}
+		if ok {
+			for _, image := range images {
+				path, _ := image.(string)
+				if note := files[strings.TrimPrefix(path, "source/")].Note; path != "" && note != "" {
+					item := dynvalue.NewObject()
+					item.Set("path", path)
+					item.Set("note", note)
+					notes = append(notes, item)
+				}
+			}
+		}
+		object, isObject := entity.(*dynvalue.Object)
+		if len(notes) == 0 || !isObject {
+			result = append(result, entity)
+			continue
+		}
+		copied := dynvalue.Spread(object)
+		copied.Set("imageNotes", &dynvalue.Array{Items: notes})
+		result = append(result, copied)
+	}
+	return result
 }

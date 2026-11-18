@@ -3,9 +3,11 @@ package productionworkflow
 import (
 	"context"
 	"errors"
+	"os"
 	"path"
 	"slices"
 	"strings"
+	"time"
 
 	"songframe/internal/derivedshot"
 	"songframe/internal/dynvalue"
@@ -199,10 +201,14 @@ func (w *Workflow) GenerateFrames(ctx context.Context, project, shot, packageDir
 	}
 	defer w.mu.Unlock()
 	notes := slices.Clone(plan.notes)
-	job, err := w.generateImages(c.Project, mediaapi.ImagesInput{
+	input := mediaapi.ImagesInput{
 		Project: c.Project, Shot: shot, PackageDir: c.PackageDir, Frames: []mediaapi.FramePrompt{frame}, Notes: &notes, ApprovedFrames: &approved,
 		ReferenceEntities: addShotFrameEntities(c, referenceEntities(c.Cast)),
-	})
+	}
+	if previous := previousFrameFile(c, frame.ID); previous != "" {
+		input.PreviousFrames = []mediaapi.ApprovedFrame{{ID: frame.ID, Role: frame.Role, Path: previous}}
+	}
+	job, err := w.generateImages(c.Project, input)
 	if err != nil {
 		return View{}, err
 	}
@@ -301,4 +307,30 @@ func (w *Workflow) ImportFrames(project, shot, packageDir string, images []Frame
 		return View{}, err
 	}
 	return w.view(c.Project, shot, packageDir)
+}
+
+// previousFrameFile — прежний вариант неутверждённой опоры id: файл frames/<id>.<ext> пакета,
+// который остаётся после снятия кандидата замечанием. Из нескольких расширений берётся самый
+// новый файл. Пустая строка — прежнего варианта нет (первая генерация) или опора уже утверждена.
+func previousFrameFile(c *Context, id string) string {
+	for _, item := range keyframes(c.Workflow) {
+		if dynvalue.Get(item, "id") == id && dynvalue.Truthy(dynvalue.Get(item, "approved")) {
+			return ""
+		}
+	}
+	best, newest := "", time.Time{}
+	for _, suffix := range []string{".png", ".jpg", ".jpeg", ".webp"} {
+		candidate, err := packageFile(c, path.Join("frames", id+suffix))
+		if err != nil || !mediafile.IsImage(candidate) {
+			continue
+		}
+		info, err := os.Stat(candidate)
+		if err != nil || !info.Mode().IsRegular() {
+			continue
+		}
+		if best == "" || info.ModTime().After(newest) {
+			best, newest = candidate, info.ModTime()
+		}
+	}
+	return best
 }

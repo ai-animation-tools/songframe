@@ -980,6 +980,9 @@ export const productionTexts = {
     notice: ({ stale, message, status }: { stale: boolean; message?: string; status: string }) =>
       `${stale ? 'Исходные материалы изменились. Подготовьте новое предложение.' : (message ?? `${status}.`)} Применение сохраняет материалы для отдельного согласования; оно не принимает опоры, промпт или платную отправку.`,
     current: 'Сейчас в попытке',
+    currentFrame: ({ id, role, seconds, state }: { id: string; role: string; seconds: string; state: string }) => `${id} · ${role} · ${seconds} с — ${state}`,
+    currentFrameState: { approved: 'утверждена', candidate: 'ждёт решения', missing: 'ещё не создана' },
+    currentFramesEmpty: 'Опор в попытке ещё нет.',
     currentHint: 'Что уже сохранено и будет заменено',
     proposed: 'Предложение агента',
     proposedHint: 'Станет материалами попытки после «Принять»'

@@ -140,7 +140,41 @@ function Current({ proposal }: { proposal: ProductionProposal }): ReactElement {
       </Alert>
     );
   }
+  if (proposal.stage === 'frames') {
+    return <CurrentFrames before={before} />;
+  }
   return <Paragraphs text={before} />;
+}
+
+/** Опоры попытки до предложения: Go присылает поле keyframes пакета JSON-строкой, человеку — строка на опору. */
+function CurrentFrames({ before }: { before: string }): ReactElement {
+  const texts = productionTexts.productionProposalPreview;
+  let frames: { id?: unknown; role?: unknown; time_seconds?: unknown; path?: unknown; approved?: unknown }[] = [];
+  try {
+    const parsed: unknown = JSON.parse(before);
+    frames = Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return <Paragraphs text={before} />;
+  }
+  if (frames.length === 0) {
+    return <Typography variant="body2">{texts.currentFramesEmpty}</Typography>;
+  }
+  return (
+    <Stack spacing={0.5}>
+      {frames.map((frame, index) => {
+        const role =
+          typeof frame.role === 'string' && frame.role in FRAME_ROLES ? FRAME_ROLES[frame.role as ProductionFramePrompt['role']] : String(frame.role ?? '');
+        const state =
+          frame.approved === true ? texts.currentFrameState.approved : frame.path ? texts.currentFrameState.candidate : texts.currentFrameState.missing;
+        const seconds = String(frame.time_seconds ?? '').replace('.', ',');
+        return (
+          <Typography key={`${String(frame.id)}-${index}`} variant="body2">
+            {texts.currentFrame({ id: String(frame.id ?? ''), role, seconds, state })}
+          </Typography>
+        );
+      })}
+    </Stack>
+  );
 }
 
 const problemTexts = productionTexts.productionProposalPreview;

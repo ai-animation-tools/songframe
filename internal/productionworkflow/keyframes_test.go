@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"songframe/internal/agents"
@@ -89,6 +90,37 @@ func TestKeyframeImagesSymlinkedStateDir(t *testing.T) {
 	}
 	if len(candidates) != 1 || candidates[0].ID != "K01" || filepath.Base(candidates[0].Path) != "K01.png" {
 		t.Fatalf("кандидаты %+v", candidates)
+	}
+}
+
+// Доработка опоры по замечанию: прежний вариант копируется в рабочую папку, называется в
+// контексте задания, а инструкция велит править его, а не рисовать кадр заново.
+func TestKeyframeImagesPreviousFrame(t *testing.T) {
+	images, manager, input := keyframesFixture(t)
+	previous := filepath.Join(input.Project, "plan", "batches", "M01-attempt-01", "frames", "K01.png")
+	if err := os.MkdirAll(filepath.Dir(previous), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(previous, tinyPNG, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	notes := []string{"Исправь только часы на запястье."}
+	input.Notes = &notes
+	input.PreviousFrames = []mediaapi.ApprovedFrame{{ID: "K01", Role: "first", Path: previous}}
+	if _, err := images.Start(input, agentexec.ImagesRequest{Provider: "test-agent", RequestSha: "sha", Agent: agents.Settings{Provider: "codex"}}); err != nil {
+		t.Fatal(err)
+	}
+	start := manager.images[0]
+	if _, err := os.Stat(filepath.Join(start.workDir, "previous-K01.png")); err != nil {
+		t.Fatalf("прежний вариант не скопирован: %v", err)
+	}
+	context, _ := dynvalue.Parse([]byte(start.input.Context))
+	items, _ := dynvalue.AsArray(dynvalue.Get(context, "previousFrames"))
+	if len(items) != 1 || dynvalue.Get(items[0], "id") != "K01" || dynvalue.Get(items[0], "path") != "previous-K01.png" {
+		t.Fatalf("previousFrames в контексте: %s", start.input.Context)
+	}
+	if !strings.Contains(start.input.Prompt, "previousFrames") {
+		t.Fatalf("инструкция не говорит о прежнем варианте: %s", start.input.Prompt)
 	}
 }
 

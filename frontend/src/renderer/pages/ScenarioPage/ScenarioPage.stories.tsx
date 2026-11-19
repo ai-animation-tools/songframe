@@ -12,6 +12,7 @@ import {
   scenarioPageOptions,
   scenarioStateInspection
 } from '../../testing/scenarioPageStories';
+import { formatDateTime } from '../../format';
 
 const meta = {
   title: 'Страницы/Сценарий',
@@ -719,6 +720,47 @@ export const CheckResolve: Story = {
     await waitFor(() => expect(panel.queryByText(/Сосед появляется раньше куплета/)).not.toBeInTheDocument());
     await expect(checkSummary(panel)).toHaveAttribute('aria-expanded', 'false');
     await expect(panel.getByText(scenarioTexts.check.statusIssues({ count: 3 }))).toBeInTheDocument();
+  }
+};
+
+export const CheckReviewed: Story = {
+  name: 'Проверка сценария · «Все проблемы разобраны» сворачивает устаревший отчёт, «Вернуть в работу» раскрывает',
+  tags: ['!autodocs', 'ci'],
+  parameters: { songframe: scenarioPageOptions({ check: 'staleReport' }) },
+  play: async (context) => {
+    const screen = await ready(context);
+    const panel = await checkPanel(screen);
+    await expect(panel.getByText(scenarioTexts.check.statusStale)).toBeInTheDocument();
+    await expandCheck(panel);
+    await expect(panel.getByText(scenarioTexts.check.stale)).toBeInTheDocument();
+    // Отказ от подтверждения ничего не отмечает.
+    await userEvent.click(panel.getByRole('button', { name: scenarioTexts.check.resolveAll }));
+    let dialog = within(await screen.findByRole('dialog', { name: scenarioTexts.check.resolveAllTitle }));
+    await expect(dialog.getByText(scenarioTexts.check.resolveAllDescription({ count: 3 }))).toBeInTheDocument();
+    await userEvent.click(dialog.getByRole('button', { name: commonTexts.cancel }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await expect(panel.getByText(scenarioTexts.check.statusStale)).toBeInTheDocument();
+    // Согласие отмечает все проблемы и сворачивает отчёт с предупреждением до строки с датой проверки.
+    await userEvent.click(panel.getByRole('button', { name: scenarioTexts.check.resolveAll }));
+    dialog = within(await screen.findByRole('dialog', { name: scenarioTexts.check.resolveAllTitle }));
+    await userEvent.click(dialog.getByRole('button', { name: scenarioTexts.check.resolveAllConfirm }));
+    // Пока окно подтверждения закрывается, страница под ним скрыта от вспомогательных технологий.
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await expect(await panel.findByText(scenarioTexts.check.statusReviewed)).toBeInTheDocument();
+    await expect(panel.getByText(scenarioTexts.check.reviewed({ date: formatDateTime('2026-10-30T09:01:00.000Z') }))).toBeVisible();
+    await expect(panel.queryByText(scenarioTexts.check.stale)).not.toBeInTheDocument();
+    await expect(panel.queryByText(/Сосед появляется раньше куплета/)).not.toBeInTheDocument();
+    await expect(panel.queryByText(scenarioTexts.check.openCount({ count: 3 }))).not.toBeInTheDocument();
+    await expect(panel.queryByRole('button', { name: scenarioTexts.check.resolveAll })).not.toBeInTheDocument();
+    await expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений сценария: 0');
+    // Отчёт раскрывается по запросу; снятая отметка возвращает обычный вид устаревшего отчёта.
+    await userEvent.click(panel.getByRole('button', { name: scenarioTexts.check.showReport }));
+    await userEvent.click(await panel.findByRole('button', { name: /Сосед появляется раньше куплета/ }));
+    await userEvent.click(await panel.findByRole('button', { name: scenarioTexts.check.unresolve }));
+    await expect(await panel.findByText(scenarioTexts.check.statusStale)).toBeInTheDocument();
+    await expect(panel.getByText(scenarioTexts.check.stale)).toBeInTheDocument();
+    await expect(panel.getByText(scenarioTexts.check.openCount({ count: 1 }))).toBeInTheDocument();
+    await expect(panel.getByRole('button', { name: scenarioTexts.check.resolveAll })).toBeEnabled();
   }
 };
 

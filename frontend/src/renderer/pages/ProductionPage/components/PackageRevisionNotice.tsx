@@ -6,10 +6,22 @@ import { Alert, Box, Button, Typography } from '@mui/material';
 import type { PackageView } from '@shared/types';
 import { LinkedText } from '../../../components/LinkedText';
 
-export function PackageRevisionNotice({ pkg, onOpenRevision }: { pkg: PackageView; onOpenRevision?(focusNote?: boolean): void }): ReactElement | null {
+export function PackageRevisionNotice({
+  pkg,
+  frameRunning = false,
+  onOpenRevision
+}: {
+  pkg: PackageView;
+  /** Опора этой попытки уже создаётся заново (задание агента или запрос изображения): совет создать её не нужен. */
+  frameRunning?: boolean;
+  /** Перейти к доработке; focusNote — сразу к полю замечания. */
+  onOpenRevision?(focusNote?: boolean): void;
+}): ReactElement | null {
   // Новый вопрос заменяет прежнее замечание: материалы следующего согласования уже требуют своего ответа.
   if (pkg.pendingDecision || pkg.decision?.verdict !== 'revise') return null;
   // Возврат опоры: замечание уже в списке замечаний к опорам, следующий шаг — создать опору заново, а не доработка агентом.
+  // Пока опора создаётся, этот шаг уже сделан: подсказка вернётся, только если задание не даст нового вопроса.
+  if (pkg.decision.stage === 'keyframes_review' && frameRunning) return null;
   if (pkg.decision.stage === 'keyframes_review')
     return (
       <Alert severity="info" sx={{ mb: 2 }}>

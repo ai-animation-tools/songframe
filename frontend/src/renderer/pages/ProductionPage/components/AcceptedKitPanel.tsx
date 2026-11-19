@@ -2,13 +2,16 @@
  * Принятый план без рабочей попытки: вместо пути шагов — один блок «Принятый комплект». Приёмка удаляет пакет
  * попытки, и шаги пути считались бы по пустоте («опор 0»), поэтому показывается то, что сохранено в комплекте
  * assets/shots/Mxx: принятое видео, как оно получено (сервис или ручная генерация с источником и примечанием),
- * опоры, видеопромпт (с переводом — оба варианта переключателем, «Скопировать» копирует показанный) и срез речи. Сведения читает Go (production.acceptedKit) при показе; новая попытка
- * возвращает обычный путь шагов. У своего видео опоры и промпт есть, только если их указали при загрузке; тогда они
- * показываются так же, как у генерации, а пустой промпт не показывается.
+ * опоры в порядке входов генерации с ролью по позиции (как роли по умолчанию у своего видео), видеопромпт
+ * (с переводом — оба варианта переключателем, «Скопировать» копирует показанный) и срез речи. Сведения читает Go
+ * (production.acceptedKit) при показе; новая попытка возвращает обычный путь шагов. У своего видео опоры и промпт есть, только если их указали при загрузке; тогда они
+ * показываются так же, как у генерации, а пустой промпт не показывается. «Открыть папку» показывает папку комплекта
+ * в файловом менеджере ОС.
  */
 import { useEffect, useState, type ReactElement } from 'react';
 import { Alert, Box, Button, Paper, Stack, Typography } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import { commonTexts } from '@shared/texts/common';
 import { productionTexts } from '@shared/texts/production';
 import { mediaProviderInfo } from '@shared/media-providers';
@@ -21,6 +24,7 @@ import { AcceptedAsset } from './AcceptedAsset';
 import { ManualGenerationInfo } from './ManualGeneration';
 import { PromptVariantsText, promptVariantText } from './PromptVariantsText';
 import { SpeechSlice } from './ProductionSpeechPanel';
+import { defaultRole } from '../ownVideoGeneration';
 
 const texts = productionTexts.acceptedKit;
 
@@ -57,6 +61,7 @@ export function AcceptedKitPanel({ project, shot }: { project: string; shot: Sho
   }, [project, shot.id, describeError]);
 
   if (!shot.asset) return null;
+  const kitDir = shot.asset.dir;
   const copy = async (text: string): Promise<void> => {
     try {
       await navigator.clipboard.writeText(text);
@@ -69,7 +74,16 @@ export function AcceptedKitPanel({ project, shot }: { project: string; shot: Sho
   const variants = kit?.promptVariants;
   const promptShown: PromptVariant = shownPrompt?.shot === shot.id ? shownPrompt.variant : (variants?.selected ?? 'original');
   const visiblePrompt = kit?.prompt ? promptVariantText(kit.prompt, variants, promptShown) : '';
-  const gallery = (kit?.images ?? []).map((imagePath, index) => ({ imagePath, label: texts.image({ index: index + 1 }) }));
+  // Роль опоры — как записана в комплекте (у своего видео её выбирал пользователь); без записи она следует
+  // из позиции: одна опора — первый кадр, у нескольких последняя — последний.
+  const images = kit?.images ?? [];
+  const gallery = images.map((image, index) => ({
+    imagePath: image.path,
+    label: texts.image({ index: index + 1, role: image.role ?? productionTexts.inputRoles[defaultRole(index, images.length)] })
+  }));
+  const openFolder = (dir: string): void => {
+    window.api.shell.openPath(dir).catch((reason: unknown) => notify(describeError(reason), 'error'));
+  };
 
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
@@ -93,8 +107,11 @@ export function AcceptedKitPanel({ project, shot }: { project: string; shot: Sho
                 {/* Как опоры в пакете попытки: миниатюра открывает общий просмотр изображений. */}
                 <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
                   {gallery.map((image, index) => (
-                    <Box key={image.imagePath} sx={{ width: 220, minWidth: 0 }}>
+                    <Box key={`${index}:${image.imagePath}`} sx={{ width: 220, minWidth: 0 }}>
                       <ImageThumbnail path={image.imagePath} label={image.label} title={image.imagePath} fit="cover" onOpen={() => setActive(index)} />
+                      <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+                        {image.label}
+                      </Typography>
                     </Box>
                   ))}
                 </Box>
@@ -130,6 +147,12 @@ export function AcceptedKitPanel({ project, shot }: { project: string; shot: Sho
             ) : null}
           </>
         ) : null}
+        {/* Действие блока — после содержимого: папка комплекта с видео, оригиналом, опорами и промптом. */}
+        <Box>
+          <Button size="small" startIcon={<FolderOpenIcon />} title={texts.openFolderHint} onClick={() => openFolder(kitDir)}>
+            {texts.openFolder}
+          </Button>
+        </Box>
       </Stack>
       {active !== null && gallery.length ? (
         <ImageGallery kind={productionTexts.packageKeyframes.galleryKind} images={gallery} initialIndex={active} onClose={() => setActive(null)} />

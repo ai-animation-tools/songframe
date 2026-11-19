@@ -288,7 +288,8 @@ it('сохраняет локальное согласование при бло
       pending: { stage: 'request_choice', question: 'Продолжить?', options: ['approve', 'revise', 'send', 'retry'] },
       aiKind: 'image',
       busy: false,
-      note: 'Нужна правка',
+      // Без введённого замечания: оно само блокирует остальные ответы, а здесь проверяется только доступ к AI.
+      note: '',
       setNote: unchanged,
       onDecide: unchanged
     })

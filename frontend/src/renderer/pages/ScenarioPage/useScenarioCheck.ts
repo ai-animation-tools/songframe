@@ -103,6 +103,17 @@ export function useScenarioCheck(project: string, onFixed: () => Promise<void>) 
     },
     /** Отметка «Решено вручную» у проблемы или её снятие. */
     resolve: (issue: number, resolved: boolean) => run(() => window.api.scenarioWorkflow.resolveCheckIssue({ project, issue, resolved })),
+    /**
+     * Отметка «Решено вручную» сразу у нескольких проблем: тот же вызов, что и по одной, последовательно,
+     * потому что каждая отметка перезаписывает запись проверки. При ошибке уже поставленные отметки
+     * остаются, а опрос покажет фактическое состояние отчёта.
+     */
+    resolveAll: (issues: number[]) =>
+      run(async () => {
+        let next: ScenarioCheckView | null = null;
+        for (const issue of issues) next = await window.api.scenarioWorkflow.resolveCheckIssue({ project, issue, resolved: true });
+        return next ?? window.api.scenarioWorkflow.checkView(project);
+      }),
     cancel: async (id: string): Promise<void> => {
       await run(async () => {
         await window.api.agents.cancel(id);

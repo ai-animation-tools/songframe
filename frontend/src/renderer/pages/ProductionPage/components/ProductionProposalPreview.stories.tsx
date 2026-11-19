@@ -102,7 +102,7 @@ const translatedPrompt = (): ProductionProposal =>
   });
 export const PromptTranslation: Story = {
   tags: ['ci'],
-  name: 'Видеопромпт с переводом · переключатель вариантов, принять с переводом к отправке',
+  name: 'Видеопромпт с переводом · показанный вариант и есть отправляемый, принять с переводом',
   args: { initialProposal: translatedPrompt(), dialog: true },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -113,12 +113,14 @@ export const PromptTranslation: Story = {
     await userEvent.click(canvas.getByRole('button', { name: dialogLabels.open }));
     const dialog = within(await body.findByRole('dialog'));
     const proposed = within(dialog.getByRole('region', { name: labels.proposed }));
-    // По умолчанию показан и выбран к отправке оригинал.
+    // По умолчанию показан и выбран к отправке оригинал; отдельного выбора отправки нет.
     await expect(proposed.getByText(after.prompt)).toBeInTheDocument();
-    await expect(proposed.getByRole('radio', { name: variants.sendOriginal })).toBeChecked();
+    await expect(proposed.getByText(variants.selected({ translation: false }))).toBeInTheDocument();
+    await expect(proposed.queryByRole('radiogroup')).not.toBeInTheDocument();
+    // Переключатель показа меняет и текст, и отметку «К отправке».
     await userEvent.click(proposed.getByRole('button', { name: variants.translation }));
     await expect(proposed.getByText(after.translation)).toBeInTheDocument();
-    await userEvent.click(proposed.getByRole('radio', { name: variants.sendTranslation }));
+    await expect(proposed.queryByText(after.prompt)).not.toBeInTheDocument();
     await expect(proposed.getByText(variants.selected({ translation: true }))).toBeInTheDocument();
     await userEvent.click(dialog.getByRole('button', { name: labels.apply }));
     await waitFor(() => expect(body.queryByRole('dialog')).not.toBeInTheDocument());
@@ -126,13 +128,13 @@ export const PromptTranslation: Story = {
   }
 };
 export const PromptTranslationPreview: Story = {
-  name: 'Видеопромпт с переводом · превью без выбора отправки',
+  name: 'Видеопромпт с переводом · превью без отметки отправки',
   args: { initialProposal: translatedPrompt() },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const variants = productionTexts.promptVariants;
     await expect(canvas.getByRole('group', { name: variants.view })).toBeInTheDocument();
-    await expect(canvas.queryByRole('radiogroup', { name: variants.send })).not.toBeInTheDocument();
+    await expect(canvas.queryByText(variants.selected({ translation: false }))).not.toBeInTheDocument();
   }
 };
 export const FirstPrompt: Story = {
@@ -375,5 +377,34 @@ export const PromptOverLimit: Story = {
     await expect(dialog.queryByRole('group', { name: productionTexts.promptVariants.view })).not.toBeInTheDocument();
     await userEvent.click(dialog.getByRole('button', { name: productionTexts.verdictLabels.revise }));
     await expect(dialog.getByRole('textbox', { name: productionTexts.productionWorkflowPanel.note })).toHaveValue(productionTexts.promptLimit.reviseNote(over));
+  }
+};
+
+/** Замечание доработки введено: «Принять» недоступна, иначе предложение применится и замечание пропадёт. */
+export const ReviseNoteBlocksApply: Story = {
+  tags: ['ci'],
+  name: 'Доработка · пока введено замечание, принять нельзя; пустое поле снимает блокировку',
+  args: { initialProposal: workflowProposal('description'), dialog: true },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(document.body);
+    await userEvent.click(canvas.getByRole('button', { name: dialogLabels.open }));
+    const dialog = within(await body.findByRole('dialog'));
+    // Кнопка с причиной недоступности обёрнута подсказкой: после смены состояния её ищут заново.
+    const apply = () => dialog.getByRole('button', { name: labels.apply });
+    await userEvent.click(dialog.getByRole('button', { name: productionTexts.verdictLabels.revise }));
+    const note = dialog.getByRole('textbox', { name: productionTexts.productionWorkflowPanel.note });
+    // Открытое пустое поле не мешает принять.
+    await expect(apply()).toBeEnabled();
+    await userEvent.type(note, 'Герой выходит из дома.');
+    await waitFor(() => expect(apply()).toBeDisabled());
+    await expect(apply()).toHaveAttribute('title', expect.stringContaining(productionTexts.packageDecision.noteFilled));
+    // Одни пробелы замечанием не считаются.
+    await userEvent.clear(note);
+    await userEvent.type(note, '   ');
+    await waitFor(() => expect(apply()).toBeEnabled());
+    await userEvent.clear(note);
+    await expect(apply()).toBeEnabled();
+    await expect(canvas.getByTestId('saved-materials')).toHaveTextContent('Герой стоит перед воротами.');
   }
 };

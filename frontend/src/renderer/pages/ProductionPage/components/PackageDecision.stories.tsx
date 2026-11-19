@@ -1,6 +1,6 @@
 /** Согласование опоры меняет пакет; ошибка не снимает вопрос и не теряет введённое замечание. */
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, userEvent, within } from 'storybook/test';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { productionTexts } from '@shared/texts/production';
 import { KeyframeReviewStory, keyframePackage } from '../../../testing/keyframeStories';
 
@@ -48,6 +48,25 @@ export const Whitespace: Story = {
     await openRevision(canvas);
     await expect(canvas.getByRole('button', reviseButton)).toBeDisabled();
     await expect(canvas.getByRole('button', approveButton)).toBeEnabled();
+  }
+};
+/** Введённое замечание теряется при утверждении: пока оно есть, утвердить нельзя, пустое поле снимает блокировку. */
+export const NoteBlocksApprove: Story = {
+  tags: ['ci'],
+  name: 'Доработка · пока введено замечание, утвердить нельзя',
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // Кнопка с причиной недоступности обёрнута подсказкой: после смены состояния её ищут заново.
+    const approve = () => canvas.getByRole('button', approveButton);
+    await openRevision(canvas);
+    await expect(approve()).toBeEnabled();
+    await userEvent.type(canvas.getByRole('textbox', noteField), 'Камера ниже.');
+    await waitFor(() => expect(approve()).toBeDisabled());
+    await expect(approve()).toHaveAttribute('title', expect.stringContaining(texts.noteFilled));
+    await expect(canvas.getByRole('button', reviseButton)).toBeEnabled();
+    await userEvent.clear(canvas.getByRole('textbox', noteField));
+    await waitFor(() => expect(approve()).toBeEnabled());
+    await expect(canvas.getByText(/Опоры · утверждено 1 из 4/)).toBeInTheDocument();
   }
 };
 export const ApproveSequence: Story = {

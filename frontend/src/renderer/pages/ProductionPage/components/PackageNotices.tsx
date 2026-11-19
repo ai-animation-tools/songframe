@@ -14,12 +14,15 @@ export function PackageNotices({
   pkg,
   busy,
   busyReason = BUSY_REASON,
+  frameRunning = false,
   onKeepForScene,
   onOpenRevision
 }: {
   pkg: PackageView;
   busy: boolean;
   busyReason?: string;
+  /** Идёт создание опоры этой попытки: подсказка о возвращённой опоре скрыта. */
+  frameRunning?: boolean;
   onKeepForScene(): void;
   onOpenRevision(focusNote?: boolean): void;
 }): ReactElement {
@@ -38,7 +41,7 @@ export function PackageNotices({
           ) : null}
         </Box>
       ) : null}
-      <PackageRevisionNotice pkg={pkg} onOpenRevision={onOpenRevision} />
+      <PackageRevisionNotice pkg={pkg} frameRunning={frameRunning} onOpenRevision={onOpenRevision} />
       {isQueuedPackage(pkg) ? <Alert severity="info">{productionTexts.packageCard.queued}</Alert> : null}
       {pkg.sceneChanged ? (
         <PackageSceneChanged pkg={pkg} busy={busy} busyReason={busyReason} onKeep={onKeepForScene} onOpenRevision={() => onOpenRevision(true)} />

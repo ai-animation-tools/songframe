@@ -24,6 +24,8 @@ export function useImageGeneration(project: string, mode: 'cover' | 'reference' 
   const [accepting, setAccepting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [preparedSha, setPreparedSha] = useState<string | null>(null);
+  // Текст, отправленный в create текущей сессии: с ним сравнивается редактор, чтобы «Ещё» знало, нужна ли новая сессия.
+  const [sessionPrompt, setSessionPrompt] = useState<string | null>(null);
   const alive = useRef(true);
   const locked = useRef(false);
   const id = useRef<string | null>(null);
@@ -94,42 +96,87 @@ export function useImageGeneration(project: string, mode: 'cover' | 'reference' 
     [api, update]
   );
 
+  /** Текст, который уходит в create: референс сохраняет точный текст редактора, обложка — без краевых пробелов. */
+  const requestPrompt = useCallback((prompt: string): string => (mode === 'reference' ? prompt : prompt.trim()), [mode]);
+
+  /** Создаёт сессию с текущими опорами и сразу готовит её; вызывается только внутри perform. */
+  const create = async (prompt: string): Promise<CoverGenerationSession | null> => {
+    if (currentBlock.current) throw new Error(currentBlock.current);
+    const text = requestPrompt(prompt);
+    // Оба вида запроса получают только явно выбранные опоры.
+    const created = await (mode === 'reference'
+      ? window.api.referenceImages.create(project, text, referenceInput ?? { images: [] })
+      : window.api.cover.create(project, text, referenceInput ?? { images: [] }));
+    id.current = created.id;
+    // Закрытие диалога может опередить create: полученный позднее каталог всё равно удаляется.
+    if (!update(created)) {
+      await release(created.id);
+      return null;
+    }
+    setSessionPrompt(text);
+    return prepare(created.id);
+  };
+
   const start = (prompt: string): Promise<CoverGenerationSession | null | undefined> =>
     perform(async () => {
       if (id.current || !prompt.trim()) return null;
-      if (currentBlock.current) throw new Error(currentBlock.current);
-      // Оба вида запроса получают только явно выбранные опоры; референс сохраняет точный текст редактора.
-      const created = await (mode === 'reference'
-        ? window.api.referenceImages.create(project, prompt, referenceInput ?? { images: [] })
-        : window.api.cover.create(project, prompt.trim(), referenceInput ?? { images: [] }));
-      id.current = created.id;
-      // Закрытие диалога может опередить create: полученный позднее каталог всё равно удаляется.
-      if (!update(created)) {
-        await release(created.id);
-        return null;
-      }
-      return prepare(created.id);
+      return create(prompt);
     });
 
-  /** Новый текст или набор опор снимает согласование и кандидат до следующего render. */
-  const invalidate = (): boolean => {
-    if (locked.current || session?.status === 'generating' || accepting || referenceResult.current) return false;
+  /** Правку запроса нельзя начать во время отправки, принятия и незавершённой привязки оплаченного оригинала. */
+  const editable = (): boolean => !(locked.current || session?.status === 'generating' || accepting || referenceResult.current);
+
+  /** Закрывает текущую сессию без принятия; кандидат и согласования пропадают до следующего render. */
+  const dropSession = (): void => {
     const previous = id.current;
     id.current = null;
     accepted.current = false;
     setSession(null);
+    setSessionPrompt(null);
     setPreparedSha(null);
     setError(null);
     setAttachmentPending(false);
     if (previous) void release(previous).catch((failure) => notify(describeError(failure), 'error'));
+  };
+
+  /** Новый текст или набор опор снимает согласование и кандидат до следующего render. */
+  const invalidate = (): boolean => {
+    if (!editable()) return false;
+    dropSession();
     return true;
   };
 
-  // Подготовка никогда не отправляет запрос: каждый провайдер ждёт отдельного подтверждения промпта.
-  const next = (): Promise<CoverGenerationSession | null | undefined> =>
-    perform(async () => (session && id.current === session.id ? prepare(session.id) : null));
+  /**
+   * Правка текста после попытки: кандидат и ошибка прежней попытки остаются на виду, а подготовленный
+   * запрос, его цена и согласования сразу перестают действовать. Новую сессию создаёт только «Ещё».
+   */
+  const editPrompt = (): boolean => {
+    if (!editable()) return false;
+    setPreparedSha(null);
+    return true;
+  };
 
-  const refreshQuote = next;
+  /** Текст редактора расходится с тем, по которому создана текущая сессия. */
+  const promptChanged = (prompt: string): boolean => sessionPrompt !== null && requestPrompt(prompt) !== sessionPrompt;
+
+  /**
+   * Следующая попытка. Без правки текста готовится та же сессия с прежними опорами. Изменённый текст
+   * закрывает прежнюю сессию и создаёт новую с теми же выбранными опорами: у неё новые SHA, оценка цены
+   * и токен согласования, поэтому прежнее согласие на неё не распространяется. Подготовка никогда
+   * не отправляет запрос: каждый провайдер ждёт отдельного подтверждения промпта.
+   */
+  const next = (prompt?: string): Promise<CoverGenerationSession | null | undefined> =>
+    perform(async () => {
+      if (!session || id.current !== session.id) return null;
+      if (prompt === undefined || !promptChanged(prompt)) return prepare(session.id);
+      if (!prompt.trim() || accepting || referenceResult.current) return null;
+      dropSession();
+      return create(prompt);
+    });
+
+  /** Новая оценка цены той же подготовленной сессии; текст и опоры при этом не меняются. */
+  const refreshQuote = (): Promise<CoverGenerationSession | null | undefined> =>
+    perform(async () => (session && id.current === session.id ? prepare(session.id) : null));
 
   const generate = (approval: CoverGenerationApproval): Promise<void | undefined> =>
     perform(async () => {
@@ -199,5 +246,20 @@ export function useImageGeneration(project: string, mode: 'cover' | 'reference' 
     };
   }, [api, sessionId, generating, update, describeError]);
 
-  return { session, working, accepting, attachmentPending, error, preparedSha, start, next, refreshQuote, generate, accept, invalidate };
+  return {
+    session,
+    working,
+    accepting,
+    attachmentPending,
+    error,
+    preparedSha,
+    start,
+    next,
+    refreshQuote,
+    generate,
+    accept,
+    invalidate,
+    editPrompt,
+    promptChanged
+  };
 }

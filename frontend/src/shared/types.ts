@@ -591,8 +591,8 @@ export interface AcceptedKit {
   prompt: string | null;
   /** Оригинал и перевод видеопромпта, если попытка их предлагала; selected — отправленный вариант. */
   promptVariants?: PromptVariants;
-  /** Изображения, переданные в генерацию (опоры). */
-  images: string[];
+  /** Изображения, переданные в генерацию (опоры), по порядку входов; role — роль входа из комплекта, null — не записана. */
+  images: { path: string; role: string | null }[];
   /** Срез речи речевого плана и его границы в песне. */
   speech: { path: string; start: number | null; end: number | null } | null;
 }

@@ -85,6 +85,37 @@ export const ReferenceIdentity: Story = {
   }
 };
 
+export const EntityCodeTyping: Story = {
+  tags: ['ci'],
+  name: 'Код сущности — непрерывный ввод сохраняет фокус и полный код',
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const screen = within(canvasElement.ownerDocument.body);
+    await canvas.findByRole('textbox', { name: castTexts.appearance });
+    await userEvent.click(canvas.getByRole('button', { name: castTexts.addEntity }));
+    // Раскрывается только новая карточка: поле кода прежней исчезает после сворачивания. Ждать нужно именно
+    // поле новой сущности — до перерисовки единственным на странице остаётся поле прежней карточки.
+    await waitFor(() => {
+      const fields = canvas.getAllByRole<HTMLInputElement>('textbox', { name: commonTexts.code });
+      expect(fields).toHaveLength(1);
+      expect(fields[0].value).toMatch(/^entity_\d+$/);
+    });
+    const code = canvas.getByRole<HTMLInputElement>('textbox', { name: commonTexts.code });
+    await userEvent.clear(code);
+    await userEvent.type(code, 'street_workshop');
+    // Тот же узел поля: карточка не пересоздавалась ни на одном символе.
+    await expect(canvas.getByRole('textbox', { name: commonTexts.code })).toBe(code);
+    await expect(code).toHaveFocus();
+    await expect(code).toHaveValue('street_workshop');
+    await userEvent.click(canvas.getByRole('button', { name: commonTexts.save }));
+    await expect(await screen.findByText(castTexts.saved)).toBeInTheDocument();
+    const saved = referencePageSnapshot().cast.entities.find((entity) => entity.id === 'street_workshop');
+    // Ключ карточки живёт только в памяти страницы и не попадает в cast.json.
+    await expect(Object.keys(saved ?? {}).sort()).toEqual(['appearance', 'id', 'images', 'initial_state', 'kind', 'name', 'role', 'short_name']);
+    await expect(canvas.getByRole('textbox', { name: commonTexts.code })).toHaveValue('street_workshop');
+  }
+};
+
 export const SameViewImageLabels: Story = {
   tags: ['ci'],
   name: 'Изображения одного вида — подписи по заметке, без путей',

@@ -289,3 +289,34 @@ export const Revise: Story = {
     await expect(screen.getByTestId('scenario-drafts')).toHaveTextContent('Черновики сброшены');
   }
 };
+export const ReviseNoteReset: Story = {
+  name: 'Доработка M01 · отмена хранит черновик, запуск очищает замечание',
+  tags: ['ci'],
+  parameters: { songframe: scenarioWorkflowOptions('revise') },
+  play: async (context) => {
+    const screen = await ready(context);
+    const open = async () => {
+      await userEvent.click(screen.getByRole('button', { name: scenarioTexts.revise.title }));
+      return within(await screen.findByRole('dialog'));
+    };
+    // Отмена окна оставляет набранный текст черновиком до следующего открытия.
+    let dialog = await open();
+    await userEvent.type(dialog.getByRole('textbox', { name: scenarioTexts.revise.note }), 'Показать мокрую куртку.');
+    await userEvent.click(dialog.getByRole('button', { name: commonTexts.cancel }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    dialog = await open();
+    await expect(dialog.getByRole('textbox', { name: scenarioTexts.revise.note })).toHaveValue('Показать мокрую куртку.');
+    await userEvent.click(dialog.getByRole('button', { name: scenarioTexts.revise.prepare }));
+    await waitFor(() => expect(screen.getByTestId('scenario-counts')).toHaveTextContent('Запусков: 1.'));
+    await expect(screen.getByTestId('scenario-note')).toHaveTextContent('Отправленное замечание для M01: Показать мокрую куртку.');
+    // После готового предложения окно открывается пустым: случайное нажатие не повторит прежнюю доработку.
+    await userEvent.click(await screen.findByRole('button', { name: 'Завершить демонстрационное задание' }));
+    await screen.findByRole('button', { name: scenarioTexts.workflow.reviewProposal }, { timeout: 4000 });
+    await waitFor(() => expect(screen.getByRole('button', { name: scenarioTexts.revise.title })).toBeEnabled());
+    dialog = await open();
+    await expect(dialog.getByRole('textbox', { name: scenarioTexts.revise.note })).toHaveValue('');
+    await expect(dialog.getByRole('button', { name: scenarioTexts.revise.prepare })).toBeDisabled();
+    await userEvent.click(dialog.getByRole('button', { name: commonTexts.cancel }));
+    await expect(screen.getByTestId('scenario-counts')).toHaveTextContent('Запусков: 1.');
+  }
+};

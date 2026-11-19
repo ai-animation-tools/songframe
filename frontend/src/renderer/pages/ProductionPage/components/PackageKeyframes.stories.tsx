@@ -192,7 +192,11 @@ export const RemoveNote: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Снять замечание к K02' }));
     await canvas.findByText('Замечание снято и больше не учитывается.');
     await expect(canvas.queryByText('Сохранить куртку и направление света из утверждённой K01.')).not.toBeInTheDocument();
-    await expect(canvas.getByRole('textbox', { name: 'Что исправить в опоре K02' })).toHaveValue('Несохранённый черновик к текущей опоре.');
+    const note = canvas.getByRole('textbox', { name: 'Что исправить в опоре K02' });
+    await expect(note).toHaveValue('Несохранённый черновик к текущей опоре.');
+    // Пока черновик замечания не отправлен и не очищен, утверждение потеряло бы его.
+    await expect(canvas.getByRole('button', { name: 'Утвердить K02' })).toBeDisabled();
+    await userEvent.clear(note);
     await expect(canvas.getByRole('button', { name: 'Утвердить K02' })).toBeEnabled();
   }
 };

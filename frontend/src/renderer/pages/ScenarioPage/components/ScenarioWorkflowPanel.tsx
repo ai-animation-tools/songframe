@@ -283,11 +283,15 @@ export function ScenarioWorkflowPanel({
           onNote={setNote}
           onClose={() => setRevise(false)}
           onStart={() => {
-            if (!note.trim() || !reviseIds.length) return;
+            const text = note.trim();
+            if (!text || !reviseIds.length) return;
             setRevise(false);
             const issue = reviseIssue;
             setReviseIssue(undefined);
-            guard(() => workflow.start('revise', note.trim(), reviseIds, issue));
+            // Запущенное замечание не остаётся в поле: иначе следующее открытие окна сразу разрешило бы
+            // повторную доработку тем же текстом. Отмена окна, напротив, сохраняет текст как черновик.
+            setNote('');
+            guard(() => workflow.start('revise', text, reviseIds, issue));
           }}
         />
         {proposal && preview && (

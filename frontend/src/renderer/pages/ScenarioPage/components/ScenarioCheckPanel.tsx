@@ -1,7 +1,7 @@
 import { scenarioTexts } from '@shared/texts/scenario';
 import { commonTexts } from '@shared/texts/common';
 import { useEffect, useRef, useState, type ReactElement } from 'react';
-import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Button, Checkbox, Chip, Stack, Typography } from '@mui/material';
+import { Accordion, AccordionDetails, AccordionSummary, Alert, AlertTitle, Box, Button, Checkbox, Chip, Stack, Typography } from '@mui/material';
 import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import UndoIcon from '@mui/icons-material/Undo';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -16,6 +16,8 @@ import { ScenarioDraftConflictDialog } from './ScenarioDraftConflictDialog';
 import { ScenarioCheckFixDialog } from './ScenarioCheckFixDialog';
 import type { useScenarioCheck } from '../useScenarioCheck';
 import { useStoredNumber } from '../../../hooks/useStoredNumber';
+import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
+import { formatDateTime } from '../../../format';
 
 /** Сколько проблем видно до «Показать все»: отчёт не должен отодвигать редактор на несколько экранов. */
 const SHOWN_ISSUES = 5;
@@ -41,6 +43,14 @@ interface NumberedIssue {
 /** Проблема ещё в работе: правки не внесены и пользователь не отметил её решённой. */
 const unresolved = (issue: ScenarioCheckIssue): boolean => !issue.fixed && !issue.resolved;
 
+/**
+ * Отчёт разобран: в нём есть проблемы, и каждая исправлена или отмечена «Решено вручную». Состояние
+ * вычисляется из отметок отчёта, отдельного признака нет: снятие любой отметки возвращает обычный вид,
+ * а новая проверка приходит со своими нерешёнными проблемами.
+ */
+const isReviewed = (view: ScenarioCheckView | null): boolean =>
+  view?.status === 'ready' && !!view.report?.issues.length && !view.report.issues.some(unresolved);
+
 /** Проблему можно исправить кнопкой: у неё есть правки состояния и она ещё в работе. */
 const fixable = (issue: ScenarioCheckIssue): boolean => issue.changes.length > 0 && unresolved(issue);
 
@@ -57,7 +67,9 @@ const REPORT_OPEN_KEY = 'songframe.scenarioCheck.reportOpen';
  * окно с задетыми принятыми планами; остальные — доработка плана агентом с описанием проблемы в замечании.
  * Проблему без правок можно отметить «Решено вручную». Проверка и правки читают сохранённый сценарий,
  * поэтому при несохранённых правках страница сначала предлагает сохранить или отменить их — тем же
- * диалогом, что и проходы агента. Блок — Accordion, как «Общие правила и части»: в свёрнутом виде виден
+ * диалогом, что и проходы агента. «Все проблемы разобраны» ставит эту отметку у всех нерешённых проблем;
+ * разобранный отчёт вместе с предупреждением об устаревании сворачивается до строки с датой проверки и
+ * раскрывается по запросу, чтобы снять отметки по одной. Блок — Accordion, как «Общие правила и части»: в свёрнутом виде виден
  * заголовок со статусом; раскрывается он сам, когда проверка завершилась или пользователь перешёл к проблеме
  * из карточки плана.
  */
@@ -95,6 +107,9 @@ export function ScenarioCheckPanel({
   const [open, setOpen] = useState<number[]>([]);
   const [chosen, setChosen] = useState<number[]>([]);
   const [fixIssues, setFixIssues] = useState<number[] | null>(null);
+  const [confirmAll, setConfirmAll] = useState(false);
+  // Разобранный отчёт свёрнут до строки; раскрытие нужно, чтобы вернуть отдельную проблему в работу.
+  const [reviewedOpen, setReviewedOpen] = useState(false);
   const [storedOpen, setStoredOpen] = useStoredNumber(REPORT_OPEN_KEY, -1, (value) => value === 0 || value === 1);
   const rootRef = useRef<HTMLDivElement>(null);
   const { view, error, pending } = check;
@@ -112,8 +127,15 @@ export function ScenarioCheckPanel({
   const report = view?.report ?? null;
   const reportKey = report ? JSON.stringify(report.issues.map((issue) => [issue.title, issue.fixed, issue.resolved])) : '';
   const openCount = report?.issues.filter(unresolved).length ?? 0;
+  const reviewed = isReviewed(view);
+  // Дата берётся у задания проверки: отдельного времени отметок запись не хранит, а без задания строка обходится без даты.
+  const checkedAt = view?.job?.finishedAt ?? view?.job?.startedAt ?? null;
+  const resolveReason = pending || resolving ? commonTexts.operationPending : null;
   // Новый отчёт или внесённые правки снимают отметки: выбор относится к показанным проблемам.
   useEffect(() => setChosen([]), [reportKey]);
+  useEffect(() => {
+    if (!reviewed) setReviewedOpen(false);
+  }, [reviewed]);
   const withDrafts = (action: () => void): void => {
     if (scenesDirty) setAfterDrafts(() => action);
     else action();
@@ -145,6 +167,7 @@ export function ScenarioCheckPanel({
     const position = issuesRef.current.findIndex((item) => item.index === focus.index);
     if (position < 0) return;
     setStoredOpen(1);
+    setReviewedOpen(true);
     if (position >= SHOWN_ISSUES) setExpanded(true);
     setOpen((current) => (current.includes(focus.index) ? current : [...current, focus.index]));
     // Прокрутка после раскрытия: элемент появляется в DOM на следующей отрисовке.
@@ -169,7 +192,7 @@ export function ScenarioCheckPanel({
             <Typography variant="subtitle1" component="h2">
               {scenarioTexts.check.title}
             </Typography>
-            {view && <StatusChip view={view} />}
+            {view && <StatusChip view={view} reviewed={reviewed} />}
             {view?.stale && openCount > 0 && (
               <Typography variant="body2" color="text.secondary">
                 {scenarioTexts.check.openCount({ count: openCount })}
@@ -186,8 +209,21 @@ export function ScenarioCheckPanel({
               {scenarioTexts.check.description}
             </Typography>
             {view?.message && !running && <Alert severity={view.status === 'cancelled' ? 'info' : 'warning'}>{view.message}</Alert>}
-            {view?.stale && report && <Alert severity="warning">{scenarioTexts.check.stale}</Alert>}
-            {report && (
+            {view?.stale && report && !reviewed && <Alert severity="warning">{scenarioTexts.check.stale}</Alert>}
+            {reviewed && (
+              <Alert
+                severity="success"
+                action={
+                  <Button color="inherit" size="small" aria-expanded={reviewedOpen} onClick={() => setReviewedOpen((value) => !value)}>
+                    {reviewedOpen ? scenarioTexts.check.hideReport : scenarioTexts.check.showReport}
+                  </Button>
+                }
+              >
+                <AlertTitle>{scenarioTexts.check.reviewed({ date: checkedAt ? formatDateTime(checkedAt) : null })}</AlertTitle>
+                {scenarioTexts.check.reviewedHint}
+              </Alert>
+            )}
+            {report && (!reviewed || reviewedOpen) && (
               <Stack spacing={1}>
                 <Typography variant="body1">{report.summary}</Typography>
                 {!issues.length && <Alert severity="success">{scenarioTexts.check.clean}</Alert>}
@@ -208,7 +244,7 @@ export function ScenarioCheckPanel({
                       onOpenShot={onOpenShot}
                       onFix={() => withDrafts(() => setFixIssues([index]))}
                       onResolve={(resolved) => void check.resolve(index, resolved)}
-                      resolveReason={pending || resolving ? commonTexts.operationPending : null}
+                      resolveReason={resolveReason}
                       onRevise={() =>
                         withDrafts(() =>
                           onRevise(issue.shots, scenarioTexts.check.reviseNote({ title: issue.title, problem: issue.problem, fix: issue.fix }), index)
@@ -252,6 +288,18 @@ export function ScenarioCheckPanel({
                   {scenarioTexts.check.fixSelected({ count: selectable.length })}
                 </ActionButton>
               )}
+              {view?.status === 'ready' && openCount > 0 && (
+                <ActionButton
+                  variant="outlined"
+                  startIcon={<TaskAltIcon />}
+                  disabled={!!resolveReason}
+                  disabledReason={resolveReason}
+                  title={scenarioTexts.check.resolveAllHint}
+                  onClick={() => setConfirmAll(true)}
+                >
+                  {scenarioTexts.check.resolveAll}
+                </ActionButton>
+              )}
             </Stack>
           </Stack>
         </AccordionDetails>
@@ -261,6 +309,19 @@ export function ScenarioCheckPanel({
         busy={resolving || editorBusy}
         onResolve={(action) => void resolve(action)}
         onClose={() => setAfterDrafts(null)}
+      />
+      <ConfirmationDialog
+        open={confirmAll}
+        title={scenarioTexts.check.resolveAllTitle}
+        description={scenarioTexts.check.resolveAllDescription({ count: openCount })}
+        confirmLabel={scenarioTexts.check.resolveAllConfirm}
+        confirmIcon={<TaskAltIcon />}
+        onClose={() => setConfirmAll(false)}
+        onConfirm={() => {
+          setConfirmAll(false);
+          const issues = (report?.issues ?? []).flatMap((issue, index) => (unresolved(issue) ? [index] : []));
+          if (issues.length) void check.resolveAll(issues);
+        }}
       />
       <ScenarioCheckFixDialog
         issues={fixIssues}
@@ -278,8 +339,8 @@ export function ScenarioCheckPanel({
   );
 }
 
-/** Заметный статус последней проверки: устаревший отчёт важнее числа проблем. */
-function StatusChip({ view }: { view: ScenarioCheckView }): ReactElement {
+/** Заметный статус последней проверки: разобранный отчёт спокоен даже устаревшим, иначе устаревание важнее числа проблем. */
+function StatusChip({ view, reviewed }: { view: ScenarioCheckView; reviewed: boolean }): ReactElement {
   const count = view.report?.issues.filter(unresolved).length ?? 0;
   const high = view.report?.issues.some((issue) => issue.severity === 'high' && unresolved(issue));
   const [label, color] =
@@ -289,11 +350,13 @@ function StatusChip({ view }: { view: ScenarioCheckView }): ReactElement {
         ? [scenarioTexts.check.statusRunning, 'info' as const]
         : view.status !== 'ready'
           ? [scenarioTexts.check.statusFailed, 'warning' as const]
-          : view.stale
-            ? [scenarioTexts.check.statusStale, 'warning' as const]
-            : count
-              ? [scenarioTexts.check.statusIssues({ count }), high ? ('error' as const) : ('warning' as const)]
-              : [scenarioTexts.check.statusClean, 'success' as const];
+          : reviewed
+            ? [scenarioTexts.check.statusReviewed, 'success' as const]
+            : view.stale
+              ? [scenarioTexts.check.statusStale, 'warning' as const]
+              : count
+                ? [scenarioTexts.check.statusIssues({ count }), high ? ('error' as const) : ('warning' as const)]
+                : [scenarioTexts.check.statusClean, 'success' as const];
   return <Chip size="small" color={color} label={label} />;
 }
 

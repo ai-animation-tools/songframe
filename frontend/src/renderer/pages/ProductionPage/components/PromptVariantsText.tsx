@@ -2,10 +2,11 @@
  * Видеопромпт попытки или принятого комплекта. Если агент предложил к промпту на языке провайдера русский перевод,
  * оба текста показываются одним блоком с переключателем «Оригинал / Перевод»: заголовок и число символов относятся к
  * показанному варианту, отметка рядом говорит, какой вариант выбран к отправке или отправлен. Без перевода — обычный
- * текст пакета. Выбор варианта к отправке — отдельный PromptSendChoice на вопросе согласования.
+ * текст пакета. На согласовании переключатель и есть выбор отправки: родитель передаёт shown и onShownChange,
+ * а показанный вариант уходит в утверждение. В утверждённом промпте и принятом комплекте он только для просмотра.
  */
-import { useId, useState, type ReactElement, type ReactNode } from 'react';
-import { Box, Chip, FormControlLabel, FormLabel, Radio, RadioGroup, Stack, ToggleButton, ToggleButtonGroup } from '@mui/material';
+import { useState, type ReactElement, type ReactNode } from 'react';
+import { Box, Chip, Stack, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import { productionTexts } from '@shared/texts/production';
 import type { PromptVariant } from '@shared/types';
 import { PackageTextSection } from './PackageTextSection';
@@ -29,6 +30,7 @@ export function PromptVariantsText({
   variants,
   title,
   status,
+  statusHint,
   shown,
   onShownChange,
   maxHeight,
@@ -41,6 +43,8 @@ export function PromptVariantsText({
   title(characters: number): string;
   /** Отметка выбранного или отправленного варианта; без неё отметки нет. */
   status?: string;
+  /** Подсказка отметки: например, что показанный вариант уйдёт в запрос видео. */
+  statusHint?: string;
   /** Показанный вариант, если им управляет родитель; иначе блок помнит его сам, начиная с оригинала. */
   shown?: PromptVariant;
   onShownChange?(variant: PromptVariant): void;
@@ -76,35 +80,11 @@ export function PromptVariantsText({
               {texts.translation}
             </ToggleButton>
           </ToggleButtonGroup>
-          {status ? <Chip size="small" color="info" label={status} /> : null}
+          {status ? <Chip size="small" color="info" label={status} title={statusHint} /> : null}
         </Stack>
       ) : null}
       <PackageTextSection title={title(visible.length)} text={visible} maxHeight={maxHeight} />
       {children}
     </Box>
-  );
-}
-
-/** Выбор варианта видеопромпта к отправке при утверждении: оригинал (по умолчанию) или перевод. */
-export function PromptSendChoice({
-  value,
-  disabled = false,
-  onChange
-}: {
-  value: PromptVariant;
-  disabled?: boolean;
-  onChange(variant: PromptVariant): void;
-}): ReactElement {
-  const labelId = useId();
-  return (
-    <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', flexWrap: 'wrap' }} title={texts.sendHint}>
-      <FormLabel id={labelId} sx={{ color: 'text.primary', typography: 'body2' }}>
-        {texts.send}
-      </FormLabel>
-      <RadioGroup row aria-labelledby={labelId} value={value} onChange={(event) => onChange(event.target.value as PromptVariant)}>
-        <FormControlLabel value="original" disabled={disabled} control={<Radio size="small" />} label={texts.sendOriginal} />
-        <FormControlLabel value="translation" disabled={disabled} control={<Radio size="small" />} label={texts.sendTranslation} />
-      </RadioGroup>
-    </Stack>
   );
 }

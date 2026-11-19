@@ -3,7 +3,7 @@ import { productionTexts } from '@shared/texts/production';
  * Вопрос пакета и варианты ответа; ответ сразу выполняет приложение. На вопросе «Отправить» доработка
  * подготовленного запроса — «Изменить» (onChangeRequest): окно выбора модели и параметров, без агента.
  */
-import { useState, type ReactElement, type ReactNode } from 'react';
+import { useState, type ReactElement } from 'react';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EditIcon from '@mui/icons-material/Edit';
 import SendIcon from '@mui/icons-material/Send';
@@ -43,8 +43,7 @@ export function PackageDecision({
   onChangeRequest,
   verdictReasons,
   suggestedNote,
-  onDecide,
-  children
+  onDecide
 }: {
   pending: PackageView['pendingDecision'];
   aiKind: AiActionKind;
@@ -64,8 +63,6 @@ export function PackageDecision({
   suggestedNote?: string;
   /** Для вопроса об опоре передаётся охват замечания: только эта опора или и следующие. */
   onDecide(verdict: string, noteScope?: KeyframeNoteScope): void;
-  /** Выбор, уточняющий ответ, над кнопками: например, какой вариант видеопромпта отправить. */
-  children?: ReactNode;
 }): ReactElement {
   const { aiAccess } = useApp();
   const problem = aiActionProblem(aiAccess, aiKind);
@@ -79,6 +76,9 @@ export function PackageDecision({
   // Поле замечания открывается «Доработать…»: пока решение не про доработку, оно только мешает.
   const [revisingKey, setRevisingKey] = useState<string | null>(null);
   const revising = !onChangeRequest && (revisingKey === questionKey || !!note.trim());
+  // Введённое замечание теряется при другом ответе: пока оно есть, отвечать можно только доработкой.
+  // Сборка пробы стыков вопрос не закрывает и замечание не трогает.
+  const noteFilled = revising && !!note.trim();
   const label = (verdict: string): string =>
     frame && verdict === 'approve'
       ? productionTexts.packageDecision.approve({ frame })
@@ -106,7 +106,6 @@ export function PackageDecision({
               {productionTexts.packageDecision.workflowHint}
             </Typography>
           )}
-          {children ? <Box sx={{ mb: 1 }}>{children}</Box> : null}
           {options.includes('revise') && revising ? (
             <TextField
               size="small"
@@ -132,17 +131,20 @@ export function PackageDecision({
             {options.map((verdict) => {
               const paid = ['send', 'retry'].includes(verdict);
               const reason = paid ? problem : (verdictReasons?.[verdict] ?? null);
+              const noteBlocks = noteFilled && verdict !== 'revise' && verdict !== 'review';
               const disabledReason =
                 reason ??
                 (busy
                   ? busyReason
                   : sendingBlocked && paid
                     ? productionTexts.packageDecision.submissionUnknown
-                    : verdict === 'revise' && revising && !note.trim()
-                      ? frame
-                        ? productionTexts.packageDecision.frameNoteRequired({ frame })
-                        : productionTexts.packageDecision.noteRequired
-                      : null);
+                    : noteBlocks
+                      ? productionTexts.packageDecision.noteFilled
+                      : verdict === 'revise' && revising && !note.trim()
+                        ? frame
+                          ? productionTexts.packageDecision.frameNoteRequired({ frame })
+                          : productionTexts.packageDecision.noteRequired
+                        : null);
               if (verdict === 'revise' && onChangeRequest)
                 return (
                   <ActionButton
@@ -179,7 +181,13 @@ export function PackageDecision({
                   size="small"
                   variant={verdict === options[0] ? 'contained' : 'outlined'}
                   color={VERDICT_LABELS[verdict]?.color ?? 'inherit'}
-                  disabled={!!reason || busy || (sendingBlocked && ['send', 'retry'].includes(verdict)) || (verdict === 'revise' && revising && !note.trim())}
+                  disabled={
+                    !!reason ||
+                    busy ||
+                    noteBlocks ||
+                    (sendingBlocked && ['send', 'retry'].includes(verdict)) ||
+                    (verdict === 'revise' && revising && !note.trim())
+                  }
                   onClick={() => {
                     if (verdict !== 'revise' || revising) return onDecide(verdict, frame && verdict === 'revise' ? scope : undefined);
                     setRevisingKey(questionKey);

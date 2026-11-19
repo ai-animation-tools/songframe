@@ -76,7 +76,9 @@ describe('Замечание при согласовании пакета', () =
     });
     expect(html).not.toContain('внешн');
     expect(html).toContain('камера медленно приближается к герою');
-    expect(button(html, 'Принять')).not.toContain('disabled=""');
+    // Введённое замечание потерялось бы при принятии: пока оно есть, принять нельзя.
+    expect(button(html, 'Принять')).toContain('disabled=""');
+    expect(button(html, 'Принять')).toContain('Сначала отправьте или очистите замечание.');
   });
 
   it('не просит замечание, если возврата нет среди ответов', () => {
@@ -105,7 +107,8 @@ describe('Замечание при согласовании пакета', () =
     expect(html).toContain('Что исправить в опоре K02');
     expect(html).toContain('Учесть и для следующих опор');
     expect(html).toMatch(/<input[^>]*type="checkbox"[^>]*checked=""/);
-    expect(button(html, 'Утвердить K02')).not.toContain('disabled=""');
+    expect(button(html, 'Утвердить K02')).toContain('disabled=""');
+    expect(button(empty, 'Утвердить K02')).not.toContain('disabled=""');
     expect(html).not.toContain('Запустить доработку с агентом');
   });
 });

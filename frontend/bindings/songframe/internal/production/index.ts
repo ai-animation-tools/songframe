@@ -3,6 +3,7 @@
 
 export type {
     AcceptOptions,
+    AcceptedImage,
     AcceptedKit,
     AcceptedSpeech,
     Asset,

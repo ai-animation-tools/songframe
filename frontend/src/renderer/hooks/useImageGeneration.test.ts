@@ -153,6 +153,7 @@ describe('жизненный цикл генерации референса', ()
     );
     const submitting = RenderHook().generate({ approvalToken: 'token', promptConfirmed: true });
     expect(RenderHook().invalidate()).toBe(false);
+    expect(RenderHook().editPrompt()).toBe(false);
     finish(ready);
     await submitting;
     await RenderHook().accept(null, async () => {
@@ -160,6 +161,7 @@ describe('жизненный цикл генерации референса', ()
     });
     expect(RenderHook().attachmentPending).toBe(true);
     expect(RenderHook().invalidate()).toBe(false);
+    expect(RenderHook().editPrompt()).toBe(false);
     expect(api.close).not.toHaveBeenCalled();
   });
 
@@ -179,6 +181,48 @@ describe('жизненный цикл генерации референса', ()
     expect(api.prepare.mock.calls).toEqual([['reference-session'], ['reference-session']]);
     expect(RenderHook('reference').session).toEqual(snapshot);
     expect(api.generate).not.toHaveBeenCalled();
+  });
+
+  it('правка текста после результата сохраняет кандидата; «Ещё» с новым текстом создаёт сессию с теми же опорами без отправки', async () => {
+    const input = { images: [{ path: '/uploads/hero.png', label: 'Анфас' }] };
+    await RenderHook('reference', input).start('Герой <&>');
+    await RenderHook('reference', input).generate({ approvalToken: 'token', promptConfirmed: true });
+    const current = RenderHook('reference', input);
+    expect(current.promptChanged('Герой <&>')).toBe(false);
+    expect(current.promptChanged('Герой в профиль')).toBe(true);
+    expect(current.editPrompt()).toBe(true);
+    expect(RenderHook('reference', input).session?.image).toEqual(ready.image);
+    expect(RenderHook('reference', input).preparedSha).toBeNull();
+    expect(api.close).not.toHaveBeenCalled();
+
+    // Без правки «Ещё» готовит прежнюю сессию; её новая оценка тоже требует отдельного согласия.
+    api.prepare.mockResolvedValueOnce({ ...ready, requestSha: 'repeat-sha', approvalToken: 'repeat-token' });
+    await RenderHook('reference', input).next('Герой <&>');
+    expect(api.create).toHaveBeenCalledTimes(1);
+    expect(api.prepare).toHaveBeenLastCalledWith('reference-session');
+
+    const edited = { ...prepared, id: 'edited-session', prompt: 'Герой в профиль', requestSha: 'edited-sha', approvalToken: 'edited-token' };
+    api.create.mockResolvedValueOnce({ ...edited, requestSha: null, approvalToken: null });
+    api.prepare.mockResolvedValueOnce(edited);
+    await expect(RenderHook('reference', input).next('Герой в профиль')).resolves.toEqual(edited);
+    expect(api.close).toHaveBeenCalledExactlyOnceWith('reference-session');
+    expect(api.create).toHaveBeenLastCalledWith('/project', 'Герой в профиль', input);
+    expect(api.prepare).toHaveBeenLastCalledWith('edited-session');
+    expect(RenderHook('reference', input).session).toEqual(edited);
+    expect(RenderHook('reference', input).promptChanged('Герой в профиль')).toBe(false);
+    // Подготовка новой попытки ничего не отправляет, а токены прежней сессии к ней не подходят.
+    expect(api.generate).toHaveBeenCalledTimes(1);
+    await RenderHook('reference', input).generate({ approvalToken: 'repeat-token', promptConfirmed: true });
+    expect(api.generate).toHaveBeenCalledTimes(1);
+    await RenderHook('reference', input).generate({ approvalToken: 'edited-token', promptConfirmed: true });
+    expect(api.generate).toHaveBeenLastCalledWith('edited-session', 'edited-sha', { approvalToken: 'edited-token', promptConfirmed: true });
+  });
+
+  it('обложка сравнивает текст без краевых пробелов, как он уходит в запрос', async () => {
+    await RenderHook('cover').start('  Обложка  ');
+    expect(api.create).toHaveBeenCalledExactlyOnceWith('/project', 'Обложка', { images: [] });
+    expect(RenderHook('cover').promptChanged('Обложка\n')).toBe(false);
+    expect(RenderHook('cover').promptChanged('Новая обложка')).toBe(true);
   });
 
   it('обложка передаёт выбранные опоры и снимает подготовку при изменении выбора', async () => {

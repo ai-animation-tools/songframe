@@ -586,6 +586,108 @@ export const ReferenceCandidateEdit: Story = {
     await expect(imageStoryInspection().generations).toBe(1);
   }
 };
+/** Кнопка следующей попытки; после подготовки цена входит в её доступное имя. */
+const moreButton = (screen: ReturnType<typeof screenOf>) =>
+  screen.getByRole<HTMLButtonElement>('button', { name: (name) => name === sourcesTexts.more || name.startsWith(`${sourcesTexts.more} · `) });
+
+export const ReferenceRetryEditedPrompt: Story = {
+  tags: ['ci'],
+  name: 'Референс — «Ещё» с исправленным промптом: те же опоры и новая оценка',
+  args: { mode: 'reference' },
+  play: async (context) => {
+    const screen = screenOf(context);
+    // Своя опора прикрепляется один раз до первой попытки и должна дожить до следующей.
+    await expandReferenceSection(screen, sourcesTexts.referenceSupports);
+    await userEvent.click(screen.getByRole('button', { name: (name) => name.startsWith(sourcesTexts.additionalSupports) }));
+    const upload = sourcesTexts.additionalSupportLabel({ name: 'extra-story-image.png' });
+    await expect(await screen.findByRole('checkbox', { name: sourcesTexts.referenceUseImage({ label: upload }) })).toBeChecked();
+    await candidate(context);
+    const first = imageStoryInspection().creates[0];
+    const oldSession = imageStoryInspection().sessions[0];
+    await expect(first.input?.images.map((image) => image.path)).toContain(IMAGE_STORY_UPLOAD);
+
+    // Без правки «Ещё» готовит ту же сессию с прежним текстом.
+    await userEvent.click(moreButton(screen));
+    let confirmation = await screen.findByRole('dialog', { name: sourcesTexts.confirmPromptTitle });
+    await expect(within(confirmation).getByRole('textbox', { name: sourcesTexts.confirmedPrompt })).toHaveValue(oldSession.prompt);
+    await expect(imageStoryInspection().creates).toHaveLength(1);
+    await userEvent.click(within(confirmation).getByRole('button', { name: commonTexts.cancel }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: sourcesTexts.confirmPromptTitle })).not.toBeInTheDocument());
+
+    // Правка после результата оставляет кандидата, но снимает подготовленную цену прежней сессии.
+    const prompt = await screen.findByRole<HTMLTextAreaElement>('textbox', { name: sourcesTexts.referenceImagePrompt });
+    const addition = ' Взгляд на дверь мастерской.';
+    const edited = `${prompt.value}${addition}`;
+    await userEvent.type(prompt, addition);
+    await expect(prompt).toHaveValue(edited);
+    await expect(prompt).toHaveFocus();
+    await expect(screen.getByText(sourcesTexts.retryPromptChanged)).toBeInTheDocument();
+    await expect(screen.getByRole('img', { name: IMAGE_STORY_TARGET })).toBeInTheDocument();
+    await expect(screen.getByRole('button', { name: sourcesTexts.accept })).toBeEnabled();
+    await expect(moreButton(screen)).toHaveAccessibleName(sourcesTexts.more);
+    await expect(screen.queryByText(sourcesTexts.requestSha({ sha: '' }).trim(), { exact: false })).not.toBeInTheDocument();
+    await expect(imageStoryInspection().closes).toEqual([]);
+
+    // «Ещё» с новым текстом создаёт новую сессию с теми же опорами и ждёт отдельного подтверждения.
+    await userEvent.click(moreButton(screen));
+    confirmation = await screen.findByRole('dialog', { name: sourcesTexts.confirmPromptTitle });
+    await expect(within(confirmation).getByRole('textbox', { name: sourcesTexts.confirmedPrompt })).toHaveValue(edited);
+    await expect(within(confirmation).getAllByText(upload, { exact: false }).length).toBeGreaterThan(0);
+    const retry = imageStoryInspection().creates[1];
+    await expect(retry.prompt).toBe(edited);
+    await expect(retry.input).toEqual(first.input);
+    await expect(imageStoryInspection().closes).toEqual([oldSession.id]);
+    await expect(imageStoryInspection().generations).toBe(1);
+    await userEvent.click(within(confirmation).getByRole('button', { name: sourcesTexts.generateReferenceImage }));
+    await waitFor(() => expect(screen.getByRole('button', { name: sourcesTexts.accept })).toBeEnabled());
+    await expect(imageStoryInspection().generations).toBe(2);
+    await expect(screen.queryByText(sourcesTexts.retryPromptChanged)).not.toBeInTheDocument();
+  }
+};
+export const ReferenceRetryEditedUnknownPrice: Story = {
+  tags: ['ci'],
+  name: 'Референс — согласие с неизвестной ценой не переходит на «Ещё» с новым промптом',
+  args: { mode: 'reference' },
+  parameters: { songframe: imageStoryOptions({ quote: 'unknown' }) },
+  play: async (context) => {
+    const screen = screenOf(context);
+    await prepare(context);
+    await userEvent.click(await screen.findByRole('button', { name: sourcesTexts.agree }));
+    await prepare(context);
+    const confirmation = await screen.findByRole('dialog', { name: sourcesTexts.confirmPromptTitle });
+    await userEvent.click(within(confirmation).getByRole('button', { name: sourcesTexts.generateReferenceImage }));
+    await waitFor(() => expect(screen.getByRole('button', { name: sourcesTexts.accept })).toBeEnabled());
+    const prompt = await screen.findByRole('textbox', { name: sourcesTexts.referenceImagePrompt });
+    await userEvent.type(prompt, ' Общий план улицы.');
+    await userEvent.click(moreButton(screen));
+    // Новая сессия получила свою оценку: без нового «Я согласен» подтверждение не открывается.
+    await expect(await screen.findByRole('button', { name: sourcesTexts.agree })).toBeEnabled();
+    await expect(screen.queryByRole('dialog', { name: sourcesTexts.confirmPromptTitle })).not.toBeInTheDocument();
+    await expect(screen.getByRole('button', { name: sourcesTexts.generateReferenceImage })).toBeDisabled();
+    await expect(imageStoryInspection().creates).toHaveLength(2);
+    await expect(imageStoryInspection().generations).toBe(1);
+  }
+};
+export const CoverRetryEditedPrompt: Story = {
+  tags: ['ci'],
+  name: 'Обложка — промпт после результата меняется для «Ещё»',
+  play: async (context) => {
+    const screen = screenOf(context);
+    await candidate(context);
+    const prompt = screen.getByRole('textbox', { name: sourcesTexts.coverPrompt });
+    await expect(prompt).not.toHaveAttribute('readonly');
+    const edited = 'Ворота на закате, крупный план.';
+    await userEvent.clear(prompt);
+    await userEvent.type(prompt, edited);
+    await expect(screen.getByText(sourcesTexts.retryPromptChanged)).toBeInTheDocument();
+    await expect(screen.getByRole('img', { name: sourcesTexts.createdCoverAlt })).toBeInTheDocument();
+    await userEvent.click(moreButton(screen));
+    const confirmation = await screen.findByRole('dialog', { name: sourcesTexts.confirmPromptTitle });
+    await expect(within(confirmation).getByRole('textbox', { name: sourcesTexts.confirmedPrompt })).toHaveValue(edited);
+    await expect(imageStoryInspection().creates.map((create) => create.prompt)).toEqual([IMAGE_STORY_PROMPT, edited]);
+    await expect(imageStoryInspection().generations).toBe(1);
+  }
+};
 export const GenerationFailure: Story = {
   name: 'Сбой генерации — новая попытка по действию',
   parameters: { songframe: imageStoryOptions({ failGenerationOnce: true }) },

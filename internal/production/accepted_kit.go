@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"songframe/internal/dynvalue"
 	"songframe/internal/spend"
@@ -32,9 +33,16 @@ type AcceptedKit struct {
 	// prompt_original); без второго варианта поля нет.
 	PromptVariants *PromptVariants `json:"promptVariants,omitempty"`
 	// Images — изображения, переданные в генерацию (опоры), в порядке входов.
-	Images []string `json:"images"`
+	Images []AcceptedImage `json:"images"`
 	// Speech — срез речи речевого плана; null без него.
 	Speech *AcceptedSpeech `json:"speech"`
+}
+
+// AcceptedImage — опора принятого комплекта: путь к файлу и роль входа так, как она записана
+// в манифесте (generation.inputs[].role, например «Первый кадр»); nil, если роль не записана.
+type AcceptedImage struct {
+	Path string  `json:"path"`
+	Role *string `json:"role"`
 }
 
 // AcceptedSpeech — WAV среза речи комплекта и его границы в песне из audio-recipe.json
@@ -60,7 +68,7 @@ func AcceptedKitFor(project, shot string) (*AcceptedKit, error) {
 	if !dynvalue.IsRecord(generation) {
 		return nil, nil
 	}
-	kit := &AcceptedKit{Images: []string{}, OwnVideo: dynvalue.StrictEqual(dynvalue.Get(generation, "own_video"), true)}
+	kit := &AcceptedKit{Images: []AcceptedImage{}, OwnVideo: dynvalue.StrictEqual(dynvalue.Get(generation, "own_video"), true)}
 	if path, err := existingAssetFile(dir, dynvalue.GetPath(generation, "request", "path")); err != nil {
 		return nil, err
 	} else if path != nil {
@@ -90,15 +98,22 @@ func AcceptedKitFor(project, shot string) (*AcceptedKit, error) {
 	}
 	inputs, _ := dynvalue.AsArray(dynvalue.Get(generation, "inputs"))
 	for _, input := range inputs {
-		if dynvalue.Get(input, "slot") != "image" {
+		// Имена слотов изображений задаёт провайдер (image, first_image, tail_image…), поэтому
+		// опору отличают от звукового и других входов по типу файла, а не по слоту.
+		name, _ := dynvalue.Get(input, "path").(string)
+		if !isImageFile(name) {
 			continue
 		}
-		path, err := existingAssetFile(dir, dynvalue.Get(input, "path"))
+		path, err := existingAssetFile(dir, name)
 		if err != nil {
 			return nil, err
 		}
 		if path != nil {
-			kit.Images = append(kit.Images, *path)
+			image := AcceptedImage{Path: *path}
+			if role, ok := dynvalue.Get(input, "role").(string); ok && role != "" {
+				image.Role = &role
+			}
+			kit.Images = append(kit.Images, image)
 		}
 	}
 	if path, err := existingAssetFile(dir, dynvalue.GetPath(generation, "audio", "path")); err != nil {
@@ -164,4 +179,13 @@ func acceptedPromptVariants(dir string, generation any, sent string) (*PromptVar
 		return &PromptVariants{Original: string(data), Translation: sent, Selected: "translation"}, nil
 	}
 	return nil, nil
+}
+
+// isImageFile — вход комплекта является изображением-опорой по расширению файла.
+func isImageFile(name string) bool {
+	switch strings.ToLower(filepath.Ext(name)) {
+	case ".png", ".jpg", ".jpeg", ".webp":
+		return true
+	}
+	return false
 }

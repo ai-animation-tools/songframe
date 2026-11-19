@@ -20,7 +20,7 @@ import { createDerivedScenario } from './derivedStories';
 import { fragmentModel } from './fragmentStories';
 import { keyframePackage, keyframeQuestion } from './keyframeStories';
 import { productionShot } from './productionQueueStories';
-import { workflowProposal, workflowView } from './productionWorkflowStories';
+import { workflowAgentJob, workflowProposal, workflowView } from './productionWorkflowStories';
 import { reviewView } from './videoReviewStories';
 import { createStoryApi, STORY_IMAGE_PATH, STORY_VIDEO_PATH, type StoryOptions } from './storybook';
 import { createSpendModel } from './spendStories';
@@ -93,6 +93,8 @@ export interface ProductionPageModelOptions {
   acceptedKit?: (shot: string) => AcceptedKit | null;
   /** Расход плана (production.spend); без модели — отправок нет и блок «Расход» не показывается. */
   spend?: (shot: string) => ShotSpend | null;
+  /** Создание опоры оставляет задание агента идущим: вид попытки показывает идущее предложение опор и задание. */
+  frameJob?: boolean;
   /** Поля вида прохода агента поверх вычисленных моделью: задание, предложение, доступная доработка. */
   workflowView?: (shot: string, packageDir: string | undefined) => Partial<ProductionWorkflowView>;
 }
@@ -129,6 +131,8 @@ interface PageModel {
   requestBuilds: string[];
   /** Варианты видеопромпта, утверждённые к отправке (production.decide с promptVariant), по порядку. */
   promptVariants: string[];
+  /** Папки, открытые в файловом менеджере (shell.openPath), по порядку. */
+  openedPaths: string[];
   subscribe(listener: () => void): () => void;
   revision(): number;
 }
@@ -199,6 +203,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
         methodChanges: [],
         requestBuilds: [],
         promptVariants: [],
+        openedPaths: [],
         subscribe(listener) {
           listeners.add(listener);
           return () => {
@@ -270,6 +275,8 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
       const ownFramePrompts = new Map<string, ProductionFramePrompt[]>();
       // Свой файл опоры становится предложением только на время между импортом и применением.
       const frameImports = new Map<string, ProductionProposal>();
+      // Попытки с идущим заданием на опору (options.frameJob): задание не завершается, пока история открыта.
+      const frameJobs = new Set<string>();
       const workflowSnapshot = (project: string, shot: string, packageDir: string | undefined) => {
         checked(project);
         const pkg = model.view.shots.flatMap((item) => item.packages).find((item) => item.dir === packageDir);
@@ -311,7 +318,10 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
           canGenerateFrames: !!nextFrame,
           nextFrame,
           framePrompts: (packageDir && ownFramePrompts.get(packageDir)) || [],
-          proposal: (packageDir && frameImports.get(packageDir)) || null,
+          proposal:
+            (packageDir && frameImports.get(packageDir)) ||
+            (packageDir && frameJobs.has(packageDir) ? workflowProposal('frames', { status: 'running', after: null }) : null),
+          job: packageDir && frameJobs.has(packageDir) ? workflowAgentJob({ id: 'job-frames-1', task: `Создание опоры ${shot}` }) : null,
           reasons: packageDir
             ? {
                 prepare: null,
@@ -669,6 +679,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
           generateFrames: async (project, shot, dir) => {
             find(project, dir);
             model.frameRuns++;
+            if (options.frameJob) frameJobs.add(dir);
             publish();
             return workflowSnapshot(project, shot, dir);
           },
@@ -864,7 +875,13 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
             request?.filters?.some((filter) => filter.extensions.includes('mp4')) || options.manual || manualMethods.size ? STORY_VIDEO_PATH : STORY_IMAGE_PATH
           ]
         },
-        shell: { openPath: async () => undefined, fileUrl: fragment.overrides.shell.fileUrl },
+        shell: {
+          openPath: async (path) => {
+            model.openedPaths.push(path);
+            publish();
+          },
+          fileUrl: fragment.overrides.shell.fileUrl
+        },
         derivedShots: derived.api.derivedShots
       });
       models.set(session.api, model);
@@ -933,7 +950,7 @@ export function ProductionPageStory({ links = [] }: { links?: StoryLink[] }): Re
             . Своих видео: {model.ownVideos}. Входов своих видео: {model.ownVideoGenerations.join('; ') || 'нет'}. Возвратов промпта:{' '}
             {model.promptReopens.join(', ') || 'нет'}. Своих описаний: {model.ownSaves.join(', ') || 'нет'}. Способов генерации:{' '}
             {model.methodChanges.join(', ') || 'нет'}. Запросов приложения: {model.requestBuilds.join(', ') || 'нет'}. Вариантов промпта к отправке:{' '}
-            {model.promptVariants.join(', ') || 'нет'}.
+            {model.promptVariants.join(', ') || 'нет'}. Открытых папок: {model.openedPaths.join(', ') || 'нет'}.
           </Typography>
           <Typography variant="caption" color="text.secondary" data-testid="production-review-model">
             Проверок видео: {model.reviewStarts}. Отмен проверок: {model.reviewCancels}.

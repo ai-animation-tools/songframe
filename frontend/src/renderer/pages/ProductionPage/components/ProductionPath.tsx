@@ -27,7 +27,7 @@ import { PackageResume } from './PackageResume';
 import { PackageTextSection } from './PackageTextSection';
 import { PromptLimitAlert } from './PromptLimitAlert';
 import { PromptReopenDialog } from './PromptReopenDialog';
-import { PromptSendChoice, PromptVariantsText, promptVariantText } from './PromptVariantsText';
+import { PromptVariantsText, promptVariantText } from './PromptVariantsText';
 import { RequestChangeDialog } from './RequestChangeDialog';
 import { ActionButton } from '../../../components/ActionButton';
 import { promptOverLimit } from '../promptLimit';
@@ -174,9 +174,15 @@ export function ProductionPath({
       : sendChoice.key === variantsKey
         ? sendChoice.variant
         : 'original';
-  // Показанный вариант: по умолчанию — выбранный к отправке, новый выбор отправки показывает свой текст.
+  // Пока промпт не утверждён, показанный вариант и есть выбранный к отправке: переключатель меняет оба.
+  // Утверждённый промпт переключается только для просмотра, отправляемым остаётся сохранённый вариант.
   const [shownChoice, setShownChoice] = useState<{ key: string; variant: PromptVariant } | null>(null);
-  const shownVariant = shownChoice?.key === variantsKey ? shownChoice.variant : sendVariant;
+  const promptApproved = !!pkg?.prompt?.approved;
+  const shownVariant = !promptApproved ? sendVariant : shownChoice?.key === variantsKey ? shownChoice.variant : sendVariant;
+  const showVariant = (variant: PromptVariant): void => {
+    if (promptApproved) setShownChoice({ key: variantsKey, variant });
+    else setSendChoice({ key: variantsKey, variant });
+  };
   // Промпт на согласовании длиннее предела провайдера: утвердить нельзя, только вернуть агенту. Предел — для выбранного варианта.
   const overLimit =
     pkg?.prompt && !pkg.prompt.approved ? promptOverLimit(promptVariantText(pkg.prompt.text, variants, sendVariant), view?.promptMaxChars) : null;
@@ -352,18 +358,7 @@ export function ProductionPath({
           const promptVariant = shown.stage === 'prompt_review' && verdict === 'approve' && variants ? sendVariant : undefined;
           onDecide(verdict, scope, agentRevision ? () => workflow.start('revise', text).then(() => undefined) : undefined, promptVariant);
         }}
-      >
-        {shown.stage === 'prompt_review' && variants && !pkg.prompt?.approved ? (
-          <PromptSendChoice
-            value={sendVariant}
-            disabled={blocked}
-            onChange={(variant) => {
-              setSendChoice({ key: variantsKey, variant });
-              setShownChoice({ key: variantsKey, variant });
-            }}
-          />
-        ) : null}
-      </PackageDecision>
+      />
     );
   };
 
@@ -393,6 +388,12 @@ export function ProductionPath({
         </Typography>
       </Stack>
     ) : null;
+
+  // Опора этой попытки создаётся: задание агента на опору (вид Go относится к выбранной попытке) или запрос
+  // изображения у провайдера в пути. Общая занятость view.busy сюда не годится: она учитывает любые задания проекта.
+  const frameRunning =
+    (view?.proposal?.stage === 'frames' && (view.proposal.status === 'running' || view.job?.status === 'running')) ||
+    (receiving && pkg?.request?.kind === 'image' && REQUEST_IN_FLIGHT.includes(attemptStatus));
 
   // Почему опору нельзя создать или поставить: одна подпись на шаг, а не под каждой опорой.
   const framesReason =
@@ -482,8 +483,9 @@ export function ProductionPath({
                 variants={variants}
                 title={(characters) => productionTexts.packageCard.promptTitle({ approved: !!pkg.prompt?.approved, characters })}
                 status={variants ? productionTexts.promptVariants.selected({ translation: sendVariant === 'translation' }) : undefined}
+                statusHint={variants && !promptApproved ? productionTexts.promptVariants.sendHint : undefined}
                 shown={shownVariant}
-                onShownChange={(variant) => setShownChoice({ key: variantsKey, variant })}
+                onShownChange={showVariant}
                 maxHeight={220}
               />
             ) : null}
@@ -639,7 +641,14 @@ export function ProductionPath({
         />
       ) : null}
       {pkg ? (
-        <PackageNotices pkg={pkg} busy={blocked} busyReason={busyReason} onKeepForScene={onKeepForScene} onOpenRevision={() => setReviseOpen(true)} />
+        <PackageNotices
+          pkg={pkg}
+          busy={blocked}
+          busyReason={busyReason}
+          frameRunning={frameRunning}
+          onKeepForScene={onKeepForScene}
+          onOpenRevision={() => setReviseOpen(true)}
+        />
       ) : null}
       {/* Приёмка удалила пакет попытки: шаги считались бы по пустоте, поэтому показывается принятый комплект. */}
       {!pkg && shot.asset && !newAttempt ? (

@@ -82,6 +82,16 @@ describe('Продолжение после возврата пакета', () =
     expect(render(fixture(overrides))).toBe('');
   });
 
+  it('возврат опоры: совет создать её заново скрыт, пока опора уже создаётся', () => {
+    const frame = fixture({ stage: 'keyframes_review', decision: { stage: 'keyframes_review', verdict: 'revise', note } });
+    const shown = renderToStaticMarkup(createElement(PackageRevisionNotice, { pkg: frame, onOpenRevision: vi.fn() }));
+    expect(shown).toContain('Опора возвращена на доработку');
+    expect(shown).toContain('Доработать описание');
+    expect(renderToStaticMarkup(createElement(PackageRevisionNotice, { pkg: frame, frameRunning: true, onOpenRevision: vi.fn() }))).toBe('');
+    // Возврат других материалов от задания опоры не зависит.
+    expect(renderToStaticMarkup(createElement(PackageRevisionNotice, { pkg: fixture(), frameRunning: true }))).toContain(note.split('\n')[0]);
+  });
+
   it('в карточке показывает сохранённый возврат без дублирования последнего ответа', () => {
     const html = renderToStaticMarkup(createElement(PackageNotices, { pkg: fixture(), busy: false, onKeepForScene: vi.fn(), onOpenRevision: vi.fn() }));
     expect(html).toContain(note);

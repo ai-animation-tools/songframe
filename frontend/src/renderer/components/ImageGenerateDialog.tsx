@@ -100,11 +100,22 @@ export function ImageGenerateDialog({
   const prompt = reference ? composer.prompt : coverPrompt;
   const selectedInput = supports.input;
   const [crop, setCrop] = useState<CoverCrop | null>(null);
-  const { session, working, accepting, attachmentPending, error, preparedSha, start, next, refreshQuote, generate, accept, invalidate } = useImageGeneration(
-    project,
-    mode,
-    selectedInput
-  );
+  const {
+    session,
+    working,
+    accepting,
+    attachmentPending,
+    error,
+    preparedSha,
+    start,
+    next,
+    refreshQuote,
+    generate,
+    accept,
+    invalidate,
+    editPrompt,
+    promptChanged
+  } = useImageGeneration(project, mode, selectedInput);
   const [gallery, setGallery] = useState<{ key: string; index: number; images: { imagePath: string; label: string }[] } | null>(null);
   // При ответе create галерея старого набора закрывается до обновления внутреннего индекса.
   const galleryKey = JSON.stringify({ session: session?.id ?? null, images: referenceOptions });
@@ -128,12 +139,29 @@ export function ImageGenerateDialog({
   }, [reference, imagePath, width, height]);
 
   const generating = session?.status === 'generating';
+  // После готового или неудачного результата сессия остаётся «попыткой»: её текст можно поправить для «Ещё».
+  const attempted = session?.status === 'ready' || session?.status === 'failed';
   const editingBlocked = working || generating || accepting || attachmentPending;
+  const editedAfterAttempt = attempted && promptChanged(prompt);
   const changeReference = (action: () => void): void => {
     if (editingBlocked || !invalidate()) return;
     setConfirmation(null);
     setAgreedToken(null);
     setGallery(null);
+    action();
+  };
+  /**
+   * Правка только текста. До первой попытки она сбрасывает запрос целиком, как смена опор. После попытки
+   * кандидат остаётся, а подготовка, цена и согласия снимаются: «Ещё» создаст новую сессию с теми же опорами.
+   */
+  const changePrompt = (action: () => void): void => {
+    if (!attempted) {
+      changeReference(action);
+      return;
+    }
+    if (editingBlocked || !editPrompt()) return;
+    setConfirmation(null);
+    setAgreedToken(null);
     action();
   };
   const supportsTitle = reference ? sourcesTexts.referenceSupports : sourcesTexts.coverSupports;
@@ -217,9 +245,8 @@ export function ImageGenerateDialog({
     setAgreedToken(null);
     setConfirmation((current) => (current?.approvalToken === session?.approvalToken && !error ? current : null));
   }, [session?.approvalToken, error]);
-  const isRetry = session?.status === 'ready' || session?.status === 'failed';
   const createLabel = reference ? sourcesTexts.generateReferenceImage : sourcesTexts.generateCover;
-  const actionLabel = isRetry ? sourcesTexts.more : createLabel;
+  const actionLabel = attempted ? sourcesTexts.more : createLabel;
   const generationLabel =
     paid && prepared && quote?.verdict === 'ok'
       ? sourcesTexts.generationCostLabel({ action: actionLabel, credits: formatCredits(quote.credits) })
@@ -230,7 +257,7 @@ export function ImageGenerateDialog({
     preparing ||
     generating ||
     !!blockedQuote ||
-    (!session && !prompt.trim()) ||
+    ((!session || editedAfterAttempt) && !prompt.trim()) ||
     !supports.ready ||
     (reference && !composer.ready);
   // Причины блокировки для подсказок; недоступность исполнителя AgentButton показывает сам, обычной кнопке её передаём явно.
@@ -254,7 +281,7 @@ export function ImageGenerateDialog({
     quoteReason ??
     (!supports.ready ? (supports.error ?? sourcesTexts.referenceSupportsLoading) : null) ??
     (reference && !composer.ready ? (composer.loading ? sourcesTexts.referenceContextLoading : sourcesTexts.referenceContextUnavailable) : null) ??
-    (!session && !prompt.trim() ? (reference ? sourcesTexts.enterReferencePrompt : sourcesTexts.enterCoverPrompt) : null);
+    ((!session || editedAfterAttempt) && !prompt.trim() ? (reference ? sourcesTexts.enterReferencePrompt : sourcesTexts.enterCoverPrompt) : null);
   const acceptReason = preparing
     ? sourcesTexts.waitPreparation
     : !image
@@ -272,7 +299,8 @@ export function ImageGenerateDialog({
     if (preparingClick.current || blockedReason || generationDisabled) return;
     preparingClick.current = true;
     try {
-      const preparedSession = prepared ? session : await (session ? next() : start(prompt));
+      // Изменённый после попытки текст никогда не использует прежнюю подготовку: next создаст новую сессию.
+      const preparedSession = prepared && !editedAfterAttempt ? session : await (session ? next(prompt) : start(prompt));
       if (!alive.current || !preparedSession?.approvalToken || !preparedSession.requestSha) return;
       if (MEDIA_PROVIDERS[preparedSession.provider].paid && !priceAllowsGeneration(preparedSession.quote, agreedToken === preparedSession.approvalToken))
         return;
@@ -316,7 +344,9 @@ export function ImageGenerateDialog({
               {session
                 ? reference
                   ? sourcesTexts.referenceContextFixed
-                  : sourcesTexts.promptSessionFixed
+                  : attempted
+                    ? sourcesTexts.promptRetryEditable
+                    : sourcesTexts.promptSessionFixed
                 : reference
                   ? sourcesTexts.referencePromptHint
                   : idea.trim()
@@ -409,28 +439,37 @@ export function ImageGenerateDialog({
                     composer={composer}
                     description={referenceDescription}
                     disabled={editingBlocked || supports.loading}
-                    onChange={changeReference}
+                    onChange={changePrompt}
                   />
                 )}
               </Box>
             }
             <TextField
               label={reference ? sourcesTexts.referenceImagePrompt : sourcesTexts.coverPrompt}
-              value={reference ? prompt : (session?.prompt ?? prompt)}
-              onChange={(event) => (reference ? changeReference(() => composer.edit(event.target.value)) : setCoverPrompt(event.target.value))}
+              // Обложка до попытки показывает зафиксированный текст сессии, после попытки — редактируемый текст для «Ещё».
+              value={reference || !session || attempted ? prompt : session.prompt}
+              onChange={(event) => {
+                const value = event.target.value;
+                if (reference) changePrompt(() => composer.edit(value));
+                else if (attempted) changePrompt(() => setCoverPrompt(value));
+                else setCoverPrompt(value);
+              }}
               multiline
               minRows={reference ? 10 : 3}
               maxRows={reference ? 24 : 7}
               fullWidth
-              slotProps={{ input: { readOnly: reference ? editingBlocked : !!session || preparing } }}
+              slotProps={{ input: { readOnly: reference ? editingBlocked : editingBlocked || preparing || (!!session && !attempted) } }}
               helperText={
                 reference
                   ? sourcesTexts.referenceCharacterCount({ count: Array.from(prompt).length })
                   : session
-                    ? sourcesTexts.promptRetryFixed
+                    ? attempted
+                      ? sourcesTexts.promptRetryEditableHint
+                      : sourcesTexts.promptRetryFixed
                     : sourcesTexts.promptEditable
               }
             />
+            {editedAfterAttempt && <Alert severity="warning">{image ? sourcesTexts.retryPromptChanged : sourcesTexts.retryPromptChangedNoCandidate}</Alert>}
             <Alert severity="info">{sourcesTexts.referenceRequestInvalidated}</Alert>
             {session && (
               <Stack spacing={0.5}>

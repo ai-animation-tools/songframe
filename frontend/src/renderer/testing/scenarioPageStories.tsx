@@ -67,8 +67,11 @@ export interface ScenarioPageOptions {
   lineMoved?: boolean;
   /** Планы с принятым в производстве видео: их постановка на странице закрыта для правки. */
   accepted?: string[];
-  /** Последняя проверка сценария агентом: не было, отчёт с проблемами или без них. */
-  check?: 'none' | 'report' | 'clean';
+  /**
+   * Последняя проверка сценария агентом: не было, отчёт с проблемами или без них; staleReport — тот же отчёт
+   * с проблемами, устаревший после правок сценария, с завершённым заданием проверки (его время видно в отчёте).
+   */
+  check?: 'none' | 'report' | 'clean' | 'staleReport';
 }
 
 /** Демонстрационный отчёт проверки: по одной проблеме каждой важности, самая важная записана последней. */
@@ -544,10 +547,10 @@ export function scenarioPageOptions({
           status: check === 'none' ? 'none' : 'ready',
           canStart: true,
           reason: null,
-          stale: false,
+          stale: check === 'staleReport',
           report: check === 'none' ? null : check === 'clean' ? { summary: 'Противоречий не найдено.', issues: [] } : structuredClone(STORY_CHECK_REPORT),
           message: null,
-          job: null
+          job: check === 'staleReport' ? { ...scenarioJob('completed'), id: 'scenario-check-job', task: 'ai-clip-scenario:check' } : null
         },
         checkStarts: 0,
         checkFixes: [],

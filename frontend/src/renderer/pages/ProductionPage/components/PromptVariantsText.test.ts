@@ -3,7 +3,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { productionTexts } from '@shared/texts/production';
-import { PromptSendChoice, PromptVariantsText, promptVariantText } from './PromptVariantsText';
+import { PromptVariantsText, promptVariantText } from './PromptVariantsText';
 
 const variants = { original: 'Camera pushes in.', translation: 'Камера приближается.' };
 const title = (characters: number): string => `Видеопромпт · ${characters}`;
@@ -30,11 +30,5 @@ describe('Варианты видеопромпта', () => {
     const html = renderToStaticMarkup(createElement(PromptVariantsText, { text: 'Камера.', title }));
     expect(html).not.toContain(productionTexts.promptVariants.view);
     expect(html).toContain('Камера.');
-  });
-
-  it('выбор отправки отмечает выбранный вариант', () => {
-    const html = renderToStaticMarkup(createElement(PromptSendChoice, { value: 'translation', onChange: () => undefined }));
-    expect(html).toMatch(/value="translation"[^>]*checked|checked[^>]*value="translation"/);
-    expect(html).toContain(productionTexts.promptVariants.sendOriginal);
   });
 });

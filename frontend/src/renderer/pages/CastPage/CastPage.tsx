@@ -42,6 +42,26 @@ export function CastPage(): ReactElement {
   const entityParam = params.get(ENTITY_PARAM);
   // Сущность, к карточке которой после перехода (?entity=) нужно прокрутить; сбрасывается после прокрутки.
   const [revealEntity, setRevealEntity] = useState<string | null>(null);
+  // Ключи карточек по текущему коду сущности. Код редактируется посимвольно, поэтому ключ React не может
+  // совпадать с ним: иначе каждая буква пересоздавала бы карточку и поле «Код» теряло бы фокус.
+  // Ключи живут только в памяти страницы и не попадают в cast.json.
+  const cardKeys = useRef(new Map<string, string>());
+  const lastCardKey = useRef(0);
+  const cardKey = (id: string): string => {
+    let key = cardKeys.current.get(id);
+    if (!key) {
+      lastCardKey.current += 1;
+      key = `cast-card-${lastCardKey.current}`;
+      cardKeys.current.set(id, key);
+    }
+    return key;
+  };
+  /** Переименование переносит ключ карточки на новый код, чтобы React сохранил её узлы и фокус ввода. */
+  const moveCardKey = (from: string, to: string): void => {
+    const key = cardKey(from);
+    cardKeys.current.delete(from);
+    cardKeys.current.set(to, key);
+  };
 
   const load = useCallback(async () => {
     const current = projectScope.current.capture(project);
@@ -65,8 +85,16 @@ export function CastPage(): ReactElement {
   }, [load, notify, describeError]);
 
   // Переход с ?entity= (источник значения врезки на «Сценарии») раскрывает карточку сущности; параметр затем снимается.
+  // Роутер снимает параметр в переходе, а правка состава (например, новая сущность) успевает раньше: без отметки
+  // обработанного перехода эффект сработал бы на изменённый cast ещё раз и снова раскрыл бы прежнюю карточку.
+  const handledEntityParam = useRef<string | null>(null);
   useEffect(() => {
-    if (!entityParam || !cast) return;
+    if (!entityParam) {
+      handledEntityParam.current = null;
+      return;
+    }
+    if (!cast || handledEntityParam.current === entityParam) return;
+    handledEntityParam.current = entityParam;
     if (cast.entities.some((entity) => entity.id === entityParam)) {
       setExpanded(entityParam);
       setRevealEntity(entityParam);
@@ -202,7 +230,7 @@ export function CastPage(): ReactElement {
         >
           {cast.entities.map((entity) => (
             <CastEntityCard
-              key={entity.id}
+              key={cardKey(entity.id)}
               entity={entity}
               entities={cast.entities}
               kinds={kinds}
@@ -220,6 +248,7 @@ export function CastPage(): ReactElement {
                   notify(castTexts.entityCodeTaken, 'warning');
                   return;
                 }
+                moveCardKey(entity.id, nextId);
                 update(entity.id, { id: nextId });
                 setExpanded(nextId);
               }}

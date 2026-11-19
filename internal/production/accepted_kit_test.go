@@ -28,7 +28,7 @@ func writeKit(t *testing.T, files map[string]string) string {
 func TestAcceptedKitManualSpeech(t *testing.T) {
 	project := writeKit(t, map[string]string{
 		"manifest.json": `{"generation":{"request":{"path":"generation-request.json"},"prompt":{"path":"generation-prompt.txt"},
-			"generation_id":null,"inputs":[{"path":"generation-input-1.png","slot":"image"},{"path":"generation-input-2.wav","slot":"audio"},
+			"generation_id":null,"inputs":[{"path":"generation-input-1.png","slot":"first_image","role":"Первый кадр"},{"path":"generation-input-2.wav","slot":"audio"},
 			{"path":"missing.png","slot":"image"}],"audio":{"path":"speech.wav"}}}`,
 		"generation-request.json": `{"provider":"test","manual_generation":{"source":"Сайт сервиса","cost":{"amount":38,"unit":"credits"},"description":"Попыток: 1."}}`,
 		"generation-prompt.txt":   "Средний план, камера приближается.",
@@ -52,8 +52,10 @@ func TestAcceptedKitManualSpeech(t *testing.T) {
 	if kit.Prompt == nil || *kit.Prompt != "Средний план, камера приближается." {
 		t.Fatalf("промпт %v", kit.Prompt)
 	}
-	if len(kit.Images) != 1 || kit.Images[0] != filepath.Join(dir, "generation-input-1.png") {
-		t.Fatalf("опоры %v", kit.Images)
+	// Слот изображения назван провайдером, звуковой вход опорой не считается, роль берётся из манифеста.
+	if len(kit.Images) != 1 || kit.Images[0].Path != filepath.Join(dir, "generation-input-1.png") ||
+		kit.Images[0].Role == nil || *kit.Images[0].Role != "Первый кадр" {
+		t.Fatalf("опоры %+v", kit.Images)
 	}
 	if kit.Speech == nil || kit.Speech.Path != filepath.Join(dir, "speech.wav") || *kit.Speech.Start != 23.25 || *kit.Speech.End != 27.25 {
 		t.Fatalf("срез %+v", kit.Speech)

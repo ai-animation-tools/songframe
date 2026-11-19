@@ -65,7 +65,11 @@ vi.mock('../../hooks/useImageGeneration', () => ({
     next: fixture.next,
     refreshQuote: fixture.refreshQuote,
     generate: fixture.generate,
-    accept: fixture.accept
+    accept: fixture.accept,
+    invalidate: () => true,
+    editPrompt: () => true,
+    // Текст конструктора в стенде всегда совпадает с промптом подготовленной сессии.
+    promptChanged: () => false
   })
 }));
 

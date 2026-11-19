@@ -14,7 +14,7 @@ import { BUSY_REASON, PRODUCTION_PASS_LABELS, PRODUCTION_PROPOSAL_LABELS } from 
 import { Prose } from '../../../components/Prose';
 import { ReadableValue } from '../../../components/ReadableValue';
 import type { PromptVariant } from '@shared/types';
-import { PromptSendChoice, PromptVariantsText } from './PromptVariantsText';
+import { PromptVariantsText } from './PromptVariantsText';
 
 const FRAME_ROLES: Record<ProductionFramePrompt['role'], string> = productionTexts.inputRoles;
 
@@ -234,8 +234,8 @@ function ScenarioProblem({ problem }: { problem: ProductionScenarioProblem }): R
 }
 
 /**
- * Предложенный текст этапа. Видеопромпт с переводом показывается переключателем «Оригинал / Перевод», а при
- * onSendVariant под ним — выбор варианта к отправке, с которым окно примет предложение.
+ * Предложенный текст этапа. Видеопромпт с переводом показывается переключателем «Оригинал / Перевод»; при
+ * onSendVariant показанный вариант и есть выбранный к отправке, с ним окно примет предложение.
  */
 function Proposed({
   proposal,
@@ -315,9 +315,10 @@ function Proposed({
           variants={{ original: after.prompt, translation: after.translation }}
           title={(characters) => productionTexts.productionProposalPreview.promptTitle({ characters })}
           status={onSendVariant ? productionTexts.promptVariants.selected({ translation: sendVariant === 'translation' }) : undefined}
-        >
-          {onSendVariant ? <PromptSendChoice value={sendVariant} onChange={onSendVariant} /> : null}
-        </PromptVariantsText>
+          statusHint={onSendVariant ? productionTexts.promptVariants.sendHint : undefined}
+          shown={onSendVariant ? sendVariant : undefined}
+          onShownChange={onSendVariant}
+        />
       );
     default:
       return <ReadableValue value={after} />;
@@ -355,6 +356,8 @@ export function ProposalActions({
 }): ReactElement | null {
   const ready = proposal.status === 'ready' && !proposal.stale && !!proposal.after;
   const fixes = scenarioFixes(proposal);
+  // Принятие закрыло бы предложение и потеряло введённое замечание: пока оно есть, принять нельзя.
+  const noteFilled = revising && !!reviseNote?.trim();
   if (proposal.status === 'applied' || proposal.status === 'running') return null;
   const applyReason = busy
     ? BUSY_REASON
@@ -417,8 +420,8 @@ export function ProposalActions({
       <ActionButton
         variant="contained"
         startIcon={<CheckIcon />}
-        disabled={busy || !ready || !!applyBlockedReason}
-        disabledReason={applyReason ?? applyBlockedReason}
+        disabled={busy || !ready || !!applyBlockedReason || noteFilled}
+        disabledReason={applyReason ?? applyBlockedReason ?? (noteFilled ? productionTexts.packageDecision.noteFilled : null)}
         onClick={onApply}
       >
         {productionTexts.productionProposalPreview.apply}
@@ -447,7 +450,7 @@ export function ProductionProposalPreview({
   actions?: boolean;
   /** Занять всю высоту контейнера: колонки прокручиваются внутри себя. */
   fill?: boolean;
-  /** Вариант видеопромпта с переводом к отправке и его выбор; без обработчика выбора нет. */
+  /** Вариант видеопромпта с переводом к отправке и его выбор переключателем показа; без обработчика переключатель только для просмотра. */
   sendVariant?: PromptVariant;
   onSendVariant?(variant: PromptVariant): void;
 }): ReactElement {

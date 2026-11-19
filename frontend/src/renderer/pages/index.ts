@@ -11,6 +11,7 @@ export { ProjectPage } from './ProjectPage';
 export { ProductionPage } from './ProductionPage';
 export { ProjectsPage } from './ProjectsPage';
 export { ScenarioPage } from './ScenarioPage';
+export { SchemesPage } from './SchemesPage';
 export { ScenesPage } from './ScenesPage';
 export { SettingsPage } from './SettingsPage';
 export { SourcesPage } from './SourcesPage';

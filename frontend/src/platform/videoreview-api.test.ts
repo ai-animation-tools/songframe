@@ -22,6 +22,7 @@ function bindings(videoReview: Record<string, unknown>): Bindings {
     timing: missing,
     sources: missing,
     cast: missing,
+    schemes: missing,
     scenario: missing,
     tools: missing,
     checks: missing,

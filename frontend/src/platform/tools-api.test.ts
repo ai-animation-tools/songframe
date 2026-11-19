@@ -21,6 +21,7 @@ function bindings(tools: Record<string, unknown>): Bindings {
     timing: missing,
     sources: missing,
     cast: missing,
+    schemes: missing,
     scenario: missing,
     tools: async () => tools as never,
     checks: missing,

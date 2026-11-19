@@ -37,6 +37,7 @@ function bindings(
     timing: missing,
     sources: overrides.sources ? service(overrides.sources) : missing,
     cast: missing,
+    schemes: missing,
     scenario: missing,
     tools: missing,
     checks: overrides.checks ? service(overrides.checks) : missing,

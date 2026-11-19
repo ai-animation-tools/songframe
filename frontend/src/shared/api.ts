@@ -1,3 +1,4 @@
+import type { SchemesFile, SchemesView } from './schemes';
 import type { VocalModelId, VocalPreparationView } from './vocals';
 import type { SongModelSetup } from './song-models';
 import type { AgentAccountResult, AgentCheckResult, AgentEvent, AgentJob, AgentModelsResult, AgentSettings, AgentStartInput } from './agents';
@@ -217,6 +218,12 @@ export interface Api {
     /** Создаёт кастинг из референсов исходников или дополняет существующий. */
     init(project: string): Promise<CastFile>;
     save(project: string, cast: CastFile): Promise<CastFile>;
+  };
+  schemes: {
+    /** Схемы локаций, локации кастинга и проблемы; ничего не пишет. */
+    view(project: string): Promise<SchemesView>;
+    /** Проверяет схемы по кастингу и атомарно записывает plan/schemes.json; отказ оставляет прежний файл. */
+    save(project: string, document: SchemesFile): Promise<SchemesFile>;
   };
   scenario: {
     /** Готовность сценария для страниц, которые работают со сценами. */

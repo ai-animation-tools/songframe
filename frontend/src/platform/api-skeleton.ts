@@ -169,6 +169,10 @@ export function apiSkeleton(): Api {
       init: stub('cast.init'),
       save: stub('cast.save')
     },
+    schemes: {
+      view: stub('schemes.view'),
+      save: stub('schemes.save')
+    },
     scenario: {
       status: stub('scenario.status'),
       view: stub('scenario.view'),

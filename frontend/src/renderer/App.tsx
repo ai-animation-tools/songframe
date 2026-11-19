@@ -26,6 +26,7 @@ import {
   ProductionPage,
   ProjectsPage,
   ScenarioPage,
+  SchemesPage,
   ScenesPage,
   SettingsPage,
   SourcesPage,
@@ -101,6 +102,14 @@ export function App({ onReady }: { onReady?: () => Promise<void> }): ReactElemen
               element={
                 <RequireProject>
                   <CastPage />
+                </RequireProject>
+              }
+            />
+            <Route
+              path="project/schemes"
+              element={
+                <RequireProject>
+                  <SchemesPage />
                 </RequireProject>
               }
             />

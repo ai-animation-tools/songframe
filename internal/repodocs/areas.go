@@ -69,6 +69,13 @@ var Areas = []Area{
 		Paths: []string{"resources/templates/project"},
 	},
 	{
+		Title:    "Схемы локаций",
+		Docs:     []string{"docs/schemes.md"},
+		Packages: []string{"internal/schemes"},
+		Pages:    []string{"SchemesPage"},
+		Paths:    []string{"frontend/src/shared/schemes.ts", "frontend/src/shared/scheme-editing.ts"},
+	},
+	{
 		Title:    "Разметка песни",
 		Docs:     []string{"docs/timing.md"},
 		Packages: []string{"internal/timing", "internal/songtiming", "internal/songml", "internal/speech", "internal/cutspeech"},

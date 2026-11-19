@@ -160,6 +160,10 @@ export function unconfiguredStoryApi(): Api {
       init: async () => unconfigured('cast.init'),
       save: async () => unconfigured('cast.save')
     },
+    schemes: {
+      view: async () => unconfigured('schemes.view'),
+      save: async () => unconfigured('schemes.save')
+    },
     scenario: {
       status: async () => unconfigured('scenario.status'),
       view: async () => unconfigured('scenario.view'),

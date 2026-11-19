@@ -56,6 +56,7 @@ export const PAGE_ALIASES: Readonly<Record<string, string>> = {
   [navigationTexts.pageForms.timingPrepositional]: navigationTexts.pages.timing,
   [navigationTexts.pageForms.timingGenitive]: navigationTexts.pages.timing,
   [navigationTexts.pageForms.castPrepositional]: navigationTexts.pages.cast,
+  [navigationTexts.pageForms.schemesPrepositional]: navigationTexts.pages.schemes,
   [navigationTexts.pageForms.scenarioPrepositional]: navigationTexts.pages.scenario,
   [navigationTexts.pageForms.productionPrepositional]: navigationTexts.pages.production,
   [navigationTexts.pageForms.checksPrepositional]: navigationTexts.pages.checks,

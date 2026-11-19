@@ -20,6 +20,7 @@ function bindings(cover: Record<string, unknown>, referenceImages: Record<string
     timing: missing,
     sources: missing,
     cast: missing,
+    schemes: missing,
     scenario: missing,
     tools: missing,
     checks: missing,

@@ -26,6 +26,7 @@ import * as PromptLogService from "./promptlogservice.js";
 import * as ReferenceImagesService from "./referenceimagesservice.js";
 import * as ScenarioService from "./scenarioservice.js";
 import * as ScenarioWorkflowService from "./scenarioworkflowservice.js";
+import * as SchemesService from "./schemesservice.js";
 import * as ShellService from "./shellservice.js";
 import * as SourcesService from "./sourcesservice.js";
 import * as TimingService from "./timingservice.js";
@@ -58,6 +59,7 @@ export {
     ReferenceImagesService,
     ScenarioService,
     ScenarioWorkflowService,
+    SchemesService,
     ShellService,
     SourcesService,
     TimingService,

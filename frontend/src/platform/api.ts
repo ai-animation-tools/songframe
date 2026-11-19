@@ -61,6 +61,7 @@ import type { NotificationTarget } from '@shared/notifications';
 import type { MontageWindowEvent } from '@shared/montage-window';
 import type { MontageDraft, MontageView } from '@shared/montage';
 import type { DerivedShotView } from '@shared/derived-shot';
+import type { SchemesFile, SchemesView } from '@shared/schemes';
 import type * as mediaapi from '../../bindings/songframe/internal/mediaapi/models';
 import type { MediaCapabilities, MediaKind, ProviderAuth } from '@shared/media-providers';
 import { componentTexts } from '@shared/texts/component-manager';
@@ -149,6 +150,7 @@ export interface Bindings {
   timing: () => Promise<typeof import('../../bindings/songframe/internal/app/timingservice')>;
   sources: () => Promise<typeof import('../../bindings/songframe/internal/app/sourcesservice')>;
   cast: () => Promise<typeof import('../../bindings/songframe/internal/app/castservice')>;
+  schemes: () => Promise<typeof import('../../bindings/songframe/internal/app/schemesservice')>;
   scenario: () => Promise<typeof import('../../bindings/songframe/internal/app/scenarioservice')>;
   tools: () => Promise<typeof import('../../bindings/songframe/internal/app/toolsservice')>;
   checks: () => Promise<typeof import('../../bindings/songframe/internal/app/checksservice')>;
@@ -183,6 +185,7 @@ export const nativeBindings: Bindings = {
   timing: () => import('../../bindings/songframe/internal/app/timingservice'),
   sources: () => import('../../bindings/songframe/internal/app/sourcesservice'),
   cast: () => import('../../bindings/songframe/internal/app/castservice'),
+  schemes: () => import('../../bindings/songframe/internal/app/schemesservice'),
   scenario: () => import('../../bindings/songframe/internal/app/scenarioservice'),
   tools: () => import('../../bindings/songframe/internal/app/toolsservice'),
   checks: () => import('../../bindings/songframe/internal/app/checksservice'),
@@ -556,6 +559,9 @@ export function createApi(b: Bindings): Api {
   api.cast.view = (project) => call('cast.view', async () => (await b.cast()).View(project));
   api.cast.init = (project) => call('cast.init', async () => (await b.cast()).Init(project));
   api.cast.save = (project, cast) => call('cast.save', async () => (await b.cast()).Save(project, cast));
+  // Точки Go приходят как number[]: формат гарантирует две координаты, сужение типа без проверки.
+  api.schemes.view = (project) => call('schemes.view', async () => (await (await b.schemes()).View(project)) as unknown as SchemesView);
+  api.schemes.save = (project, document) => call('schemes.save', async () => (await (await b.schemes()).Save(project, document)) as unknown as SchemesFile);
 
   api.scenario.status = (project) => call('scenario.status', async () => (await (await b.scenario()).Status(project)) as ScenarioStatus);
   api.scenario.view = (project) => call('scenario.view', async () => (await b.scenario()).View(project));

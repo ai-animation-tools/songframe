@@ -125,6 +125,7 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
     sources: { ...defaults.sources, ...overrides.sources },
     timing: { ...defaults.timing, ...overrides.timing },
     cast: { ...defaults.cast, ...overrides.cast },
+    schemes: { ...defaults.schemes, ...overrides.schemes },
     scenario: { ...defaults.scenario, ...overrides.scenario },
     production: { ...defaults.production, ...overrides.production },
     dashboard: { ...defaults.dashboard, ...overrides.dashboard },
@@ -282,6 +283,10 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
       view: guardedAsync(merged.cast.view),
       init: guardedAsync(merged.cast.init),
       save: guardedAsync(merged.cast.save)
+    },
+    schemes: {
+      view: guardedAsync(merged.schemes.view),
+      save: guardedAsync(merged.schemes.save)
     },
     scenario: {
       status: guardedAsync(merged.scenario.status),

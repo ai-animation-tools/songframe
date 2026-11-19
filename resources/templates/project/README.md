@@ -17,7 +17,7 @@
 | Персонаж, транспорт, локация | «Кастинг» | `plan/cast.json` |
 | Передать материалы монтажёру | «Проект» → «Пакет для монтажёра» | Пакет создаётся в пустой папке вне проекта или внутри `plan/batches`: таблица планов, строки песни, EDL, FCPXML, README; с копированием медиа — и исходники |
 
-В пустом проекте нет файлов, которые создают действия приложения: `source/manifest.json` (сохранение исходников), `plan/audio/timing.json` (разметка), `plan/cast.json` и `plan/scenes.json` (кастинг и сценарий), `plan/animatic/latest/manifest.json` (сборка аниматика). Производные документы (`ROADMAP.md`, `plan/edit-list.md`, `plan/storyboard.md`, `plan/context/characters.md`, `plan/audio/timing.md`, `assets/shots/manifest.json`) появляются после первого обновления представлений.
+В пустом проекте нет файлов, которые создают действия приложения: `source/manifest.json` (сохранение исходников), `plan/audio/timing.json` (разметка), `plan/cast.json` и `plan/scenes.json` (кастинг и сценарий), `plan/schemes.json` (схемы локаций), `plan/animatic/latest/manifest.json` (сборка аниматика). Производные документы (`ROADMAP.md`, `plan/edit-list.md`, `plan/storyboard.md`, `plan/context/characters.md`, `plan/audio/timing.md`, `assets/shots/manifest.json`) появляются после первого обновления представлений.
 
 ## Источники сведений
 
@@ -51,6 +51,7 @@ assets/shots/manifest.json    Производный индекс комплек
 assets/replaced/Mxx/<время>/  Прежние комплекты, заменённые повторной приёмкой
 plan/project.json             Название проекта, имя MP4 аниматика, частота кадров, инструкции текстовому агенту и настройки генерации
 plan/cast.json                Кастинг: сущности, изображения, роль, внешность, начальное состояние
+plan/schemes.json             Схемы локаций: вид сверху и с четырёх сторон, фигуры в метрах
 plan/scenes.json              Сценарий: логлайн, части песни, постановка и единая монтажная шкала
 plan/production-status.json   Принятие полной сборки и отпечатки постановки принятых планов
 plan/scenario-workflow.json   Утверждение сценария

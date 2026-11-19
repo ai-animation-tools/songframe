@@ -81,6 +81,20 @@
 
 Ещё: [`resources/templates/project`](../resources/templates/project).
 
+## Схемы локаций
+
+Документы: [docs/schemes.md](schemes.md).
+
+| Пакет | Назначение |
+| --- | --- |
+| [`internal/schemes`](../internal/schemes) | Читает, проверяет и сохраняет схемы локаций plan/schemes.json: вид сверху и виды с четырёх сторон, нарисованные именованными фигурами в метрах. |
+
+| Страница | Назначение |
+| --- | --- |
+| [`SchemesPage`](../frontend/src/renderer/pages/SchemesPage/SchemesPage.tsx) | Страница «Схемы»: локации кастинга слева, схемы выбранной локации справа. |
+
+Ещё: [`frontend/src/shared/schemes.ts`](../frontend/src/shared/schemes.ts), [`frontend/src/shared/scheme-editing.ts`](../frontend/src/shared/scheme-editing.ts).
+
 ## Разметка песни
 
 Документы: [docs/timing.md](timing.md).

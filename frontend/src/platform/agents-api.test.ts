@@ -21,6 +21,7 @@ function bindings(services: { agents?: Record<string, unknown>; ai?: Record<stri
     timing: missing,
     sources: missing,
     cast: missing,
+    schemes: missing,
     scenario: missing,
     tools: missing,
     checks: missing,

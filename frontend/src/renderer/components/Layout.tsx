@@ -27,6 +27,7 @@ import FactCheckIcon from '@mui/icons-material/FactCheck';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import GridViewIcon from '@mui/icons-material/GridView';
 import GroupsIcon from '@mui/icons-material/Groups';
+import MapIcon from '@mui/icons-material/Map';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import ForumOutlinedIcon from '@mui/icons-material/ForumOutlined';
 import HistoryIcon from '@mui/icons-material/History';
@@ -60,6 +61,7 @@ const ICONS: Record<string, ReactElement> = {
   '/project/sources': <AudiotrackIcon />,
   '/project/timing': <TimelineIcon />,
   '/project/cast': <GroupsIcon />,
+  '/project/schemes': <MapIcon />,
   '/project/scenario': <TheatersIcon />,
   '/project/production': <BuildIcon />,
   '/project/scenes': <GridViewIcon />,

@@ -22,6 +22,7 @@ function bindings(services: { environment?: Record<string, unknown>; media?: Rec
     timing: missing,
     sources: missing,
     cast: missing,
+    schemes: missing,
     scenario: missing,
     tools: missing,
     checks: missing,

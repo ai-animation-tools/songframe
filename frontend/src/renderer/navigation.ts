@@ -13,6 +13,8 @@ export const NAV_PAGES: readonly NavPage[] = [
   { to: '/project/sources', label: navigationTexts.pages.sources, needsProject: true },
   { to: '/project/timing', label: navigationTexts.pages.timing, needsProject: true },
   { to: '/project/cast', label: navigationTexts.pages.cast, needsProject: true },
+  // Схемы локаций кастинга: вид сверху и с четырёх сторон для агентов.
+  { to: '/project/schemes', label: navigationTexts.pages.schemes, needsProject: true },
   { to: '/project/scenario', label: navigationTexts.pages.scenario, needsProject: true },
   { to: '/project/production', label: navigationTexts.pages.production, needsProject: true },
   { to: '/project/scenes', label: navigationTexts.pages.scenes, needsProject: true },

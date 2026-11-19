@@ -2,7 +2,7 @@ import { scenarioTexts } from '@shared/texts/scenario';
 import { useEffect, useRef, type ReactElement } from 'react';
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
 import { Alert, Box, Paper, Stack, Typography } from '@mui/material';
-import type { CastFile, CastProperty, ScenesFile } from '@shared/types';
+import type { CastFile, CastProperty, LyricsLine, ScenesFile, TimingLine } from '@shared/types';
 import { SCENE_PROBLEMS_ID, type EntityOption, type OpenShotState, type ScenarioBrief, type ShotReveal } from '../types';
 import { useSceneDraft } from '../useSceneDraft';
 import { SceneTimeline } from './SceneTimeline';
@@ -34,7 +34,10 @@ export function SceneRegistry({
   propertiesOf,
   notify,
   acceptedShots = [],
-  shotNotice = null
+  shotNotice = null,
+  lines = [],
+  lyrics = [],
+  maxVideoSeconds = null
 }: {
   resetKey?: object | null;
   scenes: ScenesFile;
@@ -62,8 +65,13 @@ export function SceneRegistry({
   acceptedShots?: string[];
   /** Сообщение над карточкой выбранного плана, например о его проблемах в отчёте проверки. */
   shotNotice?: ReactNode;
+  /** Разметка и текст песни: деление плана идёт по началу строки. */
+  lines?: readonly TimingLine[];
+  lyrics?: readonly LyricsLine[];
+  /** Предел одного запроса видео у провайдера проекта: предупреждение при объединении. */
+  maxVideoSeconds?: number | null;
 }): ReactElement {
-  const { shot, shotIndex, updateShot, setBoundary, split, mergeNext, setDelta } = useSceneDraft(scenes, selected, setScenes, setSelected, notify);
+  const { shot, shotIndex, updateShot, setBoundary, split, merge, setDelta } = useSceneDraft(scenes, selected, setScenes, setSelected, notify);
   const locked = !!shot && acceptedShots.includes(shot.id);
   const states = useShotStates();
   // Граница и слияние меняют и следующий план, поэтому его принятие тоже закрывает эти правки.
@@ -122,7 +130,11 @@ export function SceneRegistry({
                 updateShot={updateShot}
                 setBoundary={setBoundary}
                 split={split}
-                mergeNext={mergeNext}
+                merge={merge}
+                lines={lines}
+                lyrics={lyrics}
+                acceptedShots={acceptedShots}
+                maxVideoSeconds={maxVideoSeconds}
                 locked={locked}
                 nextLocked={nextLocked}
               />

@@ -180,6 +180,42 @@ export const AcceptedShotLocked: Story = {
   }
 };
 
+export const MergeAndSplit: Story = {
+  name: 'Объединение и деление · коды остальных планов не меняются',
+  tags: ['!autodocs', 'ci'],
+  parameters: { songframe: scenarioPageOptions({ route: '/project/scenario?shot=M01', videoProvider: true }) },
+  play: async (context) => {
+    const screen = await ready(context);
+    await editorHeading(screen, 'M01');
+    // Объединение M01 по M03: окно предупреждает о длине больше предела запроса видео и называет исчезающие коды.
+    await userEvent.click(screen.getByRole('button', { name: scenarioTexts.shot.mergeNext }));
+    const merge = await screen.findByRole('dialog', { name: scenarioTexts.shot.mergeTitle({ shot: 'M01' }) });
+    await userEvent.click(within(merge).getByRole('combobox', { name: scenarioTexts.shot.mergeUntil }));
+    await userEvent.click(await screen.findByRole('option', { name: scenarioTexts.shot.mergeOption({ id: 'M03', seconds: '12.0' }) }));
+    await expect(within(merge).getByText(scenarioTexts.shot.mergeTooLong({ seconds: '12.0', max: 10 }))).toBeVisible();
+    await expect(within(merge).getByText(/Коды M02, M03 исчезнут/)).toBeVisible();
+    await userEvent.click(within(merge).getByRole('button', { name: scenarioTexts.shot.mergeConfirm }));
+    await waitFor(() => expect(documentOf(context).querySelector('[data-shot-id="M02"]')).toBeNull());
+    await expect(documentOf(context).querySelector('[data-shot-id="M03"]')).toBeNull();
+    await expect(row(context, 'M04')).toBeInTheDocument();
+    await expect(field(screen, scenarioTexts.shot.original).value).toContain(' / ');
+    // Разные действия склеены с пометкой: поле подсвечено и объясняет, что сделать, в списке план помечен «доделать».
+    await expect(field(screen, scenarioTexts.fields.action).value).toMatch(/^ЗАПОЛНИТЬ: свести в одну постановку — /);
+    await expect(screen.getAllByText(scenarioTexts.shot.fillMarker).length).toBeGreaterThan(0);
+    await expect(within(row(context, 'M01')).getByText(scenarioTexts.shot.unfilled)).toBeVisible();
+    // Деление объединённого плана идёт по началу строки песни; новая половина получает свободный код M01.1.
+    await userEvent.click(screen.getByRole('button', { name: scenarioTexts.shot.split }));
+    const split = await screen.findByRole('dialog', { name: scenarioTexts.shot.splitTitle({ shot: 'M01' }) });
+    await expect(within(split).getByText(/по началу строки песни/)).toBeVisible();
+    await userEvent.click(within(split).getByRole('button', { name: scenarioTexts.shot.splitConfirm }));
+    await editorHeading(screen, 'M01.1');
+    await expect(row(context, 'M01.1')).toHaveAttribute('aria-current', 'true');
+    await expect(field(screen, scenarioTexts.fields.action).value).toMatch(/^ЗАПОЛНИТЬ: разделить между M01 и M01\.1 — /);
+    await expect(row(context, 'M04')).toBeInTheDocument();
+    await expect(unsavedChip(screen)).toBeInTheDocument();
+  }
+};
+
 export const BriefOutsidePlan: Story = {
   name: 'Врезка · сущности вне плана свёрнуты и не идут агенту',
   tags: ['!autodocs', 'ci'],

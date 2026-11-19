@@ -138,6 +138,7 @@ describe('согласование обложки с текстами слова
       manual: false,
       lipSync: null,
       maxKeyframes: null,
+      maxVideoSeconds: null,
       manualLipSync: null,
       learnsPriceFromCharges: false,
       generationHistory: null,

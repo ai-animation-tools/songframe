@@ -28,6 +28,11 @@ export interface MediaProviderInfo {
    */
   maxKeyframes: number | null;
   /**
+   * Наибольшая длительность одного запроса видео у самой длинной модели провайдера, секунды: редактор сценария
+   * предупреждает об объединении планов длиннее неё. null — провайдер предела не объявляет (ручная генерация).
+   */
+  maxVideoSeconds: number | null;
+  /**
    * Как сделать видео речевого плана вне приложения, если у провайдера нет липсинка (lipSync null): адрес кабинета, шаги
    * и пример источника для поля загрузки. В шагах {url} становится ссылкой, {image} и {audio} — именами файлов пакета.
    * null — пошаговой инструкции нет: пакет и загрузка видео работают и без неё.
@@ -77,6 +82,9 @@ export const MEDIA_PROVIDERS: Record<MediaProviderId, MediaProviderInfo> = {
     lipSync: null,
     // Kling 4.0 Keyframes: первый, промежуточные и последний кадр — не больше 10 изображений.
     maxKeyframes: 10,
+    // По объявленным возможностям: v4_0 — до 30 с, v4_0_flash — до 20 с, семейство v3_0 — до 15 с, старые — до 10 с;
+    // приложение выбирает модель, сетка которой покрывает длительность плана.
+    maxVideoSeconds: 30,
     // Режим Avatar есть только на сайте сервиса, не в его MCP: речевой план делается по пакету вручную.
     /* eslint-disable no-restricted-syntax -- Особенность конкретного провайдера: его сайт и режим генерации. */
     manualLipSync: {
@@ -157,6 +165,7 @@ export const MEDIA_PROVIDERS: Record<MediaProviderId, MediaProviderInfo> = {
     manual: false,
     lipSync: null,
     maxKeyframes: null,
+    maxVideoSeconds: null,
     manualLipSync: null,
     learnsPriceFromCharges: false,
     generationHistory: null,
@@ -185,6 +194,7 @@ export const MEDIA_PROVIDERS: Record<MediaProviderId, MediaProviderInfo> = {
     manual: true,
     lipSync: null,
     maxKeyframes: null,
+    maxVideoSeconds: null,
     manualLipSync: null,
     learnsPriceFromCharges: false,
     generationHistory: null,
@@ -271,6 +281,11 @@ export const DEFAULT_KEYFRAME_LIMIT = 20;
 /** Предел выбора числа опор плана для провайдера видео проекта; его же проверяет Go при подготовке и применении описания. */
 export function keyframeLimit(provider: unknown): number {
   return mediaProviderInfo(provider, 'video')?.maxKeyframes ?? DEFAULT_KEYFRAME_LIMIT;
+}
+
+/** Предел длины одного запроса видео у провайдера видео проекта, секунды; null — неизвестный провайдер или предела нет. */
+export function maxVideoSeconds(provider: unknown): number | null {
+  return mediaProviderInfo(provider, 'video')?.maxVideoSeconds ?? null;
 }
 
 /** Имя сервиса в сохранённом запросе и в настройках может отличаться регистром и крайними пробелами. */

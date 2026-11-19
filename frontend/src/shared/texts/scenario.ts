@@ -119,6 +119,7 @@ export const scenarioTexts = {
     impactStagingChanged: 'изменена постановка плана',
     impactBoundsChanged: 'сдвинуты границы плана',
     impactInheritedState: ({ source }: { source: string }) => `изменилось состояние, унаследованное от ${source}`,
+    impactStateLink: ({ source }: { source: string }) => `ссылка на состояние перешла к ${source}, само состояние то же`,
     impactInitialState: 'изменилось начальное состояние',
     impactGlobalRules: 'изменены общие правила или направление части',
     impactDerivedSource: ({ source }: { source: string }) => `собирается из материала ${source}`,
@@ -527,10 +528,29 @@ export const scenarioTexts = {
       `${id}${title ? ` · ${title}` : ''}${derived === null ? '' : ` (сам из ${derived})`}`,
     references: 'В кадре (референсы)',
     primaryReference: 'Референс карточки',
-    split: 'Разделить план пополам',
-    mergeNext: 'Объединить со следующим',
-    mergeDescription: ({ shot, next }: { shot: string; next: string | undefined }) =>
-      `Планы ${shot} и ${next ?? 'следующий'} станут одним. Камера и действие останутся от ${shot}; отдельная запись следующего плана будет удалена. Изменение применяется к черновику.`,
+    split: 'Разделить план',
+    splitTitle: ({ shot }: { shot: string }) => `Разделить ${shot}?`,
+    splitByLine: ({ shot, at, id, first, second }: { shot: string; at: string; id: string; first: string; second: string }) =>
+      `${shot} разделится в ${at}, по началу строки песни. ${shot} останется со строками «${first}», новый план ${id} получит «${second}».`,
+    splitMiddle: ({ shot, at, id }: { shot: string; at: string; id: string }) =>
+      `Внутри ${shot} нет границы строк песни, поэтому план разделится посередине, в ${at}. Новый план получит код ${id}, строки песни останутся у обеих половин.`,
+    splitRest: ({ shot, id }: { shot: string; id: string }) =>
+      `Камера и референсы останутся у обеих половин, действие и непрерывность — с пометкой ЗАПОЛНИТЬ: разделите их между половинами вручную или доработкой с агентом. Изменения состояния останутся у ${shot}, ${id} продолжит его итог. Коды остальных планов не меняются. Изменение применяется к черновику.`,
+    splitConfirm: 'Разделить',
+    fillMarker: 'Замените пометку ЗАПОЛНИТЬ итоговым текстом: до этого план считается незаполненным.',
+    unfilled: 'доделать',
+    mergeNext: 'Объединить со следующими',
+    mergeTitle: ({ shot }: { shot: string }) => `Объединить ${shot} со следующими планами?`,
+    mergeUntil: 'Объединить по план',
+    mergeOption: ({ id, seconds }: { id: string; seconds: string }) => `${id} включительно · вместе ${seconds} с`,
+    mergeAcceptedStop: ({ shot }: { shot: string }) => `${shot} принят: объединение заканчивается перед ним.`,
+    mergeSummary: ({ shot, removed, start, end, seconds }: { shot: string; removed: string; start: string; end: string; seconds: string }) =>
+      `${shot} займёт ${start}–${end} (${seconds} с). Коды ${removed} исчезнут, ссылки на них перейдут к ${shot}; коды остальных планов не меняются.`,
+    mergeTexts:
+      'Строки песни и заметки склеятся через « / », референсы объединятся, изменения состояния сольются по порядку. Разные камера, действие и непрерывность склеятся с пометкой ЗАПОЛНИТЬ: план останется незаполненным, пока вы не сведёте их в одну постановку вручную или доработкой с агентом. Изменение применяется к черновику.',
+    mergeTooLong: ({ seconds, max }: { seconds: string; max: number }) =>
+      `Вместе ${seconds} с — длиннее ${max} с, предела одного запроса видео у провайдера проекта. Такой план не сгенерировать одним запросом.`,
+    mergeParts: ({ parts }: { parts: string }) => `Планы из разных частей песни (${parts}). Объединённый план останется в части первого плана.`,
     mergeLastReason: 'Это последний план: объединять не с чем.',
     mergeConfirm: 'Объединить'
   },

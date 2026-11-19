@@ -160,11 +160,11 @@ describe('Видимые тексты и границы JSX сценария', (
         updateShot: noop,
         setBoundary: noop,
         split: noop,
-        mergeNext: noop
+        merge: noop
       })
     );
     expect(text(html)).toContain('M010:00.00–0:01.00 · 1.00 с · 30 кадров');
-    expect(text(html)).toContain('Разделить план пополам');
+    expect(text(html)).toContain('Разделить план');
     expect(html).toContain('Это последний план: объединять не с чем.');
   });
 

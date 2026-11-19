@@ -45,6 +45,9 @@ const (
 func textImpactInherited(source string) string {
 	return "изменилось состояние, унаследованное от " + source
 }
+func textImpactStateLink(source string) string {
+	return "ссылка на состояние перешла к " + source + ", само состояние то же"
+}
 func textImpactDerived(source string) string {
 	return "собирается из материала " + source
 }
@@ -130,11 +133,15 @@ func findScene(registry any, id string) (any, bool) {
 	return nil, false
 }
 
-// withoutBounds — план без start_frame и end_frame_exclusive для сравнения постановки.
-func withoutBounds(scene any) string {
+// withoutBounds — план без start_frame и end_frame_exclusive для сравнения постановки; extra —
+// ещё поля, которые не участвуют в сравнении.
+func withoutBounds(scene any, extra ...string) string {
 	rest := dynvalue.Spread(scene)
 	rest.Delete("start_frame")
 	rest.Delete("end_frame_exclusive")
+	for _, key := range extra {
+		rest.Delete(key)
+	}
 	return dynvalue.Stringify(rest)
 }
 
@@ -152,16 +159,21 @@ func stateJSON(registry any, initial *dynvalue.Object, id string) (string, bool,
 }
 
 // reasonOf — формальная причина изменения отпечатка плана: новый план, изменённая постановка,
-// сдвиг границ, изменённое унаследованное или начальное состояние, иначе общие правила. Смысловые
-// связи свободного текста не угадываются.
+// сдвиг границ, изменённое унаследованное или начальное состояние, сменившаяся только ссылка
+// state_from при прежнем состоянии (объединение планов убрало код, на который она указывала),
+// иначе общие правила. Смысловые связи свободного текста не угадываются.
 func reasonOf(project string, before, after any, id string) (string, error) {
 	previous, found := findScene(before, id)
 	next, _ := findScene(after, id)
 	if !found {
 		return textImpactNewShot, nil
 	}
+	linkOnly := false
 	if withoutBounds(previous) != withoutBounds(next) {
-		return textImpactStaging, nil
+		if withoutBounds(previous, "state_from") != withoutBounds(next, "state_from") {
+			return textImpactStaging, nil
+		}
+		linkOnly = true
 	}
 	if !dynvalue.StrictEqual(dynvalue.Get(previous, "start_frame"), dynvalue.Get(next, "start_frame")) ||
 		!dynvalue.StrictEqual(dynvalue.Get(previous, "end_frame_exclusive"), dynvalue.Get(next, "end_frame_exclusive")) {
@@ -190,7 +202,19 @@ func reasonOf(project string, before, after any, id string) (string, error) {
 		}
 		return textImpactInitialState, nil
 	}
+	if linkOnly {
+		return textImpactStateLink(stateSource(next)), nil
+	}
 	return textImpactGlobalRules, nil
+}
+
+// stateSource — код плана, на который ссылается state_from (строка или {scene, phase}); пусто — начальное состояние.
+func stateSource(scene any) string {
+	from := dynvalue.Get(scene, "state_from")
+	if _, isString := from.(string); isString {
+		return dynvalue.ToString(from)
+	}
+	return dynvalue.ToString(dynvalue.Coalesce(dynvalue.Get(from, "scene"), ""))
 }
 
 // affectedShots — планы, чей отпечаток различается у сохранённого реестра и черновика, плюс

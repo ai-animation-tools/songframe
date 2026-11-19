@@ -18,6 +18,7 @@ import AddIcon from '@mui/icons-material/Add';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import { LinkedText } from '../../components/LinkedText';
 import { unsavedDraftsReason } from './shotNavigation';
+import { maxVideoSeconds } from '@shared/media-providers';
 
 /**
  * Страница сценария: один черновик plan/scenes.json — блок «Общие правила и части» над планами. Пока планов нет,
@@ -215,6 +216,9 @@ export function ScenarioPage(): ReactElement {
             propertiesOf={propertiesOf}
             notify={notify}
             acceptedShots={workflow.view?.acceptedShots}
+            lines={view.timing?.lines}
+            lyrics={view.lyrics}
+            maxVideoSeconds={maxVideoSeconds(view.videoProvider)}
             shotNotice={
               selected && shotIssues.length ? (
                 <Alert

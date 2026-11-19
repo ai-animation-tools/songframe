@@ -44,6 +44,10 @@ type View struct {
 	// По нему страница разрешает сохранить реестр без правок: иначе обещанное в предупреждении
 	// обновление карты недостижимо, ведь «Сохранить» без изменений выключена.
 	ReferencesStale bool `json:"referencesStale"`
+	// VideoProvider — generation.video.provider проекта как есть; нет в ответе, если провайдер не
+	// выбран или настройки не читаются. По нему редактор планов берёт из реестра провайдеров предел
+	// длины одного запроса видео и предупреждает об объединении длиннее него.
+	VideoProvider json.RawMessage `json:"videoProvider,omitempty"`
 }
 
 // readDocument — чтение документа проекта: (значение, true) или (nil, false) для отсутствующего
@@ -114,6 +118,14 @@ func ViewProject(project string) (View, error) {
 			}
 		}
 	}
+	var videoProvider json.RawMessage
+	if settings, err := projectfile.ReadSettings(project); err == nil {
+		if generation, err := dynvalue.Parse(settings.Generation); err == nil {
+			if value := dynvalue.Get(dynvalue.Get(generation, "video"), "provider"); value != dynvalue.Undefined {
+				videoProvider = dynvalue.Raw(value)
+			}
+		}
+	}
 	var trackPath *string
 	if track := filepath.Join(project, "source", "track.mp3"); dynvalue.Exists(track) {
 		trackPath = &track
@@ -128,6 +140,7 @@ func ViewProject(project string) (View, error) {
 		Problems:  problems,
 
 		ReferencesStale: stale,
+		VideoProvider:   videoProvider,
 	}, nil
 }
 

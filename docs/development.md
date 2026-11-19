@@ -105,7 +105,7 @@ FFmpeg/ffprobe, ONNX Runtime CPU и модели (выделение вокал�
 
 | Часть | Где |
 | --- | --- |
-| Реестр для интерфейса | [`frontend/src/shared/media-providers.ts`](../frontend/src/shared/media-providers.ts): название, виды медиа, исполнитель, платность, `lipSync`, `learnsPriceFromCharges`, `generationHistory`, значения по умолчанию, подписи |
+| Реестр для интерфейса | [`frontend/src/shared/media-providers.ts`](../frontend/src/shared/media-providers.ts): название, виды медиа, исполнитель, платность, `lipSync`, `maxVideoSeconds` (предел длины одного запроса видео), `learnsPriceFromCharges`, `generationHistory`, значения по умолчанию, подписи |
 | Go-часть реестра | [`internal/mediaproviders`](../internal/mediaproviders/mediaproviders.go): только поля, нужные Go; совпадение с TS-реестром проверяет `TestRegistryMatchesFrontend` |
 | Документ провайдера | `resources/providers/<вид>/<id>.md` на каждый вид медиа; раздел `## Указания агенту` слой провайдеров вкладывает в промпт задания |
 | Адаптер | папка `internal/providers/<id>/`; платный провайдер дополнительно получает строку в таблице `adapters` пакета [`internal/mediaadapters`](../internal/mediaadapters/mediaadapters.go) и файл-связку там же, провайдер-исполнитель на агенте — строку в таблице `agentAdapters` пакета [`internal/providers`](../internal/providers/providers.go) |

@@ -19,6 +19,8 @@ import type {
 } from '@shared/types';
 import type { ScenarioCheckFixPreview, ScenarioCheckReport, ScenarioCheckView, ScenarioWorkflowView } from '@shared/scenario-workflow';
 import { DEFAULT_FPS } from '@shared/video';
+import { registerMediaProviderForTests } from '@shared/media-providers';
+import { TEST_PROVIDER, testProviderInfo } from '@shared/testing/media-provider';
 import { scenarioTexts } from '@shared/texts/scenario';
 import { ScenarioPage } from '../pages/ScenarioPage/ScenarioPage';
 import { shotPageRoute } from '../components/shotRoutes';
@@ -72,6 +74,8 @@ export interface ScenarioPageOptions {
    * с проблемами, устаревший после правок сценария, с завершённым заданием проверки (его время видно в отчёте).
    */
   check?: 'none' | 'report' | 'clean' | 'staleReport';
+  /** Провайдер видео проекта — тестовый сервис с пределом запроса 10 с: объединение длиннее предупреждает. */
+  videoProvider?: boolean;
 }
 
 /** Демонстрационный отчёт проверки: по одной проблеме каждой важности, самая важная записана последней. */
@@ -493,7 +497,8 @@ export function scenarioPageOptions({
   leadPause = false,
   lineMoved = false,
   accepted = [],
-  check = 'none'
+  check = 'none',
+  videoProvider = false
 }: ScenarioPageOptions = {}): StoryOptions {
   const state: AppState = {
     packaged: false,
@@ -515,6 +520,7 @@ export function scenarioPageOptions({
       const produced = new Set(variant === 'produced' ? ['M01', 'M02'] : []);
       const saved = pageView(variant, gappedTiming);
       if (referencesStale) Object.assign(saved, { referencesStale: true, problems: [scenarioTexts.main.referencesRefresh] });
+      if (videoProvider) saved.videoProvider = TEST_PROVIDER;
       const pausedLine = leadPause ? saved.timing?.lines.find((line) => line.source_line === 3) : undefined;
       if (pausedLine) pausedLine.start = LEAD_PAUSE_LINE_START;
       const movedLine = lineMoved ? saved.timing?.lines.find((line) => line.source_line === 3) : undefined;
@@ -919,6 +925,7 @@ export function scenarioPageOptions({
         }
       });
       models.set(session.api, model);
+      if (videoProvider) session.onCleanup(registerMediaProviderForTests(TEST_PROVIDER, testProviderInfo));
       session.onCleanup(() => {
         listeners.clear();
         models.delete(session.api);

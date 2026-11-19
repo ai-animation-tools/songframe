@@ -4,6 +4,7 @@ import { Box, ButtonBase, Chip, InputAdornment, Paper, TextField, Typography } f
 import SearchIcon from '@mui/icons-material/Search';
 import { matchesWords, searchWords } from '../../../components/searchText';
 import type { ScenesFile, ShotProductionState } from '@shared/types';
+import { shotUnfilled } from '@shared/scene-editing';
 import { SHOT_STATE_LABELS } from '../../../components/shotState';
 import { formatClock } from '../../../format';
 
@@ -66,9 +67,10 @@ export function SceneList({
           </Typography>
         ) : null}
         {shown.map((s) => {
-          // eslint-disable-next-line no-restricted-syntax -- Маркер каркаса из данных scene_scaffold, а не подпись интерфейса.
-          const filled = !s.action.startsWith('ЗАПОЛНИТЬ') && !s.camera.startsWith('ЗАПОЛНИТЬ');
-          const status = states ? SHOT_STATE_LABELS[states[s.id] ?? 'planned'] : null;
+          const filled = !shotUnfilled(s);
+          const state = states?.[s.id] ?? 'planned';
+          // Незаполненный не начатый план показывает «доделать» вместо «не начат»: оба чипа не помещаются в строку.
+          const status = states && (filled || state !== 'planned') ? SHOT_STATE_LABELS[state] : null;
           return (
             // Строка — кнопка: план выбирается и с клавиатуры (Tab, Enter или пробел), выбранный отмечен aria-current.
             <ButtonBase
@@ -101,7 +103,7 @@ export function SceneList({
                   {scenarioTexts.timeline.range({ start: formatClock(s.start_frame / scenes.fps), end: formatClock(s.end_frame_exclusive / scenes.fps) })}
                 </Typography>
                 {/* Заливка: контурный warning на фоне выбранной строки (action.selected) не держит 4.5:1. */}
-                {!filled ? <Chip size="small" label={scenarioTexts.brief.empty} color="warning" sx={{ height: 18 }} /> : null}
+                {!filled ? <Chip size="small" label={scenarioTexts.shot.unfilled} color="warning" sx={{ height: 18 }} /> : null}
                 {s.lipsync ? <Chip size="small" label={scenarioTexts.list.speech} sx={{ height: 18 }} /> : null}
               </Box>
               <Typography variant="caption" noWrap display="block" color="text.secondary">

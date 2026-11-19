@@ -105,11 +105,11 @@ describe('Параметры, ветвления и полные фразы сц
     expect(scenarioTexts.shot.sourceOption({ id: 'M01', title: '', derived: 'M02' })).toBe('M01 (сам из M02)');
     expect(scenarioTexts.shot.sourceOption({ id: 'M01', title: '<&>', derived: 'M02' })).toBe('M01 · <&> (сам из M02)');
     expect(scenarioTexts.shot.sourceOption({ id: 'M01', title: '<&>', derived: '' })).toBe('M01 · <&> (сам из )');
-    expect(scenarioTexts.shot.mergeDescription({ shot: 'M01', next: undefined })).toBe(
-      'Планы M01 и следующий станут одним. Камера и действие останутся от M01; отдельная запись следующего плана будет удалена. Изменение применяется к черновику.'
+    expect(scenarioTexts.shot.mergeSummary({ shot: 'M23', removed: 'M24, M25', start: '2:04', end: '2:17', seconds: '13.2' })).toBe(
+      'M23 займёт 2:04–2:17 (13.2 с). Коды M24, M25 исчезнут, ссылки на них перейдут к M23; коды остальных планов не меняются.'
     );
-    expect(scenarioTexts.shot.mergeDescription({ shot: 'M<&>', next: 'M02' })).toBe(
-      'Планы M<&> и M02 станут одним. Камера и действие останутся от M<&>; отдельная запись следующего плана будет удалена. Изменение применяется к черновику.'
+    expect(scenarioTexts.shot.splitMiddle({ shot: 'M<&>', at: '0:03', id: 'M<&>.1' })).toBe(
+      'Внутри M<&> нет границы строк песни, поэтому план разделится посередине, в 0:03. Новый план получит код M<&>.1, строки песни останутся у обеих половин.'
     );
     expect(scenarioTexts.treatment.deletePart({ title: '<&>', id: 'intro' })).toBe('Удалить часть «<&>»');
     expect(scenarioTexts.treatment.deletePart({ title: '', id: 'intro' })).toBe('Удалить часть «intro»');

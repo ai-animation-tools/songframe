@@ -1,6 +1,6 @@
 import { scenarioTexts } from '@shared/texts/scenario';
 import { commonTexts } from '@shared/texts/common';
-import { useEffect, useState, type ReactElement } from 'react';
+import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import {
   Accordion,
   AccordionDetails,
@@ -58,11 +58,18 @@ import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 import { FullscreenEditorDialog } from '../../../components/FullscreenEditorDialog';
 import { LinkedText } from '../../../components/LinkedText';
 import { SchemePreview } from '../../../components/SchemePreview';
+import { SchemeVolumeView, type VolumeExtra } from '../../../components/SchemeVolumeView';
+import { EYE_HEIGHT, FIGURE_HEIGHT, subjectFigures, viewpointCamera } from '@shared/viewpoint-camera';
 
 const texts = scenarioTexts.viewpoint;
 
 /** Высота мини-схемы в блоке страницы, px. */
 const INLINE_HEIGHT = 320;
+/** Пропорция кадра вида из камеры. */
+const FRAME_ASPECT = 16 / 9;
+/** Цвета фигур героев: в фокусе и остальные. */
+const FOCUS_COLOR = '#ef6c00';
+const SUBJECT_COLOR = '#7b1fa2';
 
 /** Бейдж заголовка: «С юга · Общий · на схеме» или «не задана». */
 export function viewpointBadge(viewpoint: SceneViewpoint | undefined): string {
@@ -124,8 +131,63 @@ function FovField({
 }
 
 /**
- * Расстановка на схеме: что ставить щелчком (камера или герой, первый или последний кадр), мини-схема и строки
- * состояния камеры и героев с фокусом и удалением. Одна и та же часть живёт в блоке страницы и в окне во весь экран;
+ * Вид из камеры: перспективные кадры объёма схемы из точки камеры — первый и, если камера или герои движутся,
+ * последний. Без камеры или у камеры сверху — пояснение вместо кадра.
+ */
+function CameraView({ viewpoint, scheme }: { viewpoint: SceneViewpoint; scheme: Scheme }): ReactElement {
+  // Кадры пересчитываются только при смене точки съёмки: новый массив фигур перестраивал бы сцену при каждой отрисовке.
+  const frames = useMemo(() => {
+    const phases: ViewpointPhase[] = moves(viewpoint.camera) || (viewpoint.subjects ?? []).some(moves) ? ['start', 'end'] : ['start'];
+    return phases.map((phase) => ({
+      phase,
+      camera: viewpointCamera(viewpoint, phase),
+      extras: subjectFigures(viewpoint, phase).map((figure): VolumeExtra => ({
+        id: figure.entity,
+        triangles: figure.triangles,
+        color: figure.focus ? FOCUS_COLOR : SUBJECT_COLOR
+      }))
+    }));
+  }, [viewpoint]);
+  const unavailable = viewpoint.side === 'top' ? texts.cameraViewTop : !viewpoint.camera ? texts.cameraViewNoCamera : null;
+  return (
+    <Stack spacing={1} data-camera-view="">
+      <Typography variant="subtitle2">{texts.cameraView}</Typography>
+      {unavailable ? (
+        <Typography variant="body2" color="text.secondary">
+          {unavailable}
+        </Typography>
+      ) : (
+        <>
+          <Typography variant="body2" color="text.secondary">
+            {texts.cameraViewHint({ eye: metres(EYE_HEIGHT), figure: metres(FIGURE_HEIGHT) })}
+          </Typography>
+          <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap' }}>
+            {frames.map((frame) =>
+              frame.camera ? (
+                <Box key={frame.phase} sx={{ flex: '1 1 360px', minWidth: 0 }} data-camera-frame={frame.phase}>
+                  <Typography variant="caption" color="text.secondary">
+                    {texts.phases[frame.phase]}
+                  </Typography>
+                  <SchemeVolumeView
+                    scheme={scheme}
+                    label={texts.cameraFrame({ phase: texts.phases[frame.phase] })}
+                    camera={frame.camera}
+                    extras={frame.extras}
+                    aspect={FRAME_ASPECT}
+                  />
+                </Box>
+              ) : null
+            )}
+          </Stack>
+        </>
+      )}
+    </Stack>
+  );
+}
+
+/**
+ * Расстановка на схеме: что ставить щелчком (камера или герой, первый или последний кадр), мини-схема, строки
+ * состояния камеры и героев с фокусом и удалением и вид из камеры. Одна и та же часть живёт в блоке страницы и в окне во весь экран;
  * выбор цели и кадра у каждой своя.
  */
 function ViewpointPlacement({
@@ -256,6 +318,7 @@ function ViewpointPlacement({
           })}
         </Stack>
       </Paper>
+      <CameraView viewpoint={viewpoint} scheme={scheme} />
     </Stack>
   );
 }

@@ -550,6 +550,12 @@ export const scenarioTexts = {
     removeEnd: 'Убрать движение',
     removeTarget: 'Убрать со схемы',
     subjectLabel: ({ name, metres }: { name: string; metres: string | null }) => (metres === null ? name : `${name} · ${metres} м`),
+    cameraView: 'Вид из камеры',
+    cameraViewHint: ({ eye, figure }: { eye: string; figure: string }) =>
+      `Кадр 16:9 из точки камеры с её углом обзора. Камера на высоте ${eye} м, герои — условные фигуры высотой ${figure} м, герой в фокусе — оранжевый. Объём предметов задаётся на странице «Схемы».`,
+    cameraViewNoCamera: 'Поставьте камеру на схему: здесь появится вид из неё.',
+    cameraViewTop: 'Камера сверху смотрит вниз: её кадр — сама схема.',
+    cameraFrame: ({ phase }: { phase: string }) => `Вид из камеры, ${phase.toLowerCase()}`,
     remove: 'Убрать точку съёмки',
     preview: ({ title }: { title: string }) => `Мини-схема «${title}»`,
     fullscreenTitle: ({ shot }: { shot: string }) => `Точка съёмки ${shot}`,

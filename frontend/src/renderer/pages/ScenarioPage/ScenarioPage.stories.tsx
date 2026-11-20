@@ -203,6 +203,8 @@ export const ViewpointSet: Story = {
     await userEvent.click(viewpointBlock(screen));
     await userEvent.click(await screen.findByRole('button', { name: viewpointTexts.create }));
     await expect(viewpointBlock(screen)).toHaveTextContent(viewpointTexts.badge({ side: 'С юга', size: 'Общий', placed: false }));
+    // Вид из камеры ждёт камеру на схеме.
+    await expect(await screen.findByText(viewpointTexts.cameraViewNoCamera)).toBeVisible();
     // Камера слева, герой справа на той же высоте: камера смотрит на восток и сама получает сторону «с запада».
     const preview = await previewOf(screen);
     clickPreview(preview, 0.3, 0.5);
@@ -220,6 +222,15 @@ export const ViewpointSet: Story = {
     clickPreview(preview, 0.3, 0.8);
     await waitFor(() => expect(preview.querySelector('[data-camera-end]')).not.toBeNull());
     await expect(document.querySelector('[data-viewpoint-row="camera"]')).toHaveTextContent(/движется на/);
+    // Камера движется: вид из неё показывает первый и последний кадр, в каждом объём схемы и фигура героя.
+    await waitFor(() => expect(document.querySelector('[data-camera-frame="end"]')).not.toBeNull());
+    for (const phase of ['start', 'end'] as const) {
+      const frame = document.querySelector(`[data-camera-frame="${phase}"]`)!;
+      await expect(
+        within(frame as HTMLElement).getByRole('application', { name: viewpointTexts.cameraFrame({ phase: viewpointTexts.phases[phase] }) })
+      ).toBeVisible();
+      await expect(Number(frame.querySelector('[data-volume-view]')?.getAttribute('data-triangles'))).toBeGreaterThan(40);
+    }
     // Крупность меняет угол по умолчанию; свой угол хранится отдельно и возвращается кнопкой.
     await userEvent.click(screen.getByRole('combobox', { name: viewpointTexts.size }));
     await userEvent.click(await screen.findByRole('option', { name: viewpointTexts.sizes.close }));

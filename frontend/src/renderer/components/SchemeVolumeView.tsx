@@ -95,27 +95,33 @@ function buildVertices(
  * Объём схемы вида сверху в перспективе (WebGL без библиотек). Без camera — облёт: перетаскивание вращает вид,
  * колесо приближает, стрелки и +/− делают то же с клавиатуры, подписи объектов стоят над их верхом. С camera —
  * неподвижный кадр точки съёмки без подписей: подпись спрятанного объекта выдавала бы его в кадре. Кадр
- * перерисовывается только при изменении сцены, размера или вида. Без WebGL — понятное сообщение вместо сцены.
+ * перерисовывается только при изменении сцены, размера или вида. С aspect высота следует из ширины, как у кадра
+ * видео. Без WebGL — понятное сообщение вместо сцены.
  */
 export function SchemeVolumeView({
   scheme,
   label,
   height,
   camera,
-  extras = []
+  extras = [],
+  aspect
 }: {
   scheme: Scheme;
   /** Доступное имя области. */
   label: string;
-  height: number;
+  /** Высота области, px; не нужна при aspect. */
+  height?: number;
   camera?: Camera3D;
   extras?: readonly VolumeExtra[];
+  /** Пропорция кадра ширина / высота: высота считается из ширины. */
+  aspect?: number;
 }): ReactElement {
   const theme = useTheme();
   const boxRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const glRef = useRef<{ gl: WebGLRenderingContext; matrix: WebGLUniformLocation; count: number; lines: number } | null>(null);
   const [width, setWidth] = useState(640);
+  const frameHeight = aspect ? Math.round(width / aspect) : (height ?? 360);
   const [failed, setFailed] = useState<string | null>(null);
   const [orbit, setOrbit] = useState<{ azimuth: number; elevation: number; distance: number | null }>({ ...ORBIT, distance: null });
   const drag = useRef<{ x: number; y: number; azimuth: number; elevation: number } | null>(null);
@@ -194,14 +200,14 @@ export function SchemeVolumeView({
   }, [vertices]);
 
   const pixelRatio = typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1;
-  const matrix = cameraMatrix(view, width, height, extent);
+  const matrix = cameraMatrix(view, width, frameHeight, extent);
   useEffect(() => {
     const context = glRef.current;
     const canvas = canvasRef.current;
     if (!context || !canvas) return;
     const { gl } = context;
     canvas.width = Math.round(width * pixelRatio);
-    canvas.height = Math.round(height * pixelRatio);
+    canvas.height = Math.round(frameHeight * pixelRatio);
     gl.viewport(0, 0, canvas.width, canvas.height);
     const sky = rgb(theme.palette.mode === 'dark' ? '#1e2a33' : '#e3edf5');
     gl.clearColor(sky[0], sky[1], sky[2], 1);
@@ -212,15 +218,15 @@ export function SchemeVolumeView({
   });
 
   // Стрелка севера: направление на экране от центра сцены к точке севернее.
-  const from = projectPoint(matrix, center, width, height);
-  const to = projectPoint(matrix, [center[0], center[1] + extent / 4, 0], width, height);
+  const from = projectPoint(matrix, center, width, frameHeight);
+  const to = projectPoint(matrix, [center[0], center[1] + extent / 4, 0], width, frameHeight);
   const north = from && to ? (Math.atan2(to[0] - from[0], -(to[1] - from[1])) * 180) / Math.PI : 0;
   const labels = camera
     ? []
     : scheme.objects.flatMap((object) => {
         const [x, y] = labelAnchor(object.shape);
-        const at = projectPoint(matrix, [x, y, objectTopHeight(object) + 0.3], width, height);
-        return at && at[0] >= 0 && at[0] <= width && at[1] >= 0 && at[1] <= height ? [{ id: object.id, name: object.name, at }] : [];
+        const at = projectPoint(matrix, [x, y, objectTopHeight(object) + 0.3], width, frameHeight);
+        return at && at[0] >= 0 && at[0] <= width && at[1] >= 0 && at[1] <= frameHeight ? [{ id: object.id, name: object.name, at }] : [];
       });
 
   const rotate = (azimuth: number, elevation: number): void =>
@@ -246,7 +252,7 @@ export function SchemeVolumeView({
   return (
     <Box
       ref={boxRef}
-      sx={{ position: 'relative', border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden', height }}
+      sx={{ position: 'relative', border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden', height: frameHeight }}
       data-volume-view=""
       data-triangles={vertices.triangles}
     >
@@ -255,7 +261,7 @@ export function SchemeVolumeView({
         role="application"
         aria-label={label}
         tabIndex={camera ? -1 : 0}
-        style={{ display: 'block', width, height, cursor: camera ? 'default' : drag.current ? 'grabbing' : 'grab', touchAction: 'none' }}
+        style={{ display: 'block', width, height: frameHeight, cursor: camera ? 'default' : drag.current ? 'grabbing' : 'grab', touchAction: 'none' }}
         onKeyDown={keyDown}
         onPointerDown={(event) => {
           if (camera) return;

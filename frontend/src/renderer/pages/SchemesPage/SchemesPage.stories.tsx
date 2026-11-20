@@ -324,7 +324,11 @@ export const Volume: Story = {
       .getByRole('application', { name: schemesTexts.volumeView.label({ title: 'Перекрёсток сверху' }) })
       .focus();
     await userEvent.keyboard('{ArrowLeft}{ArrowUp}+');
-    await expect(canvasElement.querySelector('[data-volume-view]')).not.toBeNull();
+    await expect(canvasElement.querySelector('[data-volume-view]')).toHaveAttribute('data-orbit', '225,40');
+    // Поворот запоминается: после плана объём открывается тем же видом.
+    await userEvent.click(canvas.getByRole('button', { name: schemesTexts.displayPlan }));
+    await userEvent.click(canvas.getByRole('button', { name: schemesTexts.displayVolume }));
+    await waitFor(() => expect(canvasElement.querySelector('[data-volume-view]')).toHaveAttribute('data-orbit', '225,40'));
     await userEvent.click(saveButton(canvas));
     await waitFor(() => expect(schemesStorySnapshot().saves).toBe(1));
     const house = schemesStorySnapshot().document.schemes[0].objects.find((object) => object.id === 'o2');

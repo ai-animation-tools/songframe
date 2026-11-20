@@ -288,6 +288,7 @@ export function SchemeEditor({
                 height={canvasHeight}
                 selected={selected}
                 onSelect={setSelected}
+                viewKey={viewStorage ? `${viewStorage}.${scheme.id}.volume` : undefined}
               />
             ) : (
               <SchemeCanvas

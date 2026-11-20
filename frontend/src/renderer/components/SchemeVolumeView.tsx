@@ -33,6 +33,37 @@ void main() {
   gl_FragColor = vec4(vColor * shade, 1.0);
 }`;
 
+/** Облёт: азимут и высота угла в градусах, расстояние в метрах (null — по размеру сцены). */
+interface Orbit {
+  azimuth: number;
+  elevation: number;
+  distance: number | null;
+}
+
+/**
+ * Запомненный облёт из localStorage. Как и вид плана, это предпочтение человека в окне, а не данные клипа;
+ * недоступное хранилище или негодное значение — облёт по умолчанию.
+ */
+function readStoredOrbit(key: string): Orbit | null {
+  try {
+    const value = JSON.parse(localStorage.getItem(key) ?? 'null') as Partial<Record<keyof Orbit, unknown>> | null;
+    const { azimuth, elevation, distance } = value ?? {};
+    if (typeof azimuth !== 'number' || !Number.isFinite(azimuth) || typeof elevation !== 'number' || !Number.isFinite(elevation)) return null;
+    return { azimuth, elevation, distance: typeof distance === 'number' && Number.isFinite(distance) && distance > 0 ? distance : null };
+  } catch {
+    return null;
+  }
+}
+
+/** Запоминает облёт; хранилище, не принявшее запись, работе не мешает. */
+function storeOrbit(key: string, orbit: Orbit): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(orbit));
+  } catch {
+    // Облёт действует, пока вид открыт.
+  }
+}
+
 /** Цвет #rrggbb в долях единицы; другое написание — серый. */
 function rgb(color: string): Vec3 {
   const match = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(color);
@@ -100,7 +131,8 @@ function buildVertices(
 /**
  * Объём схемы вида сверху в перспективе (WebGL без библиотек). Без camera — облёт: перетаскивание вращает вид,
  * колесо приближает, стрелки и +/− делают то же с клавиатуры, подписи объектов стоят над их верхом. Щелчок без
- * сдвига выбирает ближайший объект под указателем (onSelect, пустое место — null), выбранный светлеет. С camera —
+ * сдвига выбирает ближайший объект под указателем (onSelect, пустое место — null), выбранный светлеет. Облёт
+ * запоминается под viewKey и возвращается, когда вид открывают снова. С camera —
  * неподвижный кадр точки съёмки без подписей: подпись спрятанного объекта выдавала бы его в кадре. Кадр
  * перерисовывается только при изменении сцены, размера или вида. С aspect высота следует из ширины, как у кадра
  * видео. Без WebGL — понятное сообщение вместо сцены.
@@ -113,7 +145,8 @@ export function SchemeVolumeView({
   extras = [],
   aspect,
   selected = null,
-  onSelect
+  onSelect,
+  viewKey
 }: {
   scheme: Scheme;
   /** Доступное имя области. */
@@ -127,6 +160,8 @@ export function SchemeVolumeView({
   /** Выбранный объект схемы. */
   selected?: string | null;
   onSelect?(id: string | null): void;
+  /** Ключ localStorage, под которым запоминается облёт. */
+  viewKey?: string;
 }): ReactElement {
   const theme = useTheme();
   const boxRef = useRef<HTMLDivElement>(null);
@@ -135,7 +170,12 @@ export function SchemeVolumeView({
   const [width, setWidth] = useState(640);
   const frameHeight = aspect ? Math.round(width / aspect) : (height ?? 360);
   const [failed, setFailed] = useState<string | null>(null);
-  const [orbit, setOrbit] = useState<{ azimuth: number; elevation: number; distance: number | null }>({ ...ORBIT, distance: null });
+  const [orbit, setOrbit] = useState<Orbit>(() => (viewKey ? readStoredOrbit(viewKey) : null) ?? { ...ORBIT, distance: null });
+  // Записывается только облёт, который человек менял: открытие вида ничего не сохраняет.
+  const turned = useRef(false);
+  useEffect(() => {
+    if (turned.current && viewKey) storeOrbit(viewKey, orbit);
+  }, [orbit, viewKey]);
   const drag = useRef<{ x: number; y: number; azimuth: number; elevation: number; moved: boolean } | null>(null);
 
   useLayoutEffect(() => {
@@ -243,10 +283,14 @@ export function SchemeVolumeView({
           : [];
       });
 
-  const rotate = (azimuth: number, elevation: number): void =>
+  const rotate = (azimuth: number, elevation: number): void => {
+    turned.current = true;
     setOrbit((value) => ({ ...value, azimuth: (azimuth + 360) % 360, elevation: Math.min(85, Math.max(5, elevation)) }));
-  const zoom = (factor: number): void =>
+  };
+  const zoom = (factor: number): void => {
+    turned.current = true;
     setOrbit((value) => ({ ...value, distance: Math.min(extent * 6, Math.max(2, (value.distance ?? extent * 1.3) * factor)) }));
+  };
   const keyDown = (event: KeyboardEvent): void => {
     const keys: Record<string, () => void> = {
       ArrowLeft: () => rotate(orbit.azimuth - 10, orbit.elevation),
@@ -269,6 +313,7 @@ export function SchemeVolumeView({
       sx={{ position: 'relative', border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden', height: frameHeight }}
       data-volume-view=""
       data-triangles={vertices.triangles}
+      data-orbit={`${Math.round(orbit.azimuth)},${Math.round(orbit.elevation)}`}
     >
       <canvas
         ref={canvasRef}

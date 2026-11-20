@@ -12,6 +12,7 @@ import {
   scenarioPageActionProblem,
   scenarioPageOptions,
   scenarioCameraWindowInspection,
+  scenarioCameraWindowMessage,
   scenarioStateInspection
 } from '../../testing/scenarioPageStories';
 import { formatDateTime } from '../../format';
@@ -45,6 +46,17 @@ async function ready(context: Context, timeout = 4000): Promise<Screen> {
   const screen = screenOf(context);
   await screen.findByRole('heading', { name: navigationTexts.pages.scenario }, { timeout });
   return screen;
+}
+/** Раскрывает свёрнутую панель «Камера» справа от карты: крупность, угол обзора и высота. */
+async function openCameraFields(scope: Screen): Promise<void> {
+  const panel = await waitFor(() => {
+    const found = document.querySelector<HTMLElement>('[data-camera-fields]');
+    if (!found) throw new Error('Нет панели «Камера» справа от карты.');
+    return found;
+  });
+  const summary = within(panel).getByRole('button', { name: new RegExp(`^${viewpointTexts.cameraSettings}`) });
+  if (summary.getAttribute('aria-expanded') !== 'true') await userEvent.click(summary);
+  await waitFor(() => expect(scope.getByRole('combobox', { name: viewpointTexts.size })).toBeVisible());
 }
 const editorHeading = (screen: Screen, shot: string) => screen.findByRole('heading', { name: shot, level: 6 }, { timeout: 3000 });
 const field = (screen: Screen, name: string): HTMLInputElement => screen.getByRole('textbox', { name }) as HTMLInputElement;
@@ -208,13 +220,18 @@ export const ViewpointSet: Story = {
     await userEvent.click(await screen.findByRole('button', { name: viewpointTexts.create }));
     // Новая точка сразу открывает карту во весь экран: в блоке сценария плана только кнопка «Открыть карту».
     const map = within(await screen.findByRole('dialog', { name: viewpointTexts.fullscreenTitle({ shot: 'M03' }) }));
-    // Вид из камеры ждёт камеру на схеме.
-    await expect(await map.findByText(viewpointTexts.cameraViewNoCamera)).toBeVisible();
     // Дом нарисован на схеме объектом со ссылкой на референс: его не ставят точкой, строка показывает его со схемы.
     await expect(within(map.getByRole('group', { name: viewpointTexts.target })).queryByRole('button', { name: /Дом/ })).toBeNull();
     await expect(document.querySelector('[data-viewpoint-linked="house"]')).toHaveTextContent(viewpointTexts.linked);
     // Камера слева, герой справа на той же высоте: камера смотрит на восток и сама получает сторону «с запада».
     const preview = await previewOf(screen, map);
+    // Как в редакторе схем: строки камеры и героев слева от карты, свёрнутые поля камеры справа.
+    const rowsBox = document.querySelector('[data-viewpoint-rows]')!.getBoundingClientRect();
+    const mapBox = preview.getBoundingClientRect();
+    const fieldsBox = document.querySelector('[data-camera-fields]')!.getBoundingClientRect();
+    await expect(rowsBox.right).toBeLessThanOrEqual(mapBox.left);
+    await expect(fieldsBox.left).toBeGreaterThanOrEqual(mapBox.right);
+    await expect(map.queryByRole('combobox', { name: viewpointTexts.size })).toBeNull();
     clickPreview(preview, 0.3, 0.5);
     await waitFor(() => expect(preview.querySelector('[data-camera]')).not.toBeNull());
     await userEvent.click(within(map.getByRole('group', { name: viewpointTexts.target })).getByRole('button', { name: /Герой/ }));
@@ -232,31 +249,17 @@ export const ViewpointSet: Story = {
     clickPreview(preview, 0.3, 0.8);
     await waitFor(() => expect(preview.querySelector('[data-camera-end]')).not.toBeNull());
     await expect(document.querySelector('[data-viewpoint-row="camera"]')).toHaveTextContent(/движется на/);
-    // Камера движется: вид из неё показывает первый и последний кадр, в каждом объём схемы и фигура героя.
-    await waitFor(() => expect(document.querySelector('[data-camera-frame="end"]')).not.toBeNull());
-    for (const phase of ['start', 'end'] as const) {
-      const frame = document.querySelector(`[data-camera-frame="${phase}"]`)!;
-      await expect(
-        within(frame as HTMLElement).getByRole('application', { name: viewpointTexts.cameraFrame({ phase: viewpointTexts.phases[phase] }) })
-      ).toBeVisible();
-      await expect(Number(frame.querySelector('[data-volume-view]')?.getAttribute('data-triangles'))).toBeGreaterThan(40);
-    }
     // Крупность меняет угол по умолчанию; свой угол хранится отдельно и возвращается кнопкой.
+    await openCameraFields(map);
     await userEvent.click(map.getByRole('combobox', { name: viewpointTexts.size }));
     await userEvent.click(await screen.findByRole('option', { name: viewpointTexts.sizes.close }));
     const fov = map.getByRole('spinbutton', { name: viewpointTexts.fov }) as HTMLInputElement;
     await expect(fov.value).toBe('25');
     await userEvent.clear(fov);
-    await userEvent.type(fov, '18');
+    await userEvent.type(fov, '16');
     // Угол применяется по уходу из поля: промежуточные «1» не обрезаются до наименьшего угла.
     await userEvent.tab();
     await expect(map.getByText(viewpointTexts.fovOwn({ fov: 25 }))).toBeVisible();
-    // Ползунок у вида из камеры — зум объектива: тот же угол, что в поле; вверх — угол уже.
-    const zoom = map.getByRole('slider', { name: viewpointTexts.cameraZoom });
-    await expect(zoom).toHaveAttribute('aria-valuetext', viewpointTexts.cameraZoomValue({ fov: 18 }));
-    zoom.focus();
-    await userEvent.keyboard('{ArrowUp}{ArrowUp}');
-    await waitFor(() => expect(fov.value).toBe('16'));
     // Второй герой далеко в стороне: камера целится между героями, при узком угле оба вне кадра.
     await userEvent.click(map.getByRole('button', { name: viewpointTexts.phases.start }));
     await userEvent.click(within(map.getByRole('group', { name: viewpointTexts.target })).getByRole('button', { name: /Сосед/ }));
@@ -353,6 +356,7 @@ export const ViewpointFullscreen: Story = {
     await userEvent.click(fit);
     await waitFor(() => expect(dialog.queryByRole('button', { name: schemesTexts.fit })).toBeNull());
     // Высота камеры: кнопка типовой высоты и своя высота на последнем кадре (кран).
+    await openCameraFields(dialog);
     const presets = within(dialog.getByLabelText(viewpointTexts.cameraHeightPresets));
     await userEvent.click(presets.getByRole('button', { name: viewpointTexts.cameraHeightPreset({ name: viewpointTexts.heightPresets.drone, metres: '10' }) }));
     await expect(dialog.getByRole('spinbutton', { name: viewpointTexts.cameraHeight })).toHaveValue(10);
@@ -371,7 +375,7 @@ export const ViewpointFullscreen: Story = {
 };
 
 export const ViewpointCameraWindow: Story = {
-  name: 'Вид из камеры в отдельном окне · кадры следуют за картой, «Вернуть», закрытие карты закрывает окно',
+  name: 'Вид из камеры в отдельном окне · кнопка в шапке карты, кадры следуют за картой, зум из окна, закрытие',
   tags: ['!autodocs', 'ci'],
   parameters: { songframe: scenarioPageOptions({ route: '/project/scenario?shot=M03' }) },
   play: async (context) => {
@@ -380,24 +384,29 @@ export const ViewpointCameraWindow: Story = {
     await userEvent.click(viewpointBlock(screen));
     await userEvent.click(await screen.findByRole('button', { name: viewpointTexts.create }));
     const dialog = within(await screen.findByRole('dialog', { name: viewpointTexts.fullscreenTitle({ shot: 'M03' }) }));
-    await userEvent.click(dialog.getByRole('button', { name: viewpointTexts.cameraDetach }));
-    // В карте вместо кадров — пояснение и «Вернуть»; окно получает всё, из чего строит кадры.
-    await expect(await dialog.findByText(viewpointTexts.cameraDetached)).toBeVisible();
+    // Встроенного вида в карте нет: он только в отдельном окне, кнопка — в шапке рядом с «Сохранить».
+    await expect(document.querySelector('[data-camera-frame]')).toBeNull();
+    await userEvent.click(dialog.getByRole('button', { name: viewpointTexts.cameraOpen }));
+    await expect(await dialog.findByRole('button', { name: viewpointTexts.cameraClose })).toBeVisible();
     await waitFor(() => expect(scenarioCameraWindowInspection().states).toHaveLength(1));
     const [first] = scenarioCameraWindowInspection().states;
     await expect(first.title).toBe(viewpointTexts.cameraWindowTitle({ shot: 'M03', location: 'Старые ворота' }));
-    await expect(first.viewpoint.location).toBe('gate');
+    await expect(first).toMatchObject({ editable: true, viewpoint: { location: 'gate' }, heights: { hero: 1.8 } });
     // Правка в карте сразу уходит в окно.
+    await openCameraFields(dialog);
     const presets = within(dialog.getByLabelText(viewpointTexts.cameraHeightPresets));
     await userEvent.click(presets.getByRole('button', { name: viewpointTexts.cameraHeightPreset({ name: viewpointTexts.heightPresets.drone, metres: '10' }) }));
     await waitFor(() => expect(scenarioCameraWindowInspection().states.at(-1)!.viewpoint.camera_height).toEqual({ start: 10 }));
-    // «Вернуть» закрывает окно, кадры снова в карте.
-    await userEvent.click(dialog.getByRole('button', { name: viewpointTexts.cameraReturn }));
-    await waitFor(() => expect(document.querySelector('[data-camera-detached]')).toBeNull());
+    // Зум в окне меняет угол обзора точки: поле карты и следующее состояние окна.
+    scenarioCameraWindowMessage({ type: 'fov', fov: 16 });
+    await waitFor(() => expect((dialog.getByRole('spinbutton', { name: viewpointTexts.fov }) as HTMLInputElement).value).toBe('16'));
+    await waitFor(() => expect(scenarioCameraWindowInspection().states.at(-1)!.viewpoint.fov).toBe(16));
+    // Кнопка в шапке закрывает окно.
+    await userEvent.click(dialog.getByRole('button', { name: viewpointTexts.cameraClose }));
+    await expect(await dialog.findByRole('button', { name: viewpointTexts.cameraOpen })).toBeVisible();
     await expect(scenarioCameraWindowInspection().open).toBe(false);
-    await expect(dialog.getByRole('button', { name: viewpointTexts.cameraDetach })).toBeVisible();
     // Закрытие карты закрывает и отдельное окно.
-    await userEvent.click(dialog.getByRole('button', { name: viewpointTexts.cameraDetach }));
+    await userEvent.click(dialog.getByRole('button', { name: viewpointTexts.cameraOpen }));
     await waitFor(() => expect(scenarioCameraWindowInspection().open).toBe(true));
     await userEvent.click(dialog.getByRole('button', { name: commonTexts.close }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());

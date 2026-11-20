@@ -93,7 +93,7 @@
 | Страница | Назначение |
 | --- | --- |
 | [`SchemesPage`](../frontend/src/renderer/pages/SchemesPage/SchemesPage.tsx) | Страница «Схемы»: локации кастинга слева, схемы выбранной локации справа. |
-| [`CameraViewPage`](../frontend/src/renderer/pages/CameraViewPage/CameraViewPage.tsx) | Отдельное окно вида из камеры: кадры точки съёмки, присланные картой плана из основного окна. |
+| [`CameraViewPage`](../frontend/src/renderer/pages/CameraViewPage/CameraViewPage.tsx) | Отдельное окно вида из камеры: кадры точки съёмки, присланные картой плана из основного окна, и зум объектива. |
 
 Ещё: [`frontend/src/shared/schemes.ts`](../frontend/src/shared/schemes.ts), [`frontend/src/shared/scheme-editing.ts`](../frontend/src/shared/scheme-editing.ts), [`frontend/src/shared/scheme-canvas.ts`](../frontend/src/shared/scheme-canvas.ts), [`frontend/src/shared/scheme-volume.ts`](../frontend/src/shared/scheme-volume.ts), [`frontend/src/shared/camera3d.ts`](../frontend/src/shared/camera3d.ts), [`frontend/src/renderer/components/SchemeVolumeView.tsx`](../frontend/src/renderer/components/SchemeVolumeView.tsx), [`frontend/src/shared/viewpoint.ts`](../frontend/src/shared/viewpoint.ts), [`frontend/src/shared/viewpoint-camera.ts`](../frontend/src/shared/viewpoint-camera.ts), [`frontend/src/renderer/components/SchemePreview.tsx`](../frontend/src/renderer/components/SchemePreview.tsx), [`frontend/src/renderer/components/CameraFrames.tsx`](../frontend/src/renderer/components/CameraFrames.tsx), [`frontend/src/shared/camera-window.ts`](../frontend/src/shared/camera-window.ts), [`internal/app/camera_window.go`](../internal/app/camera_window.go), [`internal/scenario/viewpoint.go`](../internal/scenario/viewpoint.go).
 

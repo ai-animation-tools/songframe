@@ -9,9 +9,9 @@ import {
   Box,
   Button,
   Chip,
+  Divider,
   MenuItem,
   Paper,
-  Slider,
   Stack,
   TextField,
   ToggleButton,
@@ -34,8 +34,6 @@ import type { CastEntity, CastFile } from '@shared/types';
 import type { Scheme, SchemeShape, SchemesFile } from '@shared/schemes';
 import { formatMetres } from '@shared/scheme-canvas';
 import {
-  MAX_FOV,
-  MIN_FOV,
   SIZE_FOV,
   VIEWPOINT_SIDES,
   VIEWPOINT_SIZES,
@@ -73,14 +71,14 @@ import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 import { FullscreenEditorDialog } from '../../../components/FullscreenEditorDialog';
 import { LinkedText } from '../../../components/LinkedText';
 import { SchemePreview } from '../../../components/SchemePreview';
-import { CameraFrames } from '../../../components/CameraFrames';
-import { ActionIconButton } from '../../../components/ActionIconButton';
 import { useApp } from '../../../state';
 import { useThemeMode } from '../../../theme';
 import { useDetachedCamera } from '../useDetachedCamera';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import CallReceivedIcon from '@mui/icons-material/CallReceived';
-import { FIGURE_HEIGHT, type FigureHeights } from '@shared/viewpoint-camera';
+import CloseIcon from '@mui/icons-material/Close';
+import PushPinIcon from '@mui/icons-material/PushPin';
+import { ActionIconButton } from '../../../components/ActionIconButton';
+import type { FigureHeights } from '@shared/viewpoint-camera';
 import { castEntityRoute } from '../../../components/castRoutes';
 
 const texts = scenarioTexts.viewpoint;
@@ -95,8 +93,10 @@ interface LinkedReference {
   shapes: SchemeShape[];
 }
 /** Ширина колонок строки камеры или героя: имя и состояние, px. */
-const ROW_NAME_WIDTH = 120;
-const ROW_STATE_WIDTH = 420;
+/** Колонка строк камеры и героев слева от карты, px. */
+const ROWS_WIDTH = 300;
+/** Колонка полей камеры справа от карты, px. */
+const FIELDS_WIDTH = 340;
 
 /** Бейдж заголовка: «С юга · Общий · на схеме» или «не задана». */
 export function viewpointBadge(viewpoint: SceneViewpoint | undefined): string {
@@ -178,93 +178,9 @@ const HEIGHT_PRESETS = [
 ] as const;
 
 /**
- * Вид из камеры: перспективные кадры объёма схемы из точки камеры — первый и, если камера движется или
- * поворачивается либо герои движутся, последний. Без камеры или у камеры сверху — пояснение вместо кадра.
- */
-function CameraView({
-  viewpoint,
-  scheme,
-  heights,
-  title,
-  editable,
-  update
-}: {
-  viewpoint: SceneViewpoint;
-  scheme: Scheme;
-  /** Заголовок отдельного окна вида: план и локация. */
-  title: string;
-  /** Рост героев из кастинга. */
-  heights: FigureHeights;
-  editable: boolean;
-  update(next: SceneViewpoint): void;
-}): ReactElement {
-  const fov = viewpointFov(viewpoint);
-  const { notify, describeError } = useApp();
-  const { mode: theme } = useThemeMode();
-  const windowState = useMemo(() => ({ title, scheme, viewpoint, heights, theme }), [title, scheme, viewpoint, heights, theme]);
-  const separate = useDetachedCamera(windowState, (error) => notify(describeError(error), 'error'));
-  const eye = heightMoves(viewpoint)
-    ? `${metres(cameraHeight(viewpoint, 'start'))} → ${metres(cameraHeight(viewpoint, 'end'))}`
-    : metres(cameraHeight(viewpoint, 'start'));
-  const unavailable = viewpoint.side === 'top' ? texts.cameraViewTop : !viewpoint.camera ? texts.cameraViewNoCamera : null;
-  return (
-    <Stack spacing={1} data-camera-view="">
-      <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
-        <Typography variant="subtitle2">{texts.cameraView}</Typography>
-        {separate.detached ? null : (
-          <ActionIconButton aria-label={texts.cameraDetach} size="small" onClick={separate.open}>
-            <OpenInNewIcon fontSize="small" />
-          </ActionIconButton>
-        )}
-      </Stack>
-      {separate.detached ? (
-        <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }} data-camera-detached="">
-          <Typography variant="body2" color="text.secondary">
-            {texts.cameraDetached}
-          </Typography>
-          <ActionButton startIcon={<CallReceivedIcon />} onClick={separate.close}>
-            {texts.cameraReturn}
-          </ActionButton>
-        </Stack>
-      ) : unavailable ? (
-        <Typography variant="body2" color="text.secondary">
-          {unavailable}
-        </Typography>
-      ) : (
-        <>
-          <Typography variant="body2" color="text.secondary">
-            {texts.cameraViewHint({ eye, figure: metres(FIGURE_HEIGHT) })}
-          </Typography>
-          <Stack direction="row" spacing={1.5} sx={{ alignItems: 'stretch' }}>
-            <CameraFrames viewpoint={viewpoint} scheme={scheme} heights={heights} />
-            {/* Зум объектива: вверх — уже угол и крупнее кадр. Тот же угол, что в поле «Угол обзора» и у сектора на схеме. */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', pt: 3, pb: 1 }} data-camera-zoom="">
-              <Slider
-                orientation="vertical"
-                size="small"
-                min={MIN_FOV}
-                max={MAX_FOV}
-                step={1}
-                value={MIN_FOV + MAX_FOV - fov}
-                disabled={!editable}
-                aria-label={texts.cameraZoom}
-                getAriaValueText={(value) => texts.cameraZoomValue({ fov: MIN_FOV + MAX_FOV - value })}
-                valueLabelDisplay="auto"
-                valueLabelFormat={(value) => texts.cameraZoomValue({ fov: MIN_FOV + MAX_FOV - value })}
-                onChange={(_, value) => update(withFov(viewpoint, MIN_FOV + MAX_FOV - (value as number)))}
-                sx={{ flex: 1, minHeight: 120 }}
-              />
-            </Box>
-          </Stack>
-        </>
-      )}
-    </Stack>
-  );
-}
-
-/**
  * Расстановка на схеме: что ставить щелчком (камера или герой, первый или последний кадр), мини-схема, строки
- * состояния камеры, героев и нарисованных на схеме референсов и вид из камеры. Живёт в окне карты во весь экран.
+ * состояния камеры, героев и нарисованных на схеме референсов. Живёт в окне карты во весь экран; вид из камеры —
+ * в отдельном окне (кнопка в шапке карты).
  */
 function ViewpointPlacement({
   viewpoint,
@@ -273,9 +189,10 @@ function ViewpointPlacement({
   linked,
   nameOf,
   heights,
-  title,
   editable,
   height,
+  place,
+  cameraFields,
   update
 }: {
   viewpoint: SceneViewpoint;
@@ -283,13 +200,15 @@ function ViewpointPlacement({
   heroes: readonly CastEntity[];
   /** Рост сущностей кастинга: фигуры вида из камеры и отметка «рост не задан». */
   heights: FigureHeights;
-  /** Заголовок отдельного окна вида из камеры. */
-  title: string;
   /** Референсы плана, нарисованные на схеме объектами: только строки состояния. */
   linked: readonly LinkedReference[];
   nameOf(id: string): string;
   editable: boolean;
   height: number;
+  /** Локация и сторона: над картой. */
+  place: ReactNode;
+  /** Крупность, угол обзора и высота камеры: свёрнутая панель справа от карты. */
+  cameraFields: ReactNode;
   update(next: SceneViewpoint): void;
 }): ReactElement {
   const navigate = useNavigate();
@@ -313,18 +232,39 @@ function ViewpointPlacement({
           : lastDiffers && inFrame(viewpoint, 'end', pathPoint(path, 'end')!) === false
             ? 'end'
             : null;
+    const actions =
+      editable && path ? (
+        <Stack direction="row" sx={{ flexShrink: 0 }}>
+          {focus === false ? (
+            <ActionIconButton aria-label={texts.makeFocus} size="small" onClick={() => update(setFocus(viewpoint, key))}>
+              <StarIcon fontSize="small" />
+            </ActionIconButton>
+          ) : null}
+          {key === 'camera' && viewpoint.heading ? (
+            <ActionIconButton aria-label={texts.headingAuto} size="small" onClick={() => update(withoutHeading(viewpoint))}>
+              <CenterFocusStrongIcon fontSize="small" />
+            </ActionIconButton>
+          ) : null}
+          {path.end ? (
+            <ActionIconButton aria-label={texts.removeEnd} size="small" onClick={() => update(removePoint(viewpoint, rowTarget, 'end'))}>
+              <PushPinIcon fontSize="small" />
+            </ActionIconButton>
+          ) : null}
+          <ActionIconButton aria-label={texts.removeTarget} size="small" color="error" onClick={() => update(removePoint(viewpoint, rowTarget, 'start'))}>
+            <LocationOffIcon fontSize="small" />
+          </ActionIconButton>
+        </Stack>
+      ) : null;
     return (
-      // Сетка с колонкой состояния ограниченной ширины: кнопки строки стоят рядом с её текстом, а не у дальнего края
-      // широкого окна, и у всех строк начинаются с одной линии.
-      <Box
-        key={key}
-        sx={{ display: 'grid', gridTemplateColumns: `${ROW_NAME_WIDTH}px minmax(0, ${ROW_STATE_WIDTH}px) auto`, columnGap: 1.5, alignItems: 'center' }}
-        data-viewpoint-row={key}
-      >
-        <Typography variant="body2" fontWeight={600} noWrap>
-          {name}
-        </Typography>
-        <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}>
+      // Узкая колонка слева от карты: имя и кнопки-значки в первой строке, состояние под ними.
+      <Stack key={key} spacing={0.25} data-viewpoint-row={key}>
+        <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', minHeight: 30 }}>
+          <Typography variant="body2" fontWeight={600} noWrap sx={{ flex: 1, minWidth: 0 }}>
+            {name}
+          </Typography>
+          {actions}
+        </Stack>
+        <Stack direction="row" spacing={0.5} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}>
           {focus ? <Chip size="small" variant="outlined" icon={<StarIcon color="secondary" />} label={texts.focus} /> : null}
           {unmeasured ? (
             <Tooltip title={texts.heightUnknownHint}>
@@ -347,31 +287,7 @@ function ViewpointPlacement({
             {[pathState(path), fromCamera, key === 'camera' && path && viewpoint.heading ? texts.headingOwn : null].filter(Boolean).join(' · ')}
           </Typography>
         </Stack>
-        <Stack direction="row" spacing={0.5} useFlexGap sx={{ flexWrap: 'wrap' }}>
-          {editable && path ? (
-            <>
-              {focus === false ? (
-                <Button size="small" startIcon={<StarIcon />} onClick={() => update(setFocus(viewpoint, key))}>
-                  {texts.makeFocus}
-                </Button>
-              ) : null}
-              {key === 'camera' && viewpoint.heading ? (
-                <Button size="small" startIcon={<CenterFocusStrongIcon />} onClick={() => update(withoutHeading(viewpoint))}>
-                  {texts.headingAuto}
-                </Button>
-              ) : null}
-              {path.end ? (
-                <Button size="small" onClick={() => update(removePoint(viewpoint, rowTarget, 'end'))}>
-                  {texts.removeEnd}
-                </Button>
-              ) : null}
-              <Button size="small" color="error" startIcon={<LocationOffIcon />} onClick={() => update(removePoint(viewpoint, rowTarget, 'start'))}>
-                {texts.removeTarget}
-              </Button>
-            </>
-          ) : null}
-        </Stack>
-      </Box>
+      </Stack>
     );
   };
 
@@ -382,15 +298,13 @@ function ViewpointPlacement({
     const end = lastDiffers ? footprintView(viewpoint, 'end', item.shapes) : null;
     const outOf = start?.inFrame === false ? 'start' : end?.inFrame === false ? 'end' : null;
     return (
-      <Box
-        key={item.id}
-        sx={{ display: 'grid', gridTemplateColumns: `${ROW_NAME_WIDTH}px minmax(0, ${ROW_STATE_WIDTH}px) auto`, columnGap: 1.5, alignItems: 'center' }}
-        data-viewpoint-linked={item.id}
-      >
-        <Typography variant="body2" fontWeight={600} noWrap>
-          {item.name}
-        </Typography>
-        <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}>
+      <Stack key={item.id} spacing={0.25} data-viewpoint-linked={item.id}>
+        <Stack direction="row" sx={{ alignItems: 'center', minHeight: 30 }}>
+          <Typography variant="body2" fontWeight={600} noWrap sx={{ flex: 1, minWidth: 0 }}>
+            {item.name}
+          </Typography>
+        </Stack>
+        <Stack direction="row" spacing={0.5} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}>
           <Tooltip title={texts.linkedHint}>
             <Chip size="small" variant="outlined" icon={<MapIcon />} label={texts.linked} />
           </Tooltip>
@@ -405,13 +319,43 @@ function ViewpointPlacement({
             </Typography>
           ) : null}
         </Stack>
-        <Box />
-      </Box>
+      </Stack>
     );
   };
 
+  const rows = (
+    <Paper variant="outlined" sx={{ p: 1.5, minWidth: 0 }} data-viewpoint-rows="">
+      <Stack spacing={1} divider={<Divider flexItem />}>
+        {pathRow('camera', texts.camera, camera, null)}
+        {heroes.map((entity) => {
+          const path = targetPath(viewpoint, { entity: entity.id });
+          return pathRow(entity.id, entity.name || entity.id, path, path ? viewpoint.subjects?.[0]?.entity === entity.id : null);
+        })}
+        {linked.map((item) => linkedRow(item))}
+      </Stack>
+    </Paper>
+  );
+  const eye = heightMoves(viewpoint)
+    ? `${metres(cameraHeight(viewpoint, 'start'))} → ${metres(cameraHeight(viewpoint, 'end'))}`
+    : metres(cameraHeight(viewpoint, 'start'));
+  // Поля камеры свёрнуты по умолчанию: в заголовке — их итог, чтобы видеть его, не раскрывая.
+  const cameraPanel = (
+    <Accordion variant="outlined" disableGutters defaultExpanded={false} sx={{ minWidth: 0 }} data-camera-fields="">
+      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+        <Stack sx={{ minWidth: 0 }}>
+          <Typography variant="subtitle2">{texts.cameraSettings}</Typography>
+          <Typography variant="body2" color="text.secondary">
+            {texts.cameraSummary({ size: texts.sizes[viewpoint.size], fov, height: eye })}
+          </Typography>
+        </Stack>
+      </AccordionSummary>
+      <AccordionDetails>{cameraFields}</AccordionDetails>
+    </Accordion>
+  );
+
   return (
     <Stack spacing={1.5}>
+      {place}
       {editable ? (
         <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap', alignItems: 'center' }}>
           <Typography variant="body2">{texts.target}</Typography>
@@ -447,59 +391,100 @@ function ViewpointPlacement({
       <Typography variant="body2" color="text.secondary">
         {viewpoint.side === 'top' ? texts.pickTopHint : texts.pickHint}
       </Typography>
-      <SchemePreview
-        scheme={scheme}
-        label={texts.preview({ title: scheme.title })}
-        disabled={!editable}
-        height={height}
-        camera={
-          camera
-            ? {
-                start: camera.start,
-                end: camera.end,
-                startHeading: lookHeading(viewpoint, 'start'),
-                endHeading: camera.end || viewpoint.heading?.end !== undefined ? lookHeading(viewpoint, 'end') : null,
-                fov
-              }
-            : null
-        }
-        subjects={(viewpoint.subjects ?? []).map((subject, index) => ({
-          entity: subject.entity,
-          label: texts.subjectLabel({ name: nameOf(subject.entity), metres: camera ? metres(distance(camera.start, subject.start)) : null }),
-          start: subject.start,
-          end: subject.end,
-          focus: index === 0
-        }))}
-        onPick={(point) => update(setPoint(viewpoint, target, phase, point))}
-        onFov={(value) => update(withFov(viewpoint, value))}
-        headingPhase={phase}
-        onHeading={(degrees) => update(setHeading(viewpoint, phase, degrees))}
-        onMove={(moved, movedPhase, point) =>
-          // На последнем кадре неподвижная точка не сдвигается целиком: перетаскивание задаёт, куда она переместится.
-          update(setPoint(viewpoint, moved, phase === 'end' && !targetPath(viewpoint, moved)?.end ? 'end' : movedPhase, point))
-        }
-        ghost={
-          target === 'camera'
-            ? (point) => {
-                // Куда смотрела бы камера, поставленная сюда щелчком: тот же расчёт, что после установки.
-                const next = setPoint(viewpoint, 'camera', phase, point);
-                return { heading: lookHeading(next, phase), fov: viewpointFov(next) };
-              }
-            : undefined
-        }
-      />
-      <Paper variant="outlined" sx={{ p: 1.5 }}>
-        <Stack spacing={0.75}>
-          {pathRow('camera', texts.camera, camera, null)}
-          {heroes.map((entity) => {
-            const path = targetPath(viewpoint, { entity: entity.id });
-            return pathRow(entity.id, entity.name || entity.id, path, path ? viewpoint.subjects?.[0]?.entity === entity.id : null);
-          })}
-          {linked.map((item) => linkedRow(item))}
-        </Stack>
-      </Paper>
-      <CameraView viewpoint={viewpoint} scheme={scheme} heights={heights} title={title} editable={editable} update={update} />
+      {/* Как в редакторе схем: строки камеры и героев слева, карта посередине, поля камеры справа; в узком окне — друг под другом. */}
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: 'minmax(0, 1fr)', lg: `${ROWS_WIDTH}px minmax(0, 1fr) ${FIELDS_WIDTH}px` },
+          gap: 1.5,
+          alignItems: 'start'
+        }}
+      >
+        {rows}
+        <SchemePreview
+          scheme={scheme}
+          label={texts.preview({ title: scheme.title })}
+          disabled={!editable}
+          height={height}
+          camera={
+            camera
+              ? {
+                  start: camera.start,
+                  end: camera.end,
+                  startHeading: lookHeading(viewpoint, 'start'),
+                  endHeading: camera.end || viewpoint.heading?.end !== undefined ? lookHeading(viewpoint, 'end') : null,
+                  fov
+                }
+              : null
+          }
+          subjects={(viewpoint.subjects ?? []).map((subject, index) => ({
+            entity: subject.entity,
+            label: texts.subjectLabel({ name: nameOf(subject.entity), metres: camera ? metres(distance(camera.start, subject.start)) : null }),
+            start: subject.start,
+            end: subject.end,
+            focus: index === 0
+          }))}
+          onPick={(point) => update(setPoint(viewpoint, target, phase, point))}
+          onFov={(value) => update(withFov(viewpoint, value))}
+          headingPhase={phase}
+          onHeading={(degrees) => update(setHeading(viewpoint, phase, degrees))}
+          onMove={(moved, movedPhase, point) =>
+            // На последнем кадре неподвижная точка не сдвигается целиком: перетаскивание задаёт, куда она переместится.
+            update(setPoint(viewpoint, moved, phase === 'end' && !targetPath(viewpoint, moved)?.end ? 'end' : movedPhase, point))
+          }
+          ghost={
+            target === 'camera'
+              ? (point) => {
+                  // Куда смотрела бы камера, поставленная сюда щелчком: тот же расчёт, что после установки.
+                  const next = setPoint(viewpoint, 'camera', phase, point);
+                  return { heading: lookHeading(next, phase), fov: viewpointFov(next) };
+                }
+              : undefined
+          }
+        />
+        {cameraPanel}
+      </Box>
     </Stack>
+  );
+}
+
+/**
+ * Кнопка шапки карты: открывает вид из камеры в отдельном окне и, пока оно открыто, закрывает его. Живёт, пока
+ * открыта карта: размонтирование (закрытие карты) закрывает и окно. Окно получает точку, схему, рост героев и тему
+ * при каждом изменении, обратно присылает зум объектива — его применяет onFov, если точку можно править.
+ */
+function CameraWindowButton({
+  title,
+  scheme,
+  viewpoint,
+  heights,
+  editable,
+  onFov
+}: {
+  title: string;
+  scheme: Scheme;
+  viewpoint: SceneViewpoint;
+  heights: FigureHeights;
+  editable: boolean;
+  onFov(fov: number): void;
+}): ReactElement {
+  const { notify, describeError } = useApp();
+  const { mode: theme } = useThemeMode();
+  const state = useMemo(() => ({ title, scheme, viewpoint, heights, theme, editable }), [title, scheme, viewpoint, heights, theme, editable]);
+  const cameraWindow = useDetachedCamera(state, {
+    onFov: (value) => {
+      if (editable) onFov(value);
+    },
+    onError: (error) => notify(describeError(error), 'error')
+  });
+  return cameraWindow.detached ? (
+    <ActionButton variant="outlined" startIcon={<CloseIcon />} onClick={cameraWindow.close}>
+      {texts.cameraClose}
+    </ActionButton>
+  ) : (
+    <ActionButton variant="outlined" startIcon={<OpenInNewIcon />} onClick={cameraWindow.open}>
+      {texts.cameraOpen}
+    </ActionButton>
   );
 }
 
@@ -573,9 +558,8 @@ export function ViewpointBlock({
   const fov = viewpoint ? viewpointFov(viewpoint) : 0;
   const derivedSide = !!viewpoint && sideFromPoints(viewpoint);
   const update = (next: SceneViewpoint): void => onChange(syncSide(withFov(next, next.fov)));
-
-  // Поля точки съёмки: локация, сторона, крупность и угол — те же в блоке и в окне во весь экран.
-  const fields = (current: SceneViewpoint): ReactElement => (
+  // Место съёмки: локация и сторона — над картой.
+  const placeFields = (current: SceneViewpoint): ReactElement => (
     <Stack spacing={1}>
       <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap', alignItems: 'flex-start' }}>
         <TextField
@@ -609,6 +593,19 @@ export function ViewpointBlock({
             </ToggleButton>
           ))}
         </ToggleButtonGroup>
+      </Stack>
+      {derivedSide ? (
+        <Typography variant="body2" color="text.secondary">
+          {texts.sideFromPoints({ side: texts.sides[current.side] })}
+        </Typography>
+      ) : null}
+    </Stack>
+  );
+
+  // Поля камеры: крупность, угол обзора и высота — в свёрнутой панели справа от карты.
+  const cameraFields = (current: SceneViewpoint): ReactElement => (
+    <Stack spacing={1}>
+      <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap', alignItems: 'flex-start' }}>
         <TextField
           select
           size="small"
@@ -673,11 +670,6 @@ export function ViewpointBlock({
           </Stack>
         </Stack>
       )}
-      {derivedSide ? (
-        <Typography variant="body2" color="text.secondary">
-          {texts.sideFromPoints({ side: texts.sides[current.side] })}
-        </Typography>
-      ) : null}
     </Stack>
   );
 
@@ -751,12 +743,31 @@ export function ViewpointBlock({
                 open={fullscreen}
                 title={texts.fullscreenTitle({ shot })}
                 dirty={dirty}
-                actions={saveButton}
+                actions={
+                  <>
+                    {fullscreen && viewpoint && locationScheme ? (
+                      <CameraWindowButton
+                        title={texts.cameraWindowTitle({ shot, location: nameOf(viewpoint.location) })}
+                        scheme={locationScheme}
+                        viewpoint={viewpoint}
+                        heights={heights}
+                        editable={editable}
+                        onFov={(value) => update(withFov(viewpoint, value))}
+                      />
+                    ) : null}
+                    {saveButton}
+                  </>
+                }
                 onClose={() => setFullscreen(false)}
               >
                 {fullscreen ? (
                   <Stack spacing={1.5}>
-                    {fields(viewpoint)}
+                    {locationScheme && !schemesError ? null : (
+                      <>
+                        {placeFields(viewpoint)}
+                        {cameraFields(viewpoint)}
+                      </>
+                    )}
                     {schemesError ? (
                       <Alert severity="error">{texts.schemesError({ error: schemesError })}</Alert>
                     ) : locationScheme ? (
@@ -767,9 +778,10 @@ export function ViewpointBlock({
                         linked={linked}
                         nameOf={nameOf}
                         heights={heights}
-                        title={texts.cameraWindowTitle({ shot, location: nameOf(viewpoint.location) })}
                         editable={editable}
                         height={Math.max(MIN_MAP_HEIGHT, window.innerHeight - 330)}
+                        place={placeFields(viewpoint)}
+                        cameraFields={cameraFields(viewpoint)}
                         update={update}
                       />
                     ) : schemes ? (

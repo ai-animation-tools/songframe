@@ -22,8 +22,8 @@ var cameraWindowKind = windowKind{
 }
 
 // CameraWindowService — отдельное окно вида из камеры (window.api.cameraWindow): карта точки съёмки
-// в основном окне присылает ему схему, точку и рост героев, а окно только показывает кадры — правится
-// всё в карте. Механика окна — detachedWindows.
+// в основном окне присылает ему схему, точку и рост героев, окно показывает кадры и отвечает только зумом
+// объектива — точки правятся в карте. Механика окна — detachedWindows.
 type CameraWindowService struct {
 	*detachedWindows
 }

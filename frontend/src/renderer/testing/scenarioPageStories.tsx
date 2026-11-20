@@ -4,7 +4,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { Link, Paper, Stack, Typography } from '@mui/material';
 import type { SchemesFile } from '@shared/schemes';
 import type { Api } from '@shared/api';
-import type { CameraWindowState } from '@shared/camera-window';
+import type { CameraWindowMessage, CameraWindowState } from '@shared/camera-window';
 import type {
   AppState,
   BriefResult,
@@ -531,7 +531,7 @@ interface PageModel {
   applies: number;
   cancels: number;
   /** Отдельное окно вида из камеры: открытая сессия и состояния, присланные картой. */
-  cameraWindow: { session: string | null; states: CameraWindowState[] };
+  cameraWindow: { session: string | null; states: CameraWindowState[]; fromWindow(message: CameraWindowMessage): void };
   subscribe(listener: () => void): () => void;
   revision(): number;
   publish(): void;
@@ -623,7 +623,7 @@ export function scenarioPageOptions({
         starts: 0,
         applies: 0,
         cancels: 0,
-        cameraWindow: { session: null, states: [] },
+        cameraWindow: { session: null, states: [], fromWindow: () => undefined },
         subscribe(listener) {
           listeners.add(listener);
           return () => {
@@ -1035,6 +1035,12 @@ export function scenarioPageOptions({
           fileUrl: () => STORY_IMAGE_PATH
         }
       });
+      // Сообщение от имени открытого окна вида из камеры (зум объектива) — как его доставил бы Go.
+      model.cameraWindow.fromWindow = (message) => {
+        const id = model.cameraWindow.session;
+        if (!id) throw new Error('Отдельное окно вида из камеры не открыто.');
+        session.emit.cameraMessage({ session: id, message });
+      };
       models.set(session.api, model);
       if (videoProvider) session.onCleanup(registerMediaProviderForTests(TEST_PROVIDER, testProviderInfo));
       session.onCleanup(() => {
@@ -1050,7 +1056,14 @@ export function scenarioPageOptions({
 export function scenarioCameraWindowInspection(): { open: boolean; states: CameraWindowState[] } {
   const model = models.get(window.api);
   if (!model) throw new Error('Модель сценария не открыта.');
-  return structuredClone({ open: model.cameraWindow.session !== null, states: model.cameraWindow.states });
+  return { open: model.cameraWindow.session !== null, states: structuredClone(model.cameraWindow.states) };
+}
+
+/** Сообщение от имени открытого окна вида из камеры, например зум объектива. */
+export function scenarioCameraWindowMessage(message: CameraWindowMessage): void {
+  const model = models.get(window.api);
+  if (!model) throw new Error('Модель сценария не открыта.');
+  model.cameraWindow.fromWindow(message);
 }
 
 /** Снимок сохранённых документов позволяет проверить, что выбор пустого поля ничего не записал. */

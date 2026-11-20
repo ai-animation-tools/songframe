@@ -69,7 +69,7 @@ type detachedWindowEvent struct {
 type windowSession struct {
 	session      string
 	owner        windowOwner
-	detached       detachedWindow
+	detached     detachedWindow
 	cancelOwner  func()
 	cancelPlayer func()
 	done         bool

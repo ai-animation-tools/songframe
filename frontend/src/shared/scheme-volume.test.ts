@@ -99,7 +99,7 @@ describe('объём объектов схемы', () => {
     expect(road.every((triangle) => triangleNormal(triangle)[2] > 0.99 && triangle.every((p) => p[2] === 0))).toBe(true);
   });
 
-  it('забор — двусторонняя стенка, полоса с шириной — плоская дорога, точка с высотой — столб', () => {
+  it('забор — стенка в один слой, полоса с шириной — плоская дорога, точка с высотой — столб', () => {
     const fence = objectVolume(
       object(
         {
@@ -113,7 +113,7 @@ describe('объём объектов схемы', () => {
         { height: 1.8 }
       )
     );
-    expect(fence).toHaveLength(8);
+    expect(fence).toHaveLength(4);
     expect(bounds(fence)[1][2]).toBe(1.8);
     const road = objectVolume(
       object({

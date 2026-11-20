@@ -24,7 +24,8 @@ void main() { gl_Position = matrix * vec4(position, 1.0); vNormal = normal; vCol
 const FRAGMENT_SHADER = `precision mediump float; varying vec3 vNormal; varying vec3 vColor;
 void main() {
   vec3 light = normalize(vec3(-0.45, -0.6, 0.75));
-  float shade = 0.45 + 0.55 * max(dot(normalize(vNormal), light), 0.0) + 0.12 * max(dot(normalize(vNormal), -light), 0.0);
+  vec3 normal = gl_FrontFacing ? normalize(vNormal) : -normalize(vNormal);
+  float shade = 0.45 + 0.55 * max(dot(normal, light), 0.0) + 0.12 * max(dot(normal, -light), 0.0);
   gl_FragColor = vec4(vColor * shade, 1.0);
 }`;
 

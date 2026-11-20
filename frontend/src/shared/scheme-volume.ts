@@ -7,7 +7,8 @@ import { ellipseOutline, rectCorners, smoothCurve } from './scheme-editing';
  * `docs/schemes.md#объём`, допустимые сочетания проверяет Go (`internal/schemes`), здесь они уже верны.
  *
  * Все треугольники обращены наружу: вершины идут против часовой стрелки, если смотреть снаружи, поэтому нормаль
- * (b − a) × (c − a) смотрит от тела. Плоская поверхность (без высоты и верха) — один слой на высоте низа лицом вверх.
+ * (b − a) × (c − a) смотрит от тела. Плоская поверхность (без высоты и верха) — один слой на высоте низа лицом вверх;
+ * стенка линии без ширины — один слой, видимый с обеих сторон.
  */
 
 export type Vec3 = [number, number, number];
@@ -220,7 +221,7 @@ function ellipsoid(center: SchemePoint, ru: number, rv: number, angle: number, z
   return triangles;
 }
 
-/** Стенка или полоса вдоль линии: у каждого отрезка свой параллелепипед шириной width (без ширины — двусторонняя стенка). */
+/** Стенка или полоса вдоль линии: у каждого отрезка свой параллелепипед шириной width, без ширины — стенка в один слой. */
 function wall(points: readonly SchemePoint[], width: number | undefined, z0: number, z1: number): Triangle[] {
   const triangles: Triangle[] = [];
   for (let index = 0; index + 1 < points.length; index++) {
@@ -243,7 +244,9 @@ function wall(points: readonly SchemePoint[], width: number | undefined, z0: num
         [q[0], q[1], z1],
         [p[0], p[1], z1]
       ];
-      triangles.push([a, b, c], [a, c, d], [b, a, d], [b, d, c]);
+      // Один слой: два слоя в одной плоскости лицом в разные стороны рябят в кадре. Видна с обеих сторон, свет
+      // для обратной стороны отрисовка считает по перевёрнутой нормали.
+      triangles.push([a, b, c], [a, c, d]);
     }
   }
   return triangles;

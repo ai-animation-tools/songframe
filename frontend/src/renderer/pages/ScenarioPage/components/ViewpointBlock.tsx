@@ -11,6 +11,7 @@ import {
   Chip,
   MenuItem,
   Paper,
+  Slider,
   Stack,
   TextField,
   ToggleButton,
@@ -33,6 +34,8 @@ import type { CastEntity, CastFile } from '@shared/types';
 import type { Scheme, SchemesFile } from '@shared/schemes';
 import { formatMetres } from '@shared/scheme-canvas';
 import {
+  MAX_FOV,
+  MIN_FOV,
   SIZE_FOV,
   VIEWPOINT_SIDES,
   VIEWPOINT_SIZES,
@@ -144,7 +147,18 @@ function FovField({
  * Вид из камеры: перспективные кадры объёма схемы из точки камеры — первый и, если камера движется или
  * поворачивается либо герои движутся, последний. Без камеры или у камеры сверху — пояснение вместо кадра.
  */
-function CameraView({ viewpoint, scheme }: { viewpoint: SceneViewpoint; scheme: Scheme }): ReactElement {
+function CameraView({
+  viewpoint,
+  scheme,
+  editable,
+  update
+}: {
+  viewpoint: SceneViewpoint;
+  scheme: Scheme;
+  editable: boolean;
+  update(next: SceneViewpoint): void;
+}): ReactElement {
+  const fov = viewpointFov(viewpoint);
   // Кадры пересчитываются только при смене точки съёмки: новый массив фигур перестраивал бы сцену при каждой отрисовке.
   const frames = useMemo(() => {
     const phases: ViewpointPhase[] =
@@ -172,23 +186,43 @@ function CameraView({ viewpoint, scheme }: { viewpoint: SceneViewpoint; scheme: 
           <Typography variant="body2" color="text.secondary">
             {texts.cameraViewHint({ eye: metres(EYE_HEIGHT), figure: metres(FIGURE_HEIGHT) })}
           </Typography>
-          <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap' }}>
-            {frames.map((frame) =>
-              frame.camera ? (
-                <Box key={frame.phase} sx={{ flex: '1 1 360px', minWidth: 0 }} data-camera-frame={frame.phase}>
-                  <Typography variant="caption" color="text.secondary">
-                    {texts.phases[frame.phase]}
-                  </Typography>
-                  <SchemeVolumeView
-                    scheme={scheme}
-                    label={texts.cameraFrame({ phase: texts.phases[frame.phase] })}
-                    camera={frame.camera}
-                    extras={frame.extras}
-                    aspect={FRAME_ASPECT}
-                  />
-                </Box>
-              ) : null
-            )}
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: 'stretch' }}>
+            <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
+              {frames.map((frame) =>
+                frame.camera ? (
+                  <Box key={frame.phase} sx={{ flex: '1 1 360px', minWidth: 0 }} data-camera-frame={frame.phase}>
+                    <Typography variant="caption" color="text.secondary">
+                      {texts.phases[frame.phase]}
+                    </Typography>
+                    <SchemeVolumeView
+                      scheme={scheme}
+                      label={texts.cameraFrame({ phase: texts.phases[frame.phase] })}
+                      camera={frame.camera}
+                      extras={frame.extras}
+                      aspect={FRAME_ASPECT}
+                    />
+                  </Box>
+                ) : null
+              )}
+            </Stack>
+            {/* Зум объектива: вверх — уже угол и крупнее кадр. Тот же угол, что в поле «Угол обзора» и у сектора на схеме. */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', pt: 3, pb: 1 }} data-camera-zoom="">
+              <Slider
+                orientation="vertical"
+                size="small"
+                min={MIN_FOV}
+                max={MAX_FOV}
+                step={1}
+                value={MIN_FOV + MAX_FOV - fov}
+                disabled={!editable}
+                aria-label={texts.cameraZoom}
+                getAriaValueText={(value) => texts.cameraZoomValue({ fov: MIN_FOV + MAX_FOV - value })}
+                valueLabelDisplay="auto"
+                valueLabelFormat={(value) => texts.cameraZoomValue({ fov: MIN_FOV + MAX_FOV - value })}
+                onChange={(_, value) => update(withFov(viewpoint, MIN_FOV + MAX_FOV - (value as number)))}
+                sx={{ flex: 1, minHeight: 120 }}
+              />
+            </Box>
           </Stack>
         </>
       )}
@@ -370,7 +404,7 @@ function ViewpointPlacement({
           })}
         </Stack>
       </Paper>
-      <CameraView viewpoint={viewpoint} scheme={scheme} />
+      <CameraView viewpoint={viewpoint} scheme={scheme} editable={editable} update={update} />
     </Stack>
   );
 }

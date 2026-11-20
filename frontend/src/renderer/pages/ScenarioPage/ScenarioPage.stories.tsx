@@ -245,6 +245,12 @@ export const ViewpointSet: Story = {
     // Угол применяется по уходу из поля: промежуточные «1» не обрезаются до наименьшего угла.
     await userEvent.tab();
     await expect(screen.getByText(viewpointTexts.fovOwn({ fov: 25 }))).toBeVisible();
+    // Ползунок у вида из камеры — зум объектива: тот же угол, что в поле; вверх — угол уже.
+    const zoom = screen.getByRole('slider', { name: viewpointTexts.cameraZoom });
+    await expect(zoom).toHaveAttribute('aria-valuetext', viewpointTexts.cameraZoomValue({ fov: 18 }));
+    zoom.focus();
+    await userEvent.keyboard('{ArrowUp}{ArrowUp}');
+    await waitFor(() => expect(fov.value).toBe('16'));
     // Второй герой далеко в стороне: камера целится между героями, при узком угле оба вне кадра.
     await userEvent.click(screen.getByRole('button', { name: viewpointTexts.phases.start }));
     await userEvent.click(within(screen.getByRole('group', { name: viewpointTexts.target })).getByRole('button', { name: /Сосед/ }));
@@ -274,7 +280,7 @@ export const ViewpointSet: Story = {
     // Сохранение удаляет временный файл.
     await waitFor(() => expect(scenarioStateInspection().draft).toBeNull());
     const saved = scenarioStateInspection().saved.scenes!.scenes.find((shot) => shot.id === 'M03')!.viewpoint!;
-    await expect(saved).toMatchObject({ location: 'gate', side: 'west', size: 'close', fov: 18 });
+    await expect(saved).toMatchObject({ location: 'gate', side: 'west', size: 'close', fov: 16 });
     await expect(saved.camera?.end).toHaveLength(2);
     await expect(saved.subjects?.map((subject) => subject.entity)).toEqual(['hero', 'neighbor']);
   }

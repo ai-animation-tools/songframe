@@ -556,7 +556,9 @@ export const scenarioTexts = {
     subjectLabel: ({ name, metres }: { name: string; metres: string | null }) => (metres === null ? name : `${name} · ${metres} м`),
     cameraView: 'Вид из камеры',
     cameraViewHint: ({ eye, figure }: { eye: string; figure: string }) =>
-      `Кадр 16:9 из точки камеры с её углом обзора. Камера на высоте ${eye} м, герои — условные фигуры высотой ${figure} м, герой в фокусе — оранжевый. Объём предметов задаётся на странице «Схемы».`,
+      `Кадр 16:9 из точки камеры с её углом обзора. Камера на высоте ${eye} м, герои — условные фигуры высотой ${figure} м, герой в фокусе — оранжевый. Ползунок справа от кадров — зум объектива: вверх угол обзора уже и кадр крупнее, это тот же угол, что в поле «Угол обзора». Объём предметов задаётся на странице «Схемы».`,
+    cameraZoom: 'Угол обзора кадра',
+    cameraZoomValue: ({ fov }: { fov: number }) => `${fov}°`,
     cameraViewNoCamera: 'Поставьте камеру на схему: здесь появится вид из неё.',
     cameraViewTop: 'Камера сверху смотрит вниз: её кадр — сама схема.',
     cameraFrame: ({ phase }: { phase: string }) => `Вид из камеры, ${phase.toLowerCase()}`,

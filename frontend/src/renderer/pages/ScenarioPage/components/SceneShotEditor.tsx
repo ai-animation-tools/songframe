@@ -3,7 +3,8 @@ import { useState, type ReactElement } from 'react';
 import { Alert, AlertTitle, Autocomplete, Box, Checkbox, FormControlLabel, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
 import CallMergeIcon from '@mui/icons-material/CallMerge';
 import CallSplitIcon from '@mui/icons-material/CallSplit';
-import type { LyricsLine, SceneShot, ScenesFile, TimingLine } from '@shared/types';
+import type { CastFile, LyricsLine, SceneShot, ScenesFile, TimingLine } from '@shared/types';
+import type { SchemesFile } from '@shared/schemes';
 import { hasFillMarker, nextShotId, splitPlan, type SplitPlan } from '@shared/scene-editing';
 import { formatClock } from '../../../format';
 import type { EntityOption } from '../types';
@@ -11,6 +12,9 @@ import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 import { MergeShotsDialog } from './MergeShotsDialog';
 import { ShotPageButton } from '../../../components/ShotPageButton';
 import { ActionButton } from '../../../components/ActionButton';
+import { ViewpointBlock } from './ViewpointBlock';
+
+const noop = (): void => undefined;
 
 /**
  * Редактирует постановку плана, референсы и границу с соседним планом. Принятый в производстве план
@@ -33,7 +37,9 @@ export function SceneShotEditor({
   lines = [],
   lyrics = [],
   acceptedShots = [],
-  maxVideoSeconds = null
+  maxVideoSeconds = null,
+  cast = null,
+  schemes = null
 }: {
   shot: SceneShot;
   shotIndex: number;
@@ -56,6 +62,10 @@ export function SceneShotEditor({
   acceptedShots?: readonly string[];
   /** Предел одного запроса видео у провайдера проекта, секунды; null — не проверяется. */
   maxVideoSeconds?: number | null;
+  /** Кастинг: локации для точки съёмки. */
+  cast?: CastFile | null;
+  /** Схемы локаций для мини-схемы точки съёмки; читаются при первом раскрытии блока. */
+  schemes?: { schemes: SchemesFile | null; error: string | null; request(): void } | null;
 }): ReactElement {
   const [dialog, setDialog] = useState<'split' | 'merge' | null>(null);
   const plan = splitPlan(shot, lines, lyrics, scenes.fps);
@@ -138,6 +148,19 @@ export function SceneShotEditor({
         sx={{ mt: 1.5 }}
         placeholder={scenarioTexts.shot.cameraPlaceholder}
       />
+      <ViewpointBlock
+        key={shot.id}
+        shot={shot.id}
+        viewpoint={shot.viewpoint}
+        references={shot.references}
+        locked={locked}
+        dirty={!!leaveReason}
+        cast={cast}
+        schemes={schemes?.schemes ?? null}
+        schemesError={schemes?.error ?? null}
+        requestSchemes={schemes?.request ?? noop}
+        onChange={(viewpoint) => updateShot({ viewpoint })}
+      />
       <TextField
         fullWidth
         multiline
@@ -170,6 +193,8 @@ export function SceneShotEditor({
         onChange={(e) => updateShot({ derived_from: e.target.value ? { shot: e.target.value } : undefined })}
         sx={{ mt: 1.5 }}
         helperText={scenarioTexts.shot.derivedHint}
+        // У принятого плана поле закрыто, но подсказка должна читаться: приглушённый цвет disabled не проходит по контрасту.
+        slotProps={{ formHelperText: { sx: { '&.Mui-disabled': { color: 'text.secondary' } } } }}
       >
         <MenuItem value="">{scenarioTexts.shot.ownGeneration}</MenuItem>
         {scenes.scenes

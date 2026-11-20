@@ -18,10 +18,15 @@ import { ActionButton } from '../../components/ActionButton';
 import { LinkedText } from '../../components/LinkedText';
 import { ListDetailLayout } from '../../components/ListDetailLayout';
 import { SchemeEditor } from './components/SchemeEditor';
+import { DraftRestoreAlert } from '../../components/DraftRestoreAlert';
+import { FullscreenEditorDialog } from '../../components/FullscreenEditorDialog';
+import { useDraftBackup } from '../../hooks/useDraftBackup';
 
 /** Параметры адреса: выбранная локация и вид, чтобы переход по ссылке открывал нужную схему. */
 const LOCATION_PARAM = 'location';
 const VIEW_PARAM = 'view';
+/** Высота шапки окна во весь экран с отступом содержимого: от неё редактор считает высоту холста, px. */
+const FULLSCREEN_TOP = 64;
 
 /**
  * Страница «Схемы»: локации кастинга слева, схемы выбранной локации справа. Один черновик plan/schemes.json на всю
@@ -36,6 +41,8 @@ export function SchemesPage(): ReactElement {
   const [draft, setDraft] = useState<SchemesFile | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Редактор выбранной локации во весь экран: он показывается в окне вместо страницы, черновик тот же.
+  const [fullscreen, setFullscreen] = useState(false);
   const [params, setParams] = useSearchParams();
   const { barRef, stickyTop } = useStickyTop([view]);
 
@@ -63,18 +70,33 @@ export function SchemesPage(): ReactElement {
     setParams(next, { replace: true });
   };
   const dirty = useMemo(() => !!view && !!draft && JSON.stringify(view.document) !== JSON.stringify(draft), [view, draft]);
+  // Несохранённые схемы страхуются временным файлом вне клипа; повреждённый файл схем не перезаписывается и
+  // не сравнивается с черновиком.
+  const backup = useDraftBackup<SchemesFile | null>({
+    project,
+    kind: 'schemes',
+    ready: !!view && !view.damaged,
+    saved: view?.document ?? null,
+    draft,
+    dirty,
+    onRestore: (document) => document && setDraft(document),
+    onError: (message) => notify(message, 'warning')
+  });
 
-  const save = async (): Promise<void> => {
-    if (!draft) return;
+  /** Записывает черновик; true — записан (окно во весь экран после этого можно закрыть). */
+  const save = async (): Promise<boolean> => {
+    if (!draft) return false;
     const current = scope.current.capture(project);
     setBusy(true);
     try {
       await window.api.schemes.save(project, draft);
-      if (!current()) return;
+      if (!current()) return false;
       await load();
       notify(schemesTexts.saved, 'success');
+      return true;
     } catch (error) {
       notify(describeError(error), 'error');
+      return false;
     } finally {
       setBusy(false);
     }
@@ -98,22 +120,44 @@ export function SchemesPage(): ReactElement {
 
   const location = locations.find((item) => item.id === locationId) ?? null;
   const saveBlocked = view.damaged ? schemesTexts.damaged : null;
+  const saveButton = (
+    <ActionButton
+      variant="contained"
+      startIcon={<SaveIcon />}
+      disabled={busy || !dirty || !!saveBlocked}
+      disabledReason={busy ? commonTexts.operationPending : !dirty ? commonTexts.noChangesToSave : saveBlocked}
+      onClick={() => void save()}
+    >
+      {commonTexts.save}
+    </ActionButton>
+  );
+  const editor = (inDialog: boolean): ReactElement | null =>
+    location ? (
+      <SchemeEditor
+        key={location.id}
+        location={location}
+        locations={locations}
+        schemes={draft.schemes.filter((scheme) => scheme.location === location.id)}
+        view={schemeView}
+        onView={(kind) => select(location.id, kind)}
+        onCreate={(kind, title) => setDraft({ ...draft, schemes: [...draft.schemes, createScheme(draft, location.id, kind, title)] })}
+        onChange={(scheme) => setDraft((current) => (current ? updateScheme(current, scheme.id, () => scheme) : current))}
+        onDelete={(scheme) => setDraft({ ...draft, schemes: draft.schemes.filter((item) => item.id !== scheme.id) })}
+        onFullscreen={inDialog ? undefined : () => setFullscreen(true)}
+        inDialog={inDialog}
+        viewStorage={`songframe.schemes.view.${project}`}
+        stickyTop={inDialog ? FULLSCREEN_TOP : stickyTop}
+      />
+    ) : null;
   return (
     <Stack spacing={2}>
       <PageActionBar barRef={barRef}>
         <Typography variant="h5">{navigationTexts.pages.schemes}</Typography>
         {dirty ? <Chip size="small" color="warning" label={commonTexts.unsavedChanges} /> : null}
         <Box sx={{ flex: 1 }} />
-        <ActionButton
-          variant="contained"
-          startIcon={<SaveIcon />}
-          disabled={busy || !dirty || !!saveBlocked}
-          disabledReason={busy ? commonTexts.operationPending : !dirty ? commonTexts.noChangesToSave : saveBlocked}
-          onClick={() => void save()}
-        >
-          {commonTexts.save}
-        </ActionButton>
+        {saveButton}
       </PageActionBar>
+      {backup.offer ? <DraftRestoreAlert offer={backup.offer} onRestore={backup.restore} onDiscard={backup.discard} /> : null}
       {view.damaged ? <Alert severity="error">{schemesTexts.damaged}</Alert> : null}
       {view.problems.length && !view.damaged ? (
         <Alert severity="warning">
@@ -175,24 +219,20 @@ export function SchemesPage(): ReactElement {
               })}
             </Paper>
           }
-          detail={
-            location ? (
-              <SchemeEditor
-                key={location.id}
-                location={location}
-                locations={locations}
-                schemes={draft.schemes.filter((scheme) => scheme.location === location.id)}
-                view={schemeView}
-                onView={(kind) => select(location.id, kind)}
-                onCreate={(kind, title) => setDraft({ ...draft, schemes: [...draft.schemes, createScheme(draft, location.id, kind, title)] })}
-                onChange={(scheme) => setDraft((current) => (current ? updateScheme(current, scheme.id, () => scheme) : current))}
-                onDelete={(scheme) => setDraft({ ...draft, schemes: draft.schemes.filter((item) => item.id !== scheme.id) })}
-                stickyTop={stickyTop}
-              />
-            ) : null
-          }
+          detail={fullscreen ? null : editor(false)}
         />
       )}
+      <FullscreenEditorDialog
+        open={fullscreen && !!location}
+        title={schemesTexts.fullscreenTitle({ location: location?.name || location?.id || '' })}
+        dirty={dirty}
+        closeText={schemesTexts.fullscreenClose}
+        actions={saveButton}
+        saveAction={{ label: commonTexts.fullscreen.saveAndClose, icon: <SaveIcon />, run: save }}
+        onClose={() => setFullscreen(false)}
+      >
+        {fullscreen ? editor(true) : null}
+      </FullscreenEditorDialog>
     </Stack>
   );
 }

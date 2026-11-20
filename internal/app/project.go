@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"songframe/internal/derivedworkflow"
+	"songframe/internal/drafts"
 	"songframe/internal/montage"
 	"songframe/internal/project"
 	"songframe/internal/scenarioapply"
@@ -36,6 +37,8 @@ type ProjectService struct {
 	media    MediaRegistry
 	state    *store.LocalState
 	scenario scenarioapply.Store
+	// drafts — черновики несохранённых правок страниц в каталоге состояния (projects.readDraft и др.).
+	drafts drafts.Store
 	// template — шаблон нового проекта; nil означает встроенный resources.ProjectTemplate.
 	template fs.FS
 	// review — проблема актуальности сценария для projects.status (reviewProblem);
@@ -52,9 +55,26 @@ func ConnectScenarioReview(s *ProjectService, workflow *scenarioworkflow.Workflo
 }
 
 // NewProjectService принимает уже запущенный медиасервер и каталог состояния приложения; журнал
-// публикаций сценария лежит в том же каталоге состояния.
+// публикаций сценария и черновики страниц лежат в том же каталоге состояния.
 func NewProjectService(media MediaRegistry, localDir string) *ProjectService {
-	return &ProjectService{media: media, state: store.NewLocalState(localDir), scenario: scenarioapply.NewStore(localDir)}
+	return &ProjectService{
+		media: media, state: store.NewLocalState(localDir), scenario: scenarioapply.NewStore(localDir), drafts: drafts.NewStore(localDir),
+	}
+}
+
+// ReadDraft — projects.readDraft: черновик несохранённых правок страницы kind (schemes, scenes); нет — "".
+func (s *ProjectService) ReadDraft(project, kind string) (string, error) {
+	return wire.Done(s.drafts.Read(project, kind))
+}
+
+// WriteDraft — projects.writeDraft: атомарно записывает черновик страницы в каталог состояния; проект не меняется.
+func (s *ProjectService) WriteDraft(project, kind, content string) error {
+	return s.drafts.Write(project, kind, content)
+}
+
+// RemoveDraft — projects.removeDraft: удаляет черновик после сохранения или отказа от правок.
+func (s *ProjectService) RemoveDraft(project, kind string) error {
+	return s.drafts.Remove(project, kind)
 }
 
 // Open — projects.open: только папка с plan/project.json и названием становится текущей.

@@ -259,7 +259,10 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
       close: guardedAsync(merged.projects.close),
       forget: guardedAsync(merged.projects.forget),
       settings: guardedAsync(merged.projects.settings),
-      saveSettings: guardedAsync(merged.projects.saveSettings)
+      saveSettings: guardedAsync(merged.projects.saveSettings),
+      readDraft: guardedAsync(merged.projects.readDraft),
+      writeDraft: guardedAsync(merged.projects.writeDraft),
+      removeDraft: guardedAsync(merged.projects.removeDraft)
     },
     sources: {
       view: guardedAsync(merged.sources.view),

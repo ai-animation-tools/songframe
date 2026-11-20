@@ -519,6 +519,9 @@ export function createApi(b: Bindings): Api {
   api.projects.validateNew = (input) => call('projects.validateNew', async () => (await b.projects()).ValidateNew(input));
   api.projects.rename = (path, name) => call('projects.rename', async () => toStatus(await (await b.projects()).Rename(path, name)));
   api.projects.settings = (project) => call('projects.settings', async () => toSettings(await (await b.projects()).Settings(project)));
+  api.projects.readDraft = (project, kind) => call('projects.readDraft', async () => (await b.projects()).ReadDraft(project, kind));
+  api.projects.writeDraft = (project, kind, content) => call('projects.writeDraft', async () => (await b.projects()).WriteDraft(project, kind, content));
+  api.projects.removeDraft = (project, kind) => call('projects.removeDraft', async () => (await b.projects()).RemoveDraft(project, kind));
   api.projects.saveSettings = (project, settings) =>
     call('projects.saveSettings', async () =>
       toSettings(await (await b.projects()).SaveSettings(project, { ...settings, unset: undefinedPaths(settings.generation) }))

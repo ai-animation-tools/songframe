@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Scheme, SchemePoint } from './schemes';
 import {
   drawOrder,
+  labelAnchor,
   shapeArea,
   shapeHandles,
   appendPoint,
@@ -310,5 +311,32 @@ describe('порядок отрисовки', () => {
     const point = { id: 'p', name: 'p', shape: { type: 'point' as const, at: [0, 0] as SchemePoint } };
     expect(drawOrder([point, thin, big, small]).map((object) => object.id)).toEqual(['big', 'thin', 'small', 'p']);
     expect(drawOrder([rect('a', 2, 2), rect('b', 2, 2)]).map((object) => object.id)).toEqual(['a', 'b']);
+  });
+});
+
+describe('подписи', () => {
+  it('забор по периметру подписан на самой линии, а не в центре двора', () => {
+    const fence: SchemePoint[] = [
+      [-2, -12],
+      [-10, -12],
+      [-10, 10],
+      [12, 10],
+      [12, -12],
+      [0, -12]
+    ];
+    // Длина 86 м, середина — 43 м от начала: на северной стороне, 13 м от северо-западного угла.
+    expect(labelAnchor({ type: 'line', points: fence, smooth: false, closed: false })).toEqual([3, 10]);
+  });
+
+  it('замкнутая линия учитывает замыкающий отрезок, точка и фигуры — как прежде', () => {
+    const square: SchemePoint[] = [
+      [0, 0],
+      [4, 0],
+      [4, 4],
+      [0, 4]
+    ];
+    expect(labelAnchor({ type: 'line', points: square, smooth: false, closed: true })).toEqual([4, 4]);
+    expect(labelAnchor({ type: 'point', at: [1, 2] })).toEqual([1, 2]);
+    expect(labelAnchor({ type: 'rect', center: [1, 1], size: [2, 4], rotation: 0 })).toEqual([1, 1]);
   });
 });

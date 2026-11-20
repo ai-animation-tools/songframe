@@ -1,10 +1,12 @@
 import { schemesTexts } from '@shared/texts/schemes';
+import { commonTexts } from '@shared/texts/common';
 import { useLayoutEffect, useRef, useState, type ReactElement, type RefObject } from 'react';
 import { Alert, AlertTitle, Box, Paper, Stack, Tab, Tabs, TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CropSquareIcon from '@mui/icons-material/CropSquare';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import FitScreenIcon from '@mui/icons-material/FitScreen';
+import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import NearMeIcon from '@mui/icons-material/NearMe';
 import PentagonOutlinedIcon from '@mui/icons-material/PentagonOutlined';
 import PlaceIcon from '@mui/icons-material/Place';
@@ -95,6 +97,8 @@ function useEditorLayout(
 /**
  * Схемы одной локации: вкладки видов, создание недостающей схемы, название, удаление, холст с инструментами
  * и свойства выбранного объекта. Все правки — в черновике страницы; запись — общей кнопкой «Сохранить».
+ * На странице редактор предлагает открыться во весь экран (onFullscreen); в окне (inDialog) панель инструментов
+ * липнет к верху прокрутки окна, а stickyTop — высота шапки окна над ней.
  */
 export function SchemeEditor({
   location,
@@ -105,6 +109,9 @@ export function SchemeEditor({
   onCreate,
   onChange,
   onDelete,
+  onFullscreen,
+  inDialog = false,
+  viewStorage,
   stickyTop
 }: {
   location: SchemeLocation;
@@ -116,6 +123,11 @@ export function SchemeEditor({
   onCreate(view: SchemeViewKind, title: string): void;
   onChange(scheme: Scheme): void;
   onDelete(scheme: Scheme): void;
+  /** Открыть редактор во весь экран; нет — кнопки нет (редактор уже в окне). */
+  onFullscreen?(): void;
+  inDialog?: boolean;
+  /** Префикс ключа localStorage, под которым холст запоминает вид каждой схемы. */
+  viewStorage?: string;
   /** Отступ закреплённой панели инструментов под шапкой и панелью действий страницы. */
   stickyTop: number;
 }): ReactElement {
@@ -186,7 +198,7 @@ export function SchemeEditor({
             sx={{
               p: 1,
               position: 'sticky',
-              top: stickyTop,
+              top: inDialog ? 0 : stickyTop,
               zIndex: (theme) => theme.zIndex.appBar - 2,
               bgcolor: 'background.paper',
               // В широкой области карточка прокручивается сама: панель липнет к её верху.
@@ -221,6 +233,11 @@ export function SchemeEditor({
                 <ActionButton startIcon={<FitScreenIcon />} onClick={() => setFitSignal((value) => value + 1)}>
                   {schemesTexts.fit}
                 </ActionButton>
+                {onFullscreen ? (
+                  <ActionButton startIcon={<OpenInFullIcon />} onClick={onFullscreen}>
+                    {commonTexts.fullscreen.open}
+                  </ActionButton>
+                ) : null}
                 <Box sx={{ flex: 1 }} />
                 <ActionButton color="error" startIcon={<DeleteOutlineIcon />} onClick={() => setConfirmDelete(true)}>
                   {schemesTexts.deleteScheme}
@@ -245,6 +262,7 @@ export function SchemeEditor({
               tool={tool}
               selected={selected}
               fitSignal={fitSignal}
+              viewKey={viewStorage ? `${viewStorage}.${scheme.id}` : undefined}
               height={canvasHeight}
               onSelect={setSelected}
               onChange={onChange}

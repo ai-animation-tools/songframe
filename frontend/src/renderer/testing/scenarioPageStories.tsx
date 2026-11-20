@@ -2,6 +2,7 @@
 import { useSyncExternalStore, type ReactElement } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { Link, Paper, Stack, Typography } from '@mui/material';
+import type { SchemesFile } from '@shared/schemes';
 import type { Api } from '@shared/api';
 import type {
   AppState,
@@ -24,6 +25,7 @@ import { TEST_PROVIDER, testProviderInfo } from '@shared/testing/media-provider'
 import { scenarioTexts } from '@shared/texts/scenario';
 import { ScenarioPage } from '../pages/ScenarioPage/ScenarioPage';
 import { shotPageRoute } from '../components/shotRoutes';
+import { draftEnvelope } from '@shared/drafts';
 import { createStoryApi, STORY_IMAGE_PATH, STORY_TRACK_PATH, type StoryOptions } from './storybook';
 import { storyAccess } from './commonStories';
 import { scenarioDocuments, scenarioJob, scenarioProposal, SCENARIO_STORY_PROJECT } from './scenarioWorkflowStories';
@@ -76,6 +78,8 @@ export interface ScenarioPageOptions {
   check?: 'none' | 'report' | 'clean' | 'staleReport';
   /** Провайдер видео проекта — тестовый сервис с пределом запроса 10 с: объединение длиннее предупреждает. */
   videoProvider?: boolean;
+  /** Остался черновик прошлого запуска: у M03 расставлены камера и герой. */
+  leftDraft?: boolean;
 }
 
 /** Демонстрационный отчёт проверки: по одной проблеме каждой важности, самая важная записана последней. */
@@ -211,6 +215,37 @@ function pageCast(long: boolean): CastFile {
     ]
   };
 }
+
+/** Вид сверху у локации ворот: забор с воротами, дом с высотой, дорога-полоса. */
+export const SCENARIO_STORY_SCHEMES: SchemesFile = {
+  schema_version: 1,
+  schemes: [
+    {
+      id: 's1',
+      location: 'gate',
+      title: 'Ворота сверху',
+      view: 'top',
+      objects: [
+        { id: 'o1', name: 'Дом', height: 6, shape: { type: 'rect', center: [0, 12], size: [10, 8], rotation: 0 } },
+        { id: 'o2', name: 'Ворота', height: 2, shape: { type: 'rect', center: [0, 4], size: [4, 0.4], rotation: 0 } },
+        {
+          id: 'o3',
+          name: 'Дорога',
+          shape: {
+            type: 'line',
+            points: [
+              [-15, -4],
+              [15, -4]
+            ],
+            smooth: false,
+            closed: false,
+            width: 5
+          }
+        }
+      ]
+    }
+  ]
+};
 
 const PARTS = [
   { id: 'intro', title: 'Возвращение', direction: 'Герой подходит к воротам под дождём.' },
@@ -473,6 +508,8 @@ interface PageModel {
   links: string[];
   reads: number;
   scenesSaves: ScenesSaveMode[];
+  /** Черновик сценария во временном файле каталога состояния; null — файла нет. */
+  draft: string | null;
   /** Принятые планы, оставленные принятыми при обычных сохранениях с выбором по плану. */
   kept: string[];
   /** Аргументы scene_scaffold при «Пересчитать границы». */
@@ -498,7 +535,8 @@ export function scenarioPageOptions({
   lineMoved = false,
   accepted = [],
   check = 'none',
-  videoProvider = false
+  videoProvider = false,
+  leftDraft = false
 }: ScenarioPageOptions = {}): StoryOptions {
   const state: AppState = {
     packaged: false,
@@ -564,6 +602,7 @@ export function scenarioPageOptions({
         links,
         reads: 0,
         scenesSaves: [],
+        draft: null,
         kept: [],
         scaffolds: [],
         starts: 0,
@@ -655,7 +694,39 @@ export function scenarioPageOptions({
           const timer = setTimeout(resolve, ms);
           session.onCleanup(() => clearTimeout(timer));
         });
+      if (leftDraft && model.saved.scenes) {
+        const document = structuredClone(model.saved.scenes);
+        const shot = document.scenes.find((item) => item.id === 'M03');
+        if (shot)
+          shot.viewpoint = { location: 'gate', side: 'south', size: 'medium', camera: { start: [0, -8] }, subjects: [{ entity: 'hero', start: [0, 3] }] };
+        model.draft = draftEnvelope(document, model.saved.scenes, new Date('2026-11-20T09:15:00Z'));
+      }
       const session = createStoryApi({
+        projects: {
+          readDraft: async () => model.draft ?? '',
+          writeDraft: async (_project, _kind, content) => {
+            model.draft = content;
+            model.publish();
+          },
+          removeDraft: async () => {
+            model.draft = null;
+            model.publish();
+          }
+        },
+        // Схемы локаций для блока «Точка съёмки»: вид сверху у локации ворот.
+        schemes: {
+          view: async (project) => {
+            validate(project);
+            return {
+              document: structuredClone(SCENARIO_STORY_SCHEMES),
+              missing: false,
+              damaged: false,
+              locations: [{ id: 'gate', name: 'Старые ворота' }],
+              problems: [],
+              withoutTop: []
+            };
+          }
+        },
         scenario: {
           view: async (project) => {
             validate(project);
@@ -936,10 +1007,10 @@ export function scenarioPageOptions({
 }
 
 /** Снимок сохранённых документов позволяет проверить, что выбор пустого поля ничего не записал. */
-export function scenarioStateInspection(): { saved: ScenarioView; saves: ScenesSaveMode[] } {
+export function scenarioStateInspection(): { saved: ScenarioView; saves: ScenesSaveMode[]; draft: string | null } {
   const model = models.get(window.api);
   if (!model) throw new Error('Модель сценария не открыта.');
-  return structuredClone({ saved: model.saved, saves: model.scenesSaves });
+  return structuredClone({ saved: model.saved, saves: model.scenesSaves, draft: model.draft });
 }
 
 function useModel(): PageModel {

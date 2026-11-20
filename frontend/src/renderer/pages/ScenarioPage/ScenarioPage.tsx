@@ -17,6 +17,7 @@ import ReplayIcon from '@mui/icons-material/Replay';
 import AddIcon from '@mui/icons-material/Add';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import { LinkedText } from '../../components/LinkedText';
+import { DraftRestoreAlert } from '../../components/DraftRestoreAlert';
 import { unsavedDraftsReason } from './shotNavigation';
 import { maxVideoSeconds } from '@shared/media-providers';
 
@@ -116,6 +117,9 @@ export function ScenarioPage(): ReactElement {
           recalculateBounds={scenario.recalculateBounds}
         />
       </PageActionBar>
+      {scenario.draftBackup.offer ? (
+        <DraftRestoreAlert offer={scenario.draftBackup.offer} onRestore={scenario.draftBackup.restore} onDiscard={scenario.draftBackup.discard} />
+      ) : null}
       <ScenesSaveDialog request={saveRequest} busy={busy} onConfirm={(keep) => void confirmSaveScenes(keep)} onClose={cancelSaveScenes} />
       {view.problems.length ? (
         <Alert severity="warning">

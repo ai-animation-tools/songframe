@@ -45,6 +45,7 @@
 | [`internal/appversion`](../internal/appversion) | Хранит версию собранного приложения. |
 | [`internal/updates`](../internal/updates) | Обновляет приложение по явному действию пользователя: читает последний выпуск публичного репозитория на GitHub, скачивает пакет своей поставки и сверяет его с digest SHA-256 и размером из GitHub API — тем же, что проверяет публикация выпуска. |
 | [`internal/plural`](../internal/plural) | Согласует русское существительное с числом для текстов, которые Go отдаёт интерфейсу и пишет в файлы проекта: 1 кадр, 2 кадра, 5 кадров. |
+| [`internal/drafts`](../internal/drafts) | Хранит черновики несохранённых правок страниц в каталоге состояния приложения, а не в папке проекта: правки сложной работы (схемы локаций, расстановка точки съёмки в сценарии) переживают падение или закрытие программы и не попадают в Git клипа. |
 
 | Страница | Назначение |
 | --- | --- |
@@ -93,7 +94,7 @@
 | --- | --- |
 | [`SchemesPage`](../frontend/src/renderer/pages/SchemesPage/SchemesPage.tsx) | Страница «Схемы»: локации кастинга слева, схемы выбранной локации справа. |
 
-Ещё: [`frontend/src/shared/schemes.ts`](../frontend/src/shared/schemes.ts), [`frontend/src/shared/scheme-editing.ts`](../frontend/src/shared/scheme-editing.ts).
+Ещё: [`frontend/src/shared/schemes.ts`](../frontend/src/shared/schemes.ts), [`frontend/src/shared/scheme-editing.ts`](../frontend/src/shared/scheme-editing.ts), [`frontend/src/shared/scheme-canvas.ts`](../frontend/src/shared/scheme-canvas.ts), [`frontend/src/shared/viewpoint.ts`](../frontend/src/shared/viewpoint.ts), [`frontend/src/renderer/components/SchemePreview.tsx`](../frontend/src/renderer/components/SchemePreview.tsx), [`internal/scenario/viewpoint.go`](../internal/scenario/viewpoint.go).
 
 ## Разметка песни
 

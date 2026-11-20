@@ -1,6 +1,6 @@
 /** Целая страница «Сценарий» на локальной модели: переходы к планам, блок частей, закреплённые панели и сохранность черновика. */
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { expect, fireEvent, userEvent, waitFor, within } from 'storybook/test';
 import { componentsTexts } from '@shared/texts/components';
 import { commonTexts } from '@shared/texts/common';
 import { navigationTexts } from '@shared/texts/navigation';
@@ -177,6 +177,123 @@ export const AcceptedShotLocked: Story = {
       expect.stringContaining(scenarioTexts.accepted.mergeReason({ shot: 'M02' }))
     );
     await expect(unsavedChip(screen)).not.toBeInTheDocument();
+  }
+};
+
+const viewpointTexts = scenarioTexts.viewpoint;
+const viewpointBlock = (screen: Screen) => screen.getByRole('button', { name: new RegExp(viewpointTexts.title) });
+
+/** Щелчок по мини-схеме в доле её ширины и высоты. */
+const clickPreview = (preview: Element, x: number, y: number): void => {
+  const box = preview.getBoundingClientRect();
+  fireEvent.pointerDown(preview, { clientX: box.left + box.width * x, clientY: box.top + box.height * y, pointerId: 1 });
+};
+const previewOf = async (screen: Screen, scope: Screen = screen): Promise<SVGSVGElement> =>
+  (await scope.findByRole('application', { name: viewpointTexts.preview({ title: 'Ворота сверху' }) })) as unknown as SVGSVGElement;
+
+export const ViewpointSet: Story = {
+  name: 'Точка съёмки · камера и герои на мини-схеме, сторона по точкам, движение камеры, свой угол и запись',
+  tags: ['!autodocs', 'ci'],
+  parameters: { songframe: scenarioPageOptions({ route: '/project/scenario?shot=M03' }) },
+  play: async (context) => {
+    const screen = await ready(context);
+    await editorHeading(screen, 'M03');
+    // Свёрнутый блок показывает бейдж «не задана»; раскрытие читает схемы локаций.
+    await expect(viewpointBlock(screen)).toHaveTextContent(viewpointTexts.badgeUnset);
+    await userEvent.click(viewpointBlock(screen));
+    await userEvent.click(await screen.findByRole('button', { name: viewpointTexts.create }));
+    await expect(viewpointBlock(screen)).toHaveTextContent(viewpointTexts.badge({ side: 'С юга', size: 'Общий', placed: false }));
+    // Камера слева, герой справа на той же высоте: камера смотрит на восток и сама получает сторону «с запада».
+    const preview = await previewOf(screen);
+    clickPreview(preview, 0.3, 0.5);
+    await waitFor(() => expect(preview.querySelector('[data-camera]')).not.toBeNull());
+    await userEvent.click(within(screen.getByRole('group', { name: viewpointTexts.target })).getByRole('button', { name: /Герой/ }));
+    clickPreview(preview, 0.7, 0.5);
+    await waitFor(() => expect(preview.querySelector('[data-subject="hero"]')).not.toBeNull());
+    await expect(await screen.findByText(viewpointTexts.sideFromPoints({ side: viewpointTexts.sides.west }))).toBeVisible();
+    await expect(viewpointBlock(screen)).toHaveTextContent(viewpointTexts.badge({ side: 'С запада', size: 'Общий', placed: true }));
+    await expect(screen.getByRole('button', { name: viewpointTexts.sides.south })).toBeDisabled();
+    await expect(document.querySelector('[data-viewpoint-row="hero"]')).toHaveTextContent(viewpointTexts.focus);
+    // Последний кадр камеры: камера проезжает вниз по схеме, путь и сектор конца видны пунктиром.
+    await userEvent.click(within(screen.getByRole('group', { name: viewpointTexts.target })).getByRole('button', { name: viewpointTexts.camera }));
+    await userEvent.click(screen.getByRole('button', { name: viewpointTexts.phases.end }));
+    clickPreview(preview, 0.3, 0.8);
+    await waitFor(() => expect(preview.querySelector('[data-camera-end]')).not.toBeNull());
+    await expect(document.querySelector('[data-viewpoint-row="camera"]')).toHaveTextContent(/движется на/);
+    // Крупность меняет угол по умолчанию; свой угол хранится отдельно и возвращается кнопкой.
+    await userEvent.click(screen.getByRole('combobox', { name: viewpointTexts.size }));
+    await userEvent.click(await screen.findByRole('option', { name: viewpointTexts.sizes.close }));
+    const fov = screen.getByRole('spinbutton', { name: viewpointTexts.fov }) as HTMLInputElement;
+    await expect(fov.value).toBe('25');
+    await userEvent.clear(fov);
+    await userEvent.type(fov, '18');
+    // Угол применяется по уходу из поля: промежуточные «1» не обрезаются до наименьшего угла.
+    await userEvent.tab();
+    await expect(screen.getByText(viewpointTexts.fovOwn({ fov: 25 }))).toBeVisible();
+    // Расстановка уже во временном файле: падение программы её не потеряет.
+    await waitFor(() => expect(scenarioStateInspection().draft).toContain('"entity":"hero"'));
+    await userEvent.click(saveButton(screen));
+    await waitFor(() => expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений сценария: 1'));
+    // Сохранение удаляет временный файл.
+    await waitFor(() => expect(scenarioStateInspection().draft).toBeNull());
+    const saved = scenarioStateInspection().saved.scenes!.scenes.find((shot) => shot.id === 'M03')!.viewpoint!;
+    await expect(saved).toMatchObject({ location: 'gate', side: 'west', size: 'close', fov: 18 });
+    await expect(saved.camera?.end).toHaveLength(2);
+    await expect(saved.subjects?.map((subject) => subject.entity)).toEqual(['hero']);
+  }
+};
+
+export const ViewpointFullscreen: Story = {
+  name: 'Точка съёмки во весь экран · расстановка в черновик, закрытие с правками подтверждается',
+  tags: ['!autodocs', 'ci'],
+  parameters: { songframe: scenarioPageOptions({ route: '/project/scenario?shot=M03' }) },
+  play: async (context) => {
+    const screen = await ready(context);
+    await editorHeading(screen, 'M03');
+    await userEvent.click(viewpointBlock(screen));
+    await userEvent.click(await screen.findByRole('button', { name: viewpointTexts.create }));
+    await userEvent.click(await screen.findByRole('button', { name: commonTexts.fullscreen.open }));
+    const dialog = within(await screen.findByRole('dialog', { name: viewpointTexts.fullscreenTitle({ shot: 'M03' }) }));
+    await userEvent.click(within(dialog.getByRole('group', { name: viewpointTexts.target })).getByRole('button', { name: /Сосед/ }));
+    clickPreview(await previewOf(screen, dialog), 0.5, 0.4);
+    // Закрытие с несохранёнными правками спрашивает и объясняет, что черновик не потеряется.
+    await userEvent.click(dialog.getByRole('button', { name: commonTexts.close }));
+    const confirm = within(await screen.findByRole('dialog', { name: commonTexts.fullscreen.closeTitle }));
+    await expect(confirm.getByText(viewpointTexts.fullscreenClose)).toBeInTheDocument();
+    await userEvent.click(confirm.getByRole('button', { name: commonTexts.fullscreen.stay }));
+    // Окно подтверждения закрывается с анимацией: до её конца окно расстановки скрыто от дерева доступности.
+    await expect(await screen.findByRole('dialog', { name: viewpointTexts.fullscreenTitle({ shot: 'M03' }) })).toBeInTheDocument();
+    await userEvent.click(dialog.getByRole('button', { name: commonTexts.close }));
+    await userEvent.click(
+      within(await screen.findByRole('dialog', { name: commonTexts.fullscreen.closeTitle })).getByRole('button', { name: commonTexts.fullscreen.closeKeep })
+    );
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    // Расстановка из окна осталась в черновике страницы.
+    await expect(document.querySelector('[data-viewpoint-row="neighbor"]')).toHaveTextContent(viewpointTexts.focus);
+    await expect(unsavedChip(screen)).toBeInTheDocument();
+  }
+};
+
+export const ViewpointAcceptedUnlock: Story = {
+  name: 'Точка съёмки принятого M02 · закрыта, открывается после подтверждения с риском',
+  tags: ['!autodocs', 'ci'],
+  parameters: { songframe: scenarioPageOptions({ route: '/project/scenario?shot=M02', accepted: ['M02'] }) },
+  play: async (context) => {
+    const screen = await ready(context);
+    await editorHeading(screen, 'M02');
+    await userEvent.click(viewpointBlock(screen));
+    await expect(await screen.findByText(viewpointTexts.lockedHint)).toBeVisible();
+    await expect(screen.getByRole('button', { name: viewpointTexts.create })).toBeDisabled();
+    await userEvent.click(screen.getByRole('button', { name: viewpointTexts.unlock }));
+    const dialog = within(await screen.findByRole('dialog', { name: viewpointTexts.unlockTitle({ shot: 'M02' }) }));
+    await expect(dialog.getByText(viewpointTexts.unlockText)).toBeInTheDocument();
+    await userEvent.click(dialog.getByRole('button', { name: viewpointTexts.unlockConfirm }));
+    await waitFor(() => expect(screen.queryByText(viewpointTexts.lockedHint)).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await userEvent.click(screen.getByRole('button', { name: viewpointTexts.create }));
+    await expect(viewpointBlock(screen)).toHaveTextContent(viewpointTexts.badge({ side: 'С юга', size: 'Общий', placed: false }));
+    // Остальная постановка принятого плана остаётся закрытой.
+    await expect(field(screen, scenarioTexts.fields.camera)).toBeDisabled();
   }
 };
 
@@ -1047,5 +1164,21 @@ export const NeutralAgentTreatment: Story = {
     await expect(await screen.findByRole('textbox', { name: scenarioTexts.fields.logline })).toBeVisible();
     await expect(screen.getByRole('button', { name: scenarioTexts.treatment.title({ count: 0 }) })).toHaveAttribute('aria-expanded', 'true');
     await expect(screen.getByText(scenarioTexts.page.noShots)).toBeVisible();
+  }
+};
+
+export const ViewpointDraftRestore: Story = {
+  name: 'Точка съёмки · черновик прошлого запуска восстанавливает расстановку',
+  tags: ['!autodocs', 'ci'],
+  parameters: { songframe: scenarioPageOptions({ route: '/project/scenario?shot=M03', leftDraft: true }) },
+  play: async (context) => {
+    const screen = await ready(context);
+    await editorHeading(screen, 'M03');
+    await expect(await screen.findByText(commonTexts.draft.title)).toBeVisible();
+    await expect(viewpointBlock(screen)).toHaveTextContent(viewpointTexts.badgeUnset);
+    await userEvent.click(screen.getByRole('button', { name: commonTexts.draft.restore }));
+    await expect(viewpointBlock(screen)).toHaveTextContent(viewpointTexts.badge({ side: 'С юга', size: 'Средний', placed: true }));
+    await expect(unsavedChip(screen)).toBeInTheDocument();
+    await expect(screen.queryByText(commonTexts.draft.title)).toBeNull();
   }
 };

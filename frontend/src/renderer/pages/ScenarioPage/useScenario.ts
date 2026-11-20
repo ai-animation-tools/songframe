@@ -11,6 +11,7 @@ import { requestedShot } from './shotNavigation';
 import { partsFromSections, patchTreatmentPart } from './treatmentParts';
 import { recalculateSceneBounds } from './sceneBounds';
 import { SHOT_PARAM } from '../../components/shotRoutes';
+import { useDraftBackup } from '../../hooks/useDraftBackup';
 
 /** Загружает сценарий — логлайн, части и планы одним черновиком; проверка следует текущему черновику. */
 export function useScenario() {
@@ -54,6 +55,21 @@ export function useScenario() {
   }, [load, notify, describeError]);
 
   const scenesDirty = JSON.stringify(scenes) !== JSON.stringify(view?.scenes ?? null);
+
+  // Несохранённые правки сценария (и расстановка точки съёмки в нём) страхуются временным файлом вне клипа.
+  const draftBackup = useDraftBackup<ScenesFile | null>({
+    project,
+    kind: 'scenes',
+    ready: view !== null,
+    saved: view?.scenes ?? null,
+    draft: scenes,
+    dirty: scenesDirty,
+    onRestore: (document) => {
+      setScenes(document);
+      setSelected((current) => (document?.scenes.some((shot) => shot.id === current) ? current : (document?.scenes[0]?.id ?? null)));
+    },
+    onError: (message) => notify(message, 'warning')
+  });
 
   // Переход с ?shot= (с «Производства», «Сцен» или по ссылке на открытой странице) только выбирает план в черновике:
   // реестр не перечитывается, поэтому правки других планов остаются. Отсутствующий план оставляет обычный выбор.
@@ -321,6 +337,7 @@ export function useScenario() {
     propertiesOf,
     duration,
     scenesDirty,
+    draftBackup,
     acceptWorkflowUpdate,
     resolveWorkflowDrafts,
     createScenario,

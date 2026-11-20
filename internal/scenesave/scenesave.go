@@ -36,6 +36,7 @@ const (
 const (
 	textImpactNewShot      = "новый план в сценарии"
 	textImpactStaging      = "изменена постановка плана"
+	textImpactViewpoint    = "изменена только точка съёмки"
 	textImpactBounds       = "сдвинуты границы плана"
 	textImpactInitialState = "изменилось начальное состояние"
 	textImpactGlobalRules  = "изменены общие правила или направление части"
@@ -170,6 +171,11 @@ func reasonOf(project string, before, after any, id string) (string, error) {
 	}
 	linkOnly := false
 	if withoutBounds(previous) != withoutBounds(next) {
+		// Точка съёмки описывает, откуда снят план: её правка отдельно названа, чтобы видео,
+		// которое уже снято с этой точки, можно было осознанно оставить принятым.
+		if withoutBounds(previous, "viewpoint") == withoutBounds(next, "viewpoint") {
+			return textImpactViewpoint, nil
+		}
 		if withoutBounds(previous, "state_from") != withoutBounds(next, "state_from") {
 			return textImpactStaging, nil
 		}

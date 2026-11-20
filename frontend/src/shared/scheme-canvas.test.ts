@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fitViewport, formatMetres, gridStep, horizontalSign, snap, toScreen, toWorld, type Viewport } from './canvasMapping';
+import { fitViewport, formatMetres, gridStep, horizontalSign, snap, toScreen, toWorld, type Viewport } from './scheme-canvas';
 
 const viewport: Viewport = { center: [10, 20], scale: 5, width: 400, height: 300 };
 

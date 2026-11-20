@@ -159,3 +159,45 @@ func TestReasonStateLinkOnly(t *testing.T) {
 		t.Fatalf("причина %q", reason)
 	}
 }
+
+// TestReasonViewpointOnly: правка одной точки съёмки названа отдельной причиной, а вместе с другим
+// полем постановки — общей «изменена постановка плана».
+func TestReasonViewpointOnly(t *testing.T) {
+	var item golden.Case
+	for _, candidate := range golden.Load(t, "scenario-scenes") {
+		if candidate.Name == "mini-state-keep" {
+			item = candidate
+		}
+	}
+	project := item.CopyProject(t)
+	parse := func(registry map[string]any) any {
+		raw, err := json.Marshal(registry)
+		if err != nil {
+			t.Fatal(err)
+		}
+		value, err := dynvalue.Parse(raw)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return value
+	}
+	before := readScenes(t, project)
+	after := readScenes(t, project)
+	shot := after["scenes"].([]any)[0].(map[string]any)
+	shot["viewpoint"] = map[string]any{"location": "yard", "side": "south", "size": "wide"}
+	reason, err := reasonOf(project, parse(before), parse(after), shot["id"].(string))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reason != textImpactViewpoint {
+		t.Fatalf("причина %q", reason)
+	}
+	shot["camera"] = "Другая камера"
+	reason, err = reasonOf(project, parse(before), parse(after), shot["id"].(string))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reason != textImpactStaging {
+		t.Fatalf("причина вместе с камерой %q", reason)
+	}
+}

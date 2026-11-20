@@ -1,4 +1,5 @@
 import type { SchemesFile, SchemesView } from './schemes';
+import type { DraftKind } from './drafts';
 import type { VocalModelId, VocalPreparationView } from './vocals';
 import type { SongModelSetup } from './song-models';
 import type { AgentAccountResult, AgentCheckResult, AgentEvent, AgentJob, AgentModelsResult, AgentSettings, AgentStartInput } from './agents';
@@ -194,6 +195,12 @@ export interface Api {
     /** Название, имя MP4 аниматика, инструкции агенту и блок generation из plan/project.json. */
     settings(project: string): Promise<ProjectSettings>;
     saveSettings(project: string, settings: ProjectSettings): Promise<ProjectSettings>;
+    /** Черновик несохранённых правок страницы из каталога состояния приложения (не из проекта); нет — пустая строка. */
+    readDraft(project: string, kind: DraftKind): Promise<string>;
+    /** Атомарно записывает черновик страницы (JSON) в каталог состояния; файлы проекта не меняются. */
+    writeDraft(project: string, kind: DraftKind, content: string): Promise<void>;
+    /** Удаляет черновик после сохранения или отказа от правок; отсутствующий — не ошибка. */
+    removeDraft(project: string, kind: DraftKind): Promise<void>;
   };
   sources: {
     view(project: string): Promise<SourcesView>;

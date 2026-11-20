@@ -5,7 +5,7 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import type { SchemeLocation, SchemeObject, SchemePoint, SchemeShape } from '@shared/schemes';
 import { ActionButton } from '../../../components/ActionButton';
-import { objectColor } from './SchemeCanvas';
+import { objectColor } from '@shared/scheme-editing';
 
 /**
  * Сетка полей свойств: колонки не уже 140 px. В боковой панели справа от холста — две колонки, под широким

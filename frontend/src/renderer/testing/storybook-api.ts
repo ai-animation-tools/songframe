@@ -7,6 +7,10 @@ function unconfigured(method: string): never {
 }
 
 export function unconfiguredStoryApi(): Api {
+  // Черновики страниц — страховка любой редактирующей страницы, поэтому по умолчанию они хранятся в памяти
+  // витрины, а не требуют настройки в каждой истории; история восстановления подменяет readDraft.
+  const drafts = new Map<string, string>();
+  const draftKey = (project: string, kind: string): string => `${project}\n${kind}`;
   return {
     ai: {
       access: async () => unconfigured('ai.access')
@@ -135,7 +139,14 @@ export function unconfiguredStoryApi(): Api {
       close: async () => unconfigured('projects.close'),
       forget: async () => unconfigured('projects.forget'),
       settings: async () => unconfigured('projects.settings'),
-      saveSettings: async () => unconfigured('projects.saveSettings')
+      saveSettings: async () => unconfigured('projects.saveSettings'),
+      readDraft: async (project, kind) => drafts.get(draftKey(project, kind)) ?? '',
+      writeDraft: async (project, kind, content) => {
+        drafts.set(draftKey(project, kind), content);
+      },
+      removeDraft: async (project, kind) => {
+        drafts.delete(draftKey(project, kind));
+      }
     },
     sources: {
       view: async () => unconfigured('sources.view'),

@@ -70,6 +70,20 @@ export function Open(path: string): $CancellablePromise<status$0.ProjectStatus> 
 }
 
 /**
+ * ReadDraft — projects.readDraft: черновик несохранённых правок страницы kind (schemes, scenes); нет — "".
+ */
+export function ReadDraft(project: string, kind: string): $CancellablePromise<string> {
+    return $Call.ByID(4093520682, project, kind);
+}
+
+/**
+ * RemoveDraft — projects.removeDraft: удаляет черновик после сохранения или отказа от правок.
+ */
+export function RemoveDraft(project: string, kind: string): $CancellablePromise<void> {
+    return $Call.ByID(1478237618, project, kind);
+}
+
+/**
  * Rename — projects.rename: меняется только название в plan/project.json и в истории; папка,
  * MP4 и настройки генерации не переносятся. Нечитаемая история отказывает до записи маркера.
  */
@@ -104,4 +118,11 @@ export function Status(path: string): $CancellablePromise<status$0.ProjectStatus
  */
 export function ValidateNew(input: newproject$0.Input): $CancellablePromise<string[]> {
     return $Call.ByID(2851278929, input);
+}
+
+/**
+ * WriteDraft — projects.writeDraft: атомарно записывает черновик страницы в каталог состояния; проект не меняется.
+ */
+export function WriteDraft(project: string, kind: string, content: string): $CancellablePromise<void> {
+    return $Call.ByID(2411635693, project, kind, content);
 }

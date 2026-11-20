@@ -1,6 +1,7 @@
 import type { AppState } from '@shared/types';
 import type { SchemesFile, SchemesView } from '@shared/schemes';
 import type { StoryOptions } from './storybook';
+import { draftEnvelope } from '@shared/drafts';
 
 /** Локальная модель страницы «Схемы»: локации кастинга, сохранённый документ и счётчик записей. */
 export const SCHEMES_STORY_PROJECT = '/mock/projects/schemes-story';
@@ -73,6 +74,8 @@ export const SCHEMES_STORY_DOCUMENT: SchemesFile = {
 export interface SchemesStorySnapshot {
   document: SchemesFile;
   saves: number;
+  /** Черновик во временном файле каталога состояния; null — файла нет. */
+  draft: string | null;
 }
 
 let activeSnapshot: (() => SchemesStorySnapshot) | null = null;
@@ -89,6 +92,8 @@ export interface SchemesStoryOptions {
   /** В кастинге нет локаций. */
   noLocations?: boolean;
   route?: string;
+  /** Остался черновик прошлого запуска: схема переименована; changed — файл схем изменился после начала правок. */
+  leftDraft?: 'same' | 'changed';
 }
 
 /** Страница «Схемы» на локальной модели: запись проверяет только наличие названий, как минимальная проверка Go. */
@@ -101,7 +106,14 @@ export function schemesPageOptions(options: SchemesStoryOptions = {}): StoryOpti
     createApi: () => {
       let saved: SchemesFile = options.empty || options.damaged ? { schema_version: 1, schemes: [] } : structuredClone(SCHEMES_STORY_DOCUMENT);
       let saves = 0;
-      activeSnapshot = () => structuredClone({ document: saved, saves });
+      let draft: string | null = null;
+      if (options.leftDraft) {
+        const document = structuredClone(saved);
+        document.schemes[0].title = 'Перекрёсток из черновика';
+        const base = options.leftDraft === 'changed' ? { ...saved, schemes: [] } : saved;
+        draft = draftEnvelope(document, base, new Date('2026-11-20T09:15:00Z'));
+      }
+      activeSnapshot = () => structuredClone({ document: saved, saves, draft });
       const locations = options.noLocations
         ? []
         : [
@@ -119,6 +131,15 @@ export function schemesPageOptions(options: SchemesStoryOptions = {}): StoryOpti
           .map((item) => item.id)
       });
       return {
+        projects: {
+          readDraft: async () => draft ?? '',
+          writeDraft: async (_project, _kind, content) => {
+            draft = content;
+          },
+          removeDraft: async () => {
+            draft = null;
+          }
+        },
         schemes: {
           view: async () => view(),
           save: async (_project, document) => {

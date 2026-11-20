@@ -1,0 +1,78 @@
+package scenario
+
+import (
+	"slices"
+	"testing"
+
+	"songframe/internal/dynvalue"
+)
+
+// TestViewpointProblems — таблица проверки точки съёмки: допустимые формы и каждое нарушение.
+func TestViewpointProblems(t *testing.T) {
+	castValue, err := dynvalue.Parse([]byte(`{"entities": [
+		{"id": "yard", "kind": "location"}, {"id": "ivan", "kind": "character"}, {"id": "world", "kind": "world"}]}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	locations := castLocations(castValue)
+	if !slices.Equal(locations, []string{"yard"}) {
+		t.Fatalf("локации кастинга: %v", locations)
+	}
+	references := []string{"ivan", "boy"}
+	cases := []struct {
+		name, json string
+		want       []string
+	}{
+		{"без точки", ``, nil},
+		{"сторона и крупность", `{"location": "yard", "side": "south", "size": "wide"}`, []string{}},
+		{"камера с концом, герои и угол", `{"location": "yard", "side": "west", "size": "medium", "fov": 18,
+			"camera": {"start": [-3, 0], "end": [-3, 15]},
+			"subjects": [{"entity": "ivan", "start": [1, 0], "end": [1, 15]}, {"entity": "boy", "start": [8, 6]}]}`, []string{}},
+		{"не объект", `"south"`, []string{textViewpointShape("M01")}},
+		{"лишний ключ", `{"location": "yard", "side": "south", "size": "wide", "at": [1, 2]}`, []string{textViewpointShape("M01")}},
+		{"нет крупности", `{"location": "yard", "side": "south"}`, []string{textViewpointShape("M01")}},
+		{"не локация", `{"location": "ivan", "side": "south", "size": "wide"}`, []string{textViewpointLocation("M01", "ivan")}},
+		{"неизвестная сторона и крупность", `{"location": "yard", "side": "south-west", "size": "long"}`,
+			[]string{textViewpointSide("M01", "south-west"), textViewpointSize("M01", "long")}},
+		{"нулевой угол", `{"location": "yard", "side": "south", "size": "wide", "fov": 0}`, []string{textViewpointFov("M01")}},
+		{"угол 180", `{"location": "yard", "side": "south", "size": "wide", "fov": 180}`, []string{textViewpointFov("M01")}},
+		{"камера без начала", `{"location": "yard", "side": "south", "size": "wide", "camera": {"end": [1, 2]}}`, []string{textViewpointCamera("M01")}},
+		{"камера из трёх чисел", `{"location": "yard", "side": "south", "size": "wide", "camera": {"start": [1, 2, 3]}}`, []string{textViewpointCamera("M01")}},
+		{"конец камеры строкой", `{"location": "yard", "side": "south", "size": "wide", "camera": {"start": [1, 2], "end": ["1", 2]}}`, []string{textViewpointCamera("M01")}},
+		{"лишний ключ камеры", `{"location": "yard", "side": "south", "size": "wide", "camera": {"start": [1, 2], "heading": 90}}`, []string{textViewpointCamera("M01")}},
+		{"герои не список", `{"location": "yard", "side": "south", "size": "wide", "subjects": {"entity": "ivan"}}`, []string{textViewpointSubjects("M01")}},
+		{"герой без точки", `{"location": "yard", "side": "south", "size": "wide", "subjects": [{"entity": "ivan"}]}`, []string{textViewpointSubjects("M01")}},
+		{"герой не объект", `{"location": "yard", "side": "south", "size": "wide", "subjects": ["ivan"]}`, []string{textViewpointSubjects("M01")}},
+		{"герой не из референсов", `{"location": "yard", "side": "south", "size": "wide", "subjects": [{"entity": "kirill", "start": [0, 0]}]}`,
+			[]string{textViewpointSubjectUnknown("M01", "kirill")}},
+		{"герой дважды", `{"location": "yard", "side": "south", "size": "wide", "subjects": [{"entity": "ivan", "start": [0, 0]}, {"entity": "ivan", "start": [1, 1]}]}`,
+			[]string{textViewpointSubjectRepeated("M01", "ivan")}},
+	}
+	for _, item := range cases {
+		t.Run(item.name, func(t *testing.T) {
+			value := any(dynvalue.Undefined)
+			if item.json != "" {
+				parsed, err := dynvalue.Parse([]byte(item.json))
+				if err != nil {
+					t.Fatal(err)
+				}
+				value = parsed
+			}
+			got := viewpointProblems("M01", value, locations, references)
+			if len(got) != len(item.want) || (len(item.want) > 0 && !slices.Equal(got, item.want)) {
+				t.Fatalf("получено %q, ожидалось %q", got, item.want)
+			}
+		})
+	}
+}
+
+// TestShotReferences — референсы плана без заглушки «—» и нестроковых значений.
+func TestShotReferences(t *testing.T) {
+	scene, err := dynvalue.Parse([]byte(`{"references": ["ivan", "—", "boy"]}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := shotReferences(scene); !slices.Equal(got, []string{"ivan", "boy"}) {
+		t.Fatalf("референсы %v", got)
+	}
+}

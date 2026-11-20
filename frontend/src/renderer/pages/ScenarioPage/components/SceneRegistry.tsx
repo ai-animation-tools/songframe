@@ -5,6 +5,7 @@ import { Alert, Box, Paper, Stack, Typography } from '@mui/material';
 import type { CastFile, CastProperty, LyricsLine, ScenesFile, TimingLine } from '@shared/types';
 import { SCENE_PROBLEMS_ID, type EntityOption, type OpenShotState, type ScenarioBrief, type ShotReveal } from '../types';
 import { useSceneDraft } from '../useSceneDraft';
+import { useSchemesOnDemand } from '../useSchemesOnDemand';
 import { SceneTimeline } from './SceneTimeline';
 import { SceneList } from './SceneList';
 import { useShotStates } from '../useShotStates';
@@ -74,6 +75,7 @@ export function SceneRegistry({
   const { shot, shotIndex, updateShot, setBoundary, split, merge, setDelta } = useSceneDraft(scenes, selected, setScenes, setSelected, notify);
   const locked = !!shot && acceptedShots.includes(shot.id);
   const states = useShotStates();
+  const schemes = useSchemesOnDemand();
   // Граница и слияние меняют и следующий план, поэтому его принятие тоже закрывает эти правки.
   const nextId = shotIndex >= 0 ? scenes.scenes[shotIndex + 1]?.id : undefined;
   const nextLocked = nextId && acceptedShots.includes(nextId) ? nextId : null;
@@ -137,6 +139,8 @@ export function SceneRegistry({
                 maxVideoSeconds={maxVideoSeconds}
                 locked={locked}
                 nextLocked={nextLocked}
+                cast={cast}
+                schemes={schemes}
               />
             </Box>
             <Box ref={stateRef} sx={{ minWidth: 0 }}>

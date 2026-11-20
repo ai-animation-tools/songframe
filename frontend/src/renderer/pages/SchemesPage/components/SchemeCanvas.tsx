@@ -6,19 +6,20 @@ import {
   appendPoint,
   createObject,
   createShape,
+  ellipseOutline,
+  objectColor,
   drawOrder,
   hasVertices,
   moveHandle,
   moveShape,
   rectCorners,
   removeHandle,
-  rotate,
   schemeBounds,
-  shapeBounds,
+  labelAnchor,
   shapeHandles,
   smoothCurve
 } from '@shared/scheme-editing';
-import { clampScale, fitViewport, formatMetres, gridStep, snap, toScreen, toWorld, type Viewport } from '../canvasMapping';
+import { clampScale, fitViewport, formatMetres, gridStep, snap, toScreen, toWorld, type Viewport } from '@shared/scheme-canvas';
 
 /** Инструмент холста: выбор и перемещение или рисование фигуры. */
 export type SchemeTool = 'select' | SchemeShapeType;
@@ -29,12 +30,6 @@ export const MIN_CANVAS_HEIGHT = 420;
 /** Ширина невидимой полосы попадания вокруг линий и точек, px. */
 const HIT_WIDTH = 16;
 
-/** Цвет объекта без выбранного: плоская поверхность серая, объём — синеватый. */
-const FLAT_COLOR = '#9e9e9e';
-const VOLUME_COLOR = '#607d8b';
-/** Цвет объекта на холсте: свой, если автор его выбрал, иначе серый для плоского и сине-серый для объёма. */
-export const objectColor = (object: SchemeObject): string => object.color || (object.height ? VOLUME_COLOR : FLAT_COLOR);
-
 /** Текущее действие мышью: сдвиг вида, перенос объекта или вершины, протягивание рамки новой фигуры. */
 type Drag =
   | { kind: 'pan'; from: SchemePoint; center: SchemePoint }
@@ -42,18 +37,36 @@ type Drag =
   | { kind: 'handle'; id: string; index: number; shape: SchemeShape }
   | { kind: 'frame'; type: 'rect' | 'ellipse'; from: SchemePoint; to: SchemePoint };
 
-/** Точки эллипса для отрисовки: на видах сбоку ось развёрнута, поэтому он рисуется ломаной, а не <ellipse>. */
-function ellipsePoints(shape: Extract<SchemeShape, { type: 'ellipse' }>): SchemePoint[] {
-  return Array.from({ length: 48 }, (_, index) => {
-    const angle = (index / 48) * Math.PI * 2;
-    const point: SchemePoint = [shape.center[0] + shape.radii[0] * Math.cos(angle), shape.center[1] + shape.radii[1] * Math.sin(angle)];
-    return rotate(point, shape.center, shape.rotation ?? 0);
-  });
+/**
+ * Запомненный вид схемы из localStorage: центр в метрах и масштаб. Это предпочтение человека в окне, а не данные
+ * клипа; недоступное хранилище или негодное значение — вид не запомнен.
+ */
+function readStoredView(key: string): Pick<Viewport, 'center' | 'scale'> | null {
+  try {
+    const value = JSON.parse(localStorage.getItem(key) ?? 'null') as { center?: unknown; scale?: unknown } | null;
+    const center = value?.center;
+    const scale = value?.scale;
+    if (!Array.isArray(center) || center.length !== 2 || !center.every(Number.isFinite) || typeof scale !== 'number' || !Number.isFinite(scale)) return null;
+    return { center: [center[0] as number, center[1] as number], scale: clampScale(scale) };
+  } catch {
+    return null;
+  }
+}
+
+/** Запоминает вид схемы; хранилище, не принявшее запись, работе не мешает. */
+function storeView(key: string, viewport: Viewport): void {
+  try {
+    localStorage.setItem(key, JSON.stringify({ center: viewport.center, scale: viewport.scale }));
+  } catch {
+    // Вид действует до закрытия окна.
+  }
 }
 
 /**
  * Холст редактора схем: сетка в метрах, фигуры с подписями, выбор и перемещение, рисование выбранным инструментом.
- * Колесо меняет масштаб вокруг курсора, перетаскивание пустого места двигает вид. Все правки уходят в onChange
+ * Колесо меняет масштаб вокруг курсора, перетаскивание пустого места двигает вид. Вид, который человек выбрал
+ * колесом, перетаскиванием или «Показать всё», запоминается под viewKey и возвращается при следующем открытии
+ * схемы; без запомненного вида схема вписывается в холст. Все правки уходят в onChange
  * новой схемой; координаты прилипают к клеткам текущего масштаба (см. `snap`). Инструмент рисования остаётся
  * включённым после фигуры, Esc без черновика возвращает выбор.
  */
@@ -63,6 +76,7 @@ export function SchemeCanvas({
   selected,
   fitSignal,
   height,
+  viewKey,
   onSelect,
   onChange,
   onToolCancel
@@ -74,6 +88,8 @@ export function SchemeCanvas({
   selected: string | null;
   /** Смена значения вписывает все объекты в холст (кнопка «Показать всё», смена схемы). */
   fitSignal: number;
+  /** Ключ localStorage для вида схемы (центр и масштаб); нет — вид не запоминается. */
+  viewKey?: string;
   onSelect(id: string | null): void;
   onChange(scheme: Scheme): void;
   /** Esc без черновика при включённом рисовании: страница возвращает инструмент выбора. */
@@ -101,11 +117,30 @@ export function SchemeCanvas({
     return () => observer.disconnect();
   }, []);
 
-  // Вписывание по сигналу, при смене схемы и размера холста.
+  // Вид выбран человеком (колесо, перетаскивание, «Показать всё» или запомненный): смена размера холста его
+  // не сбрасывает и он запоминается. Невыбранный вид вписывает схему при каждом изменении размера.
+  const chosen = useRef(false);
+  const lastFit = useRef(fitSignal);
+  const fit = (): void => setViewport(fitViewport(schemeBounds(scheme.objects), width, height));
+  // Смена схемы: запомненный вид или вписывание. Объекты не в зависимостях: правка фигуры не меняет масштаб.
   useEffect(() => {
-    setViewport(fitViewport(schemeBounds(scheme.objects), width, height));
-    // Объекты не в зависимостях: правка фигуры не должна перескакивать масштабом.
-  }, [fitSignal, scheme.id, width, height]); // eslint-disable-line react-hooks/exhaustive-deps
+    const stored = viewKey ? readStoredView(viewKey) : null;
+    chosen.current = !!stored;
+    if (stored) setViewport((value) => ({ ...value, ...stored }));
+    else fit();
+  }, [scheme.id, viewKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!chosen.current) fit();
+  }, [width, height]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (fitSignal === lastFit.current) return;
+    lastFit.current = fitSignal;
+    chosen.current = true;
+    fit();
+  }, [fitSignal]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (chosen.current && viewKey) storeView(viewKey, viewport);
+  }, [viewport, viewKey]);
 
   useEffect(() => {
     setDraft([]);
@@ -120,6 +155,7 @@ export function SchemeCanvas({
       event.preventDefault();
       const rect = svg.getBoundingClientRect();
       const pixel: SchemePoint = [event.clientX - rect.left, event.clientY - rect.top];
+      chosen.current = true;
       setViewport((current) => {
         const anchor = toWorld(pixel, current, view);
         const scale = clampScale(current.scale * (event.deltaY < 0 ? 1.15 : 1 / 1.15));
@@ -203,6 +239,7 @@ export function SchemeCanvas({
     if (drag.kind === 'pan') {
       const pixel = pixelOf(event);
       const sign = view === 'north' || view === 'west' ? -1 : 1;
+      chosen.current = true;
       setViewport((value) => ({
         ...value,
         center: [drag.center[0] - (sign * (pixel[0] - drag.from[0])) / value.scale, drag.center[1] + (pixel[1] - drag.from[1]) / value.scale]
@@ -280,7 +317,7 @@ export function SchemeCanvas({
       case 'rect':
         return <path d={path(rectCorners(shape), true)} fill={color} fillOpacity={0.25} {...common} />;
       case 'ellipse':
-        return <path d={path(ellipsePoints(shape), true)} fill={color} fillOpacity={0.25} {...common} />;
+        return <path d={path(ellipseOutline(shape), true)} fill={color} fillOpacity={0.25} {...common} />;
       case 'polygon':
         return <path d={path(shape.points, true)} fill={color} fillOpacity={0.25} {...common} />;
       case 'line': {
@@ -329,10 +366,7 @@ export function SchemeCanvas({
     }
   };
   const label = (object: SchemeObject): ReactElement => {
-    const bounds = shapeBounds(object.shape);
-    const anchor: SchemePoint =
-      object.shape.type === 'point' ? [object.shape.at[0], object.shape.at[1]] : [(bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2];
-    const [x, y] = screen(anchor);
+    const [x, y] = screen(labelAnchor(object.shape));
     return (
       <text
         x={x}
@@ -356,7 +390,7 @@ export function SchemeCanvas({
   const preview = (): ReactElement | null => {
     if (drag?.kind === 'frame') {
       const shape = createShape(drag.type, drag.from, drag.to);
-      const points = shape.type === 'rect' ? rectCorners(shape) : shape.type === 'ellipse' ? ellipsePoints(shape) : [];
+      const points = shape.type === 'rect' ? rectCorners(shape) : shape.type === 'ellipse' ? ellipseOutline(shape) : [];
       return <path d={path(points, true)} fill="none" stroke={theme.palette.primary.main} strokeDasharray="6 4" />;
     }
     if (draft.length) {

@@ -181,6 +181,7 @@ func ValidateScenes(data, castValue any, fps float64, duration any) ([]string, e
 		groups.add(id)
 	}
 	references := dynvalue.Get(data, "references")
+	locations := castLocations(castValue)
 	seen := &valueSet{}
 	end := 0.0
 	for _, scene := range scenes {
@@ -254,6 +255,7 @@ func ValidateScenes(data, castValue any, fps float64, duration any) ([]string, e
 		if !known {
 			problems = append(problems, textShotPrimaryReferenceMissing(sid))
 		}
+		problems = append(problems, viewpointProblems(sid, dynvalue.Get(scene, "viewpoint"), locations, shotReferences(scene))...)
 	}
 	derived, err := DerivedFromProblems(scenes)
 	if err != nil {

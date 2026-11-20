@@ -1,4 +1,4 @@
-import type { SchemePoint, SchemeViewKind } from '@shared/schemes';
+import type { SchemePoint, SchemeViewKind } from './schemes';
 
 /**
  * Пересчёт между метрами схемы и пикселями холста. Ось Y экрана направлена вниз, поэтому север (вид сверху) и высота

@@ -144,7 +144,10 @@ export function apiSkeleton(): Api {
       close: stub('projects.close'),
       forget: stub('projects.forget'),
       settings: stub('projects.settings'),
-      saveSettings: stub('projects.saveSettings')
+      saveSettings: stub('projects.saveSettings'),
+      readDraft: stub('projects.readDraft'),
+      writeDraft: stub('projects.writeDraft'),
+      removeDraft: stub('projects.removeDraft')
     },
     sources: {
       view: stub('sources.view'),

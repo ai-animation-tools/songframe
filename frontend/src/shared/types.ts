@@ -3,6 +3,7 @@ import type { VocalModelId } from './vocals';
 import type { MediaModelSelection } from './media-providers';
 import type { ProductionProposalSummary } from './production-workflow';
 import type { FrameRate } from './video';
+import type { SceneViewpoint } from './viewpoint';
 import { generationTexts } from './texts/generation';
 import { projectDataTexts } from './texts/project-data';
 
@@ -358,6 +359,8 @@ export interface SceneShot {
   state_changes: { before?: StateDelta; after?: StateDelta };
   /** План собирается из материала другого плана (стоп-кадр, повтор, замедление) без собственной генерации. */
   derived_from?: { shot: string };
+  /** Точка съёмки по схемам локации: сторона, крупность, место камеры и угол обзора. */
+  viewpoint?: SceneViewpoint;
 }
 
 export interface SceneReference {

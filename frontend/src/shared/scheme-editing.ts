@@ -241,6 +241,24 @@ export function drawOrder(objects: readonly SchemeObject[]): SchemeObject[] {
     .map((item) => item.object);
 }
 
+/** Цвета объекта по умолчанию: плоская поверхность серая, объём — сине-серый. */
+const FLAT_COLOR = '#9e9e9e';
+const VOLUME_COLOR = '#607d8b';
+
+/** Цвет объекта на холсте: свой, если автор его выбрал, иначе по умолчанию для плоского или объёма. Только для человека. */
+export function objectColor(object: SchemeObject): string {
+  return object.color || (object.height ? VOLUME_COLOR : FLAT_COLOR);
+}
+
+/** Контур эллипса ломаной из 48 точек с учётом поворота: на видах сбоку ось экрана развёрнута, <ellipse> не подходит. */
+export function ellipseOutline(shape: Extract<SchemeShape, { type: 'ellipse' }>): SchemePoint[] {
+  return Array.from({ length: 48 }, (_, index) => {
+    const angle = (index / 48) * Math.PI * 2;
+    const point: SchemePoint = [shape.center[0] + shape.radii[0] * Math.cos(angle), shape.center[1] + shape.radii[1] * Math.sin(angle)];
+    return rotate(point, shape.center, shape.rotation ?? 0);
+  });
+}
+
 /** Ограничивающая рамка в метрах: [minX, minY, maxX, maxY]. */
 export type Bounds = [number, number, number, number];
 
@@ -333,4 +351,31 @@ export function updateObject(scheme: Scheme, id: string, change: (object: Scheme
 /** Документ с заменённой схемой id. */
 export function updateScheme(document: SchemesFile, id: string, change: (scheme: Scheme) => Scheme): SchemesFile {
   return { ...document, schemes: document.schemes.map((scheme) => (scheme.id === id ? change(scheme) : scheme)) };
+}
+
+/**
+ * Место подписи объекта на схеме. Линия подписывается на самой себе, в середине длины: центр рамки у забора по
+ * периметру или изогнутой дороги лежит в стороне от линии, часто на другом объекте. Точка — в своём месте,
+ * остальные фигуры — в центре рамки.
+ */
+export function labelAnchor(shape: SchemeShape): SchemePoint {
+  if (shape.type === 'point') return [shape.at[0], shape.at[1]];
+  if (shape.type === 'line' && shape.points.length > 1) {
+    const closed = !!shape.closed;
+    const path = shape.smooth ? smoothCurve(shape.points, closed) : [...shape.points];
+    if (closed && !shape.smooth) path.push(path[0]);
+    const lengths = path.slice(1).map((point, index) => Math.hypot(point[0] - path[index][0], point[1] - path[index][1]));
+    let rest = lengths.reduce((sum, length) => sum + length, 0) / 2;
+    for (let index = 0; index < lengths.length; index++) {
+      if (rest <= lengths[index] && lengths[index] > 0) {
+        const t = rest / lengths[index];
+        const [from, to] = [path[index], path[index + 1]];
+        return [from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t];
+      }
+      rest -= lengths[index];
+    }
+    return path[0];
+  }
+  const bounds = shapeBounds(shape);
+  return [(bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2];
 }

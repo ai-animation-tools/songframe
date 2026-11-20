@@ -178,3 +178,95 @@ export const NoLocations: Story = {
     await expect(await within(canvasElement).findByText(/В кастинге нет локаций/)).toBeVisible();
   }
 };
+
+export const Fullscreen: Story = {
+  name: 'Во весь экран · правки в окне, закрытие подтверждается, сохранить и закрыть',
+  tags: ['ci'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    await canvasOf(canvas, 'Перекрёсток сверху');
+    await userEvent.click(canvas.getByRole('button', { name: commonTexts.fullscreen.open }));
+    const dialog = within(await page.findByRole('dialog', { name: schemesTexts.fullscreenTitle({ location: 'Перекрёсток' }) }));
+    await canvasOf(dialog, 'Перекрёсток сверху');
+    // В окне нет кнопки «Во весь экран», а холст выше, чем на странице.
+    await expect(dialog.queryByRole('button', { name: commonTexts.fullscreen.open })).toBeNull();
+    const title = dialog.getByRole('textbox', { name: schemesTexts.schemeTitle });
+    await userEvent.type(title, ' вечером');
+    // Правка в окне сразу уходит во временный файл.
+    await waitFor(() => expect(schemesStorySnapshot().draft).toContain('Перекрёсток сверху вечером'));
+    await userEvent.click(dialog.getByRole('button', { name: commonTexts.close }));
+    const confirm = within(await page.findByRole('dialog', { name: commonTexts.fullscreen.closeTitle }));
+    await expect(confirm.getByText(schemesTexts.fullscreenClose)).toBeInTheDocument();
+    await userEvent.click(confirm.getByRole('button', { name: commonTexts.fullscreen.saveAndClose }));
+    await waitFor(() => expect(schemesStorySnapshot().saves).toBe(1));
+    await waitFor(() => expect(page.queryByRole('dialog')).not.toBeInTheDocument());
+    await expect(schemesStorySnapshot().document.schemes[0].title).toBe('Перекрёсток сверху вечером');
+    // Сохранение удаляет временный файл.
+    await waitFor(() => expect(schemesStorySnapshot().draft).toBeNull());
+    await canvasOf(canvas, 'Перекрёсток сверху вечером');
+  }
+};
+
+export const DraftRestore: Story = {
+  name: 'Черновик прошлого запуска · продолжить, правки вернулись',
+  tags: ['ci'],
+  parameters: { songframe: schemesPageOptions({ leftDraft: 'same' }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(await canvas.findByText(commonTexts.draft.title)).toBeVisible();
+    await expect(canvas.queryByText(commonTexts.draft.baseChanged)).toBeNull();
+    // Пока решение не принято, черновик не перезаписывается сохранённой схемой.
+    await expect(schemesStorySnapshot().draft).toContain('Перекрёсток из черновика');
+    await userEvent.click(canvas.getByRole('button', { name: commonTexts.draft.restore }));
+    await canvasOf(canvas, 'Перекрёсток из черновика');
+    await expect(canvas.queryByText(commonTexts.draft.title)).toBeNull();
+    await expect(canvas.getByText(commonTexts.unsavedChanges)).toBeVisible();
+    await expect(saveButton(canvas)).toBeEnabled();
+  }
+};
+
+export const DraftDiscard: Story = {
+  name: 'Черновик при изменившемся файле · предупреждение, отказ подтверждается',
+  tags: ['ci'],
+  parameters: { songframe: schemesPageOptions({ leftDraft: 'changed' }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    await expect(await canvas.findByText(commonTexts.draft.baseChanged)).toBeVisible();
+    await userEvent.click(canvas.getByRole('button', { name: commonTexts.draft.discard }));
+    const confirm = within(await page.findByRole('dialog', { name: commonTexts.draft.discardTitle }));
+    await userEvent.click(confirm.getByRole('button', { name: commonTexts.draft.discard }));
+    await waitFor(() => expect(schemesStorySnapshot().draft).toBeNull());
+    await expect(canvas.queryByText(commonTexts.draft.title)).toBeNull();
+    await canvasOf(canvas, 'Перекрёсток сверху');
+    await expect(saveButton(canvas)).toBeDisabled();
+  }
+};
+
+export const RememberView: Story = {
+  name: 'Масштаб схемы запоминается · другая локация и окно во весь экран его не сбрасывают',
+  tags: ['ci'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    const scaleOf = (root: ParentNode): string => root.querySelector('[data-scale-label]')!.textContent ?? '';
+    const svg = await canvasOf(canvas, 'Перекрёсток сверху');
+    const fitted = scaleOf(svg);
+    const box = svg.getBoundingClientRect();
+    for (let index = 0; index < 8; index++) fireEvent.wheel(svg, { deltaY: -100, clientX: box.left + box.width / 2, clientY: box.top + box.height / 2 });
+    await waitFor(() => expect(scaleOf(svg)).not.toBe(fitted));
+    const zoomed = scaleOf(svg);
+    // Другая локация и обратно: редактор создаётся заново, вид берётся из запомненного.
+    await userEvent.click(canvasElement.querySelector<HTMLElement>('[data-location-id="street"]')!);
+    await userEvent.click(canvasElement.querySelector<HTMLElement>('[data-location-id="crossing"]')!);
+    await waitFor(async () => expect(scaleOf(await canvasOf(canvas, 'Перекрёсток сверху'))).toBe(zoomed));
+    // Во весь экран холст больше, но масштаб тот же.
+    await userEvent.click(canvas.getByRole('button', { name: commonTexts.fullscreen.open }));
+    const dialog = within(await page.findByRole('dialog', { name: schemesTexts.fullscreenTitle({ location: 'Перекрёсток' }) }));
+    await expect(scaleOf(await canvasOf(dialog, 'Перекрёсток сверху'))).toBe(zoomed);
+    // «Показать всё» возвращает вписанный вид.
+    await userEvent.click(dialog.getByRole('button', { name: schemesTexts.fit }));
+    await waitFor(async () => expect(scaleOf(await canvasOf(dialog, 'Перекрёсток сверху'))).not.toBe(zoomed));
+  }
+};

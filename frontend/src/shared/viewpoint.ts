@@ -21,6 +21,12 @@ export interface ViewpointPath {
   end?: SchemePoint;
 }
 
+/** Своё направление камеры на первом кадре и, если поворачивается, на последнем: градусы [0, 360). */
+export interface ViewpointHeading {
+  start: number;
+  end?: number;
+}
+
 /** Герой плана на схеме: сущность из референсов плана и её путь. */
 export interface ViewpointSubject extends ViewpointPath {
   entity: string;
@@ -35,6 +41,8 @@ export interface SceneViewpoint {
   /** Свой угол обзора по горизонтали, градусы; нет — угол крупности. */
   fov?: number;
   camera?: ViewpointPath;
+  /** Своё направление камеры; нет — камера целится в героев (aimHeading). */
+  heading?: ViewpointHeading;
   /** Герои на схеме; первый — в фокусе (главный в кадре). Камера целится так, чтобы в кадр вошли все. */
   subjects?: ViewpointSubject[];
 }
@@ -135,28 +143,53 @@ export function subjectPoints(viewpoint: SceneViewpoint, phase: ViewpointPhase):
   return (viewpoint.subjects ?? []).map((subject) => pathPoint(subject, phase)!);
 }
 
+/** Прицел на героев на кадре phase без учёта своего направления; без камеры или героев с направлением — null. */
+export function autoHeading(viewpoint: SceneViewpoint, phase: ViewpointPhase): number | null {
+  const camera = pathPoint(viewpoint.camera, phase);
+  return camera ? aimHeading(camera, subjectPoints(viewpoint, phase)) : null;
+}
+
 /**
- * Направление взгляда на кадре phase: прицел на всех героев (aimHeading), если стоят камера и хотя бы один герой
- * не в её точке; иначе по стороне. Камера сверху направления не имеет — null.
+ * Направление взгляда на кадре phase: своё направление человека (на последнем кадре без своего конца — как на
+ * первом: камера не поворачивается); иначе прицел на всех героев (aimHeading), если стоят камера и хотя бы один
+ * герой не в её точке; иначе по стороне. Камера сверху направления не имеет — null.
  */
 export function lookHeading(viewpoint: SceneViewpoint, phase: ViewpointPhase): number | null {
   if (viewpoint.side === 'top') return null;
+  if (viewpoint.heading && viewpoint.camera) return phase === 'end' ? (viewpoint.heading.end ?? viewpoint.heading.start) : viewpoint.heading.start;
   const camera = pathPoint(viewpoint.camera, phase);
   const aim = camera ? aimHeading(camera, subjectPoints(viewpoint, phase)) : null;
   return aim ?? viewpointHeading(viewpoint.side);
 }
 
-/** Сторона определяется точками: на первом кадре есть камера и герои, дающие прицел; камера не сверху. */
+/** Сторона определяется точками: есть камера и своё направление или герои, дающие прицел; камера не сверху. */
 export function sideFromPoints(viewpoint: SceneViewpoint): boolean {
-  const camera = viewpoint.camera?.start;
-  return viewpoint.side !== 'top' && !!camera && aimHeading(camera, subjectPoints(viewpoint, 'start')) !== null;
+  return viewpoint.side !== 'top' && !!viewpoint.camera && (!!viewpoint.heading || autoHeading(viewpoint, 'start') !== null);
 }
 
-/** Точка съёмки, у которой сторона приведена к прицелу первого кадра (если точки его дают). */
+/** Точка съёмки, у которой сторона приведена к направлению первого кадра (если точки его дают). */
 export function syncSide(viewpoint: SceneViewpoint): SceneViewpoint {
   if (!sideFromPoints(viewpoint)) return viewpoint;
-  const side = sideOfHeading(aimHeading(viewpoint.camera!.start, subjectPoints(viewpoint, 'start'))!);
+  const side = sideOfHeading(lookHeading(viewpoint, 'start')!);
   return side === viewpoint.side ? viewpoint : { ...viewpoint, side };
+}
+
+/**
+ * Своё направление камеры на кадре phase, целые градусы [0, 360). Конец без своего начала берёт началом текущее
+ * направление первого кадра: поворот начинается оттуда, где камера смотрит сейчас. Конец, совпавший с началом, не
+ * хранится. Сторона приводится к направлению.
+ */
+export function setHeading(viewpoint: SceneViewpoint, phase: ViewpointPhase, degrees: number): SceneViewpoint {
+  const value = ((Math.round(degrees) % 360) + 360) % 360;
+  const start = phase === 'start' ? value : (viewpoint.heading?.start ?? Math.round(lookHeading(viewpoint, 'start') ?? value) % 360);
+  const end = phase === 'end' ? value : viewpoint.heading?.end;
+  return syncSide({ ...viewpoint, heading: { start, ...(end !== undefined && end !== start ? { end } : {}) } });
+}
+
+/** Без своего направления: камера снова целится в героев. Сторона приводится к прицелу. */
+export function withoutHeading(viewpoint: SceneViewpoint): SceneViewpoint {
+  const { heading: _heading, ...rest } = viewpoint;
+  return syncSide(rest);
 }
 
 /**
@@ -199,8 +232,9 @@ export function removePoint(viewpoint: SceneViewpoint, target: ViewpointTarget, 
     return rest as T;
   };
   if (target === 'camera') {
-    const { camera, ...rest } = viewpoint;
-    return phase === 'end' && camera ? { ...rest, camera: strip(camera) } : rest;
+    // Без камеры своё направление теряет смысл и уходит вместе с ней.
+    const { camera, heading, ...rest } = viewpoint;
+    return phase === 'end' && camera ? { ...rest, ...(heading ? { heading } : {}), camera: strip(camera) } : rest;
   }
   const { subjects = [], ...rest } = viewpoint;
   const next = phase === 'end' ? subjects.map((item) => (sameTarget(item, target) ? strip(item) : item)) : subjects.filter((item) => !sameTarget(item, target));
@@ -215,9 +249,9 @@ export function setFocus(viewpoint: SceneViewpoint, entity: string): SceneViewpo
   return syncSide({ ...viewpoint, subjects: [chosen, ...subjects.filter((subject) => subject !== chosen)] });
 }
 
-/** Без мест камеры и героев: смена локации делает точки другой схемы бессмысленными. */
+/** Без мест камеры и героев и своего направления: смена локации делает точки другой схемы бессмысленными. */
 export function withoutPoints(viewpoint: SceneViewpoint): SceneViewpoint {
-  const { camera: _camera, subjects: _subjects, ...rest } = viewpoint;
+  const { camera: _camera, heading: _heading, subjects: _subjects, ...rest } = viewpoint;
   return rest;
 }
 

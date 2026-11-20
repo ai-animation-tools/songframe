@@ -18,6 +18,9 @@ import (
 //     героев (все входят в кадр при наименьшем угле), а side редактор держит равной стороне по этому прицелу.
 //   - camera — место камеры на виде сверху в метрах: start на первом кадре, end — на последнем, если
 //     камера движется.
+//   - heading — своё направление взгляда камеры в градусах против часовой стрелки от востока, [0, 360):
+//     start на первом кадре, end — на последнем, если камера поворачивается. Без него камера целится в героев;
+//     с ним — куда указал человек, когда в кадре не только герои.
 //   - subjects — герои плана на схеме: entity из references плана, start и необязательный end. Первый —
 //     в фокусе: главный в кадре.
 //
@@ -31,13 +34,17 @@ var ViewpointSizes = []string{"wide", "medium", "close", "detail"}
 
 // viewpointKeys, pathKeys, subjectKeys — допустимые ключи; остальные запрещены, чтобы опечатка не терялась молча.
 var (
-	viewpointKeys = []string{"location", "side", "size", "fov", "camera", "subjects"}
+	viewpointKeys = []string{"location", "side", "size", "fov", "camera", "heading", "subjects"}
 	pathKeys      = []string{"start", "end"}
+	headingKeys   = []string{"start", "end"}
 	subjectKeys   = []string{"entity", "start", "end"}
 )
 
 func textViewpointShape(shot string) string {
-	return shot + ": точка съёмки — объект с локацией, стороной и крупностью (location, side, size), необязательными fov, camera и subjects."
+	return shot + ": точка съёмки — объект с локацией, стороной и крупностью (location, side, size), необязательными fov, camera, heading и subjects."
+}
+func textViewpointHeading(shot string) string {
+	return shot + ": направление камеры heading — объект со start и необязательным end, каждый — градусы от 0 до 360 (360 не входит)."
 }
 func textViewpointLocation(shot, location string) string {
 	return shot + ": точка съёмки ссылается на «" + location + "», а это не локация кастинга."
@@ -89,6 +96,21 @@ func isPoint(value any) bool {
 	return ok && len(point) == 2 && finite(point[0]) && finite(point[1])
 }
 
+// isAngle — конечное число градусов в [0, 360).
+func isAngle(value any) bool {
+	return finite(value) && value.(float64) >= 0 && value.(float64) < 360
+}
+
+// isHeading — объект {start, end?} с углами.
+func isHeading(value any) bool {
+	record, ok := dynvalue.AsObject(value)
+	if !ok || slices.ContainsFunc(record.Keys(), func(key string) bool { return !slices.Contains(headingKeys, key) }) || !isAngle(record.Value("start")) {
+		return false
+	}
+	end := record.Value("end")
+	return end == dynvalue.Undefined || isAngle(end)
+}
+
 // isPath — объект {start, end?} с точками; keys — все допустимые ключи объекта.
 func isPath(value any, keys []string) (*dynvalue.Object, bool) {
 	record, ok := dynvalue.AsObject(value)
@@ -137,6 +159,9 @@ func viewpointProblems(shot string, value any, locations []string, references []
 		if _, ok := isPath(camera, pathKeys); !ok {
 			problems = append(problems, textViewpointCamera(shot))
 		}
+	}
+	if heading := record.Value("heading"); heading != dynvalue.Undefined && !isHeading(heading) {
+		problems = append(problems, textViewpointHeading(shot))
 	}
 	if subjects := record.Value("subjects"); subjects != dynvalue.Undefined {
 		list, ok := dynvalue.AsArray(subjects)

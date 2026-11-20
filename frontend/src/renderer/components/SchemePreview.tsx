@@ -5,7 +5,7 @@ import { schemesTexts } from '@shared/texts/schemes';
 import type { Scheme, SchemeObject, SchemePoint } from '@shared/schemes';
 import { drawOrder, ellipseOutline, labelAnchor, objectColor, rectCorners, schemeBounds, smoothCurve, type Bounds } from '@shared/scheme-editing';
 import { fitViewport, snap, toScreen, toWorld, zoomViewportAt, type Viewport } from '@shared/scheme-canvas';
-import { fovThrough, viewSector } from '@shared/viewpoint';
+import { fovThrough, headingBetween, pointAt, viewSector, type ViewpointPhase } from '@shared/viewpoint';
 
 /**
  * Камера на мини-схеме: место на первом кадре и, если движется, на последнем; направление взгляда на каждом
@@ -42,7 +42,8 @@ const SECTOR_PX = 160;
 /**
  * Мини-схема вида сверху только для чтения: объекты схемы, север, камера с сектором обзора и герои. Движение
  * показано пунктирной стрелкой к месту на последнем кадре, там же пунктиром сектор конца. Щелчок по схеме сообщает
- * место в метрах (onPick), край сектора первого кадра тянется мышью и меняет угол обзора (onFov). Масштаб вписывает
+ * место в метрах (onPick), край сектора первого кадра тянется мышью и меняет угол обзора (onFov), ромб посередине
+ * дуги сектора кадра headingPhase поворачивает камеру (onHeading). Масштаб вписывает
  * схему и точки с запасом вокруг при смене схемы и ширины, а не при каждом сдвиге точки, чтобы схема не прыгала под
  * мышью. Колесо приближает у курсора, перетаскивание сдвигает схему, кнопка «Показать всё» возвращает вписанный вид.
  */
@@ -54,7 +55,9 @@ export function SchemePreview({
   disabled = false,
   height = 300,
   onPick,
-  onFov
+  onFov,
+  headingPhase = 'start',
+  onHeading
 }: {
   scheme: Scheme;
   /** Доступное имя области. */
@@ -65,12 +68,23 @@ export function SchemePreview({
   height?: number;
   onPick?(point: SchemePoint): void;
   onFov?(fov: number): void;
+  /** Кадр, направление которого поворачивает ромб сектора. */
+  headingPhase?: ViewpointPhase;
+  onHeading?(degrees: number): void;
 }): ReactElement {
   const theme = useTheme();
   const boxRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [width, setWidth] = useState(480);
-  const [dragging, setDragging] = useState(false);
+  // Что тянется мышью: край сектора (угол обзора) или ромб (направление).
+  // Ref читают обработчики указателя: следующее событие может прийти раньше, чем React применит состояние;
+  // состояние нужно только курсору.
+  const [dragging, setDraggingState] = useState<'fov' | 'heading' | null>(null);
+  const draggingRef = useRef<'fov' | 'heading' | null>(null);
+  const setDragging = (value: 'fov' | 'heading' | null): void => {
+    draggingRef.current = value;
+    setDraggingState(value);
+  };
   // Свой вид человека (колесо, сдвиг) поверх вписанного; смена схемы или размера возвращает вписанный.
   const [own, setOwn] = useState<Pick<Viewport, 'center' | 'scale'> | null>(null);
   const press = useRef<{ x: number; y: number; center: SchemePoint; moved: boolean } | null>(null);
@@ -181,7 +195,17 @@ export function SchemePreview({
   const accent = theme.palette.secondary.main;
   const sectorLength = SECTOR_PX / viewport.scale;
   const sector = camera && camera.startHeading !== null ? viewSector(camera.start, camera.startHeading, camera.fov, sectorLength) : null;
-  const endSector = camera?.end && camera.endHeading !== null ? viewSector(camera.end, camera.endHeading, camera.fov, sectorLength) : null;
+  // Сектор последнего кадра — у движущейся или поворачивающейся камеры; неподвижная стоит в начале.
+  const endOrigin = camera?.end ?? camera?.start;
+  const endSector = camera && endOrigin && camera.endHeading !== null ? viewSector(endOrigin, camera.endHeading, camera.fov, sectorLength) : null;
+  // Ромб поворота посередине дуги сектора выбранного кадра; без сектора конца последний кадр крутится от начала.
+  const rotor = (() => {
+    if (!camera || camera.startHeading === null) return null;
+    const useEnd = headingPhase === 'end' && endOrigin && camera.endHeading !== null;
+    const origin = useEnd ? endOrigin : camera.start;
+    const heading = useEnd ? camera.endHeading! : camera.startHeading;
+    return { phase: headingPhase, origin, at: screen(pointAt(origin, heading, sectorLength)) };
+  })();
   const edge = sector ? screen(sector[1]) : null;
   // Пунктирная стрелка пути от первого кадра к последнему.
   const route = (from: SchemePoint, to: SchemePoint | undefined, color: string, marker: string): ReactElement | null => {
@@ -205,8 +229,13 @@ export function SchemePreview({
           event.currentTarget.setPointerCapture?.(event.pointerId);
         }}
         onPointerMove={(event) => {
-          if (dragging) {
+          if (draggingRef.current === 'fov') {
             if (camera && camera.startHeading !== null && onFov) onFov(fovThrough(camera.start, camera.startHeading, worldOf(event)));
+            return;
+          }
+          if (draggingRef.current === 'heading') {
+            const degrees = rotor ? headingBetween(rotor.origin, worldOf(event)) : null;
+            if (degrees !== null) onHeading?.(degrees);
             return;
           }
           const start = press.current;
@@ -220,8 +249,8 @@ export function SchemePreview({
         onPointerUp={(event) => {
           const start = press.current;
           press.current = null;
-          if (dragging) {
-            setDragging(false);
+          if (draggingRef.current) {
+            setDragging(null);
             return;
           }
           if (start && !start.moved && !disabled && onPick) onPick(worldOf(event));
@@ -319,7 +348,26 @@ export function SchemePreview({
                 style={{ cursor: 'grab' }}
                 onPointerDown={(event) => {
                   event.stopPropagation();
-                  setDragging(true);
+                  setDragging('fov');
+                  (event.target as Element).setPointerCapture?.(event.pointerId);
+                }}
+              />
+            ) : null}
+            {rotor && !disabled && onHeading ? (
+              <rect
+                data-heading-handle={rotor.phase}
+                x={rotor.at[0] - 6}
+                y={rotor.at[1] - 6}
+                width={12}
+                height={12}
+                transform={`rotate(45 ${rotor.at[0]} ${rotor.at[1]})`}
+                fill={primary}
+                stroke={theme.palette.background.paper}
+                strokeWidth={2}
+                style={{ cursor: 'grab' }}
+                onPointerDown={(event) => {
+                  event.stopPropagation();
+                  setDragging('heading');
                   (event.target as Element).setPointerCapture?.(event.pointerId);
                 }}
               />

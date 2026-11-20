@@ -252,6 +252,21 @@ export const ViewpointSet: Story = {
     await waitFor(() => expect(document.querySelector('[data-viewpoint-row="neighbor"] [data-out-of-frame="start"]')).not.toBeNull());
     await expect(document.querySelector('[data-viewpoint-row="hero"] [data-out-of-frame="start"]')).not.toBeNull();
     await expect(document.querySelector('[data-viewpoint-row="hero"]')).toHaveTextContent(viewpointTexts.focus);
+    // Своё направление: ромб посередине дуги поворачивает камеру прямо на героя — он в первом кадре, сосед нет.
+    // Камера при этом уезжает вниз, не поворачиваясь, поэтому на последнем кадре герой может выйти из кадра.
+    const rotor = preview.querySelector('[data-heading-handle="start"]')!;
+    const heroMark = preview.querySelector('[data-subject="hero"] circle')!.getBoundingClientRect();
+    const target = { clientX: heroMark.left + heroMark.width / 2, clientY: heroMark.top + heroMark.height / 2, pointerId: 1 };
+    fireEvent.pointerDown(rotor, target);
+    fireEvent.pointerMove(preview, target);
+    fireEvent.pointerUp(preview, target);
+    await waitFor(() => expect(document.querySelector('[data-viewpoint-row="hero"] [data-out-of-frame="start"]')).toBeNull());
+    await expect(document.querySelector('[data-viewpoint-row="neighbor"] [data-out-of-frame="start"]')).not.toBeNull();
+    await expect(document.querySelector('[data-viewpoint-row="camera"]')).toHaveTextContent(viewpointTexts.headingOwn);
+    // «Прицел на героев» возвращает автоматическое направление.
+    await userEvent.click(screen.getByRole('button', { name: viewpointTexts.headingAuto }));
+    await waitFor(() => expect(document.querySelector('[data-viewpoint-row="hero"] [data-out-of-frame="start"]')).not.toBeNull());
+    await expect(screen.queryByRole('button', { name: viewpointTexts.headingAuto })).toBeNull();
     // Расстановка уже во временном файле: падение программы её не потеряет.
     await waitFor(() => expect(scenarioStateInspection().draft).toContain('"entity":"hero"'));
     await userEvent.click(saveButton(screen));

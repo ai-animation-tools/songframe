@@ -12,6 +12,7 @@ import {
   moves,
   pointAt,
   removePoint,
+  setHeading,
   setFocus,
   setPoint,
   sideFromPoints,
@@ -20,6 +21,7 @@ import {
   viewpointFov,
   viewpointHeading,
   withFov,
+  withoutHeading,
   withoutPoints,
   type SceneViewpoint
 } from './viewpoint';
@@ -219,5 +221,40 @@ describe('новая точка съёмки', () => {
     expect(createViewpoint(['yard', 'street'], schemes)).toEqual({ location: 'street', side: 'south', size: 'wide' });
     expect(createViewpoint(['yard', 'street'], null)).toEqual({ location: 'yard', side: 'south', size: 'wide' });
     expect(createViewpoint([], schemes)).toBeNull();
+  });
+});
+
+describe('своё направление камеры', () => {
+  const placed: SceneViewpoint = { ...base, camera: { start: [0, 0] }, subjects: [{ entity: 'artem', start: [0, 5] }] };
+
+  it('заменяет прицел на героев, задаёт сторону и отметки кадра; конец без своего — как начало', () => {
+    expect(lookHeading(placed, 'start')).toBe(90);
+    const turned = setHeading(placed, 'start', 0.4);
+    expect(turned.heading).toEqual({ start: 0 });
+    expect(turned.side).toBe('west');
+    expect(lookHeading(turned, 'start')).toBe(0);
+    expect(lookHeading(turned, 'end')).toBe(0);
+    expect(inFrame(turned, 'start', [0, 5])).toBe(false);
+    expect(sideFromPoints(turned)).toBe(true);
+  });
+
+  it('конец без своего начала начинает поворот с текущего направления; конец как начало не хранится', () => {
+    const pan = setHeading(placed, 'end', -90);
+    expect(pan.heading).toEqual({ start: 90, end: 270 });
+    expect(lookHeading(pan, 'end')).toBe(270);
+    expect(pan.side).toBe('south');
+    expect(setHeading(pan, 'end', 90).heading).toEqual({ start: 90 });
+    expect(setHeading(placed, 'start', 359.6).heading).toEqual({ start: 0 });
+  });
+
+  it('прицел на героев возвращается кнопкой; без камеры и при смене локации направление уходит', () => {
+    const turned = setHeading(placed, 'start', 0);
+    const back = withoutHeading(turned);
+    expect('heading' in back).toBe(false);
+    expect(back.side).toBe('south');
+    expect('heading' in removePoint(turned, 'camera', 'start')).toBe(false);
+    expect(removePoint(setHeading({ ...turned, camera: { start: [0, 0], end: [1, 0] } }, 'end', 45), 'camera', 'end').heading).toEqual({ start: 0, end: 45 });
+    expect('heading' in withoutPoints(turned)).toBe(false);
+    expect(lookHeading({ ...turned, side: 'top' }, 'start')).toBeNull();
   });
 });

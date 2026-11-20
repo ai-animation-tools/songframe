@@ -19,6 +19,7 @@ import {
   Typography
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import CenterFocusStrongIcon from '@mui/icons-material/CenterFocusStrong';
 import ClearIcon from '@mui/icons-material/Clear';
 import CropFreeIcon from '@mui/icons-material/CropFree';
 import EditIcon from '@mui/icons-material/Edit';
@@ -43,12 +44,14 @@ import {
   pathPoint,
   removePoint,
   setFocus,
+  setHeading,
   setPoint,
   sideFromPoints,
   syncSide,
   targetPath,
   viewpointFov,
   withFov,
+  withoutHeading,
   withoutPoints,
   type SceneViewpoint,
   type ViewpointPath,
@@ -135,13 +138,14 @@ function FovField({
 }
 
 /**
- * Вид из камеры: перспективные кадры объёма схемы из точки камеры — первый и, если камера или герои движутся,
- * последний. Без камеры или у камеры сверху — пояснение вместо кадра.
+ * Вид из камеры: перспективные кадры объёма схемы из точки камеры — первый и, если камера движется или
+ * поворачивается либо герои движутся, последний. Без камеры или у камеры сверху — пояснение вместо кадра.
  */
 function CameraView({ viewpoint, scheme }: { viewpoint: SceneViewpoint; scheme: Scheme }): ReactElement {
   // Кадры пересчитываются только при смене точки съёмки: новый массив фигур перестраивал бы сцену при каждой отрисовке.
   const frames = useMemo(() => {
-    const phases: ViewpointPhase[] = moves(viewpoint.camera) || (viewpoint.subjects ?? []).some(moves) ? ['start', 'end'] : ['start'];
+    const phases: ViewpointPhase[] =
+      moves(viewpoint.camera) || viewpoint.heading?.end !== undefined || (viewpoint.subjects ?? []).some(moves) ? ['start', 'end'] : ['start'];
     return phases.map((phase) => ({
       phase,
       camera: viewpointCamera(viewpoint, phase),
@@ -220,7 +224,7 @@ function ViewpointPlacement({
     const rowTarget = targetOf(key);
     const fromCamera = path && camera && key !== 'camera' ? texts.fromCamera({ metres: metres(distance(camera.start, path.start)) }) : null;
     // Герой вне угла обзора на первом кадре или, если кто-то движется, на последнем.
-    const lastDiffers = moves(camera) || moves(path);
+    const lastDiffers = moves(camera) || moves(path) || viewpoint.heading?.end !== undefined;
     const outOf =
       key === 'camera' || !path
         ? null
@@ -241,7 +245,7 @@ function ViewpointPlacement({
           </Tooltip>
         ) : null}
         <Typography variant="body2" color="text.secondary">
-          {[pathState(path), fromCamera].filter(Boolean).join(' · ')}
+          {[pathState(path), fromCamera, key === 'camera' && path && viewpoint.heading ? texts.headingOwn : null].filter(Boolean).join(' · ')}
         </Typography>
         <Box sx={{ flex: 1 }} />
         {editable && path ? (
@@ -249,6 +253,11 @@ function ViewpointPlacement({
             {focus === false ? (
               <Button size="small" startIcon={<StarIcon />} onClick={() => update(setFocus(viewpoint, key))}>
                 {texts.makeFocus}
+              </Button>
+            ) : null}
+            {key === 'camera' && viewpoint.heading ? (
+              <Button size="small" startIcon={<CenterFocusStrongIcon />} onClick={() => update(withoutHeading(viewpoint))}>
+                {texts.headingAuto}
               </Button>
             ) : null}
             {path.end ? (
@@ -313,7 +322,7 @@ function ViewpointPlacement({
                 start: camera.start,
                 end: camera.end,
                 startHeading: lookHeading(viewpoint, 'start'),
-                endHeading: camera.end ? lookHeading(viewpoint, 'end') : null,
+                endHeading: camera.end || viewpoint.heading?.end !== undefined ? lookHeading(viewpoint, 'end') : null,
                 fov
               }
             : null
@@ -327,6 +336,8 @@ function ViewpointPlacement({
         }))}
         onPick={(point) => update(setPoint(viewpoint, target, phase, point))}
         onFov={(value) => update(withFov(viewpoint, value))}
+        headingPhase={phase}
+        onHeading={(degrees) => update(setHeading(viewpoint, phase, degrees))}
       />
       <Paper variant="outlined" sx={{ p: 1.5 }}>
         <Stack spacing={0.75}>

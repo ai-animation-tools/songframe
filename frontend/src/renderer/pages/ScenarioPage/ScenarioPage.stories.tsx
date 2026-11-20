@@ -5,6 +5,7 @@ import { componentsTexts } from '@shared/texts/components';
 import { commonTexts } from '@shared/texts/common';
 import { navigationTexts } from '@shared/texts/navigation';
 import { scenarioTexts } from '@shared/texts/scenario';
+import { schemesTexts } from '@shared/texts/schemes';
 import {
   SCENARIO_PAGE_READ_ERROR,
   ScenarioPageStory,
@@ -186,7 +187,9 @@ const viewpointBlock = (screen: Screen) => screen.getByRole('button', { name: ne
 /** Щелчок по мини-схеме в доле её ширины и высоты. */
 const clickPreview = (preview: Element, x: number, y: number): void => {
   const box = preview.getBoundingClientRect();
-  fireEvent.pointerDown(preview, { clientX: box.left + box.width * x, clientY: box.top + box.height * y, pointerId: 1 });
+  const at = { clientX: box.left + box.width * x, clientY: box.top + box.height * y, pointerId: 1 };
+  fireEvent.pointerDown(preview, at);
+  fireEvent.pointerUp(preview, at);
 };
 const previewOf = async (screen: Screen, scope: Screen = screen): Promise<SVGSVGElement> =>
   (await scope.findByRole('application', { name: viewpointTexts.preview({ title: 'Ворота сверху' }) })) as unknown as SVGSVGElement;
@@ -266,7 +269,22 @@ export const ViewpointFullscreen: Story = {
     await userEvent.click(await screen.findByRole('button', { name: commonTexts.fullscreen.open }));
     const dialog = within(await screen.findByRole('dialog', { name: viewpointTexts.fullscreenTitle({ shot: 'M03' }) }));
     await userEvent.click(within(dialog.getByRole('group', { name: viewpointTexts.target })).getByRole('button', { name: /Сосед/ }));
-    clickPreview(await previewOf(screen, dialog), 0.5, 0.4);
+    const preview = await previewOf(screen, dialog);
+    clickPreview(preview, 0.5, 0.4);
+    // Вокруг локации есть место: колесо отдаляет схему, перетаскивание сдвигает её и ничего не ставит.
+    const box = preview.getBoundingClientRect();
+    const [cx, cy] = [box.left + box.width / 2, box.top + box.height / 2];
+    for (let index = 0; index < 3; index++) fireEvent.wheel(preview, { deltaY: 100, clientX: cx, clientY: cy });
+    const fit = await dialog.findByRole('button', { name: schemesTexts.fit });
+    await userEvent.click(within(dialog.getByRole('group', { name: viewpointTexts.target })).getByRole('button', { name: viewpointTexts.camera }));
+    fireEvent.pointerDown(preview, { clientX: cx, clientY: cy, pointerId: 1 });
+    fireEvent.pointerMove(preview, { clientX: cx + 80, clientY: cy + 40, pointerId: 1 });
+    fireEvent.pointerUp(preview, { clientX: cx + 80, clientY: cy + 40, pointerId: 1 });
+    await expect(dialog.getAllByText(viewpointTexts.notPlaced).length).toBeGreaterThan(0);
+    await expect(preview.querySelector('[data-camera]')).toBeNull();
+    // «Показать всё» возвращает вписанный вид и прячется.
+    await userEvent.click(fit);
+    await waitFor(() => expect(dialog.queryByRole('button', { name: schemesTexts.fit })).toBeNull());
     // Закрытие с несохранёнными правками спрашивает и объясняет, что черновик не потеряется.
     await userEvent.click(dialog.getByRole('button', { name: commonTexts.close }));
     const confirm = within(await screen.findByRole('dialog', { name: commonTexts.fullscreen.closeTitle }));

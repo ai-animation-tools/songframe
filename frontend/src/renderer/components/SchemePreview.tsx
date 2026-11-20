@@ -1,9 +1,10 @@
-import { useLayoutEffect, useMemo, useRef, useState, type PointerEvent, type ReactElement } from 'react';
-import { Box, useTheme } from '@mui/material';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent, type ReactElement } from 'react';
+import { Box, IconButton, Tooltip, useTheme } from '@mui/material';
+import FitScreenIcon from '@mui/icons-material/FitScreen';
 import { schemesTexts } from '@shared/texts/schemes';
 import type { Scheme, SchemeObject, SchemePoint } from '@shared/schemes';
 import { drawOrder, ellipseOutline, labelAnchor, objectColor, rectCorners, schemeBounds, smoothCurve, type Bounds } from '@shared/scheme-editing';
-import { fitViewport, snap, toScreen, toWorld, type Viewport } from '@shared/scheme-canvas';
+import { fitViewport, snap, toScreen, toWorld, zoomViewportAt, type Viewport } from '@shared/scheme-canvas';
 import { fovThrough, viewSector } from '@shared/viewpoint';
 
 /**
@@ -27,6 +28,14 @@ export interface PreviewSubject {
   focus: boolean;
 }
 
+/**
+ * Запас вокруг схемы при вписывании, доля большего размера рамки с каждой стороны: камеру общего плана ставят далеко
+ * за краем локации, и для неё нужно место на мини-схеме.
+ */
+const AROUND = 0.5;
+/** Сдвиг указателя, после которого нажатие сдвигает схему, а не ставит точку, px. */
+const CLICK_SLOP = 4;
+
 /** Длина сектора обзора в пикселях: заметен на схеме любого размера и не уходит далеко за её края. */
 const SECTOR_PX = 160;
 
@@ -34,7 +43,8 @@ const SECTOR_PX = 160;
  * Мини-схема вида сверху только для чтения: объекты схемы, север, камера с сектором обзора и герои. Движение
  * показано пунктирной стрелкой к месту на последнем кадре, там же пунктиром сектор конца. Щелчок по схеме сообщает
  * место в метрах (onPick), край сектора первого кадра тянется мышью и меняет угол обзора (onFov). Масштаб вписывает
- * схему и точки при смене схемы и ширины, а не при каждом сдвиге точки, чтобы схема не прыгала под мышью.
+ * схему и точки с запасом вокруг при смене схемы и ширины, а не при каждом сдвиге точки, чтобы схема не прыгала под
+ * мышью. Колесо приближает у курсора, перетаскивание сдвигает схему, кнопка «Показать всё» возвращает вписанный вид.
  */
 export function SchemePreview({
   scheme,
@@ -58,8 +68,12 @@ export function SchemePreview({
 }): ReactElement {
   const theme = useTheme();
   const boxRef = useRef<HTMLDivElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
   const [width, setWidth] = useState(480);
   const [dragging, setDragging] = useState(false);
+  // Свой вид человека (колесо, сдвиг) поверх вписанного; смена схемы или размера возвращает вписанный.
+  const [own, setOwn] = useState<Pick<Viewport, 'center' | 'scale'> | null>(null);
+  const press = useRef<{ x: number; y: number; center: SchemePoint; moved: boolean } | null>(null);
 
   useLayoutEffect(() => {
     const box = boxRef.current;
@@ -76,16 +90,35 @@ export function SchemePreview({
     ...(camera ? [camera.start, ...(camera.end ? [camera.end] : [])] : []),
     ...subjects.flatMap((subject) => [subject.start, ...(subject.end ? [subject.end] : [])])
   ];
-  const viewport: Viewport = useMemo(() => {
+  const fitted: Viewport = useMemo(() => {
     let bounds: Bounds | null = schemeBounds(scheme.objects);
     for (const point of points) {
       bounds = bounds
         ? [Math.min(bounds[0], point[0]), Math.min(bounds[1], point[1]), Math.max(bounds[2], point[0]), Math.max(bounds[3], point[1])]
         : [point[0] - 5, point[1] - 5, point[0] + 5, point[1] + 5];
     }
-    return fitViewport(bounds, width, height);
+    const around = bounds ? Math.max(bounds[2] - bounds[0], bounds[3] - bounds[1]) * AROUND : 0;
+    return fitViewport(bounds && [bounds[0] - around, bounds[1] - around, bounds[2] + around, bounds[3] + around], width, height);
     // Точки не в зависимостях: их сдвиг не меняет масштаб.
   }, [scheme.id, scheme.objects, width, height]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => setOwn(null), [scheme.id, width, height]);
+  const viewport: Viewport = own ? { ...own, width, height } : fitted;
+
+  // Колесо без пассивного слушателя: прокрутка страницы не должна срабатывать над схемой.
+  const viewportRef = useRef(viewport);
+  viewportRef.current = viewport;
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const wheel = (event: WheelEvent): void => {
+      event.preventDefault();
+      const rect = svg.getBoundingClientRect();
+      const next = zoomViewportAt(viewportRef.current, [event.clientX - rect.left, event.clientY - rect.top], event.deltaY < 0 ? 1.15 : 1 / 1.15, 'top');
+      setOwn({ center: next.center, scale: next.scale });
+    };
+    svg.addEventListener('wheel', wheel, { passive: false });
+    return () => svg.removeEventListener('wheel', wheel);
+  }, []);
 
   const screen = (point: SchemePoint): SchemePoint => toScreen(point, viewport, 'top');
   const path = (points: SchemePoint[], closed: boolean): string =>
@@ -159,22 +192,40 @@ export function SchemePreview({
   };
 
   return (
-    <Box ref={boxRef} sx={{ border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden', bgcolor: 'background.paper' }}>
+    <Box ref={boxRef} sx={{ position: 'relative', border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden', bgcolor: 'background.paper' }}>
       <svg
+        ref={svgRef}
         role="application"
         aria-label={label}
         width={width}
         height={height}
-        style={{ display: 'block', touchAction: 'none', cursor: disabled ? 'default' : dragging ? 'grabbing' : 'crosshair' }}
+        style={{ display: 'block', touchAction: 'none', cursor: dragging || press.current?.moved ? 'grabbing' : disabled || !onPick ? 'grab' : 'crosshair' }}
         onPointerDown={(event) => {
-          if (disabled || !onPick) return;
-          onPick(worldOf(event));
+          press.current = { x: event.clientX, y: event.clientY, center: viewport.center, moved: false };
+          event.currentTarget.setPointerCapture?.(event.pointerId);
         }}
         onPointerMove={(event) => {
-          if (!dragging || !camera || camera.startHeading === null || !onFov) return;
-          onFov(fovThrough(camera.start, camera.startHeading, worldOf(event)));
+          if (dragging) {
+            if (camera && camera.startHeading !== null && onFov) onFov(fovThrough(camera.start, camera.startHeading, worldOf(event)));
+            return;
+          }
+          const start = press.current;
+          if (!start) return;
+          const dx = event.clientX - start.x;
+          const dy = event.clientY - start.y;
+          if (!start.moved && Math.hypot(dx, dy) < CLICK_SLOP) return;
+          start.moved = true;
+          setOwn({ center: [start.center[0] - dx / viewport.scale, start.center[1] + dy / viewport.scale], scale: viewport.scale });
         }}
-        onPointerUp={() => setDragging(false)}
+        onPointerUp={(event) => {
+          const start = press.current;
+          press.current = null;
+          if (dragging) {
+            setDragging(false);
+            return;
+          }
+          if (start && !start.moved && !disabled && onPick) onPick(worldOf(event));
+        }}
       >
         <g style={{ pointerEvents: 'none' }}>
           {ordered.map((object) => (
@@ -282,6 +333,18 @@ export function SchemePreview({
           </text>
         </g>
       </svg>
+      {own ? (
+        <Tooltip title={schemesTexts.fit}>
+          <IconButton
+            size="small"
+            aria-label={schemesTexts.fit}
+            onClick={() => setOwn(null)}
+            sx={{ position: 'absolute', left: 6, top: 6, bgcolor: 'background.paper', '&:hover': { bgcolor: 'action.hover' } }}
+          >
+            <FitScreenIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      ) : null}
     </Box>
   );
 }

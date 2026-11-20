@@ -44,6 +44,16 @@ export function fitViewport(bounds: [number, number, number, number] | null, wid
   return { center: [(bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2], scale: clampScale(scale), width, height };
 }
 
+/** Вид, приближенный в factor раз вокруг пикселя pixel: точка схемы под ним остаётся на месте. */
+export function zoomViewportAt(viewport: Viewport, pixel: SchemePoint, factor: number, view: SchemeViewKind): Viewport {
+  const anchor = toWorld(pixel, viewport, view);
+  const scale = clampScale(viewport.scale * factor);
+  const next = { ...viewport, scale };
+  const moved = toScreen(anchor, next, view);
+  const sign = horizontalSign(view);
+  return { ...next, center: [next.center[0] + (sign * (moved[0] - pixel[0])) / scale, next.center[1] - (moved[1] - pixel[1]) / scale] };
+}
+
 /** Масштаб в разумных пределах: от 0,5 до 200 пикселей на метр. */
 export function clampScale(scale: number): number {
   return Math.min(200, Math.max(0.5, scale));

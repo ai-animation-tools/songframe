@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fitViewport, formatMetres, gridStep, horizontalSign, snap, toScreen, toWorld, type Viewport } from './scheme-canvas';
+import { fitViewport, formatMetres, gridStep, horizontalSign, snap, toScreen, toWorld, zoomViewportAt, type Viewport } from './scheme-canvas';
 
 const viewport: Viewport = { center: [10, 20], scale: 5, width: 400, height: 300 };
 
@@ -43,5 +43,21 @@ describe('пересчёт координат холста', () => {
     expect(Object.is(snap(-0.4, 1), 0)).toBe(true);
     expect(formatMetres(0.6)).toBe('0,6');
     expect(formatMetres(12)).toBe('12');
+  });
+});
+
+describe('приближение у курсора', () => {
+  it('точка схемы под курсором остаётся на месте, масштаб в пределах', () => {
+    const viewport: Viewport = { center: [3, -2], scale: 10, width: 800, height: 500 };
+    for (const view of ['top', 'north', 'east'] as const) {
+      const pixel: [number, number] = [620, 130];
+      const anchor = toWorld(pixel, viewport, view);
+      const next = zoomViewportAt(viewport, pixel, 1.15, view);
+      expect(next.scale).toBeCloseTo(11.5, 9);
+      const moved = toScreen(anchor, next, view);
+      expect(moved[0]).toBeCloseTo(pixel[0], 9);
+      expect(moved[1]).toBeCloseTo(pixel[1], 9);
+    }
+    expect(zoomViewportAt(viewport, [0, 0], 1000, 'top').scale).toBe(200);
   });
 });

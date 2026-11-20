@@ -19,7 +19,7 @@ import {
   shapeHandles,
   smoothCurve
 } from '@shared/scheme-editing';
-import { clampScale, fitViewport, formatMetres, gridStep, snap, toScreen, toWorld, type Viewport } from '@shared/scheme-canvas';
+import { clampScale, fitViewport, formatMetres, gridStep, snap, toScreen, toWorld, zoomViewportAt, type Viewport } from '@shared/scheme-canvas';
 
 /** Инструмент холста: выбор и перемещение или рисование фигуры. */
 export type SchemeTool = 'select' | SchemeShapeType;
@@ -156,14 +156,7 @@ export function SchemeCanvas({
       const rect = svg.getBoundingClientRect();
       const pixel: SchemePoint = [event.clientX - rect.left, event.clientY - rect.top];
       chosen.current = true;
-      setViewport((current) => {
-        const anchor = toWorld(pixel, current, view);
-        const scale = clampScale(current.scale * (event.deltaY < 0 ? 1.15 : 1 / 1.15));
-        const next = { ...current, scale };
-        const moved = toScreen(anchor, next, view);
-        const sign = view === 'north' || view === 'west' ? -1 : 1;
-        return { ...next, center: [next.center[0] + (sign * (moved[0] - pixel[0])) / scale, next.center[1] - (moved[1] - pixel[1]) / scale] };
-      });
+      setViewport((current) => zoomViewportAt(current, pixel, event.deltaY < 0 ? 1.15 : 1 / 1.15, view));
     };
     svg.addEventListener('wheel', wheel, { passive: false });
     return () => svg.removeEventListener('wheel', wheel);

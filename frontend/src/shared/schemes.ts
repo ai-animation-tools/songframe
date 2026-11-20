@@ -27,15 +27,35 @@ export type SchemeShape =
 /** Тип фигуры. */
 export type SchemeShapeType = SchemeShape['type'];
 
+/** Форма верха объёма: гребень вдоль оси фигуры, скат в одну сторону, шатёр к центру. */
+export type SchemeTopForm = 'ridge' | 'slope' | 'tent';
+export const SCHEME_TOP_FORMS: readonly SchemeTopForm[] = ['ridge', 'slope', 'tent'];
+
+/** Собственная ось фигуры до поворота: x — первый размер (без поворота — восток), y — второй (север). */
+export type SchemeAxis = 'x' | 'y';
+/** Сторона фигуры, куда опускается скат. */
+export type SchemeSlopeDown = '+x' | '-x' | '+y' | '-y';
+
+/** Верх объёма над телом: поднимается на rise метров; axis — у гребня, down — у ската. */
+export type SchemeTop =
+  { form: 'ridge'; rise: number; axis: SchemeAxis } | { form: 'slope'; rise: number; down: SchemeSlopeDown } | { form: 'tent'; rise: number };
+
 /**
- * Именованная фигура. Смысл объекта агент берёт из названия; height (метры) отличает объём, заслоняющий обзор,
- * от плоской поверхности; color нужен только редактору; entity связывает объект с сущностью кастинга.
+ * Именованная фигура. Смысл объекта агент берёт из названия; color нужен только редактору; entity связывает объект
+ * с сущностью кастинга.
+ *
+ * Объём (только на виде сверху): тело — фигура, поднятая на height метров от низа (нет или 0 — плоская поверхность);
+ * elevation поднимает низ над землёй; top — верх над телом; body «ellipsoid» — округлое тело вместо призмы.
+ * Допустимые сочетания проверяет Go (`internal/schemes`).
  */
 export interface SchemeObject {
   id: string;
   name: string;
   shape: SchemeShape;
   height?: number;
+  elevation?: number;
+  top?: SchemeTop;
+  body?: 'ellipsoid';
   color?: string;
   entity?: string;
 }

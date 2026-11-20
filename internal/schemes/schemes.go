@@ -65,16 +65,49 @@ type Shape struct {
 	At       *Point   `json:"at,omitempty"`
 }
 
-// Object — именованная фигура схемы. Смысл объекта агент берёт из названия; Height (метры)
-// отличает объём, заслоняющий обзор, от плоской поверхности (нет или 0). Color нужен только
+// Формы верха объёма.
+const (
+	TopRidge = "ridge"
+	TopSlope = "slope"
+	TopTent  = "tent"
+)
+
+// TopForms — допустимые формы верха.
+var TopForms = []string{TopRidge, TopSlope, TopTent}
+
+// BodyEllipsoid — тело-эллипсоид, вписанное в фигуру и высоту, вместо призмы.
+const BodyEllipsoid = "ellipsoid"
+
+// Top — верх объёма над телом: поднимается от высоты тела на Rise метров.
+//   - ridge — гребень посередине фигуры вдоль её оси Axis («x» — вдоль первого размера, «y» — второго);
+//   - slope — одна плоскость, опускающаяся в сторону Down («+x», «-x», «+y», «-y»);
+//   - tent — к центру фигуры (шатёр, конус над эллипсом).
+//
+// Оси — собственные оси фигуры до поворота: у фигуры без поворота «x» — восток, «y» — север.
+// Названия форм геометрические: из них собираются дом, палатка, навес, беседка.
+type Top struct {
+	Form string  `json:"form"`
+	Rise float64 `json:"rise"`
+	Axis string  `json:"axis,omitempty"`
+	Down string  `json:"down,omitempty"`
+}
+
+// Object — именованная фигура схемы. Смысл объекта агент берёт из названия. Color нужен только
 // редактору; Entity связывает объект с сущностью кастинга (например, дверь соседней локации).
+//
+// Объём (только на виде сверху): тело — фигура, поднятая на Height метров от низа (нет или 0 —
+// плоская поверхность, линия без высоты — разметка, точка — отметка); низ поднят над землёй на
+// Elevation (навес, крона, мост); Top — верх над телом; Body «ellipsoid» — округлое тело вместо призмы.
 type Object struct {
-	ID     string   `json:"id"`
-	Name   string   `json:"name"`
-	Shape  Shape    `json:"shape"`
-	Height *float64 `json:"height,omitempty"`
-	Color  string   `json:"color,omitempty"`
-	Entity string   `json:"entity,omitempty"`
+	ID        string   `json:"id"`
+	Name      string   `json:"name"`
+	Shape     Shape    `json:"shape"`
+	Height    *float64 `json:"height,omitempty"`
+	Elevation *float64 `json:"elevation,omitempty"`
+	Top       *Top     `json:"top,omitempty"`
+	Body      string   `json:"body,omitempty"`
+	Color     string   `json:"color,omitempty"`
+	Entity    string   `json:"entity,omitempty"`
 }
 
 // Scheme — одна схема локации кастинга (Location — ID сущности типа location).

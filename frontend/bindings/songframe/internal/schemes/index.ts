@@ -8,5 +8,6 @@ export type {
     Point,
     Scheme,
     Shape,
+    Top,
     View
 } from "./models.js";

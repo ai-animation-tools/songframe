@@ -152,8 +152,73 @@ func validateObjects(scheme Scheme, catalog Catalog) []string {
 		if problem := shapeProblem(object.Shape); problem != "" {
 			problems = append(problems, textObjectShape(scheme.ID, id, problem))
 		}
+		if problem := volumeProblem(scheme.View, object); problem != "" {
+			problems = append(problems, textObjectShape(scheme.ID, id, problem))
+		}
 	}
 	return problems
+}
+
+// volumeProblem — что не так с объёмом объекта; пустая строка — объёма нет или он верный. Объём
+// задаётся только на виде сверху: виды сбоку — плоские силуэты. Верх бывает у площадных фигур
+// (гребень и скат — у прямоугольника, шатёр — у прямоугольника, эллипса и многоугольника), эллипсоид —
+// у прямоугольника и эллипса с высотой и без верха.
+func volumeProblem(view string, object Object) string {
+	if object.Elevation == nil && object.Top == nil && object.Body == "" {
+		return ""
+	}
+	if view != ViewTop {
+		return "подъём над землёй, верх и тело задаются только на виде сверху"
+	}
+	if object.Elevation != nil && (!finite(*object.Elevation) || *object.Elevation < 0) {
+		return "подъём над землёй должен быть неотрицательным числом"
+	}
+	kind := object.Shape.Type
+	if object.Body != "" {
+		switch {
+		case object.Body != BodyEllipsoid:
+			return "неизвестное тело «" + object.Body + "»"
+		case kind != ShapeRect && kind != ShapeEllipse:
+			return "эллипсоид бывает только у прямоугольника и эллипса"
+		case object.Height == nil || *object.Height <= 0:
+			return "эллипсоиду нужна высота"
+		case object.Top != nil:
+			return "у эллипсоида нет верха"
+		}
+	}
+	top := object.Top
+	if top == nil {
+		return ""
+	}
+	if !finite(top.Rise) || top.Rise <= 0 {
+		return "подъём верха должен быть положительным числом"
+	}
+	switch top.Form {
+	case TopRidge:
+		if kind != ShapeRect {
+			return "гребень бывает только у прямоугольника"
+		}
+		if top.Axis != "x" && top.Axis != "y" || top.Down != "" {
+			return "у гребня нужна ось x или y"
+		}
+	case TopSlope:
+		if kind != ShapeRect {
+			return "скат бывает только у прямоугольника"
+		}
+		if !slices.Contains([]string{"+x", "-x", "+y", "-y"}, top.Down) || top.Axis != "" {
+			return "у ската нужна сторона, куда он опускается: +x, -x, +y или -y"
+		}
+	case TopTent:
+		if kind != ShapeRect && kind != ShapeEllipse && kind != ShapePolygon {
+			return "шатёр бывает только у прямоугольника, эллипса и многоугольника"
+		}
+		if top.Axis != "" || top.Down != "" {
+			return "у шатра нет оси и стороны ската"
+		}
+	default:
+		return "неизвестная форма верха «" + top.Form + "»"
+	}
+	return ""
 }
 
 // finite — число конечно (JSON не передаёт NaN и бесконечности, но значения приходят и из кода).

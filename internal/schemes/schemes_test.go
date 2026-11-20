@@ -42,11 +42,12 @@ func sample() Document {
 	return Document{SchemaVersion: 1, Schemes: []Scheme{
 		{ID: "s1", Location: "crossing", Title: "Перекрёсток сверху", View: ViewTop, Objects: []Object{
 			{ID: "o1", Name: "Проезжая часть", Shape: Shape{Type: ShapeRect, Center: point(5, 40), Size: point(10, 120), Rotation: number(0)}},
-			{ID: "o2", Name: "Дом", Height: number(12), Entity: "street", Shape: Shape{Type: ShapeRect, Center: point(22, 54), Size: point(16, 92)}},
+			{ID: "o2", Name: "Дом", Height: number(12), Entity: "street", Top: &Top{Form: TopRidge, Rise: 4, Axis: "y"}, Shape: Shape{Type: ShapeRect, Center: point(22, 54), Size: point(16, 92)}},
 			{ID: "o3", Name: "Клумба", Shape: Shape{Type: ShapeEllipse, Center: point(20, 0), Radii: point(2, 2)}},
 			{ID: "o4", Name: "Сквер", Height: number(7), Color: "#4caf50", Shape: Shape{Type: ShapePolygon, Points: []Point{{14, -20}, {30, -20}, {30, 7}}}},
 			{ID: "o5", Name: "Трасса", Shape: Shape{Type: ShapeLine, Points: []Point{{0, 0}, {10, 5}, {20, 0}}, Smooth: true, Closed: true, Width: number(12)}},
 			{ID: "o6", Name: "Светофор", Height: number(3.5), Shape: Shape{Type: ShapePoint, At: point(10.5, 7)}},
+			{ID: "o7", Name: "Крона", Height: number(4), Elevation: number(2), Body: BodyEllipsoid, Shape: Shape{Type: ShapeEllipse, Center: point(-6, 3), Radii: point(2, 2)}},
 		}},
 		{ID: "s2", Location: "crossing", Title: "Сквер с запада", View: ViewWest, Objects: []Object{}},
 	}}
@@ -70,7 +71,9 @@ func TestSaveAndReadBack(t *testing.T) {
 	if err != nil || missing {
 		t.Fatalf("чтение: %v", err)
 	}
-	if len(document.Schemes) != 2 || len(document.Schemes[0].Objects) != 6 || document.Schemes[0].Objects[4].Shape.Width == nil {
+	objects := document.Schemes[0].Objects
+	if len(document.Schemes) != 2 || len(objects) != 7 || objects[4].Shape.Width == nil ||
+		objects[1].Top == nil || objects[1].Top.Axis != "y" || objects[6].Elevation == nil || objects[6].Body != BodyEllipsoid {
 		t.Fatalf("прочитано не то: %+v", document)
 	}
 	if _, err := Save(project, document); err != nil {
@@ -202,5 +205,44 @@ func TestViewProject(t *testing.T) {
 	view, err = ViewProject(project)
 	if err != nil || view.Missing || len(view.Problems) != 0 || !slices.Equal(view.WithoutTop, []string{"street"}) {
 		t.Fatalf("вид после записи: %+v %v", view, err)
+	}
+}
+
+// TestVolumeProblems — объём объекта: допустимые сочетания формы, верха и тела и их отказы.
+func TestVolumeProblems(t *testing.T) {
+	rect := Shape{Type: ShapeRect, Center: point(0, 0), Size: point(6, 8)}
+	ellipse := Shape{Type: ShapeEllipse, Center: point(0, 0), Radii: point(2, 2)}
+	line := Shape{Type: ShapeLine, Points: []Point{{0, 0}, {5, 0}}}
+	cases := []struct {
+		name   string
+		view   string
+		object Object
+		want   string
+	}{
+		{"без объёма", ViewTop, Object{Shape: rect, Height: number(3)}, ""},
+		{"гребень", ViewTop, Object{Shape: rect, Height: number(3), Top: &Top{Form: TopRidge, Rise: 3, Axis: "x"}}, ""},
+		{"скат", ViewTop, Object{Shape: rect, Height: number(2), Top: &Top{Form: TopSlope, Rise: 0.5, Down: "-y"}}, ""},
+		{"шатёр от земли", ViewTop, Object{Shape: rect, Top: &Top{Form: TopTent, Rise: 2}}, ""},
+		{"конус над эллипсом", ViewTop, Object{Shape: ellipse, Height: number(1), Top: &Top{Form: TopTent, Rise: 1}}, ""},
+		{"крона", ViewTop, Object{Shape: ellipse, Height: number(4), Elevation: number(2), Body: BodyEllipsoid}, ""},
+		{"поднятая линия", ViewTop, Object{Shape: line, Height: number(0.2), Elevation: number(3)}, ""},
+		{"вид сбоку", ViewWest, Object{Shape: rect, Elevation: number(1)}, "только на виде сверху"},
+		{"отрицательный подъём", ViewTop, Object{Shape: rect, Elevation: number(-1)}, "неотрицательным"},
+		{"гребень у эллипса", ViewTop, Object{Shape: ellipse, Top: &Top{Form: TopRidge, Rise: 1, Axis: "x"}}, "только у прямоугольника"},
+		{"гребень без оси", ViewTop, Object{Shape: rect, Top: &Top{Form: TopRidge, Rise: 1}}, "ось x или y"},
+		{"скат без стороны", ViewTop, Object{Shape: rect, Top: &Top{Form: TopSlope, Rise: 1, Down: "x"}}, "+x, -x, +y или -y"},
+		{"шатёр у линии", ViewTop, Object{Shape: line, Top: &Top{Form: TopTent, Rise: 1}}, "шатёр бывает"},
+		{"нулевой подъём верха", ViewTop, Object{Shape: rect, Top: &Top{Form: TopTent, Rise: 0}}, "положительным"},
+		{"неизвестный верх", ViewTop, Object{Shape: rect, Top: &Top{Form: "dome", Rise: 1}}, "неизвестная форма"},
+		{"эллипсоид без высоты", ViewTop, Object{Shape: ellipse, Body: BodyEllipsoid}, "нужна высота"},
+		{"эллипсоид с верхом", ViewTop, Object{Shape: rect, Height: number(2), Body: BodyEllipsoid, Top: &Top{Form: TopTent, Rise: 1}}, "нет верха"},
+		{"эллипсоид у линии", ViewTop, Object{Shape: line, Height: number(2), Body: BodyEllipsoid}, "только у прямоугольника"},
+		{"неизвестное тело", ViewTop, Object{Shape: rect, Height: number(2), Body: "sphere"}, "неизвестное тело"},
+	}
+	for _, item := range cases {
+		got := volumeProblem(item.view, item.object)
+		if item.want == "" && got != "" || item.want != "" && !strings.Contains(got, item.want) {
+			t.Errorf("%s: %q, ждали %q", item.name, got, item.want)
+		}
 	}
 }

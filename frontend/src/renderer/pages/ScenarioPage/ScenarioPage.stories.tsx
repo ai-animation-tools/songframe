@@ -219,6 +219,7 @@ export const ViewpointSet: Story = {
     await expect(viewpointBlock(screen)).toHaveTextContent(viewpointTexts.badge({ side: 'С запада', size: 'Общий', placed: true }));
     await expect(screen.getByRole('button', { name: viewpointTexts.sides.south })).toBeDisabled();
     await expect(document.querySelector('[data-viewpoint-row="hero"]')).toHaveTextContent(viewpointTexts.focus);
+    await expect(document.querySelector('[data-viewpoint-row="hero"] [data-out-of-frame]')).toBeNull();
     // Последний кадр камеры: камера проезжает вниз по схеме, путь и сектор конца видны пунктиром.
     await userEvent.click(within(screen.getByRole('group', { name: viewpointTexts.target })).getByRole('button', { name: viewpointTexts.camera }));
     await userEvent.click(screen.getByRole('button', { name: viewpointTexts.phases.end }));
@@ -244,6 +245,13 @@ export const ViewpointSet: Story = {
     // Угол применяется по уходу из поля: промежуточные «1» не обрезаются до наименьшего угла.
     await userEvent.tab();
     await expect(screen.getByText(viewpointTexts.fovOwn({ fov: 25 }))).toBeVisible();
+    // Второй герой далеко в стороне: камера целится между героями, при узком угле оба вне кадра.
+    await userEvent.click(screen.getByRole('button', { name: viewpointTexts.phases.start }));
+    await userEvent.click(within(screen.getByRole('group', { name: viewpointTexts.target })).getByRole('button', { name: /Сосед/ }));
+    clickPreview(preview, 0.7, 0.1);
+    await waitFor(() => expect(document.querySelector('[data-viewpoint-row="neighbor"] [data-out-of-frame="start"]')).not.toBeNull());
+    await expect(document.querySelector('[data-viewpoint-row="hero"] [data-out-of-frame="start"]')).not.toBeNull();
+    await expect(document.querySelector('[data-viewpoint-row="hero"]')).toHaveTextContent(viewpointTexts.focus);
     // Расстановка уже во временном файле: падение программы её не потеряет.
     await waitFor(() => expect(scenarioStateInspection().draft).toContain('"entity":"hero"'));
     await userEvent.click(saveButton(screen));
@@ -253,7 +261,7 @@ export const ViewpointSet: Story = {
     const saved = scenarioStateInspection().saved.scenes!.scenes.find((shot) => shot.id === 'M03')!.viewpoint!;
     await expect(saved).toMatchObject({ location: 'gate', side: 'west', size: 'close', fov: 18 });
     await expect(saved.camera?.end).toHaveLength(2);
-    await expect(saved.subjects?.map((subject) => subject.entity)).toEqual(['hero']);
+    await expect(saved.subjects?.map((subject) => subject.entity)).toEqual(['hero', 'neighbor']);
   }
 };
 

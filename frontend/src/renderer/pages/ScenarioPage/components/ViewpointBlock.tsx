@@ -15,10 +15,12 @@ import {
   TextField,
   ToggleButton,
   ToggleButtonGroup,
+  Tooltip,
   Typography
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import ClearIcon from '@mui/icons-material/Clear';
+import CropFreeIcon from '@mui/icons-material/CropFree';
 import EditIcon from '@mui/icons-material/Edit';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
@@ -35,8 +37,10 @@ import {
   VIEWPOINT_SIZES,
   createViewpoint,
   distance,
+  inFrame,
   lookHeading,
   moves,
+  pathPoint,
   removePoint,
   setFocus,
   setPoint,
@@ -215,12 +219,27 @@ function ViewpointPlacement({
   const pathRow = (key: string, name: string, path: ViewpointPath | undefined, focus: boolean | null): ReactElement => {
     const rowTarget = targetOf(key);
     const fromCamera = path && camera && key !== 'camera' ? texts.fromCamera({ metres: metres(distance(camera.start, path.start)) }) : null;
+    // Герой вне угла обзора на первом кадре или, если кто-то движется, на последнем.
+    const lastDiffers = moves(camera) || moves(path);
+    const outOf =
+      key === 'camera' || !path
+        ? null
+        : inFrame(viewpoint, 'start', path.start) === false
+          ? 'start'
+          : lastDiffers && inFrame(viewpoint, 'end', pathPoint(path, 'end')!) === false
+            ? 'end'
+            : null;
     return (
       <Stack key={key} direction="row" spacing={1} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }} data-viewpoint-row={key}>
         <Typography variant="body2" fontWeight={600} sx={{ minWidth: 120 }}>
           {name}
         </Typography>
         {focus ? <Chip size="small" variant="outlined" icon={<StarIcon color="secondary" />} label={texts.focus} /> : null}
+        {outOf ? (
+          <Tooltip title={texts.outOfFrameHint}>
+            <Chip size="small" color="warning" icon={<CropFreeIcon />} label={texts.outOfFrame({ end: outOf === 'end' })} data-out-of-frame={outOf} />
+          </Tooltip>
+        ) : null}
         <Typography variant="body2" color="text.secondary">
           {[pathState(path), fromCamera].filter(Boolean).join(' · ')}
         </Typography>

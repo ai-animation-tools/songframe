@@ -1,13 +1,14 @@
 import type { Camera3D } from './camera3d';
 import type { SchemeObject } from './schemes';
 import { objectVolume, type Triangle } from './scheme-volume';
-import { focusSubject, lookHeading, pathPoint, pointAt, viewpointFov, type SceneViewpoint, type ViewpointPhase } from './viewpoint';
+import { distance, focusSubject, lookHeading, pathPoint, pointAt, viewpointFov, type SceneViewpoint, type ViewpointPhase } from './viewpoint';
 
 /**
  * Вид из камеры точки съёмки: перспективная камера и условные фигуры героев для объёма схемы вида сверху. Всё
- * вычисляется из точек плана и не хранится: камера стоит в своей точке на высоте глаз, смотрит на героя в фокусе
- * (на середину фигуры) или, без него, горизонтально по стороне. Рост героев неизвестен, поэтому все они — одинаковые
- * цилиндры: они показывают, где герой стоит и что его заслоняет, а не его облик. Камера сверху висит над точкой и
+ * вычисляется из точек плана и не хранится: камера стоит в своей точке на высоте глаз и смотрит по прицелу на всех
+ * героев (lookHeading) на середину фигуры на расстоянии героя в фокусе или, без героев, горизонтально по стороне.
+ * Рост героев неизвестен, поэтому все они — одинаковые цилиндры: они показывают, где герой стоит и что его
+ * заслоняет, а не его облик. Камера сверху висит над точкой и
  * смотрит вниз; её кадр и есть схема, отдельного вида у неё нет.
  */
 
@@ -26,10 +27,12 @@ export function viewpointCamera(viewpoint: SceneViewpoint, phase: ViewpointPhase
   if (!at || heading === null) return null;
   const focus = pathPoint(focusSubject(viewpoint), phase);
   const eye: Camera3D['eye'] = [at[0], at[1], EYE_HEIGHT];
-  // Герой в той же точке, что камера, направления не даёт: lookHeading уже вернул сторону, смотрим вдаль по ней.
-  const ahead = pointAt(at, heading, LOOK_AHEAD);
-  const target: Camera3D['target'] =
-    focus && Math.hypot(focus[0] - at[0], focus[1] - at[1]) > 1e-9 ? [focus[0], focus[1], FIGURE_HEIGHT / 2] : [ahead[0], ahead[1], EYE_HEIGHT];
+  // Наклон взгляда — на середину фигуры на расстоянии героя в фокусе; герой в точке камеры или без героев —
+  // горизонтально вдаль.
+  const reach = focus ? distance(at, focus) : 0;
+  const aimed = reach > 1e-9;
+  const ahead = pointAt(at, heading, aimed ? reach : LOOK_AHEAD);
+  const target: Camera3D['target'] = [ahead[0], ahead[1], aimed ? FIGURE_HEIGHT / 2 : EYE_HEIGHT];
   return { eye, target, fov: viewpointFov(viewpoint) };
 }
 

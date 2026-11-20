@@ -15,13 +15,27 @@ const placed: SceneViewpoint = {
 };
 
 describe('вид из камеры', () => {
-  it('камера на высоте глаз смотрит на середину фигуры героя в фокусе, угол — точки съёмки', () => {
-    expect(viewpointCamera(placed, 'start')).toEqual({ eye: [0, 0, EYE_HEIGHT], target: [0, 10, FIGURE_HEIGHT / 2], fov: 60 });
-    expect(viewpointCamera({ ...placed, fov: 30 }, 'end')).toEqual({ eye: [4, 0, EYE_HEIGHT], target: [4, 12, FIGURE_HEIGHT / 2], fov: 30 });
+  it('камера на высоте глаз смотрит по прицелу на всех героев на середину фигуры на расстоянии героя в фокусе', () => {
+    const single: SceneViewpoint = { ...placed, subjects: placed.subjects!.slice(0, 1) };
+    const start = viewpointCamera(single, 'start')!;
+    expect(start.eye).toEqual([0, 0, EYE_HEIGHT]);
+    expect(start.target[0]).toBeCloseTo(0, 9);
+    expect(start.target[1]).toBeCloseTo(10, 9);
+    expect(start.target[2]).toBe(FIGURE_HEIGHT / 2);
+    expect(start.fov).toBe(60);
+    const end = viewpointCamera({ ...single, fov: 30 }, 'end')!;
+    expect(end.target[0]).toBeCloseTo(4, 9);
+    expect(end.target[1]).toBeCloseTo(12, 9);
+    expect(end.fov).toBe(30);
+    // Двое героев: прицел между ними, на расстоянии героя в фокусе (10 м).
+    const pair = viewpointCamera(placed, 'start')!;
+    const heading = (Math.atan2(pair.target[1], pair.target[0]) * 180) / Math.PI;
+    expect(heading).toBeCloseTo((90 + (Math.atan2(10, 3) * 180) / Math.PI) / 2, 9);
+    expect(Math.hypot(pair.target[0], pair.target[1])).toBeCloseTo(10, 9);
   });
 
-  it('герой в фокусе — в центре кадра, герой за краем угла обзора — вне кадра', () => {
-    const camera = viewpointCamera({ ...placed, size: 'close' }, 'start')!;
+  it('один герой — в центре кадра, предмет за краем угла обзора — вне кадра', () => {
+    const camera = viewpointCamera({ ...placed, size: 'close', subjects: placed.subjects!.slice(0, 1) }, 'start')!;
     const matrix = cameraMatrix(camera, 1600, 900, 20);
     const center = projectPoint(matrix, [0, 10, FIGURE_HEIGHT / 2], 1600, 900)!;
     expect(center[0]).toBeCloseTo(800, 6);

@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { SchemesFile } from './schemes';
 import {
+  aimHeading,
+  angleFrom,
   createViewpoint,
   distance,
   fovThrough,
   headingBetween,
+  inFrame,
   lookHeading,
   moves,
   pointAt,
@@ -81,7 +84,7 @@ describe('направление и сторона', () => {
     for (const [heading, side] of table) expect([heading, sideOfHeading(heading)]).toEqual([heading, side]);
   });
 
-  it('взгляд от камеры к герою в фокусе; без точек — по стороне; сверху — нет', () => {
+  it('взгляд от камеры на героя; без точек — по стороне; сверху — нет', () => {
     const tracking = setPoint(
       setPoint(setPoint(setPoint(base, 'camera', 'start', [-3, 0]), 'camera', 'end', [-3, 15]), { entity: 'artem' }, 'start', [1, 0]),
       { entity: 'artem' },
@@ -113,14 +116,69 @@ describe('правка точек', () => {
     expect(two.subjects?.map((subject) => subject.entity)).toEqual(['artem', 'kirill']);
   });
 
-  it('фокус переставляет героя первым и пересчитывает сторону', () => {
+  it('фокус переставляет героя первым, прицел на всех героев и сторона не меняются', () => {
     let viewpoint = setPoint(base, 'camera', 'start', [0, 0]);
     viewpoint = setPoint(viewpoint, { entity: 'artem' }, 'start', [0, 5]);
-    viewpoint = setPoint(viewpoint, { entity: 'kirill' }, 'start', [5, 0]);
     expect(viewpoint.side).toBe('south');
+    // Второй герой на востоке: прицел посередине (45°), северо-восток относится к востоку — камера с запада.
+    viewpoint = setPoint(viewpoint, { entity: 'kirill' }, 'start', [5, 0]);
+    expect(lookHeading(viewpoint, 'start')).toBeCloseTo(45, 9);
+    expect(viewpoint.side).toBe('west');
     viewpoint = setFocus(viewpoint, 'kirill');
     expect(viewpoint.subjects?.[0].entity).toBe('kirill');
     expect(viewpoint.side).toBe('west');
+    expect(lookHeading(viewpoint, 'start')).toBeCloseTo(45, 9);
+  });
+
+  it('прицел — середина углового разброса героев, в том числе через 0°; герой в точке камеры не считается', () => {
+    expect(aimHeading([0, 0], [[10, 0]])).toBe(0);
+    expect(
+      aimHeading(
+        [0, 0],
+        [
+          [10, -1.763],
+          [10, 1.763],
+          [10, 0.5]
+        ]
+      )
+    ).toBeCloseTo(0, 2);
+    expect(
+      aimHeading(
+        [0, 0],
+        [
+          [-5, 5],
+          [5, 5],
+          [0, 5]
+        ]
+      )
+    ).toBeCloseTo(90, 9);
+    expect(aimHeading([0, 0], [[0, 0]])).toBeNull();
+    expect(aimHeading([0, 0], [])).toBeNull();
+  });
+
+  it('в кадре — герои в пределах половины угла обзора от прицела', () => {
+    // Камера южнее двух героев, разнесённых на 10 м в 11 м перед ней: им нужно около 49°.
+    const pair: SceneViewpoint = {
+      ...base,
+      fov: 30,
+      camera: { start: [0, -28] },
+      subjects: [
+        { entity: 'ivan', start: [-5, -17] },
+        { entity: 'pasha', start: [5, -17] },
+        { entity: 'tree', start: [-9, -15] }
+      ]
+    };
+    expect(lookHeading(pair, 'start')).toBeCloseTo(
+      90 + (angleFrom(90, headingBetween([0, -28], [5, -17])!) + angleFrom(90, headingBetween([0, -28], [-9, -15])!)) / 2,
+      9
+    );
+    const two = { ...pair, subjects: pair.subjects!.slice(0, 2) };
+    expect(lookHeading(two, 'start')).toBeCloseTo(90, 9);
+    expect(inFrame(two, 'start', [-5, -17])).toBe(false);
+    expect(inFrame({ ...two, fov: 50 }, 'start', [-5, -17])).toBe(true);
+    expect(inFrame({ ...two, fov: 50 }, 'start', [5, -17])).toBe(true);
+    expect(inFrame({ ...two, side: 'top' }, 'start', [5, -17])).toBeNull();
+    expect(inFrame({ ...base }, 'start', [5, -17])).toBeNull();
   });
 
   it('убирает конец пути или камеру и героя целиком; пустые поля не хранятся', () => {

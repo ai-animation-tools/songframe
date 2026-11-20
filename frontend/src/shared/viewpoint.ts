@@ -29,13 +29,13 @@ export interface ViewpointSubject extends ViewpointPath {
 export interface SceneViewpoint {
   /** ID локации кастинга. */
   location: string;
-  /** Где стоит камера; при точках камеры и героя в фокусе — сторона, вычисленная из них (syncSide). */
+  /** Где стоит камера; при точках камеры и героев — сторона, вычисленная из них (syncSide). */
   side: ViewpointSide;
   size: ViewpointSize;
   /** Свой угол обзора по горизонтали, градусы; нет — угол крупности. */
   fov?: number;
   camera?: ViewpointPath;
-  /** Герои на схеме; первый — в фокусе, на него смотрит камера. */
+  /** Герои на схеме; первый — в фокусе (главный в кадре). Камера целится так, чтобы в кадр вошли все. */
   subjects?: ViewpointSubject[];
 }
 
@@ -112,30 +112,63 @@ export function focusSubject(viewpoint: SceneViewpoint): ViewpointSubject | unde
   return viewpoint.subjects?.[0];
 }
 
+/** Угол от heading до angle в градусах (−180, 180]: положительный — против часовой стрелки, влево в кадре. */
+export function angleFrom(heading: number, angle: number): number {
+  const delta = (((angle - heading) % 360) + 360) % 360;
+  return delta > 180 ? delta - 360 : delta;
+}
+
 /**
- * Направление взгляда на кадре phase: от камеры к герою в фокусе, если обе точки есть и не совпадают; иначе по
- * стороне. Камера сверху направления не имеет — null.
+ * Прицел камеры из точки camera на героев points: середина их углового разброса, если смотреть из камеры. При таком
+ * направлении все герои входят в кадр при наименьшем угле обзора. Герой в точке камеры направления не даёт; без
+ * героев с направлением — null.
+ */
+export function aimHeading(camera: SchemePoint, points: readonly SchemePoint[]): number | null {
+  const headings = points.map((point) => headingBetween(camera, point)).filter((heading): heading is number => heading !== null);
+  if (!headings.length) return null;
+  const offsets = headings.map((heading) => angleFrom(headings[0], heading));
+  return (((headings[0] + (Math.min(...offsets) + Math.max(...offsets)) / 2) % 360) + 360) % 360;
+}
+
+/** Места героев на кадре phase в порядке списка. */
+export function subjectPoints(viewpoint: SceneViewpoint, phase: ViewpointPhase): SchemePoint[] {
+  return (viewpoint.subjects ?? []).map((subject) => pathPoint(subject, phase)!);
+}
+
+/**
+ * Направление взгляда на кадре phase: прицел на всех героев (aimHeading), если стоят камера и хотя бы один герой
+ * не в её точке; иначе по стороне. Камера сверху направления не имеет — null.
  */
 export function lookHeading(viewpoint: SceneViewpoint, phase: ViewpointPhase): number | null {
   if (viewpoint.side === 'top') return null;
   const camera = pathPoint(viewpoint.camera, phase);
-  const focus = pathPoint(focusSubject(viewpoint), phase);
-  const between = camera && focus ? headingBetween(camera, focus) : null;
-  return between ?? viewpointHeading(viewpoint.side);
+  const aim = camera ? aimHeading(camera, subjectPoints(viewpoint, phase)) : null;
+  return aim ?? viewpointHeading(viewpoint.side);
 }
 
-/** Сторона определяется точками: есть камера и герой в фокусе на первом кадре, камера не сверху. */
+/** Сторона определяется точками: на первом кадре есть камера и герои, дающие прицел; камера не сверху. */
 export function sideFromPoints(viewpoint: SceneViewpoint): boolean {
   const camera = viewpoint.camera?.start;
-  const focus = focusSubject(viewpoint)?.start;
-  return viewpoint.side !== 'top' && !!camera && !!focus && headingBetween(camera, focus) !== null;
+  return viewpoint.side !== 'top' && !!camera && aimHeading(camera, subjectPoints(viewpoint, 'start')) !== null;
 }
 
-/** Точка съёмки, у которой сторона приведена к точкам первого кадра (если они её определяют). */
+/** Точка съёмки, у которой сторона приведена к прицелу первого кадра (если точки его дают). */
 export function syncSide(viewpoint: SceneViewpoint): SceneViewpoint {
   if (!sideFromPoints(viewpoint)) return viewpoint;
-  const side = sideOfHeading(headingBetween(viewpoint.camera!.start, focusSubject(viewpoint)!.start)!);
+  const side = sideOfHeading(aimHeading(viewpoint.camera!.start, subjectPoints(viewpoint, 'start'))!);
   return side === viewpoint.side ? viewpoint : { ...viewpoint, side };
+}
+
+/**
+ * Входит ли место point в кадр камеры на кадре phase по горизонтали: угол от направления взгляда не больше половины
+ * угла обзора. Без камеры или у камеры сверху — null: судить не по чему.
+ */
+export function inFrame(viewpoint: SceneViewpoint, phase: ViewpointPhase, point: SchemePoint): boolean | null {
+  const camera = pathPoint(viewpoint.camera, phase);
+  const heading = lookHeading(viewpoint, phase);
+  if (!camera || heading === null) return null;
+  const angle = headingBetween(camera, point);
+  return angle === null || Math.abs(angleFrom(heading, angle)) <= viewpointFov(viewpoint) / 2 + 1e-9;
 }
 
 const sameTarget = (subject: ViewpointSubject, target: ViewpointTarget): boolean => target !== 'camera' && subject.entity === target.entity;
@@ -174,7 +207,7 @@ export function removePoint(viewpoint: SceneViewpoint, target: ViewpointTarget, 
   return syncSide(next.length ? { ...rest, subjects: next } : rest);
 }
 
-/** Ставит героя в фокус: он становится первым, остальные сохраняют порядок. Сторона приводится к точкам. */
+/** Ставит героя в фокус: он становится первым, остальные сохраняют порядок. */
 export function setFocus(viewpoint: SceneViewpoint, entity: string): SceneViewpoint {
   const subjects = viewpoint.subjects ?? [];
   const chosen = subjects.find((subject) => subject.entity === entity);
@@ -211,9 +244,7 @@ export function viewSector(at: SchemePoint, heading: number, fov: number, length
 
 /** Угол обзора, при котором край сектора проходит через point: удвоенный угол между взглядом и направлением на point. */
 export function fovThrough(at: SchemePoint, heading: number, point: SchemePoint): number {
-  const angle = headingBetween(at, point) ?? heading;
-  const delta = Math.abs(((((angle - heading) % 360) + 540) % 360) - 180);
-  return delta * 2;
+  return Math.abs(angleFrom(heading, headingBetween(at, point) ?? heading)) * 2;
 }
 
 /** Есть ли у локации схема вида сверху. */

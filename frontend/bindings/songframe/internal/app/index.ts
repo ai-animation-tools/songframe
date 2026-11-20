@@ -5,6 +5,7 @@ import * as AIService from "./aiservice.js";
 import * as AgentsService from "./agentsservice.js";
 import * as AnimaticService from "./animaticservice.js";
 import * as AppService from "./appservice.js";
+import * as CameraWindowService from "./camerawindowservice.js";
 import * as CastService from "./castservice.js";
 import * as ChecksService from "./checksservice.js";
 import * as ComponentsService from "./componentsservice.js";
@@ -38,6 +39,7 @@ export {
     AgentsService,
     AnimaticService,
     AppService,
+    CameraWindowService,
     CastService,
     ChecksService,
     ComponentsService,

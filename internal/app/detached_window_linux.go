@@ -11,10 +11,10 @@ package app
 #include <gdk/x11/gdkx.h>
 #endif
 
-// sf_montage_decide_policy разрешает документу окна плеера звук без жеста пользователя.
+// sf_detached_decide_policy разрешает документу отдельного окна звук без жеста пользователя.
 // Политика сайта WebKitGTK по умолчанию — WEBKIT_AUTOPLAY_ALLOW_WITHOUT_SOUND, у Wails нет
 // опции для неё, а задать её можно только решением навигации (webkit_policy_decision_use_with_policies).
-static gboolean sf_montage_decide_policy(WebKitWebView *view, WebKitPolicyDecision *decision, WebKitPolicyDecisionType type, gpointer data) {
+static gboolean sf_detached_decide_policy(WebKitWebView *view, WebKitPolicyDecision *decision, WebKitPolicyDecisionType type, gpointer data) {
 	if (type != WEBKIT_POLICY_DECISION_TYPE_NAVIGATION_ACTION) return FALSE;
 	WebKitWebsitePolicies *policies = webkit_website_policies_new_with_policies("autoplay", WEBKIT_AUTOPLAY_ALLOW, NULL);
 	webkit_policy_decision_use_with_policies(decision, policies);
@@ -34,13 +34,13 @@ static GtkWidget *sf_find_webview(GtkWidget *widget) {
 
 typedef int (*sf_XMoveWindow)(Display *, Window, int, int);
 
-// sf_montage_show показывает скрытое окно плеера: в X11 сначала ставит его в (x, y) — до показа,
+// sf_detached_show показывает скрытое отдельное окно: в X11 сначала ставит его в (x, y) — до показа,
 // потому что перемещение показанного окна в Wails/GTK4 сбрасывает его размер к минимальному, —
 // затем подключает политику автозапуска и заново открывает текущий адрес (первая навигация
 // к этому моменту уже решена без политики, а reload решения навигации не проходит).
 // XMoveWindow берётся через dlsym, как в Wails: libX11 не становится зависимостью бинарника.
 // Возвращает 0, если webview не найден (окно всё равно показывается).
-static int sf_montage_show(void *window, int move, int x, int y) {
+static int sf_detached_show(void *window, int move, int x, int y) {
 	if (window == NULL) return 0;
 	GtkWidget *widget = GTK_WIDGET(window);
 #ifdef GDK_WINDOWING_X11
@@ -56,7 +56,7 @@ static int sf_montage_show(void *window, int move, int x, int y) {
 	gtk_window_present(GTK_WINDOW(window));
 	GtkWidget *view = sf_find_webview(widget);
 	if (view == NULL) return 0;
-	g_signal_connect(view, "decide-policy", G_CALLBACK(sf_montage_decide_policy), NULL);
+	g_signal_connect(view, "decide-policy", G_CALLBACK(sf_detached_decide_policy), NULL);
 	gchar *uri = g_strdup(webkit_web_view_get_uri(WEBKIT_WEB_VIEW(view)));
 	if (uri == NULL) return 0;
 	webkit_web_view_load_uri(WEBKIT_WEB_VIEW(view), uri);
@@ -64,26 +64,26 @@ static int sf_montage_show(void *window, int move, int x, int y) {
 	return 1;
 }
 
-// sf_montage_release_idle снимает ссылки на закрытое окно, уже вне gtk_window_destroy. Обычно их
+// sf_detached_release_idle снимает ссылки на закрытое окно, уже вне gtk_window_destroy. Обычно их
 // две: своя и лишняя ссылка Wails. Единица значит, что Wails свою уже отпускает, и трогать её нельзя.
-static gboolean sf_montage_release_idle(gpointer data) {
+static gboolean sf_detached_release_idle(gpointer data) {
 	GObject *window = G_OBJECT(data);
 	if (window->ref_count == 2) g_object_unref(window);
 	g_object_unref(window);
 	return G_SOURCE_REMOVE;
 }
 
-static void sf_montage_unrealized(GtkWidget *widget, gpointer data) {
-	g_signal_handlers_disconnect_by_func(widget, (gpointer)sf_montage_unrealized, data);
-	g_idle_add(sf_montage_release_idle, widget);
+static void sf_detached_unrealized(GtkWidget *widget, gpointer data) {
+	g_signal_handlers_disconnect_by_func(widget, (gpointer)sf_detached_unrealized, data);
+	g_idle_add(sf_detached_release_idle, widget);
 }
 
-// sf_montage_release_on_close готовит освобождение окна: срабатывает из gtk_window_destroy, когда
+// sf_detached_release_on_close готовит освобождение окна: срабатывает из gtk_window_destroy, когда
 // Wails его вызовет. Окно, которое ни разу не показывалось, не реализовано и остаётся как есть.
-static void sf_montage_release_on_close(void *window) {
+static void sf_detached_release_on_close(void *window) {
 	if (window == NULL || !gtk_widget_get_realized(GTK_WIDGET(window))) return;
 	g_object_ref(window);
-	g_signal_connect(window, "unrealize", G_CALLBACK(sf_montage_unrealized), NULL);
+	g_signal_connect(window, "unrealize", G_CALLBACK(sf_detached_unrealized), NULL);
 }
 */
 import "C"
@@ -97,14 +97,15 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/events"
 )
 
-// newMontageNativeWindow создаёт окно плеера в сборке GTK4 с тремя поправками к Wails 3.
+// newDetachedNativeWindow создаёт отдельное окно (плеер монтажа, вид из камеры) в сборке GTK4 с тремя
+// поправками к Wails 3.
 //
 // Воспроизведение без жеста: окно разрешает автозапуск медиа без действия пользователя.
 // Плеер запускают кнопкой или клавишей в основном окне, жеста в самом окне нет, и WebKitGTK
 // отклоняет audio.play() (NotAllowedError) — это показала нативная проверка «Окно плеера монтажа…».
 //
 // Размер и положение: Wails ставит показанное окно (центр или X/Y) перемещением X11, после
-// которого GTK4 сжимает окно до минимального размера, — окно плеера открывалось бы 480×270
+// которого GTK4 сжимает окно до минимального размера, — окно открывалось бы минимального размера (у плеера 480×270)
 // вместо 820×540 или сохранённого размера. Поэтому окно создаётся скрытым и показывается здесь,
 // при первом начале загрузки его страницы (раньше нативного webview нет), уже на своём месте.
 // Без сохранённого положения место выбирает оконный менеджер.
@@ -115,7 +116,7 @@ import (
 // дальше. Для плеера это слышно: <audio> играет без окна, а часы на requestAnimationFrame в
 // скрытой странице стоят, поэтому звук уходит за границы участка и накладывается на встроенный
 // плеер. Хук освобождает окно сразу после destroy, вместе с ним уходят страница и её медиа.
-func newMontageNativeWindow(desktop *application.App, options application.WebviewWindowOptions) *application.WebviewWindow {
+func newDetachedNativeWindow(desktop *application.App, options application.WebviewWindowOptions) *application.WebviewWindow {
 	native := options
 	native.Hidden = true
 	window := desktop.Window.NewWithOptions(native)
@@ -127,8 +128,8 @@ func newMontageNativeWindow(desktop *application.App, options application.Webvie
 	show := func() {
 		once.Do(func() {
 			application.InvokeSync(func() {
-				if C.sf_montage_show(window.NativeWindow(), C.int(move), C.int(x), C.int(y)) == 0 {
-					log.Print("окно плеера монтажа: не найден WebKitWebView, воспроизведение без жеста недоступно")
+				if C.sf_detached_show(window.NativeWindow(), C.int(move), C.int(x), C.int(y)) == 0 {
+					log.Print("отдельное окно: не найден WebKitWebView, воспроизведение без жеста недоступно")
 				}
 			})
 		})
@@ -138,7 +139,7 @@ func newMontageNativeWindow(desktop *application.App, options application.Webvie
 	window.RegisterHook(events.Linux.WindowLoadStarted, func(*application.WindowEvent) { show() })
 	var release sync.Once
 	window.RegisterHook(events.Common.WindowClosing, func(*application.WindowEvent) {
-		release.Do(func() { application.InvokeSync(func() { C.sf_montage_release_on_close(window.NativeWindow()) }) })
+		release.Do(func() { application.InvokeSync(func() { C.sf_detached_release_on_close(window.NativeWindow()) }) })
 	})
 	window.RegisterHook(events.Linux.WindowLoadFinished, func(*application.WindowEvent) { show() })
 	time.AfterFunc(3*time.Second, func() {

@@ -25,6 +25,7 @@ import type { NotificationTarget } from './notifications';
 import type { DerivedShotApi } from './derived-shot';
 import type { MontageApi } from './montage';
 import type { MontageWindowApi } from './montage-window';
+import type { CameraWindowApi } from './camera-window';
 import type { ScenarioStatus } from './scenario-status';
 import type { ReferenceImageGenerationApi } from './reference-image-generation';
 import type { CoverGenerationApi } from './cover-generation';
@@ -103,6 +104,7 @@ export interface Api {
   derivedShots: DerivedShotApi;
   montage: MontageApi;
   montageWindow: MontageWindowApi;
+  cameraWindow: CameraWindowApi;
   /** Проверка, скачивание и установка новой версии приложения только по действию пользователя. */
   updates: UpdatesApi;
   videoReview: VideoReviewApi;

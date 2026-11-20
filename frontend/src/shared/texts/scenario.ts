@@ -566,6 +566,11 @@ export const scenarioTexts = {
     removeTarget: 'Убрать со схемы',
     subjectLabel: ({ name, metres }: { name: string; metres: string | null }) => (metres === null ? name : `${name} · ${metres} м`),
     cameraView: 'Вид из камеры',
+    cameraDetach: 'Открыть вид из камеры в отдельном окне',
+    cameraDetached: 'Вид из камеры открыт в отдельном окне: он меняется сразу, как вы двигаете камеру и героев.',
+    cameraReturn: 'Вернуть вид из камеры',
+    cameraWindowWaiting: 'Ждём точку съёмки из основного окна',
+    cameraWindowTitle: ({ shot, location }: { shot: string; location: string }) => `Вид из камеры · ${shot} · ${location}`,
     cameraViewHint: ({ eye, figure }: { eye: string; figure: string }) =>
       `Кадр 16:9 из точки камеры с её углом обзора. Камера на высоте ${eye} м, герои — фигуры ростом из кастинга, без роста — условные ${figure} м, герой в фокусе — оранжевый. Ползунок справа от кадров — зум объектива: вверх угол обзора уже и кадр крупнее, это тот же угол, что в поле «Угол обзора». Объём предметов задаётся на странице «Схемы».`,
     cameraZoom: 'Угол обзора кадра',

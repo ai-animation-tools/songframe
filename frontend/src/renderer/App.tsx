@@ -22,6 +22,7 @@ import {
   NewProjectPage,
   MontagePage,
   MontagePlayerPage,
+  CameraViewPage,
   ProjectPage,
   ProductionPage,
   ProjectsPage,
@@ -63,6 +64,7 @@ export function App({ onReady }: { onReady?: () => Promise<void> }): ReactElemen
             }
           />
           <Route path="montage-player" element={<MontagePlayerPage />} />
+          <Route path="camera-view" element={<CameraViewPage />} />
           <Route
             element={
               <AppProvider onReady={onReady}>

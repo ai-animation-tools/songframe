@@ -57,6 +57,7 @@ function bindings(
     projectHistory: missing,
     montage: missing,
     montageWindow: missing,
+    cameraWindow: missing,
     derivedShots: missing,
     updates: missing,
     events: async () => ({ on: overrides.on ?? (() => () => undefined) })

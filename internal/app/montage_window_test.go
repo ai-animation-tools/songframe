@@ -110,11 +110,11 @@ type montageHarness struct {
 func newMontageHarness(t *testing.T) *montageHarness {
 	h := &montageHarness{dir: filepath.Join(t.TempDir(), "профиль")}
 	h.service = NewMontageWindowService(h.dir)
-	h.service.caller = func(ctx context.Context) montageOwner {
-		window, _ := ctx.Value(montageCallerKey{}).(montageOwner)
+	h.service.caller = func(ctx context.Context) windowOwner {
+		window, _ := ctx.Value(montageCallerKey{}).(windowOwner)
 		return window
 	}
-	h.service.create = func(options application.WebviewWindowOptions) montagePlayer {
+	h.service.create = func(options application.WebviewWindowOptions) detachedWindow {
 		player := newFakeMontageWindow(uint(100 + len(h.players)))
 		h.players = append(h.players, player)
 		h.options = append(h.options, options)
@@ -126,7 +126,7 @@ func newMontageHarness(t *testing.T) *montageHarness {
 	return h
 }
 
-func from(window montageOwner) context.Context {
+func from(window windowOwner) context.Context {
 	return context.WithValue(context.Background(), montageCallerKey{}, window)
 }
 
@@ -200,15 +200,15 @@ func TestMontageWindowSessionIsolation(t *testing.T) {
 }
 
 // TestMontageWindowSingleOwner — повторное открытие при открытом окне отвергается текстом
-// montageOpenFailed и не создаёт второе окно; вызов без окна и пустая сессия тоже отвергаются.
+// montageWindowKind.openFailed и не создаёт второе окно; вызов без окна и пустая сессия тоже отвергаются.
 func TestMontageWindowSingleOwner(t *testing.T) {
 	h := newMontageHarness(t)
 	owner := newFakeMontageWindow(1)
 	// Вызов не из окна и пустая сессия.
-	if err := h.service.Open(context.Background(), "original"); err == nil || err.Error() != "Не удалось открыть отдельное окно плеера." {
+	if err := h.service.Open(context.Background(), "original"); err == nil || err.Error() != montageWindowKind.openFailed {
 		t.Fatalf("вызов без окна: %v", err)
 	}
-	if err := h.service.Open(from(owner), ""); err == nil || err.Error() != "Не удалось открыть отдельное окно плеера." {
+	if err := h.service.Open(from(owner), ""); err == nil || err.Error() != montageWindowKind.openFailed {
 		t.Fatalf("пустая сессия: %v", err)
 	}
 	if len(h.players) != 0 {
@@ -217,8 +217,8 @@ func TestMontageWindowSingleOwner(t *testing.T) {
 	if err := h.service.Open(from(owner), "original"); err != nil {
 		t.Fatal(err)
 	}
-	for _, window := range []montageOwner{owner, newFakeMontageWindow(2)} {
-		if err := h.service.Open(from(window), "duplicate"); err == nil || err.Error() != "Не удалось открыть отдельное окно плеера." {
+	for _, window := range []windowOwner{owner, newFakeMontageWindow(2)} {
+		if err := h.service.Open(from(window), "duplicate"); err == nil || err.Error() != montageWindowKind.openFailed {
 			t.Fatalf("повторное открытие: %v", err)
 		}
 	}
@@ -356,7 +356,7 @@ func TestUsableMontageBoundsGolden(t *testing.T) {
 			for _, display := range item.Displays {
 				areas = append(areas, application.Rect{X: display.X, Y: display.Y, Width: display.Width, Height: display.Height})
 			}
-			bounds, index, ok := usableMontageBounds([]byte(item.Text), areas)
+			bounds, index, ok := montageWindowKind.usableBounds([]byte(item.Text), areas)
 			if ok != (item.Expected != nil) {
 				t.Fatalf("пригодность %v, эталон %v", ok, item.Expected)
 			}

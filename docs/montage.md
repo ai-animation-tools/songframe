@@ -8,7 +8,7 @@
 | Каталог материалов, черновики, экспорт, применение, восстановление | [internal/montage](../internal/montage/montage.go), сервис `window.api.montage` — [internal/app/montage.go](../internal/app/montage.go) |
 | Сборка пробы MP4 | [internal/buildreview](../internal/buildreview/buildreview.go) |
 | Применение монтажа к планам | [internal/applymontage](../internal/applymontage/applymontage.go) |
-| Второе окно плеера | [internal/app/montage_window.go](../internal/app/montage_window.go), страница окна — [MontagePlayerPage](../frontend/src/renderer/pages/MontagePlayerPage/MontagePlayerPage.tsx) |
+| Второе окно плеера | [internal/app/montage_window.go](../internal/app/montage_window.go) поверх общего [отдельного окна](../internal/app/detached_window.go), страница окна — [MontagePlayerPage](../frontend/src/renderer/pages/MontagePlayerPage/MontagePlayerPage.tsx) |
 | Производный план | [internal/derivedworkflow](../internal/derivedworkflow/workflow.go), сборка и приёмка — [internal/deriveshot](../internal/deriveshot/deriveshot.go), панель на странице «Производство» — [DerivedShotPanel](../frontend/src/renderer/pages/ProductionPage/components/DerivedShotPanel.tsx) |
 | Аниматик: вид страницы, свежесть и принятие | [internal/animatic](../internal/animatic/animatic.go), страница — [AnimaticPage](../frontend/src/renderer/pages/AnimaticPage/AnimaticPage.tsx) |
 | Сборка аниматика и фрагмента | [internal/buildanimatic](../internal/buildanimatic/buildanimatic.go), карточки планов — [internal/animaticcards](../internal/animaticcards/animaticcards.go) |

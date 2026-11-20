@@ -72,6 +72,13 @@ export function apiSkeleton(): Api {
       onMessage: stub('montageWindow.onMessage'),
       onClosed: stub('montageWindow.onClosed')
     },
+    cameraWindow: {
+      open: stub('cameraWindow.open'),
+      close: stub('cameraWindow.close'),
+      send: stub('cameraWindow.send'),
+      onMessage: stub('cameraWindow.onMessage'),
+      onClosed: stub('cameraWindow.onClosed')
+    },
     updates: {
       view: stub('updates.view'),
       check: stub('updates.check'),

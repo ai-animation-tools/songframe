@@ -73,8 +73,14 @@ import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 import { FullscreenEditorDialog } from '../../../components/FullscreenEditorDialog';
 import { LinkedText } from '../../../components/LinkedText';
 import { SchemePreview } from '../../../components/SchemePreview';
-import { SchemeVolumeView, type VolumeExtra } from '../../../components/SchemeVolumeView';
-import { FIGURE_HEIGHT, subjectFigures, viewpointCamera, type FigureHeights } from '@shared/viewpoint-camera';
+import { CameraFrames } from '../../../components/CameraFrames';
+import { ActionIconButton } from '../../../components/ActionIconButton';
+import { useApp } from '../../../state';
+import { useThemeMode } from '../../../theme';
+import { useDetachedCamera } from '../useDetachedCamera';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import CallReceivedIcon from '@mui/icons-material/CallReceived';
+import { FIGURE_HEIGHT, type FigureHeights } from '@shared/viewpoint-camera';
 import { castEntityRoute } from '../../../components/castRoutes';
 
 const texts = scenarioTexts.viewpoint;
@@ -91,11 +97,6 @@ interface LinkedReference {
 /** Ширина колонок строки камеры или героя: имя и состояние, px. */
 const ROW_NAME_WIDTH = 120;
 const ROW_STATE_WIDTH = 420;
-/** Пропорция кадра вида из камеры. */
-const FRAME_ASPECT = 16 / 9;
-/** Цвета фигур героев: в фокусе и остальные. */
-const FOCUS_COLOR = '#ef6c00';
-const SUBJECT_COLOR = '#7b1fa2';
 
 /** Бейдж заголовка: «С юга · Общий · на схеме» или «не задана». */
 export function viewpointBadge(viewpoint: SceneViewpoint | undefined): string {
@@ -184,41 +185,48 @@ function CameraView({
   viewpoint,
   scheme,
   heights,
+  title,
   editable,
   update
 }: {
   viewpoint: SceneViewpoint;
   scheme: Scheme;
+  /** Заголовок отдельного окна вида: план и локация. */
+  title: string;
   /** Рост героев из кастинга. */
   heights: FigureHeights;
   editable: boolean;
   update(next: SceneViewpoint): void;
 }): ReactElement {
   const fov = viewpointFov(viewpoint);
-  // Кадры пересчитываются только при смене точки съёмки: новый массив фигур перестраивал бы сцену при каждой отрисовке.
-  const frames = useMemo(() => {
-    const phases: ViewpointPhase[] =
-      moves(viewpoint.camera) || viewpoint.heading?.end !== undefined || heightMoves(viewpoint) || (viewpoint.subjects ?? []).some(moves)
-        ? ['start', 'end']
-        : ['start'];
-    return phases.map((phase) => ({
-      phase,
-      camera: viewpointCamera(viewpoint, phase, heights),
-      extras: subjectFigures(viewpoint, phase, heights).map((figure): VolumeExtra => ({
-        id: figure.entity,
-        triangles: figure.triangles,
-        color: figure.focus ? FOCUS_COLOR : SUBJECT_COLOR
-      }))
-    }));
-  }, [viewpoint, heights]);
+  const { notify, describeError } = useApp();
+  const { mode: theme } = useThemeMode();
+  const windowState = useMemo(() => ({ title, scheme, viewpoint, heights, theme }), [title, scheme, viewpoint, heights, theme]);
+  const separate = useDetachedCamera(windowState, (error) => notify(describeError(error), 'error'));
   const eye = heightMoves(viewpoint)
     ? `${metres(cameraHeight(viewpoint, 'start'))} → ${metres(cameraHeight(viewpoint, 'end'))}`
     : metres(cameraHeight(viewpoint, 'start'));
   const unavailable = viewpoint.side === 'top' ? texts.cameraViewTop : !viewpoint.camera ? texts.cameraViewNoCamera : null;
   return (
     <Stack spacing={1} data-camera-view="">
-      <Typography variant="subtitle2">{texts.cameraView}</Typography>
-      {unavailable ? (
+      <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
+        <Typography variant="subtitle2">{texts.cameraView}</Typography>
+        {separate.detached ? null : (
+          <ActionIconButton aria-label={texts.cameraDetach} size="small" onClick={separate.open}>
+            <OpenInNewIcon fontSize="small" />
+          </ActionIconButton>
+        )}
+      </Stack>
+      {separate.detached ? (
+        <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }} data-camera-detached="">
+          <Typography variant="body2" color="text.secondary">
+            {texts.cameraDetached}
+          </Typography>
+          <ActionButton startIcon={<CallReceivedIcon />} onClick={separate.close}>
+            {texts.cameraReturn}
+          </ActionButton>
+        </Stack>
+      ) : unavailable ? (
         <Typography variant="body2" color="text.secondary">
           {unavailable}
         </Typography>
@@ -228,24 +236,7 @@ function CameraView({
             {texts.cameraViewHint({ eye, figure: metres(FIGURE_HEIGHT) })}
           </Typography>
           <Stack direction="row" spacing={1.5} sx={{ alignItems: 'stretch' }}>
-            <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
-              {frames.map((frame) =>
-                frame.camera ? (
-                  <Box key={frame.phase} sx={{ flex: '1 1 360px', minWidth: 0 }} data-camera-frame={frame.phase}>
-                    <Typography variant="caption" color="text.secondary">
-                      {frames.length === 1 ? texts.phaseWhole : texts.phases[frame.phase]}
-                    </Typography>
-                    <SchemeVolumeView
-                      scheme={scheme}
-                      label={texts.cameraFrame({ phase: texts.phases[frame.phase] })}
-                      camera={frame.camera}
-                      extras={frame.extras}
-                      aspect={FRAME_ASPECT}
-                    />
-                  </Box>
-                ) : null
-              )}
-            </Stack>
+            <CameraFrames viewpoint={viewpoint} scheme={scheme} heights={heights} />
             {/* Зум объектива: вверх — уже угол и крупнее кадр. Тот же угол, что в поле «Угол обзора» и у сектора на схеме. */}
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', pt: 3, pb: 1 }} data-camera-zoom="">
               <Slider
@@ -282,6 +273,7 @@ function ViewpointPlacement({
   linked,
   nameOf,
   heights,
+  title,
   editable,
   height,
   update
@@ -291,6 +283,8 @@ function ViewpointPlacement({
   heroes: readonly CastEntity[];
   /** Рост сущностей кастинга: фигуры вида из камеры и отметка «рост не задан». */
   heights: FigureHeights;
+  /** Заголовок отдельного окна вида из камеры. */
+  title: string;
   /** Референсы плана, нарисованные на схеме объектами: только строки состояния. */
   linked: readonly LinkedReference[];
   nameOf(id: string): string;
@@ -504,7 +498,7 @@ function ViewpointPlacement({
           {linked.map((item) => linkedRow(item))}
         </Stack>
       </Paper>
-      <CameraView viewpoint={viewpoint} scheme={scheme} heights={heights} editable={editable} update={update} />
+      <CameraView viewpoint={viewpoint} scheme={scheme} heights={heights} title={title} editable={editable} update={update} />
     </Stack>
   );
 }
@@ -773,6 +767,7 @@ export function ViewpointBlock({
                         linked={linked}
                         nameOf={nameOf}
                         heights={heights}
+                        title={texts.cameraWindowTitle({ shot, location: nameOf(viewpoint.location) })}
                         editable={editable}
                         height={Math.max(MIN_MAP_HEIGHT, window.innerHeight - 330)}
                         update={update}

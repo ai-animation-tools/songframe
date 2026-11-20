@@ -42,6 +42,7 @@ function bindings(services: { environment?: Record<string, unknown>; media?: Rec
     projectHistory: missing,
     montage: missing,
     montageWindow: missing,
+    cameraWindow: missing,
     derivedShots: missing,
     updates: missing,
     events

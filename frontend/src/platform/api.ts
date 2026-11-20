@@ -59,6 +59,7 @@ import type { ProductionFramePrompt, ProductionPass, ProductionProposal, Product
 import type { VocalModelId, VocalPreparationView } from '@shared/vocals';
 import type { NotificationTarget } from '@shared/notifications';
 import type { MontageWindowEvent } from '@shared/montage-window';
+import type { CameraWindowEvent } from '@shared/camera-window';
 import type { MontageDraft, MontageView } from '@shared/montage';
 import type { DerivedShotView } from '@shared/derived-shot';
 import type { SchemesFile, SchemesView } from '@shared/schemes';
@@ -170,6 +171,7 @@ export interface Bindings {
   projectHistory: () => Promise<typeof import('../../bindings/songframe/internal/app/projecthistoryservice')>;
   montage: () => Promise<typeof import('../../bindings/songframe/internal/app/montageservice')>;
   montageWindow: () => Promise<typeof import('../../bindings/songframe/internal/app/montagewindowservice')>;
+  cameraWindow: () => Promise<typeof import('../../bindings/songframe/internal/app/camerawindowservice')>;
   derivedShots: () => Promise<typeof import('../../bindings/songframe/internal/app/derivedshotservice')>;
   updates: () => Promise<typeof import('../../bindings/songframe/internal/app/updatesservice')>;
   events: EventSource;
@@ -205,6 +207,7 @@ export const nativeBindings: Bindings = {
   projectHistory: () => import('../../bindings/songframe/internal/app/projecthistoryservice'),
   montage: () => import('../../bindings/songframe/internal/app/montageservice'),
   montageWindow: () => import('../../bindings/songframe/internal/app/montagewindowservice'),
+  cameraWindow: () => import('../../bindings/songframe/internal/app/camerawindowservice'),
   derivedShots: () => import('../../bindings/songframe/internal/app/derivedshotservice'),
   updates: () => import('../../bindings/songframe/internal/app/updatesservice'),
   events: async () => {
@@ -503,6 +506,18 @@ export function createApi(b: Bindings): Api {
     };
   };
   api.montageWindow.onClosed = (listener) => subscribe<string>(b.events, 'montage-window:closed', listener);
+
+  // Окно вида из камеры адресов файлов не строит: сообщения доставляются сразу, в порядке прихода.
+  let cameraQueue: Promise<void> = Promise.resolve();
+  api.cameraWindow.open = (session) => call('cameraWindow.open', async () => (await b.cameraWindow()).Open(session));
+  api.cameraWindow.close = (session) => call('cameraWindow.close', async () => (await b.cameraWindow()).Close(session));
+  api.cameraWindow.send = (message) => {
+    cameraQueue = cameraQueue
+      .then(() => call('cameraWindow.send', async () => (await b.cameraWindow()).Send(message)))
+      .catch((error: unknown) => console.error(error));
+  };
+  api.cameraWindow.onMessage = (listener) => subscribe<CameraWindowEvent>(b.events, 'camera-window:message', listener);
+  api.cameraWindow.onClosed = (listener) => subscribe<string>(b.events, 'camera-window:closed', listener);
 
   api.diagnostics.reportRendererError = (report) => {
     void call('diagnostics.reportRendererError', async () => (await b.native()).ReportRendererError(report)).catch((error: unknown) => console.error(error));

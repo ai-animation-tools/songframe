@@ -40,6 +40,7 @@ function bindings(videoReview: Record<string, unknown>): Bindings {
     projectHistory: missing,
     montage: missing,
     montageWindow: missing,
+    cameraWindow: missing,
     derivedShots: missing,
     updates: missing,
     scenarioWorkflow: missing,

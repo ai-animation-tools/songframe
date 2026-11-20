@@ -63,6 +63,13 @@ export function unconfiguredStoryApi(): Api {
       onMessage: () => unconfigured('montageWindow.onMessage'),
       onClosed: () => unconfigured('montageWindow.onClosed')
     },
+    cameraWindow: {
+      open: async () => unconfigured('cameraWindow.open'),
+      close: async () => unconfigured('cameraWindow.close'),
+      send: () => unconfigured('cameraWindow.send'),
+      onMessage: () => unconfigured('cameraWindow.onMessage'),
+      onClosed: () => unconfigured('cameraWindow.onClosed')
+    },
     notifications: {
       onOpen: () => unconfigured('notifications.onOpen')
     },

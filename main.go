@@ -249,6 +249,7 @@ func run() error {
 	}
 	service := shell.NewAppService(profile, mediaServer, true, ready)
 	montageWindow := shell.NewMontageWindowService(profilePath)
+	cameraWindow := shell.NewCameraWindowService(profilePath)
 	montageService := shell.NewMontageService(jobManager, scenarioWorkflow)
 	files := shell.NewShellService(mediaServer, func(path string) error { return desktop.Browser.OpenFile(path) },
 		func(address string) error { return desktop.Browser.OpenURL(address) },
@@ -301,6 +302,7 @@ func run() error {
 		application.NewService(shell.NewDerivedShotService(jobManager)),
 		// Второе окно плеера монтажа: одно окно у одного владельца, положение — в каталоге состояния.
 		application.NewService(montageWindow),
+		application.NewService(cameraWindow),
 		// Ручной монтаж: черновики, экспорт пробы и применение через apply_montage менеджером заданий.
 		application.NewService(montageService),
 	}
@@ -339,6 +341,7 @@ func run() error {
 	shell.ConfigureWindowIcon(desktop)
 	shell.ConfigureNativeMedia(native, mediaServer.ContainsURL, mediaServer.AllowFile)
 	shell.ConfigureMontageWindow(montageWindow, desktop)
+	shell.ConfigureCameraWindow(cameraWindow, desktop)
 	shell.ConfigureMontageDesktop(montageService, desktop)
 	defer shell.ConfigureAgentEvents(agentManager, desktop)()
 	shell.ConfigureEnvironmentEvents(environmentService, desktop)

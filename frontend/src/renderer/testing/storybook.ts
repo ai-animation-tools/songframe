@@ -68,6 +68,8 @@ export interface StoryApiSession {
     loginUrl(value: EventPayload<'environment', 'onLoginUrl'>): void;
     montageMessage(value: EventPayload<'montageWindow', 'onMessage'>): void;
     montageClosed(value: EventPayload<'montageWindow', 'onClosed'>): void;
+    cameraMessage(value: EventPayload<'cameraWindow', 'onMessage'>): void;
+    cameraClosed(value: EventPayload<'cameraWindow', 'onClosed'>): void;
     /** Нативный drop Wails: пути файлов для FileDropZone с данным id. */
     filesDropped(value: EventPayload<'shell', 'onFilesDropped'>): void;
   };
@@ -83,6 +85,8 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
   const login = eventChannel<EventPayload<'environment', 'onLoginUrl'>>();
   const message = eventChannel<EventPayload<'montageWindow', 'onMessage'>>();
   const closed = eventChannel<EventPayload<'montageWindow', 'onClosed'>>();
+  const cameraMessage = eventChannel<EventPayload<'cameraWindow', 'onMessage'>>();
+  const cameraClosed = eventChannel<EventPayload<'cameraWindow', 'onClosed'>>();
   const dropped = eventChannel<EventPayload<'shell', 'onFilesDropped'>>();
   const cleanups = new Set<() => void>();
   let disposed = false;
@@ -114,6 +118,7 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
     derivedShots: { ...defaults.derivedShots, ...overrides.derivedShots },
     montage: { ...defaults.montage, ...overrides.montage },
     montageWindow: { ...defaults.montageWindow, onMessage: message.subscribe, onClosed: closed.subscribe, ...overrides.montageWindow },
+    cameraWindow: { ...defaults.cameraWindow, onMessage: cameraMessage.subscribe, onClosed: cameraClosed.subscribe, ...overrides.cameraWindow },
     notifications: { ...defaults.notifications, onOpen: notification.subscribe, ...overrides.notifications },
     media: { ...defaults.media, ...overrides.media },
     videoReview: { ...defaults.videoReview, ...overrides.videoReview },
@@ -192,6 +197,13 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
       send: guardedSync(merged.montageWindow.send),
       onMessage: guardedSync(merged.montageWindow.onMessage),
       onClosed: guardedSync(merged.montageWindow.onClosed)
+    },
+    cameraWindow: {
+      open: guardedAsync(merged.cameraWindow.open),
+      close: guardedAsync(merged.cameraWindow.close),
+      send: guardedSync(merged.cameraWindow.send),
+      onMessage: guardedSync(merged.cameraWindow.onMessage),
+      onClosed: guardedSync(merged.cameraWindow.onClosed)
     },
     notifications: {
       onOpen: guardedSync(merged.notifications.onOpen)
@@ -421,6 +433,8 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
       loginUrl: login.emit,
       montageMessage: message.emit,
       montageClosed: closed.emit,
+      cameraMessage: cameraMessage.emit,
+      cameraClosed: cameraClosed.emit,
       filesDropped: dropped.emit
     },
     onCleanup(cleanup) {

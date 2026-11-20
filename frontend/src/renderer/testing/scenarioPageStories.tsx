@@ -4,6 +4,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { Link, Paper, Stack, Typography } from '@mui/material';
 import type { SchemesFile } from '@shared/schemes';
 import type { Api } from '@shared/api';
+import type { CameraWindowState } from '@shared/camera-window';
 import type {
   AppState,
   BriefResult,
@@ -26,7 +27,7 @@ import { scenarioTexts } from '@shared/texts/scenario';
 import { ScenarioPage } from '../pages/ScenarioPage/ScenarioPage';
 import { shotPageRoute } from '../components/shotRoutes';
 import { draftEnvelope } from '@shared/drafts';
-import { createStoryApi, STORY_IMAGE_PATH, STORY_TRACK_PATH, type StoryOptions } from './storybook';
+import { createStoryApi, STORY_IMAGE_PATH, STORY_TRACK_PATH, type StoryApiSession, type StoryOptions } from './storybook';
 import { storyAccess } from './commonStories';
 import { scenarioDocuments, scenarioJob, scenarioProposal, SCENARIO_STORY_PROJECT } from './scenarioWorkflowStories';
 import { productionShot } from './productionQueueStories';
@@ -529,6 +530,8 @@ interface PageModel {
   starts: number;
   applies: number;
   cancels: number;
+  /** Отдельное окно вида из камеры: открытая сессия и состояния, присланные картой. */
+  cameraWindow: { session: string | null; states: CameraWindowState[] };
   subscribe(listener: () => void): () => void;
   revision(): number;
   publish(): void;
@@ -620,6 +623,7 @@ export function scenarioPageOptions({
         starts: 0,
         applies: 0,
         cancels: 0,
+        cameraWindow: { session: null, states: [] },
         subscribe(listener) {
           listeners.add(listener);
           return () => {
@@ -713,7 +717,27 @@ export function scenarioPageOptions({
           shot.viewpoint = { location: 'gate', side: 'south', size: 'medium', camera: { start: [0, -8] }, subjects: [{ entity: 'hero', start: [0, 3] }] };
         model.draft = draftEnvelope(document, model.saved.scenes, new Date('2026-11-20T09:15:00Z'));
       }
-      const session = createStoryApi({
+      const session: StoryApiSession = createStoryApi({
+        // Отдельное окно вида из камеры: как Go, открытое окно сообщает о готовности, закрытие доходит до владельца.
+        cameraWindow: {
+          open: async (id) => {
+            if (model.cameraWindow.session) throw new Error('Отдельное окно вида из камеры уже открыто.');
+            model.cameraWindow.session = id;
+            model.publish();
+            queueMicrotask(() => session.emit.cameraMessage({ session: id, message: { type: 'ready' } }));
+          },
+          close: async (id) => {
+            if (model.cameraWindow.session !== id) return;
+            model.cameraWindow.session = null;
+            model.publish();
+            session.emit.cameraClosed(id);
+          },
+          send: (message) => {
+            if (message.type !== 'state') return;
+            model.cameraWindow.states.push(structuredClone(message.state));
+            model.publish();
+          }
+        },
         projects: {
           readDraft: async () => model.draft ?? '',
           writeDraft: async (_project, _kind, content) => {
@@ -1020,6 +1044,13 @@ export function scenarioPageOptions({
       return session;
     }
   };
+}
+
+/** Отдельное окно вида из камеры: открыто ли оно и какие состояния прислала карта. */
+export function scenarioCameraWindowInspection(): { open: boolean; states: CameraWindowState[] } {
+  const model = models.get(window.api);
+  if (!model) throw new Error('Модель сценария не открыта.');
+  return structuredClone({ open: model.cameraWindow.session !== null, states: model.cameraWindow.states });
 }
 
 /** Снимок сохранённых документов позволяет проверить, что выбор пустого поля ничего не записал. */

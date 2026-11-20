@@ -1,3 +1,4 @@
+import type { DetachedWindowApi, DetachedWindowEvent } from './detached-window';
 import type { MontageDraft } from './montage';
 
 /** Состояние передаётся только при изменении монтажа или явной перемотке; кадры идут отдельно. */
@@ -23,15 +24,7 @@ export type MontageWindowMessage =
   | { type: 'preferences'; loop: boolean; volume: number }
   | { type: 'command'; action: 'toggle' | 'previousFrame' | 'nextFrame' };
 
-export interface MontageWindowEvent {
-  session: string;
-  message: MontageWindowMessage;
-}
+export type MontageWindowEvent = DetachedWindowEvent<MontageWindowMessage>;
 
-export interface MontageWindowApi {
-  open(session: string): Promise<void>;
-  close(session: string): Promise<void>;
-  send(message: MontageWindowMessage): void;
-  onMessage(listener: (event: MontageWindowEvent) => void): () => void;
-  onClosed(listener: (session: string) => void): () => void;
-}
+/** Отдельное окно плеера монтажа. */
+export type MontageWindowApi = DetachedWindowApi<MontageWindowMessage>;

@@ -327,6 +327,15 @@ export const ViewpointFullscreen: Story = {
     fireEvent.pointerMove(preview, at(0.6, 0.3));
     fireEvent.pointerUp(preview, at(0.6, 0.3));
     await waitFor(() => expect(preview.querySelector('[data-subject="neighbor"] [data-mark="start"]')!.getAttribute('cx')).not.toBe(before));
+    // На последнем кадре перетаскивание неподвижного героя задаёт конец пути, начало остаётся на месте.
+    const placed = preview.querySelector('[data-subject="neighbor"] [data-mark="start"]')!.getAttribute('cx');
+    await userEvent.click(within(dialog.getByRole('group', { name: viewpointTexts.phase })).getByRole('button', { name: viewpointTexts.phases.end }));
+    fireEvent.pointerDown(preview.querySelector('[data-subject="neighbor"] [data-mark="start"]')!, at(0.6, 0.3));
+    fireEvent.pointerMove(preview, at(0.7, 0.3));
+    fireEvent.pointerUp(preview, at(0.7, 0.3));
+    await waitFor(() => expect(preview.querySelector('[data-subject="neighbor"] [data-mark="end"]')).not.toBeNull());
+    await expect(preview.querySelector('[data-subject="neighbor"] [data-mark="start"]')!.getAttribute('cx')).toBe(placed);
+    await userEvent.click(within(dialog.getByRole('group', { name: viewpointTexts.phase })).getByRole('button', { name: viewpointTexts.phases.start }));
     await expect(dialog.queryByRole('button', { name: schemesTexts.fit })).toBeNull();
     // Масштаб — ползунком, не колесом: колесо листает страницу.
     fireEvent.wheel(preview, { deltaY: 100, ...at(0.5, 0.5) });

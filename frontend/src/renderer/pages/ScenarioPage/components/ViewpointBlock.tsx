@@ -233,7 +233,7 @@ function CameraView({
                 frame.camera ? (
                   <Box key={frame.phase} sx={{ flex: '1 1 360px', minWidth: 0 }} data-camera-frame={frame.phase}>
                     <Typography variant="caption" color="text.secondary">
-                      {texts.phases[frame.phase]}
+                      {frames.length === 1 ? texts.phaseWhole : texts.phases[frame.phase]}
                     </Typography>
                     <SchemeVolumeView
                       scheme={scheme}
@@ -480,7 +480,10 @@ function ViewpointPlacement({
         onFov={(value) => update(withFov(viewpoint, value))}
         headingPhase={phase}
         onHeading={(degrees) => update(setHeading(viewpoint, phase, degrees))}
-        onMove={(moved, movedPhase, point) => update(setPoint(viewpoint, moved, movedPhase, point))}
+        onMove={(moved, movedPhase, point) =>
+          // На последнем кадре неподвижная точка не сдвигается целиком: перетаскивание задаёт, куда она переместится.
+          update(setPoint(viewpoint, moved, phase === 'end' && !targetPath(viewpoint, moved)?.end ? 'end' : movedPhase, point))
+        }
         ghost={
           target === 'camera'
             ? (point) => {

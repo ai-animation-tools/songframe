@@ -3,6 +3,7 @@
 
 export type {
     Document,
+    Entity,
     Location,
     $Object,
     Point,

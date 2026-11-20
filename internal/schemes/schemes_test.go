@@ -199,6 +199,11 @@ func TestViewProject(t *testing.T) {
 	if err != nil || !view.Missing || len(view.Locations) != 2 || !slices.Equal(view.WithoutTop, []string{"crossing", "street"}) {
 		t.Fatalf("вид без файла: %+v %v", view, err)
 	}
+	// Связать объект можно с любой сущностью кастинга, кроме мира сцены.
+	wantEntities := []Entity{{ID: "crossing", Name: "Перекрёсток", Kind: "location"}, {ID: "street", Name: "Улица", Kind: "location"}, {ID: "hero", Name: "Герой", Kind: "character"}}
+	if !slices.Equal(view.Entities, wantEntities) {
+		t.Fatalf("сущности для связи: %+v", view.Entities)
+	}
 	if _, err := Save(project, sample()); err != nil {
 		t.Fatal(err)
 	}

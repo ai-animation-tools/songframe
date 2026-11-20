@@ -1,4 +1,5 @@
-import type { SchemePoint, SchemesFile } from './schemes';
+import type { Scheme, SchemePoint, SchemeShape, SchemesFile } from './schemes';
+import { ellipseOutline, rectCorners } from './scheme-editing';
 
 /**
  * Точка съёмки плана (`scene.viewpoint` в plan/scenes.json): откуда снимает камера и где стоят герои относительно
@@ -294,4 +295,101 @@ export function createViewpoint(locations: readonly string[], schemes: SchemesFi
   if (!locations.length) return null;
   const withTop = locations.filter((location) => hasTopScheme(schemes, location));
   return { location: withTop.length === 1 ? withTop[0] : locations[0], side: 'south', size: 'wide' };
+}
+
+/**
+ * Контур фигуры на виде сверху и замкнут ли он: углы прямоугольника, контур эллипса, вершины многоугольника и линии,
+ * точка. Нужен референсам плана, которые нарисованы на схеме объектом: их место и размер берутся из контура.
+ */
+export function shapeFootprint(shape: SchemeShape): { points: SchemePoint[]; closed: boolean } {
+  switch (shape.type) {
+    case 'rect':
+      return { points: rectCorners(shape), closed: true };
+    case 'ellipse':
+      return { points: ellipseOutline(shape), closed: true };
+    case 'polygon':
+      return { points: shape.points, closed: true };
+    case 'line':
+      return { points: shape.points, closed: !!shape.closed };
+    case 'point':
+      return { points: [shape.at], closed: false };
+  }
+}
+
+/** Расстояние от p до отрезка ab, метры. */
+function segmentDistance(p: SchemePoint, a: SchemePoint, b: SchemePoint): number {
+  const [dx, dy] = [b[0] - a[0], b[1] - a[1]];
+  const length = dx * dx + dy * dy;
+  const t = length ? Math.min(1, Math.max(0, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / length)) : 0;
+  return Math.hypot(p[0] - (a[0] + t * dx), p[1] - (a[1] + t * dy));
+}
+
+/** Лежит ли точка внутри замкнутого контура (чётность пересечений луча). */
+function insideOutline(p: SchemePoint, points: readonly SchemePoint[]): boolean {
+  let inside = false;
+  for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+    const [a, b] = [points[i], points[j]];
+    if (a[1] > p[1] !== b[1] > p[1] && p[0] < ((b[0] - a[0]) * (p[1] - a[1])) / (b[1] - a[1]) + a[0]) inside = !inside;
+  }
+  return inside;
+}
+
+/** Предмет схемы, связанный с референсом плана: как его видно с камеры. */
+export interface FootprintView {
+  /** До ближайшей точки контура, метры; камера внутри замкнутого контура — 0. */
+  distance: number;
+  /** Входит ли в угол обзора хоть часть контура; у камеры сверху — null. */
+  inFrame: boolean | null;
+}
+
+/**
+ * Как с камеры на кадре phase виден предмет, нарисованный на схеме одной или несколькими фигурами: расстояние до
+ * ближайшего края и попадает ли в кадр хоть часть. В кадре — если угловой разброс контура пересекается с углом
+ * обзора: длинная стена, концы которой за краями кадра, всё равно в кадре. Без камеры — null.
+ */
+export function footprintView(viewpoint: SceneViewpoint, phase: ViewpointPhase, shapes: readonly SchemeShape[]): FootprintView | null {
+  const camera = pathPoint(viewpoint.camera, phase);
+  if (!camera || !shapes.length) return null;
+  let nearest = Infinity;
+  let around = false;
+  // Углы точек контура от камеры — смещениями от угла на первую точку: так разброс не рвётся на переходе через 0°.
+  let reference: number | null = null;
+  let low = 0;
+  let high = 0;
+  for (const shape of shapes) {
+    const { points, closed } = shapeFootprint(shape);
+    if (closed && points.length > 2 && insideOutline(camera, points)) around = true;
+    const edges = points.length > 1 ? points.length - (closed ? 0 : 1) : 0;
+    nearest = Math.min(
+      nearest,
+      edges
+        ? Math.min(...Array.from({ length: edges }, (_, i) => segmentDistance(camera, points[i], points[(i + 1) % points.length])))
+        : distance(camera, points[0])
+    );
+    for (const point of points) {
+      const angle = headingBetween(camera, point);
+      if (angle === null) {
+        around = true;
+        continue;
+      }
+      reference ??= angle;
+      const offset = angleFrom(reference, angle);
+      low = Math.min(low, offset);
+      high = Math.max(high, offset);
+    }
+  }
+  const heading = lookHeading(viewpoint, phase);
+  let inFrame: boolean | null = null;
+  if (heading !== null) {
+    // Разброс контура — дуга с серединой center и полушириной spread: в кадре, если она пересекает угол обзора.
+    const center = reference === null ? heading : reference + (low + high) / 2;
+    const spread = (high - low) / 2;
+    inFrame = around || Math.abs(angleFrom(heading, center)) <= viewpointFov(viewpoint) / 2 + spread + 1e-9;
+  }
+  return { distance: around ? 0 : nearest, inFrame };
+}
+
+/** Фигуры вида сверху scheme, связанные с сущностью entity; пусто — референс не нарисован на схеме. */
+export function linkedShapes(scheme: Scheme | null, entity: string): SchemeShape[] {
+  return scheme ? scheme.objects.filter((object) => object.entity === entity).map((object) => object.shape) : [];
 }

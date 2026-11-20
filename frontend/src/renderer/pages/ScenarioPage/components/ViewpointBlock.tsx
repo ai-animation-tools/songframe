@@ -1,5 +1,4 @@
 import { scenarioTexts } from '@shared/texts/scenario';
-import { commonTexts } from '@shared/texts/common';
 import { useEffect, useMemo, useState, type ReactElement, type ReactNode } from 'react';
 import {
   Accordion,
@@ -25,13 +24,13 @@ import ClearIcon from '@mui/icons-material/Clear';
 import CropFreeIcon from '@mui/icons-material/CropFree';
 import EditIcon from '@mui/icons-material/Edit';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import FullscreenIcon from '@mui/icons-material/Fullscreen';
+import MapIcon from '@mui/icons-material/Map';
 import LocationOffIcon from '@mui/icons-material/LocationOff';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import StarIcon from '@mui/icons-material/Star';
 import VideocamIcon from '@mui/icons-material/Videocam';
 import type { CastEntity, CastFile } from '@shared/types';
-import type { Scheme, SchemesFile } from '@shared/schemes';
+import type { Scheme, SchemeShape, SchemesFile } from '@shared/schemes';
 import { formatMetres } from '@shared/scheme-canvas';
 import {
   MAX_FOV,
@@ -41,7 +40,9 @@ import {
   VIEWPOINT_SIZES,
   createViewpoint,
   distance,
+  footprintView,
   inFrame,
+  linkedShapes,
   lookHeading,
   moves,
   pathPoint,
@@ -73,8 +74,15 @@ import { EYE_HEIGHT, FIGURE_HEIGHT, subjectFigures, viewpointCamera } from '@sha
 
 const texts = scenarioTexts.viewpoint;
 
-/** Высота мини-схемы в блоке страницы, px. */
-const INLINE_HEIGHT = 320;
+/** Наименьшая высота мини-схемы в окне карты, px. */
+const MIN_MAP_HEIGHT = 320;
+
+/** Референс плана, нарисованный на схеме локации объектами: имя и фигуры. */
+interface LinkedReference {
+  id: string;
+  name: string;
+  shapes: SchemeShape[];
+}
 /** Ширина колонок строки камеры или героя: имя и состояние, px. */
 const ROW_NAME_WIDTH = 120;
 const ROW_STATE_WIDTH = 420;
@@ -232,13 +240,13 @@ function CameraView({
 
 /**
  * Расстановка на схеме: что ставить щелчком (камера или герой, первый или последний кадр), мини-схема, строки
- * состояния камеры и героев с фокусом и удалением и вид из камеры. Одна и та же часть живёт в блоке страницы и в окне во весь экран;
- * выбор цели и кадра у каждой своя.
+ * состояния камеры, героев и нарисованных на схеме референсов и вид из камеры. Живёт в окне карты во весь экран.
  */
 function ViewpointPlacement({
   viewpoint,
   scheme,
   heroes,
+  linked,
   nameOf,
   editable,
   height,
@@ -247,6 +255,8 @@ function ViewpointPlacement({
   viewpoint: SceneViewpoint;
   scheme: Scheme;
   heroes: readonly CastEntity[];
+  /** Референсы плана, нарисованные на схеме объектами: только строки состояния. */
+  linked: readonly LinkedReference[];
   nameOf(id: string): string;
   editable: boolean;
   height: number;
@@ -316,6 +326,41 @@ function ViewpointPlacement({
             </>
           ) : null}
         </Stack>
+      </Box>
+    );
+  };
+
+  // Референс на схеме объектом: расстояние до ближайшего края и попадает ли в кадр хоть часть контура.
+  const linkedRow = (item: LinkedReference): ReactElement => {
+    const start = footprintView(viewpoint, 'start', item.shapes);
+    const lastDiffers = moves(camera) || viewpoint.heading?.end !== undefined;
+    const end = lastDiffers ? footprintView(viewpoint, 'end', item.shapes) : null;
+    const outOf = start?.inFrame === false ? 'start' : end?.inFrame === false ? 'end' : null;
+    return (
+      <Box
+        key={item.id}
+        sx={{ display: 'grid', gridTemplateColumns: `${ROW_NAME_WIDTH}px minmax(0, ${ROW_STATE_WIDTH}px) auto`, columnGap: 1.5, alignItems: 'center' }}
+        data-viewpoint-linked={item.id}
+      >
+        <Typography variant="body2" fontWeight={600} noWrap>
+          {item.name}
+        </Typography>
+        <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}>
+          <Tooltip title={texts.linkedHint}>
+            <Chip size="small" variant="outlined" icon={<MapIcon />} label={texts.linked} />
+          </Tooltip>
+          {outOf ? (
+            <Tooltip title={texts.outOfFrameHint}>
+              <Chip size="small" color="warning" icon={<CropFreeIcon />} label={texts.outOfFrame({ end: outOf === 'end' })} data-out-of-frame={outOf} />
+            </Tooltip>
+          ) : null}
+          {start ? (
+            <Typography variant="body2" color="text.secondary">
+              {texts.nearestFromCamera({ metres: metres(start.distance) })}
+            </Typography>
+          ) : null}
+        </Stack>
+        <Box />
       </Box>
     );
   };
@@ -402,6 +447,7 @@ function ViewpointPlacement({
             const path = targetPath(viewpoint, { entity: entity.id });
             return pathRow(entity.id, entity.name || entity.id, path, path ? viewpoint.subjects?.[0]?.entity === entity.id : null);
           })}
+          {linked.map((item) => linkedRow(item))}
         </Stack>
       </Paper>
       <CameraView viewpoint={viewpoint} scheme={scheme} editable={editable} update={update} />
@@ -410,9 +456,10 @@ function ViewpointPlacement({
 }
 
 /**
- * Блок «Точка съёмки» редактора плана: свёрнут, в заголовке заметный бейдж. Внутри — локация, сторона, крупность,
- * угол обзора и расстановка камеры и героев плана на мини-схеме вида сверху; расстановку можно открыть во весь
- * экран. Камера смотрит на героя в фокусе (первого), без него — по стороне; сторона по точкам считается сама.
+ * Блок «Точка съёмки» редактора плана: свёрнут, в заголовке заметный бейдж. Внутри только кнопка «Открыть карту»:
+ * локация, сторона, крупность, угол обзора, расстановка камеры и героев на мини-схеме вида сверху и вид из камеры
+ * живут в окне во весь экран, чтобы не раздувать сценарий плана. Камера целится в героев или по своему направлению;
+ * сторона по точкам считается сама.
  * У принятого плана блок закрыт: правка открывается после подтверждения с описанием риска, дальше — обычное окно
  * сохранения. Схемы читаются при первом раскрытии (requestSchemes).
  */
@@ -451,8 +498,8 @@ export function ViewpointBlock({
   const [confirm, setConfirm] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   useEffect(() => {
-    if (expanded) requestSchemes();
-  }, [expanded, requestSchemes]);
+    if (expanded || fullscreen) requestSchemes();
+  }, [expanded, fullscreen, requestSchemes]);
 
   const entities = cast?.entities ?? [];
   const locations = entities.filter((entity) => entity.kind === 'location');
@@ -463,6 +510,14 @@ export function ViewpointBlock({
   const nameOf = (id: string): string => entities.find((entity) => entity.id === id)?.name || id;
   const editable = !locked || unlocked;
   const top = viewpoint ? (schemes?.schemes.find((scheme) => scheme.location === viewpoint.location && scheme.view === 'top') ?? null) : null;
+  // Референс, нарисованный на схеме объектом, точкой не ставят: место и размер берутся из схемы. Уже поставленный
+  // раньше остаётся среди героев, чтобы его можно было убрать.
+  const placed = (id: string): boolean => !!viewpoint?.subjects?.some((subject) => subject.entity === id);
+  const linked: LinkedReference[] = heroes
+    .filter((entity) => !placed(entity.id))
+    .map((entity) => ({ id: entity.id, name: entity.name || entity.id, shapes: linkedShapes(top, entity.id) }))
+    .filter((item) => item.shapes.length > 0);
+  const placeable = heroes.filter((entity) => !linked.some((item) => item.id === entity.id));
   const fov = viewpoint ? viewpointFov(viewpoint) : 0;
   const derivedSide = !!viewpoint && sideFromPoints(viewpoint);
   const update = (next: SceneViewpoint): void => onChange(syncSide(withFov(next, next.fov)));
@@ -578,14 +633,15 @@ export function ViewpointBlock({
                   startIcon={<AddIcon />}
                   disabled={!editable}
                   disabledReason={editable ? null : texts.lockedHint}
-                  onClick={() =>
-                    onChange(
-                      createViewpoint(
-                        locations.map((entity) => entity.id),
-                        schemes
-                      ) ?? undefined
-                    )
-                  }
+                  onClick={() => {
+                    const created = createViewpoint(
+                      locations.map((entity) => entity.id),
+                      schemes
+                    );
+                    onChange(created ?? undefined);
+                    // Новую точку сразу расставляют на карте.
+                    if (created) setFullscreen(true);
+                  }}
                 >
                   {texts.create}
                 </ActionButton>
@@ -597,51 +653,42 @@ export function ViewpointBlock({
             )
           ) : (
             <>
-              {fields(viewpoint)}
-              {schemesError ? (
-                <Alert severity="error">{texts.schemesError({ error: schemesError })}</Alert>
-              ) : top ? (
-                <>
-                  <Box>
-                    <Button size="small" variant="outlined" startIcon={<FullscreenIcon />} onClick={() => setFullscreen(true)}>
-                      {commonTexts.fullscreen.open}
-                    </Button>
-                  </Box>
-                  <ViewpointPlacement
-                    viewpoint={viewpoint}
-                    scheme={top}
-                    heroes={heroes}
-                    nameOf={nameOf}
-                    editable={editable}
-                    height={INLINE_HEIGHT}
-                    update={update}
-                  />
-                  <FullscreenEditorDialog
-                    open={fullscreen}
-                    title={texts.fullscreenTitle({ shot })}
-                    dirty={dirty}
-                    actions={saveButton}
-                    onClose={() => setFullscreen(false)}
-                  >
-                    <Stack spacing={1.5}>
-                      {fields(viewpoint)}
+              <Box>
+                <Button variant="outlined" startIcon={<MapIcon />} onClick={() => setFullscreen(true)}>
+                  {texts.openMap}
+                </Button>
+              </Box>
+              <FullscreenEditorDialog
+                open={fullscreen}
+                title={texts.fullscreenTitle({ shot })}
+                dirty={dirty}
+                actions={saveButton}
+                onClose={() => setFullscreen(false)}
+              >
+                {fullscreen ? (
+                  <Stack spacing={1.5}>
+                    {fields(viewpoint)}
+                    {schemesError ? (
+                      <Alert severity="error">{texts.schemesError({ error: schemesError })}</Alert>
+                    ) : top ? (
                       <ViewpointPlacement
                         viewpoint={viewpoint}
                         scheme={top}
-                        heroes={heroes}
+                        heroes={placeable}
+                        linked={linked}
                         nameOf={nameOf}
                         editable={editable}
-                        height={Math.max(INLINE_HEIGHT, window.innerHeight - 330)}
+                        height={Math.max(MIN_MAP_HEIGHT, window.innerHeight - 330)}
                         update={update}
                       />
-                    </Stack>
-                  </FullscreenEditorDialog>
-                </>
-              ) : schemes ? (
-                <Alert severity="info">
-                  <LinkedText text={texts.noTop} />
-                </Alert>
-              ) : null}
+                    ) : schemes ? (
+                      <Alert severity="info">
+                        <LinkedText text={texts.noTop} />
+                      </Alert>
+                    ) : null}
+                  </Stack>
+                ) : null}
+              </FullscreenEditorDialog>
               {editable ? (
                 <Box>
                   <Button size="small" color="error" startIcon={<ClearIcon />} onClick={() => onChange(undefined)}>

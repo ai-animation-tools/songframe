@@ -52,10 +52,20 @@ type Location struct {
 	Name string `json:"name"`
 }
 
-// castEntities — сущности кастинга: ID и название локаций по порядку и множество всех ID для связи
-// объектов. Без кастинга или при повреждённом файле — пусто: проверка назовёт неизвестные локации.
-func castEntities(project string) ([]Location, map[string]bool) {
+// Entity — сущность кастинга, с которой можно связать объект схемы: строение, предмет, герой или другая
+// локация. Kind — тип сущности кастинга; мир сцены в список не входит.
+type Entity struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Kind string `json:"kind"`
+}
+
+// castEntities — сущности кастинга: ID и название локаций по порядку, сущности для связи объектов (без мира
+// сцены) и множество всех ID для проверки. Без кастинга или при повреждённом файле — пусто: проверка назовёт
+// неизвестные локации.
+func castEntities(project string) ([]Location, []Entity, map[string]bool) {
 	locations := []Location{}
+	linkable := []Entity{}
 	known := map[string]bool{}
 	read := cast.Read(project)
 	entities, _ := dynvalue.AsArray(dynvalue.Get(read.Value, "entities"))
@@ -65,23 +75,28 @@ func castEntities(project string) ([]Location, map[string]bool) {
 			continue
 		}
 		known[id] = true
-		if dynvalue.Get(entity, "kind") == "location" {
-			name, _ := dynvalue.Get(entity, "name").(string)
+		name, _ := dynvalue.Get(entity, "name").(string)
+		kind, _ := dynvalue.Get(entity, "kind").(string)
+		if kind == "location" {
 			locations = append(locations, Location{ID: id, Name: name})
 		}
+		if kind != "world" {
+			linkable = append(linkable, Entity{ID: id, Name: name, Kind: kind})
+		}
 	}
-	return locations, known
+	return locations, linkable, known
 }
 
 // LoadCatalog — локации и сущности кастинга проекта для проверки и выбора на странице.
 func LoadCatalog(project string) Catalog {
-	locations, entities := castEntities(project)
-	return Catalog{Locations: locations, Entities: entities}
+	locations, linkable, entities := castEntities(project)
+	return Catalog{Locations: locations, Linkable: linkable, Entities: entities}
 }
 
 // Catalog — что из кастинга нужно проверке: локации для схем и все сущности для связи объектов.
 type Catalog struct {
 	Locations []Location
+	Linkable  []Entity
 	Entities  map[string]bool
 }
 

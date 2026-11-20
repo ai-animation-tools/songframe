@@ -203,6 +203,16 @@ function pageCast(long: boolean): CastFile {
         initial_state: { coat: 'нет', mood: 'дремлет' }
       },
       {
+        id: 'house',
+        kind: 'prop',
+        name: 'Дом за воротами',
+        short_name: 'Дом',
+        role: 'Дом героя за воротами',
+        appearance: 'Бревенчатый дом с высоким крыльцом.',
+        images: [],
+        initial_state: {}
+      },
+      {
         id: 'gate',
         kind: 'location',
         name: 'Старые ворота',
@@ -226,7 +236,8 @@ export const SCENARIO_STORY_SCHEMES: SchemesFile = {
       title: 'Ворота сверху',
       view: 'top',
       objects: [
-        { id: 'o1', name: 'Дом', height: 6, shape: { type: 'rect', center: [0, 12], size: [10, 8], rotation: 0 } },
+        // Дом связан с референсом плана: в точке съёмки его не ставят, место и размер берутся из схемы.
+        { id: 'o1', name: 'Дом', height: 6, entity: 'house', shape: { type: 'rect', center: [0, 12], size: [10, 8], rotation: 0 } },
         { id: 'o2', name: 'Ворота', height: 2, shape: { type: 'rect', center: [0, 4], size: [4, 0.4], rotation: 0 } },
         {
           id: 'o3',
@@ -279,7 +290,7 @@ function regularShots(): SceneShot[] {
       original: 'Скрипит знакомая калитка',
       camera: 'Средний план через забор.',
       action: 'Герой толкает калитку, из темноты выходит сосед.',
-      references: ['hero', 'neighbor'],
+      references: ['hero', 'neighbor', 'house'],
       lipsync: false,
       state_changes: {}
     },
@@ -722,6 +733,10 @@ export function scenarioPageOptions({
               missing: false,
               damaged: false,
               locations: [{ id: 'gate', name: 'Старые ворота' }],
+              entities: [
+                { id: 'house', name: 'Дом за воротами', kind: 'prop' },
+                { id: 'gate', name: 'Старые ворота', kind: 'location' }
+              ],
               problems: [],
               withoutTop: []
             };

@@ -562,6 +562,11 @@ export const scenarioTexts = {
     cameraViewNoCamera: 'Поставьте камеру на схему: здесь появится вид из неё.',
     cameraViewTop: 'Камера сверху смотрит вниз: её кадр — сама схема.',
     cameraFrame: ({ phase }: { phase: string }) => `Вид из камеры, ${phase.toLowerCase()}`,
+    openMap: 'Открыть карту',
+    linked: 'на схеме локации',
+    linkedHint:
+      'Нарисован на схеме локации объектом: место и размер берутся из схемы, ставить его точкой не нужно. Связь задаётся на странице «Схемы» в свойствах объекта.',
+    nearestFromCamera: ({ metres }: { metres: string }) => `${metres} м от камеры до ближайшего края`,
     remove: 'Убрать точку съёмки',
     preview: ({ title }: { title: string }) => `Мини-схема «${title}»`,
     fullscreenTitle: ({ shot }: { shot: string }) => `Точка съёмки ${shot}`,

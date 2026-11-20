@@ -136,7 +136,7 @@ export function SchemesPage(): ReactElement {
       <SchemeEditor
         key={location.id}
         location={location}
-        locations={locations}
+        entities={view?.entities ?? []}
         schemes={draft.schemes.filter((scheme) => scheme.location === location.id)}
         view={schemeView}
         onView={(kind) => select(location.id, kind)}

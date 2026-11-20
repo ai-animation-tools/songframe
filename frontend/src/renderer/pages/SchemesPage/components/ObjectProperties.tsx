@@ -17,7 +17,7 @@ import {
 } from '@mui/material';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import type { SchemeLocation, SchemeObject, SchemePoint, SchemeShape, SchemeSlopeDown, SchemeTop, SchemeTopForm } from '@shared/schemes';
+import type { SchemeEntity, SchemeObject, SchemePoint, SchemeShape, SchemeSlopeDown, SchemeTop, SchemeTopForm } from '@shared/schemes';
 import { ActionButton } from '../../../components/ActionButton';
 import { objectColor } from '@shared/scheme-editing';
 
@@ -271,10 +271,10 @@ function VolumeFields({ object, onChange }: { object: SchemeObject; onChange(obj
   );
 }
 
-/** Свойства выбранного объекта схемы: название, высота, цвет, связь с локацией и геометрия; удаление объекта. */
+/** Свойства выбранного объекта схемы: название, высота, цвет, связь с сущностью кастинга и геометрия; удаление объекта. */
 export function ObjectProperties({
   object,
-  locations,
+  entities,
   volume = false,
   onChange,
   onDelete
@@ -282,7 +282,8 @@ export function ObjectProperties({
   object: SchemeObject | null;
   /** Схема вида сверху: у объекта есть поля объёма. */
   volume?: boolean;
-  locations: readonly SchemeLocation[];
+  /** Сущности кастинга, с которыми можно связать объект (без локации самой схемы и мира сцены). */
+  entities: readonly SchemeEntity[];
   onChange(object: SchemeObject): void;
   onDelete(): void;
 }): ReactElement {
@@ -349,11 +350,12 @@ export function ObjectProperties({
             sx={WIDE_FIELD}
           >
             <MenuItem value="">{schemesTexts.entityNone}</MenuItem>
-            {locations.map((location) => (
-              <MenuItem key={location.id} value={location.id}>
-                {location.name || location.id}
+            {entities.map((entity) => (
+              <MenuItem key={entity.id} value={entity.id}>
+                {entity.name || entity.id}
               </MenuItem>
             ))}
+            {object.entity && !entities.some((entity) => entity.id === object.entity) ? <MenuItem value={object.entity}>{object.entity}</MenuItem> : null}
           </TextField>
         </Box>
         <Typography variant="subtitle2">{schemesTexts.shapeType({ type: schemesTexts.tools[object.shape.type] })}</Typography>

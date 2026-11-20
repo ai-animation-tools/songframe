@@ -81,6 +81,13 @@ export interface SchemeLocation {
   name: string;
 }
 
+/** Сущность кастинга, с которой можно связать объект схемы (без мира сцены). */
+export interface SchemeEntity {
+  id: string;
+  name: string;
+  kind: string;
+}
+
 /** Ответ schemes.view. */
 export interface SchemesView {
   document: SchemesFile;
@@ -89,6 +96,7 @@ export interface SchemesView {
   /** Файл не разбирается; запись запрещена, пока его не исправят. */
   damaged: boolean;
   locations: SchemeLocation[];
+  entities: SchemeEntity[];
   problems: string[];
   /** ID локаций без обязательного вида сверху. */
   withoutTop: string[];

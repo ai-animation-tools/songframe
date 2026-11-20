@@ -125,6 +125,7 @@ export function schemesPageOptions(options: SchemesStoryOptions = {}): StoryOpti
         missing: !saved.schemes.length && !options.damaged,
         damaged: !!options.damaged,
         locations,
+        entities: [...locations.map((location) => ({ ...location, kind: 'location' })), { id: 'hero', name: 'Герой', kind: 'character' }],
         problems: options.damaged ? ['plan/schemes.json повреждён.'] : [],
         withoutTop: locations
           .filter((location) => !saved.schemes.some((scheme) => scheme.location === location.id && scheme.view === 'top'))

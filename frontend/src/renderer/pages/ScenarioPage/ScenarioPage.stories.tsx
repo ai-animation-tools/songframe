@@ -195,7 +195,7 @@ const previewOf = async (screen: Screen, scope: Screen = screen): Promise<SVGSVG
   (await scope.findByRole('application', { name: viewpointTexts.preview({ title: 'Ворота сверху' }) })) as unknown as SVGSVGElement;
 
 export const ViewpointSet: Story = {
-  name: 'Точка съёмки · камера и герои на мини-схеме, сторона по точкам, движение камеры, свой угол и запись',
+  name: 'Точка съёмки · карта во весь экран: камера и герои, дом со схемы, сторона по точкам, движение, свой угол и запись',
   tags: ['!autodocs', 'ci'],
   parameters: { songframe: scenarioPageOptions({ route: '/project/scenario?shot=M03' }) },
   play: async (context) => {
@@ -205,24 +205,29 @@ export const ViewpointSet: Story = {
     await expect(viewpointBlock(screen)).toHaveTextContent(viewpointTexts.badgeUnset);
     await userEvent.click(viewpointBlock(screen));
     await userEvent.click(await screen.findByRole('button', { name: viewpointTexts.create }));
-    await expect(viewpointBlock(screen)).toHaveTextContent(viewpointTexts.badge({ side: 'С юга', size: 'Общий', placed: false }));
+    // Новая точка сразу открывает карту во весь экран: в блоке сценария плана только кнопка «Открыть карту».
+    const map = within(await screen.findByRole('dialog', { name: viewpointTexts.fullscreenTitle({ shot: 'M03' }) }));
     // Вид из камеры ждёт камеру на схеме.
-    await expect(await screen.findByText(viewpointTexts.cameraViewNoCamera)).toBeVisible();
+    await expect(await map.findByText(viewpointTexts.cameraViewNoCamera)).toBeVisible();
+    // Дом нарисован на схеме объектом со ссылкой на референс: его не ставят точкой, строка показывает его со схемы.
+    await expect(within(map.getByRole('group', { name: viewpointTexts.target })).queryByRole('button', { name: /Дом/ })).toBeNull();
+    await expect(document.querySelector('[data-viewpoint-linked="house"]')).toHaveTextContent(viewpointTexts.linked);
     // Камера слева, герой справа на той же высоте: камера смотрит на восток и сама получает сторону «с запада».
-    const preview = await previewOf(screen);
+    const preview = await previewOf(screen, map);
     clickPreview(preview, 0.3, 0.5);
     await waitFor(() => expect(preview.querySelector('[data-camera]')).not.toBeNull());
-    await userEvent.click(within(screen.getByRole('group', { name: viewpointTexts.target })).getByRole('button', { name: /Герой/ }));
+    await userEvent.click(within(map.getByRole('group', { name: viewpointTexts.target })).getByRole('button', { name: /Герой/ }));
     clickPreview(preview, 0.7, 0.5);
     await waitFor(() => expect(preview.querySelector('[data-subject="hero"]')).not.toBeNull());
-    await expect(await screen.findByText(viewpointTexts.sideFromPoints({ side: viewpointTexts.sides.west }))).toBeVisible();
-    await expect(viewpointBlock(screen)).toHaveTextContent(viewpointTexts.badge({ side: 'С запада', size: 'Общий', placed: true }));
-    await expect(screen.getByRole('button', { name: viewpointTexts.sides.south })).toBeDisabled();
+    await expect(await map.findByText(viewpointTexts.sideFromPoints({ side: viewpointTexts.sides.west }))).toBeVisible();
+    // С камерой у дома есть расстояние до ближайшего края.
+    await expect(document.querySelector('[data-viewpoint-linked="house"]')).toHaveTextContent(/м от камеры до ближайшего края/);
+    await expect(map.getByRole('button', { name: viewpointTexts.sides.south })).toBeDisabled();
     await expect(document.querySelector('[data-viewpoint-row="hero"]')).toHaveTextContent(viewpointTexts.focus);
     await expect(document.querySelector('[data-viewpoint-row="hero"] [data-out-of-frame]')).toBeNull();
     // Последний кадр камеры: камера проезжает вниз по схеме, путь и сектор конца видны пунктиром.
-    await userEvent.click(within(screen.getByRole('group', { name: viewpointTexts.target })).getByRole('button', { name: viewpointTexts.camera }));
-    await userEvent.click(screen.getByRole('button', { name: viewpointTexts.phases.end }));
+    await userEvent.click(within(map.getByRole('group', { name: viewpointTexts.target })).getByRole('button', { name: viewpointTexts.camera }));
+    await userEvent.click(map.getByRole('button', { name: viewpointTexts.phases.end }));
     clickPreview(preview, 0.3, 0.8);
     await waitFor(() => expect(preview.querySelector('[data-camera-end]')).not.toBeNull());
     await expect(document.querySelector('[data-viewpoint-row="camera"]')).toHaveTextContent(/движется на/);
@@ -236,24 +241,24 @@ export const ViewpointSet: Story = {
       await expect(Number(frame.querySelector('[data-volume-view]')?.getAttribute('data-triangles'))).toBeGreaterThan(40);
     }
     // Крупность меняет угол по умолчанию; свой угол хранится отдельно и возвращается кнопкой.
-    await userEvent.click(screen.getByRole('combobox', { name: viewpointTexts.size }));
+    await userEvent.click(map.getByRole('combobox', { name: viewpointTexts.size }));
     await userEvent.click(await screen.findByRole('option', { name: viewpointTexts.sizes.close }));
-    const fov = screen.getByRole('spinbutton', { name: viewpointTexts.fov }) as HTMLInputElement;
+    const fov = map.getByRole('spinbutton', { name: viewpointTexts.fov }) as HTMLInputElement;
     await expect(fov.value).toBe('25');
     await userEvent.clear(fov);
     await userEvent.type(fov, '18');
     // Угол применяется по уходу из поля: промежуточные «1» не обрезаются до наименьшего угла.
     await userEvent.tab();
-    await expect(screen.getByText(viewpointTexts.fovOwn({ fov: 25 }))).toBeVisible();
+    await expect(map.getByText(viewpointTexts.fovOwn({ fov: 25 }))).toBeVisible();
     // Ползунок у вида из камеры — зум объектива: тот же угол, что в поле; вверх — угол уже.
-    const zoom = screen.getByRole('slider', { name: viewpointTexts.cameraZoom });
+    const zoom = map.getByRole('slider', { name: viewpointTexts.cameraZoom });
     await expect(zoom).toHaveAttribute('aria-valuetext', viewpointTexts.cameraZoomValue({ fov: 18 }));
     zoom.focus();
     await userEvent.keyboard('{ArrowUp}{ArrowUp}');
     await waitFor(() => expect(fov.value).toBe('16'));
     // Второй герой далеко в стороне: камера целится между героями, при узком угле оба вне кадра.
-    await userEvent.click(screen.getByRole('button', { name: viewpointTexts.phases.start }));
-    await userEvent.click(within(screen.getByRole('group', { name: viewpointTexts.target })).getByRole('button', { name: /Сосед/ }));
+    await userEvent.click(map.getByRole('button', { name: viewpointTexts.phases.start }));
+    await userEvent.click(within(map.getByRole('group', { name: viewpointTexts.target })).getByRole('button', { name: /Сосед/ }));
     clickPreview(preview, 0.7, 0.1);
     await waitFor(() => expect(document.querySelector('[data-viewpoint-row="neighbor"] [data-out-of-frame="start"]')).not.toBeNull());
     await expect(document.querySelector('[data-viewpoint-row="hero"] [data-out-of-frame="start"]')).not.toBeNull();
@@ -270,12 +275,12 @@ export const ViewpointSet: Story = {
     await expect(document.querySelector('[data-viewpoint-row="neighbor"] [data-out-of-frame="start"]')).not.toBeNull();
     await expect(document.querySelector('[data-viewpoint-row="camera"]')).toHaveTextContent(viewpointTexts.headingOwn);
     // «Прицел на героев» возвращает автоматическое направление.
-    await userEvent.click(screen.getByRole('button', { name: viewpointTexts.headingAuto }));
+    await userEvent.click(map.getByRole('button', { name: viewpointTexts.headingAuto }));
     await waitFor(() => expect(document.querySelector('[data-viewpoint-row="hero"] [data-out-of-frame="start"]')).not.toBeNull());
-    await expect(screen.queryByRole('button', { name: viewpointTexts.headingAuto })).toBeNull();
+    await expect(map.queryByRole('button', { name: viewpointTexts.headingAuto })).toBeNull();
     // Расстановка уже во временном файле: падение программы её не потеряет.
     await waitFor(() => expect(scenarioStateInspection().draft).toContain('"entity":"hero"'));
-    await userEvent.click(saveButton(screen));
+    await userEvent.click(map.getByRole('button', { name: commonTexts.save }));
     await waitFor(() => expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений сценария: 1'));
     // Сохранение удаляет временный файл.
     await waitFor(() => expect(scenarioStateInspection().draft).toBeNull());
@@ -283,6 +288,11 @@ export const ViewpointSet: Story = {
     await expect(saved).toMatchObject({ location: 'gate', side: 'west', size: 'close', fov: 16 });
     await expect(saved.camera?.end).toHaveLength(2);
     await expect(saved.subjects?.map((subject) => subject.entity)).toEqual(['hero', 'neighbor']);
+    // После закрытия карты бейдж блока говорит итог расстановки.
+    await userEvent.click(map.getByRole('button', { name: commonTexts.close }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await expect(viewpointBlock(screen)).toHaveTextContent(viewpointTexts.badge({ side: 'С запада', size: 'Крупный', placed: true }));
+    await expect(screen.getByRole('button', { name: viewpointTexts.openMap })).toBeVisible();
   }
 };
 
@@ -295,7 +305,6 @@ export const ViewpointFullscreen: Story = {
     await editorHeading(screen, 'M03');
     await userEvent.click(viewpointBlock(screen));
     await userEvent.click(await screen.findByRole('button', { name: viewpointTexts.create }));
-    await userEvent.click(await screen.findByRole('button', { name: commonTexts.fullscreen.open }));
     const dialog = within(await screen.findByRole('dialog', { name: viewpointTexts.fullscreenTitle({ shot: 'M03' }) }));
     const preview = await previewOf(screen, dialog);
     const box = preview.getBoundingClientRect();
@@ -336,7 +345,9 @@ export const ViewpointFullscreen: Story = {
     await waitFor(() => expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений сценария: 1'));
     await userEvent.click(dialog.getByRole('button', { name: commonTexts.close }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    await expect(document.querySelector('[data-viewpoint-row="neighbor"]')).toHaveTextContent(viewpointTexts.focus);
+    // Расстановка живёт только в окне карты; бейдж блока говорит, что герои на схеме.
+    await expect(document.querySelector('[data-viewpoint-row]')).toBeNull();
+    await expect(viewpointBlock(screen)).toHaveTextContent(viewpointTexts.badge({ side: 'С юга', size: 'Общий', placed: true }));
   }
 };
 
@@ -357,6 +368,9 @@ export const ViewpointAcceptedUnlock: Story = {
     await waitFor(() => expect(screen.queryByText(viewpointTexts.lockedHint)).not.toBeInTheDocument());
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     await userEvent.click(screen.getByRole('button', { name: viewpointTexts.create }));
+    const map = within(await screen.findByRole('dialog', { name: viewpointTexts.fullscreenTitle({ shot: 'M02' }) }));
+    await userEvent.click(map.getByRole('button', { name: commonTexts.close }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     await expect(viewpointBlock(screen)).toHaveTextContent(viewpointTexts.badge({ side: 'С юга', size: 'Общий', placed: false }));
     // Остальная постановка принятого плана остаётся закрытой.
     await expect(field(screen, scenarioTexts.fields.camera)).toBeDisabled();
@@ -406,8 +420,8 @@ export const BriefOutsidePlan: Story = {
   play: async (context) => {
     const screen = await ready(context);
     await editorHeading(screen, 'M02');
-    // В M02 в кадре только герой: сосед и ворота вычислены, но во врезку агенту не входят.
-    const summary = await screen.findByRole('button', { name: new RegExp(scenarioTexts.brief.outsidePlan({ count: 2 })) }, { timeout: 3000 });
+    // В M02 в кадре только герой: сосед, дом и ворота вычислены, но во врезку агенту не входят.
+    const summary = await screen.findByRole('button', { name: new RegExp(scenarioTexts.brief.outsidePlan({ count: 3 })) }, { timeout: 3000 });
     await expect(summary).toHaveAttribute('aria-expanded', 'false');
     await expect(screen.getByText(scenarioTexts.brief.outsidePlanHint)).toBeVisible();
     // Вопросы сверки и текст для агента — только о герое плана.

@@ -10,6 +10,8 @@ type View struct {
 	Damaged bool `json:"damaged"`
 	// Locations — локации кастинга, к которым можно привязать схемы.
 	Locations []Location `json:"locations"`
+	// Entities — сущности кастинга, с которыми можно связать объект схемы (без мира сцены).
+	Entities []Entity `json:"entities"`
 	// Problems — проблемы документа.
 	Problems []string `json:"problems"`
 	// WithoutTop — ID локаций без обязательного вида сверху: страница отмечает их в списке,
@@ -21,7 +23,7 @@ type View struct {
 // остальное — проблемы проверки и локации кастинга без вида сверху.
 func ViewProject(project string) (View, error) {
 	catalog := LoadCatalog(project)
-	view := View{Document: Empty(), Locations: catalog.Locations, Problems: []string{}, WithoutTop: []string{}}
+	view := View{Document: Empty(), Locations: catalog.Locations, Entities: catalog.Linkable, Problems: []string{}, WithoutTop: []string{}}
 	document, missing, err := Read(project)
 	if err == errDamaged {
 		view.Damaged = true

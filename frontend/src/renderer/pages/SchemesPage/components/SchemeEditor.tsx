@@ -12,7 +12,7 @@ import PentagonOutlinedIcon from '@mui/icons-material/PentagonOutlined';
 import PlaceIcon from '@mui/icons-material/Place';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
-import { SCHEME_VIEWS, type Scheme, type SchemeLocation, type SchemeViewKind } from '@shared/schemes';
+import { SCHEME_VIEWS, type Scheme, type SchemeEntity, type SchemeLocation, type SchemeViewKind } from '@shared/schemes';
 import { ActionButton } from '../../../components/ActionButton';
 import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 import { ObjectProperties } from './ObjectProperties';
@@ -103,7 +103,7 @@ function useEditorLayout(
  */
 export function SchemeEditor({
   location,
-  locations,
+  entities,
   schemes,
   view,
   onView,
@@ -116,7 +116,8 @@ export function SchemeEditor({
   stickyTop
 }: {
   location: SchemeLocation;
-  locations: readonly SchemeLocation[];
+  /** Сущности кастинга для связи объекта. */
+  entities: readonly SchemeEntity[];
   /** Схемы этой локации. */
   schemes: readonly Scheme[];
   view: SchemeViewKind;
@@ -308,7 +309,7 @@ export function SchemeEditor({
               <ObjectProperties
                 object={object}
                 volume={view === 'top'}
-                locations={locations.filter((item) => item.id !== location.id)}
+                entities={entities.filter((item) => item.id !== location.id)}
                 onChange={(next) => onChange({ ...scheme, objects: scheme.objects.map((item) => (item.id === next.id ? next : item)) })}
                 onDelete={() => {
                   onChange({ ...scheme, objects: scheme.objects.filter((item) => item.id !== selected) });

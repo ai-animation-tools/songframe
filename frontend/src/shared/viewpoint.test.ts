@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import type { SchemesFile } from './schemes';
+import type { Scheme, SchemeShape, SchemesFile } from './schemes';
 import {
   aimHeading,
   angleFrom,
   createViewpoint,
   distance,
+  footprintView,
   fovThrough,
   headingBetween,
   inFrame,
+  linkedShapes,
   lookHeading,
   moves,
   pointAt,
@@ -256,5 +258,57 @@ describe('своё направление камеры', () => {
     expect(removePoint(setHeading({ ...turned, camera: { start: [0, 0], end: [1, 0] } }, 'end', 45), 'camera', 'end').heading).toEqual({ start: 0, end: 45 });
     expect('heading' in withoutPoints(turned)).toBe(false);
     expect(lookHeading({ ...turned, side: 'top' }, 'start')).toBeNull();
+  });
+});
+
+describe('предмет схемы как референс плана', () => {
+  // Камера в 10 м южнее дома 6×6, смотрит на север.
+  const house: SchemeShape = { type: 'rect', center: [0, 10], size: [6, 6] };
+  const looking: SceneViewpoint = { ...base, camera: { start: [0, -3] }, heading: { start: 90 } };
+
+  it('расстояние — до ближайшего края контура, а не до центра или угла', () => {
+    expect(footprintView(looking, 'start', [house])!.distance).toBeCloseTo(10, 9);
+    expect(footprintView({ ...looking, camera: { start: [0, 10] } }, 'start', [house])!.distance).toBe(0);
+    expect(footprintView({ ...base }, 'start', [house])).toBeNull();
+  });
+
+  it('в кадре, если хоть часть контура в угле обзора; длинная стена с концами за краями кадра — тоже', () => {
+    expect(footprintView({ ...looking, fov: 10 }, 'start', [house])!.inFrame).toBe(true);
+    expect(footprintView({ ...looking, heading: { start: 0 }, fov: 30 }, 'start', [house])!.inFrame).toBe(false);
+    const wall: SchemeShape = {
+      type: 'line',
+      points: [
+        [-50, 20],
+        [50, 20]
+      ]
+    };
+    expect(footprintView({ ...looking, fov: 5 }, 'start', [wall])!.inFrame).toBe(true);
+    // Стена позади камеры, огибающая её с обеих сторон, в кадр не попадает.
+    const behind: SchemeShape = {
+      type: 'line',
+      points: [
+        [-50, -10],
+        [50, -10]
+      ]
+    };
+    expect(footprintView({ ...looking, fov: 60 }, 'start', [behind])!.inFrame).toBe(false);
+    expect(footprintView({ ...looking, side: 'top' }, 'start', [house])!.inFrame).toBeNull();
+  });
+
+  it('фигуры предмета — объекты вида сверху со ссылкой на сущность', () => {
+    const scheme: Scheme = {
+      id: 's',
+      location: 'yard',
+      view: 'top',
+      title: 'Двор',
+      objects: [
+        { id: 'o1', name: 'Дом', shape: house, entity: 'dom' },
+        { id: 'o2', name: 'Пристройка', shape: { type: 'point', at: [5, 5] }, entity: 'dom' },
+        { id: 'o3', name: 'Забор', shape: { type: 'point', at: [9, 9] } }
+      ]
+    };
+    expect(linkedShapes(scheme, 'dom')).toHaveLength(2);
+    expect(linkedShapes(scheme, 'stol')).toEqual([]);
+    expect(linkedShapes(null, 'dom')).toEqual([]);
   });
 });

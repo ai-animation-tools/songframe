@@ -12,6 +12,51 @@ import { KEEP_NOTHING_REASON, SCENE_PROBLEMS_ID } from '../types';
 
 const BUSY_REASON = commonTexts.operationPending;
 
+/** Что решает доступность сохранения сценария: одно правило для панели страницы и окна во весь экран. */
+export interface ScenarioSaveState {
+  scenes: ScenesFile | null;
+  busy: boolean;
+  /** В сценарии есть планы: без них проблемы частей не мешают сохранению, а пересчитывать нечего. */
+  hasShots: boolean;
+  scenesDirty: boolean;
+  /** Карта references сценария устарела после изменения кастинга: сохранение доступно без правок и обновит её. */
+  referencesStale: boolean;
+  problems: string[];
+}
+
+/** Доступность сохранения и её причина для подсказки; blocking — проблемы, которые надо исправить до записи. */
+function saveAvailability({ scenes, busy, hasShots, scenesDirty, referencesStale, problems }: ScenarioSaveState): {
+  disabled: boolean;
+  reason: string | null;
+  shownProblems: number;
+} {
+  // Устаревшая карта референсов — тоже повод сохранить сценарий: её обновляет только запись.
+  const savable = scenesDirty || (hasShots && referencesStale);
+  const shownProblems = scenes ? problems.length : 0;
+  // Сценарий из одних частей сохраняется черновиком и с проблемами; с планами проблемы надо исправить.
+  const blocking = hasShots ? shownProblems : 0;
+  const disabled = busy || !scenes || !savable || blocking > 0;
+  // Причина недоступности сохранения видна в подсказке, даже если список проблем прокручен из вида.
+  const reason = busy
+    ? BUSY_REASON
+    : blocking && savable
+      ? scenarioTexts.toolbar.fixRegistry({ count: blocking })
+      : savable
+        ? null
+        : scenarioTexts.toolbar.noChanges;
+  return { disabled, reason, shownProblems };
+}
+
+/** Кнопка «Сохранить» сценария: в панели страницы и в шапке окна точки съёмки во весь экран. */
+export function ScenarioSaveButton({ state, saveScenes }: { state: ScenarioSaveState; saveScenes(mode: ScenesSaveMode): Promise<void> }): ReactElement {
+  const { disabled, reason } = saveAvailability(state);
+  return (
+    <ActionButton variant="contained" startIcon={<SaveIcon />} disabled={disabled} disabledReason={reason} onClick={() => void saveScenes('production')}>
+      {commonTexts.save}
+    </ActionButton>
+  );
+}
+
 /** Панель сценария: признак правок, число проблем, пересчёт границ и сохранение одного документа. */
 export function ScenarioToolbar({
   scenes,
@@ -42,20 +87,8 @@ export function ScenarioToolbar({
   /** Окна планов по сохранённым частям и разметке — в черновик сценария, постановка прежняя. */
   recalculateBounds(): Promise<void>;
 }): ReactElement {
-  // Устаревшая карта референсов — тоже повод сохранить сценарий: её обновляет только запись.
-  const savable = scenesDirty || (hasShots && referencesStale);
-  const shownProblems = scenes ? problems.length : 0;
-  // Сценарий из одних частей сохраняется черновиком и с проблемами; с планами проблемы надо исправить.
-  const blocking = hasShots ? shownProblems : 0;
-  const saveDisabled = busy || !scenes || !savable || blocking > 0;
-  // Причина недоступности сохранения видна в подсказке, даже если список проблем прокручен из вида.
-  const saveReason = busy
-    ? BUSY_REASON
-    : blocking && savable
-      ? scenarioTexts.toolbar.fixRegistry({ count: blocking })
-      : savable
-        ? null
-        : scenarioTexts.toolbar.noChanges;
+  const state: ScenarioSaveState = { scenes, busy, hasShots, scenesDirty, referencesStale, problems };
+  const { disabled: saveDisabled, reason: saveReason, shownProblems } = saveAvailability(state);
   // «Без производства» имеет смысл, только когда сохранение затрагивает планы с материалами.
   const keepDisabled = saveDisabled || keepUseless;
   const keepReason = saveReason ?? (keepUseless ? KEEP_NOTHING_REASON : null);
@@ -96,15 +129,7 @@ export function ScenarioToolbar({
             </ActionButton>
           </>
         ) : null}
-        <ActionButton
-          variant="contained"
-          startIcon={<SaveIcon />}
-          disabled={saveDisabled}
-          disabledReason={saveReason}
-          onClick={() => void saveScenes('production')}
-        >
-          {commonTexts.save}
-        </ActionButton>
+        <ScenarioSaveButton state={state} saveScenes={saveScenes} />
       </Box>
     </>
   );

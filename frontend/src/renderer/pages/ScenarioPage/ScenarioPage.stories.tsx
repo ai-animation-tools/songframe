@@ -281,7 +281,7 @@ export const ViewpointSet: Story = {
 };
 
 export const ViewpointFullscreen: Story = {
-  name: 'Точка съёмки во весь экран · расстановка в черновик, закрытие с правками подтверждается',
+  name: 'Точка съёмки во весь экран · сектор под курсором, перетаскивание, масштаб ползунком, «Сохранить» в шапке',
   tags: ['!autodocs', 'ci'],
   parameters: { songframe: scenarioPageOptions({ route: '/project/scenario?shot=M03' }) },
   play: async (context) => {
@@ -291,38 +291,46 @@ export const ViewpointFullscreen: Story = {
     await userEvent.click(await screen.findByRole('button', { name: viewpointTexts.create }));
     await userEvent.click(await screen.findByRole('button', { name: commonTexts.fullscreen.open }));
     const dialog = within(await screen.findByRole('dialog', { name: viewpointTexts.fullscreenTitle({ shot: 'M03' }) }));
-    await userEvent.click(within(dialog.getByRole('group', { name: viewpointTexts.target })).getByRole('button', { name: /Сосед/ }));
     const preview = await previewOf(screen, dialog);
-    clickPreview(preview, 0.5, 0.4);
-    // Вокруг локации есть место: колесо отдаляет схему, перетаскивание сдвигает её и ничего не ставит.
     const box = preview.getBoundingClientRect();
-    const [cx, cy] = [box.left + box.width / 2, box.top + box.height / 2];
-    for (let index = 0; index < 3; index++) fireEvent.wheel(preview, { deltaY: 100, clientX: cx, clientY: cy });
+    const at = (x: number, y: number) => ({ clientX: box.left + box.width * x, clientY: box.top + box.height * y, pointerId: 1 });
+    // Пока выбрана камера, под курсором её будущий сектор — до щелчка видно, что попадёт в кадр.
+    fireEvent.pointerMove(preview, at(0.5, 0.8));
+    await waitFor(() => expect(preview.querySelector('[data-ghost]')).not.toBeNull());
+    // React узнаёт об уходе указателя по pointerout с целью вне схемы.
+    fireEvent.pointerOut(preview, { relatedTarget: document.body });
+    await waitFor(() => expect(preview.querySelector('[data-ghost]')).toBeNull());
+    await userEvent.click(within(dialog.getByRole('group', { name: viewpointTexts.target })).getByRole('button', { name: /Сосед/ }));
+    clickPreview(preview, 0.5, 0.4);
+    await waitFor(() => expect(preview.querySelector('[data-subject="neighbor"] [data-mark="start"]')).not.toBeNull());
+    // Поставленного героя можно перетащить: метка переезжает, схема под ней не сдвигается.
+    const mark = preview.querySelector('[data-subject="neighbor"] [data-mark="start"]')!;
+    const before = mark.getAttribute('cx');
+    fireEvent.pointerDown(mark, at(0.5, 0.4));
+    fireEvent.pointerMove(preview, at(0.6, 0.3));
+    fireEvent.pointerUp(preview, at(0.6, 0.3));
+    await waitFor(() => expect(preview.querySelector('[data-subject="neighbor"] [data-mark="start"]')!.getAttribute('cx')).not.toBe(before));
+    await expect(dialog.queryByRole('button', { name: schemesTexts.fit })).toBeNull();
+    // Масштаб — ползунком, не колесом: колесо листает страницу.
+    fireEvent.wheel(preview, { deltaY: 100, ...at(0.5, 0.5) });
+    await expect(dialog.queryByRole('button', { name: schemesTexts.fit })).toBeNull();
+    dialog.getByRole('slider', { name: schemesTexts.previewZoom }).focus();
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}{ArrowDown}');
     const fit = await dialog.findByRole('button', { name: schemesTexts.fit });
+    // Перетаскивание пустого места сдвигает схему и ничего не ставит.
     await userEvent.click(within(dialog.getByRole('group', { name: viewpointTexts.target })).getByRole('button', { name: viewpointTexts.camera }));
-    fireEvent.pointerDown(preview, { clientX: cx, clientY: cy, pointerId: 1 });
-    fireEvent.pointerMove(preview, { clientX: cx + 80, clientY: cy + 40, pointerId: 1 });
-    fireEvent.pointerUp(preview, { clientX: cx + 80, clientY: cy + 40, pointerId: 1 });
-    await expect(dialog.getAllByText(viewpointTexts.notPlaced).length).toBeGreaterThan(0);
+    fireEvent.pointerDown(preview, at(0.3, 0.7));
+    fireEvent.pointerMove(preview, at(0.4, 0.75));
+    fireEvent.pointerUp(preview, at(0.4, 0.75));
     await expect(preview.querySelector('[data-camera]')).toBeNull();
-    // «Показать всё» возвращает вписанный вид и прячется.
     await userEvent.click(fit);
     await waitFor(() => expect(dialog.queryByRole('button', { name: schemesTexts.fit })).toBeNull());
-    // Закрытие с несохранёнными правками спрашивает и объясняет, что черновик не потеряется.
+    // «Сохранить» в шапке окна записывает сценарий; закрытие окна ничего не спрашивает.
+    await userEvent.click(dialog.getByRole('button', { name: commonTexts.save }));
+    await waitFor(() => expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений сценария: 1'));
     await userEvent.click(dialog.getByRole('button', { name: commonTexts.close }));
-    const confirm = within(await screen.findByRole('dialog', { name: commonTexts.fullscreen.closeTitle }));
-    await expect(confirm.getByText(viewpointTexts.fullscreenClose)).toBeInTheDocument();
-    await userEvent.click(confirm.getByRole('button', { name: commonTexts.fullscreen.stay }));
-    // Окно подтверждения закрывается с анимацией: до её конца окно расстановки скрыто от дерева доступности.
-    await expect(await screen.findByRole('dialog', { name: viewpointTexts.fullscreenTitle({ shot: 'M03' }) })).toBeInTheDocument();
-    await userEvent.click(dialog.getByRole('button', { name: commonTexts.close }));
-    await userEvent.click(
-      within(await screen.findByRole('dialog', { name: commonTexts.fullscreen.closeTitle })).getByRole('button', { name: commonTexts.fullscreen.closeKeep })
-    );
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    // Расстановка из окна осталась в черновике страницы.
     await expect(document.querySelector('[data-viewpoint-row="neighbor"]')).toHaveTextContent(viewpointTexts.focus);
-    await expect(unsavedChip(screen)).toBeInTheDocument();
   }
 };
 

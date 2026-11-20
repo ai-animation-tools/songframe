@@ -3,7 +3,7 @@ import { commonTexts } from '@shared/texts/common';
 import { type ReactElement, useState } from 'react';
 import { usePageLoading } from '../../components/PageLoader';
 import { Alert, AlertTitle, Button, Paper, Stack, Typography } from '@mui/material';
-import { ScenarioToolbar, ScenesSaveDialog, ScenarioPartsEditor, SceneRegistry } from './components';
+import { ScenarioSaveButton, ScenarioToolbar, ScenesSaveDialog, ScenarioPartsEditor, SceneRegistry } from './components';
 import { useScenario } from './useScenario';
 import { useScenarioWorkflow } from './useScenarioWorkflow';
 import { useScenarioCheck } from './useScenarioCheck';
@@ -211,6 +211,12 @@ export function ScenarioPage(): ReactElement {
             onRevealed={clearReveal}
             onOpenShotState={openShotState}
             leaveReason={unsavedDraftsReason(scenesDirty)}
+            saveButton={
+              <ScenarioSaveButton
+                state={{ scenes, busy: busy || workflow.busy, hasShots, scenesDirty, referencesStale: view.referencesStale, problems }}
+                saveScenes={saveScenes}
+              />
+            }
             problems={problems}
             duration={duration}
             brief={brief}

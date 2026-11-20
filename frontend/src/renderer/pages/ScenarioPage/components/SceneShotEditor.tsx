@@ -1,5 +1,5 @@
 import { scenarioTexts } from '@shared/texts/scenario';
-import { useState, type ReactElement } from 'react';
+import { useState, type ReactElement, type ReactNode } from 'react';
 import { Alert, AlertTitle, Autocomplete, Box, Checkbox, FormControlLabel, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
 import CallMergeIcon from '@mui/icons-material/CallMerge';
 import CallSplitIcon from '@mui/icons-material/CallSplit';
@@ -28,6 +28,7 @@ export function SceneShotEditor({
   scenes,
   referenceOptions,
   leaveReason,
+  saveButton,
   locked = false,
   nextLocked = null,
   updateShot,
@@ -47,6 +48,8 @@ export function SceneShotEditor({
   referenceOptions: EntityOption[];
   /** Уход на «Производство» сбросит несохранённые черновики страницы: тогда переход недоступен. */
   leaveReason: string | null;
+  /** Кнопка «Сохранить» сценария для шапки окна точки съёмки во весь экран. */
+  saveButton?: ReactNode;
   /** План принят в производстве: постановка закрыта для правки. */
   locked?: boolean;
   /** ID следующего плана, если он принят: граница и объединение изменили бы его. */
@@ -155,6 +158,7 @@ export function SceneShotEditor({
         references={shot.references}
         locked={locked}
         dirty={!!leaveReason}
+        saveButton={saveButton}
         cast={cast}
         schemes={schemes?.schemes ?? null}
         schemesError={schemes?.error ?? null}

@@ -1,11 +1,11 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent, type ReactElement } from 'react';
-import { Box, IconButton, Tooltip, useTheme } from '@mui/material';
+import { Box, IconButton, Slider, Tooltip, useTheme } from '@mui/material';
 import FitScreenIcon from '@mui/icons-material/FitScreen';
 import { schemesTexts } from '@shared/texts/schemes';
 import type { Scheme, SchemeObject, SchemePoint } from '@shared/schemes';
 import { drawOrder, ellipseOutline, labelAnchor, objectColor, rectCorners, schemeBounds, smoothCurve, type Bounds } from '@shared/scheme-editing';
-import { fitViewport, snap, toScreen, toWorld, zoomViewportAt, type Viewport } from '@shared/scheme-canvas';
-import { fovThrough, headingBetween, pointAt, viewSector, type ViewpointPhase } from '@shared/viewpoint';
+import { clampScale, fitViewport, snap, toScreen, toWorld, type Viewport } from '@shared/scheme-canvas';
+import { fovThrough, headingBetween, pointAt, viewSector, type ViewpointPhase, type ViewpointTarget } from '@shared/viewpoint';
 
 /**
  * Камера на мини-схеме: место на первом кадре и, если движется, на последнем; направление взгляда на каждом
@@ -36,16 +36,31 @@ const AROUND = 0.5;
 /** Сдвиг указателя, после которого нажатие сдвигает схему, а не ставит точку, px. */
 const CLICK_SLOP = 4;
 
+/** Пределы ползунка масштаба: степень двойки относительно вписанного вида (от 1/8 до 8 раз). */
+const ZOOM_MIN = -3;
+const ZOOM_MAX = 3;
+
+/** Сектор под курсором до щелчка: куда смотрела бы камера, поставленная в эту точку. */
+export interface PreviewGhost {
+  heading: number | null;
+  fov: number;
+}
+
+/** Что тянется мышью: край сектора (угол обзора), ромб (направление) или метка камеры либо героя на кадре. */
+type Drag = 'fov' | 'heading' | { target: ViewpointTarget; phase: ViewpointPhase };
+
 /** Длина сектора обзора в пикселях: заметен на схеме любого размера и не уходит далеко за её края. */
 const SECTOR_PX = 160;
 
 /**
- * Мини-схема вида сверху только для чтения: объекты схемы, север, камера с сектором обзора и герои. Движение
- * показано пунктирной стрелкой к месту на последнем кадре, там же пунктиром сектор конца. Щелчок по схеме сообщает
- * место в метрах (onPick), край сектора первого кадра тянется мышью и меняет угол обзора (onFov), ромб посередине
- * дуги сектора кадра headingPhase поворачивает камеру (onHeading). Масштаб вписывает
- * схему и точки с запасом вокруг при смене схемы и ширины, а не при каждом сдвиге точки, чтобы схема не прыгала под
- * мышью. Колесо приближает у курсора, перетаскивание сдвигает схему, кнопка «Показать всё» возвращает вписанный вид.
+ * Мини-схема вида сверху: объекты схемы (их не изменить), север, камера с сектором обзора и герои. Движение
+ * показано пунктирной стрелкой к месту на последнем кадре, там же пунктиром сектор конца. Щелчок по пустому месту
+ * сообщает точку в метрах (onPick); до щелчка под курсором виден сектор будущей камеры (ghost). Метки камеры и героев
+ * на обоих кадрах тянутся мышью (onMove), край сектора первого кадра меняет угол обзора (onFov), ромб посередине дуги
+ * сектора кадра headingPhase поворачивает камеру (onHeading). Масштаб вписывает схему и точки с запасом вокруг при
+ * смене схемы и ширины, а не при каждом сдвиге точки, чтобы схема не прыгала под мышью. Масштаб меняет ползунок
+ * справа — не колесо, которым листают страницу; перетаскивание пустого места сдвигает схему, кнопка «Показать всё»
+ * возвращает вписанный вид.
  */
 export function SchemePreview({
   scheme,
@@ -57,7 +72,9 @@ export function SchemePreview({
   onPick,
   onFov,
   headingPhase = 'start',
-  onHeading
+  onHeading,
+  onMove,
+  ghost
 }: {
   scheme: Scheme;
   /** Доступное имя области. */
@@ -71,21 +88,25 @@ export function SchemePreview({
   /** Кадр, направление которого поворачивает ромб сектора. */
   headingPhase?: ViewpointPhase;
   onHeading?(degrees: number): void;
+  /** Метку камеры или героя на кадре phase перетащили в point. */
+  onMove?(target: ViewpointTarget, phase: ViewpointPhase, point: SchemePoint): void;
+  /** Сектор будущей камеры в точке под курсором; нет — подсказки нет. */
+  ghost?(point: SchemePoint): PreviewGhost | null;
 }): ReactElement {
   const theme = useTheme();
   const boxRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [width, setWidth] = useState(480);
-  // Что тянется мышью: край сектора (угол обзора) или ромб (направление).
   // Ref читают обработчики указателя: следующее событие может прийти раньше, чем React применит состояние;
   // состояние нужно только курсору.
-  const [dragging, setDraggingState] = useState<'fov' | 'heading' | null>(null);
-  const draggingRef = useRef<'fov' | 'heading' | null>(null);
-  const setDragging = (value: 'fov' | 'heading' | null): void => {
+  const [dragging, setDraggingState] = useState<Drag | null>(null);
+  const draggingRef = useRef<Drag | null>(null);
+  const [hover, setHover] = useState<SchemePoint | null>(null);
+  const setDragging = (value: Drag | null): void => {
     draggingRef.current = value;
     setDraggingState(value);
   };
-  // Свой вид человека (колесо, сдвиг) поверх вписанного; смена схемы или размера возвращает вписанный.
+  // Свой вид человека (ползунок, сдвиг) поверх вписанного; смена схемы или размера возвращает вписанный.
   const [own, setOwn] = useState<Pick<Viewport, 'center' | 'scale'> | null>(null);
   const press = useRef<{ x: number; y: number; center: SchemePoint; moved: boolean } | null>(null);
 
@@ -118,21 +139,8 @@ export function SchemePreview({
   useEffect(() => setOwn(null), [scheme.id, width, height]);
   const viewport: Viewport = own ? { ...own, width, height } : fitted;
 
-  // Колесо без пассивного слушателя: прокрутка страницы не должна срабатывать над схемой.
-  const viewportRef = useRef(viewport);
-  viewportRef.current = viewport;
-  useEffect(() => {
-    const svg = svgRef.current;
-    if (!svg) return;
-    const wheel = (event: WheelEvent): void => {
-      event.preventDefault();
-      const rect = svg.getBoundingClientRect();
-      const next = zoomViewportAt(viewportRef.current, [event.clientX - rect.left, event.clientY - rect.top], event.deltaY < 0 ? 1.15 : 1 / 1.15, 'top');
-      setOwn({ center: next.center, scale: next.scale });
-    };
-    svg.addEventListener('wheel', wheel, { passive: false });
-    return () => svg.removeEventListener('wheel', wheel);
-  }, []);
+  // Ползунок — степень двойки от вписанного масштаба: шаг ползунка одинаково заметен при любом размере схемы.
+  const zoom = Math.log2(viewport.scale / fitted.scale);
 
   const screen = (point: SchemePoint): SchemePoint => toScreen(point, viewport, 'top');
   const path = (points: SchemePoint[], closed: boolean): string =>
@@ -207,6 +215,22 @@ export function SchemePreview({
     return { phase: headingPhase, origin, at: screen(pointAt(origin, heading, sectorLength)) };
   })();
   const edge = sector ? screen(sector[1]) : null;
+  // Метка камеры или героя: тянется мышью, если расстановка открыта для правки.
+  const movable = !disabled && !!onMove;
+  const grab = (target: ViewpointTarget, phase: ViewpointPhase) =>
+    movable
+      ? {
+          style: { cursor: 'move' },
+          'data-movable': '',
+          onPointerDown: (event: PointerEvent<SVGElement>) => {
+            event.stopPropagation();
+            setHover(null);
+            setDragging({ target, phase });
+            event.currentTarget.setPointerCapture?.(event.pointerId);
+          }
+        }
+      : { style: { pointerEvents: 'none' as const } };
+  const ghostView = hover && ghost ? ghost(hover) : null;
   // Пунктирная стрелка пути от первого кадра к последнему.
   const route = (from: SchemePoint, to: SchemePoint | undefined, color: string, marker: string): ReactElement | null => {
     if (!to) return null;
@@ -223,23 +247,37 @@ export function SchemePreview({
         aria-label={label}
         width={width}
         height={height}
-        style={{ display: 'block', touchAction: 'none', cursor: dragging || press.current?.moved ? 'grabbing' : disabled || !onPick ? 'grab' : 'crosshair' }}
+        style={{
+          display: 'block',
+          touchAction: 'none',
+          cursor: dragging && typeof dragging === 'object' ? 'move' : dragging || press.current?.moved ? 'grabbing' : disabled || !onPick ? 'grab' : 'crosshair'
+        }}
         onPointerDown={(event) => {
           press.current = { x: event.clientX, y: event.clientY, center: viewport.center, moved: false };
+          setHover(null);
           event.currentTarget.setPointerCapture?.(event.pointerId);
         }}
+        onPointerLeave={() => setHover(null)}
         onPointerMove={(event) => {
-          if (draggingRef.current === 'fov') {
+          const drag = draggingRef.current;
+          if (drag && typeof drag === 'object') {
+            onMove?.(drag.target, drag.phase, worldOf(event));
+            return;
+          }
+          if (drag === 'fov') {
             if (camera && camera.startHeading !== null && onFov) onFov(fovThrough(camera.start, camera.startHeading, worldOf(event)));
             return;
           }
-          if (draggingRef.current === 'heading') {
+          if (drag === 'heading') {
             const degrees = rotor ? headingBetween(rotor.origin, worldOf(event)) : null;
             if (degrees !== null) onHeading?.(degrees);
             return;
           }
           const start = press.current;
-          if (!start) return;
+          if (!start) {
+            if (ghost && !disabled && onPick) setHover(worldOf(event));
+            return;
+          }
           const dx = event.clientX - start.x;
           const dy = event.clientY - start.y;
           if (!start.moved && Math.hypot(dx, dy) < CLICK_SLOP) return;
@@ -275,13 +313,32 @@ export function SchemePreview({
         {subjects.map((subject) => {
           const [x, y] = screen(subject.start);
           return (
-            <g key={subject.entity} data-subject={subject.entity} style={{ pointerEvents: 'none' }}>
-              {route(subject.start, subject.end, accent, 'scheme-preview-subject-arrow')}
+            <g key={subject.entity} data-subject={subject.entity}>
+              <g style={{ pointerEvents: 'none' }}>{route(subject.start, subject.end, accent, 'scheme-preview-subject-arrow')}</g>
               {subject.end ? (
-                <circle cx={screen(subject.end)[0]} cy={screen(subject.end)[1]} r={5} fill={theme.palette.background.paper} stroke={accent} strokeWidth={2} />
+                <circle
+                  cx={screen(subject.end)[0]}
+                  cy={screen(subject.end)[1]}
+                  r={5}
+                  fill={theme.palette.background.paper}
+                  stroke={accent}
+                  strokeWidth={2}
+                  data-mark="end"
+                  {...grab({ entity: subject.entity }, 'end')}
+                />
               ) : null}
-              <circle cx={x} cy={y} r={6} fill={subject.focus ? accent : theme.palette.background.paper} stroke={accent} strokeWidth={2} />
+              <circle
+                cx={x}
+                cy={y}
+                r={6}
+                fill={subject.focus ? accent : theme.palette.background.paper}
+                stroke={accent}
+                strokeWidth={2}
+                data-mark="start"
+                {...grab({ entity: subject.entity }, 'start')}
+              />
               <text
+                style={{ pointerEvents: 'none' }}
                 x={x + 9}
                 y={y - 9}
                 fontSize={12}
@@ -324,7 +381,8 @@ export function SchemePreview({
                 fill={theme.palette.background.paper}
                 stroke={primary}
                 strokeWidth={2}
-                style={{ pointerEvents: 'none' }}
+                data-mark="end"
+                {...grab('camera', 'end')}
               />
             ) : null}
             <circle
@@ -334,7 +392,8 @@ export function SchemePreview({
               fill={primary}
               stroke={theme.palette.background.paper}
               strokeWidth={2}
-              style={{ pointerEvents: 'none' }}
+              data-mark="start"
+              {...grab('camera', 'start')}
             />
             {edge && !disabled && onFov ? (
               <circle
@@ -374,6 +433,21 @@ export function SchemePreview({
             ) : null}
           </g>
         ) : null}
+        {ghostView && hover ? (
+          <g data-ghost="" style={{ pointerEvents: 'none' }} opacity={0.6}>
+            {ghostView.heading !== null ? (
+              <path
+                d={path(viewSector(hover, ghostView.heading, ghostView.fov, sectorLength), true)}
+                fill={primary}
+                fillOpacity={0.08}
+                stroke={primary}
+                strokeWidth={1.2}
+                strokeDasharray="4 3"
+              />
+            ) : null}
+            <circle cx={screen(hover)[0]} cy={screen(hover)[1]} r={6} fill="none" stroke={primary} strokeWidth={2} />
+          </g>
+        ) : null}
         <g transform={`translate(${width - 22} 26)`} style={{ pointerEvents: 'none' }}>
           <path d="M0 -14 L6 3 L0 0 L-6 3 Z" fill={theme.palette.text.primary} />
           <text y={15} textAnchor="middle" fontSize={11} fontWeight={600} fill={theme.palette.text.primary}>
@@ -381,6 +455,20 @@ export function SchemePreview({
           </text>
         </g>
       </svg>
+      <Box sx={{ position: 'absolute', right: 6, top: 64, bottom: 16, display: 'flex', alignItems: 'stretch', py: 1 }}>
+        <Slider
+          orientation="vertical"
+          size="small"
+          min={ZOOM_MIN}
+          max={ZOOM_MAX}
+          step={0.05}
+          value={Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoom))}
+          aria-label={schemesTexts.previewZoom}
+          valueLabelDisplay="auto"
+          valueLabelFormat={(value) => schemesTexts.previewZoomValue({ factor: 2 ** value })}
+          onChange={(_, value) => setOwn({ center: viewport.center, scale: clampScale(fitted.scale * 2 ** (value as number)) })}
+        />
+      </Box>
       {own ? (
         <Tooltip title={schemesTexts.fit}>
           <IconButton

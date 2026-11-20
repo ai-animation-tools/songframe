@@ -226,9 +226,7 @@ export function SchemesPage(): ReactElement {
         open={fullscreen && !!location}
         title={schemesTexts.fullscreenTitle({ location: location?.name || location?.id || '' })}
         dirty={dirty}
-        closeText={schemesTexts.fullscreenClose}
         actions={saveButton}
-        saveAction={{ label: commonTexts.fullscreen.saveAndClose, icon: <SaveIcon />, run: save }}
         onClose={() => setFullscreen(false)}
       >
         {fullscreen ? editor(true) : null}

@@ -180,7 +180,7 @@ export const NoLocations: Story = {
 };
 
 export const Fullscreen: Story = {
-  name: 'Во весь экран · правки в окне, закрытие подтверждается, сохранить и закрыть',
+  name: 'Во весь экран · правки в окне, «Сохранить» в шапке, закрытие без вопросов',
   tags: ['ci'],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -195,11 +195,10 @@ export const Fullscreen: Story = {
     await userEvent.type(title, ' вечером');
     // Правка в окне сразу уходит во временный файл.
     await waitFor(() => expect(schemesStorySnapshot().draft).toContain('Перекрёсток сверху вечером'));
-    await userEvent.click(dialog.getByRole('button', { name: commonTexts.close }));
-    const confirm = within(await page.findByRole('dialog', { name: commonTexts.fullscreen.closeTitle }));
-    await expect(confirm.getByText(schemesTexts.fullscreenClose)).toBeInTheDocument();
-    await userEvent.click(confirm.getByRole('button', { name: commonTexts.fullscreen.saveAndClose }));
+    await userEvent.click(dialog.getByRole('button', { name: commonTexts.save }));
     await waitFor(() => expect(schemesStorySnapshot().saves).toBe(1));
+    // Закрытие ничего не теряет и не спрашивает.
+    await userEvent.click(dialog.getByRole('button', { name: commonTexts.close }));
     await waitFor(() => expect(page.queryByRole('dialog')).not.toBeInTheDocument());
     await expect(schemesStorySnapshot().document.schemes[0].title).toBe('Перекрёсток сверху вечером');
     // Сохранение удаляет временный файл.

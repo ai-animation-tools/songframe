@@ -1,6 +1,6 @@
 import { scenarioTexts } from '@shared/texts/scenario';
 import { commonTexts } from '@shared/texts/common';
-import { useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useEffect, useMemo, useState, type ReactElement, type ReactNode } from 'react';
 import {
   Accordion,
   AccordionDetails,
@@ -72,6 +72,9 @@ const texts = scenarioTexts.viewpoint;
 
 /** Высота мини-схемы в блоке страницы, px. */
 const INLINE_HEIGHT = 320;
+/** Ширина колонок строки камеры или героя: имя и состояние, px. */
+const ROW_NAME_WIDTH = 120;
+const ROW_STATE_WIDTH = 420;
 /** Пропорция кадра вида из камеры. */
 const FRAME_ASPECT = 16 / 9;
 /** Цвета фигур героев: в фокусе и остальные. */
@@ -234,43 +237,52 @@ function ViewpointPlacement({
             ? 'end'
             : null;
     return (
-      <Stack key={key} direction="row" spacing={1} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }} data-viewpoint-row={key}>
-        <Typography variant="body2" fontWeight={600} sx={{ minWidth: 120 }}>
+      // Сетка с колонкой состояния ограниченной ширины: кнопки строки стоят рядом с её текстом, а не у дальнего края
+      // широкого окна, и у всех строк начинаются с одной линии.
+      <Box
+        key={key}
+        sx={{ display: 'grid', gridTemplateColumns: `${ROW_NAME_WIDTH}px minmax(0, ${ROW_STATE_WIDTH}px) auto`, columnGap: 1.5, alignItems: 'center' }}
+        data-viewpoint-row={key}
+      >
+        <Typography variant="body2" fontWeight={600} noWrap>
           {name}
         </Typography>
-        {focus ? <Chip size="small" variant="outlined" icon={<StarIcon color="secondary" />} label={texts.focus} /> : null}
-        {outOf ? (
-          <Tooltip title={texts.outOfFrameHint}>
-            <Chip size="small" color="warning" icon={<CropFreeIcon />} label={texts.outOfFrame({ end: outOf === 'end' })} data-out-of-frame={outOf} />
-          </Tooltip>
-        ) : null}
-        <Typography variant="body2" color="text.secondary">
-          {[pathState(path), fromCamera, key === 'camera' && path && viewpoint.heading ? texts.headingOwn : null].filter(Boolean).join(' · ')}
-        </Typography>
-        <Box sx={{ flex: 1 }} />
-        {editable && path ? (
-          <>
-            {focus === false ? (
-              <Button size="small" startIcon={<StarIcon />} onClick={() => update(setFocus(viewpoint, key))}>
-                {texts.makeFocus}
+        <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}>
+          {focus ? <Chip size="small" variant="outlined" icon={<StarIcon color="secondary" />} label={texts.focus} /> : null}
+          {outOf ? (
+            <Tooltip title={texts.outOfFrameHint}>
+              <Chip size="small" color="warning" icon={<CropFreeIcon />} label={texts.outOfFrame({ end: outOf === 'end' })} data-out-of-frame={outOf} />
+            </Tooltip>
+          ) : null}
+          <Typography variant="body2" color="text.secondary">
+            {[pathState(path), fromCamera, key === 'camera' && path && viewpoint.heading ? texts.headingOwn : null].filter(Boolean).join(' · ')}
+          </Typography>
+        </Stack>
+        <Stack direction="row" spacing={0.5} useFlexGap sx={{ flexWrap: 'wrap' }}>
+          {editable && path ? (
+            <>
+              {focus === false ? (
+                <Button size="small" startIcon={<StarIcon />} onClick={() => update(setFocus(viewpoint, key))}>
+                  {texts.makeFocus}
+                </Button>
+              ) : null}
+              {key === 'camera' && viewpoint.heading ? (
+                <Button size="small" startIcon={<CenterFocusStrongIcon />} onClick={() => update(withoutHeading(viewpoint))}>
+                  {texts.headingAuto}
+                </Button>
+              ) : null}
+              {path.end ? (
+                <Button size="small" onClick={() => update(removePoint(viewpoint, rowTarget, 'end'))}>
+                  {texts.removeEnd}
+                </Button>
+              ) : null}
+              <Button size="small" color="error" startIcon={<LocationOffIcon />} onClick={() => update(removePoint(viewpoint, rowTarget, 'start'))}>
+                {texts.removeTarget}
               </Button>
-            ) : null}
-            {key === 'camera' && viewpoint.heading ? (
-              <Button size="small" startIcon={<CenterFocusStrongIcon />} onClick={() => update(withoutHeading(viewpoint))}>
-                {texts.headingAuto}
-              </Button>
-            ) : null}
-            {path.end ? (
-              <Button size="small" onClick={() => update(removePoint(viewpoint, rowTarget, 'end'))}>
-                {texts.removeEnd}
-              </Button>
-            ) : null}
-            <Button size="small" color="error" startIcon={<LocationOffIcon />} onClick={() => update(removePoint(viewpoint, rowTarget, 'start'))}>
-              {texts.removeTarget}
-            </Button>
-          </>
-        ) : null}
-      </Stack>
+            </>
+          ) : null}
+        </Stack>
+      </Box>
     );
   };
 
@@ -338,6 +350,16 @@ function ViewpointPlacement({
         onFov={(value) => update(withFov(viewpoint, value))}
         headingPhase={phase}
         onHeading={(degrees) => update(setHeading(viewpoint, phase, degrees))}
+        onMove={(moved, movedPhase, point) => update(setPoint(viewpoint, moved, movedPhase, point))}
+        ghost={
+          target === 'camera'
+            ? (point) => {
+                // Куда смотрела бы камера, поставленная сюда щелчком: тот же расчёт, что после установки.
+                const next = setPoint(viewpoint, 'camera', phase, point);
+                return { heading: lookHeading(next, phase), fov: viewpointFov(next) };
+              }
+            : undefined
+        }
       />
       <Paper variant="outlined" sx={{ p: 1.5 }}>
         <Stack spacing={0.75}>
@@ -366,6 +388,7 @@ export function ViewpointBlock({
   references,
   locked,
   dirty,
+  saveButton,
   cast,
   schemes,
   schemesError,
@@ -379,8 +402,10 @@ export function ViewpointBlock({
   references: readonly string[];
   /** План принят в производстве. */
   locked: boolean;
-  /** В сценарии есть несохранённые правки: закрытие окна во весь экран подтверждается. */
+  /** В сценарии есть несохранённые правки: отметка в шапке окна во весь экран. */
   dirty: boolean;
+  /** Кнопка «Сохранить» сценария в шапке окна во весь экран. */
+  saveButton?: ReactNode;
   cast: CastFile | null;
   schemes: SchemesFile | null;
   schemesError: string | null;
@@ -561,7 +586,7 @@ export function ViewpointBlock({
                     open={fullscreen}
                     title={texts.fullscreenTitle({ shot })}
                     dirty={dirty}
-                    closeText={texts.fullscreenClose}
+                    actions={saveButton}
                     onClose={() => setFullscreen(false)}
                   >
                     <Stack spacing={1.5}>

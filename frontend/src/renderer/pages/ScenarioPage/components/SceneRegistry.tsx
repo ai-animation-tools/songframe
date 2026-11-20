@@ -26,6 +26,7 @@ export function SceneRegistry({
   onRevealed,
   onOpenShotState,
   leaveReason,
+  saveButton,
   problems,
   duration,
   brief,
@@ -54,6 +55,8 @@ export function SceneRegistry({
   onOpenShotState: OpenShotState;
   /** Причина, по которой уход на другую страницу сейчас потеряет правки. */
   leaveReason: string | null;
+  /** Кнопка «Сохранить» сценария для шапки окна точки съёмки во весь экран. */
+  saveButton?: ReactNode;
   problems: string[];
   duration: number;
   brief: ScenarioBrief;
@@ -129,6 +132,7 @@ export function SceneRegistry({
                 scenes={scenes}
                 referenceOptions={referenceOptions}
                 leaveReason={leaveReason}
+                saveButton={saveButton}
                 updateShot={updateShot}
                 setBoundary={setBoundary}
                 split={split}

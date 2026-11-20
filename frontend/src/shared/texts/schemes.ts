@@ -48,9 +48,9 @@ export const schemesTexts = {
     point: 'Щелчок ставит точку на пересечение клеток. Инструмент остаётся включённым, Esc возвращает выбор.'
   } satisfies Record<SchemeShapeType | 'select', string>,
   fit: 'Показать всё',
+  previewZoom: 'Масштаб мини-схемы',
+  previewZoomValue: ({ factor }: { factor: number }) => `×${String(factor >= 10 ? Math.round(factor) : Math.round(factor * 10) / 10).replace('.', ',')}`,
   fullscreenTitle: ({ location }: { location: string }) => `Схемы: ${location}`,
-  fullscreenClose:
-    'Правки уже в черновике страницы и во временном файле: они не потеряются ни при закрытии окна, ни при сбое программы. Сохранить можно и позже кнопкой «Сохранить» на странице.',
   canvasLabel: ({ title }: { title: string }) => `Холст схемы «${title}»`,
   north: 'С',
   ground: 'земля',

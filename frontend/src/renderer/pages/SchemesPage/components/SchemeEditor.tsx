@@ -282,7 +282,13 @@ export function SchemeEditor({
             }
           >
             {showVolume ? (
-              <SchemeVolumeView scheme={scheme} label={schemesTexts.volumeView.label({ title: scheme.title })} height={canvasHeight} />
+              <SchemeVolumeView
+                scheme={scheme}
+                label={schemesTexts.volumeView.label({ title: scheme.title })}
+                height={canvasHeight}
+                selected={selected}
+                onSelect={setSelected}
+              />
             ) : (
               <SchemeCanvas
                 scheme={scheme}

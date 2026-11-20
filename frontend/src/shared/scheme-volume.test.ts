@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SchemeObject, SchemeShape } from './schemes';
-import { objectTopHeight, objectVolume, triangleNormal, triangulate, type Triangle, type Vec3 } from './scheme-volume';
+import { objectTopHeight, objectVolume, pickObject, triangleNormal, triangulate, type Triangle, type Vec3 } from './scheme-volume';
 
 const object = (shape: SchemeShape, extra: Partial<SchemeObject> = {}): SchemeObject => ({ id: 'o', name: 'Объект', shape, ...extra });
 const rect = (rotation = 0): SchemeShape => ({ type: 'rect', center: [10, 20], size: [6, 8], rotation });
@@ -163,5 +163,45 @@ describe('объём объектов схемы', () => {
     expect(objectTopHeight(object(rect(), { height: 3, top: { form: 'ridge', rise: 3, axis: 'x' } }))).toBe(6);
     expect(objectTopHeight(object(rect(), { height: 4, elevation: 2, body: 'ellipsoid' }))).toBe(6);
     expect(objectTopHeight(object(rect()))).toBe(0);
+  });
+});
+
+describe('выбор объекта лучом', () => {
+  const house = object({ type: 'rect', center: [0, 0], size: [6, 4] }, { id: 'house', height: 3 });
+  const fence = object(
+    {
+      type: 'line',
+      points: [
+        [-10, -5],
+        [10, -5]
+      ]
+    },
+    { id: 'fence', height: 1.5 }
+  );
+  const road = object(
+    {
+      type: 'line',
+      points: [
+        [-10, -8],
+        [10, -8]
+      ],
+      width: 3
+    },
+    { id: 'road' }
+  );
+  const patch = object({ type: 'rect', center: [0, -8], size: [2, 2] }, { id: 'patch' });
+  const objects = [road, patch, fence, house];
+
+  it('ближайший объект под лучом: забор заслоняет дом, над забором виден дом', () => {
+    expect(pickObject(objects, [0, -20, 1], [0, 1, 0])).toBe('fence');
+    expect(pickObject(objects, [0, -20, 2.5], [0, 1, 0])).toBe('house');
+    expect(pickObject(objects, [0, -20, 5], [0, 1, 0])).toBeNull();
+  });
+
+  it('стенка без толщины выбирается с обеих сторон, плоские — сверху, из совпавших — нарисованный позже', () => {
+    expect(pickObject(objects, [0, 0.5, 1], [0, -1, 0])).toBe('house');
+    expect(pickObject(objects, [5, -4, 1], [0, -1, 0])).toBe('fence');
+    expect(pickObject(objects, [5, -8, 10], [0, 0, -1])).toBe('road');
+    expect(pickObject(objects, [0, -8, 10], [0, 0, -1])).toBe('patch');
   });
 });

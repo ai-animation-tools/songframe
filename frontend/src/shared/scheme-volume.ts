@@ -317,3 +317,42 @@ export function schemeVolume(scheme: Scheme): ObjectVolume[] {
 export function objectTopHeight(object: SchemeObject): number {
   return (object.elevation ?? 0) + (object.height ?? 0) + (object.top && object.body !== 'ellipsoid' ? object.top.rise : 0);
 }
+
+const dot = (a: Vec3, b: Vec3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+
+/**
+ * Расстояние вдоль луча origin + t·direction до треугольника (Мёллер — Трумбор) или null, если луч его не пересекает.
+ * Треугольник засчитывается с обеих сторон: стенка линии без толщины видна и щёлкается и изнутри, и снаружи.
+ */
+export function rayTriangle(origin: Vec3, direction: Vec3, [a, b, c]: Triangle): number | null {
+  const edge1 = sub(b, a);
+  const edge2 = sub(c, a);
+  const p = cross(direction, edge2);
+  const det = dot(edge1, p);
+  if (Math.abs(det) < 1e-12) return null;
+  const s = sub(origin, a);
+  const u = dot(s, p) / det;
+  if (u < 0 || u > 1) return null;
+  const q = cross(s, edge1);
+  const v = dot(direction, q) / det;
+  if (v < 0 || u + v > 1) return null;
+  const t = dot(edge2, q) / det;
+  return t > 1e-9 ? t : null;
+}
+
+/**
+ * Объект под лучом из камеры: ближайший по пересечению с его объёмом. objects идут в порядке отрисовки: из плоских
+ * объектов на одной высоте выигрывает нарисованный позже, как и на экране. Никого не задел — null.
+ */
+export function pickObject(objects: readonly SchemeObject[], origin: Vec3, direction: Vec3): string | null {
+  let bestId: string | null = null;
+  let bestT = Infinity;
+  for (const object of objects)
+    for (const triangle of objectVolume(object)) {
+      const t = rayTriangle(origin, direction, triangle);
+      if (t === null || t > bestT + 1e-6) continue;
+      bestId = object.id;
+      bestT = Math.min(t, bestT);
+    }
+  return bestId;
+}

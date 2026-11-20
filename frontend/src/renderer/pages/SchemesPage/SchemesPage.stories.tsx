@@ -306,6 +306,19 @@ export const Volume: Story = {
     await expect(Number(view.dataset.triangles)).toBeGreaterThan(20);
     await expect(within(view).getByText('Длинный дом')).toBeInTheDocument();
     await expect(canvas.getByRole('button', { name: schemesTexts.tools.rect })).toBeDisabled();
+    // Выбор в объёме: щелчок мимо объектов снимает выбор, щелчок по дому под его подписью снова открывает свойства.
+    const scene = within(view).getByRole('application', { name: schemesTexts.volumeView.label({ title: 'Перекрёсток сверху' }) });
+    const click = (x: number, y: number): void => {
+      fireEvent.pointerDown(scene, { clientX: x, clientY: y, pointerId: 1 });
+      fireEvent.pointerUp(scene, { clientX: x, clientY: y, pointerId: 1 });
+    };
+    await expect(view.querySelector('[data-volume-label="o2"]')).toHaveStyle({ fontWeight: '600' });
+    const sceneBox = scene.getBoundingClientRect();
+    click(sceneBox.left + 4, sceneBox.top + 4);
+    await waitFor(() => expect(canvas.queryByRole('combobox', { name: volume.top })).toBeNull());
+    const label = view.querySelector('[data-volume-label="o2"]')!.getBoundingClientRect();
+    click(label.left + label.width / 2, label.bottom + 14);
+    await expect(await canvas.findByRole('combobox', { name: volume.top })).toHaveTextContent(volume.topForms.ridge);
     // Облёт с клавиатуры не ломает сцену.
     within(view)
       .getByRole('application', { name: schemesTexts.volumeView.label({ title: 'Перекрёсток сверху' }) })

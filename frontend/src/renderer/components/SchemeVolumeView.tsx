@@ -3,8 +3,8 @@ import { Alert, Box, useTheme } from '@mui/material';
 import { schemesTexts } from '@shared/texts/schemes';
 import type { Scheme } from '@shared/schemes';
 import { drawOrder, labelAnchor, objectColor, schemeBounds } from '@shared/scheme-editing';
-import { objectTopHeight, objectVolume, triangleNormal, type Triangle, type Vec3 } from '@shared/scheme-volume';
-import { cameraMatrix, orbitCamera, projectPoint, type Camera3D } from '@shared/camera3d';
+import { objectTopHeight, objectVolume, pickObject, triangleNormal, type Triangle, type Vec3 } from '@shared/scheme-volume';
+import { cameraMatrix, orbitCamera, pixelRay, projectPoint, type Camera3D } from '@shared/camera3d';
 
 /** Дополнительное тело сцены, которого нет в схеме: например, фигура героя точки съёмки. */
 export interface VolumeExtra {
@@ -17,6 +17,10 @@ export interface VolumeExtra {
 const ORBIT = { azimuth: 235, elevation: 35 };
 /** Плоские объекты на земле приподнимаются по порядку отрисовки, чтобы не мерцать друг на друге, м. */
 const FLAT_LIFT = 0.004;
+/** Сдвиг указателя, после которого нажатие считается вращением, а не щелчком, px. */
+const CLICK_SLOP = 4;
+/** Выбранный объект светлеет на эту долю к белому. */
+const SELECTED_LIGHTEN = 0.45;
 
 const VERTEX_SHADER = `attribute vec3 position; attribute vec3 normal; attribute vec3 color;
 uniform mat4 matrix; varying vec3 vNormal; varying vec3 vColor;
@@ -48,6 +52,7 @@ function gridStep(extent: number): number {
  */
 function buildVertices(
   scheme: Scheme,
+  selected: string | null,
   extras: readonly VolumeExtra[],
   ground: Vec3,
   gridColor: Vec3,
@@ -60,7 +65,8 @@ function buildVertices(
   };
   drawOrder(scheme.objects).forEach((object, index) => {
     const flat = objectTopHeight(object) === 0;
-    const color = rgb(objectColor(object));
+    const base = rgb(objectColor(object));
+    const color: Vec3 = object.id === selected ? (base.map((value) => value + (1 - value) * SELECTED_LIGHTEN) as Vec3) : base;
     for (const triangle of objectVolume(object)) push(triangle, color, flat ? FLAT_LIFT * (index + 1) : 0);
   });
   for (const extra of extras) for (const triangle of extra.triangles) push(triangle, rgb(extra.color));
@@ -93,7 +99,8 @@ function buildVertices(
 
 /**
  * Объём схемы вида сверху в перспективе (WebGL без библиотек). Без camera — облёт: перетаскивание вращает вид,
- * колесо приближает, стрелки и +/− делают то же с клавиатуры, подписи объектов стоят над их верхом. С camera —
+ * колесо приближает, стрелки и +/− делают то же с клавиатуры, подписи объектов стоят над их верхом. Щелчок без
+ * сдвига выбирает ближайший объект под указателем (onSelect, пустое место — null), выбранный светлеет. С camera —
  * неподвижный кадр точки съёмки без подписей: подпись спрятанного объекта выдавала бы его в кадре. Кадр
  * перерисовывается только при изменении сцены, размера или вида. С aspect высота следует из ширины, как у кадра
  * видео. Без WebGL — понятное сообщение вместо сцены.
@@ -104,7 +111,9 @@ export function SchemeVolumeView({
   height,
   camera,
   extras = [],
-  aspect
+  aspect,
+  selected = null,
+  onSelect
 }: {
   scheme: Scheme;
   /** Доступное имя области. */
@@ -115,6 +124,9 @@ export function SchemeVolumeView({
   extras?: readonly VolumeExtra[];
   /** Пропорция кадра ширина / высота: высота считается из ширины. */
   aspect?: number;
+  /** Выбранный объект схемы. */
+  selected?: string | null;
+  onSelect?(id: string | null): void;
 }): ReactElement {
   const theme = useTheme();
   const boxRef = useRef<HTMLDivElement>(null);
@@ -124,7 +136,7 @@ export function SchemeVolumeView({
   const frameHeight = aspect ? Math.round(width / aspect) : (height ?? 360);
   const [failed, setFailed] = useState<string | null>(null);
   const [orbit, setOrbit] = useState<{ azimuth: number; elevation: number; distance: number | null }>({ ...ORBIT, distance: null });
-  const drag = useRef<{ x: number; y: number; azimuth: number; elevation: number } | null>(null);
+  const drag = useRef<{ x: number; y: number; azimuth: number; elevation: number; moved: boolean } | null>(null);
 
   useLayoutEffect(() => {
     const box = boxRef.current;
@@ -142,8 +154,8 @@ export function SchemeVolumeView({
   const dark = theme.palette.mode === 'dark';
   const step = gridStep(extent);
   const vertices = useMemo(
-    () => buildVertices(scheme, extras, rgb(dark ? '#3a4a3a' : '#c9d6c0'), rgb(dark ? '#55665a' : '#a9bba0'), step),
-    [scheme, extras, dark, step]
+    () => buildVertices(scheme, selected, extras, rgb(dark ? '#3a4a3a' : '#c9d6c0'), rgb(dark ? '#55665a' : '#a9bba0'), step),
+    [scheme, selected, extras, dark, step]
   );
   const view: Camera3D = camera ?? orbitCamera(center, orbit.azimuth, orbit.elevation, orbit.distance ?? extent * 1.3);
 
@@ -226,7 +238,9 @@ export function SchemeVolumeView({
     : scheme.objects.flatMap((object) => {
         const [x, y] = labelAnchor(object.shape);
         const at = projectPoint(matrix, [x, y, objectTopHeight(object) + 0.3], width, frameHeight);
-        return at && at[0] >= 0 && at[0] <= width && at[1] >= 0 && at[1] <= frameHeight ? [{ id: object.id, name: object.name, at }] : [];
+        return at && at[0] >= 0 && at[0] <= width && at[1] >= 0 && at[1] <= frameHeight
+          ? [{ id: object.id, name: object.name, at, chosen: object.id === selected }]
+          : [];
       });
 
   const rotate = (azimuth: number, elevation: number): void =>
@@ -265,16 +279,23 @@ export function SchemeVolumeView({
         onKeyDown={keyDown}
         onPointerDown={(event) => {
           if (camera) return;
-          drag.current = { x: event.clientX, y: event.clientY, azimuth: orbit.azimuth, elevation: orbit.elevation };
+          drag.current = { x: event.clientX, y: event.clientY, azimuth: orbit.azimuth, elevation: orbit.elevation, moved: false };
           event.currentTarget.setPointerCapture?.(event.pointerId);
         }}
         onPointerMove={(event) => {
           const start = drag.current;
           if (!start) return;
+          if (!start.moved && Math.hypot(event.clientX - start.x, event.clientY - start.y) < CLICK_SLOP) return;
+          start.moved = true;
           rotate(start.azimuth - (event.clientX - start.x) * 0.4, start.elevation + (event.clientY - start.y) * 0.3);
         }}
-        onPointerUp={() => {
+        onPointerUp={(event) => {
+          const start = drag.current;
           drag.current = null;
+          if (!start || start.moved || !onSelect) return;
+          const box = event.currentTarget.getBoundingClientRect();
+          const { origin, direction } = pixelRay(view, width, frameHeight, [event.clientX - box.left, event.clientY - box.top]);
+          onSelect(pickObject(drawOrder(scheme.objects), origin, direction));
         }}
         onWheel={(event) => {
           if (!camera) zoom(event.deltaY < 0 ? 0.9 : 1 / 0.9);
@@ -292,11 +313,13 @@ export function SchemeVolumeView({
             fontSize: 12,
             px: 0.5,
             borderRadius: 0.5,
-            bgcolor: 'background.paper',
-            color: 'text.primary',
-            opacity: 0.9,
+            bgcolor: item.chosen ? 'primary.main' : 'background.paper',
+            color: item.chosen ? 'primary.contrastText' : 'text.primary',
+            fontWeight: item.chosen ? 600 : undefined,
+            opacity: item.chosen ? 1 : 0.9,
             whiteSpace: 'nowrap'
           }}
+          data-volume-label={item.id}
         >
           {item.name}
         </Box>

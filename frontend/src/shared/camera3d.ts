@@ -75,6 +75,25 @@ export function projectPoint(matrix: Matrix4, point: Vec3, width: number, height
   return [((clip[0] / clip[3] + 1) / 2) * width, ((1 - clip[1] / clip[3]) / 2) * height];
 }
 
+/**
+ * Луч из камеры через пиксель кадра width × height: начало в глазу, направление (не нормированное) по тем же осям,
+ * что у lookAt и perspective. Обратная к projectPoint операция для выбора объекта щелчком.
+ */
+export function pixelRay(camera: Camera3D, width: number, height: number, pixel: [number, number]): { origin: Vec3; direction: Vec3 } {
+  const forward = normalize(sub(camera.target, camera.eye));
+  const up: Vec3 = Math.abs(forward[2]) > 0.999 ? [0, 1, 0] : [0, 0, 1];
+  const right = normalize(cross(forward, up));
+  const cameraUp = cross(right, forward);
+  const aspect = width / Math.max(1, height);
+  const tanY = Math.tan(verticalFov(camera.fov, aspect) / 2);
+  const x = ((2 * pixel[0]) / width - 1) * tanY * aspect;
+  const y = (1 - (2 * pixel[1]) / height) * tanY;
+  return {
+    origin: camera.eye,
+    direction: [0, 1, 2].map((axis) => forward[axis] + right[axis] * x + cameraUp[axis] * y) as Vec3
+  };
+}
+
 /** Камера облёта: вокруг target на расстоянии distance, азимут от востока против часовой и высота угла над горизонтом, градусы. */
 export function orbitCamera(target: Vec3, azimuth: number, elevation: number, distance: number, fov = 50): Camera3D {
   const a = (azimuth * Math.PI) / 180;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cameraMatrix, orbitCamera, projectPoint, verticalFov, type Camera3D } from './camera3d';
+import { cameraMatrix, orbitCamera, pixelRay, projectPoint, verticalFov, type Camera3D } from './camera3d';
 
 describe('камера объёма', () => {
   const camera: Camera3D = { eye: [0, -10, 1.7], target: [0, 0, 1.7], fov: 60 };
@@ -32,5 +32,27 @@ describe('камера объёма', () => {
     const orbit = orbitCamera([0, 0, 0], 270, 0, 10);
     expect(orbit.eye[0]).toBeCloseTo(0);
     expect(orbit.eye[1]).toBeCloseTo(-10);
+  });
+
+  it('луч через пиксель проходит через точку мира, которая в этот пиксель проецируется', () => {
+    for (const view of [camera, orbitCamera([2, 3, 0], 235, 35, 30), { eye: [1, 2, 40], target: [1, 2, 0], fov: 50 } satisfies Camera3D]) {
+      const viewMatrix = cameraMatrix(view, 1200, 600, 40);
+      for (const point of [
+        [0, 0, 1.7],
+        [4, 6, 0],
+        [-3, 5, 2.5]
+      ] as const) {
+        const pixel = projectPoint(viewMatrix, [...point], 1200, 600)!;
+        const { origin, direction } = pixelRay(view, 1200, 600, pixel);
+        const toPoint = [0, 1, 2].map((axis) => point[axis] - origin[axis]);
+        const crossed = [
+          direction[1] * toPoint[2] - direction[2] * toPoint[1],
+          direction[2] * toPoint[0] - direction[0] * toPoint[2],
+          direction[0] * toPoint[1] - direction[1] * toPoint[0]
+        ];
+        expect(Math.hypot(...crossed) / (Math.hypot(...direction) * Math.hypot(...toPoint))).toBeLessThan(1e-9);
+        expect(direction[0] * toPoint[0] + direction[1] * toPoint[1] + direction[2] * toPoint[2]).toBeGreaterThan(0);
+      }
+    }
   });
 });

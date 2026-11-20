@@ -28,6 +28,18 @@ export interface ViewpointHeading {
   end?: number;
 }
 
+/** Своя высота камеры над землёй на первом кадре и, если меняется (кран, дрон), на последнем: метры (0, 500]. */
+export interface ViewpointHeight {
+  start: number;
+  end?: number;
+}
+
+/** Высота камеры по умолчанию, м: съёмка с рук или штатива на уровне глаз. */
+export const DEFAULT_CAMERA_HEIGHT = 1.6;
+/** Границы своей высоты камеры, м (как проверяет Go): от земли до съёмки с дрона. */
+export const MIN_CAMERA_HEIGHT = 0.05;
+export const MAX_CAMERA_HEIGHT = 500;
+
 /** Герой плана на схеме: сущность из референсов плана и её путь. */
 export interface ViewpointSubject extends ViewpointPath {
   entity: string;
@@ -44,6 +56,8 @@ export interface SceneViewpoint {
   camera?: ViewpointPath;
   /** Своё направление камеры; нет — камера целится в героев (aimHeading). */
   heading?: ViewpointHeading;
+  /** Своя высота камеры; нет — уровень глаз (DEFAULT_CAMERA_HEIGHT). */
+  camera_height?: ViewpointHeight;
   /** Герои на схеме; первый — в фокусе (главный в кадре). Камера целится так, чтобы в кадр вошли все. */
   subjects?: ViewpointSubject[];
 }
@@ -254,6 +268,32 @@ export function setFocus(viewpoint: SceneViewpoint, entity: string): SceneViewpo
 export function withoutPoints(viewpoint: SceneViewpoint): SceneViewpoint {
   const { camera: _camera, heading: _heading, subjects: _subjects, ...rest } = viewpoint;
   return rest;
+}
+
+/** Высота камеры на кадре phase, м: своя (на последнем кадре — конец, иначе начало) или уровень глаз. */
+export function cameraHeight(viewpoint: SceneViewpoint, phase: ViewpointPhase): number {
+  const own = viewpoint.camera_height;
+  if (!own) return DEFAULT_CAMERA_HEIGHT;
+  return phase === 'end' ? (own.end ?? own.start) : own.start;
+}
+
+/** Меняется ли высота камеры за план. */
+export function heightMoves(viewpoint: SceneViewpoint): boolean {
+  return viewpoint.camera_height?.end !== undefined;
+}
+
+/**
+ * Своя высота камеры на кадре phase, округлённая до сантиметра и прижатая к границам. Конец, равный началу, не
+ * хранится; уровень глаз без подъёма — тоже: в файле только то, что отличается от умолчания.
+ */
+export function setCameraHeight(viewpoint: SceneViewpoint, phase: ViewpointPhase, metres: number): SceneViewpoint {
+  const value = Math.round(Math.min(MAX_CAMERA_HEIGHT, Math.max(MIN_CAMERA_HEIGHT, metres)) * 100) / 100;
+  const start = phase === 'start' ? value : (viewpoint.camera_height?.start ?? DEFAULT_CAMERA_HEIGHT);
+  const end = phase === 'end' ? value : viewpoint.camera_height?.end;
+  const { camera_height: _height, ...rest } = viewpoint;
+  const keepEnd = end !== undefined && end !== start;
+  if (start === DEFAULT_CAMERA_HEIGHT && !keepEnd) return rest;
+  return { ...rest, camera_height: { start, ...(keepEnd ? { end } : {}) } };
 }
 
 /** Есть ли у пути движение: конец задан и отличается от начала. */

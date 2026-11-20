@@ -297,6 +297,8 @@ export interface CastEntity {
   role: string;
   /** Для связанного референса — управляемая проекция его description; без референса описание принадлежит сущности. */
   appearance: string;
+  /** Рост или высота в метрах; нет ключа — не задан. У мира и локаций не бывает: размеры локации задаёт её схема. */
+  height?: number;
   /** Пути изображений внутри source; первый основной для карточек. */
   images: string[];
   initial_state: Record<string, string>;

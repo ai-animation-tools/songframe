@@ -2,7 +2,9 @@ package cast
 
 import (
 	"errors"
+	"math"
 	"regexp"
+	"slices"
 	"strings"
 
 	"songframe/internal/dynvalue"
@@ -53,6 +55,18 @@ func textPropertyDuplicate(key, kind string) string {
 func textImageMissing(name, image string) string {
 	return name + ": нет файла source/" + image + "."
 }
+func textHeightInvalid(label string) string {
+	return label + ": рост или высота — положительное число метров не больше 500."
+}
+func textHeightNotAllowed(label string) string {
+	return label + ": у мира и локаций роста нет — размеры локации задаёт её схема."
+}
+
+// MaxHeight — верхняя граница роста или высоты сущности, м: заведомо выше любого предмета в кадре.
+const MaxHeight = 500.0
+
+// heightlessKinds — типы без роста: мир сцены — общие условия, а размеры локации задаёт её схема.
+var heightlessKinds = []string{WorldID, "location"}
 
 var (
 	// slug — код сущности, типа и свойства: строчная латиница, цифры и подчёркивание с буквы.
@@ -152,6 +166,13 @@ func Validate(cast any) ([]string, error) {
 				problems = append(problems, textImagePathInvalid(labelText, dynvalue.ToString(image)))
 			}
 		}
+		if height := dynvalue.Get(entity, "height"); height != dynvalue.Undefined {
+			if value, ok := height.(float64); !ok || math.IsNaN(value) || math.IsInf(value, 0) || value <= 0 || value > MaxHeight {
+				problems = append(problems, textHeightInvalid(labelText))
+			} else if kindText, _ := kind.(string); slices.Contains(heightlessKinds, kindText) {
+				problems = append(problems, textHeightNotAllowed(labelText))
+			}
+		}
 		state, err := dynvalue.Entries(dynvalue.Get(entity, "initial_state"))
 		if err != nil {
 			return nil, err
@@ -234,7 +255,8 @@ func validProperty(value any) bool {
 
 // Normalize — строгая проверка типов документа (ответ агента и ручной JSON),
 // затем нормализация полей и проверка Validate. Записываемый документ содержит только
-// schema_version, entities (с восемью полями сущности) и properties — лишние поля отбрасываются.
+// schema_version, entities (с восемью полями сущности и необязательным ростом height) и properties —
+// лишние поля отбрасываются.
 // Ошибка — сообщение отказа сохранения (проблемы через пробел).
 func Normalize(value any, defaults Defaults) (*dynvalue.Object, error) {
 	document, ok := dynvalue.AsObject(value)
@@ -259,6 +281,10 @@ func Normalize(value any, defaults Defaults) (*dynvalue.Object, error) {
 		if valid {
 			state, stateOK := dynvalue.AsObject(entity.Value("initial_state"))
 			valid = isStrings(entity.Value("images")) && stateOK
+			if height := entity.Value("height"); height != dynvalue.Undefined {
+				_, isNumber := height.(float64)
+				valid = valid && isNumber
+			}
 			for _, key := range keysOf(state) {
 				if _, isString := state.Value(key).(string); !isString {
 					valid = false
@@ -312,6 +338,10 @@ func Normalize(value any, defaults Defaults) (*dynvalue.Object, error) {
 		result.Set("role", dynvalue.Trim(text("role")))
 		// Общее описание переносится дословно: правка другого поля не должна менять canonical source.
 		result.Set("appearance", text("appearance"))
+		// Рост — только у сущности, где его задали: отсутствие ключа и есть «не задан».
+		if height := entity.Value("height"); height != dynvalue.Undefined {
+			result.Set("height", height)
+		}
 		result.Set("images", entity.Value("images"))
 		result.Set("initial_state", state)
 		normalized[index] = result
@@ -374,4 +404,34 @@ func References(cast any) (*dynvalue.Object, error) {
 		}
 	}
 	return result, nil
+}
+
+// KeepHeights переносит рост сущностей из previous в документ next, пришедший от агента: рост задаёт
+// человек на странице «Кастинг», агент его не меняет — заданный остаётся, придуманный агентом отбрасывается.
+// Сущности сопоставляются по коду; next меняется на месте и потом проходит Normalize, которая ставит ключ на
+// его место. Документы другой формы пропускаются: их отклонит Normalize.
+func KeepHeights(next, previous any) {
+	heights := map[string]any{}
+	if entities, ok := dynvalue.AsArray(dynvalue.Get(previous, "entities")); ok {
+		for _, entity := range entities {
+			if id, ok := dynvalue.Get(entity, "id").(string); ok {
+				if height := dynvalue.Get(entity, "height"); height != dynvalue.Undefined {
+					heights[id] = height
+				}
+			}
+		}
+	}
+	entities, _ := dynvalue.AsArray(dynvalue.Get(next, "entities"))
+	for _, item := range entities {
+		entity, ok := dynvalue.AsObject(item)
+		if !ok {
+			continue
+		}
+		entity.Delete("height")
+		if id, ok := entity.Value("id").(string); ok {
+			if height, found := heights[id]; found {
+				entity.Set("height", height)
+			}
+		}
+	}
 }

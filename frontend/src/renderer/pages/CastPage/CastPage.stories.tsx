@@ -285,6 +285,26 @@ export const LocalStateFields: Story = {
   }
 };
 
+export const EntityHeight: Story = {
+  name: 'Рост сущности · необязательное число метров, пустое поле снимает рост',
+  tags: ['ci'],
+  parameters: { songframe: referencePageOptions('cast', { stateFields: true }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const screen = within(canvasElement.ownerDocument.body);
+    const field = (await canvas.findAllByRole('spinbutton', { name: castTexts.height }))[0];
+    await expect(field).toHaveValue(null);
+    await userEvent.type(field, '1.25');
+    await userEvent.click(canvas.getByRole('button', { name: commonTexts.save }));
+    await screen.findByText(castTexts.saved);
+    await expect(referencePageSnapshot().cast.entities[0].height).toBe(1.25);
+    // Пустое поле — рост не задан: ключ уходит из файла.
+    await userEvent.clear(canvas.getAllByRole('spinbutton', { name: castTexts.height })[0]);
+    await userEvent.click(canvas.getByRole('button', { name: commonTexts.save }));
+    await waitFor(() => expect(referencePageSnapshot().cast.entities[0]).not.toHaveProperty('height'));
+  }
+};
+
 export const ExternalImageSupport: Story = {
   name: 'Референс — своя опора из кастинга и отмена без изменения сущности',
   tags: ['ci'],

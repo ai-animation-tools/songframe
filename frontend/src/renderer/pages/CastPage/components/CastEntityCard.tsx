@@ -8,11 +8,12 @@ import type { CastEntity, CastProperty, SourceKind } from '@shared/types';
 import { ReferenceImageGenerateButton } from '../../../components/ReferenceImageGenerateButton';
 import { AiProblemAlert } from '../../../components/AiProblemAlert';
 import { StateEditor } from '../../../components';
-import { WORLD } from '../constants';
+import { WORLD, hasHeight } from '../constants';
 import type { CastImageOption } from '../types';
 import { CastEntityIdentityFields } from './CastEntityIdentityFields';
 import { CastEntityImages } from './CastEntityImages';
 import { LinkedText } from '../../../components/LinkedText';
+import { NumberField } from '../../../components/NumberField';
 
 interface CastEntityCardProps {
   entity: CastEntity;
@@ -120,7 +121,31 @@ export function CastEntityCard({
       <AccordionDetails>
         <Stack spacing={2}>
           <CastEntityIdentityFields entity={entity} entities={entities} kinds={kinds} onUpdate={onUpdate} onRename={onRename} />
-          <TextField label={castTexts.role} value={entity.role} onChange={(e) => onUpdate({ role: e.target.value })} placeholder={castTexts.rolePlaceholder} />
+          {hasHeight(entity.kind) ? (
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 220px' }, gap: 1.5, alignItems: 'start' }}>
+              <TextField
+                label={castTexts.role}
+                value={entity.role}
+                onChange={(e) => onUpdate({ role: e.target.value })}
+                placeholder={castTexts.rolePlaceholder}
+              />
+              <NumberField
+                label={castTexts.height}
+                value={entity.height}
+                optional
+                min={0}
+                helperText={castTexts.heightHint}
+                onChange={(height) => onUpdate({ height })}
+              />
+            </Box>
+          ) : (
+            <TextField
+              label={castTexts.role}
+              value={entity.role}
+              onChange={(e) => onUpdate({ role: e.target.value })}
+              placeholder={castTexts.rolePlaceholder}
+            />
+          )}
           <TextField
             label={castTexts.appearance}
             multiline

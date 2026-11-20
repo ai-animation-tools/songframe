@@ -3,7 +3,7 @@ import { commonTexts } from '@shared/texts/common';
 import type { ReactElement } from 'react';
 import { Box, MenuItem, TextField } from '@mui/material';
 import type { CastEntity, SourceKind } from '@shared/types';
-import { WORLD } from '../constants';
+import { WORLD, hasHeight } from '../constants';
 
 interface CastEntityIdentityFieldsProps {
   entity: CastEntity;
@@ -19,7 +19,14 @@ export function CastEntityIdentityFields({ entity, entities, kinds, onUpdate, on
     <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: '2fr 1fr 1.2fr 1fr' }, gap: 1.5, alignItems: 'start' }}>
       <TextField label={commonTexts.title} value={entity.name} onChange={(e) => onUpdate({ name: e.target.value })} />
       <TextField label={castTexts.shortName} value={entity.short_name} onChange={(e) => onUpdate({ short_name: e.target.value })} placeholder={entity.name} />
-      <TextField select label={commonTexts.type} value={entity.kind} onChange={(e) => onUpdate({ kind: e.target.value })} disabled={entity.kind === WORLD}>
+      <TextField
+        select
+        label={commonTexts.type}
+        value={entity.kind}
+        // У мира и локаций роста нет: смена типа на них снимает рост, иначе запись отклонит его.
+        onChange={(e) => onUpdate(hasHeight(e.target.value) ? { kind: e.target.value } : { kind: e.target.value, height: undefined })}
+        disabled={entity.kind === WORLD}
+      >
         {kinds.map((k) => (
           <MenuItem key={k.id} value={k.id} disabled={k.id === WORLD && entities.some((e) => e.kind === WORLD && e.id !== entity.id)}>
             {k.label}

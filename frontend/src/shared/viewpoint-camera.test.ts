@@ -76,4 +76,19 @@ describe('вид из камеры', () => {
     const still = figures[1].triangles.flat().map((point) => point[1]);
     expect((Math.max(...still) + Math.min(...still)) / 2).toBeCloseTo(10, 9);
   });
+
+  it('своя высота камеры и рост героев из кастинга', () => {
+    const single: SceneViewpoint = { ...placed, camera_height: { start: 10, end: 0.3 }, subjects: placed.subjects!.slice(0, 1) };
+    const heights = { hero: 1.2 };
+    const start = viewpointCamera(single, 'start', heights)!;
+    expect(start.eye[2]).toBe(10);
+    // Взгляд на середину роста героя в фокусе: с 10 м камера смотрит вниз.
+    expect(start.target[2]).toBeCloseTo(0.6, 9);
+    expect(viewpointCamera(single, 'end', heights)!.eye[2]).toBe(0.3);
+    const figures = subjectFigures(placed, 'start', heights);
+    expect(figures.map((figure) => figure.measured)).toEqual([true, false]);
+    const top = (index: number): number => Math.max(...figures[index].triangles.flat().map((point) => point[2]));
+    expect(top(0)).toBeCloseTo(1.2, 9);
+    expect(top(1)).toBeCloseTo(FIGURE_HEIGHT, 9);
+  });
 });

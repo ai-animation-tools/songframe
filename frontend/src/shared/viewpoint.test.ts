@@ -15,6 +15,8 @@ import {
   pointAt,
   removePoint,
   setHeading,
+  setCameraHeight,
+  cameraHeight,
   setFocus,
   setPoint,
   sideFromPoints,
@@ -309,5 +311,25 @@ describe('предмет схемы как референс плана', () => {
     expect(linkedShapes(scheme, 'dom')).toHaveLength(2);
     expect(linkedShapes(scheme, 'stol')).toEqual([]);
     expect(linkedShapes(null, 'dom')).toEqual([]);
+  });
+});
+
+describe('высота камеры', () => {
+  const base: SceneViewpoint = { location: 'yard', side: 'south', size: 'wide', camera: { start: [0, 0] } };
+
+  it('по умолчанию уровень глаз, своя — на кадре, уровень глаз без подъёма не хранится', () => {
+    expect(cameraHeight(base, 'start')).toBe(1.6);
+    const low = setCameraHeight(base, 'start', 0.304);
+    expect(low.camera_height).toEqual({ start: 0.3 });
+    expect(cameraHeight(low, 'end')).toBe(0.3);
+    const crane = setCameraHeight(low, 'end', 12);
+    expect(crane.camera_height).toEqual({ start: 0.3, end: 12 });
+    expect(cameraHeight(crane, 'end')).toBe(12);
+    // Конец, равный началу, и уровень глаз без подъёма не пишутся.
+    expect(setCameraHeight(crane, 'end', 0.3).camera_height).toEqual({ start: 0.3 });
+    expect(setCameraHeight(low, 'start', 1.6).camera_height).toBeUndefined();
+    // Подъём с уровня глаз хранит начало явно.
+    expect(setCameraHeight(base, 'end', 5).camera_height).toEqual({ start: 1.6, end: 5 });
+    expect(setCameraHeight(base, 'start', 9999).camera_height).toEqual({ start: 500 });
   });
 });

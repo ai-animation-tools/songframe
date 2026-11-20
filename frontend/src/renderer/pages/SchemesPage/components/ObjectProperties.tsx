@@ -1,25 +1,12 @@
 import { schemesTexts } from '@shared/texts/schemes';
-import { useEffect, useState, type ReactElement } from 'react';
-import {
-  type SxProps,
-  type Theme,
-  Box,
-  Checkbox,
-  FormControlLabel,
-  IconButton,
-  InputAdornment,
-  MenuItem,
-  Paper,
-  Stack,
-  TextField,
-  Tooltip,
-  Typography
-} from '@mui/material';
+import type { ReactElement } from 'react';
+import { Box, Checkbox, FormControlLabel, IconButton, InputAdornment, MenuItem, Paper, Stack, TextField, Tooltip, Typography } from '@mui/material';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import type { SchemeEntity, SchemeObject, SchemePoint, SchemeShape, SchemeSlopeDown, SchemeTop, SchemeTopForm } from '@shared/schemes';
 import { ActionButton } from '../../../components/ActionButton';
 import { objectColor } from '@shared/scheme-editing';
+import { NumberField } from '../../../components/NumberField';
 
 /**
  * Сетка полей свойств: колонки не уже 140 px. В боковой панели справа от холста — две колонки, под широким
@@ -28,53 +15,6 @@ import { objectColor } from '@shared/scheme-editing';
 const FIELDS_GRID = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 1.5, alignItems: 'start' } as const;
 const WIDE_FIELD = { gridColumn: 'span 2' } as const;
 const FULL_ROW = { gridColumn: '1 / -1' } as const;
-
-/**
- * Числовое поле с собственной строкой ввода: промежуточные «-» и «1.» не сбрасываются, число уходит наверх,
- * когда строка разбирается. optional — пустая строка означает «нет значения».
- */
-function NumberField({
-  label,
-  value,
-  onChange,
-  optional = false,
-  helperText,
-  sx
-}: {
-  label: string;
-  value: number | undefined;
-  onChange(value: number | undefined): void;
-  optional?: boolean;
-  helperText?: string;
-  sx?: SxProps<Theme>;
-}): ReactElement {
-  const [text, setText] = useState(value === undefined ? '' : String(value));
-  useEffect(() => {
-    setText((current) => (Number(current) === value && current !== '' ? current : value === undefined ? '' : String(value)));
-  }, [value]);
-  return (
-    <TextField
-      size="small"
-      type="number"
-      label={label}
-      value={text}
-      helperText={helperText}
-      fullWidth
-      sx={sx}
-      inputProps={{ step: 0.1 }}
-      onChange={(event) => {
-        const next = event.target.value;
-        setText(next);
-        if (next.trim() === '') {
-          if (optional) onChange(undefined);
-          return;
-        }
-        const number = Number(next);
-        if (Number.isFinite(number)) onChange(number);
-      }}
-    />
-  );
-}
 
 /** Поля геометрии по типу фигуры: центр, размеры и поворот, координаты точки, ширина и флаги линии. */
 function ShapeFields({ shape, onChange }: { shape: SchemeShape; onChange(shape: SchemeShape): void }): ReactElement {

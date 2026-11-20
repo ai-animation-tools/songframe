@@ -21,6 +21,8 @@ import (
 //   - heading — своё направление взгляда камеры в градусах против часовой стрелки от востока, [0, 360):
 //     start на первом кадре, end — на последнем, если камера поворачивается. Без него камера целится в героев;
 //     с ним — куда указал человек, когда в кадре не только герои.
+//   - camera_height — своя высота камеры над землёй в метрах, (0, 500]: start на первом кадре, end — на
+//     последнем, если камера поднимается или опускается (кран, дрон). Без неё камера на уровне глаз — 1,6 м.
 //   - subjects — герои плана на схеме: entity из references плана, start и необязательный end. Первый —
 //     в фокусе: главный в кадре.
 //
@@ -34,14 +36,17 @@ var ViewpointSizes = []string{"wide", "medium", "close", "detail"}
 
 // viewpointKeys, pathKeys, subjectKeys — допустимые ключи; остальные запрещены, чтобы опечатка не терялась молча.
 var (
-	viewpointKeys = []string{"location", "side", "size", "fov", "camera", "heading", "subjects"}
+	viewpointKeys = []string{"location", "side", "size", "fov", "camera", "heading", "camera_height", "subjects"}
 	pathKeys      = []string{"start", "end"}
-	headingKeys   = []string{"start", "end"}
+	phaseKeys     = []string{"start", "end"}
 	subjectKeys   = []string{"entity", "start", "end"}
 )
 
 func textViewpointShape(shot string) string {
-	return shot + ": точка съёмки — объект с локацией, стороной и крупностью (location, side, size), необязательными fov, camera, heading и subjects."
+	return shot + ": точка съёмки — объект с локацией, стороной и крупностью (location, side, size), необязательными fov, camera, heading, camera_height и subjects."
+}
+func textViewpointCameraHeight(shot string) string {
+	return shot + ": высота камеры camera_height — объект со start и необязательным end, каждый — метры больше 0 и не больше 500."
 }
 func textViewpointHeading(shot string) string {
 	return shot + ": направление камеры heading — объект со start и необязательным end, каждый — градусы от 0 до 360 (360 не входит)."
@@ -104,11 +109,29 @@ func isAngle(value any) bool {
 // isHeading — объект {start, end?} с углами.
 func isHeading(value any) bool {
 	record, ok := dynvalue.AsObject(value)
-	if !ok || slices.ContainsFunc(record.Keys(), func(key string) bool { return !slices.Contains(headingKeys, key) }) || !isAngle(record.Value("start")) {
+	if !ok || slices.ContainsFunc(record.Keys(), func(key string) bool { return !slices.Contains(phaseKeys, key) }) || !isAngle(record.Value("start")) {
 		return false
 	}
 	end := record.Value("end")
 	return end == dynvalue.Undefined || isAngle(end)
+}
+
+// MaxCameraHeight — верхняя граница высоты камеры, м: с запасом выше съёмки с дрона.
+const MaxCameraHeight = 500.0
+
+// isHeight — конечное число метров в (0, MaxCameraHeight].
+func isHeight(value any) bool {
+	return finite(value) && value.(float64) > 0 && value.(float64) <= MaxCameraHeight
+}
+
+// isCameraHeight — объект {start, end?} с высотами камеры.
+func isCameraHeight(value any) bool {
+	record, ok := dynvalue.AsObject(value)
+	if !ok || slices.ContainsFunc(record.Keys(), func(key string) bool { return !slices.Contains(phaseKeys, key) }) || !isHeight(record.Value("start")) {
+		return false
+	}
+	end := record.Value("end")
+	return end == dynvalue.Undefined || isHeight(end)
 }
 
 // isPath — объект {start, end?} с точками; keys — все допустимые ключи объекта.
@@ -162,6 +185,9 @@ func viewpointProblems(shot string, value any, locations []string, references []
 	}
 	if heading := record.Value("heading"); heading != dynvalue.Undefined && !isHeading(heading) {
 		problems = append(problems, textViewpointHeading(shot))
+	}
+	if height := record.Value("camera_height"); height != dynvalue.Undefined && !isCameraHeight(height) {
+		problems = append(problems, textViewpointCameraHeight(shot))
 	}
 	if subjects := record.Value("subjects"); subjects != dynvalue.Undefined {
 		list, ok := dynvalue.AsArray(subjects)

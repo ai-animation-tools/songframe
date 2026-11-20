@@ -318,6 +318,8 @@ export const ViewpointFullscreen: Story = {
     await userEvent.click(within(dialog.getByRole('group', { name: viewpointTexts.target })).getByRole('button', { name: /Сосед/ }));
     clickPreview(preview, 0.5, 0.4);
     await waitFor(() => expect(preview.querySelector('[data-subject="neighbor"] [data-mark="start"]')).not.toBeNull());
+    // У соседа нет роста в кастинге: фигура условная, строка это показывает.
+    await expect(dialog.getByText(viewpointTexts.heightUnknown)).toBeVisible();
     // Поставленного героя можно перетащить: метка переезжает, схема под ней не сдвигается.
     const mark = preview.querySelector('[data-subject="neighbor"] [data-mark="start"]')!;
     const before = mark.getAttribute('cx');
@@ -340,9 +342,16 @@ export const ViewpointFullscreen: Story = {
     await expect(preview.querySelector('[data-camera]')).toBeNull();
     await userEvent.click(fit);
     await waitFor(() => expect(dialog.queryByRole('button', { name: schemesTexts.fit })).toBeNull());
+    // Высота камеры: кнопка типовой высоты и своя высота на последнем кадре (кран).
+    const presets = within(dialog.getByLabelText(viewpointTexts.cameraHeightPresets));
+    await userEvent.click(presets.getByRole('button', { name: viewpointTexts.cameraHeightPreset({ name: viewpointTexts.heightPresets.drone, metres: '10' }) }));
+    await expect(dialog.getByRole('spinbutton', { name: viewpointTexts.cameraHeight })).toHaveValue(10);
+    const end = dialog.getByRole('spinbutton', { name: viewpointTexts.cameraHeightEnd });
+    await userEvent.type(end, '2.5{Enter}');
     // «Сохранить» в шапке окна записывает сценарий; закрытие окна ничего не спрашивает.
     await userEvent.click(dialog.getByRole('button', { name: commonTexts.save }));
     await waitFor(() => expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений сценария: 1'));
+    await expect(scenarioStateInspection().saved.scenes!.scenes.find((shot) => shot.id === 'M03')!.viewpoint!.camera_height).toEqual({ start: 10, end: 2.5 });
     await userEvent.click(dialog.getByRole('button', { name: commonTexts.close }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     // Расстановка живёт только в окне карты; бейдж блока говорит, что герои на схеме.

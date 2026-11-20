@@ -233,7 +233,8 @@ export function referencePageOptions(page: 'sources' | 'cast', options: Referenc
           save: async (_project, input) => {
             castSaves++;
             if (options.failCastSaveOnce && castSaves === 1) throw new Error(REFERENCE_PAGE_SAVE_ERROR);
-            const nextCast = structuredClone(input);
+            // Как ответ Go: JSON без незаданных полей (рост undefined уходит из сущности).
+            const nextCast = JSON.parse(JSON.stringify(input)) as typeof input;
             const nextManifest = structuredClone(savedManifest);
             for (const entity of nextCast.entities) {
               entity.appearance = entity.appearance.trim();

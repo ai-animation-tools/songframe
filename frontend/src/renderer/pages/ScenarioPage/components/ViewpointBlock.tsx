@@ -1,5 +1,6 @@
 import { scenarioTexts } from '@shared/texts/scenario';
 import { useEffect, useMemo, useState, type ReactElement, type ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Accordion,
   AccordionDetails,
@@ -38,7 +39,9 @@ import {
   SIZE_FOV,
   VIEWPOINT_SIDES,
   VIEWPOINT_SIZES,
+  cameraHeight,
   createViewpoint,
+  heightMoves,
   distance,
   footprintView,
   inFrame,
@@ -48,6 +51,7 @@ import {
   pathPoint,
   removePoint,
   setFocus,
+  setCameraHeight,
   setHeading,
   setPoint,
   sideFromPoints,
@@ -70,7 +74,8 @@ import { FullscreenEditorDialog } from '../../../components/FullscreenEditorDial
 import { LinkedText } from '../../../components/LinkedText';
 import { SchemePreview } from '../../../components/SchemePreview';
 import { SchemeVolumeView, type VolumeExtra } from '../../../components/SchemeVolumeView';
-import { EYE_HEIGHT, FIGURE_HEIGHT, subjectFigures, viewpointCamera } from '@shared/viewpoint-camera';
+import { FIGURE_HEIGHT, subjectFigures, viewpointCamera, type FigureHeights } from '@shared/viewpoint-camera';
+import { castEntityRoute } from '../../../components/castRoutes';
 
 const texts = scenarioTexts.viewpoint;
 
@@ -110,32 +115,43 @@ const pathState = (path: ViewpointPath | undefined): string =>
   !path ? texts.notPlaced : moves(path) ? texts.movesBy({ metres: metres(distance(path.start, path.end!)) }) : texts.still;
 
 /**
- * Поле угла обзора: своя строка ввода, угол применяется по уходу из поля или Enter, чтобы промежуточные «1» и «12»
- * не обрезались до наименьшего угла. Внешняя смена угла (крупность, край сектора) переписывает строку.
+ * Числовое поле точки съёмки: своя строка ввода, число применяется по уходу из поля или Enter, чтобы промежуточные
+ * «1» и «0» не обрезались до границы. Внешняя смена значения (крупность, край сектора, кнопка высоты) переписывает
+ * строку. optional — пустая строка применяется как «нет значения» (onCommit(undefined)); иначе пустая возвращает прежнее.
  */
-function FovField({
+function CommitNumberField({
+  label,
   value,
   disabled,
   helperText,
+  optional = false,
+  step = 1,
+  width = 190,
   onCommit
 }: {
-  value: number;
+  label: string;
+  value: number | undefined;
   disabled: boolean;
   helperText: string;
-  onCommit(value: number): void;
+  optional?: boolean;
+  step?: number;
+  width?: number;
+  onCommit(value: number | undefined): void;
 }): ReactElement {
-  const [text, setText] = useState(String(value));
-  useEffect(() => setText(String(value)), [value]);
+  const shown = value === undefined ? '' : String(value);
+  const [text, setText] = useState(shown);
+  useEffect(() => setText(shown), [shown]);
   const commit = (): void => {
     const number = Number(text);
-    if (text.trim() && Number.isFinite(number)) onCommit(number);
-    else setText(String(value));
+    if (!text.trim() && optional) onCommit(undefined);
+    else if (text.trim() && Number.isFinite(number)) onCommit(number);
+    else setText(shown);
   };
   return (
     <TextField
       size="small"
       type="number"
-      label={texts.fov}
+      label={label}
       value={text}
       disabled={disabled}
       helperText={helperText}
@@ -144,12 +160,21 @@ function FovField({
       onKeyDown={(event) => {
         if (event.key === 'Enter') commit();
       }}
-      sx={{ width: 190 }}
+      sx={{ width }}
       // Подсказка читается и у закрытого поля: приглушённый цвет disabled не проходит по контрасту.
-      slotProps={{ htmlInput: { step: 1 }, formHelperText: { sx: { '&.Mui-disabled': { color: 'text.secondary' } } } }}
+      slotProps={{ htmlInput: { step }, formHelperText: { sx: { '&.Mui-disabled': { color: 'text.secondary' } } } }}
     />
   );
 }
+
+/** Подсказки высоты камеры, м: типовые точки съёмки в порядке подъёма. */
+const HEIGHT_PRESETS = [
+  { key: 'ground', metres: 0.3 },
+  { key: 'waist', metres: 1 },
+  { key: 'eyes', metres: 1.6 },
+  { key: 'overhead', metres: 2.5 },
+  { key: 'drone', metres: 10 }
+] as const;
 
 /**
  * Вид из камеры: перспективные кадры объёма схемы из точки камеры — первый и, если камера движется или
@@ -158,11 +183,14 @@ function FovField({
 function CameraView({
   viewpoint,
   scheme,
+  heights,
   editable,
   update
 }: {
   viewpoint: SceneViewpoint;
   scheme: Scheme;
+  /** Рост героев из кастинга. */
+  heights: FigureHeights;
   editable: boolean;
   update(next: SceneViewpoint): void;
 }): ReactElement {
@@ -170,17 +198,22 @@ function CameraView({
   // Кадры пересчитываются только при смене точки съёмки: новый массив фигур перестраивал бы сцену при каждой отрисовке.
   const frames = useMemo(() => {
     const phases: ViewpointPhase[] =
-      moves(viewpoint.camera) || viewpoint.heading?.end !== undefined || (viewpoint.subjects ?? []).some(moves) ? ['start', 'end'] : ['start'];
+      moves(viewpoint.camera) || viewpoint.heading?.end !== undefined || heightMoves(viewpoint) || (viewpoint.subjects ?? []).some(moves)
+        ? ['start', 'end']
+        : ['start'];
     return phases.map((phase) => ({
       phase,
-      camera: viewpointCamera(viewpoint, phase),
-      extras: subjectFigures(viewpoint, phase).map((figure): VolumeExtra => ({
+      camera: viewpointCamera(viewpoint, phase, heights),
+      extras: subjectFigures(viewpoint, phase, heights).map((figure): VolumeExtra => ({
         id: figure.entity,
         triangles: figure.triangles,
         color: figure.focus ? FOCUS_COLOR : SUBJECT_COLOR
       }))
     }));
-  }, [viewpoint]);
+  }, [viewpoint, heights]);
+  const eye = heightMoves(viewpoint)
+    ? `${metres(cameraHeight(viewpoint, 'start'))} → ${metres(cameraHeight(viewpoint, 'end'))}`
+    : metres(cameraHeight(viewpoint, 'start'));
   const unavailable = viewpoint.side === 'top' ? texts.cameraViewTop : !viewpoint.camera ? texts.cameraViewNoCamera : null;
   return (
     <Stack spacing={1} data-camera-view="">
@@ -192,7 +225,7 @@ function CameraView({
       ) : (
         <>
           <Typography variant="body2" color="text.secondary">
-            {texts.cameraViewHint({ eye: metres(EYE_HEIGHT), figure: metres(FIGURE_HEIGHT) })}
+            {texts.cameraViewHint({ eye, figure: metres(FIGURE_HEIGHT) })}
           </Typography>
           <Stack direction="row" spacing={1.5} sx={{ alignItems: 'stretch' }}>
             <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
@@ -248,6 +281,7 @@ function ViewpointPlacement({
   heroes,
   linked,
   nameOf,
+  heights,
   editable,
   height,
   update
@@ -255,6 +289,8 @@ function ViewpointPlacement({
   viewpoint: SceneViewpoint;
   scheme: Scheme;
   heroes: readonly CastEntity[];
+  /** Рост сущностей кастинга: фигуры вида из камеры и отметка «рост не задан». */
+  heights: FigureHeights;
   /** Референсы плана, нарисованные на схеме объектами: только строки состояния. */
   linked: readonly LinkedReference[];
   nameOf(id: string): string;
@@ -262,6 +298,7 @@ function ViewpointPlacement({
   height: number;
   update(next: SceneViewpoint): void;
 }): ReactElement {
+  const navigate = useNavigate();
   const [target, setTarget] = useState<ViewpointTarget>('camera');
   const [phase, setPhase] = useState<ViewpointPhase>('start');
   const camera = viewpoint.camera;
@@ -272,6 +309,8 @@ function ViewpointPlacement({
     const fromCamera = path && camera && key !== 'camera' ? texts.fromCamera({ metres: metres(distance(camera.start, path.start)) }) : null;
     // Герой вне угла обзора на первом кадре или, если кто-то движется, на последнем.
     const lastDiffers = moves(camera) || moves(path) || viewpoint.heading?.end !== undefined;
+    // Герой без роста в кастинге: фигура условная — заметная отметка со ссылкой на сущность.
+    const unmeasured = key !== 'camera' && !!path && heights[key] === undefined;
     const outOf =
       key === 'camera' || !path
         ? null
@@ -293,6 +332,18 @@ function ViewpointPlacement({
         </Typography>
         <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}>
           {focus ? <Chip size="small" variant="outlined" icon={<StarIcon color="secondary" />} label={texts.focus} /> : null}
+          {unmeasured ? (
+            <Tooltip title={texts.heightUnknownHint}>
+              <Chip
+                size="small"
+                color="warning"
+                variant="outlined"
+                label={texts.heightUnknown}
+                onClick={() => navigate(castEntityRoute(key))}
+                data-height-unknown={key}
+              />
+            </Tooltip>
+          ) : null}
           {outOf ? (
             <Tooltip title={texts.outOfFrameHint}>
               <Chip size="small" color="warning" icon={<CropFreeIcon />} label={texts.outOfFrame({ end: outOf === 'end' })} data-out-of-frame={outOf} />
@@ -450,7 +501,7 @@ function ViewpointPlacement({
           {linked.map((item) => linkedRow(item))}
         </Stack>
       </Paper>
-      <CameraView viewpoint={viewpoint} scheme={scheme} editable={editable} update={update} />
+      <CameraView viewpoint={viewpoint} scheme={scheme} heights={heights} editable={editable} update={update} />
     </Stack>
   );
 }
@@ -508,6 +559,10 @@ export function ViewpointBlock({
     .map((id) => entities.find((entity) => entity.id === id))
     .filter((entity): entity is CastEntity => !!entity && entity.kind !== 'location' && entity.kind !== 'world');
   const nameOf = (id: string): string => entities.find((entity) => entity.id === id)?.name || id;
+  const heights = useMemo<FigureHeights>(
+    () => Object.fromEntries(entities.flatMap((entity) => (entity.height === undefined ? [] : [[entity.id, entity.height]]))),
+    [entities]
+  );
   const editable = !locked || unlocked;
   const locationScheme = viewpoint ? (schemes?.schemes.find((scheme) => scheme.location === viewpoint.location) ?? null) : null;
   // Референс, нарисованный на схеме объектом, точкой не ставят: место и размер берутся из схемы. Уже поставленный
@@ -572,11 +627,12 @@ export function ViewpointBlock({
             </MenuItem>
           ))}
         </TextField>
-        <FovField
+        <CommitNumberField
+          label={texts.fov}
           value={fov}
           disabled={!editable || current.side === 'top'}
           helperText={current.fov === undefined ? texts.fovDefault({ fov: SIZE_FOV[current.size] }) : texts.fovOwn({ fov: SIZE_FOV[current.size] })}
-          onCommit={(value) => onChange(withFov(current, value))}
+          onCommit={(value) => value !== undefined && onChange(withFov(current, value))}
         />
         {current.fov !== undefined && editable ? (
           <Button size="small" startIcon={<RestartAltIcon />} onClick={() => onChange(withFov(current, undefined))} sx={{ mt: 0.5 }}>
@@ -584,6 +640,42 @@ export function ViewpointBlock({
           </Button>
         ) : null}
       </Stack>
+      {current.side === 'top' ? null : (
+        <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap', alignItems: 'flex-start' }} data-camera-height="">
+          <CommitNumberField
+            label={texts.cameraHeight}
+            value={cameraHeight(current, 'start')}
+            disabled={!editable}
+            step={0.1}
+            helperText={current.camera_height ? texts.cameraHeightOwn : texts.cameraHeightDefault}
+            onCommit={(value) => value !== undefined && onChange(setCameraHeight(current, 'start', value))}
+          />
+          <CommitNumberField
+            label={texts.cameraHeightEnd}
+            value={current.camera_height?.end}
+            disabled={!editable}
+            optional
+            step={0.1}
+            helperText={texts.cameraHeightEndHint}
+            onCommit={(value) =>
+              onChange(value === undefined ? setCameraHeight(current, 'end', cameraHeight(current, 'start')) : setCameraHeight(current, 'end', value))
+            }
+          />
+          <Stack direction="row" spacing={0.5} useFlexGap sx={{ flexWrap: 'wrap', mt: 0.5 }} aria-label={texts.cameraHeightPresets}>
+            {HEIGHT_PRESETS.map((preset) => (
+              <Chip
+                key={preset.key}
+                size="small"
+                variant={cameraHeight(current, 'start') === preset.metres ? 'filled' : 'outlined'}
+                color={cameraHeight(current, 'start') === preset.metres ? 'primary' : 'default'}
+                label={texts.cameraHeightPreset({ name: texts.heightPresets[preset.key], metres: metres(preset.metres) })}
+                disabled={!editable}
+                onClick={() => onChange(setCameraHeight(current, 'start', preset.metres))}
+              />
+            ))}
+          </Stack>
+        </Stack>
+      )}
       {derivedSide ? (
         <Typography variant="body2" color="text.secondary">
           {texts.sideFromPoints({ side: texts.sides[current.side] })}
@@ -677,6 +769,7 @@ export function ViewpointBlock({
                         heroes={placeable}
                         linked={linked}
                         nameOf={nameOf}
+                        heights={heights}
                         editable={editable}
                         height={Math.max(MIN_MAP_HEIGHT, window.innerHeight - 330)}
                         update={update}

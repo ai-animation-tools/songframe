@@ -23,7 +23,9 @@ export const castTexts = {
     entityStructureInvalid: 'cast.json: неверная структура сущности.',
     propertiesInvalid: 'cast.json: неверный словарь свойств.',
     propertyDuplicate: ({ key, kind }: { key: string; kind: string }) => `cast.json: свойство ${key} повторяется в словаре типа ${kind}.`,
-    imageMissing: ({ name, image }: { name: string; image: string }) => `${name}: нет файла source/${image}.`
+    imageMissing: ({ name, image }: { name: string; image: string }) => `${name}: нет файла source/${image}.`,
+    heightInvalid: ({ label }: { label: string }) => `${label}: рост или высота — положительное число метров не больше 500.`,
+    heightNotAllowed: ({ label }: { label: string }) => `${label}: у мира и локаций роста нет — размеры локации задаёт её схема.`
   },
   world: 'Мир сцены',
   supplemented: 'Кастинг дополнен из исходников',
@@ -40,6 +42,8 @@ export const castTexts = {
   stateCount: ({ count }: { count: number }) => `состояние: ${count}`,
   noState: 'без состояния',
   role: 'Роль в сюжете',
+  height: 'Рост или высота, м',
+  heightHint: 'Для вида из камеры и фактов кадра агентам. Пусто — не задан: на карте героя заменит условная фигура 1,7 м.',
   rolePlaceholder: 'главный герой и рассказчик; самоуверенный водитель',
   appearance: 'Внешность и неизменные правила',
   sharedDescriptionHint: 'Общее описание с референсом с тем же кодом на странице «Исходники». Изменения передаются при сохранении.',

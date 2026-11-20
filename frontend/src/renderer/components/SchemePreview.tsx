@@ -53,7 +53,7 @@ type Drag = 'fov' | 'heading' | { target: ViewpointTarget; phase: ViewpointPhase
 const SECTOR_PX = 160;
 
 /**
- * Мини-схема вида сверху: объекты схемы (их не изменить), север, камера с сектором обзора и герои. Движение
+ * Мини-схема локации: объекты схемы (их не изменить), север, камера с сектором обзора и герои. Движение
  * показано пунктирной стрелкой к месту на последнем кадре, там же пунктиром сектор конца. Щелчок по пустому месту
  * сообщает точку в метрах (onPick); до щелчка под курсором виден сектор будущей камеры (ghost). Метки камеры и героев
  * на обоих кадрах тянутся мышью (onMove), край сектора первого кадра меняет угол обзора (onFov), ромб посередине дуги
@@ -142,12 +142,12 @@ export function SchemePreview({
   // Ползунок — степень двойки от вписанного масштаба: шаг ползунка одинаково заметен при любом размере схемы.
   const zoom = Math.log2(viewport.scale / fitted.scale);
 
-  const screen = (point: SchemePoint): SchemePoint => toScreen(point, viewport, 'top');
+  const screen = (point: SchemePoint): SchemePoint => toScreen(point, viewport);
   const path = (points: SchemePoint[], closed: boolean): string =>
     points.map((point, index) => `${index ? 'L' : 'M'}${screen(point).join(' ')}`).join(' ') + (closed ? ' Z' : '');
   const worldOf = (event: PointerEvent): SchemePoint => {
     const rect = event.currentTarget.closest('svg')!.getBoundingClientRect();
-    const world = toWorld([event.clientX - rect.left, event.clientY - rect.top], viewport, 'top');
+    const world = toWorld([event.clientX - rect.left, event.clientY - rect.top], viewport);
     return [snap(world[0], 0.1), snap(world[1], 0.1)];
   };
 

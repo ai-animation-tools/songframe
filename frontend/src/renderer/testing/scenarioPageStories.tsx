@@ -226,15 +226,14 @@ function pageCast(long: boolean): CastFile {
   };
 }
 
-/** Вид сверху у локации ворот: забор с воротами, дом с высотой, дорога-полоса. */
+/** Схема локации ворот: забор с воротами, дом с высотой, дорога-полоса. */
 export const SCENARIO_STORY_SCHEMES: SchemesFile = {
   schema_version: 1,
   schemes: [
     {
       id: 's1',
       location: 'gate',
-      title: 'Ворота сверху',
-      view: 'top',
+      title: 'Ворота',
       objects: [
         // Дом связан с референсом плана: в точке съёмки его не ставят, место и размер берутся из схемы.
         { id: 'o1', name: 'Дом', height: 6, entity: 'house', shape: { type: 'rect', center: [0, 12], size: [10, 8], rotation: 0 } },
@@ -724,7 +723,7 @@ export function scenarioPageOptions({
             model.publish();
           }
         },
-        // Схемы локаций для блока «Точка съёмки»: вид сверху у локации ворот.
+        // Схемы локаций для блока «Точка съёмки»: схема у локации ворот.
         schemes: {
           view: async (project) => {
             validate(project);
@@ -738,7 +737,7 @@ export function scenarioPageOptions({
                 { id: 'gate', name: 'Старые ворота', kind: 'location' }
               ],
               problems: [],
-              withoutTop: []
+              withoutScheme: []
             };
           }
         },

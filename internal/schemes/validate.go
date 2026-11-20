@@ -24,11 +24,8 @@ func textTitleMissing(id string) string { return "Схема " + id + ": нуж�
 func textUnknownLocation(id, location string) string {
 	return "Схема " + id + ": локации " + location + " нет в кастинге."
 }
-func textUnknownView(id, view string) string {
-	return "Схема " + id + ": неизвестный вид «" + view + "»."
-}
-func textViewRepeated(location, view string) string {
-	return "У локации " + location + " два вида «" + view + "»: у каждой стороны одна схема."
+func textSchemeRepeated(location string) string {
+	return "У локации " + location + " две схемы: у локации одна схема."
 }
 func textObjectIDMissing(scheme string) string {
 	return "Схема " + scheme + ": объект без кода."
@@ -106,7 +103,7 @@ func (c Catalog) hasLocation(id string) bool {
 }
 
 // Validate — проблемы документа: версия, коды и названия схем и объектов, локации и сущности
-// кастинга, по одной схеме на вид у локации, полнота и конечность геометрии. Пустой список —
+// кастинга, одна схема у локации, полнота и конечность геометрии. Пустой список —
 // документ пригоден для записи.
 func Validate(document Document, catalog Catalog) []string {
 	problems := []string{}
@@ -114,7 +111,7 @@ func Validate(document Document, catalog Catalog) []string {
 		problems = append(problems, textSchemaVersion)
 	}
 	seen := map[string]bool{}
-	views := map[string]bool{}
+	locations := map[string]bool{}
 	for _, scheme := range document.Schemes {
 		id := strings.TrimSpace(scheme.ID)
 		if id == "" {
@@ -128,14 +125,10 @@ func Validate(document Document, catalog Catalog) []string {
 		}
 		if !catalog.hasLocation(scheme.Location) {
 			problems = append(problems, textUnknownLocation(id, scheme.Location))
+		} else if locations[scheme.Location] {
+			problems = append(problems, textSchemeRepeated(scheme.Location))
 		}
-		if !slices.Contains(Views, scheme.View) {
-			problems = append(problems, textUnknownView(id, scheme.View))
-		} else if key := scheme.Location + "\x00" + scheme.View; views[key] {
-			problems = append(problems, textViewRepeated(scheme.Location, scheme.View))
-		} else {
-			views[key] = true
-		}
+		locations[scheme.Location] = true
 		problems = append(problems, validateObjects(scheme, catalog)...)
 	}
 	return problems
@@ -167,23 +160,19 @@ func validateObjects(scheme Scheme, catalog Catalog) []string {
 		if problem := shapeProblem(object.Shape); problem != "" {
 			problems = append(problems, textObjectShape(scheme.ID, id, problem))
 		}
-		if problem := volumeProblem(scheme.View, object); problem != "" {
+		if problem := volumeProblem(object); problem != "" {
 			problems = append(problems, textObjectShape(scheme.ID, id, problem))
 		}
 	}
 	return problems
 }
 
-// volumeProblem — что не так с объёмом объекта; пустая строка — объёма нет или он верный. Объём
-// задаётся только на виде сверху: виды сбоку — плоские силуэты. Верх бывает у площадных фигур
+// volumeProblem — что не так с объёмом объекта; пустая строка — объёма нет или он верный. Верх бывает у площадных фигур
 // (гребень и скат — у прямоугольника, шатёр — у прямоугольника, эллипса и многоугольника), эллипсоид —
 // у прямоугольника и эллипса с высотой и без верха.
-func volumeProblem(view string, object Object) string {
+func volumeProblem(object Object) string {
 	if object.Elevation == nil && object.Top == nil && object.Body == "" {
 		return ""
-	}
-	if view != ViewTop {
-		return "подъём над землёй, верх и тело задаются только на виде сверху"
 	}
 	if object.Elevation != nil && (!finite(*object.Elevation) || *object.Elevation < 0) {
 		return "подъём над землёй должен быть неотрицательным числом"

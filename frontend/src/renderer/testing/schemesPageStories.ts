@@ -6,15 +6,14 @@ import { draftEnvelope } from '@shared/drafts';
 /** Локальная модель страницы «Схемы»: локации кастинга, сохранённый документ и счётчик записей. */
 export const SCHEMES_STORY_PROJECT = '/mock/projects/schemes-story';
 
-/** Вид сверху перекрёстка со всеми типами фигур: дорога, дом с высотой, сквер, плавная трасса, клумба, светофор. */
+/** Схема перекрёстка со всеми типами фигур: дорога, дом с высотой, сквер, плавная трасса, клумба, светофор. */
 export const SCHEMES_STORY_DOCUMENT: SchemesFile = {
   schema_version: 1,
   schemes: [
     {
       id: 's1',
       location: 'crossing',
-      title: 'Перекрёсток сверху',
-      view: 'top',
+      title: 'Перекрёсток',
       objects: [
         { id: 'o1', name: 'Проезжая часть', shape: { type: 'rect', center: [5, 20], size: [10, 60], rotation: 0 } },
         { id: 'o2', name: 'Длинный дом', height: 12, shape: { type: 'rect', center: [22, 30], size: [16, 40], rotation: 0 } },
@@ -85,7 +84,7 @@ export function schemesStorySnapshot(): SchemesStorySnapshot {
 }
 
 export interface SchemesStoryOptions {
-  /** Документа ещё нет: у всех локаций нет вида сверху. */
+  /** Документа ещё нет: ни у одной локации нет схемы. */
   empty?: boolean;
   /** Файл повреждён: страница показывает ошибку и не даёт сохранить. */
   damaged?: boolean;
@@ -127,9 +126,7 @@ export function schemesPageOptions(options: SchemesStoryOptions = {}): StoryOpti
         locations,
         entities: [...locations.map((location) => ({ ...location, kind: 'location' })), { id: 'hero', name: 'Герой', kind: 'character' }],
         problems: options.damaged ? ['plan/schemes.json повреждён.'] : [],
-        withoutTop: locations
-          .filter((location) => !saved.schemes.some((scheme) => scheme.location === location.id && scheme.view === 'top'))
-          .map((item) => item.id)
+        withoutScheme: locations.filter((location) => !saved.schemes.some((scheme) => scheme.location === location.id)).map((item) => item.id)
       });
       return {
         projects: {

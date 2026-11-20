@@ -30,8 +30,8 @@ describe('коды и создание', () => {
   });
 
   it('создаёт схему и объект со свободными кодами', () => {
-    const scheme = createScheme({ schema_version: 1, schemes: [{ id: 's1', location: 'a', title: 'А', view: 'top', objects: [] }] }, 'b', 'west', '  Сквер ');
-    expect(scheme).toEqual({ id: 's2', location: 'b', title: 'Сквер', view: 'west', objects: [] });
+    const scheme = createScheme({ schema_version: 1, schemes: [{ id: 's1', location: 'a', title: 'А', objects: [] }] }, 'b', '  Сквер ');
+    expect(scheme).toEqual({ id: 's2', location: 'b', title: 'Сквер', objects: [] });
     const object = createObject(
       { ...scheme, objects: [{ id: 'o1', name: 'x', shape: { type: 'point', at: [0, 0] } }] },
       { type: 'point', at: [1, 1] },

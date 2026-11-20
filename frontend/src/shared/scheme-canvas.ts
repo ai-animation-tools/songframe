@@ -1,10 +1,8 @@
-import type { SchemePoint, SchemeViewKind } from './schemes';
+import type { SchemePoint } from './schemes';
 
 /**
- * Пересчёт между метрами схемы и пикселями холста. Ось Y экрана направлена вниз, поэтому север (вид сверху) и высота
- * (виды сбоку) откладываются вверх. На видах сбоку горизонталь хранит координату мира; направление на экране — как
- * у стоящего наблюдателя: с юга запад слева (X растёт вправо), с севера восток слева (X растёт влево), с востока юг
- * слева (Y растёт вправо), с запада север слева (Y растёт влево).
+ * Пересчёт между метрами схемы и пикселями холста: восток вправо, север вверх (ось Y экрана направлена вниз, поэтому
+ * север откладывается против неё).
  */
 
 /** Видимая область холста: центр в метрах, масштаб в пикселях на метр и размер в пикселях. */
@@ -15,24 +13,14 @@ export interface Viewport {
   height: number;
 }
 
-/** Знак горизонтальной оси: +1 — координата растёт вправо, −1 — влево. */
-export function horizontalSign(view: SchemeViewKind): 1 | -1 {
-  return view === 'north' || view === 'west' ? -1 : 1;
-}
-
 /** Пиксели холста для точки схемы. */
-export function toScreen(point: SchemePoint, viewport: Viewport, view: SchemeViewKind): SchemePoint {
-  const sign = horizontalSign(view);
-  return [viewport.width / 2 + sign * (point[0] - viewport.center[0]) * viewport.scale, viewport.height / 2 - (point[1] - viewport.center[1]) * viewport.scale];
+export function toScreen(point: SchemePoint, viewport: Viewport): SchemePoint {
+  return [viewport.width / 2 + (point[0] - viewport.center[0]) * viewport.scale, viewport.height / 2 - (point[1] - viewport.center[1]) * viewport.scale];
 }
 
 /** Точка схемы для пикселей холста; обратна toScreen. */
-export function toWorld(pixel: SchemePoint, viewport: Viewport, view: SchemeViewKind): SchemePoint {
-  const sign = horizontalSign(view);
-  return [
-    viewport.center[0] + (sign * (pixel[0] - viewport.width / 2)) / viewport.scale,
-    viewport.center[1] - (pixel[1] - viewport.height / 2) / viewport.scale
-  ];
+export function toWorld(pixel: SchemePoint, viewport: Viewport): SchemePoint {
+  return [viewport.center[0] + (pixel[0] - viewport.width / 2) / viewport.scale, viewport.center[1] - (pixel[1] - viewport.height / 2) / viewport.scale];
 }
 
 /** Масштаб, при котором рамка [minX, minY, maxX, maxY] с полями помещается в холст. */
@@ -45,13 +33,12 @@ export function fitViewport(bounds: [number, number, number, number] | null, wid
 }
 
 /** Вид, приближенный в factor раз вокруг пикселя pixel: точка схемы под ним остаётся на месте. */
-export function zoomViewportAt(viewport: Viewport, pixel: SchemePoint, factor: number, view: SchemeViewKind): Viewport {
-  const anchor = toWorld(pixel, viewport, view);
+export function zoomViewportAt(viewport: Viewport, pixel: SchemePoint, factor: number): Viewport {
+  const anchor = toWorld(pixel, viewport);
   const scale = clampScale(viewport.scale * factor);
   const next = { ...viewport, scale };
-  const moved = toScreen(anchor, next, view);
-  const sign = horizontalSign(view);
-  return { ...next, center: [next.center[0] + (sign * (moved[0] - pixel[0])) / scale, next.center[1] - (moved[1] - pixel[1]) / scale] };
+  const moved = toScreen(anchor, next);
+  return { ...next, center: [next.center[0] + (moved[0] - pixel[0]) / scale, next.center[1] - (moved[1] - pixel[1]) / scale] };
 }
 
 /** Масштаб в разумных пределах: от 0,5 до 200 пикселей на метр. */

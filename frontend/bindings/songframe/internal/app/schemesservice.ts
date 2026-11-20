@@ -24,7 +24,7 @@ export function Save(project: string, document: schemes$0.Document): $Cancellabl
 }
 
 /**
- * View — schemes.view: схемы, локации кастинга, проблемы и локации без вида сверху; ничего не пишет.
+ * View — schemes.view: схемы, локации кастинга, проблемы и локации без схемы; ничего не пишет.
  */
 export function View(project: string): $CancellablePromise<schemes$0.View> {
     return $Call.ByID(1681248383, project);

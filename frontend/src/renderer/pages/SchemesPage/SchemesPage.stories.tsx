@@ -18,36 +18,40 @@ const canvasOf = async (canvas: Canvas, title: string): Promise<SVGSVGElement> =
 const saveButton = (canvas: Canvas): HTMLElement => canvas.getByRole('button', { name: commonTexts.save });
 
 export const Overview: Story = {
-  name: 'Вид сверху · все фигуры, локация без вида сверху отмечена',
+  name: 'Схема · все фигуры, локация без схемы отмечена',
   tags: ['ci'],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const svg = await canvasOf(canvas, 'Перекрёсток сверху');
+    const svg = await canvasOf(canvas, 'Перекрёсток');
     for (const id of ['o1', 'o2', 'o3', 'o4', 'o5', 'o6', 'o7']) await expect(svg.querySelector(`[data-object-id="${id}"]`)).not.toBeNull();
     await expect(within(svg as unknown as HTMLElement).getByText('Длинный дом')).toBeInTheDocument();
     const street = canvasElement.querySelector<HTMLElement>('[data-location-id="street"]')!;
-    await expect(within(street).getByText(schemesTexts.withoutTop)).toBeVisible();
+    await expect(within(street).getByText(schemesTexts.withoutScheme)).toBeVisible();
     await expect(saveButton(canvas)).toBeDisabled();
     await expect(canvas.getByText(schemesTexts.noSelection)).toBeVisible();
   }
 };
 
-export const CreateSideView: Story = {
-  name: 'Новая схема вида с запада · черновик и запись',
+export const CreateScheme: Story = {
+  name: 'Новая схема второй локации · черновик и запись',
   tags: ['ci'],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await canvasOf(canvas, 'Перекрёсток сверху');
-    await userEvent.click(canvas.getByRole('tab', { name: new RegExp(schemesTexts.views.west) }));
-    await expect(await canvas.findByText(schemesTexts.createTitle({ view: schemesTexts.views.west }))).toBeVisible();
-    await userEvent.type(canvas.getByRole('textbox', { name: schemesTexts.createName }), 'Сквер с запада');
+    await canvasOf(canvas, 'Перекрёсток');
+    await expect(canvas.getByText(schemesTexts.objectsCount({ count: 7 }))).toBeVisible();
+    await userEvent.click(canvasElement.querySelector<HTMLElement>('[data-location-id="street"]')!);
+    await expect(await canvas.findByText(schemesTexts.createTitle)).toBeVisible();
+    // Вкладок сторон нет: у локации одна схема.
+    await expect(canvas.queryByRole('tab')).toBeNull();
+    await userEvent.type(canvas.getByRole('textbox', { name: schemesTexts.createName }), 'Улица');
     await userEvent.click(canvas.getByRole('button', { name: schemesTexts.create }));
-    await canvasOf(canvas, 'Сквер с запада');
-    await expect(canvas.getByText(schemesTexts.viewHints.west)).toBeVisible();
+    await canvasOf(canvas, 'Улица');
     await expect(canvas.getByText(commonTexts.unsavedChanges)).toBeVisible();
+    await expect(canvas.getByText(schemesTexts.objectsCount({ count: 0 }))).toBeVisible();
     await userEvent.click(saveButton(canvas));
     await waitFor(() => expect(schemesStorySnapshot().saves).toBe(1));
-    await expect(schemesStorySnapshot().document.schemes.map((scheme) => scheme.view)).toEqual(['top', 'west']);
+    await expect(schemesStorySnapshot().document.schemes.map((scheme) => scheme.location)).toEqual(['crossing', 'street']);
+    await expect(canvas.queryByText(schemesTexts.withoutScheme)).toBeNull();
   }
 };
 
@@ -56,7 +60,7 @@ export const DrawAndEdit: Story = {
   tags: ['ci'],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const svg = await canvasOf(canvas, 'Перекрёсток сверху');
+    const svg = await canvasOf(canvas, 'Перекрёсток');
     await userEvent.click(canvas.getByRole('button', { name: schemesTexts.tools.rect }));
     await expect(canvas.getByText(schemesTexts.toolHints.rect)).toBeVisible();
     // Ввод в поле свойств прокручивает страницу: положение холста берётся заново перед каждым жестом.
@@ -109,7 +113,7 @@ export const LineHitArea: Story = {
   tags: ['ci'],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const svg = await canvasOf(canvas, 'Перекрёсток сверху');
+    const svg = await canvasOf(canvas, 'Перекрёсток');
     await expect(svg.querySelector('[data-scale-label]')?.textContent).toMatch(/^Клетка \d+(,\d+)? м/);
     const line = svg.querySelector<SVGPathElement>('[data-object-id="o3"] path[stroke-width]')!.getBoundingClientRect();
     // Щелчок в 6 пикселях от линии ограждения.
@@ -128,7 +132,7 @@ export const ObjectColor: Story = {
   tags: ['ci'],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const svg = await canvasOf(canvas, 'Перекрёсток сверху');
+    const svg = await canvasOf(canvas, 'Перекрёсток');
     const pick = async (id: string): Promise<HTMLInputElement> => {
       fireEvent.pointerDown(svg.querySelector(`[data-object-id="${id}"] path`)!, { pointerId: 1 });
       fireEvent.pointerUp(svg, { pointerId: 1 });
@@ -150,13 +154,13 @@ export const ObjectColor: Story = {
 };
 
 export const EmptyProject: Story = {
-  name: 'Схем ещё нет · создание вида сверху',
+  name: 'Схем ещё нет · создание схемы',
   tags: ['ci'],
   parameters: { songframe: schemesPageOptions({ empty: true }) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(await canvas.findByText(schemesTexts.createTitle({ view: schemesTexts.views.top }))).toBeVisible();
-    await expect(canvas.getAllByText(schemesTexts.withoutTop)).toHaveLength(2);
+    await expect(await canvas.findByText(schemesTexts.createTitle)).toBeVisible();
+    await expect(canvas.getAllByText(schemesTexts.withoutScheme)).toHaveLength(2);
   }
 };
 
@@ -185,25 +189,25 @@ export const Fullscreen: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const page = within(canvasElement.ownerDocument.body);
-    await canvasOf(canvas, 'Перекрёсток сверху');
+    await canvasOf(canvas, 'Перекрёсток');
     await userEvent.click(canvas.getByRole('button', { name: commonTexts.fullscreen.open }));
     const dialog = within(await page.findByRole('dialog', { name: schemesTexts.fullscreenTitle({ location: 'Перекрёсток' }) }));
-    await canvasOf(dialog, 'Перекрёсток сверху');
+    await canvasOf(dialog, 'Перекрёсток');
     // В окне нет кнопки «Во весь экран», а холст выше, чем на странице.
     await expect(dialog.queryByRole('button', { name: commonTexts.fullscreen.open })).toBeNull();
     const title = dialog.getByRole('textbox', { name: schemesTexts.schemeTitle });
     await userEvent.type(title, ' вечером');
     // Правка в окне сразу уходит во временный файл.
-    await waitFor(() => expect(schemesStorySnapshot().draft).toContain('Перекрёсток сверху вечером'));
+    await waitFor(() => expect(schemesStorySnapshot().draft).toContain('Перекрёсток вечером'));
     await userEvent.click(dialog.getByRole('button', { name: commonTexts.save }));
     await waitFor(() => expect(schemesStorySnapshot().saves).toBe(1));
     // Закрытие ничего не теряет и не спрашивает.
     await userEvent.click(dialog.getByRole('button', { name: commonTexts.close }));
     await waitFor(() => expect(page.queryByRole('dialog')).not.toBeInTheDocument());
-    await expect(schemesStorySnapshot().document.schemes[0].title).toBe('Перекрёсток сверху вечером');
+    await expect(schemesStorySnapshot().document.schemes[0].title).toBe('Перекрёсток вечером');
     // Сохранение удаляет временный файл.
     await waitFor(() => expect(schemesStorySnapshot().draft).toBeNull());
-    await canvasOf(canvas, 'Перекрёсток сверху вечером');
+    await canvasOf(canvas, 'Перекрёсток вечером');
   }
 };
 
@@ -238,7 +242,7 @@ export const DraftDiscard: Story = {
     await userEvent.click(confirm.getByRole('button', { name: commonTexts.draft.discard }));
     await waitFor(() => expect(schemesStorySnapshot().draft).toBeNull());
     await expect(canvas.queryByText(commonTexts.draft.title)).toBeNull();
-    await canvasOf(canvas, 'Перекрёсток сверху');
+    await canvasOf(canvas, 'Перекрёсток');
     await expect(saveButton(canvas)).toBeDisabled();
   }
 };
@@ -250,7 +254,7 @@ export const RememberView: Story = {
     const canvas = within(canvasElement);
     const page = within(canvasElement.ownerDocument.body);
     const scaleOf = (root: ParentNode): string => root.querySelector('[data-scale-label]')!.textContent ?? '';
-    const svg = await canvasOf(canvas, 'Перекрёсток сверху');
+    const svg = await canvasOf(canvas, 'Перекрёсток');
     const fitted = scaleOf(svg);
     const box = svg.getBoundingClientRect();
     for (let index = 0; index < 8; index++) fireEvent.wheel(svg, { deltaY: -100, clientX: box.left + box.width / 2, clientY: box.top + box.height / 2 });
@@ -259,14 +263,14 @@ export const RememberView: Story = {
     // Другая локация и обратно: редактор создаётся заново, вид берётся из запомненного.
     await userEvent.click(canvasElement.querySelector<HTMLElement>('[data-location-id="street"]')!);
     await userEvent.click(canvasElement.querySelector<HTMLElement>('[data-location-id="crossing"]')!);
-    await waitFor(async () => expect(scaleOf(await canvasOf(canvas, 'Перекрёсток сверху'))).toBe(zoomed));
+    await waitFor(async () => expect(scaleOf(await canvasOf(canvas, 'Перекрёсток'))).toBe(zoomed));
     // Во весь экран холст больше, но масштаб тот же.
     await userEvent.click(canvas.getByRole('button', { name: commonTexts.fullscreen.open }));
     const dialog = within(await page.findByRole('dialog', { name: schemesTexts.fullscreenTitle({ location: 'Перекрёсток' }) }));
-    await expect(scaleOf(await canvasOf(dialog, 'Перекрёсток сверху'))).toBe(zoomed);
+    await expect(scaleOf(await canvasOf(dialog, 'Перекрёсток'))).toBe(zoomed);
     // «Показать всё» возвращает вписанный вид.
     await userEvent.click(dialog.getByRole('button', { name: schemesTexts.fit }));
-    await waitFor(async () => expect(scaleOf(await canvasOf(dialog, 'Перекрёсток сверху'))).not.toBe(zoomed));
+    await waitFor(async () => expect(scaleOf(await canvasOf(dialog, 'Перекрёсток'))).not.toBe(zoomed));
   }
 };
 
@@ -276,7 +280,7 @@ export const Volume: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const page = within(canvasElement.ownerDocument.body);
-    const svg = await canvasOf(canvas, 'Перекрёсток сверху');
+    const svg = await canvasOf(canvas, 'Перекрёсток');
     const volume = schemesTexts.volume;
     fireEvent.pointerDown(svg.querySelector('[data-object-id="o2"] path')!, { pointerId: 1 });
     fireEvent.pointerUp(svg, { pointerId: 1 });
@@ -306,7 +310,7 @@ export const Volume: Story = {
     await expect(within(view).getByText('Длинный дом')).toBeInTheDocument();
     await expect(canvas.getByRole('button', { name: schemesTexts.tools.rect })).toBeDisabled();
     // Выбор в объёме: щелчок мимо объектов снимает выбор, щелчок по дому под его подписью снова открывает свойства.
-    const scene = within(view).getByRole('application', { name: schemesTexts.volumeView.label({ title: 'Перекрёсток сверху' }) });
+    const scene = within(view).getByRole('application', { name: schemesTexts.volumeView.label({ title: 'Перекрёсток' }) });
     const click = (x: number, y: number): void => {
       fireEvent.pointerDown(scene, { clientX: x, clientY: y, pointerId: 1 });
       fireEvent.pointerUp(scene, { clientX: x, clientY: y, pointerId: 1 });
@@ -320,7 +324,7 @@ export const Volume: Story = {
     await expect(await canvas.findByRole('combobox', { name: volume.top })).toHaveTextContent(volume.topForms.ridge);
     // Облёт с клавиатуры не ломает сцену.
     within(view)
-      .getByRole('application', { name: schemesTexts.volumeView.label({ title: 'Перекрёсток сверху' }) })
+      .getByRole('application', { name: schemesTexts.volumeView.label({ title: 'Перекрёсток' }) })
       .focus();
     await userEvent.keyboard('{ArrowLeft}{ArrowUp}+');
     await expect(canvasElement.querySelector('[data-volume-view]')).toHaveAttribute('data-orbit', '225,40');
@@ -333,6 +337,6 @@ export const Volume: Story = {
     const house = schemesStorySnapshot().document.schemes[0].objects.find((object) => object.id === 'o2');
     await expect(house?.top).toEqual({ form: 'ridge', rise: 4, axis: 'y' });
     await userEvent.click(canvas.getByRole('button', { name: schemesTexts.displayPlan }));
-    await canvasOf(canvas, 'Перекрёсток сверху');
+    await canvasOf(canvas, 'Перекрёсток');
   }
 };

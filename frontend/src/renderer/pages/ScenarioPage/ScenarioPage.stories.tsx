@@ -192,7 +192,7 @@ const clickPreview = (preview: Element, x: number, y: number): void => {
   fireEvent.pointerUp(preview, at);
 };
 const previewOf = async (screen: Screen, scope: Screen = screen): Promise<SVGSVGElement> =>
-  (await scope.findByRole('application', { name: viewpointTexts.preview({ title: 'Ворота сверху' }) })) as unknown as SVGSVGElement;
+  (await scope.findByRole('application', { name: viewpointTexts.preview({ title: 'Ворота' }) })) as unknown as SVGSVGElement;
 
 export const ViewpointSet: Story = {
   name: 'Точка съёмки · карта во весь экран: камера и герои, дом со схемы, сторона по точкам, движение, свой угол и запись',

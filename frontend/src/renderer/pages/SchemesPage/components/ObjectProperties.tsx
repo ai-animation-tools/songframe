@@ -172,7 +172,7 @@ function withForm(top: SchemeTop | undefined, form: SchemeTopForm): SchemeTop {
 }
 
 /**
- * Поля объёма объекта вида сверху: подъём над землёй, верх и округлое тело. Показываются только допустимые для
+ * Поля объёма объекта: подъём над землёй, верх и округлое тело. Показываются только допустимые для
  * фигуры формы; эллипсоид и верх взаимоисключающие.
  */
 function VolumeFields({ object, onChange }: { object: SchemeObject; onChange(object: SchemeObject): void }): ReactElement {
@@ -271,17 +271,14 @@ function VolumeFields({ object, onChange }: { object: SchemeObject; onChange(obj
   );
 }
 
-/** Свойства выбранного объекта схемы: название, высота, цвет, связь с сущностью кастинга и геометрия; удаление объекта. */
+/** Свойства выбранного объекта схемы: название, высота, объём, цвет, связь с сущностью кастинга и геометрия; удаление объекта. */
 export function ObjectProperties({
   object,
   entities,
-  volume = false,
   onChange,
   onDelete
 }: {
   object: SchemeObject | null;
-  /** Схема вида сверху: у объекта есть поля объёма. */
-  volume?: boolean;
   /** Сущности кастинга, с которыми можно связать объект (без локации самой схемы и мира сцены). */
   entities: readonly SchemeEntity[];
   onChange(object: SchemeObject): void;
@@ -360,7 +357,7 @@ export function ObjectProperties({
         </Box>
         <Typography variant="subtitle2">{schemesTexts.shapeType({ type: schemesTexts.tools[object.shape.type] })}</Typography>
         <ShapeFields shape={object.shape} onChange={(shape) => onChange({ ...object, shape })} />
-        {volume ? <VolumeFields object={object} onChange={onChange} /> : null}
+        <VolumeFields object={object} onChange={onChange} />
         <Stack direction="row" spacing={1.5} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.5 }}>
           <ActionButton color="error" startIcon={<DeleteOutlineIcon />} onClick={onDelete}>
             {schemesTexts.deleteObject}

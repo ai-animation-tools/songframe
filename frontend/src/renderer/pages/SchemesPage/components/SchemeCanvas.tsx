@@ -1,7 +1,7 @@
 import { schemesTexts } from '@shared/texts/schemes';
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactElement } from 'react';
 import { Box, useTheme } from '@mui/material';
-import type { Scheme, SchemeObject, SchemePoint, SchemeShape, SchemeShapeType, SchemeViewKind } from '@shared/schemes';
+import type { Scheme, SchemeObject, SchemePoint, SchemeShape, SchemeShapeType } from '@shared/schemes';
 import {
   appendPoint,
   createObject,
@@ -96,7 +96,6 @@ export function SchemeCanvas({
   onToolCancel(): void;
 }): ReactElement {
   const theme = useTheme();
-  const view: SchemeViewKind = scheme.view;
   const boxRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [width, setWidth] = useState(800);
@@ -156,21 +155,21 @@ export function SchemeCanvas({
       const rect = svg.getBoundingClientRect();
       const pixel: SchemePoint = [event.clientX - rect.left, event.clientY - rect.top];
       chosen.current = true;
-      setViewport((current) => zoomViewportAt(current, pixel, event.deltaY < 0 ? 1.15 : 1 / 1.15, view));
+      setViewport((current) => zoomViewportAt(current, pixel, event.deltaY < 0 ? 1.15 : 1 / 1.15));
     };
     svg.addEventListener('wheel', wheel, { passive: false });
     return () => svg.removeEventListener('wheel', wheel);
-  }, [view]);
+  }, []);
 
   const current: Viewport = { ...viewport, width, height };
   const step = gridStep(current.scale);
-  const screen = (point: SchemePoint): SchemePoint => toScreen(point, current, view);
+  const screen = (point: SchemePoint): SchemePoint => toScreen(point, current);
   const pixelOf = (event: PointerEvent): SchemePoint => {
     const rect = svgRef.current!.getBoundingClientRect();
     return [event.clientX - rect.left, event.clientY - rect.top];
   };
   const worldOf = (event: PointerEvent): SchemePoint => {
-    const world = toWorld(pixelOf(event), current, view);
+    const world = toWorld(pixelOf(event), current);
     return [snap(world[0], step), snap(world[1], step)];
   };
   const replace = (id: string, shape: SchemeShape): void =>
@@ -231,11 +230,10 @@ export function SchemeCanvas({
     if (!drag) return;
     if (drag.kind === 'pan') {
       const pixel = pixelOf(event);
-      const sign = view === 'north' || view === 'west' ? -1 : 1;
       chosen.current = true;
       setViewport((value) => ({
         ...value,
-        center: [drag.center[0] - (sign * (pixel[0] - drag.from[0])) / value.scale, drag.center[1] + (pixel[1] - drag.from[1]) / value.scale]
+        center: [drag.center[0] - (pixel[0] - drag.from[0]) / value.scale, drag.center[1] + (pixel[1] - drag.from[1]) / value.scale]
       }));
     } else if (drag.kind === 'move') {
       const dx = snap(world[0] - drag.from[0], step);
@@ -280,7 +278,7 @@ export function SchemeCanvas({
   };
 
   // Сетка видимой области в метрах.
-  const corners = [toWorld([0, 0], current, view), toWorld([width, height], current, view)];
+  const corners = [toWorld([0, 0], current), toWorld([width, height], current)];
   const [minX, maxX] = [Math.min(corners[0][0], corners[1][0]), Math.max(corners[0][0], corners[1][0])];
   const [minY, maxY] = [Math.min(corners[0][1], corners[1][1]), Math.max(corners[0][1], corners[1][1])];
   const lines: ReactElement[] = [];
@@ -446,14 +444,6 @@ export function SchemeCanvas({
         onKeyDown={key}
       >
         <g>{lines}</g>
-        {view !== 'top' ? (
-          <g>
-            <line x1={0} x2={width} y1={screen([0, 0])[1]} y2={screen([0, 0])[1]} stroke={theme.palette.text.secondary} strokeWidth={2} />
-            <text x={8} y={screen([0, 0])[1] + 14} fontSize={11} fill={theme.palette.text.secondary}>
-              {schemesTexts.ground}
-            </text>
-          </g>
-        ) : null}
         {ordered.map((object) => (
           <g key={object.id} data-object-id={object.id}>
             {renderShape(object)}
@@ -482,14 +472,12 @@ export function SchemeCanvas({
             })
           : null}
         {preview()}
-        {view === 'top' ? (
-          <g transform={`translate(${width - 28} 32)`} style={{ pointerEvents: 'none' }}>
-            <path d="M0 -18 L7 4 L0 0 L-7 4 Z" fill={theme.palette.text.primary} />
-            <text y={18} textAnchor="middle" fontSize={12} fontWeight={600} fill={theme.palette.text.primary}>
-              {schemesTexts.north}
-            </text>
-          </g>
-        ) : null}
+        <g transform={`translate(${width - 28} 32)`} style={{ pointerEvents: 'none' }}>
+          <path d="M0 -18 L7 4 L0 0 L-7 4 Z" fill={theme.palette.text.primary} />
+          <text y={18} textAnchor="middle" fontSize={12} fontWeight={600} fill={theme.palette.text.primary}>
+            {schemesTexts.north}
+          </text>
+        </g>
         {sizeLabel()}
         <g style={{ pointerEvents: 'none' }}>
           <rect x={6} y={height - 30} width={statusWidth} height={24} rx={4} fill={theme.palette.background.paper} stroke={theme.palette.divider} />

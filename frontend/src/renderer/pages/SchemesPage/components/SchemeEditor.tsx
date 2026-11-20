@@ -1,7 +1,7 @@
 import { schemesTexts } from '@shared/texts/schemes';
 import { commonTexts } from '@shared/texts/common';
 import { useLayoutEffect, useRef, useState, type ReactElement, type RefObject } from 'react';
-import { Alert, AlertTitle, Box, Paper, Stack, Tab, Tabs, TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material';
+import { Alert, AlertTitle, Box, Paper, Stack, TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CropSquareIcon from '@mui/icons-material/CropSquare';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -12,7 +12,7 @@ import PentagonOutlinedIcon from '@mui/icons-material/PentagonOutlined';
 import PlaceIcon from '@mui/icons-material/Place';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
-import { SCHEME_VIEWS, type Scheme, type SchemeEntity, type SchemeLocation, type SchemeViewKind } from '@shared/schemes';
+import type { Scheme, SchemeEntity, SchemeLocation } from '@shared/schemes';
 import { ActionButton } from '../../../components/ActionButton';
 import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 import { ObjectProperties } from './ObjectProperties';
@@ -96,7 +96,7 @@ function useEditorLayout(
 }
 
 /**
- * Схемы одной локации: вкладки видов, создание недостающей схемы, название, удаление, холст с инструментами
+ * Схема одной локации: создание, если её ещё нет, название, удаление, холст с инструментами или объём в 3D
  * и свойства выбранного объекта. Все правки — в черновике страницы; запись — общей кнопкой «Сохранить».
  * На странице редактор предлагает открыться во весь экран (onFullscreen); в окне (inDialog) панель инструментов
  * липнет к верху прокрутки окна, а stickyTop — высота шапки окна над ней.
@@ -104,9 +104,7 @@ function useEditorLayout(
 export function SchemeEditor({
   location,
   entities,
-  schemes,
-  view,
-  onView,
+  scheme,
   onCreate,
   onChange,
   onDelete,
@@ -118,11 +116,9 @@ export function SchemeEditor({
   location: SchemeLocation;
   /** Сущности кастинга для связи объекта. */
   entities: readonly SchemeEntity[];
-  /** Схемы этой локации. */
-  schemes: readonly Scheme[];
-  view: SchemeViewKind;
-  onView(view: SchemeViewKind): void;
-  onCreate(view: SchemeViewKind, title: string): void;
+  /** Схема этой локации; нет — редактор предлагает её создать. */
+  scheme: Scheme | null;
+  onCreate(title: string): void;
   onChange(scheme: Scheme): void;
   onDelete(scheme: Scheme): void;
   /** Открыть редактор во весь экран; нет — кнопки нет (редактор уже в окне). */
@@ -133,15 +129,13 @@ export function SchemeEditor({
   /** Отступ закреплённой панели инструментов под шапкой и панелью действий страницы. */
   stickyTop: number;
 }): ReactElement {
-  const scheme = schemes.find((item) => item.view === view) ?? null;
   const [title, setTitle] = useState('');
   const [tool, setTool] = useState<SchemeTool>('select');
   const [selected, setSelected] = useState<string | null>(null);
   const [fitSignal, setFitSignal] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  // Вид сверху показывается планом для правки или объёмом в 3D; свойства объекта доступны в обоих.
+  // Схема показывается планом для правки или объёмом в 3D; свойства объекта доступны в обоих.
   const [volume, setVolume] = useState(false);
-  const showVolume = volume && view === 'top';
   const object = scheme?.objects.find((item) => item.id === selected) ?? null;
   const name = location.name || location.id;
   const { rootRef, toolbarRef, canvasRef, wide, canvasHeight } = useEditorLayout(stickyTop, !!scheme);
@@ -149,33 +143,13 @@ export function SchemeEditor({
   return (
     <Stack ref={rootRef} spacing={1.5} sx={{ minWidth: 0 }}>
       <Typography variant="h6">{name}</Typography>
-      <Tabs
-        value={view}
-        onChange={(_, next: SchemeViewKind) => (setSelected(null), setTool('select'), onView(next))}
-        variant="scrollable"
-        allowScrollButtonsMobile
-      >
-        {SCHEME_VIEWS.map((item) => {
-          const exists = schemes.some((candidate) => candidate.view === item);
-          return (
-            <Tab
-              key={item}
-              value={item}
-              label={schemesTexts.views[item]}
-              // Вида ещё нет: значок «добавить» вместо приглушённого цвета, который не проходит по контрасту.
-              icon={exists ? undefined : <AddIcon fontSize="small" />}
-              iconPosition="end"
-            />
-          );
-        })}
-      </Tabs>
       <Typography variant="body2" color="text.secondary">
-        {schemesTexts.viewHints[view]}
+        {schemesTexts.hint}
       </Typography>
       {!scheme ? (
         <Paper variant="outlined" sx={{ p: 2 }}>
           <Stack spacing={1.5} sx={{ maxWidth: 520 }}>
-            <Typography variant="subtitle1">{schemesTexts.createTitle({ view: schemesTexts.views[view] })}</Typography>
+            <Typography variant="subtitle1">{schemesTexts.createTitle}</Typography>
             <TextField size="small" label={schemesTexts.createName} value={title} onChange={(event) => setTitle(event.target.value)} />
             <Box>
               <ActionButton
@@ -185,7 +159,7 @@ export function SchemeEditor({
                 disabled={!title.trim()}
                 disabledReason={title.trim() ? null : schemesTexts.createName}
                 onClick={() => {
-                  onCreate(view, title);
+                  onCreate(title);
                   setTitle('');
                 }}
               >
@@ -220,24 +194,22 @@ export function SchemeEditor({
                   onChange={(event) => onChange({ ...scheme, title: event.target.value })}
                   sx={{ minWidth: 280 }}
                 />
-                {view === 'top' ? (
-                  <ToggleButtonGroup
-                    size="small"
-                    exclusive
-                    value={showVolume ? 'volume' : 'plan'}
-                    onChange={(_, next: 'plan' | 'volume' | null) => next && setVolume(next === 'volume')}
-                    aria-label={schemesTexts.display}
-                  >
-                    <ToggleButton value="plan">{schemesTexts.displayPlan}</ToggleButton>
-                    <ToggleButton value="volume" data-volume-toggle="">
-                      {schemesTexts.displayVolume}
-                    </ToggleButton>
-                  </ToggleButtonGroup>
-                ) : null}
                 <ToggleButtonGroup
                   size="small"
                   exclusive
-                  disabled={showVolume}
+                  value={volume ? 'volume' : 'plan'}
+                  onChange={(_, next: 'plan' | 'volume' | null) => next && setVolume(next === 'volume')}
+                  aria-label={schemesTexts.display}
+                >
+                  <ToggleButton value="plan">{schemesTexts.displayPlan}</ToggleButton>
+                  <ToggleButton value="volume" data-volume-toggle="">
+                    {schemesTexts.displayVolume}
+                  </ToggleButton>
+                </ToggleButtonGroup>
+                <ToggleButtonGroup
+                  size="small"
+                  exclusive
+                  disabled={volume}
                   value={tool}
                   onChange={(_, next: SchemeTool | null) => next && setTool(next)}
                   aria-label={schemesTexts.tools.select}
@@ -252,8 +224,8 @@ export function SchemeEditor({
                 </ToggleButtonGroup>
                 <ActionButton
                   startIcon={<FitScreenIcon />}
-                  disabled={showVolume}
-                  disabledReason={showVolume ? schemesTexts.volumeView.noFit : null}
+                  disabled={volume}
+                  disabledReason={volume ? schemesTexts.volumeView.noFit : null}
                   onClick={() => setFitSignal((value) => value + 1)}
                 >
                   {schemesTexts.fit}
@@ -269,8 +241,8 @@ export function SchemeEditor({
                 </ActionButton>
               </Stack>
               <Alert severity="info" variant="outlined" sx={{ py: 0 }}>
-                <AlertTitle sx={{ mb: 0 }}>{showVolume ? schemesTexts.displayVolume : schemesTexts.tools[tool]}</AlertTitle>
-                {showVolume ? schemesTexts.volumeView.modeHint : schemesTexts.toolHints[tool]}
+                <AlertTitle sx={{ mb: 0 }}>{volume ? schemesTexts.displayVolume : schemesTexts.tools[tool]}</AlertTitle>
+                {volume ? schemesTexts.volumeView.modeHint : schemesTexts.toolHints[tool]}
               </Alert>
             </Stack>
           </Paper>
@@ -282,7 +254,7 @@ export function SchemeEditor({
                 : { display: 'grid', gap: 1.5 }
             }
           >
-            {showVolume ? (
+            {volume ? (
               <SchemeVolumeView
                 scheme={scheme}
                 label={schemesTexts.volumeView.label({ title: scheme.title })}
@@ -308,7 +280,6 @@ export function SchemeEditor({
             <Box sx={wide ? { maxHeight: canvasHeight, overflowY: 'auto' } : undefined} data-object-properties="">
               <ObjectProperties
                 object={object}
-                volume={view === 'top'}
                 entities={entities.filter((item) => item.id !== location.id)}
                 onChange={(next) => onChange({ ...scheme, objects: scheme.objects.map((item) => (item.id === next.id ? next : item)) })}
                 onDelete={() => {
@@ -320,7 +291,7 @@ export function SchemeEditor({
           </Box>
           <ConfirmationDialog
             open={confirmDelete}
-            title={schemesTexts.deleteSchemeTitle({ title: scheme.title || schemesTexts.views[view] })}
+            title={schemesTexts.deleteSchemeTitle({ title: scheme.title || name })}
             description={schemesTexts.deleteSchemeText}
             confirmLabel={schemesTexts.deleteScheme}
             confirmIcon={<DeleteOutlineIcon />}

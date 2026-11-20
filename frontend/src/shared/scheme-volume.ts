@@ -2,7 +2,7 @@ import type { Scheme, SchemeObject, SchemePoint, SchemeShape } from './schemes';
 import { ellipseOutline, rectCorners, smoothCurve } from './scheme-editing';
 
 /**
- * Объём схемы вида сверху: треугольники всех объектов в метрах мира (X — восток, Y — север, Z — вверх). Из них
+ * Объём схемы: треугольники всех объектов в метрах мира (X — восток, Y — север, Z — вверх). Из них
  * рисуется 3D-просмотр схемы и вид из камеры точки съёмки; по ним же считаются факты кадра. Формы объёма описаны в
  * `docs/schemes.md#объём`, допустимые сочетания проверяет Go (`internal/schemes`), здесь они уже верны.
  *
@@ -266,7 +266,7 @@ function outlineOf(shape: SchemeShape): SchemePoint[] | null {
   }
 }
 
-/** Треугольники одного объекта вида сверху. Линия без высоты и ширины и точка без высоты объёма не имеют. */
+/** Треугольники одного объекта схемы. Линия без высоты и ширины и точка без высоты объёма не имеют. */
 export function objectVolume(object: SchemeObject): Triangle[] {
   const { shape } = object;
   const z0 = object.elevation ?? 0;

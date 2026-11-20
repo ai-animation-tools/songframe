@@ -13,7 +13,7 @@ type SchemesService struct{}
 // NewSchemesService создаёт сервис схем.
 func NewSchemesService() *SchemesService { return &SchemesService{} }
 
-// View — schemes.view: схемы, локации кастинга, проблемы и локации без вида сверху; ничего не пишет.
+// View — schemes.view: схемы, локации кастинга, проблемы и локации без схемы; ничего не пишет.
 func (s *SchemesService) View(project string) (schemes.View, error) {
 	return wire.Done(schemes.ViewProject(project))
 }

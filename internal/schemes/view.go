@@ -14,16 +14,16 @@ type View struct {
 	Entities []Entity `json:"entities"`
 	// Problems — проблемы документа.
 	Problems []string `json:"problems"`
-	// WithoutTop — ID локаций без обязательного вида сверху: страница отмечает их в списке,
-	// а не перечисляет проблемами — у нового клипа их много, и это обычное состояние работы.
-	WithoutTop []string `json:"withoutTop"`
+	// WithoutScheme — ID локаций без схемы: страница отмечает их в списке, а не перечисляет
+	// проблемами — у нового клипа их много, и это обычное состояние работы.
+	WithoutScheme []string `json:"withoutScheme"`
 }
 
 // ViewProject — схемы проекта для страницы. Повреждённый файл даёт Damaged и проблему,
-// остальное — проблемы проверки и локации кастинга без вида сверху.
+// остальное — проблемы проверки и локации кастинга без схемы.
 func ViewProject(project string) (View, error) {
 	catalog := LoadCatalog(project)
-	view := View{Document: Empty(), Locations: catalog.Locations, Entities: catalog.Linkable, Problems: []string{}, WithoutTop: []string{}}
+	view := View{Document: Empty(), Locations: catalog.Locations, Entities: catalog.Linkable, Problems: []string{}, WithoutScheme: []string{}}
 	document, missing, err := Read(project)
 	if err == errDamaged {
 		view.Damaged = true
@@ -36,17 +36,17 @@ func ViewProject(project string) (View, error) {
 	view.Document, view.Missing = document, missing
 	view.Problems = append(view.Problems, Validate(document, catalog)...)
 	for _, location := range catalog.Locations {
-		if !hasView(document, location.ID, ViewTop) {
-			view.WithoutTop = append(view.WithoutTop, location.ID)
+		if !hasScheme(document, location.ID) {
+			view.WithoutScheme = append(view.WithoutScheme, location.ID)
 		}
 	}
 	return view, nil
 }
 
-// hasView — у локации есть схема данного вида.
-func hasView(document Document, location, kind string) bool {
+// hasScheme — у локации есть схема.
+func hasScheme(document Document, location string) bool {
 	for _, scheme := range document.Schemes {
-		if scheme.Location == location && scheme.View == kind {
+		if scheme.Location == location {
 			return true
 		}
 	}

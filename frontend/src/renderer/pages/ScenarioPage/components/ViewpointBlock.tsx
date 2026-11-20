@@ -457,7 +457,7 @@ function ViewpointPlacement({
 
 /**
  * Блок «Точка съёмки» редактора плана: свёрнут, в заголовке заметный бейдж. Внутри только кнопка «Открыть карту»:
- * локация, сторона, крупность, угол обзора, расстановка камеры и героев на мини-схеме вида сверху и вид из камеры
+ * локация, сторона, крупность, угол обзора, расстановка камеры и героев на мини-схеме и вид из камеры
  * живут в окне во весь экран, чтобы не раздувать сценарий плана. Камера целится в героев или по своему направлению;
  * сторона по точкам считается сама.
  * У принятого плана блок закрыт: правка открывается после подтверждения с описанием риска, дальше — обычное окно
@@ -509,13 +509,13 @@ export function ViewpointBlock({
     .filter((entity): entity is CastEntity => !!entity && entity.kind !== 'location' && entity.kind !== 'world');
   const nameOf = (id: string): string => entities.find((entity) => entity.id === id)?.name || id;
   const editable = !locked || unlocked;
-  const top = viewpoint ? (schemes?.schemes.find((scheme) => scheme.location === viewpoint.location && scheme.view === 'top') ?? null) : null;
+  const locationScheme = viewpoint ? (schemes?.schemes.find((scheme) => scheme.location === viewpoint.location) ?? null) : null;
   // Референс, нарисованный на схеме объектом, точкой не ставят: место и размер берутся из схемы. Уже поставленный
   // раньше остаётся среди героев, чтобы его можно было убрать.
   const placed = (id: string): boolean => !!viewpoint?.subjects?.some((subject) => subject.entity === id);
   const linked: LinkedReference[] = heroes
     .filter((entity) => !placed(entity.id))
-    .map((entity) => ({ id: entity.id, name: entity.name || entity.id, shapes: linkedShapes(top, entity.id) }))
+    .map((entity) => ({ id: entity.id, name: entity.name || entity.id, shapes: linkedShapes(locationScheme, entity.id) }))
     .filter((item) => item.shapes.length > 0);
   const placeable = heroes.filter((entity) => !linked.some((item) => item.id === entity.id));
   const fov = viewpoint ? viewpointFov(viewpoint) : 0;
@@ -670,10 +670,10 @@ export function ViewpointBlock({
                     {fields(viewpoint)}
                     {schemesError ? (
                       <Alert severity="error">{texts.schemesError({ error: schemesError })}</Alert>
-                    ) : top ? (
+                    ) : locationScheme ? (
                       <ViewpointPlacement
                         viewpoint={viewpoint}
-                        scheme={top}
+                        scheme={locationScheme}
                         heroes={placeable}
                         linked={linked}
                         nameOf={nameOf}
@@ -683,7 +683,7 @@ export function ViewpointBlock({
                       />
                     ) : schemes ? (
                       <Alert severity="info">
-                        <LinkedText text={texts.noTop} />
+                        <LinkedText text={texts.noScheme} />
                       </Alert>
                     ) : null}
                   </Stack>

@@ -7,7 +7,7 @@ import { ellipseOutline, rectCorners } from './scheme-editing';
  * точкам и расстояния считаются здесь из точек и поэтому не расходятся с ними. Проверку формы при сохранении
  * выполняет Go (`internal/scenario/viewpoint.go`).
  *
- * Координаты — метры вида сверху: X на восток, Y на север. Углы — градусы против часовой стрелки от востока.
+ * Координаты — метры схемы локации: X на восток, Y на север. Углы — градусы против часовой стрелки от востока.
  */
 
 export const VIEWPOINT_SIDES = ['north', 'east', 'south', 'west', 'top'] as const;
@@ -282,9 +282,9 @@ export function fovThrough(at: SchemePoint, heading: number, point: SchemePoint)
   return Math.abs(angleFrom(heading, headingBetween(at, point) ?? heading)) * 2;
 }
 
-/** Есть ли у локации схема вида сверху. */
-export function hasTopScheme(schemes: SchemesFile | null, location: string): boolean {
-  return !!schemes?.schemes.some((scheme) => scheme.location === location && scheme.view === 'top');
+/** Есть ли у локации схема. */
+export function hasScheme(schemes: SchemesFile | null, location: string): boolean {
+  return !!schemes?.schemes.some((scheme) => scheme.location === location);
 }
 
 /**
@@ -293,12 +293,12 @@ export function hasTopScheme(schemes: SchemesFile | null, location: string): boo
  */
 export function createViewpoint(locations: readonly string[], schemes: SchemesFile | null): SceneViewpoint | null {
   if (!locations.length) return null;
-  const withTop = locations.filter((location) => hasTopScheme(schemes, location));
-  return { location: withTop.length === 1 ? withTop[0] : locations[0], side: 'south', size: 'wide' };
+  const drawn = locations.filter((location) => hasScheme(schemes, location));
+  return { location: drawn.length === 1 ? drawn[0] : locations[0], side: 'south', size: 'wide' };
 }
 
 /**
- * Контур фигуры на виде сверху и замкнут ли он: углы прямоугольника, контур эллипса, вершины многоугольника и линии,
+ * Контур фигуры схемы и замкнут ли он: углы прямоугольника, контур эллипса, вершины многоугольника и линии,
  * точка. Нужен референсам плана, которые нарисованы на схеме объектом: их место и размер берутся из контура.
  */
 export function shapeFootprint(shape: SchemeShape): { points: SchemePoint[]; closed: boolean } {
@@ -389,7 +389,7 @@ export function footprintView(viewpoint: SceneViewpoint, phase: ViewpointPhase, 
   return { distance: around ? 0 : nearest, inFrame };
 }
 
-/** Фигуры вида сверху scheme, связанные с сущностью entity; пусто — референс не нарисован на схеме. */
+/** Фигуры схемы scheme, связанные с сущностью entity; пусто — референс не нарисован на схеме. */
 export function linkedShapes(scheme: Scheme | null, entity: string): SchemeShape[] {
   return scheme ? scheme.objects.filter((object) => object.entity === entity).map((object) => object.shape) : [];
 }

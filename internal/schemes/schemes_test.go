@@ -37,10 +37,10 @@ func newProject(t *testing.T) string {
 func number(value float64) *float64 { return &value }
 func point(x, y float64) *Point     { return &Point{x, y} }
 
-// sample — вид сверху перекрёстка со всеми типами фигур и вид с запада.
+// sample — схема перекрёстка со всеми типами фигур и пустая схема улицы.
 func sample() Document {
 	return Document{SchemaVersion: 1, Schemes: []Scheme{
-		{ID: "s1", Location: "crossing", Title: "Перекрёсток сверху", View: ViewTop, Objects: []Object{
+		{ID: "s1", Location: "crossing", Title: "Перекрёсток", Objects: []Object{
 			{ID: "o1", Name: "Проезжая часть", Shape: Shape{Type: ShapeRect, Center: point(5, 40), Size: point(10, 120), Rotation: number(0)}},
 			{ID: "o2", Name: "Дом", Height: number(12), Entity: "street", Top: &Top{Form: TopRidge, Rise: 4, Axis: "y"}, Shape: Shape{Type: ShapeRect, Center: point(22, 54), Size: point(16, 92)}},
 			{ID: "o3", Name: "Клумба", Shape: Shape{Type: ShapeEllipse, Center: point(20, 0), Radii: point(2, 2)}},
@@ -49,7 +49,7 @@ func sample() Document {
 			{ID: "o6", Name: "Светофор", Height: number(3.5), Shape: Shape{Type: ShapePoint, At: point(10.5, 7)}},
 			{ID: "o7", Name: "Крона", Height: number(4), Elevation: number(2), Body: BodyEllipsoid, Shape: Shape{Type: ShapeEllipse, Center: point(-6, 3), Radii: point(2, 2)}},
 		}},
-		{ID: "s2", Location: "crossing", Title: "Сквер с запада", View: ViewWest, Objects: []Object{}},
+		{ID: "s2", Location: "street", Title: "Улица", Objects: []Object{}},
 	}}
 }
 
@@ -166,8 +166,7 @@ func TestValidate(t *testing.T) {
 		{"повтор кода схемы", func(d *Document) { d.Schemes[1].ID = "s1" }, textSchemeIDRepeated("s1")},
 		{"название", func(d *Document) { d.Schemes[0].Title = "" }, textTitleMissing("s1")},
 		{"локация", func(d *Document) { d.Schemes[0].Location = "hero" }, textUnknownLocation("s1", "hero")},
-		{"вид", func(d *Document) { d.Schemes[1].View = "up" }, textUnknownView("s2", "up")},
-		{"повтор вида", func(d *Document) { d.Schemes[1].View = ViewTop }, textViewRepeated("crossing", ViewTop)},
+		{"вторая схема локации", func(d *Document) { d.Schemes[1].Location = "crossing" }, textSchemeRepeated("crossing")},
 		{"код объекта", func(d *Document) { d.Schemes[0].Objects[0].ID = "" }, textObjectIDMissing("s1")},
 		{"повтор кода объекта", func(d *Document) { d.Schemes[0].Objects[1].ID = "o1" }, textObjectIDRepeated("s1", "o1")},
 		{"сущность", func(d *Document) { d.Schemes[0].Objects[1].Entity = "ghost" }, textUnknownEntity("s1", "o2", "ghost")},
@@ -196,7 +195,7 @@ func TestValidate(t *testing.T) {
 func TestViewProject(t *testing.T) {
 	project := newProject(t)
 	view, err := ViewProject(project)
-	if err != nil || !view.Missing || len(view.Locations) != 2 || !slices.Equal(view.WithoutTop, []string{"crossing", "street"}) {
+	if err != nil || !view.Missing || len(view.Locations) != 2 || !slices.Equal(view.WithoutScheme, []string{"crossing", "street"}) {
 		t.Fatalf("вид без файла: %+v %v", view, err)
 	}
 	// Связать объект можно с любой сущностью кастинга, кроме мира сцены.
@@ -208,7 +207,7 @@ func TestViewProject(t *testing.T) {
 		t.Fatal(err)
 	}
 	view, err = ViewProject(project)
-	if err != nil || view.Missing || len(view.Problems) != 0 || !slices.Equal(view.WithoutTop, []string{"street"}) {
+	if err != nil || view.Missing || len(view.Problems) != 0 || len(view.WithoutScheme) != 0 {
 		t.Fatalf("вид после записи: %+v %v", view, err)
 	}
 }
@@ -220,32 +219,30 @@ func TestVolumeProblems(t *testing.T) {
 	line := Shape{Type: ShapeLine, Points: []Point{{0, 0}, {5, 0}}}
 	cases := []struct {
 		name   string
-		view   string
 		object Object
 		want   string
 	}{
-		{"без объёма", ViewTop, Object{Shape: rect, Height: number(3)}, ""},
-		{"гребень", ViewTop, Object{Shape: rect, Height: number(3), Top: &Top{Form: TopRidge, Rise: 3, Axis: "x"}}, ""},
-		{"скат", ViewTop, Object{Shape: rect, Height: number(2), Top: &Top{Form: TopSlope, Rise: 0.5, Down: "-y"}}, ""},
-		{"шатёр от земли", ViewTop, Object{Shape: rect, Top: &Top{Form: TopTent, Rise: 2}}, ""},
-		{"конус над эллипсом", ViewTop, Object{Shape: ellipse, Height: number(1), Top: &Top{Form: TopTent, Rise: 1}}, ""},
-		{"крона", ViewTop, Object{Shape: ellipse, Height: number(4), Elevation: number(2), Body: BodyEllipsoid}, ""},
-		{"поднятая линия", ViewTop, Object{Shape: line, Height: number(0.2), Elevation: number(3)}, ""},
-		{"вид сбоку", ViewWest, Object{Shape: rect, Elevation: number(1)}, "только на виде сверху"},
-		{"отрицательный подъём", ViewTop, Object{Shape: rect, Elevation: number(-1)}, "неотрицательным"},
-		{"гребень у эллипса", ViewTop, Object{Shape: ellipse, Top: &Top{Form: TopRidge, Rise: 1, Axis: "x"}}, "только у прямоугольника"},
-		{"гребень без оси", ViewTop, Object{Shape: rect, Top: &Top{Form: TopRidge, Rise: 1}}, "ось x или y"},
-		{"скат без стороны", ViewTop, Object{Shape: rect, Top: &Top{Form: TopSlope, Rise: 1, Down: "x"}}, "+x, -x, +y или -y"},
-		{"шатёр у линии", ViewTop, Object{Shape: line, Top: &Top{Form: TopTent, Rise: 1}}, "шатёр бывает"},
-		{"нулевой подъём верха", ViewTop, Object{Shape: rect, Top: &Top{Form: TopTent, Rise: 0}}, "положительным"},
-		{"неизвестный верх", ViewTop, Object{Shape: rect, Top: &Top{Form: "dome", Rise: 1}}, "неизвестная форма"},
-		{"эллипсоид без высоты", ViewTop, Object{Shape: ellipse, Body: BodyEllipsoid}, "нужна высота"},
-		{"эллипсоид с верхом", ViewTop, Object{Shape: rect, Height: number(2), Body: BodyEllipsoid, Top: &Top{Form: TopTent, Rise: 1}}, "нет верха"},
-		{"эллипсоид у линии", ViewTop, Object{Shape: line, Height: number(2), Body: BodyEllipsoid}, "только у прямоугольника"},
-		{"неизвестное тело", ViewTop, Object{Shape: rect, Height: number(2), Body: "sphere"}, "неизвестное тело"},
+		{"без объёма", Object{Shape: rect, Height: number(3)}, ""},
+		{"гребень", Object{Shape: rect, Height: number(3), Top: &Top{Form: TopRidge, Rise: 3, Axis: "x"}}, ""},
+		{"скат", Object{Shape: rect, Height: number(2), Top: &Top{Form: TopSlope, Rise: 0.5, Down: "-y"}}, ""},
+		{"шатёр от земли", Object{Shape: rect, Top: &Top{Form: TopTent, Rise: 2}}, ""},
+		{"конус над эллипсом", Object{Shape: ellipse, Height: number(1), Top: &Top{Form: TopTent, Rise: 1}}, ""},
+		{"крона", Object{Shape: ellipse, Height: number(4), Elevation: number(2), Body: BodyEllipsoid}, ""},
+		{"поднятая линия", Object{Shape: line, Height: number(0.2), Elevation: number(3)}, ""},
+		{"отрицательный подъём", Object{Shape: rect, Elevation: number(-1)}, "неотрицательным"},
+		{"гребень у эллипса", Object{Shape: ellipse, Top: &Top{Form: TopRidge, Rise: 1, Axis: "x"}}, "только у прямоугольника"},
+		{"гребень без оси", Object{Shape: rect, Top: &Top{Form: TopRidge, Rise: 1}}, "ось x или y"},
+		{"скат без стороны", Object{Shape: rect, Top: &Top{Form: TopSlope, Rise: 1, Down: "x"}}, "+x, -x, +y или -y"},
+		{"шатёр у линии", Object{Shape: line, Top: &Top{Form: TopTent, Rise: 1}}, "шатёр бывает"},
+		{"нулевой подъём верха", Object{Shape: rect, Top: &Top{Form: TopTent, Rise: 0}}, "положительным"},
+		{"неизвестный верх", Object{Shape: rect, Top: &Top{Form: "dome", Rise: 1}}, "неизвестная форма"},
+		{"эллипсоид без высоты", Object{Shape: ellipse, Body: BodyEllipsoid}, "нужна высота"},
+		{"эллипсоид с верхом", Object{Shape: rect, Height: number(2), Body: BodyEllipsoid, Top: &Top{Form: TopTent, Rise: 1}}, "нет верха"},
+		{"эллипсоид у линии", Object{Shape: line, Height: number(2), Body: BodyEllipsoid}, "только у прямоугольника"},
+		{"неизвестное тело", Object{Shape: rect, Height: number(2), Body: "sphere"}, "неизвестное тело"},
 	}
 	for _, item := range cases {
-		got := volumeProblem(item.view, item.object)
+		got := volumeProblem(item.object)
 		if item.want == "" && got != "" || item.want != "" && !strings.Contains(got, item.want) {
 			t.Errorf("%s: %q, ждали %q", item.name, got, item.want)
 		}

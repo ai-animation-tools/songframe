@@ -218,7 +218,7 @@ describe('сектор и расстояния', () => {
 });
 
 describe('новая точка съёмки', () => {
-  const schemes: SchemesFile = { schema_version: 1, schemes: [{ id: 's1', location: 'street', title: 'Улица', view: 'top', objects: [] }] };
+  const schemes: SchemesFile = { schema_version: 1, schemes: [{ id: 's1', location: 'street', title: 'Улица', objects: [] }] };
   it('берёт единственную локацию с видом сверху, иначе первую', () => {
     expect(createViewpoint(['yard', 'street'], schemes)).toEqual({ location: 'street', side: 'south', size: 'wide' });
     expect(createViewpoint(['yard', 'street'], null)).toEqual({ location: 'yard', side: 'south', size: 'wide' });
@@ -295,11 +295,10 @@ describe('предмет схемы как референс плана', () => {
     expect(footprintView({ ...looking, side: 'top' }, 'start', [house])!.inFrame).toBeNull();
   });
 
-  it('фигуры предмета — объекты вида сверху со ссылкой на сущность', () => {
+  it('фигуры предмета — объекты схемы со ссылкой на сущность', () => {
     const scheme: Scheme = {
       id: 's',
       location: 'yard',
-      view: 'top',
       title: 'Двор',
       objects: [
         { id: 'o1', name: 'Дом', shape: house, entity: 'dom' },

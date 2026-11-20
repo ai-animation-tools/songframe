@@ -6,8 +6,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Alert, AlertTitle, Box, Button, ButtonBase, Chip, Paper, Stack, Typography } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SaveIcon from '@mui/icons-material/Save';
-import type { SchemeViewKind, SchemesFile, SchemesView } from '@shared/schemes';
-import { SCHEME_VIEWS } from '@shared/schemes';
+import type { SchemesFile, SchemesView } from '@shared/schemes';
 import { createScheme, updateScheme } from '@shared/scheme-editing';
 import { useApp } from '../../state';
 import { RequestScope } from '../../hooks/requestScope';
@@ -22,9 +21,8 @@ import { DraftRestoreAlert } from '../../components/DraftRestoreAlert';
 import { FullscreenEditorDialog } from '../../components/FullscreenEditorDialog';
 import { useDraftBackup } from '../../hooks/useDraftBackup';
 
-/** Параметры адреса: выбранная локация и вид, чтобы переход по ссылке открывал нужную схему. */
+/** Параметр адреса: выбранная локация, чтобы переход по ссылке открывал нужную схему. */
 const LOCATION_PARAM = 'location';
-const VIEW_PARAM = 'view';
 /** Высота шапки окна во весь экран с отступом содержимого: от неё редактор считает высоту холста, px. */
 const FULLSCREEN_TOP = 64;
 
@@ -62,11 +60,9 @@ export function SchemesPage(): ReactElement {
   const locations = view?.locations ?? [];
   const locationId =
     params.get(LOCATION_PARAM) && locations.some((item) => item.id === params.get(LOCATION_PARAM)) ? params.get(LOCATION_PARAM)! : locations[0]?.id;
-  const schemeView = (SCHEME_VIEWS as readonly string[]).includes(params.get(VIEW_PARAM) ?? '') ? (params.get(VIEW_PARAM) as SchemeViewKind) : 'top';
-  const select = (location: string, kind: SchemeViewKind): void => {
+  const select = (location: string): void => {
     const next = new URLSearchParams(params);
     next.set(LOCATION_PARAM, location);
-    next.set(VIEW_PARAM, kind);
     setParams(next, { replace: true });
   };
   const dirty = useMemo(() => !!view && !!draft && JSON.stringify(view.document) !== JSON.stringify(draft), [view, draft]);
@@ -137,10 +133,8 @@ export function SchemesPage(): ReactElement {
         key={location.id}
         location={location}
         entities={view?.entities ?? []}
-        schemes={draft.schemes.filter((scheme) => scheme.location === location.id)}
-        view={schemeView}
-        onView={(kind) => select(location.id, kind)}
-        onCreate={(kind, title) => setDraft({ ...draft, schemes: [...draft.schemes, createScheme(draft, location.id, kind, title)] })}
+        scheme={draft.schemes.find((scheme) => scheme.location === location.id) ?? null}
+        onCreate={(title) => setDraft({ ...draft, schemes: [...draft.schemes, createScheme(draft, location.id, title)] })}
         onChange={(scheme) => setDraft((current) => (current ? updateScheme(current, scheme.id, () => scheme) : current))}
         onDelete={(scheme) => setDraft({ ...draft, schemes: draft.schemes.filter((item) => item.id !== scheme.id) })}
         onFullscreen={inDialog ? undefined : () => setFullscreen(true)}
@@ -183,8 +177,7 @@ export function SchemesPage(): ReactElement {
                 {schemesTexts.locations}
               </Typography>
               {locations.map((item) => {
-                const own = draft.schemes.filter((scheme) => scheme.location === item.id);
-                const hasTop = own.some((scheme) => scheme.view === 'top');
+                const own = draft.schemes.find((scheme) => scheme.location === item.id);
                 const active = item.id === locationId;
                 return (
                   <ButtonBase
@@ -192,7 +185,7 @@ export function SchemesPage(): ReactElement {
                     component="div"
                     data-location-id={item.id}
                     aria-current={active ? 'true' : undefined}
-                    onClick={() => select(item.id, 'top')}
+                    onClick={() => select(item.id)}
                     sx={{
                       display: 'block',
                       width: '100%',
@@ -207,12 +200,12 @@ export function SchemesPage(): ReactElement {
                     }}
                   >
                     <Typography fontWeight={600}>{item.name || item.id}</Typography>
-                    {hasTop ? (
+                    {own ? (
                       <Typography variant="caption" color="text.secondary">
-                        {schemesTexts.viewsDone({ views: own.map((scheme) => schemesTexts.views[scheme.view].toLowerCase()).join(', ') })}
+                        {schemesTexts.objectsCount({ count: own.objects.length })}
                       </Typography>
                     ) : (
-                      <Chip size="small" color="warning" label={schemesTexts.withoutTop} sx={{ height: 18 }} />
+                      <Chip size="small" color="warning" label={schemesTexts.withoutScheme} sx={{ height: 18 }} />
                     )}
                   </ButtonBase>
                 );

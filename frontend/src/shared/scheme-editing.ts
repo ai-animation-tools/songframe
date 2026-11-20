@@ -1,4 +1,4 @@
-import type { Scheme, SchemeObject, SchemePoint, SchemeShape, SchemeShapeType, SchemeViewKind, SchemesFile } from './schemes';
+import type { Scheme, SchemeObject, SchemePoint, SchemeShape, SchemeShapeType, SchemesFile } from './schemes';
 
 /**
  * Чистые правки схем для редактора страницы «Схемы»: создание схем и фигур, перемещение фигур и вершин, границы для
@@ -31,8 +31,8 @@ export function nextId(used: Iterable<string>, prefix: string): string {
   }
 }
 
-/** Пустая схема вида view для локации; код — свободный в документе. */
-export function createScheme(document: SchemesFile, location: string, view: SchemeViewKind, title: string): Scheme {
+/** Пустая схема локации; код — свободный в документе. */
+export function createScheme(document: SchemesFile, location: string, title: string): Scheme {
   return {
     id: nextId(
       document.schemes.map((scheme) => scheme.id),
@@ -40,7 +40,6 @@ export function createScheme(document: SchemesFile, location: string, view: Sche
     ),
     location,
     title: title.trim(),
-    view,
     objects: []
   };
 }

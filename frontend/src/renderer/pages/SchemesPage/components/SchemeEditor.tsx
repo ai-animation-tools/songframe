@@ -17,6 +17,7 @@ import { ActionButton } from '../../../components/ActionButton';
 import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 import { ObjectProperties } from './ObjectProperties';
 import { MIN_CANVAS_HEIGHT, SchemeCanvas, type SchemeTool } from './SchemeCanvas';
+import { SchemeVolumeView } from '../../../components/SchemeVolumeView';
 
 const TOOL_ICONS: Record<SchemeTool, ReactElement> = {
   select: <NearMeIcon fontSize="small" />,
@@ -137,6 +138,9 @@ export function SchemeEditor({
   const [selected, setSelected] = useState<string | null>(null);
   const [fitSignal, setFitSignal] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // Вид сверху показывается планом для правки или объёмом в 3D; свойства объекта доступны в обоих.
+  const [volume, setVolume] = useState(false);
+  const showVolume = volume && view === 'top';
   const object = scheme?.objects.find((item) => item.id === selected) ?? null;
   const name = location.name || location.id;
   const { rootRef, toolbarRef, canvasRef, wide, canvasHeight } = useEditorLayout(stickyTop, !!scheme);
@@ -215,9 +219,24 @@ export function SchemeEditor({
                   onChange={(event) => onChange({ ...scheme, title: event.target.value })}
                   sx={{ minWidth: 280 }}
                 />
+                {view === 'top' ? (
+                  <ToggleButtonGroup
+                    size="small"
+                    exclusive
+                    value={showVolume ? 'volume' : 'plan'}
+                    onChange={(_, next: 'plan' | 'volume' | null) => next && setVolume(next === 'volume')}
+                    aria-label={schemesTexts.display}
+                  >
+                    <ToggleButton value="plan">{schemesTexts.displayPlan}</ToggleButton>
+                    <ToggleButton value="volume" data-volume-toggle="">
+                      {schemesTexts.displayVolume}
+                    </ToggleButton>
+                  </ToggleButtonGroup>
+                ) : null}
                 <ToggleButtonGroup
                   size="small"
                   exclusive
+                  disabled={showVolume}
                   value={tool}
                   onChange={(_, next: SchemeTool | null) => next && setTool(next)}
                   aria-label={schemesTexts.tools.select}
@@ -230,7 +249,12 @@ export function SchemeEditor({
                     </Tooltip>
                   ))}
                 </ToggleButtonGroup>
-                <ActionButton startIcon={<FitScreenIcon />} onClick={() => setFitSignal((value) => value + 1)}>
+                <ActionButton
+                  startIcon={<FitScreenIcon />}
+                  disabled={showVolume}
+                  disabledReason={showVolume ? schemesTexts.volumeView.noFit : null}
+                  onClick={() => setFitSignal((value) => value + 1)}
+                >
                   {schemesTexts.fit}
                 </ActionButton>
                 {onFullscreen ? (
@@ -244,8 +268,8 @@ export function SchemeEditor({
                 </ActionButton>
               </Stack>
               <Alert severity="info" variant="outlined" sx={{ py: 0 }}>
-                <AlertTitle sx={{ mb: 0 }}>{schemesTexts.tools[tool]}</AlertTitle>
-                {schemesTexts.toolHints[tool]}
+                <AlertTitle sx={{ mb: 0 }}>{showVolume ? schemesTexts.displayVolume : schemesTexts.tools[tool]}</AlertTitle>
+                {showVolume ? schemesTexts.volumeView.modeHint : schemesTexts.toolHints[tool]}
               </Alert>
             </Stack>
           </Paper>
@@ -257,26 +281,34 @@ export function SchemeEditor({
                 : { display: 'grid', gap: 1.5 }
             }
           >
-            <SchemeCanvas
-              scheme={scheme}
-              tool={tool}
-              selected={selected}
-              fitSignal={fitSignal}
-              viewKey={viewStorage ? `${viewStorage}.${scheme.id}` : undefined}
-              height={canvasHeight}
-              onSelect={setSelected}
-              onChange={onChange}
-              onToolCancel={() => setTool('select')}
-            />
-            <ObjectProperties
-              object={object}
-              locations={locations.filter((item) => item.id !== location.id)}
-              onChange={(next) => onChange({ ...scheme, objects: scheme.objects.map((item) => (item.id === next.id ? next : item)) })}
-              onDelete={() => {
-                onChange({ ...scheme, objects: scheme.objects.filter((item) => item.id !== selected) });
-                setSelected(null);
-              }}
-            />
+            {showVolume ? (
+              <SchemeVolumeView scheme={scheme} label={schemesTexts.volumeView.label({ title: scheme.title })} height={canvasHeight} />
+            ) : (
+              <SchemeCanvas
+                scheme={scheme}
+                tool={tool}
+                selected={selected}
+                fitSignal={fitSignal}
+                viewKey={viewStorage ? `${viewStorage}.${scheme.id}` : undefined}
+                height={canvasHeight}
+                onSelect={setSelected}
+                onChange={onChange}
+                onToolCancel={() => setTool('select')}
+              />
+            )}
+            {/* Справа от холста свойства прокручиваются сами в его высоту: страница не уезжает под закреплённую панель. */}
+            <Box sx={wide ? { maxHeight: canvasHeight, overflowY: 'auto' } : undefined} data-object-properties="">
+              <ObjectProperties
+                object={object}
+                volume={view === 'top'}
+                locations={locations.filter((item) => item.id !== location.id)}
+                onChange={(next) => onChange({ ...scheme, objects: scheme.objects.map((item) => (item.id === next.id ? next : item)) })}
+                onDelete={() => {
+                  onChange({ ...scheme, objects: scheme.objects.filter((item) => item.id !== selected) });
+                  setSelected(null);
+                }}
+              />
+            </Box>
           </Box>
           <ConfirmationDialog
             open={confirmDelete}

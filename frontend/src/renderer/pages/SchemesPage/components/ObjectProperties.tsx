@@ -1,9 +1,23 @@
 import { schemesTexts } from '@shared/texts/schemes';
 import { useEffect, useState, type ReactElement } from 'react';
-import { Box, Checkbox, FormControlLabel, IconButton, InputAdornment, MenuItem, Paper, Stack, TextField, Tooltip, Typography } from '@mui/material';
+import {
+  type SxProps,
+  type Theme,
+  Box,
+  Checkbox,
+  FormControlLabel,
+  IconButton,
+  InputAdornment,
+  MenuItem,
+  Paper,
+  Stack,
+  TextField,
+  Tooltip,
+  Typography
+} from '@mui/material';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import type { SchemeLocation, SchemeObject, SchemePoint, SchemeShape } from '@shared/schemes';
+import type { SchemeLocation, SchemeObject, SchemePoint, SchemeShape, SchemeSlopeDown, SchemeTop, SchemeTopForm } from '@shared/schemes';
 import { ActionButton } from '../../../components/ActionButton';
 import { objectColor } from '@shared/scheme-editing';
 
@@ -24,13 +38,15 @@ function NumberField({
   value,
   onChange,
   optional = false,
-  helperText
+  helperText,
+  sx
 }: {
   label: string;
   value: number | undefined;
   onChange(value: number | undefined): void;
   optional?: boolean;
   helperText?: string;
+  sx?: SxProps<Theme>;
 }): ReactElement {
   const [text, setText] = useState(value === undefined ? '' : String(value));
   useEffect(() => {
@@ -44,6 +60,7 @@ function NumberField({
       value={text}
       helperText={helperText}
       fullWidth
+      sx={sx}
       inputProps={{ step: 0.1 }}
       onChange={(event) => {
         const next = event.target.value;
@@ -139,14 +156,132 @@ function ShapeFields({ shape, onChange }: { shape: SchemeShape; onChange(shape: 
   }
 }
 
+/** Формы верха, допустимые для фигуры (те же правила проверяет Go): гребень и скат — у прямоугольника. */
+function topForms(shape: SchemeShape): SchemeTopForm[] {
+  if (shape.type === 'rect') return ['ridge', 'slope', 'tent'];
+  if (shape.type === 'ellipse' || shape.type === 'polygon') return ['tent'];
+  return [];
+}
+
+/** Верх новой формы с прежним подъёмом: ось и сторона — по умолчанию первые. */
+function withForm(top: SchemeTop | undefined, form: SchemeTopForm): SchemeTop {
+  const rise = top?.rise ?? 1;
+  if (form === 'ridge') return { form, rise, axis: top?.form === 'ridge' ? top.axis : 'x' };
+  if (form === 'slope') return { form, rise, down: top?.form === 'slope' ? top.down : '-y' };
+  return { form, rise };
+}
+
+/**
+ * Поля объёма объекта вида сверху: подъём над землёй, верх и округлое тело. Показываются только допустимые для
+ * фигуры формы; эллипсоид и верх взаимоисключающие.
+ */
+function VolumeFields({ object, onChange }: { object: SchemeObject; onChange(object: SchemeObject): void }): ReactElement {
+  const texts = schemesTexts.volume;
+  const forms = topForms(object.shape);
+  const rounded = object.shape.type === 'rect' || object.shape.type === 'ellipse';
+  const top = object.top;
+  return (
+    <Stack spacing={1} data-volume-fields="">
+      <Typography variant="subtitle2">{texts.title}</Typography>
+      <Box sx={FIELDS_GRID}>
+        <NumberField
+          label={texts.elevation}
+          value={object.elevation}
+          optional
+          helperText={texts.elevationHint}
+          sx={WIDE_FIELD}
+          onChange={(value) => onChange({ ...object, elevation: value !== undefined && value > 0 ? value : undefined })}
+        />
+        {forms.length ? (
+          <TextField
+            select
+            size="small"
+            label={texts.top}
+            value={top?.form ?? 'none'}
+            disabled={object.body === 'ellipsoid'}
+            onChange={(event) => {
+              const form = event.target.value as SchemeTopForm | 'none';
+              onChange({ ...object, top: form === 'none' ? undefined : withForm(top, form) });
+            }}
+          >
+            <MenuItem value="none">{texts.topForms.none}</MenuItem>
+            {forms.map((form) => (
+              <MenuItem key={form} value={form}>
+                {texts.topForms[form]}
+              </MenuItem>
+            ))}
+          </TextField>
+        ) : null}
+        {top ? (
+          <NumberField
+            label={texts.rise}
+            value={top.rise}
+            onChange={(value) => value !== undefined && value > 0 && onChange({ ...object, top: { ...top, rise: value } })}
+          />
+        ) : null}
+        {top?.form === 'ridge' ? (
+          <TextField
+            select
+            size="small"
+            label={texts.axis}
+            value={top.axis}
+            onChange={(event) => onChange({ ...object, top: { ...top, axis: event.target.value as 'x' | 'y' } })}
+            sx={WIDE_FIELD}
+          >
+            {(['x', 'y'] as const).map((axis) => (
+              <MenuItem key={axis} value={axis}>
+                {texts.axes[axis]}
+              </MenuItem>
+            ))}
+          </TextField>
+        ) : null}
+        {top?.form === 'slope' ? (
+          <TextField
+            select
+            size="small"
+            label={texts.down}
+            value={top.down}
+            onChange={(event) => onChange({ ...object, top: { ...top, down: event.target.value as SchemeSlopeDown } })}
+            sx={WIDE_FIELD}
+          >
+            {(['-y', '+y', '-x', '+x'] as const).map((down) => (
+              <MenuItem key={down} value={down}>
+                {texts.downs[down]}
+              </MenuItem>
+            ))}
+          </TextField>
+        ) : null}
+        {rounded ? (
+          <FormControlLabel
+            sx={FULL_ROW}
+            control={
+              <Checkbox
+                checked={object.body === 'ellipsoid'}
+                onChange={(event) => onChange(event.target.checked ? { ...object, body: 'ellipsoid', top: undefined } : { ...object, body: undefined })}
+              />
+            }
+            label={texts.ellipsoid}
+          />
+        ) : null}
+      </Box>
+      <Typography variant="caption" color="text.secondary">
+        {object.body === 'ellipsoid' ? texts.ellipsoidHint : texts.hint}
+      </Typography>
+    </Stack>
+  );
+}
+
 /** Свойства выбранного объекта схемы: название, высота, цвет, связь с локацией и геометрия; удаление объекта. */
 export function ObjectProperties({
   object,
   locations,
+  volume = false,
   onChange,
   onDelete
 }: {
   object: SchemeObject | null;
+  /** Схема вида сверху: у объекта есть поля объёма. */
+  volume?: boolean;
   locations: readonly SchemeLocation[];
   onChange(object: SchemeObject): void;
   onDelete(): void;
@@ -223,6 +358,7 @@ export function ObjectProperties({
         </Box>
         <Typography variant="subtitle2">{schemesTexts.shapeType({ type: schemesTexts.tools[object.shape.type] })}</Typography>
         <ShapeFields shape={object.shape} onChange={(shape) => onChange({ ...object, shape })} />
+        {volume ? <VolumeFields object={object} onChange={onChange} /> : null}
         <Stack direction="row" spacing={1.5} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.5 }}>
           <ActionButton color="error" startIcon={<DeleteOutlineIcon />} onClick={onDelete}>
             {schemesTexts.deleteObject}

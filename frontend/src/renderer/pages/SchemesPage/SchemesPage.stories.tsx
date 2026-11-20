@@ -270,3 +270,53 @@ export const RememberView: Story = {
     await waitFor(async () => expect(scaleOf(await canvasOf(dialog, 'Перекрёсток сверху'))).not.toBe(zoomed));
   }
 };
+
+export const Volume: Story = {
+  name: 'Объём · гребень у дома в свойствах, вид объёма в 3D и запись',
+  tags: ['ci'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    const svg = await canvasOf(canvas, 'Перекрёсток сверху');
+    const volume = schemesTexts.volume;
+    fireEvent.pointerDown(svg.querySelector('[data-object-id="o2"] path')!, { pointerId: 1 });
+    fireEvent.pointerUp(svg, { pointerId: 1 });
+    // Объём: поля только допустимых форм; у дома (прямоугольник) — гребень, скат и шатёр.
+    await userEvent.click(await canvas.findByRole('combobox', { name: volume.top }));
+    const options = within(await page.findByRole('listbox'));
+    await expect(options.getAllByRole('option').map((option) => option.textContent)).toEqual([
+      volume.topForms.none,
+      volume.topForms.ridge,
+      volume.topForms.slope,
+      volume.topForms.tent
+    ]);
+    await userEvent.click(options.getByRole('option', { name: volume.topForms.ridge }));
+    const rise = canvas.getByRole('spinbutton', { name: volume.rise }) as HTMLInputElement;
+    await userEvent.clear(rise);
+    await userEvent.type(rise, '4');
+    await userEvent.click(canvas.getByRole('combobox', { name: volume.axis }));
+    await userEvent.click(await page.findByRole('option', { name: volume.axes.y }));
+    // Вид объёма: сцена построена, подпись дома над его верхом, стрелка севера и подсказка про клетку земли.
+    await userEvent.click(canvas.getByRole('button', { name: schemesTexts.displayVolume }));
+    const view = await waitFor(() => {
+      const element = canvasElement.querySelector<HTMLElement>('[data-volume-view]');
+      if (!element) throw new Error('нет вида объёма');
+      return element;
+    });
+    await expect(Number(view.dataset.triangles)).toBeGreaterThan(20);
+    await expect(within(view).getByText('Длинный дом')).toBeInTheDocument();
+    await expect(canvas.getByRole('button', { name: schemesTexts.tools.rect })).toBeDisabled();
+    // Облёт с клавиатуры не ломает сцену.
+    within(view)
+      .getByRole('application', { name: schemesTexts.volumeView.label({ title: 'Перекрёсток сверху' }) })
+      .focus();
+    await userEvent.keyboard('{ArrowLeft}{ArrowUp}+');
+    await expect(canvasElement.querySelector('[data-volume-view]')).not.toBeNull();
+    await userEvent.click(saveButton(canvas));
+    await waitFor(() => expect(schemesStorySnapshot().saves).toBe(1));
+    const house = schemesStorySnapshot().document.schemes[0].objects.find((object) => object.id === 'o2');
+    await expect(house?.top).toEqual({ form: 'ridge', rise: 4, axis: 'y' });
+    await userEvent.click(canvas.getByRole('button', { name: schemesTexts.displayPlan }));
+    await canvasOf(canvas, 'Перекрёсток сверху');
+  }
+};

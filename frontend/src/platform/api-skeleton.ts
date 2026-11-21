@@ -181,7 +181,8 @@ export function apiSkeleton(): Api {
     },
     schemes: {
       view: stub('schemes.view'),
-      save: stub('schemes.save')
+      save: stub('schemes.save'),
+      frame: stub('schemes.frame')
     },
     scenario: {
       status: stub('scenario.status'),

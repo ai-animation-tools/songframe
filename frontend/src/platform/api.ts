@@ -63,6 +63,7 @@ import type { CameraWindowEvent } from '@shared/camera-window';
 import type { MontageDraft, MontageView } from '@shared/montage';
 import type { DerivedShotView } from '@shared/derived-shot';
 import type { SchemesFile, SchemesView } from '@shared/schemes';
+import type { ViewFrame } from '@shared/viewframe';
 import type * as mediaapi from '../../bindings/songframe/internal/mediaapi/models';
 import type { MediaCapabilities, MediaKind, ProviderAuth } from '@shared/media-providers';
 import { componentTexts } from '@shared/texts/component-manager';
@@ -580,6 +581,8 @@ export function createApi(b: Bindings): Api {
   // Точки Go приходят как number[]: формат гарантирует две координаты, сужение типа без проверки.
   api.schemes.view = (project) => call('schemes.view', async () => (await (await b.schemes()).View(project)) as unknown as SchemesView);
   api.schemes.save = (project, document) => call('schemes.save', async () => (await (await b.schemes()).Save(project, document)) as unknown as SchemesFile);
+  api.schemes.frame = (project, viewpoint) =>
+    call('schemes.frame', async () => (await (await b.schemes()).Frame(project, viewpoint as never)) as unknown as ViewFrame);
 
   api.scenario.status = (project) => call('scenario.status', async () => (await (await b.scenario()).Status(project)) as ScenarioStatus);
   api.scenario.view = (project) => call('scenario.view', async () => (await b.scenario()).View(project));

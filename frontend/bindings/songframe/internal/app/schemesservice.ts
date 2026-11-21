@@ -15,6 +15,18 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as schemes$0 from "../schemes/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as viewframe$0 from "../viewframe/models.js";
+
+/**
+ * Frame — schemes.frame: факты кадра точки съёмки viewpoint по схеме её локации и росту из кастинга проекта —
+ * то же, что получит агент описания и видеопромпта. Карта присылает текущую, ещё не сохранённую точку, поэтому
+ * факты видны до сохранения и запуска. Ничего не пишет.
+ */
+export function Frame(project: string, viewpoint: viewframe$0.Viewpoint): $CancellablePromise<viewframe$0.Frame> {
+    return $Call.ByID(2726972143, project, viewpoint);
+}
 
 /**
  * Save — schemes.save: проверка по кастингу и атомарная запись; отказ оставляет прежний файл.

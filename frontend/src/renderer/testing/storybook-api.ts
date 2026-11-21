@@ -180,7 +180,8 @@ export function unconfiguredStoryApi(): Api {
     },
     schemes: {
       view: async () => unconfigured('schemes.view'),
-      save: async () => unconfigured('schemes.save')
+      save: async () => unconfigured('schemes.save'),
+      frame: async () => unconfigured('schemes.frame')
     },
     scenario: {
       status: async () => unconfigured('scenario.status'),

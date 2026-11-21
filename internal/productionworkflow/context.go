@@ -20,6 +20,7 @@ import (
 	"songframe/internal/scenario"
 	"songframe/internal/sources"
 	"songframe/internal/speech"
+	"songframe/internal/viewframe"
 )
 
 // shotID — один явный ID плана Mxx или Mxx.N.
@@ -94,6 +95,9 @@ type Context struct {
 	DerivedFrom string
 	// SceneChanged — постановка плана изменилась после подготовки пакета.
 	SceneChanged bool
+	// Frame — факты кадра точки съёмки плана (internal/viewframe) как значение JSON; nil — у плана нет
+	// точки съёмки, ключ frame в контекст агента не пишется.
+	Frame any
 
 	framesApproved, promptApproved *bool
 }
@@ -238,6 +242,15 @@ func ReadContext(path, shot, requested string) (*Context, error) {
 				if err := addSource(image); err != nil {
 					return nil, err
 				}
+			}
+		}
+	}
+	// Факты кадра считаются по сохранённой точке съёмки, схеме её локации и росту из всего кастинга: герой
+	// на схеме может быть не в списке сущностей плана.
+	if viewpoint := scene.Value("viewpoint"); viewpoint != dynvalue.Undefined {
+		if frame, ok := viewframe.ForProject(project, viewpoint, viewframe.CastHeights(castFile.Value)); ok {
+			if context.Frame, err = frame.Tree(); err != nil {
+				return nil, err
 			}
 		}
 	}

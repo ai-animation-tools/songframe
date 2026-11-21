@@ -28,6 +28,7 @@ import (
 	"songframe/internal/projectfile"
 	"songframe/internal/scenario"
 	"songframe/internal/scenarioapply"
+	"songframe/internal/schemes"
 	"songframe/internal/tools"
 	"songframe/resources"
 )
@@ -599,6 +600,13 @@ func agentContext(initial *inputs, pass string, selected []string, note string, 
 		context.Set("scenes", initial.documents.Scenes)
 	} else {
 		context.Set("scenes", scaffold)
+	}
+	// Схемы локаций нужны постановке планов: стороны, расстояния и что где стоит. Проходу частей они не нужны;
+	// проект без схем ключа не получает, его контекст прежний.
+	if pass != "treatment" {
+		if view, ok := schemes.AgentView(initial.project); ok {
+			context.Set("schemes", view)
+		}
 	}
 	context.Set("note", note)
 	return dynvalue.Stringify(context), nil

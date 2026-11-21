@@ -3,6 +3,8 @@ import { useSyncExternalStore, type ReactElement } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { Link, Paper, Stack, Typography } from '@mui/material';
 import type { SchemesFile } from '@shared/schemes';
+import type { ViewFrame } from '@shared/viewframe';
+import { cameraHeight, distance, inFrame, pathPoint, viewpointFov, type SceneViewpoint } from '@shared/viewpoint';
 import type { Api } from '@shared/api';
 import type { CameraWindowMessage, CameraWindowState } from '@shared/camera-window';
 import type {
@@ -532,6 +534,8 @@ interface PageModel {
   cancels: number;
   /** Отдельное окно вида из камеры: открытая сессия и состояния, присланные картой. */
   cameraWindow: { session: string | null; states: CameraWindowState[]; fromWindow(message: CameraWindowMessage): void };
+  /** Точки съёмки, по которым панель «Что получит агент» запрашивала факты кадра. */
+  frameRequests: SceneViewpoint[];
   subscribe(listener: () => void): () => void;
   revision(): number;
   publish(): void;
@@ -624,6 +628,7 @@ export function scenarioPageOptions({
         applies: 0,
         cancels: 0,
         cameraWindow: { session: null, states: [], fromWindow: () => undefined },
+        frameRequests: [],
         subscribe(listener) {
           listeners.add(listener);
           return () => {
@@ -765,6 +770,13 @@ export function scenarioPageOptions({
               problems: [],
               withoutScheme: []
             };
+          },
+          // Факты кадра считает Go; модель истории отвечает упрощённо — по карте и расстоянию — и запоминает
+          // присланные точки: play проверяет, что панель пересчитывает факты после правки.
+          frame: async (project, viewpoint) => {
+            validate(project);
+            model.frameRequests.push(structuredClone(viewpoint));
+            return storyFrame(viewpoint);
           }
         },
         scenario: {
@@ -1053,6 +1065,41 @@ export function scenarioPageOptions({
 }
 
 /** Отдельное окно вида из камеры: открыто ли оно и какие состояния прислала карта. */
+/** Упрощённые факты кадра для витрины: попадание героя в кадр по карте и расстояние от камеры. */
+function storyFrame(viewpoint: SceneViewpoint): ViewFrame {
+  const camera = pathPoint(viewpoint.camera, 'start');
+  return {
+    camera: { side: viewpoint.side, size: viewpoint.size, fov: viewpointFov(viewpoint) },
+    note: camera ? undefined : 'Камера не поставлена на схему: факты кадра не посчитаны, направление взгляда — по стороне.',
+    start: camera
+      ? {
+          looks: 'на север',
+          camera_height: cameraHeight(viewpoint, 'start'),
+          subjects: (viewpoint.subjects ?? []).map((subject, index) => {
+            const seen = inFrame(viewpoint, 'start', subject.start) ?? false;
+            return {
+              entity: subject.entity,
+              ...(index === 0 ? { lead: true } : {}),
+              in_frame: seen,
+              place: seen ? 'центр' : 'за левым краем',
+              distance: Math.round(distance(camera, subject.start) * 10) / 10,
+              hidden_by: []
+            };
+          }),
+          objects: []
+        }
+      : null,
+    end: null
+  };
+}
+
+/** Точки съёмки, по которым панель «Что получит агент» запрашивала факты. */
+export function scenarioFrameRequests(): SceneViewpoint[] {
+  const model = models.get(window.api);
+  if (!model) throw new Error('Модель сценария не открыта.');
+  return structuredClone(model.frameRequests);
+}
+
 export function scenarioCameraWindowInspection(): { open: boolean; states: CameraWindowState[] } {
   const model = models.get(window.api);
   if (!model) throw new Error('Модель сценария не открыта.');

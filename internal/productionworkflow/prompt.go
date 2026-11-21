@@ -108,6 +108,10 @@ func agentContext(c *Context, input contextInput) string {
 	value.Set("shot", c.Scene)
 	value.Set("cast", c.Cast)
 	value.Set("references", c.References)
+	// Факты кадра передаются только плану с точкой съёмки: контекст остальных не меняется.
+	if c.Frame != nil {
+		value.Set("frame", c.Frame)
+	}
 	value.Set("brief", input.briefs)
 	value.Set("settings", c.Settings)
 	if c.Workflow == nil {

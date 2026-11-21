@@ -72,6 +72,7 @@ import { FullscreenEditorDialog } from '../../../components/FullscreenEditorDial
 import { LinkedText } from '../../../components/LinkedText';
 import { SchemePreview } from '../../../components/SchemePreview';
 import { useApp } from '../../../state';
+import { ViewpointAgentFacts } from './ViewpointAgentFacts';
 import { useThemeMode } from '../../../theme';
 import { useDetachedCamera } from '../useDetachedCamera';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
@@ -193,6 +194,7 @@ function ViewpointPlacement({
   height,
   place,
   cameraFields,
+  agentFacts,
   update
 }: {
   viewpoint: SceneViewpoint;
@@ -209,6 +211,8 @@ function ViewpointPlacement({
   place: ReactNode;
   /** Крупность, угол обзора и высота камеры: свёрнутая панель справа от карты. */
   cameraFields: ReactNode;
+  /** Панель «Что получит агент» под полями камеры. */
+  agentFacts: ReactNode;
   update(next: SceneViewpoint): void;
 }): ReactElement {
   const navigate = useNavigate();
@@ -442,7 +446,10 @@ function ViewpointPlacement({
               : undefined
           }
         />
-        {cameraPanel}
+        <Stack spacing={1.5} sx={{ minWidth: 0 }}>
+          {cameraPanel}
+          {agentFacts}
+        </Stack>
       </Box>
     </Stack>
   );
@@ -782,6 +789,7 @@ export function ViewpointBlock({
                         height={Math.max(MIN_MAP_HEIGHT, window.innerHeight - 330)}
                         place={placeFields(viewpoint)}
                         cameraFields={cameraFields(viewpoint)}
+                        agentFacts={<ViewpointAgentFacts viewpoint={viewpoint} nameOf={nameOf} />}
                         update={update}
                       />
                     ) : schemes ? (

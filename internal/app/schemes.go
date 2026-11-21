@@ -1,7 +1,9 @@
 package app
 
 import (
+	"songframe/internal/cast"
 	"songframe/internal/schemes"
+	"songframe/internal/viewframe"
 	"songframe/internal/wire"
 )
 
@@ -21,4 +23,12 @@ func (s *SchemesService) View(project string) (schemes.View, error) {
 // Save — schemes.save: проверка по кастингу и атомарная запись; отказ оставляет прежний файл.
 func (s *SchemesService) Save(project string, document schemes.Document) (schemes.Document, error) {
 	return wire.Done(schemes.Save(project, document))
+}
+
+// Frame — schemes.frame: факты кадра точки съёмки viewpoint по схеме её локации и росту из кастинга проекта —
+// то же, что получит агент описания и видеопромпта. Карта присылает текущую, ещё не сохранённую точку, поэтому
+// факты видны до сохранения и запуска. Ничего не пишет.
+func (s *SchemesService) Frame(project string, viewpoint viewframe.Viewpoint) (viewframe.Frame, error) {
+	frame, _ := viewframe.ForProject(project, viewpoint, viewframe.CastHeights(cast.Read(project).Value))
+	return frame, nil
 }

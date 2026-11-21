@@ -301,7 +301,8 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
     },
     schemes: {
       view: guardedAsync(merged.schemes.view),
-      save: guardedAsync(merged.schemes.save)
+      save: guardedAsync(merged.schemes.save),
+      frame: guardedAsync(merged.schemes.frame)
     },
     scenario: {
       status: guardedAsync(merged.scenario.status),

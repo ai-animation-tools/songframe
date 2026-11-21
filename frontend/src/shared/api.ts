@@ -1,4 +1,6 @@
 import type { SchemesFile, SchemesView } from './schemes';
+import type { ViewFrame } from './viewframe';
+import type { SceneViewpoint } from './viewpoint';
 import type { DraftKind } from './drafts';
 import type { VocalModelId, VocalPreparationView } from './vocals';
 import type { SongModelSetup } from './song-models';
@@ -233,6 +235,8 @@ export interface Api {
     view(project: string): Promise<SchemesView>;
     /** Проверяет схемы по кастингу и атомарно записывает plan/schemes.json; отказ оставляет прежний файл. */
     save(project: string, document: SchemesFile): Promise<SchemesFile>;
+    /** Факты кадра точки съёмки по схемам и кастингу проекта — то, что получит агент; ничего не пишет. */
+    frame(project: string, viewpoint: SceneViewpoint): Promise<ViewFrame>;
   };
   scenario: {
     /** Готовность сценария для страниц, которые работают со сценами. */

@@ -12,6 +12,7 @@ import {
   scenarioPageActionProblem,
   scenarioPageOptions,
   scenarioCameraWindowInspection,
+  scenarioFrameRequests,
   scenarioCameraWindowMessage,
   scenarioStateInspection
 } from '../../testing/scenarioPageStories';
@@ -243,12 +244,28 @@ export const ViewpointSet: Story = {
     await expect(map.getByRole('button', { name: viewpointTexts.sides.south })).toBeDisabled();
     await expect(document.querySelector('[data-viewpoint-row="hero"]')).toHaveTextContent(viewpointTexts.lead);
     await expect(document.querySelector('[data-viewpoint-row="hero"] [data-out-of-frame]')).toBeNull();
+    // «Что получит агент»: факты кадра текущей, ещё не сохранённой расстановки (модель истории отвечает упрощённо).
+    const agentFacts = document.querySelector<HTMLElement>('[data-agent-facts]')!;
+    await expect(agentFacts.getBoundingClientRect().left).toBeGreaterThanOrEqual(mapBox.right);
+    await userEvent.click(within(agentFacts).getByRole('button', { name: new RegExp(viewpointTexts.agentFacts) }));
+    const facts = await waitFor(() => {
+      const found = document.querySelector<HTMLElement>('[data-agent-frame]');
+      if (!found) throw new Error('Нет фактов кадра.');
+      return found;
+    });
+    await expect(facts).toHaveTextContent(viewpointTexts.agentLead);
+    await expect(facts).toHaveTextContent(/Герой/);
+    await expect(scenarioFrameRequests().at(-1)?.subjects?.[0]?.entity).toBe('hero');
+    await userEvent.click(within(facts).getByRole('button', { name: viewpointTexts.agentShowJson }));
+    await expect(document.querySelector('[data-agent-json]')).toHaveTextContent('"in_frame": true');
     // Последний кадр камеры: камера проезжает вниз по схеме, путь и сектор конца видны пунктиром.
     await userEvent.click(within(map.getByRole('group', { name: viewpointTexts.target })).getByRole('button', { name: viewpointTexts.camera }));
     await userEvent.click(map.getByRole('button', { name: viewpointTexts.phases.end }));
     clickPreview(preview, 0.3, 0.8);
     await waitFor(() => expect(preview.querySelector('[data-camera-end]')).not.toBeNull());
     await expect(document.querySelector('[data-viewpoint-row="camera"]')).toHaveTextContent(/движется на/);
+    // Правка точки пересчитывает факты: панель запрашивает их по новой расстановке.
+    await waitFor(() => expect(scenarioFrameRequests().at(-1)?.camera?.end).toBeDefined());
     // Крупность меняет угол по умолчанию; свой угол хранится отдельно и возвращается кнопкой.
     await openCameraFields(map);
     await userEvent.click(map.getByRole('combobox', { name: viewpointTexts.size }));

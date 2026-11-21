@@ -494,3 +494,39 @@ func TestContextCarriesProjectFrameRate(t *testing.T) {
 		t.Fatal("промпт называет фиксированную частоту 30 fps")
 	}
 }
+
+// TestContextCarriesSchemes — постановке планов агент сценария получает схемы локаций без цвета объектов;
+// проходу частей и проекту без схем ключа schemes нет.
+func TestContextCarriesSchemes(t *testing.T) {
+	project := sampleProject(t)
+	contextFor := func(pass string) string {
+		t.Helper()
+		initial, err := readInputs(project)
+		if err != nil {
+			t.Fatal(err)
+		}
+		context, err := agentContext(initial, pass, nil, "", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return context
+	}
+	if strings.Contains(contextFor("scenes"), `"schemes":`) {
+		t.Fatal("проект без схем получил ключ schemes")
+	}
+	document := `{"schema_version":1,"schemes":[{"id":"s1","location":"pier","title":"Причал","objects":[` +
+		`{"id":"o1","name":"Настил","shape":{"type":"rect","center":[0,15],"size":[20,4]},"height":1,"color":"#795548"}]}]}`
+	if err := os.WriteFile(filepath.Join(project, "plan", "schemes.json"), []byte(document), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	scenes := contextFor("scenes")
+	if !strings.Contains(scenes, `"schemes":[{"id":"s1","location":"pier","title":"Причал","objects":[{"id":"o1","name":"Настил"`) {
+		t.Fatalf("нет схем в контексте: %.300s", scenes[strings.Index(scenes, `"note"`)-1:])
+	}
+	if strings.Contains(scenes, "#795548") {
+		t.Fatal("цвет объекта ушёл агенту")
+	}
+	if strings.Contains(contextFor("treatment"), `"schemes":`) {
+		t.Fatal("проход частей получил схемы")
+	}
+}

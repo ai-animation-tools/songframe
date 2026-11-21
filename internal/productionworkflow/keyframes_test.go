@@ -395,3 +395,17 @@ func TestKeyframeImagesLayout(t *testing.T) {
 		t.Fatalf("инструкция без ракурса и проверки: %s", start.input.Prompt)
 	}
 }
+
+// TestImagesPromptApprovedBase проверяет, что утверждённые опоры задаются основой кадра, а правка
+// «взять за основу утверждённую опору» по замечанию появляется только вместе с замечаниями.
+func TestImagesPromptApprovedBase(t *testing.T) {
+	withNotes := textImagesPrompt(true, true, false, true, false)
+	for _, want := range []string{"основа создаваемой опоры", "всё, что он прямо не меняет", "взять за основу утверждённую опору, передай её генератору первым входом", "важнее промпта опоры", "если notes не велят взять за основу"} {
+		if !strings.Contains(withNotes, want) {
+			t.Fatalf("нет %q: %s", want, withNotes)
+		}
+	}
+	if plain := textImagesPrompt(true, false, false, false, false); strings.Contains(plain, "взять за основу") {
+		t.Fatalf("правка по замечанию без замечаний: %s", plain)
+	}
+}

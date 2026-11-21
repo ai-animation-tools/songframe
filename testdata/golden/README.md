@@ -79,7 +79,7 @@
 | `export-bundle-job/steps.json` | `production.Service` `ExportBundle` и `RemoveBundle` | 27 шагов |
 | `derive-shot/cases.json` | инструмент `derive_shot` | 113 |
 | `derived-workflow/cases.json` | `derivedworkflow.Workflow` (`View`, `Save`, `Build`, `Accept`) и `derivedworkflow.RecoverApplications` | 112 сценариев, 1101 шаг |
-| `viewframe/cases.json` | `viewframe.Compute`: факты кадра точки съёмки по схеме локации; та же таблица проверяет карту на TypeScript (`frontend/src/shared/viewframe.test.ts`) | 12 |
+| `viewframe/cases.json` | `viewframe.Compute`: факты кадра точки съёмки по схеме локации; та же таблица проверяет карту на TypeScript (`frontend/src/shared/viewframe.test.ts`) | 13 |
 
 Тесты домена ищутся по имени каталога: `git grep -l '"<домен>"' -- '*_test.go'`.
 

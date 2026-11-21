@@ -17,8 +17,8 @@ import {
 /**
  * Вид из камеры точки съёмки: перспективная камера и условные фигуры героев для объёма схемы локации. Всё
  * вычисляется из точек плана и кастинга и не хранится: камера стоит в своей точке на своей высоте (по умолчанию —
- * уровень глаз) и смотрит по прицелу на всех героев (lookHeading) на середину фигуры главного героя на его расстоянии
- * или, без героев, горизонтально по стороне. Герои — цилиндры ростом из кастинга, без роста — условные 1,7 м: они
+ * уровень глаз) и смотрит по прицелу на всех героев (lookHeading) с наклоном к середине фигуры главного героя
+ * (lookPitch) или, без героев, горизонтально по стороне. Герои — цилиндры ростом из кастинга, без роста — условные 1,7 м: они
  * показывают, где герой стоит и что его заслоняет, а не его облик. Камера сверху висит над точкой и смотрит вниз;
  * её кадр и есть схема, отдельного вида у неё нет.
  */
@@ -48,13 +48,28 @@ export function viewpointCamera(viewpoint: SceneViewpoint, phase: ViewpointPhase
   const lead = pathPoint(subject, phase);
   const height = cameraHeight(viewpoint, phase);
   const eye: Camera3D['eye'] = [at[0], at[1], height];
-  // Наклон взгляда — на середину фигуры на расстоянии главного героя; герой в точке камеры или без героев —
-  // горизонтально вдаль.
+  // Цель взгляда — на расстоянии главного героя (без него или с героем в точке камеры — вдаль) с наклоном lookPitch.
   const reach = lead ? distance(at, lead) : 0;
-  const aimed = reach > 1e-9;
-  const ahead = pointAt(at, heading, aimed ? reach : LOOK_AHEAD);
-  const target: Camera3D['target'] = [ahead[0], ahead[1], aimed && subject ? figureHeight(heights, subject.entity) / 2 : height];
+  const depth = reach > 1e-9 ? reach : LOOK_AHEAD;
+  const ahead = pointAt(at, heading, depth);
+  const target: Camera3D['target'] = [ahead[0], ahead[1], height + depth * Math.tan(lookPitch(viewpoint, phase, heights))];
   return { eye, target, fov: viewpointFov(viewpoint) };
+}
+
+/**
+ * Наклон взгляда на кадре phase, радианы, минус — вниз; так же считает Go (viewframe.Viewpoint.Pitch) для фактов
+ * кадра агента. Камера смотрит на середину фигуры главного героя на его расстоянии; без героя или с героем в точке
+ * камеры — горизонтально. Камера со своим направлением без поворота держит наклон первого кадра весь план: она не
+ * поворачивается и по высоте. Камера, которая целится в героев или поворачивается, ведёт главного героя и наклоном.
+ */
+export function lookPitch(viewpoint: SceneViewpoint, phase: ViewpointPhase, heights: FigureHeights = {}): number {
+  const from: ViewpointPhase = viewpoint.heading && viewpoint.heading.end === undefined ? 'start' : phase;
+  const subject = leadSubject(viewpoint);
+  const at = pathPoint(viewpoint.camera, from);
+  const lead = pathPoint(subject, from);
+  if (!subject || !at || !lead) return 0;
+  const reach = distance(at, lead);
+  return reach > 1e-9 ? Math.atan2(figureHeight(heights, subject.entity) / 2 - cameraHeight(viewpoint, from), reach) : 0;
 }
 
 /** Фигура героя на кадре phase: ID сущности, главный ли он, задан ли его рост и треугольники цилиндра. */

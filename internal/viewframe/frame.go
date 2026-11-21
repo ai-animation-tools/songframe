@@ -111,14 +111,7 @@ func computePhase(viewpoint Viewpoint, scheme *schemes.Scheme, heights map[strin
 		fov:     fov,
 		vfov:    2 * math.Atan(math.Tan(fov/2*math.Pi/180)/FrameAspect) * 180 / math.Pi,
 	}
-	// Наклон взгляда — на середину роста главного героя на его расстоянии, как у вида из камеры; без героя или с
-	// героем в точке камеры камера смотрит горизонтально.
-	if len(viewpoint.Subjects) > 0 {
-		lead, _ := pathPoint(&viewpoint.Subjects[0].Path, phase)
-		if reach := distance(eye, lead); reach > epsilon {
-			camera.pitch = math.Atan2(figureHeight(heights, viewpoint.Subjects[0].Entity)/2-camera.height, reach) * 180 / math.Pi
-		}
-	}
+	camera.pitch = viewpoint.Pitch(phase, heights)
 	facts := &PhaseFacts{Looks: compass(heading), CameraHeight: round(camera.height, 2), Subjects: []SubjectFacts{}, Objects: []ObjectFacts{}}
 	points := viewpoint.subjectPoints(phase)
 	for index, subject := range viewpoint.Subjects {

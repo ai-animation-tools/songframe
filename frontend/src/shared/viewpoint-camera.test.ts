@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { cameraMatrix, projectPoint } from './camera3d';
-import { EYE_HEIGHT, FIGURE_HEIGHT, subjectFigures, viewpointCamera } from './viewpoint-camera';
+import { EYE_HEIGHT, FIGURE_HEIGHT, lookPitch, subjectFigures, viewpointCamera } from './viewpoint-camera';
 import type { SceneViewpoint } from './viewpoint';
 
 const placed: SceneViewpoint = {
@@ -75,6 +75,31 @@ describe('вид из камеры', () => {
     // Неподвижный герой на последнем кадре стоит в начале пути.
     const still = figures[1].triangles.flat().map((point) => point[1]);
     expect((Math.max(...still) + Math.min(...still)) / 2).toBeCloseTo(10, 9);
+  });
+
+  it('камера со своим направлением без поворота держит наклон первого кадра, без него ведёт героя', () => {
+    const approach: SceneViewpoint = {
+      location: 'beach',
+      side: 'south',
+      size: 'close',
+      camera: { start: [0, 0] },
+      heading: { start: 90 },
+      camera_height: { start: 0.9 },
+      subjects: [{ entity: 'kid', start: [1, 14], end: [0.5, 4] }]
+    };
+    const heights = { kid: 1.3 };
+    const first = Math.atan2(0.65 - 0.9, Math.hypot(1, 14));
+    expect(lookPitch(approach, 'start', heights)).toBeCloseTo(first, 12);
+    expect(lookPitch(approach, 'end', heights)).toBeCloseTo(first, 12);
+    // Цель последнего кадра — на расстоянии героя, на той же линии наклона.
+    const end = viewpointCamera(approach, 'end', heights)!;
+    const reach = Math.hypot(0.5, 4);
+    expect(end.target[2]).toBeCloseTo(0.9 + reach * Math.tan(first), 9);
+    // Без своего направления камера целится в героя и наклоняется за ним.
+    const { heading: _heading, ...aimed } = approach;
+    expect(lookPitch(aimed, 'end', heights)).toBeCloseTo(Math.atan2(0.65 - 0.9, reach), 12);
+    // Поворачивающаяся камера тоже ведёт героя.
+    expect(lookPitch({ ...approach, heading: { start: 90, end: 80 } }, 'end', heights)).toBeCloseTo(Math.atan2(0.65 - 0.9, reach), 12);
   });
 
   it('своя высота камеры и рост героев из кастинга', () => {

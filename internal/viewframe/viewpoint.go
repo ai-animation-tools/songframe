@@ -208,6 +208,30 @@ func (v Viewpoint) LookHeading(phase string) (float64, bool) {
 	return sideHeading(v.Side)
 }
 
+// Pitch — наклон взгляда на кадре phase в градусах, минус — вниз; так же считает вид из камеры. Камера смотрит
+// на середину роста главного героя на его расстоянии; без героя или с героем в точке камеры — горизонтально.
+// Камера со своим направлением без поворота (heading без end) не поворачивается и по высоте: наклон первого
+// кадра держится весь план, как у неподвижной камеры, тележки или крана. Камера, которая целится в героев или
+// поворачивается сама, ведёт главного героя и наклоном.
+func (v Viewpoint) Pitch(phase string, heights map[string]float64) float64 {
+	if v.Heading != nil && v.Heading.End == nil {
+		phase = PhaseStart
+	}
+	if len(v.Subjects) == 0 {
+		return 0
+	}
+	eye, ok := pathPoint(v.Camera, phase)
+	if !ok {
+		return 0
+	}
+	lead, _ := pathPoint(&v.Subjects[0].Path, phase)
+	reach := distance(eye, lead)
+	if reach <= epsilon {
+		return 0
+	}
+	return math.Atan2(figureHeight(heights, v.Subjects[0].Entity)/2-v.EyeHeight(phase), reach) * 180 / math.Pi
+}
+
 // moves — есть ли у пути движение: конец задан и отличается от начала.
 func moves(path *Path) bool {
 	return path != nil && path.End != nil && distance(path.Start, *path.End) > epsilon

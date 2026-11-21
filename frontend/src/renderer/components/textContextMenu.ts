@@ -17,6 +17,22 @@ export function textFieldAt(target: EventTarget | null): TextField | null {
   return null;
 }
 
+/** Команда правки поля по сочетанию клавиш: Ctrl+Z — отмена, Ctrl+Shift+Z и Ctrl+Y — повтор, иначе null.
+ * Клавиша берётся физическая (code), а не символ: в русской раскладке Ctrl+Z приходит как «я». */
+export function fieldEditCommand(event: Pick<KeyboardEvent, 'code' | 'ctrlKey' | 'shiftKey' | 'altKey' | 'metaKey'>): 'undo' | 'redo' | null {
+  if (!event.ctrlKey || event.altKey || event.metaKey) return null;
+  if (event.code === 'KeyZ') return event.shiftKey ? 'redo' : 'undo';
+  if (event.code === 'KeyY' && !event.shiftKey) return 'redo';
+  return null;
+}
+
+/** Нужна ли странице своя отмена в полях: собственная отмена WebKitGTK в полях не срабатывает,
+ * поэтому в Linux её выполняет TextContextMenu, а Wails свою отключает (internal/app/edit_keys_linux.go).
+ * В Windows поле отменяет сам WebView2, страница не вмешивается. */
+export function needsFieldUndo(userAgent: string): boolean {
+  return userAgent.includes('Linux') && !userAgent.includes('Android');
+}
+
 /** Снимок поля на момент открытия меню: меню забирает фокус, а выделение нужно вернуть перед действием. */
 export interface TextFieldState {
   /** Границы выделения; null у полей без API выделения (type="number"). */

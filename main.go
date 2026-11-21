@@ -336,6 +336,8 @@ func run() error {
 		Mac:      application.MacOptions{ApplicationShouldTerminateAfterLastWindowClosed: true},
 		Services: services,
 		Assets:   application.AssetOptions{Handler: application.AssetFileServerFS(assets)},
+		// Отмену и повтор в текстовых полях Linux выполняет фронтенд (internal/app/edit_keys_linux.go).
+		KeyBindings: shell.EditKeyBindings(),
 	})
 	shell.ConfigureNativeDesktop(native, desktop)
 	shell.ConfigureWindowIcon(desktop)

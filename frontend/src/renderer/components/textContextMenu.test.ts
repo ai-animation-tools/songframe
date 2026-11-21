@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SEARCH_QUERY_LIMIT, googleSearchUrl, textFieldActions, type TextFieldState } from './textContextMenu';
+import { SEARCH_QUERY_LIMIT, fieldEditCommand, googleSearchUrl, needsFieldUndo, textFieldActions, type TextFieldState } from './textContextMenu';
 
 const state = (overrides: Partial<TextFieldState>): TextFieldState => ({
   start: 0,
@@ -28,5 +28,31 @@ describe('контекстное меню текста', () => {
     expect(googleSearchUrl('a&b=c#d')).toBe('https://www.google.com/search?q=a%26b%3Dc%23d');
     expect(googleSearchUrl(' \n ')).toBeNull();
     expect(query('я'.repeat(SEARCH_QUERY_LIMIT + 20))).toHaveLength(SEARCH_QUERY_LIMIT);
+  });
+});
+
+describe('отмена в полях', () => {
+  const keys = (code: string, modifiers: Partial<Record<'ctrlKey' | 'shiftKey' | 'altKey' | 'metaKey', boolean>> = {}) => ({
+    code,
+    ctrlKey: true,
+    shiftKey: false,
+    altKey: false,
+    metaKey: false,
+    ...modifiers
+  });
+
+  it('команда по физической клавише в любой раскладке', () => {
+    expect(fieldEditCommand(keys('KeyZ'))).toBe('undo');
+    expect(fieldEditCommand(keys('KeyZ', { shiftKey: true }))).toBe('redo');
+    expect(fieldEditCommand(keys('KeyY'))).toBe('redo');
+    expect(fieldEditCommand(keys('KeyY', { shiftKey: true }))).toBeNull();
+    expect(fieldEditCommand(keys('KeyZ', { ctrlKey: false }))).toBeNull();
+    expect(fieldEditCommand(keys('KeyZ', { altKey: true }))).toBeNull();
+    expect(fieldEditCommand(keys('KeyX'))).toBeNull();
+  });
+
+  it('своя отмена только в Linux', () => {
+    expect(needsFieldUndo('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15')).toBe(true);
+    expect(needsFieldUndo('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36 Edg/130.0')).toBe(false);
   });
 });

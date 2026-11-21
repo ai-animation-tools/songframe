@@ -6,7 +6,9 @@
  * Меню перехватывает событие contextmenu на фазе захвата раньше рантайма Wails. Вставка читает
  * буфер обмена через Go (window.api.shell.clipboardText): WebKit не даёт странице читать его сам.
  * Вставка и удаление идут через execCommand, чтобы React увидел ввод, а Ctrl+Z поля отменял их.
- * Горячие клавиши Ctrl+X/C/V/A не перехватываются и работают штатно.
+ * Горячие клавиши Ctrl+X/C/V/A не перехватываются и работают штатно. Отмену и повтор в поле
+ * (Ctrl+Z, Ctrl+Shift+Z, Ctrl+Y) в Linux выполняет этот же компонент одной execCommand на нажатие:
+ * своя отмена WebKitGTK в полях не срабатывает, а запасная отмена Wails выключена пустыми привязками.
  */
 import { type ReactElement, type ReactNode, useLayoutEffect, useState } from 'react';
 import { Alert, Divider, ListItemIcon, ListItemText, Menu, MenuItem, type MenuItemProps, Snackbar, Typography } from '@mui/material';
@@ -17,7 +19,16 @@ import SelectAllIcon from '@mui/icons-material/SelectAll';
 import SearchIcon from '@mui/icons-material/Search';
 import { contextMenuTexts as texts } from '@shared/texts/context-menu';
 import { describeError } from '../state';
-import { googleSearchUrl, textFieldActions, textFieldAt, textFieldState, type TextField, type TextFieldState } from './textContextMenu';
+import {
+  fieldEditCommand,
+  googleSearchUrl,
+  needsFieldUndo,
+  textFieldActions,
+  textFieldAt,
+  textFieldState,
+  type TextField,
+  type TextFieldState
+} from './textContextMenu';
 
 type MenuState = { x: number; y: number } & ({ kind: 'field'; field: TextField; state: TextFieldState } | { kind: 'text'; text: string });
 
@@ -87,6 +98,21 @@ export function TextContextMenu(): ReactElement {
     };
     document.addEventListener('contextmenu', open, true);
     return () => document.removeEventListener('contextmenu', open, true);
+  }, []);
+
+  // Отмена и повтор в поле ввода в Linux: одна команда на нажатие, по физической клавише.
+  useLayoutEffect(() => {
+    if (!needsFieldUndo(navigator.userAgent)) return;
+    const edit = (event: KeyboardEvent): void => {
+      if (event.defaultPrevented) return;
+      const command = fieldEditCommand(event);
+      const field = command ? textFieldAt(event.target) : null;
+      if (!command || !field || field.readOnly || field.disabled) return;
+      event.preventDefault();
+      document.execCommand(command);
+    };
+    document.addEventListener('keydown', edit, true);
+    return () => document.removeEventListener('keydown', edit, true);
   }, []);
 
   const close = (): void => setMenu(null);

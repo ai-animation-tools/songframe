@@ -10,6 +10,7 @@ SongFrame — комплекс для производства музыкаль�
 | [docs/code-map.md](docs/code-map.md) | Карта кода: области, их пакеты и страницы, документы-владельцы |
 | [docs/development.md](docs/development.md) | Устройство приложения, контракт `window.api`, тесты и эталоны |
 | [docs/production-workflow.md](docs/production-workflow.md) | Производство плана: попытки, опоры, запрос, платная отправка, приёмка |
+| [docs/production-map.md](docs/production-map.md) | Схемы пути производства: все ветки и что получает агент на каждом этапе |
 | [docs/scenario-workflow.md](docs/scenario-workflow.md) | Сценарный проход и применение предложений |
 | [docs/timing.md](docs/timing.md) | Разметка песни: текст, автоматическая разметка, редактор таймингов |
 | [docs/montage.md](docs/montage.md) | Аниматик, монтаж, производные планы, экспорт для монтажёра |

@@ -109,6 +109,13 @@ func (s *ProductionWorkflowService) RetryWithFrames(ctx context.Context, project
 	return wire.Done(s.workflow.RetryWithFrames(ctx, project, shot, packageDir))
 }
 
+// RetryFirstFrame — productionWorkflow.retryFirstFrame: новая попытка плана с описанием, первой
+// утверждённой опорой и срезом речи выбранной попытки, с выбором одной опоры и без видеопромпта.
+// Попытки лежат вне Git, поэтому точка истории проекта не нужна.
+func (s *ProductionWorkflowService) RetryFirstFrame(ctx context.Context, project, shot, packageDir string) (productionworkflow.View, error) {
+	return wire.Done(s.workflow.RetryFirstFrame(ctx, project, shot, packageDir))
+}
+
 // GenerateFrames — productionWorkflow.generateFrames: сначала проверка доступа KindImage —
 // выбранный провайдер изображений, его программа-агент или вход в платного провайдера, затем
 // следующая опора плана. Внутри генерации выбор второй раз не проверяется.

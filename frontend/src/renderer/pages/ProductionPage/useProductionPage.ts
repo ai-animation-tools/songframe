@@ -462,6 +462,19 @@ export function useProductionPage() {
     );
   };
 
+  /** Новая попытка только с первой опорой создаётся в Go и сразу выбирается: дальше агент пишет видеопромпт для одной опоры. */
+  const retryFirstFrame = (pkg: PackageView): void => {
+    void act(
+      productionTexts.useProductionPage.attemptFirstFrame({ relative: pkg.relative }),
+      async () => {
+        const created = await window.api.productionWorkflow.retryFirstFrame(project, pkg.shot, pkg.dir);
+        if (created.packageDir) selectPackage(created.packageDir);
+      },
+      pkg.dir,
+      pkg.shot
+    );
+  };
+
   /** Повреждённая папка не является пакетом: удаление не трогает выбор и просто обновляет сводку. */
   const discardBroken = (item: BrokenPackage): void => {
     void act(
@@ -517,6 +530,7 @@ export function useProductionPage() {
     newAttempt: rememberedPackage === '__new__' || (currentPackage === undefined && proposalSelection === '__new__'),
     selectPackage,
     retryWithFrames,
+    retryFirstFrame,
     reportWorkflowBusy,
     workflowBusyFor
   };

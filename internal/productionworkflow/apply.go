@@ -260,7 +260,7 @@ func (w *Workflow) applyDescription(ctx context.Context, plan *applyPlan) error 
 			if err != nil {
 				return err
 			}
-			if err := carryApprovedFrames(c.PackageDir, target, c.Workflow, fresh); err != nil {
+			if err := carryApprovedFrames(c.PackageDir, target, c.Workflow, fresh, 0); err != nil {
 				return err
 			}
 			if err := writeProjectJSON(filepath.Join(target, "workflow.json"), fresh); err != nil {

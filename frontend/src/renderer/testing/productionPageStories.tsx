@@ -113,6 +113,8 @@ interface PageModel {
   discards: number;
   /** Новых попыток с теми же опорами (productionWorkflow.retryWithFrames). */
   frameRetries: number;
+  /** Новых попыток только с первой опорой (productionWorkflow.retryFirstFrame). */
+  firstFrameRetries: number;
   reviewStarts: number;
   reviewCancels: number;
   manualBuilds: number;
@@ -191,6 +193,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
         frameRuns: 0,
         discards: 0,
         frameRetries: 0,
+        firstFrameRetries: 0,
         reviewStarts: 0,
         reviewCancels: 0,
         manualBuilds: 0,
@@ -676,6 +679,32 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
             publish();
             return workflowSnapshot(project, shotId, created.dir);
           },
+          // Как Go: следующая попытка плана получает описание и первую утверждённую опору, выбор одной опоры и
+          // ждёт видеопромпт; прежняя не меняется.
+          retryFirstFrame: async (project, shotId, dir) => {
+            const { shot, pkg } = find(project, dir);
+            if (pkg.keyframes.length < 2 || !pkg.keyframes.every((frame) => frame.approved))
+              throw new Error('Не все опоры попытки утверждены или их файлы изменились.');
+            const relative = `plan/batches/${shot.id}-attempt-0${shot.packages.length + 1}`;
+            const created: PackageView = {
+              ...structuredClone(pkg),
+              dir: `${PAGE_PROJECT}/${relative}`,
+              relative,
+              retryOf: pkg.dir,
+              stage: 'keyframes_review',
+              stageLabel: 'Опоры утверждены',
+              keyframes: structuredClone(pkg.keyframes.slice(0, 1)),
+              prompt: null,
+              request: null,
+              decision: null,
+              pendingDecision: null
+            };
+            shot.packages = [...shot.packages, created];
+            shot.stageLabel = created.stageLabel;
+            model.firstFrameRetries++;
+            publish();
+            return workflowSnapshot(project, shotId, created.dir);
+          },
           generateFrames: async (project, shot, dir) => {
             find(project, dir);
             model.frameRuns++;
@@ -946,11 +975,12 @@ export function ProductionPageStory({ links = [] }: { links?: StoryLink[] }): Re
             Чтений: {model.reads}. Ответов: {model.decisions}. Выборов оригинала: {model.selections}. Утверждено опор: {approved.join(', ') || 'нет'}. Приёмок
             комплекта: {model.accepts}. Отправок генерации: {model.submissions}. Своих файлов опор: {model.frameImports}. Указаний к опорам:{' '}
             {model.frameNotes.join(', ') || 'нет'}. Созданий опор: {model.frameRuns}. Удалений попыток: {model.discards}. Попыток с теми же опорами:{' '}
-            {model.frameRetries}. Пакетов ручной генерации: {model.manualBuilds}. Загрузок видео: {model.manualUploads}. Замен видео: {model.manualReplacements}
-            . Своих видео: {model.ownVideos}. Входов своих видео: {model.ownVideoGenerations.join('; ') || 'нет'}. Возвратов промпта:{' '}
-            {model.promptReopens.join(', ') || 'нет'}. Своих описаний: {model.ownSaves.join(', ') || 'нет'}. Способов генерации:{' '}
-            {model.methodChanges.join(', ') || 'нет'}. Запросов приложения: {model.requestBuilds.join(', ') || 'нет'}. Вариантов промпта к отправке:{' '}
-            {model.promptVariants.join(', ') || 'нет'}. Открытых папок: {model.openedPaths.join(', ') || 'нет'}.
+            {model.frameRetries}. Попыток с первой опорой: {model.firstFrameRetries}. Пакетов ручной генерации: {model.manualBuilds}. Загрузок видео:{' '}
+            {model.manualUploads}. Замен видео: {model.manualReplacements}. Своих видео: {model.ownVideos}. Входов своих видео:{' '}
+            {model.ownVideoGenerations.join('; ') || 'нет'}. Возвратов промпта: {model.promptReopens.join(', ') || 'нет'}. Своих описаний:{' '}
+            {model.ownSaves.join(', ') || 'нет'}. Способов генерации: {model.methodChanges.join(', ') || 'нет'}. Запросов приложения:{' '}
+            {model.requestBuilds.join(', ') || 'нет'}. Вариантов промпта к отправке: {model.promptVariants.join(', ') || 'нет'}. Открытых папок:{' '}
+            {model.openedPaths.join(', ') || 'нет'}.
           </Typography>
           <Typography variant="caption" color="text.secondary" data-testid="production-review-model">
             Проверок видео: {model.reviewStarts}. Отмен проверок: {model.reviewCancels}.

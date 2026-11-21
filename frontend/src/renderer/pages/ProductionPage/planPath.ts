@@ -59,6 +59,22 @@ export function canRetryWithFrames(pkg: PackageView): boolean {
   );
 }
 
+/**
+ * Из попытки можно начать новую только с первой опорой (productionWorkflow.retryFirstFrame): описание
+ * принято, опор не меньше двух и все утверждены; не своё видео и не во время отправки. В отличие от
+ * повтора с теми же опорами доступна и до отправки: число опор на месте не меняется. Go проверяет то
+ * же и дополнительно — файлы опор.
+ */
+export function canRetryFirstFrame(pkg: PackageView): boolean {
+  return (
+    !pkg.request?.ownVideo &&
+    pkg.stage !== 'description_review' &&
+    pkg.keyframes.length >= 2 &&
+    pkg.keyframes.every((frame) => frame.approved) &&
+    !REQUEST_IN_FLIGHT.includes(pkg.request?.attemptStatus ?? '')
+  );
+}
+
 const QUESTION_STEPS: Record<string, PlanStepKey> = {
   description_review: 'description',
   keyframes_review: 'frames',

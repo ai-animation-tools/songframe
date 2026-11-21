@@ -145,6 +145,7 @@ const (
 	textRetryFramesInFlight            = "Дождитесь завершения отправки и получения видео."
 	textRetryFramesNotApproved         = "Не все опоры попытки утверждены или их файлы изменились."
 	textRetryFramesBusy                = "План занят: дождитесь завершения задания."
+	textRetryFirstFrameUnavailable     = "Снимать только с первой опорой можно из попытки с принятым описанием и не меньше чем двумя опорами."
 )
 
 // textToolExitCode — toolExitCode: инструмент завершился без текста ошибки; code nil — null.

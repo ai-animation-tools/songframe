@@ -103,6 +103,7 @@ export function apiSkeleton(): Api {
       discard: stub('productionWorkflow.discard'),
       fixScenario: stub('productionWorkflow.fixScenario'),
       retryWithFrames: stub('productionWorkflow.retryWithFrames'),
+      retryFirstFrame: stub('productionWorkflow.retryFirstFrame'),
       generateFrames: stub('productionWorkflow.generateFrames'),
       importFrames: stub('productionWorkflow.importFrames'),
       buildManual: stub('productionWorkflow.buildManual'),

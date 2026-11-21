@@ -149,3 +149,88 @@ func TestRetryWithFramesRefusals(t *testing.T) {
 		t.Fatal("отказ создал попытку")
 	}
 }
+
+// Новая попытка только с первой опорой переносит описание, K01 теми же байтами и её строку плана
+// опор, кадр другого плана и срез речи; K02 и видеопромпт двух опор не переносятся, выбор опор —
+// одна, поэтому опоры новой попытки утверждены, а промпт пишется заново. Доступна и до отправки,
+// на этапе промпта; прежняя попытка не меняется.
+func TestRetryFirstFrame(t *testing.T) {
+	run := ownRun(t)
+	source := paidAttempt(t, run, "downloaded")
+	runTool(t, run.project, "shot_workflow", "set-stage", "--dir", source, "prompt_review")
+	before := treeBytes(t, source)
+	view, err := run.workflow.RetryFirstFrame(context.Background(), run.project, "M01", source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	target := filepath.Join(run.project, "plan", "batches", "M01-attempt-02")
+	if view.PackageDir == nil || *view.PackageDir != target || view.Stage == nil || *view.Stage != "keyframes_review" {
+		t.Fatalf("вид новой попытки: %v %v", view.PackageDir, view.Stage)
+	}
+	after := treeBytes(t, source)
+	for path, data := range before {
+		if !bytes.Equal(after[path], data) {
+			t.Fatalf("прежняя попытка: изменён %s", path)
+		}
+	}
+	copied := treeBytes(t, target)
+	for _, path := range []string{"description.md", "continuity/M00-last.png", "audio/speech.wav", "frames/K01.png"} {
+		if !bytes.Equal(copied[path], before[path]) {
+			t.Fatalf("%s не перенесён теми же байтами", path)
+		}
+	}
+	for _, path := range []string{"frames/K02.png", "video-prompt.txt", "request-01/attempt.json", "request-01/original.mp4"} {
+		if _, ok := copied[path]; ok {
+			t.Fatalf("%s не должен переноситься", path)
+		}
+	}
+	plan, err := readJSON(filepath.Join(target, "keyframe-prompts.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rows, _ := dynvalue.AsArray(plan); len(rows) != 1 || dynvalue.Get(rows[0], "id") != "K01" || dynvalue.Get(rows[0], "prompt") != "У берега" {
+		t.Fatalf("план опор новой попытки: %s", dynvalue.Stringify(plan))
+	}
+	c, err := ReadContext(run.project, "M01", target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if frames, err := c.FramesApproved(); err != nil || !frames {
+		t.Fatalf("опора новой попытки не утверждена: %v", err)
+	}
+	if prompt, err := c.PromptApproved(); err != nil || prompt {
+		t.Fatalf("промпт новой попытки утверждён: %v", err)
+	}
+	if items := keyframes(c.Workflow); len(items) != 1 || dynvalue.Get(items[0], "id") != "K01" {
+		t.Fatalf("опоры новой попытки: %s", dynvalue.Stringify(c.Workflow.Value("keyframes")))
+	}
+	if c.Workflow.Value("keyframe_count") != float64(1) || c.Workflow.Value("retry_of") != "plan/batches/M01-attempt-01" || c.Workflow.Value("request_dir") != nil {
+		t.Fatalf("workflow новой попытки: %s", dynvalue.Stringify(c.Workflow))
+	}
+	// Из попытки с одной опорой снимать «только с первой» нечего.
+	if _, err := run.workflow.RetryFirstFrame(context.Background(), run.project, "M01", target); err == nil || err.Error() != textRetryFirstFrameUnavailable {
+		t.Fatalf("попытка с одной опорой: %v", err)
+	}
+}
+
+// Только с первой опорой нельзя, пока исход отправки неизвестен и когда опоры изменились после
+// утверждения.
+func TestRetryFirstFrameRefusals(t *testing.T) {
+	run := ownRun(t)
+	source := paidAttempt(t, run, "submission_unknown")
+	if _, err := run.workflow.RetryFirstFrame(context.Background(), run.project, "M01", source); err == nil || err.Error() != textRetryFramesInFlight {
+		t.Fatalf("неизвестный исход: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(source, "request-01", "attempt.json"), []byte(`{"status":"downloaded"}`), 0o664); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(source, "frames", "K02.png"), []byte("другое"), 0o664); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := run.workflow.RetryFirstFrame(context.Background(), run.project, "M01", source); err == nil || err.Error() != textRetryFramesNotApproved {
+		t.Fatalf("изменённая опора: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(run.project, "plan", "batches", "M01-attempt-02")); !os.IsNotExist(err) {
+		t.Fatal("отказ создал попытку")
+	}
+}

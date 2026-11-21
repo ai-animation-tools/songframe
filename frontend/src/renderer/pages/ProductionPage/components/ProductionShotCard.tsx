@@ -4,6 +4,7 @@ import { useState, type ReactElement } from 'react';
 import { Alert, Box, Button, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Paper, TextField, Tooltip, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import LooksOneOutlinedIcon from '@mui/icons-material/LooksOneOutlined';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import ReplayIcon from '@mui/icons-material/Replay';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
@@ -17,7 +18,7 @@ import { formatClock } from '../../../format';
 import { JobStatus } from '../../../components/JobStatus';
 import { BUSY_REASON } from '../constants';
 import { isPaidAttempt, isQueuedPackage } from '../decisions';
-import { attemptLabel, canRetryWithFrames, REQUEST_IN_FLIGHT, type PlanTone } from '../planPath';
+import { attemptLabel, canRetryFirstFrame, canRetryWithFrames, REQUEST_IN_FLIGHT, type PlanTone } from '../planPath';
 import { AcceptedAsset } from './AcceptedAsset';
 import { DerivedShotNotice } from './DerivedShotNotice';
 import { ShotSpendSummary } from './ShotSpendSummary';
@@ -40,6 +41,7 @@ export function ProductionShotCard({
   onOwnVideo,
   onDiscardAttempt,
   onRetryWithFrames,
+  onRetryFirstFrame,
   onFragment,
   project,
   onSpendChanged
@@ -59,6 +61,8 @@ export function ProductionShotCard({
   onNewAttempt?(): void;
   /** Новая попытка с описанием, опорами и срезом речи выбранной; после отправки видео. */
   onRetryWithFrames?(pkg: PackageView): void;
+  /** Новая попытка только с первой опорой выбранной: видео снимается с одной опорой. */
+  onRetryFirstFrame?(pkg: PackageView): void;
   /** Загрузить своё видео плана новой попыткой без описания, опор и промпта. */
   onOwnVideo?(): void;
   /** Удалить попытку целиком; доступно вне незавершённой отправки. */
@@ -76,6 +80,7 @@ export function ProductionShotCard({
   const attempt = attempts.find((pkg) => pkg.dir === selectedPackage) ?? null;
   const canDiscard = !!onDiscardAttempt && !!attempt && attempt.stage !== 'accepted' && !REQUEST_IN_FLIGHT.includes(attempt.request?.attemptStatus ?? '');
   const retryFrom = onRetryWithFrames && attempt && canRetryWithFrames(attempt) ? attempt : null;
+  const firstFrameFrom = onRetryFirstFrame && attempt && canRetryFirstFrame(attempt) ? attempt : null;
   const paidAttempt = !!attempt && isPaidAttempt(attempt);
   // Видео, загруженное пользователем, удаляется с попыткой, а его стоимость уходит из расхода: подтверждение называет обе.
   const uploadedCost = attempt?.request?.manualGeneration?.cost;
@@ -107,7 +112,7 @@ export function ProductionShotCard({
             {productionTexts.fragmentPreview.open}
           </Button>
         ) : null}
-        {canRetry || onNewAttempt || retryFrom || onOwnVideo || canDiscard ? (
+        {canRetry || onNewAttempt || retryFrom || firstFrameFrom || onOwnVideo || canDiscard ? (
           <Tooltip title={productionTexts.planPath.moreActions}>
             <IconButton size="small" aria-label={productionTexts.planPath.moreActions} onClick={(event) => setMenu(event.currentTarget)}>
               <MoreVertIcon fontSize="small" />
@@ -142,6 +147,21 @@ export function ProductionShotCard({
               <ContentCopyIcon fontSize="small" />
             </ListItemIcon>
             <ListItemText primary={productionTexts.planPath.retryWithFrames} secondary={busy ? BUSY_REASON : null} />
+          </MenuItem>
+        ) : null}
+        {firstFrameFrom ? (
+          <MenuItem
+            disabled={busy}
+            title={productionTexts.planPath.retryFirstFrameHint}
+            onClick={() => {
+              setMenu(null);
+              onRetryFirstFrame?.(firstFrameFrom);
+            }}
+          >
+            <ListItemIcon>
+              <LooksOneOutlinedIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText primary={productionTexts.planPath.retryFirstFrame} secondary={busy ? BUSY_REASON : null} />
           </MenuItem>
         ) : null}
         {onOwnVideo ? (

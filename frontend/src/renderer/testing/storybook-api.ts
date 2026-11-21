@@ -98,6 +98,7 @@ export function unconfiguredStoryApi(): Api {
       discard: async () => unconfigured('productionWorkflow.discard'),
       fixScenario: async () => unconfigured('productionWorkflow.fixScenario'),
       retryWithFrames: async () => unconfigured('productionWorkflow.retryWithFrames'),
+      retryFirstFrame: async () => unconfigured('productionWorkflow.retryFirstFrame'),
       generateFrames: async () => unconfigured('productionWorkflow.generateFrames'),
       importFrames: async () => unconfigured('productionWorkflow.importFrames'),
       buildManual: async () => unconfigured('productionWorkflow.buildManual'),

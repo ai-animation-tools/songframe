@@ -510,6 +510,9 @@ export const productionTexts = {
     retryWithFrames: 'Новая попытка с теми же опорами',
     retryWithFramesHint:
       'Описание, утверждённые опоры и срез речи переносятся в новую попытку, видеопромпт — для повторного утверждения. В ней можно вернуть опору на доработку или изменить промпт. Эта попытка не меняется.',
+    retryFirstFrame: 'Новая попытка только с первой опорой',
+    retryFirstFrameHint:
+      'Описание, первая утверждённая опора и срез речи переносятся в новую попытку, остальные опоры — нет. Видео снимается с одной опорой, конец плана видеопромпт описывает словами; промпт для одной опоры пишется заново. Помогает, когда первая и последняя опоры почти одинаковы и видео выходит застывшим. Эта попытка не меняется.',
     ownVideo: 'Загрузить своё видео',
     retryFromRequest: 'Повторить по сохранённому запросу',
     deleteAttempt: 'Удалить попытку',
@@ -560,6 +563,7 @@ export const productionTexts = {
     requestSubmitted: ({ shot }: { shot: string }) => `Запрос ${shot} отправлен. Результат придёт уведомлением, когда сервис его вернёт.`,
     attemptDeleted: ({ relative }: { relative: string }) => `Попытка ${relative} удалена`,
     attemptRetried: ({ relative }: { relative: string }) => `Новая попытка с опорами из ${relative} создана`,
+    attemptFirstFrame: ({ relative }: { relative: string }) => `Новая попытка с первой опорой из ${relative} создана`,
     folderDeleted: ({ relative }: { relative: string }) => `Папка ${relative} удалена`
   },
   useProductionWorkflow: {

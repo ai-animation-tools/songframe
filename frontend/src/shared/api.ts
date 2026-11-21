@@ -130,6 +130,11 @@ export interface Api {
      * переносятся, видеопромпт — неутверждённым. Вид — новой попытки.
      */
     retryWithFrames(project: string, shot: string, packageDir: string): Promise<ProductionWorkflowView>;
+    /**
+     * Новая попытка только с первой опорой: описание, первая утверждённая опора и срез речи выбранной
+     * попытки переносятся, выбор опор — одна, видеопромпт пишется заново. Вид — новой попытки.
+     */
+    retryFirstFrame(project: string, shot: string, packageDir: string): Promise<ProductionWorkflowView>;
     generateFrames(project: string, shot: string, packageDir: string): Promise<ProductionWorkflowView>;
     importFrames(project: string, shot: string, packageDir: string, images: ProductionFrameCandidate[]): Promise<ProductionWorkflowView>;
     /** Ручная попытка: собирает без агента пакет для генерации вне приложения (опоры, у речевого плана срез речи, промпт). */

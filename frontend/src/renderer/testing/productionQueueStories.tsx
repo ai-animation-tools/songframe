@@ -201,6 +201,26 @@ export function ProductionShotStory({ initialShot, initialSelected = '', busy = 
     setShot((current) => ({ ...current, packages: [...current.packages, created] }));
     setSelected(created.dir);
   };
+  // Как useProductionPage: новая попытка только с первой опорой сразу выбирается и ждёт видеопромпт.
+  const retryFirstFrame = (pkg: PackageView): void => {
+    const suffix = String(shot.packages.length + 1).padStart(2, '0');
+    const relative = `plan/batches/M02-attempt-${suffix}`;
+    const created: PackageView = {
+      ...structuredClone(pkg),
+      dir: `${PROJECT}/${relative}`,
+      relative,
+      retryOf: pkg.dir,
+      stage: 'keyframes_review',
+      stageLabel: 'Опоры утверждены',
+      keyframes: structuredClone(pkg.keyframes.slice(0, 1)),
+      prompt: null,
+      request: null,
+      decision: null,
+      pendingDecision: null
+    };
+    setShot((current) => ({ ...current, packages: [...current.packages, created] }));
+    setSelected(created.dir);
+  };
   return (
     <Stack spacing={2}>
       <ProductionShotCard
@@ -213,6 +233,7 @@ export function ProductionShotStory({ initialShot, initialSelected = '', busy = 
         onNewAttempt={shot.derivedFrom || (!shot.packages.length && !shot.asset) ? undefined : () => setSelected('__new__')}
         onDiscardAttempt={discard}
         onRetryWithFrames={retryWithFrames}
+        onRetryFirstFrame={retryFirstFrame}
         operation={{ job }}
       />
       <RegenerateDialog shot={confirm} problem={shot.regenerateProblem} onClose={() => setConfirm(null)} onConfirm={repeat} />

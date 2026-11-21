@@ -95,6 +95,15 @@ export function RequestOptions(project: string, shot: string, packageDir: string
 }
 
 /**
+ * RetryFirstFrame — productionWorkflow.retryFirstFrame: новая попытка плана с описанием, первой
+ * утверждённой опорой и срезом речи выбранной попытки, с выбором одной опоры и без видеопромпта.
+ * Попытки лежат вне Git, поэтому точка истории проекта не нужна.
+ */
+export function RetryFirstFrame(project: string, shot: string, packageDir: string): $CancellablePromise<productionworkflow$0.View> {
+    return $Call.ByID(4247306683, project, shot, packageDir);
+}
+
+/**
  * RetryWithFrames — productionWorkflow.retryWithFrames: новая попытка плана с описанием, опорами и
  * срезом речи выбранной попытки и неутверждённым промптом. Попытки лежат вне Git, поэтому точка
  * истории проекта не нужна.

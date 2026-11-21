@@ -166,6 +166,19 @@ export const RetryWithFrames: Story = {
     await expect(canvas.getByTestId('shot-model')).toHaveTextContent('Попыток: 2.');
   }
 };
+export const RetryFirstFrame: Story = {
+  tags: ['ci'],
+  name: 'Меню · новая попытка только с первой опорой выбирает её, прежняя остаётся',
+  args: { initialShot: productionShot({ packages: [waiting] }), initialSelected: waiting.dir },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const item = (await openMenu(canvasElement)).getByRole('menuitem', { name: path.retryFirstFrame });
+    await expect(item).toHaveAttribute('title', path.retryFirstFrameHint);
+    await userEvent.click(item);
+    await expect(canvas.getByText(/Открыт пакет: plan\/batches\/M02-attempt-02/)).toBeInTheDocument();
+    await expect(canvas.getByTestId('shot-model')).toHaveTextContent('Попыток: 2.');
+  }
+};
 export const RetryWithFramesInPlace: Story = {
   name: 'Меню · пока опору можно вернуть на месте, новой попытки с опорами нет',
   args: { initialShot: productionShot({ packages: [framesReview] }), initialSelected: framesReview.dir },
@@ -173,6 +186,8 @@ export const RetryWithFramesInPlace: Story = {
     const menu = await openMenu(canvasElement);
     await expect(menu.getByRole('menuitem', { name: path.newAttempt })).toBeInTheDocument();
     await expect(menu.queryByRole('menuitem', { name: path.retryWithFrames })).not.toBeInTheDocument();
+    // Только с первой опорой можно и до отправки: число опор на месте не меняется.
+    await expect(menu.getByRole('menuitem', { name: path.retryFirstFrame })).toBeInTheDocument();
   }
 };
 export const DeleteAttempt: Story = {

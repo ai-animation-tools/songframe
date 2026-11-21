@@ -522,6 +522,27 @@ export const RetryWithFrames: Story = {
   }
 };
 
+export const RetryFirstFrame: Story = {
+  tags: ['ci'],
+  name: 'Меню плана · новая попытка только с первой опорой: одна опора, видеопромпт заново',
+  parameters: { songframe: options({ shots: multipleShots }) },
+  play: async (context) => {
+    const screen = screenOf(context);
+    await screen.findByText('Утвердить опору K02?', {}, POLL_TIMEOUT);
+    // Не все опоры первой попытки утверждены: пункта нет.
+    const menu = await openMenu(context);
+    await expect(menu.queryByRole('menuitem', { name: steps.retryFirstFrame })).not.toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    await userEvent.click(attemptSelect(context));
+    await userEvent.click(await screen.findByRole('option', { name: attemptName(steps.attempt({ number: '2' }), 'Запрос подготовлен') }));
+    await userEvent.click((await openMenu(context)).getByRole('menuitem', { name: steps.retryFirstFrame }));
+    await waitFor(() => expect(counts(context)).toHaveTextContent('Попыток с первой опорой: 1.'));
+    await waitFor(() => expect(attemptSelect(context)).toHaveTextContent(attemptName(steps.attempt({ number: '4' }), 'Опоры утверждены')), POLL_TIMEOUT);
+    await expect(screen.getByText(texts.useProductionPage.attemptFirstFrame({ relative: 'plan/batches/M02-attempt-02' }))).toBeInTheDocument();
+    await expect(counts(context)).toHaveTextContent('Отправок генерации: 0.');
+  }
+};
+
 /** Попытка без вопроса и кандидатов: следующую опору создают или ставят своим файлом. */
 const noCandidates = () =>
   keyframePackage({

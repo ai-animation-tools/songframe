@@ -149,6 +149,104 @@
           "height": 2.2
         }
       ]
+    },
+    "beach": {
+      "id": "s2",
+      "location": "beach",
+      "title": "Пляж",
+      "objects": [
+        {
+          "id": "o1",
+          "name": "Вода",
+          "shape": {
+            "type": "rect",
+            "center": [
+              0,
+              30
+            ],
+            "size": [
+              60,
+              20
+            ]
+          }
+        },
+        {
+          "id": "o2",
+          "name": "Песок",
+          "shape": {
+            "type": "rect",
+            "center": [
+              0,
+              10
+            ],
+            "size": [
+              60,
+              20
+            ]
+          }
+        },
+        {
+          "id": "o3",
+          "name": "Мостки",
+          "shape": {
+            "type": "line",
+            "points": [
+              [
+                0,
+                -4
+              ],
+              [
+                0,
+                26
+              ]
+            ],
+            "width": 2
+          }
+        },
+        {
+          "id": "o4",
+          "name": "Полотенце",
+          "shape": {
+            "type": "rect",
+            "center": [
+              0.4,
+              4.5
+            ],
+            "size": [
+              0.6,
+              1
+            ]
+          }
+        },
+        {
+          "id": "o5",
+          "name": "Буй",
+          "shape": {
+            "type": "point",
+            "at": [
+              3,
+              32
+            ]
+          },
+          "height": 0.6
+        },
+        {
+          "id": "o6",
+          "name": "Вышка спасателя",
+          "shape": {
+            "type": "rect",
+            "center": [
+              -6,
+              12
+            ],
+            "size": [
+              2,
+              2
+            ]
+          },
+          "height": 4
+        }
+      ]
     }
   },
   "cases": [
@@ -218,12 +316,8 @@
             },
             {
               "name": "Навес",
-              "in_frame": true,
-              "x": [
-                -1,
-                1
-              ],
-              "place": "во всю ширину кадра",
+              "in_frame": false,
+              "place": "над верхним краем кадра",
               "distance": 3,
               "height": 2.7
             },
@@ -368,12 +462,8 @@
             },
             {
               "name": "Навес",
-              "in_frame": true,
-              "x": [
-                -1,
-                1
-              ],
-              "place": "во всю ширину кадра",
+              "in_frame": false,
+              "place": "над верхним краем кадра",
               "distance": 3,
               "height": 2.7
             },
@@ -735,12 +825,8 @@
             },
             {
               "name": "Навес",
-              "in_frame": true,
-              "x": [
-                -1,
-                1
-              ],
-              "place": "во всю ширину кадра",
+              "in_frame": false,
+              "place": "над верхним краем кадра",
               "distance": 3,
               "height": 2.7
             },
@@ -826,12 +912,8 @@
             },
             {
               "name": "Навес",
-              "in_frame": true,
-              "x": [
-                -1,
-                1
-              ],
-              "place": "во всю ширину кадра",
+              "in_frame": false,
+              "place": "над верхним краем кадра",
               "distance": 3.6,
               "height": 2.7
             },
@@ -956,12 +1038,8 @@
             },
             {
               "name": "Навес",
-              "in_frame": true,
-              "x": [
-                -1,
-                -0.43
-              ],
-              "place": "от левого края до левой трети",
+              "in_frame": false,
+              "place": "над верхним краем кадра",
               "distance": 3,
               "height": 2.7
             },
@@ -1076,12 +1154,8 @@
             },
             {
               "name": "Навес",
-              "in_frame": true,
-              "x": [
-                -1,
-                1
-              ],
-              "place": "вокруг камеры",
+              "in_frame": false,
+              "place": "над верхним краем кадра",
               "distance": 0,
               "height": 2.7
             },
@@ -1218,6 +1292,327 @@
         },
         "note": "У локации нет схемы: факты кадра не посчитаны.",
         "start": null,
+        "end": null
+      }
+    },
+    {
+      "name": "ground-low-camera",
+      "description": "Низкая камера на мостках смотрит почти горизонтально на героя: нижний край кадра касается земли только в 7,4 м, поэтому полотенце у ног камеры — под нижним краем, а мостки и песок видны с этой глубины.",
+      "input": {
+        "viewpoint": {
+          "location": "beach",
+          "side": "south",
+          "size": "close",
+          "camera": {
+            "start": [
+              0,
+              1
+            ]
+          },
+          "camera_height": {
+            "start": 0.8
+          },
+          "subjects": [
+            {
+              "entity": "hero",
+              "start": [
+                0,
+                7
+              ]
+            }
+          ]
+        },
+        "scheme": "beach",
+        "heights": {
+          "hero": 1.8
+        }
+      },
+      "expected": {
+        "camera": {
+          "side": "south",
+          "size": "close",
+          "fov": 25
+        },
+        "start": {
+          "looks": "на север",
+          "camera_height": 0.8,
+          "subjects": [
+            {
+              "entity": "hero",
+              "lead": true,
+              "in_frame": true,
+              "x": 0,
+              "place": "центр",
+              "distance": 6,
+              "height": 1.8,
+              "frame_height": 1,
+              "whole": false,
+              "hidden_by": []
+            }
+          ],
+          "objects": [
+            {
+              "name": "Вода",
+              "in_frame": true,
+              "x": [
+                -1,
+                1
+              ],
+              "place": "во всю ширину кадра",
+              "distance": 19
+            },
+            {
+              "name": "Песок",
+              "in_frame": true,
+              "x": [
+                -1,
+                1
+              ],
+              "place": "во всю ширину кадра",
+              "distance": 7.4
+            },
+            {
+              "name": "Мостки",
+              "in_frame": true,
+              "x": [
+                -0.61,
+                0.61
+              ],
+              "place": "от левой трети до правой трети",
+              "distance": 7.4
+            },
+            {
+              "name": "Полотенце",
+              "in_frame": false,
+              "place": "под нижним краем кадра",
+              "distance": 3
+            },
+            {
+              "name": "Буй",
+              "in_frame": true,
+              "x": [
+                0.44,
+                0.44
+              ],
+              "place": "правая треть",
+              "distance": 31.1,
+              "height": 0.6
+            },
+            {
+              "name": "Вышка спасателя",
+              "in_frame": false,
+              "place": "за левым краем",
+              "distance": 11.2,
+              "height": 4
+            }
+          ]
+        },
+        "end": null
+      }
+    },
+    {
+      "name": "ground-drone-down",
+      "description": "Дрон на 20 м смотрит круто вниз на героя: видна только полоса земли между нижним и верхним краями кадра, вода дальше верхнего края — над ним.",
+      "input": {
+        "viewpoint": {
+          "location": "beach",
+          "side": "south",
+          "size": "close",
+          "camera": {
+            "start": [
+              0,
+              0
+            ]
+          },
+          "camera_height": {
+            "start": 20
+          },
+          "subjects": [
+            {
+              "entity": "hero",
+              "start": [
+                0,
+                10
+              ]
+            }
+          ]
+        },
+        "scheme": "beach",
+        "heights": {
+          "hero": 1.8
+        }
+      },
+      "expected": {
+        "camera": {
+          "side": "south",
+          "size": "close",
+          "fov": 25
+        },
+        "start": {
+          "looks": "на север",
+          "camera_height": 20,
+          "subjects": [
+            {
+              "entity": "hero",
+              "lead": true,
+              "in_frame": true,
+              "x": 0,
+              "place": "центр",
+              "distance": 10,
+              "height": 1.8,
+              "frame_height": 0.16,
+              "whole": true,
+              "hidden_by": []
+            }
+          ],
+          "objects": [
+            {
+              "name": "Вода",
+              "in_frame": false,
+              "place": "над верхним краем кадра",
+              "distance": 20
+            },
+            {
+              "name": "Песок",
+              "in_frame": true,
+              "x": [
+                -1,
+                1
+              ],
+              "place": "во всю ширину кадра",
+              "distance": 7.5
+            },
+            {
+              "name": "Мостки",
+              "in_frame": true,
+              "x": [
+                -0.6,
+                0.6
+              ],
+              "place": "от левой трети до правой трети",
+              "distance": 7.5
+            },
+            {
+              "name": "Полотенце",
+              "in_frame": false,
+              "place": "под нижним краем кадра",
+              "distance": 4
+            },
+            {
+              "name": "Буй",
+              "in_frame": false,
+              "place": "над верхним краем кадра",
+              "distance": 32.1,
+              "height": 0.6
+            },
+            {
+              "name": "Вышка спасателя",
+              "in_frame": false,
+              "place": "за левым краем",
+              "distance": 12.1,
+              "height": 4
+            }
+          ]
+        },
+        "end": null
+      }
+    },
+    {
+      "name": "ground-looking-up",
+      "description": "Камера у самой земли снизу вверх смотрит на героя рядом: нижний край кадра выше горизонта, земли в кадре нет — все плоские поверхности под нижним краем, вышка остаётся по горизонтали.",
+      "input": {
+        "viewpoint": {
+          "location": "beach",
+          "side": "south",
+          "size": "medium",
+          "camera": {
+            "start": [
+              0,
+              5
+            ]
+          },
+          "camera_height": {
+            "start": 0.3
+          },
+          "subjects": [
+            {
+              "entity": "hero",
+              "start": [
+                0,
+                6.5
+              ]
+            }
+          ]
+        },
+        "scheme": "beach",
+        "heights": {
+          "hero": 1.8
+        }
+      },
+      "expected": {
+        "camera": {
+          "side": "south",
+          "size": "medium",
+          "fov": 40
+        },
+        "start": {
+          "looks": "на север",
+          "camera_height": 0.3,
+          "subjects": [
+            {
+              "entity": "hero",
+              "lead": true,
+              "in_frame": true,
+              "x": 0,
+              "place": "центр",
+              "distance": 1.5,
+              "height": 1.8,
+              "frame_height": 1,
+              "whole": false,
+              "hidden_by": []
+            }
+          ],
+          "objects": [
+            {
+              "name": "Вода",
+              "in_frame": false,
+              "place": "под нижним краем кадра",
+              "distance": 15
+            },
+            {
+              "name": "Песок",
+              "in_frame": false,
+              "place": "под нижним краем кадра",
+              "distance": 0
+            },
+            {
+              "name": "Мостки",
+              "in_frame": false,
+              "place": "под нижним краем кадра",
+              "distance": 0
+            },
+            {
+              "name": "Полотенце",
+              "in_frame": false,
+              "place": "за спиной камеры",
+              "distance": 0.1
+            },
+            {
+              "name": "Буй",
+              "in_frame": false,
+              "place": "под нижним краем кадра",
+              "distance": 27.2,
+              "height": 0.6
+            },
+            {
+              "name": "Вышка спасателя",
+              "in_frame": false,
+              "place": "за левым краем",
+              "distance": 7.8,
+              "height": 4
+            }
+          ]
+        },
         "end": null
       }
     }

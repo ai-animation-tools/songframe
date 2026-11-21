@@ -1,7 +1,8 @@
 /**
  * Общая таблица случаев фактов кадра (testdata/golden/viewframe/cases.json): Go считает по ней полные факты для
  * агентов (internal/viewframe), здесь та же таблица проверяет карту точки съёмки — направление взгляда, попадание
- * героев в кадр, расстояние до объектов схемы и их попадание в кадр. Так карта и агент не расходятся.
+ * героев в кадр, расстояние до объектов схемы и их попадание в сектор обзора. Так карта и агент не расходятся;
+ * отсечение по высоте кадра есть только у Go, и для таких объектов проверяется вложенность, а не равенство.
  */
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
@@ -11,7 +12,7 @@ import { distance, footprintView, inFrame, lookHeading, pathPoint, type SceneVie
 interface PhaseFacts {
   looks: string;
   subjects: { entity: string; in_frame: boolean; distance: number }[];
-  objects: { name: string; in_frame: boolean; distance: number }[];
+  objects: { name: string; in_frame: boolean; place: string; distance: number }[];
 }
 
 interface CaseFile {
@@ -28,6 +29,12 @@ const file = JSON.parse(readFileSync(new URL('../../../testdata/golden/viewframe
 /** Направление словами, как у Go: ближайшая из восьми сторон света. */
 const COMPASS = ['на восток', 'на северо-восток', 'на север', 'на северо-запад', 'на запад', 'на юго-запад', 'на юг', 'на юго-восток'];
 const compass = (heading: number): string => COMPASS[Math.round((((heading % 360) + 360) % 360) / 45) % 8];
+
+/** Места объектов, которые Go отсёк по высоте кадра (internal/viewframe/words.go). */
+const VERTICAL_OUT = new Set(['под нижним краем кадра', 'над верхним краем кадра']);
+
+/** Плоская поверхность схемы: без высоты, подъёма и верха. */
+const flat = (object: Scheme['objects'][number]): boolean => !object.height && !object.elevation && !object.top?.rise;
 
 /** Округление как у Go: половина — от нуля. */
 const round1 = (value: number): number => (Math.sign(value) * Math.round(Math.abs(value) * 10)) / 10;
@@ -52,10 +59,20 @@ describe('Факты кадра: общая таблица с Go', () => {
           expect(round1(distance(camera, at)), subject.entity).toBe(subject.distance);
         }
         for (const object of facts.objects) {
-          const shape = scheme.objects.find((candidate) => candidate.name === object.name)!.shape;
-          const view = footprintView(viewpoint, phase, [shape])!;
-          expect(view.inFrame, object.name).toBe(object.in_frame);
-          expect(round1(view.distance), object.name).toBe(object.distance);
+          const source = scheme.objects.find((candidate) => candidate.name === object.name)!;
+          const view = footprintView(viewpoint, phase, [source.shape])!;
+          // Карта показывает горизонтальный сектор обзора, а Go для агента ещё отсекает по высоте кадра: то, что
+          // под нижним или над верхним краем, и плоскую поверхность ближе места, где нижний край касается земли.
+          // Такие объекты на карте в секторе, а видимая часть плоского не ближе, чем весь объект.
+          if (VERTICAL_OUT.has(object.place)) {
+            expect(view.inFrame, object.name).toBe(true);
+          } else if (flat(source) && object.in_frame) {
+            expect(view.inFrame, object.name).toBe(true);
+            expect(round1(view.distance), object.name).toBeLessThanOrEqual(object.distance);
+          } else {
+            expect(view.inFrame, object.name).toBe(object.in_frame);
+            expect(round1(view.distance), object.name).toBe(object.distance);
+          }
         }
       });
     }

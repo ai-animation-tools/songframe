@@ -50,7 +50,8 @@ type SubjectFacts struct {
 }
 
 // ObjectFacts — объект схемы на кадре. X — видимая часть по горизонтали [левый край, правый край] от −1 до +1,
-// только в кадре. Distance — до ближайшего края, м. Height — верх над землёй, у плоской поверхности нет.
+// только в кадре. Distance — до ближайшего края, м; у плоской поверхности в кадре — до ближайшей видимой точки.
+// Height — верх над землёй, у плоской поверхности нет.
 type ObjectFacts struct {
 	Name     string      `json:"name"`
 	Entity   string      `json:"entity,omitempty"`
@@ -300,9 +301,16 @@ func objectFacts(camera view, object schemes.Object) ObjectFacts {
 			low, high = math.Min(low, offset), math.Max(high, offset)
 		}
 	}
+	bottom, top := verticalRange(object)
+	flat := top <= epsilon
 	if around {
 		facts.Distance, facts.InFrame, facts.Place = 0, true, placeAround
 		facts.X = &[2]float64{-1, 1}
+		if flat {
+			groundFacts(camera, parts, &facts)
+		} else {
+			volumeFacts(camera, parts, bottom, top, &facts)
+		}
 		return facts
 	}
 	if reference == nil {
@@ -328,7 +336,76 @@ func objectFacts(camera view, object schemes.Object) ObjectFacts {
 	xLeft, xRight := camera.screenX(left), camera.screenX(right)
 	facts.X = &[2]float64{round(xLeft, 2), round(xRight, 2)}
 	facts.Place = rangePlace(xLeft, xRight, left >= half-epsilon, right <= -half+epsilon)
+	if flat {
+		groundFacts(camera, parts, &facts)
+	} else {
+		volumeFacts(camera, parts, bottom, top, &facts)
+	}
 	return facts
+}
+
+// volumeFacts проверяет по вертикали объём, который попал в сектор обзора: его часть перед камерой занимает
+// глубины вдоль взгляда от ближней до дальней, а по высоте — от низа low до верха high. Угол места над горизонтом
+// у точки на фиксированной высоте меняется с глубиной монотонно, поэтому весь разброс углов объёма — от меньшего
+// из углов низа на ближней и дальней глубине до большего из углов верха. Не задевает полосу кадра между нижним и
+// верхним краями — объём под нижним или над верхним краем кадра; место по горизонтали тогда не нужно.
+func volumeFacts(camera view, parts []part, low, high float64, facts *ObjectFacts) {
+	front := camera.trapezoid(0, groundFar).clip(parts)
+	if len(front) == 0 {
+		return
+	}
+	theta := camera.heading * math.Pi / 180
+	near, far := math.Inf(1), math.Inf(-1)
+	for _, piece := range front {
+		for _, point := range piece.points {
+			depth := (point[0]-camera.eye[0])*math.Cos(theta) + (point[1]-camera.eye[1])*math.Sin(theta)
+			near, far = math.Min(near, depth), math.Max(far, depth)
+		}
+	}
+	elevation := func(z, depth float64) float64 { return math.Atan2(z-camera.height, depth) * 180 / math.Pi }
+	lowest := math.Min(elevation(low, near), elevation(low, far))
+	highest := math.Max(elevation(high, near), elevation(high, far))
+	switch {
+	case highest < camera.pitch-camera.vfov/2-epsilon:
+		facts.InFrame, facts.X, facts.Place = false, nil, placeBelow
+	case lowest > camera.pitch+camera.vfov/2+epsilon:
+		facts.InFrame, facts.X, facts.Place = false, nil, placeAbove
+	}
+}
+
+// groundFacts уточняет факты плоской поверхности, которая попала в сектор обзора: в кадре только её часть на
+// видимой земле (groundView). Ничего не осталось — поверхность под нижним краем кадра (ближе, чем нижний край
+// касается земли, или камера смотрит выше горизонта) либо над верхним краем (дальше, чем верхний). Иначе место
+// и доля ширины — по видимой части, расстояние — до её ближайшей точки.
+func groundFacts(camera view, parts []part, facts *ObjectFacts) {
+	ground, ok := camera.ground()
+	var visible []part
+	if ok {
+		visible = ground.clip(parts)
+	}
+	if len(visible) == 0 {
+		facts.InFrame, facts.X, facts.Place = false, nil, placeBelow
+		if ok && len(camera.trapezoid(0, ground.near).clip(parts)) == 0 {
+			facts.Place = placeAbove
+		}
+		return
+	}
+	half := camera.fov / 2
+	left, right := math.Inf(-1), math.Inf(1)
+	for _, piece := range visible {
+		for _, point := range piece.points {
+			angle, known := headingBetween(camera.eye, point)
+			if !known {
+				continue
+			}
+			offset := math.Max(-half, math.Min(half, angleFrom(camera.heading, angle)))
+			left, right = math.Max(left, offset), math.Min(right, offset)
+		}
+	}
+	xLeft, xRight := camera.screenX(left), camera.screenX(right)
+	facts.X = &[2]float64{round(xLeft, 2), round(xRight, 2)}
+	facts.Place = rangePlace(xLeft, xRight, left >= half-epsilon, right <= -half+epsilon)
+	facts.Distance = round(nearest(camera.eye, visible), 1)
 }
 
 func clamp(value float64) float64 {

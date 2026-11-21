@@ -79,6 +79,7 @@ describe('preview производства', () => {
     expect(html).toContain('Агент отказался подготовить предложение. Возможно, в сценарии есть противоречия.');
     expect(html).toContain('Причина отказа');
     expect(html).toContain('нужно уточнить конечную эмоцию');
+    expect(html).toContain('отклоните предложение: сохранённое замечание откроется на шаге');
     expect(html).not.toContain('Причина проверки');
     expect(html).not.toContain('Ответ агента');
   });

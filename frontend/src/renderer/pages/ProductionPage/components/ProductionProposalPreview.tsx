@@ -253,6 +253,10 @@ function Proposed({
     return (
       <Stack spacing={1.5}>
         <Typography variant="subtitle2">{productionTexts.productionProposalPreview.refused}</Typography>
+        {/* В отказе нечего дорабатывать: путь к исправлению замечания — через отклонение предложения. */}
+        <Typography variant="body2" color="text.secondary">
+          {productionTexts.productionProposalPreview.refusedHint}
+        </Typography>
         {proposal.agentText ? (
           <Section title={productionTexts.productionProposalPreview.refusalReason}>
             <Paragraphs text={proposal.agentText} />
@@ -272,6 +276,10 @@ function Proposed({
     return (
       <Stack spacing={1.5}>
         <Typography variant="subtitle2">{productionTexts.productionProposalPreview.refused}</Typography>
+        {/* В отказе нечего дорабатывать: путь к исправлению замечания — через отклонение предложения. */}
+        <Typography variant="body2" color="text.secondary">
+          {productionTexts.productionProposalPreview.refusedHint}
+        </Typography>
         <Section title={productionTexts.productionProposalPreview.refusalReason}>
           <Paragraphs text={proposal.agentText} />
         </Section>

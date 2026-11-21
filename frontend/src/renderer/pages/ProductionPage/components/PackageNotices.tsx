@@ -15,6 +15,7 @@ export function PackageNotices({
   busy,
   busyReason = BUSY_REASON,
   frameRunning = false,
+  canOpenRevision = true,
   onKeepForScene,
   onOpenRevision
 }: {
@@ -23,6 +24,9 @@ export function PackageNotices({
   busyReason?: string;
   /** Идёт создание опоры этой попытки: подсказка о возвращённой опоре скрыта. */
   frameRunning?: boolean;
+  /** Блок доработки сейчас открывается: пока агент работает или его предложение ждёт ответа, доработки нет,
+   * и кнопка перехода к ней в пояснении возврата не показывается, чтобы не нажиматься вхолостую. */
+  canOpenRevision?: boolean;
   onKeepForScene(): void;
   onOpenRevision(focusNote?: boolean): void;
 }): ReactElement {
@@ -41,7 +45,7 @@ export function PackageNotices({
           ) : null}
         </Box>
       ) : null}
-      <PackageRevisionNotice pkg={pkg} frameRunning={frameRunning} onOpenRevision={onOpenRevision} />
+      <PackageRevisionNotice pkg={pkg} frameRunning={frameRunning} onOpenRevision={canOpenRevision ? onOpenRevision : undefined} />
       {isQueuedPackage(pkg) ? <Alert severity="info">{productionTexts.packageCard.queued}</Alert> : null}
       {pkg.sceneChanged ? (
         <PackageSceneChanged pkg={pkg} busy={busy} busyReason={busyReason} onKeep={onKeepForScene} onOpenRevision={() => onOpenRevision(true)} />

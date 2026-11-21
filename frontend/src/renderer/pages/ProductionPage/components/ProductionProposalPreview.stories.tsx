@@ -221,6 +221,8 @@ export const Refused: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByText('Причина отказа')).toBeInTheDocument();
+    // В отказе нечего дорабатывать: подсказка ведёт к исправлению замечания через отклонение.
+    await expect(canvas.getByText(productionTexts.productionProposalPreview.refusedHint)).toBeVisible();
     await expect(canvas.queryByText('Причина проверки')).not.toBeInTheDocument();
     await expect(canvas.getByRole('button', { name: labels.apply })).toBeDisabled();
   }

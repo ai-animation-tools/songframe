@@ -98,4 +98,12 @@ describe('Продолжение после возврата пакета', () =
     expect(html).not.toContain('последний ответ:');
     expect(html).toContain('Открыть доработку');
   });
+
+  it('пока доработка недоступна (агент работает или ждёт ответа), кнопка перехода к ней скрыта, замечание видно', () => {
+    const props = { pkg: fixture(), busy: false, onKeepForScene: vi.fn(), onOpenRevision: vi.fn() };
+    expect(renderToStaticMarkup(createElement(PackageNotices, props))).toContain('Открыть доработку');
+    const closed = renderToStaticMarkup(createElement(PackageNotices, { ...props, canOpenRevision: false }));
+    expect(closed).not.toContain('Открыть доработку');
+    expect(closed).toContain(note.split('\n')[0]);
+  });
 });

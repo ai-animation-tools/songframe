@@ -646,6 +646,7 @@ export function ProductionPath({
           busy={blocked}
           busyReason={busyReason}
           frameRunning={frameRunning}
+          canOpenRevision={!!view?.canRevise}
           onKeepForScene={onKeepForScene}
           onOpenRevision={() => setReviseOpen(true)}
         />

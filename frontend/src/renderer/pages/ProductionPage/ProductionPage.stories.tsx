@@ -603,8 +603,8 @@ export const FrameRevisionDuringJob: Story = {
     songframe: options({
       shots: () => baseShots({ attention: null, packages: [returnedFrame()] }),
       frameJob: true,
-      // Опоры создаёт агент: задание видно в виде попытки, пока оно идёт.
-      workflowView: () => ({ imageProvider: 'codex' })
+      // Опоры создаёт агент: задание видно в виде попытки, пока оно идёт. Без задания доработка описания доступна.
+      workflowView: () => ({ imageProvider: 'codex', canRevise: true })
     })
   },
   play: async (context) => {
@@ -612,8 +612,9 @@ export const FrameRevisionDuringJob: Story = {
     const notice = texts.packageRevisionNotice;
     await expect(await screen.findByText(notice.frameTitle, {}, POLL_TIMEOUT)).toBeInTheDocument();
     await expect(screen.getByText('Камера ниже, ворота целиком в кадре.')).toBeInTheDocument();
-    // Кнопка подсказки называет то, что она открывает: доработку описания.
-    await expect(screen.getByRole('button', { name: notice.openPreparation })).toBeEnabled();
+    // Кнопка подсказки называет то, что она открывает: доработку описания. Она появляется, когда вид процесса
+    // загружен и доработка доступна, поэтому ждём её, а не только текст подсказки.
+    await expect(await screen.findByRole('button', { name: notice.openPreparation }, POLL_TIMEOUT)).toBeEnabled();
     const codex = mediaProviderInfo('codex', 'image')?.title ?? '';
     await userEvent.click(await screen.findByRole('button', { name: texts.productionFrameGenerationButton.create({ frame: 'K02', title: codex }) }));
     const confirmation = within(

@@ -1,11 +1,14 @@
-/** Карточка плана в сетке: одинаковая на страницах «Сцены» и «Производство», предпросмотр запускается при наведении. */
+/**
+ * Карточка плана в сетке: одинаковая на страницах «Сцены» и «Производство». Показывает изображение (обычно первую опору
+ * плана), а не видео: на странице десятки карточек, и видео в каждой держало бы декодер WebKit, от чего страница
+ * зависала. Видео смотрят в плеере выбранного плана.
+ */
 import { componentsTexts } from '@shared/texts/components';
 import { useEffect, useRef, type ReactElement, type ReactNode } from 'react';
 import { alpha } from '@mui/material/styles';
 import { Box, Chip, Paper, Typography } from '@mui/material';
 import type { ShotProductionState } from '@shared/types';
 import { formatClock } from '../format';
-import { useShotPreview } from '../hooks/useShotPreview';
 import { SHOT_STATE_LABELS } from './shotState';
 
 export interface ShotCardShot {
@@ -18,40 +21,15 @@ export interface ShotCardShot {
   stageLabel: string;
 }
 
-/** Видео заменяет статичную миниатюру; без видео остаётся изображение или заглушка той же формы. */
-function ShotPreview({
-  id,
-  videoPath,
-  imagePath,
-  videoRef
-}: {
-  id: string;
-  videoPath: string | null;
-  imagePath: string | null;
-  videoRef: ReturnType<typeof useShotPreview>['videoRef'];
-}): ReactElement {
+/** Изображение плана; без него — заглушка той же формы. */
+function ShotPreview({ id, imagePath }: { id: string; imagePath: string | null }): ReactElement {
   const style = { width: '100%', aspectRatio: '16 / 9', objectFit: 'cover', borderRadius: 4, display: 'block' } as const;
-  if (videoPath) {
-    return (
-      <video
-        key={videoPath}
-        ref={videoRef}
-        src={window.api.shell.fileUrl(videoPath)}
-        poster={imagePath ? window.api.shell.fileUrl(imagePath) : undefined}
-        muted
-        playsInline
-        preload="metadata"
-        style={style}
-      />
-    );
-  }
   if (imagePath) return <img src={window.api.shell.fileUrl(imagePath)} alt={id} style={style} />;
   return <Box sx={{ aspectRatio: '16 / 9', bgcolor: 'action.hover', borderRadius: 1 }} />;
 }
 
 export function ShotCard({
   shot,
-  videoPath,
   imagePath,
   chips,
   caption,
@@ -61,9 +39,7 @@ export function ShotCard({
   onSelect
 }: {
   shot: ShotCardShot;
-  /** Принятое или полученное видео; при наведении воспроизводится без звука. */
-  videoPath: string | null;
-  /** Постер видео или миниатюра без него. */
+  /** Изображение плана: первая опора принятого комплекта или попытки; null — заглушка. */
   imagePath: string | null;
   /** Дополнительные чипы после состояния, например «Видео отсутствует». */
   chips?: ReactNode;
@@ -74,7 +50,6 @@ export function ShotCard({
   selected: boolean;
   onSelect(id: string): void;
 }): ReactElement {
-  const { videoRef, play, pause } = useShotPreview(videoPath);
   const cardRef = useRef<HTMLDivElement>(null);
   const state = SHOT_STATE_LABELS[shot.state];
   const text = caption ?? shot.stageLabel;
@@ -96,8 +71,6 @@ export function ShotCard({
         event.preventDefault();
         onSelect(shot.id);
       }}
-      onMouseEnter={play}
-      onMouseLeave={pause}
       sx={{
         p: 1,
         minWidth: 0,
@@ -134,7 +107,7 @@ export function ShotCard({
           {formatClock(shot.start)}–{formatClock(shot.end)}
         </Typography>
       </Box>
-      <ShotPreview id={shot.id} videoPath={videoPath} imagePath={imagePath} videoRef={videoRef} />
+      <ShotPreview id={shot.id} imagePath={imagePath} />
       <Typography variant="body2" noWrap title={shot.title} sx={{ mt: 0.5 }}>
         {shot.title}
       </Typography>

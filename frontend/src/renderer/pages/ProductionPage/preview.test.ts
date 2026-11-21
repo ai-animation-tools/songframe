@@ -1,7 +1,7 @@
-/** Предпросмотр карточки плана берёт принятое видео, иначе материалы последнего пакета. */
+/** Изображение карточки плана: первая опора комплекта, иначе материалы последнего пакета; видео не показывается. */
 import { describe, expect, it } from 'vitest';
 import type { PackageView, ShotProduction } from '@shared/types';
-import { shotPreview } from './preview';
+import { shotImage } from './preview';
 
 function pkg(overrides: Partial<PackageView>): PackageView {
   return {
@@ -42,23 +42,26 @@ function shot(overrides: Partial<ShotProduction>): ShotProduction {
   };
 }
 
-describe('shotPreview', () => {
-  it('предпочитает принятое видео и постер из опор последнего пакета', () => {
-    const first = pkg({ keyframes: [{ id: 'f1', role: 'first', time_seconds: 0, imagePath: '/old.png', approved: true }] });
-    const last = pkg({ keyframes: [{ id: 'f1', role: 'first', time_seconds: 0, imagePath: '/new.png', approved: false }] });
-    expect(shotPreview(shot({ asset: { dir: '/a', video: '/a/video.mp4', original: null }, packages: [first, last] }))).toEqual({
-      videoPath: '/a/video.mp4',
-      imagePath: '/new.png'
-    });
+describe('shotImage', () => {
+  const first = pkg({ keyframes: [{ id: 'K01', role: 'first', time_seconds: 0, imagePath: '/old.png', approved: true }] });
+  const last = pkg({ keyframes: [{ id: 'K01', role: 'first', time_seconds: 0, imagePath: '/new.png', approved: false }] });
+
+  it('у принятого плана берёт первую опору из папки комплекта', () => {
+    expect(shotImage(shot({ asset: { dir: '/a', video: '/a/video.mp4', original: null, frame: '/a/generation-input-1.png' }, packages: [first, last] }))).toBe(
+      '/a/generation-input-1.png'
+    );
   });
 
-  it('без принятого видео берёт результат последнего пакета и скачанное изображение', () => {
+  it('без опоры в комплекте берёт первую опору последней попытки', () => {
+    expect(shotImage(shot({ asset: { dir: '/a', video: '/a/video.mp4', original: null, frame: null }, packages: [first, last] }))).toBe('/new.png');
+  });
+
+  it('без опор берёт скачанное изображение, видео не берёт', () => {
     const request = { downloads: ['/r/result.mp4', '/r/sheet.png'] } as unknown as PackageView['request'];
-    const view = shotPreview(shot({ packages: [pkg({ request })] }));
-    expect(view).toEqual({ videoPath: '/r/result.mp4', imagePath: '/r/sheet.png' });
+    expect(shotImage(shot({ packages: [pkg({ request })] }))).toBe('/r/sheet.png');
   });
 
   it('без материалов возвращает заглушку', () => {
-    expect(shotPreview(shot({}))).toEqual({ videoPath: null, imagePath: null });
+    expect(shotImage(shot({}))).toBeNull();
   });
 });

@@ -67,6 +67,9 @@ type Asset struct {
 	Inputs        []Input       `json:"inputs"`
 	Lipsync       bool          `json:"lipsync"`
 	Audio         *string       `json:"audio"`
+	// frame — первая опора принятого запроса (production.FirstFrameInput) для миниатюры плана; в
+	// JSON не входит: у вида плана для неё есть Thumbnail.
+	frame *string
 }
 
 // PackageRequest — запрос последнего пакета.
@@ -241,6 +244,7 @@ func readAsset(project, sid string, fps float64) *Asset {
 		Prompt: readText(descriptorPath(project, dir, dynvalue.Get(generation, "prompt"))),
 		Inputs: inputs, Lipsync: dynvalue.Truthy(dynvalue.Get(generation, "lipsync")),
 		Audio: descriptorPath(project, dir, dynvalue.Get(generation, "audio")),
+		frame: descriptorPath(project, dir, production.FirstFrameInput(manifest)),
 	}
 	if dynvalue.Truthy(request) {
 		asset.Request = &AssetRequest{
@@ -400,7 +404,11 @@ func ViewDashboard(project string) (View, error) {
 			}
 			shot.Package = pkg
 		}
-		if len(keyframes) > 0 {
+		// Миниатюра — первая опора из папки принятого комплекта, без него — первая опора текущей
+		// попытки, иначе карточка аниматика.
+		if asset != nil && asset.frame != nil {
+			shot.Thumbnail = asset.frame
+		} else if len(keyframes) > 0 {
 			thumbnail := keyframes[0].ImagePath
 			shot.Thumbnail = &thumbnail
 		} else {

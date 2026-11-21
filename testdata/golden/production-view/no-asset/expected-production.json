@@ -55,7 +55,8 @@
           "holdFirst": 0,
           "holdLast": 0,
           "note": ""
-        }
+        },
+        "frame": "<project>/assets/shots/M02/generation-input-1.png"
       },
       "packages": [],
       "spend": {

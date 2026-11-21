@@ -2,6 +2,7 @@ package production
 
 import (
 	"encoding/json"
+	"regexp"
 
 	"songframe/internal/dynvalue"
 )
@@ -83,3 +84,30 @@ func AssetMedia(manifest any, fps float64) (*string, AssetEdit) {
 		Note:           rawValue(dynvalue.Coalesce(dynvalue.Get(edit, "processing_note"), "")),
 	}
 }
+
+// FirstFrameInput — описание первой опоры среди входов принятого запроса (generation.inputs
+// manifest.json комплекта): вход со слотом first_image, иначе первый вход-изображение; nil — у
+// комплекта нет изображений-входов (своё видео без опор, производный план). Путь в описании
+// отсчитывается от папки комплекта; вызывающий сам проверяет, что файл существует. По этому кадру
+// карточки плана показывают принятый план вместо видео: десятки видео в сетке держали бы
+// декодер на каждую карточку.
+func FirstFrameInput(manifest any) any {
+	inputs, _ := dynvalue.AsArray(dynvalue.GetPath(manifest, "generation", "inputs"))
+	var first any
+	for _, item := range inputs {
+		path, _ := dynvalue.Get(item, "path").(string)
+		if !imageInput.MatchString(path) {
+			continue
+		}
+		if dynvalue.StrictEqual(dynvalue.Get(item, "slot"), "first_image") {
+			return item
+		}
+		if first == nil {
+			first = item
+		}
+	}
+	return first
+}
+
+// imageInput — расширения изображений-входов запроса.
+var imageInput = regexp.MustCompile(`(?i)\.(png|jpe?g|webp)$`)

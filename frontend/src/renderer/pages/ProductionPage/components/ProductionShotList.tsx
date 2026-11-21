@@ -8,7 +8,7 @@ import NotificationImportantIcon from '@mui/icons-material/NotificationImportant
 import type { ShotProduction } from '@shared/types';
 import { ShotCard } from '../../../components/ShotCard';
 import { FILTER_EMPTY_HINTS, FILTER_LABELS, type ProductionFilter } from '../constants';
-import { shotPreview } from '../preview';
+import { shotImage } from '../preview';
 import { LinkedText } from '../../../components/LinkedText';
 import { SpendChips } from '../../../components/SpendChips';
 
@@ -53,13 +53,11 @@ export function ProductionShotList({
       }}
     >
       {shots.map((shot) => {
-        const { videoPath, imagePath } = shotPreview(shot);
         return (
           <ShotCard
             key={shot.id}
             shot={shot}
-            videoPath={videoPath}
-            imagePath={imagePath}
+            imagePath={shotImage(shot)}
             chips={
               <>
                 {shot.derivedFrom ? (

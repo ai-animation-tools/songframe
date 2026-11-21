@@ -25,6 +25,9 @@ type Asset struct {
 	Original      *string   `json:"original"`
 	OriginalMedia *string   `json:"originalMedia"`
 	Edit          AssetEdit `json:"edit"`
+	// Frame — первая опора принятого запроса (FirstFrameInput): изображение карточки плана; nil —
+	// у комплекта нет изображений-входов.
+	Frame *string `json:"frame"`
 }
 
 // ShotProduction — план реестра на странице «Производство»: состояние, подпись этапа, причина
@@ -496,8 +499,12 @@ func shotProduction(project string, scene any, id string, packages []*PackageVie
 		if err != nil {
 			return nil, err
 		}
+		frame, err := existingAssetFile(assetDir, dynvalue.Get(FirstFrameInput(manifest), "path"))
+		if err != nil {
+			return nil, err
+		}
 		originalMedia, edit := AssetMedia(manifest, fps)
-		shot.Asset = &Asset{Dir: assetDir, Video: video, Original: original, OriginalMedia: originalMedia, Edit: edit}
+		shot.Asset = &Asset{Dir: assetDir, Video: video, Original: original, OriginalMedia: originalMedia, Edit: edit, Frame: frame}
 	}
 	return shot, nil
 }

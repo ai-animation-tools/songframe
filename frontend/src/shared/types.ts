@@ -886,9 +886,17 @@ export interface ShotProduction {
   attention: string | null;
   /**
    * Принятые материалы в assets: пути только к существующим файлам видео и оригинала. originalMedia и
-   * edit Go отдаёт всегда — подписи под плеерами; необязательны для коротких фикстур тестов.
+   * edit Go отдаёт всегда — подписи под плеерами; frame — первая опора из папки комплекта, изображение
+   * карточки плана. Все три необязательны для коротких фикстур тестов.
    */
-  asset: { dir: string; video: string | null; original: string | null; originalMedia?: string | null; edit?: AssetEdit } | null;
+  asset: {
+    dir: string;
+    video: string | null;
+    original: string | null;
+    originalMedia?: string | null;
+    edit?: AssetEdit;
+    frame?: string | null;
+  } | null;
   packages: PackageView[];
   /** Предложение агента, которое ещё не применено и не отклонено; null — такого нет. */
   proposal?: ProductionProposalSummary | null;

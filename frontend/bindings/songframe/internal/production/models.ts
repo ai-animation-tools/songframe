@@ -106,6 +106,12 @@ export interface Asset {
     "original": string | null;
     "originalMedia": string | null;
     "edit": AssetEdit;
+
+    /**
+     * Frame — первая опора принятого запроса (FirstFrameInput): изображение карточки плана; nil —
+     * у комплекта нет изображений-входов.
+     */
+    "frame": string | null;
 }
 
 /**

@@ -31,7 +31,8 @@
           "holdFirst": 0,
           "holdLast": 0,
           "note": ""
-        }
+        },
+        "frame": "<project>/assets/shots/M01/generation-input-1.png"
       },
       "packages": [],
       "spend": {
@@ -74,7 +75,8 @@
           "holdFirst": 0,
           "holdLast": 0,
           "note": ""
-        }
+        },
+        "frame": "<project>/assets/shots/M02/generation-input-1.png"
       },
       "packages": [],
       "spend": {

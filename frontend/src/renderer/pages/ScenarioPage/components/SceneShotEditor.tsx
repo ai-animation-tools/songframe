@@ -1,6 +1,6 @@
 import { scenarioTexts } from '@shared/texts/scenario';
 import { useState, type ReactElement, type ReactNode } from 'react';
-import { Alert, AlertTitle, Autocomplete, Box, Checkbox, FormControlLabel, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
+import { Alert, AlertTitle, Autocomplete, Box, Checkbox, FormControlLabel, MenuItem, Paper, Stack, TextField, Tooltip, Typography } from '@mui/material';
 import CallMergeIcon from '@mui/icons-material/CallMerge';
 import CallSplitIcon from '@mui/icons-material/CallSplit';
 import type { CastFile, LyricsLine, SceneShot, ScenesFile, TimingLine } from '@shared/types';
@@ -142,7 +142,8 @@ export function SceneShotEditor({
       </Box>
       <TextField
         fullWidth
-        size="small"
+        multiline
+        minRows={2}
         disabled={locked}
         label={scenarioTexts.fields.camera}
         value={shot.camera}
@@ -179,7 +180,8 @@ export function SceneShotEditor({
       />
       <TextField
         fullWidth
-        size="small"
+        multiline
+        minRows={2}
         disabled={locked}
         label={scenarioTexts.shot.continuity}
         value={shot.continuity}
@@ -187,39 +189,11 @@ export function SceneShotEditor({
         onChange={(e) => updateShot({ continuity: e.target.value })}
         sx={{ mt: 1.5 }}
       />
-      <TextField
-        select
-        fullWidth
-        size="small"
-        disabled={locked}
-        label={scenarioTexts.fields.derivedFrom}
-        value={shot.derived_from?.shot ?? ''}
-        onChange={(e) => updateShot({ derived_from: e.target.value ? { shot: e.target.value } : undefined })}
-        sx={{ mt: 1.5 }}
-        helperText={scenarioTexts.shot.derivedHint}
-        // У принятого плана поле закрыто, но подсказка должна читаться: приглушённый цвет disabled не проходит по контрасту.
-        slotProps={{ formHelperText: { sx: { '&.Mui-disabled': { color: 'text.secondary' } } } }}
-      >
-        <MenuItem value="">{scenarioTexts.shot.ownGeneration}</MenuItem>
-        {scenes.scenes
-          .filter((item) => item.id !== shot.id)
-          .map((item) => (
-            <MenuItem key={item.id} value={item.id}>
-              {scenarioTexts.shot.sourceOption({ id: item.id, title: item.title, derived: item.derived_from ? item.derived_from.shot : null })}
-            </MenuItem>
-          ))}
-      </TextField>
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr)' },
-          '& > *': { minWidth: 0 },
-          gap: 1.5,
-          mt: 1.5,
-          alignItems: 'center'
-        }}
-      >
+      {/* Строка переносится: на широком окне все поля в ряд, на узком выбор источника уходит вниз,
+          не растягиваясь во всю ширину. */}
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mt: 1.5, alignItems: 'center' }}>
         <Autocomplete
+          sx={{ flex: '2 1 210px', minWidth: 0 }}
           multiple
           size="small"
           disabled={locked}
@@ -241,6 +215,7 @@ export function SceneShotEditor({
           select
           size="small"
           disabled={locked}
+          sx={{ flex: '1 1 130px', minWidth: 0 }}
           label={scenarioTexts.shot.primaryReference}
           value={shot.card.primary_reference}
           onChange={(e) => updateShot({ card: { primary_reference: e.target.value } })}
@@ -252,9 +227,34 @@ export function SceneShotEditor({
           ))}
         </TextField>
         <FormControlLabel
+          sx={{ flex: '0 0 auto', mr: 0 }}
           control={<Checkbox disabled={locked} checked={shot.lipsync} onChange={(e) => updateShot({ lipsync: e.target.checked })} />}
           label={scenarioTexts.fields.lipsync}
         />
+        {/* Подсказка о производном плане длинная для поля в строке, поэтому всплывает над ним;
+            обёртка нужна, чтобы она показывалась и у закрытого поля принятого плана. */}
+        <Tooltip title={scenarioTexts.shot.derivedHint}>
+          <Box sx={{ flex: '1 1 205px', minWidth: 0, maxWidth: 360 }}>
+            <TextField
+              select
+              fullWidth
+              size="small"
+              disabled={locked}
+              label={scenarioTexts.fields.derivedFrom}
+              value={shot.derived_from?.shot ?? ''}
+              onChange={(e) => updateShot({ derived_from: e.target.value ? { shot: e.target.value } : undefined })}
+            >
+              <MenuItem value="">{scenarioTexts.shot.ownGeneration}</MenuItem>
+              {scenes.scenes
+                .filter((item) => item.id !== shot.id)
+                .map((item) => (
+                  <MenuItem key={item.id} value={item.id}>
+                    {scenarioTexts.shot.sourceOption({ id: item.id, title: item.title, derived: item.derived_from ? item.derived_from.shot : null })}
+                  </MenuItem>
+                ))}
+            </TextField>
+          </Box>
+        </Tooltip>
       </Box>
       {/* Парные действия границ плана стоят рядом внизу карточки; оба подтверждаются окном с итогом. Последним — переход к производству плана. */}
       <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mt: 1.5 }}>

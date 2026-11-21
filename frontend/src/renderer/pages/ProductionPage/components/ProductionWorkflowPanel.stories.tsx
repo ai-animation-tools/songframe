@@ -221,6 +221,10 @@ export const Conflicts: Story = {
     await expect(problems[0]).toHaveTextContent('У подъезда, в нескольких шагах от машины');
     await expect(problems[1]).toHaveTextContent(proposalLabels.problemField.camera);
     await userEvent.click(dialog.getByRole('button', { name: proposalLabels.fixAndPrepare }));
+    // Исправление пишет сценарий и запускает агента только после подтверждения.
+    const confirmation = within(await screenOf(context).findByRole('dialog', { name: proposalLabels.fixConfirmTitle }));
+    await expect(confirmation.getByText(proposalLabels.fixConfirmDescription)).toBeVisible();
+    await userEvent.click(confirmation.getByRole('button', { name: proposalLabels.fixConfirm }));
     await closed(context);
     // Исправления внесены, отказ отклонён, описание сразу готовится заново.
     await waitFor(() => expect(counts(context)).toHaveTextContent('Запусков: 1. Применений: 0. Отклонений: 0.'));
@@ -384,7 +388,15 @@ export const SingleFrame: Story = {
     await expect(screen.getByTestId('workflow-frames')).toHaveTextContent('K02: кандидат; /mock/story-image.png');
     await userEvent.click(screen.getByRole('button', { name: 'Сбросить модель' }));
     await waitFor(() => expect(screen.getByRole('button', { name: /Создать K02/ })).toBeEnabled());
+    // Генерация исполнителем — только после подтверждения; отказ ничего не запускает.
     await userEvent.click(screen.getByRole('button', { name: /Создать K02/ }));
+    let confirmation = within(await screen.findByRole('dialog', { name: /Создать K02 в .+\?/ }));
+    await userEvent.click(confirmation.getByRole('button', { name: commonTexts.cancel }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await expect(counts(context)).toHaveTextContent('Запусков: 0.');
+    await userEvent.click(screen.getByRole('button', { name: /Создать K02/ }));
+    confirmation = within(await screen.findByRole('dialog', { name: /Создать K02 в .+\?/ }));
+    await userEvent.click(confirmation.getByRole('button', { name: productionTexts.productionFrameGenerationButton.confirm({ frame: 'K02' }) }));
     await waitFor(() => expect(screen.queryByRole('button', { name: commonTexts.stop })).not.toBeInTheDocument(), { timeout: 4000 });
     // Опора агента применяется сама: вопрос об утверждении откроется у карточки опоры.
     await waitFor(() => expect(counts(context)).toHaveTextContent('Запусков: 1. Применений: 1.'), { timeout: 4000 });

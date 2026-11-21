@@ -2,11 +2,12 @@ import { productionTexts } from '@shared/texts/production';
 /** Исполнитель опор определяется настройкой изображений; подготовка платного запроса ещё не разрешает отправку. */
 import AddPhotoAlternateOutlinedIcon from '@mui/icons-material/AddPhotoAlternateOutlined';
 import BuildIcon from '@mui/icons-material/Build';
-import type { ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import { MEDIA_PROVIDERS, mediaProviderInfo, mediaProvidersFor } from '@shared/media-providers';
 import { AiButton } from '../../../components/AiButton';
 import { AgentButton } from '../../../components';
 import { ActionButton } from '../../../components/ActionButton';
+import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 
 export function ProductionFrameGenerationButton({
   provider,
@@ -26,13 +27,33 @@ export function ProductionFrameGenerationButton({
   onGenerate(): void;
 }): ReactElement {
   const info = mediaProviderInfo(provider, 'image');
+  const [confirm, setConfirm] = useState(false);
+  const texts = productionTexts.productionFrameGenerationButton;
   // Знак на кнопке — программа-исполнитель провайдера, а не выбранный текстовый агент.
   // Все варианты — текстовые кнопки, как соседние «Подготовить описание» и «Продолжить подготовку» в ряду панели.
+  // Генерация исполнителем запускается сразу и расходует его лимит, поэтому кнопка сначала спрашивает подтверждение.
   if (info?.executor)
     return (
-      <AgentButton aiKind="image" provider={info.executor} disabled={disabled} disabledReason={disabledReason} title={title} onClick={onGenerate}>
-        {productionTexts.productionFrameGenerationButton.create({ frame, title: info.title })}
-      </AgentButton>
+      <>
+        <AgentButton aiKind="image" provider={info.executor} disabled={disabled} disabledReason={disabledReason} title={title} onClick={() => setConfirm(true)}>
+          {texts.create({ frame, title: info.title })}
+        </AgentButton>
+        <ConfirmationDialog
+          open={confirm}
+          title={texts.confirmTitle({ frame, title: info.title })}
+          description={texts.confirmDescription({ frame, title: info.title })}
+          confirmLabel={texts.confirm({ frame })}
+          confirmAgent={{ provider: info.executor, aiKind: 'image' }}
+          confirmDisabled={disabled}
+          confirmDisabledReason={disabledReason}
+          cancelAutoFocus
+          onClose={() => setConfirm(false)}
+          onConfirm={() => {
+            setConfirm(false);
+            onGenerate();
+          }}
+        />
+      </>
     );
   if (info?.paid)
     return (

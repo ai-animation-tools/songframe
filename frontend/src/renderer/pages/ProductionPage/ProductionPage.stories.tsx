@@ -595,6 +595,11 @@ export const FrameRevisionDuringJob: Story = {
     await expect(screen.getByRole('button', { name: notice.openPreparation })).toBeEnabled();
     const codex = mediaProviderInfo('codex', 'image')?.title ?? '';
     await userEvent.click(await screen.findByRole('button', { name: texts.productionFrameGenerationButton.create({ frame: 'K02', title: codex }) }));
+    const confirmation = within(
+      await screen.findByRole('dialog', { name: texts.productionFrameGenerationButton.confirmTitle({ frame: 'K02', title: codex }) })
+    );
+    await expect(confirmation.getByText(texts.productionFrameGenerationButton.confirmDescription({ frame: 'K02', title: codex }))).toBeVisible();
+    await userEvent.click(confirmation.getByRole('button', { name: texts.productionFrameGenerationButton.confirm({ frame: 'K02' }) }));
     await waitFor(() => expect(counts(context)).toHaveTextContent('Созданий опор: 1.'), POLL_TIMEOUT);
     // Опора уже создаётся: совет создать её заново и переход к доработке не показываются.
     await waitFor(() => expect(screen.queryByText(notice.frameTitle)).not.toBeInTheDocument(), POLL_TIMEOUT);
@@ -1361,6 +1366,12 @@ export const PromptOverLimit: Story = {
     await expect(step.getByRole('button', { name: texts.verdictLabels.approve })).toBeDisabled();
     await userEvent.click(step.getByRole('button', { name: texts.verdictLabels.revise }));
     await expect(step.getByRole('textbox', { name: texts.packageDecision.note })).toHaveValue(texts.promptLimit.reviseNote(over));
+    // «Доработать с агентом» записывает ответ только после подтверждения; отказ ничего не записывает.
+    await userEvent.click(step.getByRole('button', { name: texts.productionWorkflowPanel.reviseNow }));
+    const confirmation = within(await screen.findByRole('dialog', { name: texts.packageDecision.reviseConfirmTitle }));
+    await expect(confirmation.getByText(texts.packageDecision.reviseConfirmDescription)).toBeVisible();
+    await userEvent.click(confirmation.getByRole('button', { name: commonTexts.cancel }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     await expect(counts(context)).toHaveTextContent('Ответов: 0.');
   }
 };

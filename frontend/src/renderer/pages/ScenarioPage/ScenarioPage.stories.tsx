@@ -750,13 +750,21 @@ export const ReferencesStale: Story = {
   }
 };
 
+/** «Создать сценарий» спрашивает подтверждение; согласие запускает агента. */
+async function confirmScenes(screen: ReturnType<typeof within>, button: HTMLElement): Promise<void> {
+  await userEvent.click(button);
+  const confirmation = within(await screen.findByRole('dialog', { name: scenarioTexts.workflow.confirmTitle.scenes }));
+  await userEvent.click(confirmation.getByRole('button', { name: scenarioTexts.workflow.createScenes }));
+  await waitFor(() => expect(screen.queryByRole('dialog', { name: scenarioTexts.workflow.confirmTitle.scenes })).not.toBeInTheDocument());
+}
+
 export const AgentWithDrafts: Story = {
   name: 'Запуск агента с несохранёнными правками · решение и пауза редактирования',
   tags: ['!autodocs', 'ci'],
   play: async (context) => {
     const screen = await ready(context);
     await userEvent.type(field(screen, scenarioTexts.fields.action), ' Правка до агента.');
-    await userEvent.click(await screen.findByRole('button', { name: scenarioTexts.workflow.createScenes }));
+    await confirmScenes(screen, await screen.findByRole('button', { name: scenarioTexts.workflow.createScenes }));
     const conflict = within(await screen.findByRole('dialog', { name: commonTexts.unsavedChanges }));
     await expect(conflict.getByText(scenarioTexts.drafts.changed)).toBeInTheDocument();
     await userEvent.click(conflict.getByRole('button', { name: scenarioTexts.drafts.returnToEditor }));
@@ -764,7 +772,7 @@ export const AgentWithDrafts: Story = {
     await expect(screen.getByTestId('page-model-agent')).toHaveTextContent('Запусков агента: 0.');
     await expect(field(screen, scenarioTexts.fields.action).value).toContain('Правка до агента.');
 
-    await userEvent.click(screen.getByRole('button', { name: scenarioTexts.workflow.createScenes }));
+    await confirmScenes(screen, screen.getByRole('button', { name: scenarioTexts.workflow.createScenes }));
     const again = within(await screen.findByRole('dialog', { name: commonTexts.unsavedChanges }));
     await userEvent.click(again.getByRole('button', { name: scenarioTexts.drafts.saveAndContinue }));
     await waitFor(() => expect(screen.getByTestId('page-model-agent')).toHaveTextContent('Запусков агента: 1.'));

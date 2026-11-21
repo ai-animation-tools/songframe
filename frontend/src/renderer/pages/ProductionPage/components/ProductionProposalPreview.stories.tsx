@@ -1,9 +1,11 @@
 /** Предложения четырёх этапов и сохранение после явного решения пользователя. */
+import { commonTexts } from '@shared/texts/common';
 import { productionTexts } from '@shared/texts/production';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import type { ProductionProposal } from '@shared/production-workflow';
 import { ProposalPreviewStory } from '../../../testing/proposalPreviewStories';
+import { storyAccess } from '../../../testing/commonStories';
 import { WORKFLOW_STORY_DESCRIPTION, workflowProposal } from '../../../testing/productionWorkflowStories';
 
 const labels = productionTexts.productionProposalPreview;
@@ -385,6 +387,8 @@ export const ReviseNoteBlocksApply: Story = {
   tags: ['ci'],
   name: 'Доработка · пока введено замечание, принять нельзя; пустое поле снимает блокировку',
   args: { initialProposal: workflowProposal('description'), dialog: true },
+  // Выбранный агент нужен кнопке доработки: история проверяет её подтверждение.
+  parameters: { songframe: { app: { online: true, agentProvider: 'codex', aiAccess: storyAccess } } },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const body = within(document.body);
@@ -399,6 +403,12 @@ export const ReviseNoteBlocksApply: Story = {
     await userEvent.type(note, 'Герой выходит из дома.');
     await waitFor(() => expect(apply()).toBeDisabled());
     await expect(apply()).toHaveAttribute('title', expect.stringContaining(productionTexts.packageDecision.noteFilled));
+    // Доработка применяет предложение и запускает агента только после подтверждения; отказ ничего не применяет.
+    await userEvent.click(dialog.getByRole('button', { name: productionTexts.productionWorkflowPanel.revise }));
+    const confirmation = within(await body.findByRole('dialog', { name: labels.reviseConfirmTitle }));
+    await expect(confirmation.getByText(labels.reviseConfirmDescription)).toBeVisible();
+    await userEvent.click(confirmation.getByRole('button', { name: commonTexts.cancel }));
+    await waitFor(() => expect(body.queryByRole('dialog', { name: labels.reviseConfirmTitle })).not.toBeInTheDocument());
     // Одни пробелы замечанием не считаются.
     await userEvent.clear(note);
     await userEvent.type(note, '   ');

@@ -691,6 +691,11 @@ export const productionTexts = {
       `Папка ${relative} будет удалена безвозвратно вместе с запросом, опорами и промптом${paid ? ', включая оплаченный оригинал генерации: кредиты не возвращаются' : ''}${uploaded ? `, включая загруженное видео${uploaded.cost ? `; его стоимость (${uploaded.cost}) уйдёт из расхода плана` : ''}` : ''}. Принятый комплект плана и исходники не затрагиваются; после удаления снова доступны новая подготовка и «Подготовить повтор».`
   },
   packageDecision: {
+    /** Подтверждение «Доработать с агентом»: ответ записывается сразу, затем запускается агент. */
+    reviseConfirmTitle: 'Записать ответ «Доработать» и запустить агента?',
+    reviseConfirmDescription:
+      'На вопрос шага сразу запишется ответ «Доработать» с вашим замечанием. Затем агент доработает результат и подготовит новое предложение.',
+    reviseConfirm: 'Записать и доработать',
     approveHint: ({ frame }: { frame: string }) =>
       `Утверждает опору ${frame}: она станет референсом следующих опор, приложение спросит о следующем готовом кандидате.`,
     reviseHint: ({ frame }: { frame: string }) =>
@@ -832,6 +837,11 @@ export const productionTexts = {
   productionFrameGenerationButton: {
     unavailable: ({ problem, choices }: { problem: string; choices: string }) => `${problem} Выберите ${choices} в настройках проекта.`,
     create: ({ frame, title }: { frame: string | null | undefined; title: string }) => `${frame ? `Создать ${frame}` : 'Создать опоры'} в ${title}`,
+    /** Подтверждение генерации исполнителем: случайный клик не должен расходовать его лимит. */
+    confirmTitle: ({ frame, title }: { frame: string | null | undefined; title: string }) => `${frame ? `Создать ${frame}` : 'Создать опоры'} в ${title}?`,
+    confirmDescription: ({ frame, title }: { frame: string | null | undefined; title: string }) =>
+      `${title} сгенерирует ${frame ? `изображение опоры ${frame}` : 'изображения опор'} по утверждённому описанию. Готовые изображения сразу станут кандидатами опор, утверждать их — вам. Генерация расходует лимит ${title}.`,
+    confirm: ({ frame }: { frame: string | null | undefined }) => (frame ? `Создать ${frame}` : 'Создать опоры'),
     prepareRequest: ({ frame, title }: { frame?: string | null; title: string }) => `Подготовить запрос изображения${frame ? ` ${frame}` : ''} (${title})`,
     alternatives: ({ preceding, last }: { preceding: string; last: string | undefined }) => `${preceding} или ${last}`,
     provider: 'провайдера',
@@ -945,6 +955,15 @@ export const productionTexts = {
     close: `Закрыть, решу позже`
   },
   productionProposalPreview: {
+    /** Подтверждения действий окна предложения, которые записывают проект и сразу запускают агента. */
+    reviseConfirmTitle: 'Применить предложение и доработать?',
+    reviseConfirmDescription:
+      'Предложение будет сразу применено к попытке вместе с вашим замечанием. Затем агент доработает результат по замечанию и подготовит новое предложение. Применение не утверждает опоры и промпт.',
+    reviseConfirm: 'Применить и доработать',
+    fixConfirmTitle: 'Исправить сценарий и подготовить заново?',
+    fixConfirmDescription:
+      'Значения «Станет» из карточек противоречий сразу запишутся в сценарий этого плана, как при сохранении на странице «Сценарий», а ответ агента с противоречиями будет отклонён. Следующие планы унаследуют новые значения, кастинг и другие планы не изменятся. Затем агент заново подготовит описание плана.',
+    fixConfirm: 'Исправить и подготовить',
     promptTitle: ({ characters }: { characters: number }) => `Видеопромпт · ${countLabel(characters, 'символ', 'символа', 'символов')}`,
     time: ({ timeSeconds }: { timeSeconds: number }) => `${timeSeconds} с от начала плана`,
     references: ({ filenames }: { filenames: string }) => `Референсы: ${filenames}`,

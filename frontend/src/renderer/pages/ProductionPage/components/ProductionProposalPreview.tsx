@@ -8,6 +8,7 @@ import { copyShotFrame } from '@shared/production-workflow';
 import { AgentButton, AgentIcon, ImageGallery, ImageThumbnail } from '../../../components';
 import { ActionButton } from '../../../components/ActionButton';
 import { DestructiveButton } from '../../../components/DestructiveButton';
+import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 import CheckIcon from '@mui/icons-material/Check';
 import EditIcon from '@mui/icons-material/Edit';
 import { BUSY_REASON, PRODUCTION_PASS_LABELS, PRODUCTION_PROPOSAL_LABELS } from '../constants';
@@ -354,6 +355,8 @@ export function ProposalActions({
   onApply(): void;
   onDiscard(): void;
 }): ReactElement | null {
+  // Доработка и исправление сценария сразу пишут проект и запускают агента: оба спрашивают подтверждение.
+  const [confirm, setConfirm] = useState<'revise' | 'fix' | null>(null);
   const ready = proposal.status === 'ready' && !proposal.stale && !!proposal.after;
   const fixes = scenarioFixes(proposal);
   // Принятие закрыло бы предложение и потеряло введённое замечание: пока оно есть, принять нельзя.
@@ -383,7 +386,7 @@ export function ProposalActions({
           <AgentButton
             disabled={busy || !ready || !reviseNote?.trim()}
             disabledReason={busy ? BUSY_REASON : (applyReason ?? productionTexts.productionWorkflowPanel.noteReason)}
-            onClick={onRevise}
+            onClick={() => setConfirm('revise')}
           >
             {productionTexts.productionWorkflowPanel.revise}
           </AgentButton>
@@ -400,7 +403,7 @@ export function ProposalActions({
             disabled={busy || proposal.stale}
             disabledReason={busy ? BUSY_REASON : problemTexts.fixStaleReason}
             title={problemTexts.fixHint({ count: fixes.length })}
-            onClick={onFixScenario}
+            onClick={() => setConfirm('fix')}
           >
             {problemTexts.fixAndPrepare}
           </AgentButton>
@@ -426,6 +429,22 @@ export function ProposalActions({
       >
         {productionTexts.productionProposalPreview.apply}
       </ActionButton>
+      <ConfirmationDialog
+        open={!!confirm}
+        title={confirm === 'fix' ? problemTexts.fixConfirmTitle : problemTexts.reviseConfirmTitle}
+        description={confirm === 'fix' ? problemTexts.fixConfirmDescription : problemTexts.reviseConfirmDescription}
+        confirmLabel={confirm === 'fix' ? problemTexts.fixConfirm : problemTexts.reviseConfirm}
+        confirmAgent={{}}
+        confirmDisabled={busy}
+        confirmDisabledReason={BUSY_REASON}
+        cancelAutoFocus
+        onClose={() => setConfirm(null)}
+        onConfirm={() => {
+          const action = confirm === 'fix' ? onFixScenario : onRevise;
+          setConfirm(null);
+          action?.();
+        }}
+      />
     </>
   );
 }

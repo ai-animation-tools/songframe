@@ -22,6 +22,21 @@ async function ready(context: Context) {
   await waitFor(() => expect(screen.getByRole('button', { name: scenarioTexts.workflow.createTreatment })).toBeEnabled());
   return screen;
 }
+/** Кнопка части или сценария открывает подтверждение; согласие в окне запускает агента. */
+async function startPass(
+  context: Context,
+  pass: 'treatment' | 'scenes',
+  label: string = pass === 'treatment' ? scenarioTexts.workflow.createTreatment : scenarioTexts.workflow.createScenes
+) {
+  const screen = screenOf(context);
+  await userEvent.click(screen.getByRole('button', { name: label }));
+  const confirmation = within(await screen.findByRole('dialog', { name: scenarioTexts.workflow.confirmTitle[pass] }));
+  await expect(confirmation.getByText(scenarioTexts.workflow.confirmDescription[pass])).toBeVisible();
+  await userEvent.click(
+    confirmation.getByRole('button', { name: pass === 'treatment' ? scenarioTexts.workflow.createTreatment : scenarioTexts.workflow.createScenes })
+  );
+  await waitFor(() => expect(screen.queryByRole('dialog', { name: scenarioTexts.workflow.confirmTitle[pass] })).not.toBeInTheDocument());
+}
 async function preview(context: Context) {
   const screen = screenOf(context);
   await userEvent.click(await screen.findByRole('button', { name: scenarioTexts.workflow.reviewProposal }));
@@ -44,11 +59,17 @@ export const Preparation: Story = {
   name: 'Подготовка · остановка и завершение через опрос',
   play: async (context) => {
     const screen = await ready(context);
+    // Отказ от подтверждения ничего не запускает.
     await userEvent.click(screen.getByRole('button', { name: scenarioTexts.workflow.createTreatment }));
+    const confirmation = within(await screen.findByRole('dialog', { name: scenarioTexts.workflow.confirmTitle.treatment }));
+    await userEvent.click(confirmation.getByRole('button', { name: commonTexts.cancel }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await expect(screen.getByTestId('scenario-counts')).toHaveTextContent('Запусков: 0.');
+    await startPass(context, 'treatment');
     await userEvent.click(await screen.findByRole('button', { name: commonTexts.stop }));
     await waitFor(() => expect(screen.getByTestId('scenario-counts')).toHaveTextContent('Запусков: 1. Применений: 0.'));
     await expect(screen.getByTestId('scenario-saved')).toHaveTextContent('Герой возвращается к старым воротам.');
-    await userEvent.click(screen.getByRole('button', { name: scenarioTexts.workflow.newProposal }));
+    await startPass(context, 'treatment', scenarioTexts.workflow.newProposal);
     await userEvent.click(await screen.findByRole('button', { name: 'Завершить демонстрационное задание' }));
     await screen.findByRole('button', { name: scenarioTexts.workflow.reviewProposal }, { timeout: 4000 });
     await expect(screen.getByTestId('scenario-counts')).toHaveTextContent('Запусков: 2. Применений: 0.');
@@ -73,7 +94,7 @@ export const InconsistentInputs: Story = {
     await expect(screen.getByRole('button', { name: scenarioTexts.workflow.createScenes })).toBeDisabled();
     await userEvent.click(screen.getByRole('button', { name: scenarioTexts.workflow.approveTreatment }));
     await waitFor(() => expect(screen.getByRole('button', { name: scenarioTexts.workflow.createScenes })).toBeEnabled());
-    await userEvent.click(screen.getByRole('button', { name: scenarioTexts.workflow.createScenes }));
+    await startPass(context, 'scenes');
     await waitFor(() => expect(screen.getByTestId('scenario-counts')).toHaveTextContent('Запусков: 1.'));
   }
 };
@@ -119,7 +140,7 @@ export const SequentialPasses: Story = {
     const logline = screen.getByTestId('scenario-saved').textContent;
     const cast = screen.getByTestId('scenario-cast').textContent;
     await expect(screen.getByTestId('scenario-cast')).toHaveTextContent('hero, gate');
-    await userEvent.click(screen.getByRole('button', { name: scenarioTexts.workflow.createScenes }));
+    await startPass(context, 'scenes');
     await userEvent.click(await screen.findByRole('button', { name: 'Завершить демонстрационное задание' }));
     await screen.findByRole('button', { name: scenarioTexts.workflow.reviewProposal }, { timeout: 4000 });
     await expect(screen.getByTestId('scenario-scene-M01')).toHaveTextContent('Герой подходит к воротам.');
@@ -166,7 +187,7 @@ export const ApplyConflict: Story = {
     await expect(screen.getByTestId('scenario-saved')).toHaveTextContent('Герой возвращается к старым воротам.');
     await userEvent.click(dialog.getByRole('button', { name: scenarioTexts.proposal.close }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    await userEvent.click(screen.getByRole('button', { name: scenarioTexts.workflow.newProposal }));
+    await startPass(context, 'treatment', scenarioTexts.workflow.newProposal);
     await expect(await screen.findByRole('button', { name: commonTexts.stop })).toBeEnabled();
   }
 };
@@ -234,12 +255,12 @@ export const DraftConflict: Story = {
   parameters: { songframe: scenarioWorkflowOptions('drafts') },
   play: async (context) => {
     const screen = await ready(context);
-    await userEvent.click(screen.getByRole('button', { name: scenarioTexts.workflow.createScenes }));
+    await startPass(context, 'scenes');
     let dialog = within(await screen.findByRole('dialog', { name: commonTexts.unsavedChanges }));
     await userEvent.click(dialog.getByRole('button', { name: scenarioTexts.drafts.returnToEditor }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     await expect(screen.getByTestId('scenario-counts')).toHaveTextContent('Запусков: 0.');
-    await userEvent.click(screen.getByRole('button', { name: scenarioTexts.workflow.createScenes }));
+    await startPass(context, 'scenes');
     dialog = within(await screen.findByRole('dialog', { name: commonTexts.unsavedChanges }));
     await userEvent.click(dialog.getByRole('button', { name: scenarioTexts.drafts.saveAndContinue }));
     await waitFor(() => expect(screen.getByTestId('scenario-counts')).toHaveTextContent('Запусков: 1.'));
@@ -254,9 +275,8 @@ export const AcceptedShots: Story = {
     const screen = await ready(context);
     // Отказ от подтверждения ничего не запускает.
     await userEvent.click(screen.getByRole('button', { name: scenarioTexts.workflow.createTreatment }));
-    let confirmation = within(await screen.findByRole('dialog', { name: scenarioTexts.accepted.confirmTitle }));
-    await expect(confirmation.getByText(scenarioTexts.accepted.treatment({ shots: ['M01'] }))).toBeVisible();
-    await expect(confirmation.getByText(scenarioTexts.accepted.kept)).toBeVisible();
+    let confirmation = within(await screen.findByRole('dialog', { name: scenarioTexts.workflow.confirmTitle.treatment }));
+    await expect(confirmation.getByRole('alert')).toHaveTextContent(`${scenarioTexts.accepted.treatment({ shots: ['M01'] })} ${scenarioTexts.accepted.kept}`);
     await userEvent.click(confirmation.getByRole('button', { name: commonTexts.cancel }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     await expect(screen.getByTestId('scenario-counts')).toHaveTextContent('Запусков: 0.');
@@ -268,9 +288,9 @@ export const AcceptedShots: Story = {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     // Согласие запускает сценарий.
     await userEvent.click(screen.getByRole('button', { name: scenarioTexts.workflow.createScenes }));
-    confirmation = within(await screen.findByRole('dialog', { name: scenarioTexts.accepted.confirmTitle }));
-    await expect(confirmation.getByText(scenarioTexts.accepted.scenes({ shots: ['M01'] }))).toBeVisible();
-    await userEvent.click(confirmation.getByRole('button', { name: scenarioTexts.accepted.confirm }));
+    confirmation = within(await screen.findByRole('dialog', { name: scenarioTexts.workflow.confirmTitle.scenes }));
+    await expect(confirmation.getByRole('alert')).toHaveTextContent(scenarioTexts.accepted.scenes({ shots: ['M01'] }));
+    await userEvent.click(confirmation.getByRole('button', { name: scenarioTexts.workflow.createScenes }));
     await waitFor(() => expect(screen.getByTestId('scenario-counts')).toHaveTextContent('Запусков: 1.'));
   }
 };

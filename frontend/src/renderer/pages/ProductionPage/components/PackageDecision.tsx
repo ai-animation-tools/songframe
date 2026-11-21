@@ -18,6 +18,7 @@ import { aiActionProblem } from '@shared/ai-access';
 import type { AiActionKind } from '@shared/ai-access';
 import { ActionButton } from '../../../components/ActionButton';
 import { AgentButton } from '../../../components';
+import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 import { KeyframeNoteScopeField } from './KeyframeNoteScopeField';
 
 /** Пример относится к текущему согласованию и помогает описать конкретное изменение. */
@@ -75,6 +76,8 @@ export function PackageDecision({
   const hints = frame ? { ...VERDICT_HINTS, ...frameHints(frame) } : VERDICT_HINTS;
   // Поле замечания открывается «Доработать…»: пока решение не про доработку, оно только мешает.
   const [revisingKey, setRevisingKey] = useState<string | null>(null);
+  // «Доработать с агентом» сразу записывает ответ и запускает агента, поэтому сначала спрашивает подтверждение.
+  const [confirmRevise, setConfirmRevise] = useState(false);
   const revising = !onChangeRequest && (revisingKey === questionKey || !!note.trim());
   // Введённое замечание теряется при другом ответе: пока оно есть, отвечать можно только доработкой.
   // Сборка пробы стыков вопрос не закрывает и замечание не трогает.
@@ -168,7 +171,7 @@ export function PackageDecision({
                     size="small"
                     disabled={!!reason || busy || !note.trim()}
                     disabledReason={disabledReason}
-                    onClick={() => onDecide(verdict)}
+                    onClick={() => setConfirmRevise(true)}
                   >
                     {productionTexts.productionWorkflowPanel.reviseNow}
                   </AgentButton>
@@ -215,6 +218,24 @@ export function PackageDecision({
             })}
           </Box>
         </Alert>
+      ) : null}
+      {/* Окно принадлежит кнопке «Доработать с агентом» и есть только вместе с ней. */}
+      {revising && revisionByAgent ? (
+        <ConfirmationDialog
+          open={confirmRevise}
+          title={productionTexts.packageDecision.reviseConfirmTitle}
+          description={productionTexts.packageDecision.reviseConfirmDescription}
+          confirmLabel={productionTexts.packageDecision.reviseConfirm}
+          confirmAgent={{}}
+          confirmDisabled={busy || !note.trim()}
+          confirmDisabledReason={busy ? busyReason : productionTexts.productionWorkflowPanel.noteReason}
+          cancelAutoFocus
+          onClose={() => setConfirmRevise(false)}
+          onConfirm={() => {
+            setConfirmRevise(false);
+            onDecide('revise');
+          }}
+        />
       ) : null}
     </>
   );

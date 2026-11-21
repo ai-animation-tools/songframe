@@ -70,11 +70,32 @@ func replacesAskedFrame(c *Context, after any) bool {
 	return dynvalue.Get(after, "stage") == "frames" && dynvalue.Truthy(frame) && len(images) == 1 && dynvalue.Get(images[0], "id") == frame
 }
 
-// replacesAskedText сообщает, что свой текст пользователя заменяет текст того этапа, о котором
-// открыт вопрос (SaveOwn): применение задаст вопрос заново о новом тексте.
+// replacesAskedText сообщает, что свой текст пользователя снимает открытый вопрос попытки
+// (SaveOwn, ownReplacesQuestion): применение задаст вопрос заново о новом тексте.
 func replacesAskedText(c *Context, proposal *dynvalue.Object) bool {
 	stage, _ := proposal.Value("stage").(string)
-	return proposal.Value("own") == true && dynvalue.Get(c.workflowValue("pending_decision"), "stage") == stage+"_review"
+	return proposal.Value("own") == true && ownReplacesQuestion(c, stage)
+}
+
+// ownReplacesQuestion сообщает, что свой текст этапа stage можно сохранить при открытом вопросе
+// попытки c: вопрос о тексте того же этапа (промпт агента сверх предела) или, для видеопромпта,
+// вопрос об отправке подготовленного, но не отправленного запроса. Утверждённый промпт меняется до
+// отправки: применение сбрасывает request_dir, папка неотправленного запроса остаётся в попытке, а
+// следующий запрос собирается по новому тексту.
+func ownReplacesQuestion(c *Context, stage string) bool {
+	pending := c.workflowValue("pending_decision")
+	if dynvalue.Get(pending, "stage") == stage+"_review" {
+		return true
+	}
+	if stage != "prompt" || dynvalue.Get(pending, "stage") != "request_choice" {
+		return false
+	}
+	request := dynvalue.ToString(c.workflowValue("request_dir"))
+	if request == "" {
+		return false
+	}
+	status := dynvalue.Get(readJSONOrNil(filepath.Join(c.PackageDir, request, "attempt.json")), "status")
+	return status == "prepared"
 }
 
 // checkApply — синхронная часть Apply до занятия плана: предложение готово, относится

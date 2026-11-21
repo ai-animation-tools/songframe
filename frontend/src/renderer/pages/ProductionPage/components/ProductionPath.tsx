@@ -252,14 +252,19 @@ export function ProductionPath({
   }, [ownOpen, workflow.error]);
   /**
    * Свой текст этапа доступен, пока агент не работает и нет непринятого предложения или открытого вопроса попытки.
-   * Вопрос о тексте того же этапа (промпт агента сверх предела) не мешает: свой текст заменит его.
+   * Вопрос о тексте того же этапа (промпт агента сверх предела) не мешает: свой текст заменит его. Видеопромпт
+   * меняется и при вопросе об отправке, пока подготовленный запрос не отправлен: запрос соберётся заново (как Go
+   * ownReplacesQuestion).
    */
+  const replacesQuestion = (stage: 'description' | 'prompt'): boolean =>
+    pkg?.pendingDecision?.stage === `${stage}_review` ||
+    (stage === 'prompt' && pkg?.pendingDecision?.stage === 'request_choice' && pkg.request?.attemptStatus === 'prepared');
   const ownReasonFor = (stage: 'description' | 'prompt'): string | null | undefined =>
     blocked
       ? busyReason
       : view?.proposal && view.proposal.status !== 'applied'
         ? productionTexts.productionWorkflowPanel.loadingReason
-        : pkg?.pendingDecision && pkg.pendingDecision.stage !== `${stage}_review`
+        : pkg?.pendingDecision && !replacesQuestion(stage)
           ? productionTexts.main.workflow.resolveQuestionFirst
           : null;
   const ownReason = ownReasonFor('description');

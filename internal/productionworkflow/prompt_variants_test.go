@@ -82,3 +82,43 @@ func TestRetryWithFramesTranslation(t *testing.T) {
 		t.Fatalf("этап: %v", stage)
 	}
 }
+
+// Свой промпт заменяет утверждённый и до отправки, когда запрос уже подготовлен и открыт вопрос
+// об отправке: подготовленная папка запроса остаётся неотправленной, вопрос переходит к новому
+// промпту, а следующий запрос собирается по нему.
+func TestSaveOwnPromptPreparedRequest(t *testing.T) {
+	run := ownRun(t)
+	workflow := requestWorkflow(t, run)
+	dir := promptReady(t, run, 2)
+	withTranslation(t, dir, "Лодка подходит к пристани, перевод.\n")
+	if _, err := workflow.PrepareRequest(context.Background(), run.project, "M01", dir, nil); err != nil {
+		t.Fatal(err)
+	}
+	own := "The boat glides to the pier."
+	if _, err := workflow.SaveOwn(context.Background(), OwnInput{Project: run.project, Shot: "M01", PackageDir: dir, Stage: "prompt", Prompt: own}); err != nil {
+		t.Fatalf("свой промпт при подготовленном запросе: %v", err)
+	}
+	c, err := ReadContext(run.project, "M01", dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.workflowValue("request_dir") != nil || c.workflowValue("stage") != "prompt_review" ||
+		dynvalue.Get(c.workflowValue("pending_decision"), "stage") != "prompt_review" {
+		t.Fatalf("попытка после своего промпта: %s", dynvalue.Stringify(c.Workflow))
+	}
+	if _, err := os.Stat(filepath.Join(dir, promptTranslationFile)); !os.IsNotExist(err) {
+		t.Fatalf("перевод прежнего промпта остался: %v", err)
+	}
+	runTool(t, run.project, "shot_workflow", "decide", "--dir", dir, "--verdict", "approve")
+	if _, err := workflow.PrepareRequest(context.Background(), run.project, "M01", dir, nil); err != nil {
+		t.Fatal(err)
+	}
+	request := requestFile(t, dir, "request-02")
+	data, err := os.ReadFile(filepath.Join(dir, "request-02", dynvalue.ToString(dynvalue.Get(request.Value("prompt"), "path"))))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != own {
+		t.Fatalf("текст нового запроса: %q", data)
+	}
+}

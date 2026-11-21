@@ -1425,6 +1425,36 @@ export const OwnPromptOverLimit: Story = {
   }
 };
 
+/** Утверждённый промпт меняется и при подготовленном неотправленном запросе: вопрос об отправке не мешает, запрос соберётся заново. */
+export const OwnPromptPreparedRequest: Story = {
+  tags: ['ci'],
+  name: 'Свой видеопромпт · замена утверждённого при подготовленном запросе',
+  parameters: {
+    songframe: options({ shots: () => baseShots({ stageLabel: 'Запрос подготовлен', attention: null, packages: [preparedPackage()] }) })
+  },
+  play: async (context) => {
+    const screen = screenOf(context);
+    const own = texts.ownPromptDialog;
+    await waitFor(() => expect(planStep(context, 'prompt')).not.toBeNull(), POLL_TIMEOUT);
+    const step = within(planStep(context, 'prompt'));
+    // Пройденный шаг свёрнут: открываем его, чтобы изменить промпт.
+    await userEvent.click(await step.findByRole('button', { name: new RegExp(steps.titles.prompt) }, POLL_TIMEOUT));
+    const edit = await step.findByRole('button', { name: texts.ownDescriptionDialog.edit }, POLL_TIMEOUT);
+    await waitFor(() => expect(edit).toBeEnabled(), POLL_TIMEOUT);
+    await userEvent.click(edit);
+    const dialog = within(await screen.findByRole('dialog', { name: own.title({ shot: 'M02' }) }));
+    const field = dialog.getByRole('textbox', { name: own.prompt });
+    await userEvent.clear(field);
+    await userEvent.type(field, 'Камера приближается к воротам.');
+    await userEvent.click(dialog.getByRole('button', { name: texts.ownDescriptionDialog.save }));
+    await waitFor(() => expect(counts(context)).toHaveTextContent('Своих описаний: промпт 30.'), POLL_TIMEOUT);
+    await expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await waitFor(() => expect(planStep(context, 'prompt')).toHaveTextContent('Камера приближается к воротам.'), POLL_TIMEOUT);
+    // Раскрытый шаг прокрутил страницу под закреплённую панель: итог axe проверяет с начала страницы.
+    context.canvasElement.ownerDocument.defaultView?.scrollTo({ top: 0 });
+  }
+};
+
 /** Видеопромпт агента с русским переводом на согласовании: оригинал короче предела провайдера, перевод длиннее. */
 const STORY_PROMPT_ORIGINAL = 'Camera slowly pushes in to the old gate.';
 const STORY_PROMPT_TRANSLATION = 'Камера медленно приближается к старым воротам, свет в окне разгорается.';

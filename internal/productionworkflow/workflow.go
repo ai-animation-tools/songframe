@@ -760,7 +760,7 @@ func (w *Workflow) continuedStage(c *Context, input StartInput) (string, error) 
 		return "", errors.New(textPackageUnavailable)
 	}
 	if pending := c.workflowValue("pending_decision"); dynvalue.Truthy(pending) &&
-		!(input.own && input.Stage != nil && dynvalue.Get(pending, "stage") == *input.Stage+"_review") {
+		!(input.own && input.Stage != nil && ownReplacesQuestion(c, *input.Stage)) {
 		return "", errors.New(textResolveQuestionFirst)
 	}
 	next, err := c.StageFor()

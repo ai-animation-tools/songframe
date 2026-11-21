@@ -315,7 +315,7 @@
           "imagePath": "<project>/source/locations/pier.png"
         }
       ],
-      "state": "unknown",
+      "state": "outdated",
       "stageLabel": "ждёт вашего решения: Утвердить опоры?",
       "asset": null,
       "package": {

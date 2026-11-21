@@ -435,7 +435,7 @@ export interface BriefResult {
  * Производство: completed означает приёмку по текущей постановке, stale — комплект принят по прежней постановке
  * и требует нового производства; доступность монтажного файла отражена в asset.video.
  */
-export type ShotProductionState = 'planned' | 'progress' | 'completed' | 'stale' | 'unknown';
+export type ShotProductionState = 'planned' | 'progress' | 'completed' | 'stale' | 'unknown' | 'outdated';
 
 /** Как сохранять реестр: изменение постановки требует нового производства либо принятые материалы остаются в силе. */
 export type ScenesSaveMode = 'production' | 'keep';

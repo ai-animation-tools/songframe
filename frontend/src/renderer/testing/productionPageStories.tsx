@@ -979,7 +979,8 @@ export function longPageShots(count = 24): ShotProduction[] {
         progress: 'Опоры на согласовании у длинной попытки',
         planned: 'Запланирован',
         stale: 'Постановка изменена',
-        unknown: ''
+        unknown: '',
+        outdated: ''
       }[state],
       asset:
         state === 'completed' || state === 'stale' ? { dir: `${PAGE_PROJECT}/assets/shots/${id}`, video: STORY_VIDEO_PATH, original: STORY_VIDEO_PATH } : null,

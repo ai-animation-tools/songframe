@@ -93,7 +93,7 @@
       "start": 12,
       "end": 16,
       "lipsync": false,
-      "state": "unknown",
+      "state": "outdated",
       "stageLabel": "ждёт вашего решения: Утвердить опоры?",
       "staleReason": null,
       "regenerateProblem": "M03: сначала выберите провайдера видео в настройках проекта.",

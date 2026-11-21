@@ -15,7 +15,7 @@
     {
       "id": "M03",
       "reason": "изменены общие правила или направление части",
-      "state": "unknown",
+      "state": "outdated",
       "produced": true
     }
   ]

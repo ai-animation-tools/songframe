@@ -424,7 +424,7 @@ func ViewDashboard(project string) (View, error) {
 			summary.CompletedSeconds += shot.End - shot.Start
 		case production.StateStale:
 			summary.Stale++
-		case production.StateProgress, production.StateUnknown:
+		case production.StateProgress, production.StateUnknown, production.StateOutdated:
 			summary.Progress++
 		case production.StatePlanned:
 			summary.Planned++

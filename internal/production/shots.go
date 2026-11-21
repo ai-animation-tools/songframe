@@ -22,7 +22,25 @@ const (
 	StateCompleted = "completed"
 	StateStale     = "stale"
 	StateUnknown   = "unknown"
+	// StateOutdated — плана нет в принятых, а его попытка готовилась по прежней постановке: единственная
+	// проблема пакетов — SceneChanged. Отличается от StateUnknown, где пакет повреждён или не прошёл проверку.
+	StateOutdated = "outdated"
 )
+
+// troubledState — состояние плана без принятого комплекта по проблемам его пакетов: "" — проблем нет,
+// StateOutdated — пакеты только устарели после правки постановки, StateUnknown — есть другие проблемы.
+func troubledState(packages []*PackageView) string {
+	state := ""
+	for _, pkg := range packages {
+		for _, problem := range pkg.Problems {
+			if problem != SceneChanged {
+				return StateUnknown
+			}
+			state = StateOutdated
+		}
+	}
+	return state
+}
 
 // ShotState — состояние плана, нужное оценке сохранения сценария.
 type ShotState struct {
@@ -92,15 +110,14 @@ func ShotStates(project string) (map[string]ShotState, error) {
 		}
 		manifest := readJSON(filepath.Join(project, "assets", "shots", id, "manifest.json"))
 		hasManifest := dynvalue.Truthy(manifest)
-		mine, troubled := 0, false
+		var mine []*PackageView
 		for _, item := range packages {
 			if item.Shot == id {
-				mine++
-				troubled = troubled || len(item.Problems) > 0
+				mine = append(mine, item)
 			}
 		}
 		state := StatePlanned
-		if mine > 0 {
+		if len(mine) > 0 {
 			state = StateProgress
 		}
 		if hasManifest {
@@ -108,10 +125,10 @@ func ShotStates(project string) (map[string]ShotState, error) {
 			if value, ok := accepted.Accepted[id]; ok {
 				state = value
 			}
-		} else if troubled {
-			state = StateUnknown
+		} else if troubled := troubledState(mine); troubled != "" {
+			state = troubled
 		}
-		result[dynvalue.ToString(rawID)] = ShotState{State: state, Produced: hasManifest || mine > 0}
+		result[dynvalue.ToString(rawID)] = ShotState{State: state, Produced: hasManifest || len(mine) > 0}
 	}
 	return result, nil
 }

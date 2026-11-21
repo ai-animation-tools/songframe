@@ -641,7 +641,7 @@ export const SaveProducedShots: Story = {
 };
 
 export const ShotStatusInList: Story = {
-  name: 'Список планов · статус производства бейджем, как на «Производстве»',
+  name: 'Список планов · статус производства бейджем, как на «Производстве»: попытка устарела и проблема различаются',
   tags: ['ci'],
   parameters: { songframe: scenarioPageOptions({ variant: 'produced' }) },
   play: async (context) => {
@@ -649,7 +649,9 @@ export const ShotStatusInList: Story = {
     const status = async (shot: string) => within(row(context, shot)).findByTestId('shot-status');
     await expect(await status('M01')).toHaveTextContent(componentsTexts.shot.states.completed);
     await expect(await status('M02')).toHaveTextContent(componentsTexts.shot.states.completed);
-    await expect(await status('M03')).toHaveTextContent(componentsTexts.shot.states.planned);
+    // Устаревшая после правки постановки попытка и повреждённый пакет — разные метки.
+    await expect(await status('M03')).toHaveTextContent(componentsTexts.shot.states.outdated);
+    await expect(await status('M04')).toHaveTextContent(componentsTexts.shot.states.unknown);
   }
 };
 

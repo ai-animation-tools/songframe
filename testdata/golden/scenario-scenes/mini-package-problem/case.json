@@ -1,10 +1,10 @@
 {
-  "description": "Пакет M03 подготовлен по другой постановке: без комплекта план unknown.",
+  "description": "Пакет M03 подготовлен по другой постановке: без комплекта план outdated (попытка устарела).",
   "call": "scenesSaveImpact + validateScenes + saveScenesWithMode",
   "project": "project",
   "mode": "production",
   "covers": [
-    "state=unknown",
+    "state=outdated",
     "SCENE_CHANGED в пакете"
   ],
   "stubbedMedia": []

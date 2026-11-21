@@ -1781,9 +1781,9 @@
   {
     "domain": "scenario-scenes",
     "name": "mini-package-problem",
-    "description": "Пакет M03 подготовлен по другой постановке: без комплекта план unknown.",
+    "description": "Пакет M03 подготовлен по другой постановке: без комплекта план outdated (попытка устарела).",
     "covers": [
-      "state=unknown",
+      "state=outdated",
       "SCENE_CHANGED в пакете"
     ]
   },

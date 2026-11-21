@@ -456,10 +456,8 @@ func shotProduction(project string, scene any, id string, packages []*PackageVie
 			break
 		}
 	}
-	for _, pkg := range mine {
-		if len(pkg.Problems) > 0 && !hasManifest {
-			state = StateUnknown
-		}
+	if troubled := troubledState(mine); troubled != "" && !hasManifest {
+		state = troubled
 	}
 	var attentionText *string
 	for _, pkg := range mine {

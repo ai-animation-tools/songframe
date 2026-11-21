@@ -16,6 +16,7 @@ import type {
   ScenarioView,
   ScenesFile,
   ScenesSaveMode,
+  ShotProductionState,
   StateDelta,
   StateSource,
   TimingFile,
@@ -42,7 +43,7 @@ export const scenarioPageActionProblem = (shot: string): string => `${shot}: о�
 
 /**
  * regular — шесть планов и утверждённые части; long — сорок планов с длинными текстами; produced — у M01 и M02 есть
- * принятые материалы; proposal — готовое предложение прохода сценария; noShots — сценарий из одних частей;
+ * принятые материалы, у M03 устаревшая попытка, у M04 повреждённый пакет; proposal — готовое предложение прохода сценария; noShots — сценарий из одних частей;
  * noScenario — сценария ещё нет; loading и loadError — отложенное и ошибочное первое чтение.
  */
 export type ScenarioPageVariant = 'regular' | 'long' | 'produced' | 'proposal' | 'noShots' | 'noScenario' | 'loading' | 'loadError';
@@ -575,6 +576,9 @@ export function scenarioPageOptions({
       let failedReads = variant === 'loadError' ? 1 : 0;
       let checkReads = 0;
       const produced = new Set(variant === 'produced' ? ['M01', 'M02'] : []);
+      // Состояния планов без принятого видео для «produced»: у M03 попытка готовилась по прежней постановке, у M04 пакет
+      // повреждён. Сохранение их не трогает: модель меняет только бейджи списка и шкалы.
+      const attempts: Record<string, ShotProductionState> = variant === 'produced' ? { M03: 'outdated', M04: 'unknown' } : {};
       const saved = pageView(variant, gappedTiming);
       if (referencesStale) Object.assign(saved, { referencesStale: true, problems: [scenarioTexts.main.referencesRefresh] });
       if (videoProvider) saved.videoProvider = TEST_PROVIDER;
@@ -866,7 +870,12 @@ export function scenarioPageOptions({
             validate(project);
             return {
               shots: (model.saved.scenes?.scenes ?? []).map((shot) =>
-                productionShot({ id: shot.id, title: shot.title ?? '', original: shot.original, state: produced.has(shot.id) ? 'completed' : 'planned' })
+                productionShot({
+                  id: shot.id,
+                  title: shot.title ?? '',
+                  original: shot.original,
+                  state: produced.has(shot.id) ? 'completed' : (attempts[shot.id] ?? 'planned')
+                })
               ),
               broken: [],
               problems: [],

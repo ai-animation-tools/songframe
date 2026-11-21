@@ -46,7 +46,14 @@ export const componentsTexts = {
   },
   shot: {
     speech: 'речь',
-    states: { planned: 'не начат', progress: commonTexts.shot.progress, completed: 'принят', stale: commonTexts.shot.stale, unknown: 'проблема' },
+    states: {
+      planned: 'не начат',
+      progress: commonTexts.shot.progress,
+      completed: 'принят',
+      stale: commonTexts.shot.stale,
+      unknown: 'проблема',
+      outdated: 'попытка устарела'
+    },
     pages: {
       production: { label: 'В производстве', title: 'на странице «Производство»' },
       scenario: { label: 'В сценарии', title: 'на странице «Сценарий»' }

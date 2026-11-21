@@ -1,5 +1,5 @@
 import type { Scheme, SchemePoint, SchemeShape, SchemesFile } from './schemes';
-import { ellipseOutline, rectCorners } from './scheme-editing';
+import { ellipseOutline, rectCorners, smoothCurve } from './scheme-editing';
 
 /**
  * Точка съёмки плана (`scene.viewpoint` в plan/scenes.json): откуда снимает камера и где стоят герои относительно
@@ -337,23 +337,67 @@ export function createViewpoint(locations: readonly string[], schemes: SchemesFi
   return { location: drawn.length === 1 ? drawn[0] : locations[0], side: 'south', size: 'wide' };
 }
 
+/** Кусок следа фигуры на земле: замкнутый контур или ломаная. */
+export interface FootprintPart {
+  points: SchemePoint[];
+  closed: boolean;
+}
+
 /**
- * Контур фигуры схемы и замкнут ли он: углы прямоугольника, контур эллипса, вершины многоугольника и линии,
- * точка. Нужен референсам плана, которые нарисованы на схеме объектом: их место и размер берутся из контура.
+ * След фигуры схемы на земле: углы прямоугольника, контур эллипса, многоугольник, линия (гладкая — по кривой, как на
+ * холсте; с шириной — полосой по прямоугольнику на каждый отрезок), точка. Нужен референсам плана, нарисованным на
+ * схеме объектом: их место и размер берутся из следа. Тот же след считает Go для фактов кадра
+ * (`internal/viewframe`), общая таблица случаев сверяет обе стороны.
  */
-export function shapeFootprint(shape: SchemeShape): { points: SchemePoint[]; closed: boolean } {
+export function shapeFootprint(shape: SchemeShape): FootprintPart[] {
   switch (shape.type) {
     case 'rect':
-      return { points: rectCorners(shape), closed: true };
+      return [{ points: rectCorners(shape), closed: true }];
     case 'ellipse':
-      return { points: ellipseOutline(shape), closed: true };
+      return [{ points: ellipseOutline(shape), closed: true }];
     case 'polygon':
-      return { points: shape.points, closed: true };
-    case 'line':
-      return { points: shape.points, closed: !!shape.closed };
+      return [{ points: shape.points, closed: true }];
+    case 'line': {
+      const points = shape.smooth ? smoothCurve(shape.points, !!shape.closed) : shape.points;
+      return shape.width && shape.width > 0 ? band(points, !!shape.closed, shape.width) : [{ points, closed: !!shape.closed }];
+    }
     case 'point':
-      return { points: [shape.at], closed: false };
+      return [{ points: [shape.at], closed: false }];
   }
+}
+
+/** Полоса шириной width вдоль ломаной: прямоугольник на каждый отрезок; одна точка — квадрат шириной полосы. */
+function band(points: readonly SchemePoint[], closed: boolean, width: number): FootprintPart[] {
+  const parts: FootprintPart[] = [];
+  const segments = closed ? points.length : points.length - 1;
+  for (let index = 0; index < segments; index++) {
+    const [a, b] = [points[index], points[(index + 1) % points.length]];
+    const length = distance(a, b);
+    if (length < 1e-9) continue;
+    const [nx, ny] = [(-(b[1] - a[1]) / length) * (width / 2), ((b[0] - a[0]) / length) * (width / 2)];
+    parts.push({
+      points: [
+        [a[0] - nx, a[1] - ny],
+        [b[0] - nx, b[1] - ny],
+        [b[0] + nx, b[1] + ny],
+        [a[0] + nx, a[1] + ny]
+      ],
+      closed: true
+    });
+  }
+  if (!parts.length && points.length) {
+    const [[x, y], half] = [points[0], width / 2];
+    parts.push({
+      points: [
+        [x - half, y - half],
+        [x + half, y - half],
+        [x + half, y + half],
+        [x - half, y + half]
+      ],
+      closed: true
+    });
+  }
+  return parts;
 }
 
 /** Расстояние от p до отрезка ab, метры. */
@@ -396,8 +440,7 @@ export function footprintView(viewpoint: SceneViewpoint, phase: ViewpointPhase, 
   let reference: number | null = null;
   let low = 0;
   let high = 0;
-  for (const shape of shapes) {
-    const { points, closed } = shapeFootprint(shape);
+  for (const { points, closed } of shapes.flatMap(shapeFootprint)) {
     if (closed && points.length > 2 && insideOutline(camera, points)) around = true;
     const edges = points.length > 1 ? points.length - (closed ? 0 : 1) : 0;
     nearest = Math.min(

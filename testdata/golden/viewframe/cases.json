@@ -1,0 +1,1225 @@
+{
+  "schemes": {
+    "yard": {
+      "id": "s1",
+      "location": "yard",
+      "title": "Двор",
+      "objects": [
+        {
+          "id": "o1",
+          "name": "Стена",
+          "shape": {
+            "type": "rect",
+            "center": [
+              0,
+              10
+            ],
+            "size": [
+              10,
+              1
+            ]
+          },
+          "height": 3
+        },
+        {
+          "id": "o2",
+          "name": "Навес",
+          "shape": {
+            "type": "rect",
+            "center": [
+              0,
+              4
+            ],
+            "size": [
+              4,
+              2
+            ]
+          },
+          "elevation": 2.5,
+          "height": 0.2
+        },
+        {
+          "id": "o3",
+          "name": "Забор",
+          "shape": {
+            "type": "line",
+            "points": [
+              [
+                -3,
+                7
+              ],
+              [
+                3,
+                7
+              ]
+            ]
+          },
+          "height": 1.2
+        },
+        {
+          "id": "o4",
+          "name": "Колодец",
+          "shape": {
+            "type": "ellipse",
+            "center": [
+              6,
+              -8
+            ],
+            "radii": [
+              1,
+              1
+            ]
+          },
+          "height": 1
+        },
+        {
+          "id": "o5",
+          "name": "Столб",
+          "shape": {
+            "type": "point",
+            "at": [
+              -6,
+              6
+            ]
+          },
+          "height": 4
+        },
+        {
+          "id": "o6",
+          "name": "Дорожка",
+          "shape": {
+            "type": "line",
+            "points": [
+              [
+                -5,
+                -5
+              ],
+              [
+                5,
+                -5
+              ]
+            ],
+            "width": 2
+          }
+        },
+        {
+          "id": "o7",
+          "name": "Клумба",
+          "shape": {
+            "type": "line",
+            "points": [
+              [
+                6,
+                8
+              ],
+              [
+                8,
+                10
+              ],
+              [
+                10,
+                8
+              ],
+              [
+                8,
+                6
+              ]
+            ],
+            "smooth": true,
+            "closed": true
+          },
+          "height": 0.5
+        },
+        {
+          "id": "o8",
+          "name": "Ворота",
+          "entity": "gate",
+          "shape": {
+            "type": "rect",
+            "center": [
+              -1,
+              10.75
+            ],
+            "size": [
+              2,
+              0.5
+            ],
+            "rotation": 90
+          },
+          "height": 2.2
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "name": "south-centre",
+      "description": "Камера с юга на уровне глаз, герой по центру; навес выше линии взгляда не заслоняет.",
+      "input": {
+        "viewpoint": {
+          "location": "yard",
+          "side": "south",
+          "size": "medium",
+          "camera": {
+            "start": [
+              0,
+              0
+            ]
+          },
+          "subjects": [
+            {
+              "entity": "hero",
+              "start": [
+                0,
+                5
+              ]
+            }
+          ]
+        },
+        "scheme": "yard",
+        "heights": {
+          "hero": 1.8
+        }
+      },
+      "expected": {
+        "camera": {
+          "side": "south",
+          "size": "medium",
+          "fov": 40
+        },
+        "start": {
+          "looks": "на север",
+          "camera_height": 1.6,
+          "subjects": [
+            {
+              "entity": "hero",
+              "lead": true,
+              "in_frame": true,
+              "x": 0,
+              "place": "центр",
+              "distance": 5,
+              "height": 1.8,
+              "frame_height": 0.86,
+              "whole": true,
+              "hidden_by": []
+            }
+          ],
+          "objects": [
+            {
+              "name": "Стена",
+              "in_frame": true,
+              "x": [
+                -1,
+                1
+              ],
+              "place": "во всю ширину кадра",
+              "distance": 9.5,
+              "height": 3
+            },
+            {
+              "name": "Навес",
+              "in_frame": true,
+              "x": [
+                -1,
+                1
+              ],
+              "place": "во всю ширину кадра",
+              "distance": 3,
+              "height": 2.7
+            },
+            {
+              "name": "Забор",
+              "in_frame": true,
+              "x": [
+                -1,
+                1
+              ],
+              "place": "во всю ширину кадра",
+              "distance": 7,
+              "height": 1.2
+            },
+            {
+              "name": "Колодец",
+              "in_frame": false,
+              "place": "за спиной камеры",
+              "distance": 9,
+              "height": 1
+            },
+            {
+              "name": "Столб",
+              "in_frame": false,
+              "place": "за левым краем",
+              "distance": 8.5,
+              "height": 4
+            },
+            {
+              "name": "Дорожка",
+              "in_frame": false,
+              "place": "за спиной камеры",
+              "distance": 4
+            },
+            {
+              "name": "Клумба",
+              "in_frame": false,
+              "place": "за правым краем",
+              "distance": 9.5,
+              "height": 0.5
+            },
+            {
+              "name": "Ворота",
+              "entity": "gate",
+              "in_frame": true,
+              "x": [
+                -0.35,
+                -0.18
+              ],
+              "place": "от левой трети до центра",
+              "distance": 9.8,
+              "height": 2.2
+            }
+          ]
+        },
+        "end": null
+      }
+    },
+    {
+      "name": "hidden-behind",
+      "description": "Второй герой без роста в кастинге стоит за первым и за забором: заслонён обоими.",
+      "input": {
+        "viewpoint": {
+          "location": "yard",
+          "side": "south",
+          "size": "medium",
+          "camera": {
+            "start": [
+              0,
+              0
+            ]
+          },
+          "subjects": [
+            {
+              "entity": "hero",
+              "start": [
+                0,
+                5
+              ]
+            },
+            {
+              "entity": "friend",
+              "start": [
+                0,
+                8
+              ]
+            }
+          ]
+        },
+        "scheme": "yard",
+        "heights": {
+          "hero": 1.8
+        }
+      },
+      "expected": {
+        "camera": {
+          "side": "south",
+          "size": "medium",
+          "fov": 40
+        },
+        "start": {
+          "looks": "на север",
+          "camera_height": 1.6,
+          "subjects": [
+            {
+              "entity": "hero",
+              "lead": true,
+              "in_frame": true,
+              "x": 0,
+              "place": "центр",
+              "distance": 5,
+              "height": 1.8,
+              "frame_height": 0.86,
+              "whole": true,
+              "hidden_by": []
+            },
+            {
+              "entity": "friend",
+              "in_frame": true,
+              "x": 0,
+              "place": "центр",
+              "distance": 8,
+              "frame_height": 0.52,
+              "whole": true,
+              "hidden_by": [
+                "hero",
+                "Забор"
+              ]
+            }
+          ],
+          "objects": [
+            {
+              "name": "Стена",
+              "in_frame": true,
+              "x": [
+                -1,
+                1
+              ],
+              "place": "во всю ширину кадра",
+              "distance": 9.5,
+              "height": 3
+            },
+            {
+              "name": "Навес",
+              "in_frame": true,
+              "x": [
+                -1,
+                1
+              ],
+              "place": "во всю ширину кадра",
+              "distance": 3,
+              "height": 2.7
+            },
+            {
+              "name": "Забор",
+              "in_frame": true,
+              "x": [
+                -1,
+                1
+              ],
+              "place": "во всю ширину кадра",
+              "distance": 7,
+              "height": 1.2
+            },
+            {
+              "name": "Колодец",
+              "in_frame": false,
+              "place": "за спиной камеры",
+              "distance": 9,
+              "height": 1
+            },
+            {
+              "name": "Столб",
+              "in_frame": false,
+              "place": "за левым краем",
+              "distance": 8.5,
+              "height": 4
+            },
+            {
+              "name": "Дорожка",
+              "in_frame": false,
+              "place": "за спиной камеры",
+              "distance": 4
+            },
+            {
+              "name": "Клумба",
+              "in_frame": false,
+              "place": "за правым краем",
+              "distance": 9.5,
+              "height": 0.5
+            },
+            {
+              "name": "Ворота",
+              "entity": "gate",
+              "in_frame": true,
+              "x": [
+                -0.35,
+                -0.18
+              ],
+              "place": "от левой трети до центра",
+              "distance": 9.8,
+              "height": 2.2
+            }
+          ]
+        },
+        "end": null
+      }
+    },
+    {
+      "name": "wall-low-and-drone",
+      "description": "Герой за стеной: с уровня глаз стена закрывает его, с высоты 30 м — нет.",
+      "input": {
+        "viewpoint": {
+          "location": "yard",
+          "side": "south",
+          "size": "wide",
+          "camera": {
+            "start": [
+              0,
+              0
+            ]
+          },
+          "camera_height": {
+            "start": 1.6,
+            "end": 30
+          },
+          "subjects": [
+            {
+              "entity": "hero",
+              "start": [
+                2,
+                12
+              ]
+            }
+          ]
+        },
+        "scheme": "yard",
+        "heights": {
+          "hero": 1.8
+        }
+      },
+      "expected": {
+        "camera": {
+          "side": "south",
+          "size": "wide",
+          "fov": 60
+        },
+        "start": {
+          "looks": "на север",
+          "camera_height": 1.6,
+          "subjects": [
+            {
+              "entity": "hero",
+              "lead": true,
+              "in_frame": true,
+              "x": 0,
+              "place": "центр",
+              "distance": 12.2,
+              "height": 1.8,
+              "frame_height": 0.23,
+              "whole": true,
+              "hidden_by": [
+                "Стена",
+                "Забор"
+              ]
+            }
+          ],
+          "objects": [
+            {
+              "name": "Стена",
+              "in_frame": true,
+              "x": [
+                -1,
+                0.57
+              ],
+              "place": "от левого края до правой трети",
+              "distance": 9.5,
+              "height": 3
+            },
+            {
+              "name": "Навес",
+              "in_frame": true,
+              "x": [
+                -1,
+                0.78
+              ],
+              "place": "от левого края до правой трети",
+              "distance": 3,
+              "height": 2.7
+            },
+            {
+              "name": "Забор",
+              "in_frame": true,
+              "x": [
+                -1,
+                0.42
+              ],
+              "place": "от левого края до правой трети",
+              "distance": 7,
+              "height": 1.2
+            },
+            {
+              "name": "Колодец",
+              "in_frame": false,
+              "place": "за спиной камеры",
+              "distance": 9,
+              "height": 1
+            },
+            {
+              "name": "Столб",
+              "in_frame": false,
+              "place": "за левым краем",
+              "distance": 8.5,
+              "height": 4
+            },
+            {
+              "name": "Дорожка",
+              "in_frame": false,
+              "place": "за спиной камеры",
+              "distance": 4
+            },
+            {
+              "name": "Клумба",
+              "in_frame": true,
+              "x": [
+                0.86,
+                1
+              ],
+              "place": "от правой трети до правого края",
+              "distance": 9.5,
+              "height": 0.5
+            },
+            {
+              "name": "Ворота",
+              "entity": "gate",
+              "in_frame": true,
+              "x": [
+                -0.52,
+                -0.4
+              ],
+              "place": "левая треть",
+              "distance": 9.8,
+              "height": 2.2
+            }
+          ]
+        },
+        "end": {
+          "looks": "на север",
+          "camera_height": 30,
+          "subjects": [
+            {
+              "entity": "hero",
+              "lead": true,
+              "in_frame": true,
+              "x": 0,
+              "place": "центр",
+              "distance": 12.2,
+              "height": 1.8,
+              "frame_height": 0.03,
+              "whole": true,
+              "hidden_by": []
+            }
+          ],
+          "objects": [
+            {
+              "name": "Стена",
+              "in_frame": true,
+              "x": [
+                -1,
+                0.57
+              ],
+              "place": "от левого края до правой трети",
+              "distance": 9.5,
+              "height": 3
+            },
+            {
+              "name": "Навес",
+              "in_frame": true,
+              "x": [
+                -1,
+                0.78
+              ],
+              "place": "от левого края до правой трети",
+              "distance": 3,
+              "height": 2.7
+            },
+            {
+              "name": "Забор",
+              "in_frame": true,
+              "x": [
+                -1,
+                0.42
+              ],
+              "place": "от левого края до правой трети",
+              "distance": 7,
+              "height": 1.2
+            },
+            {
+              "name": "Колодец",
+              "in_frame": false,
+              "place": "за спиной камеры",
+              "distance": 9,
+              "height": 1
+            },
+            {
+              "name": "Столб",
+              "in_frame": false,
+              "place": "за левым краем",
+              "distance": 8.5,
+              "height": 4
+            },
+            {
+              "name": "Дорожка",
+              "in_frame": false,
+              "place": "за спиной камеры",
+              "distance": 4
+            },
+            {
+              "name": "Клумба",
+              "in_frame": true,
+              "x": [
+                0.86,
+                1
+              ],
+              "place": "от правой трети до правого края",
+              "distance": 9.5,
+              "height": 0.5
+            },
+            {
+              "name": "Ворота",
+              "entity": "gate",
+              "in_frame": true,
+              "x": [
+                -0.52,
+                -0.4
+              ],
+              "place": "левая треть",
+              "distance": 9.8,
+              "height": 2.2
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "dolly",
+      "description": "Камера сдвигается на восток и доворачивает на неподвижного героя: последний кадр смотрит на северо-запад.",
+      "input": {
+        "viewpoint": {
+          "location": "yard",
+          "side": "south",
+          "size": "close",
+          "camera": {
+            "start": [
+              0,
+              0
+            ],
+            "end": [
+              4,
+              0
+            ]
+          },
+          "subjects": [
+            {
+              "entity": "hero",
+              "start": [
+                0,
+                5
+              ]
+            }
+          ]
+        },
+        "scheme": "yard",
+        "heights": {}
+      },
+      "expected": {
+        "camera": {
+          "side": "south",
+          "size": "close",
+          "fov": 25
+        },
+        "start": {
+          "looks": "на север",
+          "camera_height": 1.6,
+          "subjects": [
+            {
+              "entity": "hero",
+              "lead": true,
+              "in_frame": true,
+              "x": 0,
+              "place": "центр",
+              "distance": 5,
+              "frame_height": 1,
+              "whole": false,
+              "hidden_by": []
+            }
+          ],
+          "objects": [
+            {
+              "name": "Стена",
+              "in_frame": true,
+              "x": [
+                -1,
+                1
+              ],
+              "place": "во всю ширину кадра",
+              "distance": 9.5,
+              "height": 3
+            },
+            {
+              "name": "Навес",
+              "in_frame": true,
+              "x": [
+                -1,
+                1
+              ],
+              "place": "во всю ширину кадра",
+              "distance": 3,
+              "height": 2.7
+            },
+            {
+              "name": "Забор",
+              "in_frame": true,
+              "x": [
+                -1,
+                1
+              ],
+              "place": "во всю ширину кадра",
+              "distance": 7,
+              "height": 1.2
+            },
+            {
+              "name": "Колодец",
+              "in_frame": false,
+              "place": "за спиной камеры",
+              "distance": 9,
+              "height": 1
+            },
+            {
+              "name": "Столб",
+              "in_frame": false,
+              "place": "за левым краем",
+              "distance": 8.5,
+              "height": 4
+            },
+            {
+              "name": "Дорожка",
+              "in_frame": false,
+              "place": "за спиной камеры",
+              "distance": 4
+            },
+            {
+              "name": "Клумба",
+              "in_frame": false,
+              "place": "за правым краем",
+              "distance": 9.5,
+              "height": 0.5
+            },
+            {
+              "name": "Ворота",
+              "entity": "gate",
+              "in_frame": true,
+              "x": [
+                -0.58,
+                -0.29
+              ],
+              "place": "от левой трети до центра",
+              "distance": 9.8,
+              "height": 2.2
+            }
+          ]
+        },
+        "end": {
+          "looks": "на северо-запад",
+          "camera_height": 1.6,
+          "subjects": [
+            {
+              "entity": "hero",
+              "lead": true,
+              "in_frame": true,
+              "x": 0,
+              "place": "центр",
+              "distance": 6.4,
+              "frame_height": 1,
+              "whole": false,
+              "hidden_by": []
+            }
+          ],
+          "objects": [
+            {
+              "name": "Стена",
+              "in_frame": true,
+              "x": [
+                -0.38,
+                1
+              ],
+              "place": "от левой трети до правого края",
+              "distance": 9.5,
+              "height": 3
+            },
+            {
+              "name": "Навес",
+              "in_frame": true,
+              "x": [
+                -1,
+                1
+              ],
+              "place": "во всю ширину кадра",
+              "distance": 3.6,
+              "height": 2.7
+            },
+            {
+              "name": "Забор",
+              "in_frame": true,
+              "x": [
+                -0.5,
+                1
+              ],
+              "place": "от левой трети до правого края",
+              "distance": 7.1,
+              "height": 1.2
+            },
+            {
+              "name": "Колодец",
+              "in_frame": false,
+              "place": "за спиной камеры",
+              "distance": 7.2,
+              "height": 1
+            },
+            {
+              "name": "Столб",
+              "in_frame": false,
+              "place": "за левым краем",
+              "distance": 11.7,
+              "height": 4
+            },
+            {
+              "name": "Дорожка",
+              "in_frame": false,
+              "place": "за спиной камеры",
+              "distance": 4
+            },
+            {
+              "name": "Клумба",
+              "in_frame": false,
+              "place": "за правым краем",
+              "distance": 7.1,
+              "height": 0.5
+            },
+            {
+              "name": "Ворота",
+              "entity": "gate",
+              "in_frame": true,
+              "x": [
+                0.82,
+                1
+              ],
+              "place": "от правой трети до правого края",
+              "distance": 10.8,
+              "height": 2.2
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "own-heading",
+      "description": "Своё направление на северо-восток: герой на севере уходит за левый край, столб — за левый край, клумба в кадре.",
+      "input": {
+        "viewpoint": {
+          "location": "yard",
+          "side": "west",
+          "size": "medium",
+          "fov": 50,
+          "camera": {
+            "start": [
+              0,
+              0
+            ]
+          },
+          "heading": {
+            "start": 45
+          },
+          "subjects": [
+            {
+              "entity": "hero",
+              "start": [
+                0,
+                5
+              ]
+            }
+          ]
+        },
+        "scheme": "yard",
+        "heights": {
+          "hero": 1.8
+        }
+      },
+      "expected": {
+        "camera": {
+          "side": "west",
+          "size": "medium",
+          "fov": 50
+        },
+        "start": {
+          "looks": "на северо-восток",
+          "camera_height": 1.6,
+          "subjects": [
+            {
+              "entity": "hero",
+              "lead": true,
+              "in_frame": false,
+              "place": "за левым краем",
+              "distance": 5,
+              "height": 1.8,
+              "hidden_by": []
+            }
+          ],
+          "objects": [
+            {
+              "name": "Стена",
+              "in_frame": true,
+              "x": [
+                -1,
+                -0.67
+              ],
+              "place": "от левого края до левой трети",
+              "distance": 9.5,
+              "height": 3
+            },
+            {
+              "name": "Навес",
+              "in_frame": true,
+              "x": [
+                -1,
+                -0.43
+              ],
+              "place": "от левого края до левой трети",
+              "distance": 3,
+              "height": 2.7
+            },
+            {
+              "name": "Забор",
+              "in_frame": true,
+              "x": [
+                -1,
+                -0.86
+              ],
+              "place": "от левого края до левой трети",
+              "distance": 7,
+              "height": 1.2
+            },
+            {
+              "name": "Колодец",
+              "in_frame": false,
+              "place": "за спиной камеры",
+              "distance": 9,
+              "height": 1
+            },
+            {
+              "name": "Столб",
+              "in_frame": false,
+              "place": "за левым краем",
+              "distance": 8.5,
+              "height": 4
+            },
+            {
+              "name": "Дорожка",
+              "in_frame": false,
+              "place": "за спиной камеры",
+              "distance": 4
+            },
+            {
+              "name": "Клумба",
+              "in_frame": true,
+              "x": [
+                -0.35,
+                0.35
+              ],
+              "place": "от левой трети до правой трети",
+              "distance": 9.5,
+              "height": 0.5
+            },
+            {
+              "name": "Ворота",
+              "entity": "gate",
+              "in_frame": false,
+              "place": "за левым краем",
+              "distance": 9.8,
+              "height": 2.2
+            }
+          ]
+        },
+        "end": null
+      }
+    },
+    {
+      "name": "under-canopy",
+      "description": "Камера под навесом и герой рядом с камерой: навес вокруг камеры, герой в её точке.",
+      "input": {
+        "viewpoint": {
+          "location": "yard",
+          "side": "north",
+          "size": "wide",
+          "camera": {
+            "start": [
+              0,
+              4
+            ]
+          },
+          "subjects": [
+            {
+              "entity": "hero",
+              "start": [
+                0,
+                4
+              ]
+            }
+          ]
+        },
+        "scheme": "yard",
+        "heights": {}
+      },
+      "expected": {
+        "camera": {
+          "side": "north",
+          "size": "wide",
+          "fov": 60
+        },
+        "start": {
+          "looks": "на юг",
+          "camera_height": 1.6,
+          "subjects": [
+            {
+              "entity": "hero",
+              "lead": true,
+              "in_frame": true,
+              "place": "в точке камеры",
+              "distance": 0,
+              "hidden_by": []
+            }
+          ],
+          "objects": [
+            {
+              "name": "Стена",
+              "in_frame": false,
+              "place": "за спиной камеры",
+              "distance": 5.5,
+              "height": 3
+            },
+            {
+              "name": "Навес",
+              "in_frame": true,
+              "x": [
+                -1,
+                1
+              ],
+              "place": "вокруг камеры",
+              "distance": 0,
+              "height": 2.7
+            },
+            {
+              "name": "Забор",
+              "in_frame": false,
+              "place": "за спиной камеры",
+              "distance": 3,
+              "height": 1.2
+            },
+            {
+              "name": "Колодец",
+              "in_frame": true,
+              "x": [
+                -1,
+                -0.71
+              ],
+              "place": "от левого края до левой трети",
+              "distance": 12.4,
+              "height": 1
+            },
+            {
+              "name": "Столб",
+              "in_frame": false,
+              "place": "за спиной камеры",
+              "distance": 6.3,
+              "height": 4
+            },
+            {
+              "name": "Дорожка",
+              "in_frame": true,
+              "x": [
+                -1,
+                1
+              ],
+              "place": "во всю ширину кадра",
+              "distance": 8
+            },
+            {
+              "name": "Клумба",
+              "in_frame": false,
+              "place": "за спиной камеры",
+              "distance": 7.1,
+              "height": 0.5
+            },
+            {
+              "name": "Ворота",
+              "entity": "gate",
+              "in_frame": false,
+              "place": "за спиной камеры",
+              "distance": 5.8,
+              "height": 2.2
+            }
+          ]
+        },
+        "end": null
+      }
+    },
+    {
+      "name": "top",
+      "description": "Камера сверху: фактов кадра нет.",
+      "input": {
+        "viewpoint": {
+          "location": "yard",
+          "side": "top",
+          "size": "wide",
+          "camera": {
+            "start": [
+              0,
+              0
+            ]
+          }
+        },
+        "scheme": "yard",
+        "heights": {}
+      },
+      "expected": {
+        "camera": {
+          "side": "top",
+          "size": "wide",
+          "fov": 60
+        },
+        "note": "Камера сверху: кадр — вид сверху на схему локации, отдельных фактов кадра нет.",
+        "start": null,
+        "end": null
+      }
+    },
+    {
+      "name": "no-camera",
+      "description": "Камера не поставлена на схему.",
+      "input": {
+        "viewpoint": {
+          "location": "yard",
+          "side": "south",
+          "size": "wide"
+        },
+        "scheme": "yard",
+        "heights": {}
+      },
+      "expected": {
+        "camera": {
+          "side": "south",
+          "size": "wide",
+          "fov": 60
+        },
+        "note": "Камера не поставлена на схему: факты кадра не посчитаны, направление взгляда — по стороне.",
+        "start": null,
+        "end": null
+      }
+    },
+    {
+      "name": "no-scheme",
+      "description": "У локации нет схемы.",
+      "input": {
+        "viewpoint": {
+          "location": "yard",
+          "side": "south",
+          "size": "detail",
+          "camera": {
+            "start": [
+              0,
+              0
+            ]
+          }
+        },
+        "scheme": null,
+        "heights": {}
+      },
+      "expected": {
+        "camera": {
+          "side": "south",
+          "size": "detail",
+          "fov": 15
+        },
+        "note": "У локации нет схемы: факты кадра не посчитаны.",
+        "start": null,
+        "end": null
+      }
+    }
+  ]
+}

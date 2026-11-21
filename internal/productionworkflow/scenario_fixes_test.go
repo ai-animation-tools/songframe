@@ -32,14 +32,15 @@ func TestScenarioFixes(t *testing.T) {
 	run := ownRun(t)
 	blocked := `{"schemaVersion":1,"stage":"blocked","reason":"Лодка на первом кадре сухая по действию.","problems":[` +
 		`{"phase":"before","entity":"boat","property":"dirt","conflict":"«с каплями воды» из M01 против сухой лодки в действии.","fix":"сухая"},` +
-		`{"field":"camera","conflict":"Камера не видит лодку."}]}`
+		`{"field":"camera","conflict":"Камера не видит лодку."},` +
+		`{"field":"viewpoint","conflict":"Причал по точке съёмки под нижним краем кадра."}]}`
 	stored := refuse(t, run, "M03", blocked)
 	if sources := dynvalue.GetPath(mustParse(t, []byte(run.agents.starts[0].Context)), "stateSources", "before", "boat", "dirt"); sources != "M01.after" {
 		t.Fatalf("источник значения в контексте: %v", sources)
 	}
 	proposal := stored.Proposal()
 	problems, _ := dynvalue.AsArray(proposal.Value("problems"))
-	if proposal.Value("status") != "invalid" || proposal.Value("refused") != true || len(problems) != 2 ||
+	if proposal.Value("status") != "invalid" || proposal.Value("refused") != true || len(problems) != 3 ||
 		proposal.Value("agentText") != "Лодка на первом кадре сухая по действию." {
 		t.Fatalf("отказ: %s", dynvalue.Stringify(proposal))
 	}

@@ -26,7 +26,7 @@ import (
 const blockedStage = "blocked"
 
 // planFields — поля постановки, которые может назвать противоречие без исправления.
-var planFields = []string{"action", "camera", "continuity", "references"}
+var planFields = []string{"action", "camera", "continuity", "references", "viewpoint"}
 
 // refusalError — отказ агента со списком противоречий: text — итог агента (reason) для agentText,
 // problems — противоречия для таблицы.

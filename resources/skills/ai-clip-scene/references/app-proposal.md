@@ -43,7 +43,7 @@
 
 - `reason` и `problems` обязательны, других полей нет; в `problems` хотя бы один элемент.
 - Элемент значения врезки: `phase` (`before` или `after`), `entity` — ID сущности кастинга, `property` — ключ её свойства, `conflict` — текст, `fix` — новое значение строкой или `null`.
-- Элемент постановки: `field` (`action`, `camera`, `continuity`, `references`) и `conflict`, без `phase`, `entity`, `property` и `fix`.
+- Элемент постановки: `field` (`action`, `camera`, `continuity`, `references`, `viewpoint` — точка съёмки на карте) и `conflict`, без `phase`, `entity`, `property` и `fix`.
 
 ## prompt
 

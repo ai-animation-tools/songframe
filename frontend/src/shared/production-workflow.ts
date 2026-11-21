@@ -72,7 +72,7 @@ export type ProductionScenarioProblem =
       conflict: string;
       fix: string | null;
     }
-  | { field: 'action' | 'camera' | 'continuity' | 'references'; conflict: string };
+  | { field: 'action' | 'camera' | 'continuity' | 'references' | 'viewpoint'; conflict: string };
 export interface ProductionProposal {
   id: string;
   jobId: string;

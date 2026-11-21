@@ -213,13 +213,14 @@ export const Conflicts: Story = {
   parameters: { songframe: workflowPanelOptions('conflicts') },
   play: async (context) => {
     const dialog = await openProposal(context);
-    await expect(dialog.getByText(proposalLabels.problems({ count: 2 }))).toBeInTheDocument();
+    await expect(dialog.getByText(proposalLabels.problems({ count: 3 }))).toBeInTheDocument();
     const problems = dialog.getAllByTestId('scenario-problem');
-    await expect(problems).toHaveLength(2);
+    await expect(problems).toHaveLength(3);
     await expect(problems[0]).toHaveTextContent('Первый кадр · Мира · Положение');
     await expect(problems[0]).toHaveTextContent(proposalLabels.problemSource({ shot: null, phase: null }));
     await expect(problems[0]).toHaveTextContent('У подъезда, в нескольких шагах от машины');
     await expect(problems[1]).toHaveTextContent(proposalLabels.problemField.camera);
+    await expect(problems[2]).toHaveTextContent(proposalLabels.problemField.viewpoint);
     await userEvent.click(dialog.getByRole('button', { name: proposalLabels.fixAndPrepare }));
     // Исправление пишет сценарий и запускает агента только после подтверждения.
     const confirmation = within(await screenOf(context).findByRole('dialog', { name: proposalLabels.fixConfirmTitle }));

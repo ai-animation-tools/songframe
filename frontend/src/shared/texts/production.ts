@@ -979,7 +979,13 @@ export const productionTexts = {
     refusalReason: 'Причина отказа',
     problems: ({ count }: { count: number }) => `Противоречия сценария: ${count}`,
     problemPhase: { before: 'Первый кадр', after: 'Последний кадр' },
-    problemField: { action: 'Действие плана', camera: 'Камера плана', continuity: 'Непрерывность плана', references: 'Сущности в кадре' },
+    problemField: {
+      action: 'Действие плана',
+      camera: 'Камера плана',
+      continuity: 'Непрерывность плана',
+      references: 'Сущности в кадре',
+      viewpoint: 'Точка съёмки плана'
+    },
     problemNow: 'Сейчас',
     problemEmpty: 'не задано',
     problemSource: ({ shot, phase }: { shot: string | null; phase: 'before' | 'after' | null }) =>

@@ -423,6 +423,25 @@ func (c *Context) FramesApproved() (bool, error) {
 	return result, nil
 }
 
+// firstFrameApproved сообщает, что первая опора плана утверждена и её файл не изменился после
+// утверждения; состояние остальных опор не важно. Нужна для новой попытки только с первой опорой
+// (RetryFirstFrame), которая переносит её одну.
+func (c *Context) firstFrameApproved() (bool, error) {
+	frames := keyframes(c.Workflow)
+	if len(frames) == 0 {
+		return false, nil
+	}
+	frame := frames[0]
+	if !dynvalue.Truthy(dynvalue.Get(frame, "approved")) || !dynvalue.Truthy(dynvalue.Get(frame, "path")) || !dynvalue.Truthy(dynvalue.Get(frame, "sha256")) {
+		return false, nil
+	}
+	full, err := packageFile(c, dynvalue.Get(frame, "path"))
+	if err != nil {
+		return false, err
+	}
+	return matchesDigest(full, dynvalue.Get(frame, "sha256")), nil
+}
+
 // PromptApproved сообщает, что видеопромпт пакета утверждён и файл не изменился
 // после утверждения.
 func (c *Context) PromptApproved() (bool, error) {

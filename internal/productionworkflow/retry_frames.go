@@ -41,12 +41,12 @@ func (w *Workflow) RetryWithFrames(ctx context.Context, project, shot, packageDi
 // RetryFirstFrame — productionWorkflow.retryFirstFrame: новая попытка плана shot, которая снимает
 // видео только с первой опорой пакета packageDir. Две почти одинаковые опоры модель видео держит
 // неподвижными; пользователь, увидев утверждённые опоры, решает снимать с одной, а конец плана
-// видеопромпт описывает словами. Переносятся описание, первая утверждённая опора теми же байтами,
+// видеопромпт описывает словами; так же снимают план, когда остальные опоры не удаются. Переносятся описание, первая утверждённая опора теми же байтами,
 // её строка плана опор, кадры других планов и срез речи; выбор опор попытки — одна
 // (keyframe_count 1), поэтому в запрос и в ручную генерацию уходит только она. Видеопромпт прежней
 // попытки написан для двух опор и не переносится: агент пишет новый. Доступна, когда описание
-// принято и утверждены все опоры, их не меньше двух, на любом этапе до отправки и после неё, кроме
-// незавершённой отправки; прежняя попытка не меняется.
+// принято, опор не меньше двух и утверждена первая (остальные могут быть не утверждены), на любом
+// этапе до отправки и после неё, кроме незавершённой отправки; прежняя попытка не меняется.
 func (w *Workflow) RetryFirstFrame(ctx context.Context, project, shot, packageDir string) (View, error) {
 	return w.retryAttempt(ctx, project, shot, packageDir, true)
 }
@@ -97,7 +97,9 @@ func unavailableText(firstOnly bool) string {
 
 // retryFramesAllowed — причина, по которой из попытки c нельзя начать новую с теми же опорами
 // (firstOnly — только с первой опорой); nil — можно. Только первую опору переносят и до отправки:
-// число опор на месте не меняется, а на этапе опор и промпта это та же новая попытка.
+// число опор на месте не меняется, а на этапе опор и промпта это та же новая попытка. Для неё
+// достаточно утверждённой первой опоры: остальные в новую попытку не идут, и неудачную последнюю
+// опору не нужно утверждать, чтобы от неё отказаться.
 func retryFramesAllowed(c *Context, firstOnly bool) error {
 	if c.Workflow == nil || c.workflowValue("own_video") == true || c.DerivedFrom != "" {
 		return errors.New(unavailableText(firstOnly))
@@ -114,7 +116,11 @@ func retryFramesAllowed(c *Context, firstOnly bool) error {
 			return errors.New(textRetryFramesInFlight)
 		}
 	}
-	approved, err := c.FramesApproved()
+	check := c.FramesApproved
+	if firstOnly {
+		check = c.firstFrameApproved
+	}
+	approved, err := check()
 	if err != nil {
 		return err
 	}

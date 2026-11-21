@@ -213,8 +213,45 @@ func TestRetryFirstFrame(t *testing.T) {
 	}
 }
 
-// Только с первой опорой нельзя, пока исход отправки неизвестен и когда опоры изменились после
-// утверждения.
+// Только с первой опорой можно и тогда, когда последняя опора не утверждена (не удалась): она в
+// новую попытку не идёт, и утверждать её ради отказа от неё не нужно.
+func TestRetryFirstFrameUnapprovedLast(t *testing.T) {
+	run := ownRun(t)
+	source := paidAttempt(t, run, "downloaded")
+	workflow, err := packageDocument(source, textWorkflowNotCreated)
+	if err != nil {
+		t.Fatal(err)
+	}
+	frames := keyframes(workflow)
+	last, _ := frames[1].(*dynvalue.Object)
+	last.Set("approved", false)
+	last.Set("sha256", nil)
+	workflow.Delete("request_dir")
+	workflow.Set("stage", "keyframes_review")
+	if err := writeProjectJSON(filepath.Join(source, "workflow.json"), workflow); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(source, "frames", "K02.png"), []byte("неудачная"), 0o664); err != nil {
+		t.Fatal(err)
+	}
+	view, err := run.workflow.RetryFirstFrame(context.Background(), run.project, "M01", source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c, err := ReadContext(run.project, "M01", *view.PackageDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if items := keyframes(c.Workflow); len(items) != 1 || dynvalue.Get(items[0], "id") != "K01" || c.Workflow.Value("keyframe_count") != float64(1) {
+		t.Fatalf("новая попытка: %s", dynvalue.Stringify(c.Workflow))
+	}
+	if approved, err := c.FramesApproved(); err != nil || !approved {
+		t.Fatalf("опора новой попытки не утверждена: %v", err)
+	}
+}
+
+// Только с первой опорой нельзя, пока исход отправки неизвестен, когда первая опора изменилась
+// после утверждения и когда утверждена только последняя.
 func TestRetryFirstFrameRefusals(t *testing.T) {
 	run := ownRun(t)
 	source := paidAttempt(t, run, "submission_unknown")
@@ -224,11 +261,30 @@ func TestRetryFirstFrameRefusals(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(source, "request-01", "attempt.json"), []byte(`{"status":"downloaded"}`), 0o664); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(source, "frames", "K02.png"), []byte("другое"), 0o664); err != nil {
+	original, err := os.ReadFile(filepath.Join(source, "frames", "K01.png"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(source, "frames", "K01.png"), []byte("другое"), 0o664); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := run.workflow.RetryFirstFrame(context.Background(), run.project, "M01", source); err == nil || err.Error() != textRetryFramesNotApproved {
-		t.Fatalf("изменённая опора: %v", err)
+		t.Fatalf("изменённая первая опора: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(source, "frames", "K01.png"), original, 0o664); err != nil {
+		t.Fatal(err)
+	}
+	workflow, err := packageDocument(source, textWorkflowNotCreated)
+	if err != nil {
+		t.Fatal(err)
+	}
+	first, _ := keyframes(workflow)[0].(*dynvalue.Object)
+	first.Set("approved", false)
+	if err := writeProjectJSON(filepath.Join(source, "workflow.json"), workflow); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := run.workflow.RetryFirstFrame(context.Background(), run.project, "M01", source); err == nil || err.Error() != textRetryFramesNotApproved {
+		t.Fatalf("первая опора не утверждена: %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(run.project, "plan", "batches", "M01-attempt-02")); !os.IsNotExist(err) {
 		t.Fatal("отказ создал попытку")

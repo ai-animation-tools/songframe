@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ProductionWorkflowView } from '@shared/production-workflow';
 import type { PackageView, ShotProduction } from '@shared/types';
-import { attemptLabel, canRetryWithFrames, defaultAttempt, planPath } from './planPath';
+import { attemptLabel, canRetryFirstFrame, canRetryWithFrames, defaultAttempt, planPath } from './planPath';
 
 const shot = (overrides: Partial<ShotProduction> = {}): ShotProduction =>
   ({ id: 'M07', lipsync: false, asset: null, packages: [], ...overrides }) as unknown as ShotProduction;
@@ -177,5 +177,20 @@ describe('новая попытка с теми же опорами', () => {
     expect(canRetryWithFrames(pkg({ stage: 'downloaded', keyframes: [frame('K01', true), frame('K02', false)] }))).toBe(false);
     expect(canRetryWithFrames(pkg({ stage: 'submitted', keyframes: frames, request: request({ attemptStatus: 'submission_unknown' }) }))).toBe(false);
     expect(canRetryWithFrames(pkg({ stage: 'downloaded', keyframes: frames, request: request({ ownVideo: true }) }))).toBe(false);
+  });
+});
+
+describe('новая попытка только с первой опорой', () => {
+  it('доступна до отправки, когда первая опора утверждена, а остальные ещё нет', () => {
+    expect(canRetryFirstFrame(pkg({ stage: 'keyframes_review', keyframes: [frame('K01', true), frame('K02', false)] }))).toBe(true);
+    expect(canRetryFirstFrame(pkg({ stage: 'prompt_review', keyframes: [frame('K01', true), frame('K02', true)] }))).toBe(true);
+  });
+
+  it('недоступна без утверждённой первой опоры, с одной опорой, до принятия описания и во время отправки', () => {
+    expect(canRetryFirstFrame(pkg({ stage: 'keyframes_review', keyframes: [frame('K01', false), frame('K02', true)] }))).toBe(false);
+    expect(canRetryFirstFrame(pkg({ stage: 'keyframes_review', keyframes: [frame('K01', true)] }))).toBe(false);
+    expect(canRetryFirstFrame(pkg({ stage: 'description_review', keyframes: [frame('K01', true), frame('K02', false)] }))).toBe(false);
+    const inFlight = { attemptStatus: 'submission_unknown' } as PackageView['request'];
+    expect(canRetryFirstFrame(pkg({ stage: 'submitted', keyframes: [frame('K01', true), frame('K02', true)], request: inFlight }))).toBe(false);
   });
 });

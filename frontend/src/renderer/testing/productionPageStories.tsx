@@ -683,8 +683,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
           // ждёт видеопромпт; прежняя не меняется.
           retryFirstFrame: async (project, shotId, dir) => {
             const { shot, pkg } = find(project, dir);
-            if (pkg.keyframes.length < 2 || !pkg.keyframes.every((frame) => frame.approved))
-              throw new Error('Не все опоры попытки утверждены или их файлы изменились.');
+            if (pkg.keyframes.length < 2 || !pkg.keyframes[0].approved) throw new Error('Первая опора попытки не утверждена или её файл изменился.');
             const relative = `plan/batches/${shot.id}-attempt-0${shot.packages.length + 1}`;
             const created: PackageView = {
               ...structuredClone(pkg),

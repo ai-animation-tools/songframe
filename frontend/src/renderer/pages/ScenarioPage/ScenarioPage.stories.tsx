@@ -476,7 +476,8 @@ export const ViewpointAcceptedUnlock: Story = {
     await editorHeading(screen, 'M02');
     await userEvent.click(viewpointBlock(screen));
     await expect(await screen.findByText(viewpointTexts.lockedHint)).toBeVisible();
-    await expect(screen.getByRole('button', { name: viewpointTexts.create })).toBeDisabled();
+    // Закрытая точка не показывает действий правки: вход один — «Изменить точку съёмки».
+    await expect(screen.queryByRole('button', { name: viewpointTexts.create })).toBeNull();
     await userEvent.click(screen.getByRole('button', { name: viewpointTexts.unlock }));
     const dialog = within(await screen.findByRole('dialog', { name: viewpointTexts.unlockTitle({ shot: 'M02' }) }));
     await expect(dialog.getByText(viewpointTexts.unlockText)).toBeInTheDocument();
@@ -490,6 +491,27 @@ export const ViewpointAcceptedUnlock: Story = {
     await expect(viewpointBlock(screen)).toHaveTextContent(viewpointTexts.badge({ side: 'С юга', size: 'Общий', placed: false }));
     // Остальная постановка принятого плана остаётся закрытой.
     await expect(field(screen, scenarioTexts.fields.camera)).toBeDisabled();
+  }
+};
+
+export const ViewpointAcceptedPlaced: Story = {
+  name: 'Расставленная точка съёмки принятого M02 · карта скрыта, пока точка закрыта',
+  tags: ['!autodocs', 'ci'],
+  parameters: { songframe: scenarioPageOptions({ route: '/project/scenario?shot=M02', accepted: ['M02'], placed: ['M02'] }) },
+  play: async (context) => {
+    const screen = await ready(context);
+    await editorHeading(screen, 'M02');
+    await userEvent.click(viewpointBlock(screen));
+    await expect(await screen.findByText(viewpointTexts.lockedHint)).toBeVisible();
+    await expect(screen.queryByRole('button', { name: viewpointTexts.openMap })).toBeNull();
+    await expect(screen.queryByRole('button', { name: viewpointTexts.remove })).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: viewpointTexts.unlock }));
+    const dialog = within(await screen.findByRole('dialog', { name: viewpointTexts.unlockTitle({ shot: 'M02' }) }));
+    await userEvent.click(dialog.getByRole('button', { name: viewpointTexts.unlockConfirm }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    // После подтверждения карта и «Убрать точку съёмки» возвращаются.
+    await expect(await screen.findByRole('button', { name: viewpointTexts.openMap })).toBeVisible();
+    await expect(screen.getByRole('button', { name: viewpointTexts.remove })).toBeVisible();
   }
 };
 

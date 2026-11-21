@@ -770,14 +770,14 @@ export function ViewpointBlock({
               {texts.lockedHint}
             </Alert>
           ) : null}
+          {/* Закрытая точка принятого плана не показывает действий правки и карты: подсказка выше объясняет запрет
+              и даёт единственный вход — «Изменить точку съёмки». */}
           {!viewpoint ? (
-            locations.length ? (
+            !editable ? null : locations.length ? (
               <Box>
                 <ActionButton
                   variant="outlined"
                   startIcon={<AddIcon />}
-                  disabled={!editable}
-                  disabledReason={editable ? null : texts.lockedHint}
                   onClick={() => {
                     const created = createViewpoint(
                       locations.map((entity) => entity.id),
@@ -798,16 +798,16 @@ export function ViewpointBlock({
             )
           ) : (
             <>
-              <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap', alignItems: 'center' }}>
-                <Button variant="outlined" startIcon={<MapIcon />} onClick={() => setFullscreen(true)}>
-                  {texts.openMap}
-                </Button>
-                {editable ? (
+              {editable ? (
+                <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap', alignItems: 'center' }}>
+                  <Button variant="outlined" startIcon={<MapIcon />} onClick={() => setFullscreen(true)}>
+                    {texts.openMap}
+                  </Button>
                   <Button size="small" color="error" startIcon={<ClearIcon />} onClick={() => onChange(undefined)}>
                     {texts.remove}
                   </Button>
-                ) : null}
-              </Stack>
+                </Stack>
+              ) : null}
               <FullscreenEditorDialog
                 open={fullscreen}
                 title={texts.fullscreenTitle({ shot })}

@@ -75,6 +75,8 @@ export interface ScenarioPageOptions {
   lineMoved?: boolean;
   /** Планы с принятым в производстве видео: их постановка на странице закрыта для правки. */
   accepted?: string[];
+  /** Планы с уже расставленной точкой съёмки в сохранённом сценарии (камера и герой на схеме «gate»). */
+  placed?: string[];
   /**
    * Последняя проверка сценария агентом: не было, отчёт с проблемами или без них; staleReport — тот же отчёт
    * с проблемами, устаревший после правок сценария, с завершённым заданием проверки (его время видно в отчёте).
@@ -554,6 +556,7 @@ export function scenarioPageOptions({
   leadPause = false,
   lineMoved = false,
   accepted = [],
+  placed = [],
   check = 'none',
   videoProvider = false,
   leftDraft = false
@@ -582,6 +585,9 @@ export function scenarioPageOptions({
       const saved = pageView(variant, gappedTiming);
       if (referencesStale) Object.assign(saved, { referencesStale: true, problems: [scenarioTexts.main.referencesRefresh] });
       if (videoProvider) saved.videoProvider = TEST_PROVIDER;
+      for (const shot of saved.scenes?.scenes ?? [])
+        if (placed.includes(shot.id))
+          shot.viewpoint = { location: 'gate', side: 'south', size: 'medium', camera: { start: [0, -8] }, subjects: [{ entity: 'hero', start: [0, 3] }] };
       const pausedLine = leadPause ? saved.timing?.lines.find((line) => line.source_line === 3) : undefined;
       if (pausedLine) pausedLine.start = LEAD_PAUSE_LINE_START;
       const movedLine = lineMoved ? saved.timing?.lines.find((line) => line.source_line === 3) : undefined;

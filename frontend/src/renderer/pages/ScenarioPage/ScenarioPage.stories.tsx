@@ -258,6 +258,16 @@ export const ViewpointSet: Story = {
     await expect(scenarioFrameRequests().at(-1)?.subjects?.[0]?.entity).toBe('hero');
     await userEvent.click(within(facts).getByRole('button', { name: viewpointTexts.agentShowJson }));
     await expect(document.querySelector('[data-agent-json]')).toHaveTextContent('"in_frame": true');
+    // «Скопировать» кладёт в буфер тот же JSON, что показан.
+    const writes: string[] = [];
+    const original = navigator.clipboard?.writeText;
+    if (navigator.clipboard) navigator.clipboard.writeText = async (text: string) => void writes.push(text);
+    try {
+      await userEvent.click(within(facts).getByRole('button', { name: viewpointTexts.agentCopyJson }));
+      await waitFor(() => expect(writes).toEqual([document.querySelector('[data-agent-json]')?.textContent]));
+    } finally {
+      if (navigator.clipboard && original) navigator.clipboard.writeText = original;
+    }
     // Последний кадр камеры: камера проезжает вниз по схеме, путь и сектор конца видны пунктиром.
     await userEvent.click(within(map.getByRole('group', { name: viewpointTexts.target })).getByRole('button', { name: viewpointTexts.camera }));
     await userEvent.click(map.getByRole('button', { name: viewpointTexts.phases.end }));
@@ -313,7 +323,16 @@ export const ViewpointSet: Story = {
     await userEvent.click(map.getByRole('button', { name: commonTexts.close }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     await expect(viewpointBlock(screen)).toHaveTextContent(viewpointTexts.badge({ side: 'С запада', size: 'Крупный', placed: true }));
-    await expect(screen.getByRole('button', { name: viewpointTexts.openMap })).toBeVisible();
+    const openMap = screen.getByRole('button', { name: viewpointTexts.openMap });
+    await expect(openMap).toBeVisible();
+    // «Убрать точку съёмки» стоит в одной строке с «Открыть карту», а не под ней.
+    const remove = screen.getByRole('button', { name: viewpointTexts.remove });
+    const middle = (element: HTMLElement): number => {
+      const box = element.getBoundingClientRect();
+      return box.top + box.height / 2;
+    };
+    await expect(Math.abs(middle(remove) - middle(openMap))).toBeLessThan(2);
+    await expect(remove.getBoundingClientRect().left).toBeGreaterThan(openMap.getBoundingClientRect().right);
   }
 };
 

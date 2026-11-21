@@ -593,6 +593,7 @@ export const scenarioTexts = {
     agentHeight: ({ metres }: { metres: string }) => `высота ${metres} м`,
     agentShowJson: 'Показать JSON',
     agentHideJson: 'Скрыть JSON',
+    agentCopyJson: 'Скопировать',
     cameraSummary: ({ size, fov, height }: { size: string; fov: number; height: string }) => `${size} · ${fov}° · высота ${height} м`,
     cameraClose: 'Закрыть вид из камеры',
     cameraWindowWaiting: 'Ждём точку съёмки из основного окна',

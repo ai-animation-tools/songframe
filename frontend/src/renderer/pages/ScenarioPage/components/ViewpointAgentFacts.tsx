@@ -3,6 +3,8 @@ import { useEffect, useState, type ReactElement } from 'react';
 import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Button, CircularProgress, Stack, Typography } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DataObjectIcon from '@mui/icons-material/DataObject';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import { commonTexts } from '@shared/texts/common';
 import { formatMetres } from '@shared/scheme-canvas';
 import type { FrameObject, FramePhase, FrameSubject, ViewFrame } from '@shared/viewframe';
 import type { SceneViewpoint } from '@shared/viewpoint';
@@ -22,7 +24,7 @@ const number = (value: number): string => String(value).replace('.', ',').replac
  * точки пересчитывают их с короткой задержкой. nameOf называет героев и сущности по кастингу.
  */
 export function ViewpointAgentFacts({ viewpoint, nameOf }: { viewpoint: SceneViewpoint; nameOf(id: string): string }): ReactElement {
-  const { state, describeError } = useApp();
+  const { state, describeError, notify } = useApp();
   const project = state?.current ?? '';
   const [expanded, setExpanded] = useState(false);
   const [json, setJson] = useState(false);
@@ -45,6 +47,15 @@ export function ViewpointAgentFacts({ viewpoint, nameOf }: { viewpoint: SceneVie
 
   // Прежние факты видны, пока считаются новые: панель не мигает при перетаскивании.
   const frame = result?.frame;
+  // JSON копируется как есть, тем же видом, что показан в панели.
+  const copy = async (value: ViewFrame): Promise<void> => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(value, null, 2));
+      notify(commonTexts.copied, 'success');
+    } catch (reason) {
+      notify(describeError(reason), 'error');
+    }
+  };
   return (
     <Accordion variant="outlined" disableGutters expanded={expanded} onChange={(_, next) => setExpanded(next)} sx={{ minWidth: 0 }} data-agent-facts="">
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -68,11 +79,14 @@ export function ViewpointAgentFacts({ viewpoint, nameOf }: { viewpoint: SceneVie
             {frame.note ? <Typography variant="body2">{frame.note}</Typography> : null}
             {frame.start ? <PhaseFacts title={texts.phases.start} phase={frame.start} nameOf={nameOf} /> : null}
             {frame.end ? <PhaseFacts title={texts.phases.end} phase={frame.end} nameOf={nameOf} /> : null}
-            <Box>
+            <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
               <Button size="small" startIcon={<DataObjectIcon />} onClick={() => setJson((value) => !value)}>
                 {json ? texts.agentHideJson : texts.agentShowJson}
               </Button>
-            </Box>
+              <Button size="small" startIcon={<ContentCopyIcon />} onClick={() => void copy(frame)}>
+                {texts.agentCopyJson}
+              </Button>
+            </Stack>
             {json ? (
               <Box
                 component="pre"

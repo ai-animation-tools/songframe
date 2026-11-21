@@ -741,11 +741,16 @@ export function ViewpointBlock({
             )
           ) : (
             <>
-              <Box>
+              <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap', alignItems: 'center' }}>
                 <Button variant="outlined" startIcon={<MapIcon />} onClick={() => setFullscreen(true)}>
                   {texts.openMap}
                 </Button>
-              </Box>
+                {editable ? (
+                  <Button size="small" color="error" startIcon={<ClearIcon />} onClick={() => onChange(undefined)}>
+                    {texts.remove}
+                  </Button>
+                ) : null}
+              </Stack>
               <FullscreenEditorDialog
                 open={fullscreen}
                 title={texts.fullscreenTitle({ shot })}
@@ -800,13 +805,6 @@ export function ViewpointBlock({
                   </Stack>
                 ) : null}
               </FullscreenEditorDialog>
-              {editable ? (
-                <Box>
-                  <Button size="small" color="error" startIcon={<ClearIcon />} onClick={() => onChange(undefined)}>
-                    {texts.remove}
-                  </Button>
-                </Box>
-              ) : null}
             </>
           )}
         </Stack>

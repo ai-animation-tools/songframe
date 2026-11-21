@@ -1148,7 +1148,7 @@
           "task": "ai-clip-scenario:treatment",
           "permissions": "read-only",
           "inputHashes": {
-            "prompt": "d0c038ad631eab2ef96b9eacb417c859cd03ce405dc974e40a06904c31c7a18c",
+            "prompt": "27cec5958d1a6da315f4d4e8fa4555d66d4f1bf79b68d6b87f59f97d39241112",
             "context": "5a42aa369867d8ed4e324694600b39a23bf491b5c16ac6841539976c95264672"
           },
           "status": "running",
@@ -2316,7 +2316,7 @@
           "task": "ai-clip-scenario:treatment",
           "permissions": "read-only",
           "inputHashes": {
-            "prompt": "d0c038ad631eab2ef96b9eacb417c859cd03ce405dc974e40a06904c31c7a18c",
+            "prompt": "27cec5958d1a6da315f4d4e8fa4555d66d4f1bf79b68d6b87f59f97d39241112",
             "context": "5a42aa369867d8ed4e324694600b39a23bf491b5c16ac6841539976c95264672"
           },
           "status": "cancelled",

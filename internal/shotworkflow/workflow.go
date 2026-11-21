@@ -458,7 +458,7 @@ func (t *workflowTool) planKeyframes(dirArg string, requestSeconds toolrt.Int, m
 			}
 			keep = toolrt.Equal(role, point.role) && toolrt.Equal(seconds, point.seconds) && toolrt.Truthy(flag)
 		}
-		var path, digest, provider any
+		var path, digest, provider, generatorPrompt any
 		if keep {
 			if path, err = item(old, "path"); err != nil {
 				return nil, err
@@ -469,12 +469,19 @@ func (t *workflowTool) planKeyframes(dirArg string, requestSeconds toolrt.Int, m
 			if provider, err = get(old, "provider", nil); err != nil {
 				return nil, err
 			}
+			if generatorPrompt, err = get(old, "generator_prompt", nil); err != nil {
+				return nil, err
+			}
 			approved.Set(id, digest)
 		}
 		frame := record("id", id, "role", point.role, "time_seconds", point.seconds, "note", point.note, "path", path, "sha256", digest, "approved", keep)
 		// Сохранённая опора сохраняет и отметку провайдера, создавшего её (учёт расхода).
 		if provider != nil {
 			frame.Set("provider", provider)
+		}
+		// И промпт, который исполнитель опор передал генератору: его сохранит комплект плана.
+		if generatorPrompt != nil {
+			frame.Set("generator_prompt", generatorPrompt)
 		}
 		planned = append(planned, frame)
 	}
@@ -608,6 +615,7 @@ func (t *workflowTool) approve(dirArg, id, source string, candidate bool) (*tool
 	// Новый файл опоры — не результат прежнего провайдера: отметку провайдера ставит производство
 	// после предложения кандидатов задания (internal/productionworkflow).
 	keyframe.Delete("provider")
+	keyframe.Delete("generator_prompt")
 	frames, err := approvedFrames(data)
 	if err != nil {
 		return nil, err

@@ -182,11 +182,24 @@ func (w *Workflow) applyStage(ctx context.Context, plan *applyPlan) error {
 		// Кандидат от провайдера изображений помечается его ID: принятая опора остаётся
 		// сгенерированной, и учёт расхода (internal/spend) не выдаёт её за свой файл. propose снимает
 		// отметку с любой опоры, поэтому импорт файла её не наследует.
-		if provider, ok := plan.stored.Tree.Value("imageProvider").(string); ok && provider != "" && len(images) > 0 {
+		// Промпт, который исполнитель передал генератору (generator_prompt), сохраняется на опоре:
+		// приёмка плана кладёт его в комплект. propose снимает и его.
+		provider, _ := plan.stored.Tree.Value("imageProvider").(string)
+		prompts, _ := plan.stored.Tree.Value("imagePrompts").(*dynvalue.Object)
+		if (provider != "" || prompts != nil) && len(images) > 0 {
 			for _, frame := range frames {
 				object, isObject := frame.(*dynvalue.Object)
-				if isObject && slices.ContainsFunc(images, func(image any) bool { return dynvalue.Get(image, "id") == object.Value("id") }) {
+				if !isObject || !slices.ContainsFunc(images, func(image any) bool { return dynvalue.Get(image, "id") == object.Value("id") }) {
+					continue
+				}
+				if provider != "" {
 					object.Set("provider", provider)
+				}
+				if prompts == nil {
+					continue
+				}
+				if prompt, ok := prompts.Value(dynvalue.ToString(object.Value("id"))).(string); ok {
+					object.Set("generator_prompt", prompt)
 				}
 			}
 			if err := writeProjectJSON(filepath.Join(target, "workflow.json"), proposed); err != nil {
@@ -318,6 +331,7 @@ func (w *Workflow) applyDescription(ctx context.Context, plan *applyPlan) error 
 			frame.Set("path", nil)
 			frame.Set("sha256", nil)
 			frame.Delete("provider")
+			frame.Delete("generator_prompt")
 			approved.Delete(dynvalue.ToString(id))
 		}
 	}

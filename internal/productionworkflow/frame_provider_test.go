@@ -13,8 +13,8 @@ import (
 )
 
 // TestFrameProviderMark — принятый кандидат задания провайдера изображений помечается в
-// workflow.json его ID и в учёте расхода не считается своей опорой; файл, загруженный пользователем
-// вместо него, отметку снимает и становится своей опорой.
+// workflow.json его ID и промптом генератора и в учёте расхода не считается своей опорой; файл,
+// загруженный пользователем вместо него, обе отметки снимает и становится своей опорой.
 func TestFrameProviderMark(t *testing.T) {
 	run := ownRun(t)
 	ctx := context.Background()
@@ -53,6 +53,9 @@ func TestFrameProviderMark(t *testing.T) {
 		stored := run.workflow.store.Read(run.project, "M01")
 		if provider != "" {
 			stored.Tree.Set("imageProvider", provider)
+			prompts := dynvalue.NewObject()
+			prompts.Set(id, "Промпт генератора "+id)
+			stored.Tree.Set("imagePrompts", prompts)
 			if err := run.workflow.store.Write(run.project, "M01", stored); err != nil {
 				t.Fatal(err)
 			}
@@ -103,6 +106,9 @@ func TestFrameProviderMark(t *testing.T) {
 	if got := dynvalue.Get(keyframe("K01"), "provider"); got != "codex" || ownImages() != 0 {
 		t.Fatalf("принятая опора провайдера: provider %v, своих %d", got, ownImages())
 	}
+	if got := dynvalue.Get(keyframe("K01"), "generator_prompt"); got != "Промпт генератора K01" {
+		t.Fatalf("промпт генератора не записан на опору: %v", got)
+	}
 	// Свой файл для второй опоры: отметки нет, опора своя.
 	propose("K02", image("k02.png", 2), "")
 	approve("K02")
@@ -115,5 +121,8 @@ func TestFrameProviderMark(t *testing.T) {
 	}
 	if got := dynvalue.Get(keyframe("K01"), "provider"); !dynvalue.IsNullish(got) {
 		t.Fatalf("отметка провайдера пережила замену файла: %v", got)
+	}
+	if got := dynvalue.Get(keyframe("K01"), "generator_prompt"); !dynvalue.IsNullish(got) {
+		t.Fatalf("промпт генератора пережил замену файла: %v", got)
 	}
 }

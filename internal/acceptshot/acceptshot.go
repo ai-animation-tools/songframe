@@ -1040,9 +1040,18 @@ func buildKit(ctx context.Context, root, shot string, frames toolrt.Int, fps int
 	if workflow != nil && toolrt.Truthy(workflow.Value("mode")) {
 		notes = append(notes, "Режим согласования: "+toolrt.Str(workflow.Value("mode")))
 	}
-	prep := toolcli.Record("schema_version", toolrt.NewInt(1), "shot", shot, "path_base", "asset_directory",
-		"generation_inputs", generationInputs, "frame_prompts", []any{}, "references", []any{}, "notes", notes,
-		"reproduction_note", "Точные байты кадров сохранены. Повтор генерации по промпту не гарантирует тех же пикселей.")
+	// Промпты опор, референсы и описание плана — из попытки: по ним видно, как получены кадры.
+	frameData, err := collectPreparation(root, data, staging)
+	if err != nil {
+		return nil, "", err
+	}
+	prepPairs := []any{"schema_version", toolrt.NewInt(1), "shot", shot, "path_base", "asset_directory"}
+	if frameData.description != "" {
+		prepPairs = append(prepPairs, "description", frameData.description)
+	}
+	prep := toolcli.Record(append(prepPairs,
+		"generation_inputs", generationInputs, "frame_prompts", frameData.prompts, "references", frameData.references, "notes", notes,
+		"reproduction_note", "Точные байты кадров сохранены. Повтор генерации по промпту не гарантирует тех же пикселей.")...)
 	if err := writeJSON(toolrt.JoinPath(staging, "preparation.json"), prep); err != nil {
 		return nil, "", err
 	}
@@ -1056,6 +1065,7 @@ func buildKit(ctx context.Context, root, shot string, frames toolrt.Int, fps int
 		files = append(files, unique.Value(key))
 	}
 	files = append(files, promptDesc, originalDesc)
+	files = append(files, frameData.files...)
 	requestDesc, err := descriptor(staging, "generation-request.json")
 	if err != nil {
 		return nil, "", err

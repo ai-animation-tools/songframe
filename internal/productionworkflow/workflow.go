@@ -531,6 +531,10 @@ func (w *Workflow) accept(c *Context, stored *Stored, job agents.Job) error {
 		}
 		// Применение отметит опоры этим провайдером: учёт расхода отличает их от своих файлов.
 		stored.Tree.Set("imageProvider", provider)
+		// Промпты, которые программа передала генератору, применение запишет на опоры попытки.
+		if prompts := generatorPrompts(job.Result); prompts != nil {
+			stored.Tree.Set("imagePrompts", prompts)
+		}
 		document := dynvalue.NewObject()
 		document.Set("schemaVersion", float64(1))
 		document.Set("stage", "frames")

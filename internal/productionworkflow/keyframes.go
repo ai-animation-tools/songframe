@@ -356,6 +356,8 @@ func (k *KeyframeImages) jobRecord(job agents.Job) (directory string, record any
 // ответа программы и каждый файл: обычное изображение внутри рабочей папки (не ссылка, не копия
 // входа), расширение по фактическому формату, ровно согласованные опоры. Ответ не JSON —
 // textImagesFileListMissing, отсутствующий файл кандидата — textImagesFrameImageRequired.
+// Необязательное поле prompt элемента — промпт, который программа передала генератору; его
+// читает generatorPrompts.
 // requestSha записи отдельно не сверяется: единственный путь сбора (CollectJob исполнителя) берёт
 // ожидаемый SHA из этой же записи.
 func (k *KeyframeImages) Collect(job agents.Job) ([]mediaapi.FrameCandidate, error) {
@@ -410,7 +412,8 @@ func (k *KeyframeImages) Collect(job agents.Job) ([]mediaapi.FrameCandidate, err
 		}
 		id, idOK := item.Value("id").(string)
 		path, pathOK := item.Value("path").(string)
-		if !idOK || !pathOK || keys(item, "id", "path") != nil {
+		_, promptOK := item.Value("prompt").(string)
+		if !idOK || !pathOK || keys(item, "id", "path", "prompt") != nil || (item.Has("prompt") && !promptOK) {
 			return nil, errors.New(textImagesFramePathInvalid)
 		}
 		file := dynvalue.Resolve(directory, path)
@@ -442,6 +445,25 @@ func (k *KeyframeImages) Collect(job agents.Job) ([]mediaapi.FrameCandidate, err
 		result[index] = candidates[position]
 	}
 	return result, nil
+}
+
+// generatorPrompts — промпты генератора из ответа задания опор raw (поле prompt элементов images)
+// по ID опоры, без пустых. Ответ к этому моменту проверен Collect. nil — промптов в ответе нет.
+func generatorPrompts(raw string) *dynvalue.Object {
+	parsed, _ := dynvalue.Parse([]byte(raw))
+	images, _ := dynvalue.AsArray(dynvalue.Get(parsed, "images"))
+	prompts := dynvalue.NewObject()
+	for _, image := range images {
+		id, _ := dynvalue.Get(image, "id").(string)
+		prompt, _ := dynvalue.Get(image, "prompt").(string)
+		if id != "" && dynvalue.Trim(prompt) != "" {
+			prompts.Set(id, prompt)
+		}
+	}
+	if len(prompts.Keys()) == 0 {
+		return nil
+	}
+	return prompts
 }
 
 // candidateFile — кандидат file (path из ответа) — обычный файл изображения прямо в рабочей папке:

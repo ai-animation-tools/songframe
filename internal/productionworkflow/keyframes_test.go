@@ -129,6 +129,8 @@ func TestKeyframeImagesCollectRefusals(t *testing.T) {
 		// Ответ не JSON и отсутствующий файл кандидата дают понятные отказы.
 		{"не JSON", "", "Не могу нарисовать", "Тестовый агент изображений не вернул список файлов опор."},
 		{"нет файла", "", `{"schemaVersion":1,"stage":"frames","images":[{"id":"K01","path":"K01.png"}]}`, "Опора K01: нужен настоящий файл изображения в папке кандидатов."},
+		// Промпт генератора необязателен, но если он есть — строка.
+		{"промпт не строка", "K01.png", `{"schemaVersion":1,"stage":"frames","images":[{"id":"K01","path":"K01.png","prompt":1}]}`, textImagesFramePathInvalid},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			images, manager, input := keyframesFixture(t)
@@ -407,5 +409,29 @@ func TestImagesPromptApprovedBase(t *testing.T) {
 	}
 	if plain := textImagesPrompt(true, false, false, false, false); strings.Contains(plain, "взять за основу") {
 		t.Fatalf("правка по замечанию без замечаний: %s", plain)
+	}
+}
+
+// Промпт, который программа передала генератору, приходит необязательным полем prompt элемента
+// ответа: сбор его принимает, generatorPrompts отдаёт по ID опоры без пустых.
+func TestKeyframeImagesGeneratorPrompt(t *testing.T) {
+	images, manager, input := keyframesFixture(t)
+	if _, err := images.Start(input, agentexec.ImagesRequest{Provider: "test-agent", RequestSha: "sha", Agent: agents.Settings{Provider: "codex"}}); err != nil {
+		t.Fatal(err)
+	}
+	answer := `{"schemaVersion":1,"stage":"frames","images":[{"id":"K01","path":"K01.png","prompt":"Лодка у причала, вид с берега"}]}`
+	job := finishJob(t, manager, "K01.png", answer)
+	if candidates, err := images.Collect(job); err != nil || len(candidates) != 1 {
+		t.Fatalf("ответ с промптом генератора отклонён: %v %v", candidates, err)
+	}
+	prompts := generatorPrompts(answer)
+	if prompts == nil || prompts.Value("K01") != "Лодка у причала, вид с берега" {
+		t.Fatalf("промпты генератора: %v", dynvalue.Stringify(prompts))
+	}
+	if got := generatorPrompts(`{"schemaVersion":1,"stage":"frames","images":[{"id":"K01","path":"K01.png","prompt":"  "}]}`); got != nil {
+		t.Fatalf("пустой промпт сохранён: %v", dynvalue.Stringify(got))
+	}
+	if !strings.Contains(textImagesPrompt(false, false, false, false, false), `"prompt":"промпт генератора"`) {
+		t.Fatal("задание не просит вернуть промпт генератора")
 	}
 }

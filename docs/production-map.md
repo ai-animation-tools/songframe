@@ -339,9 +339,9 @@ flowchart LR
   task --> agent(("Агент изображений<br/>пишет только в рабочую папку"))
   context --> agent
   work --> agent
-  agent --> files["Файлы Kxx.png, .jpg или .webp<br/>и их список в JSON"]
+  agent --> files["Файлы Kxx.png, .jpg или .webp<br/>и их список в JSON<br/>с промптом генератора"]
   files --> check{"Проверка приложения"}
-  check -- "ровно запрошенные опоры,<br/>настоящие изображения,<br/>копии входов не изменены" --> candidate["Кандидаты Kxx<br/>копируются в проект"]
+  check -- "ровно запрошенные опоры,<br/>настоящие изображения,<br/>копии входов не изменены" --> candidate["Кандидаты Kxx<br/>копируются в проект,<br/>промпт генератора — на опору"]
   check -- "иначе" --> rejected["Ответ отклонён"]
 
   class howto,list,refs,approved,previous,layout,copies app

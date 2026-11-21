@@ -48,7 +48,7 @@ import {
   moves,
   pathPoint,
   removePoint,
-  setFocus,
+  setLead,
   setCameraHeight,
   setHeading,
   setPoint,
@@ -217,7 +217,7 @@ function ViewpointPlacement({
   const camera = viewpoint.camera;
   const fov = viewpointFov(viewpoint);
 
-  const pathRow = (key: string, name: string, path: ViewpointPath | undefined, focus: boolean | null): ReactElement => {
+  const pathRow = (key: string, name: string, path: ViewpointPath | undefined, lead: boolean | null): ReactElement => {
     const rowTarget = targetOf(key);
     const fromCamera = path && camera && key !== 'camera' ? texts.fromCamera({ metres: metres(distance(camera.start, path.start)) }) : null;
     // Герой вне угла обзора на первом кадре или, если кто-то движется, на последнем.
@@ -235,8 +235,8 @@ function ViewpointPlacement({
     const actions =
       editable && path ? (
         <Stack direction="row" sx={{ flexShrink: 0 }}>
-          {focus === false ? (
-            <ActionIconButton aria-label={texts.makeFocus} size="small" onClick={() => update(setFocus(viewpoint, key))}>
+          {lead === false ? (
+            <ActionIconButton aria-label={texts.makeLead} size="small" onClick={() => update(setLead(viewpoint, key))}>
               <StarIcon fontSize="small" />
             </ActionIconButton>
           ) : null}
@@ -265,7 +265,7 @@ function ViewpointPlacement({
           {actions}
         </Stack>
         <Stack direction="row" spacing={0.5} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}>
-          {focus ? <Chip size="small" variant="outlined" icon={<StarIcon color="secondary" />} label={texts.focus} /> : null}
+          {lead ? <Chip size="small" variant="outlined" icon={<StarIcon color="secondary" />} label={texts.lead} /> : null}
           {unmeasured ? (
             <Tooltip title={texts.heightUnknownHint}>
               <Chip
@@ -422,7 +422,7 @@ function ViewpointPlacement({
             label: texts.subjectLabel({ name: nameOf(subject.entity), metres: camera ? metres(distance(camera.start, subject.start)) : null }),
             start: subject.start,
             end: subject.end,
-            focus: index === 0
+            lead: index === 0
           }))}
           onPick={(point) => update(setPoint(viewpoint, target, phase, point))}
           onFov={(value) => update(withFov(viewpoint, value))}

@@ -9,8 +9,8 @@ import { SchemeVolumeView, type VolumeExtra } from './SchemeVolumeView';
 const texts = scenarioTexts.viewpoint;
 /** Пропорция кадра вида из камеры. */
 const FRAME_ASPECT = 16 / 9;
-/** Цвета фигур героев: в фокусе и остальные. */
-const FOCUS_COLOR = '#ef6c00';
+/** Цвета фигур героев: главного и остальных. */
+const LEAD_COLOR = '#ef6c00';
 const SUBJECT_COLOR = '#7b1fa2';
 
 /**
@@ -41,7 +41,7 @@ export function CameraFrames({
       extras: subjectFigures(viewpoint, phase, heights).map((figure): VolumeExtra => ({
         id: figure.entity,
         triangles: figure.triangles,
-        color: figure.focus ? FOCUS_COLOR : SUBJECT_COLOR
+        color: figure.lead ? LEAD_COLOR : SUBJECT_COLOR
       }))
     }));
   }, [viewpoint, heights]);

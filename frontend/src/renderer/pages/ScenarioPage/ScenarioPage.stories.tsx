@@ -241,7 +241,7 @@ export const ViewpointSet: Story = {
     // С камерой у дома есть расстояние до ближайшего края.
     await expect(document.querySelector('[data-viewpoint-linked="house"]')).toHaveTextContent(/м от камеры до ближайшего края/);
     await expect(map.getByRole('button', { name: viewpointTexts.sides.south })).toBeDisabled();
-    await expect(document.querySelector('[data-viewpoint-row="hero"]')).toHaveTextContent(viewpointTexts.focus);
+    await expect(document.querySelector('[data-viewpoint-row="hero"]')).toHaveTextContent(viewpointTexts.lead);
     await expect(document.querySelector('[data-viewpoint-row="hero"] [data-out-of-frame]')).toBeNull();
     // Последний кадр камеры: камера проезжает вниз по схеме, путь и сектор конца видны пунктиром.
     await userEvent.click(within(map.getByRole('group', { name: viewpointTexts.target })).getByRole('button', { name: viewpointTexts.camera }));
@@ -266,7 +266,7 @@ export const ViewpointSet: Story = {
     clickPreview(preview, 0.7, 0.1);
     await waitFor(() => expect(document.querySelector('[data-viewpoint-row="neighbor"] [data-out-of-frame="start"]')).not.toBeNull());
     await expect(document.querySelector('[data-viewpoint-row="hero"] [data-out-of-frame="start"]')).not.toBeNull();
-    await expect(document.querySelector('[data-viewpoint-row="hero"]')).toHaveTextContent(viewpointTexts.focus);
+    await expect(document.querySelector('[data-viewpoint-row="hero"]')).toHaveTextContent(viewpointTexts.lead);
     // Своё направление: ромб посередине дуги поворачивает камеру прямо на героя — он в первом кадре, сосед нет.
     // Камера при этом уезжает вниз, не поворачиваясь, поэтому на последнем кадре герой может выйти из кадра.
     const rotor = preview.querySelector('[data-heading-handle="start"]')!;

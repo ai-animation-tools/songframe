@@ -19,13 +19,13 @@ export interface PreviewCamera {
   fov: number;
 }
 
-/** Герой на мини-схеме: подпись (имя и расстояние), путь и признак фокуса. */
+/** Герой на мини-схеме: подпись (имя и расстояние), путь и признак главного героя. */
 export interface PreviewSubject {
   entity: string;
   label: string;
   start: SchemePoint;
   end?: SchemePoint;
-  focus: boolean;
+  lead: boolean;
 }
 
 /**
@@ -331,7 +331,7 @@ export function SchemePreview({
                 cx={x}
                 cy={y}
                 r={6}
-                fill={subject.focus ? accent : theme.palette.background.paper}
+                fill={subject.lead ? accent : theme.palette.background.paper}
                 stroke={accent}
                 strokeWidth={2}
                 data-mark="start"
@@ -342,7 +342,7 @@ export function SchemePreview({
                 x={x + 9}
                 y={y - 9}
                 fontSize={12}
-                fontWeight={subject.focus ? 700 : 500}
+                fontWeight={subject.lead ? 700 : 500}
                 fill={theme.palette.text.primary}
                 stroke={theme.palette.background.paper}
                 strokeWidth={3}

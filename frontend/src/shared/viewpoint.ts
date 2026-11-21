@@ -58,7 +58,7 @@ export interface SceneViewpoint {
   heading?: ViewpointHeading;
   /** Своя высота камеры; нет — уровень глаз (DEFAULT_CAMERA_HEIGHT). */
   camera_height?: ViewpointHeight;
-  /** Герои на схеме; первый — в фокусе (главный в кадре). Камера целится так, чтобы в кадр вошли все. */
+  /** Герои на схеме; первый — главный: на середину его роста наклоняется камера. Камера целится так, чтобы в кадр вошли все. */
   subjects?: ViewpointSubject[];
 }
 
@@ -130,8 +130,8 @@ export function pathPoint(path: ViewpointPath | undefined, phase: ViewpointPhase
   return phase === 'end' ? (path?.end ?? path?.start) : path?.start;
 }
 
-/** Герой в фокусе: первый на схеме. */
-export function focusSubject(viewpoint: SceneViewpoint): ViewpointSubject | undefined {
+/** Главный герой: первый на схеме. */
+export function leadSubject(viewpoint: SceneViewpoint): ViewpointSubject | undefined {
   return viewpoint.subjects?.[0];
 }
 
@@ -228,7 +228,7 @@ export function targetPath(viewpoint: SceneViewpoint, target: ViewpointTarget): 
 
 /**
  * Ставит камеру или героя в point на кадре phase. Конец без начала ставит начало: путь начинается с первого кадра.
- * Новый герой встаёт в конец списка, фокус не меняется. Сторона приводится к точкам.
+ * Новый герой встаёт в конец списка, главный не меняется. Сторона приводится к точкам.
  */
 export function setPoint(viewpoint: SceneViewpoint, target: ViewpointTarget, phase: ViewpointPhase, point: SchemePoint): SceneViewpoint {
   const current = targetPath(viewpoint, target);
@@ -256,8 +256,8 @@ export function removePoint(viewpoint: SceneViewpoint, target: ViewpointTarget, 
   return syncSide(next.length ? { ...rest, subjects: next } : rest);
 }
 
-/** Ставит героя в фокус: он становится первым, остальные сохраняют порядок. */
-export function setFocus(viewpoint: SceneViewpoint, entity: string): SceneViewpoint {
+/** Делает героя главным: он становится первым, остальные сохраняют порядок. */
+export function setLead(viewpoint: SceneViewpoint, entity: string): SceneViewpoint {
   const subjects = viewpoint.subjects ?? [];
   const chosen = subjects.find((subject) => subject.entity === entity);
   if (!chosen) return viewpoint;

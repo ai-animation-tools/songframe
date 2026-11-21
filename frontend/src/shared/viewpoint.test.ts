@@ -17,7 +17,7 @@ import {
   setHeading,
   setCameraHeight,
   cameraHeight,
-  setFocus,
+  setLead,
   setPoint,
   sideFromPoints,
   sideOfHeading,
@@ -122,7 +122,7 @@ describe('правка точек', () => {
     expect(two.subjects?.map((subject) => subject.entity)).toEqual(['artem', 'kirill']);
   });
 
-  it('фокус переставляет героя первым, прицел на всех героев и сторона не меняются', () => {
+  it('главный герой переставляется первым, прицел на всех героев и сторона не меняются', () => {
     let viewpoint = setPoint(base, 'camera', 'start', [0, 0]);
     viewpoint = setPoint(viewpoint, { entity: 'artem' }, 'start', [0, 5]);
     expect(viewpoint.side).toBe('south');
@@ -130,7 +130,7 @@ describe('правка точек', () => {
     viewpoint = setPoint(viewpoint, { entity: 'kirill' }, 'start', [5, 0]);
     expect(lookHeading(viewpoint, 'start')).toBeCloseTo(45, 9);
     expect(viewpoint.side).toBe('west');
-    viewpoint = setFocus(viewpoint, 'kirill');
+    viewpoint = setLead(viewpoint, 'kirill');
     expect(viewpoint.subjects?.[0].entity).toBe('kirill');
     expect(viewpoint.side).toBe('west');
     expect(lookHeading(viewpoint, 'start')).toBeCloseTo(45, 9);

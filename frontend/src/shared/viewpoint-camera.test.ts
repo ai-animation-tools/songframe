@@ -15,7 +15,7 @@ const placed: SceneViewpoint = {
 };
 
 describe('вид из камеры', () => {
-  it('камера на высоте глаз смотрит по прицелу на всех героев на середину фигуры на расстоянии героя в фокусе', () => {
+  it('камера на высоте глаз смотрит по прицелу на всех героев на середину фигуры на расстоянии главного героя', () => {
     const single: SceneViewpoint = { ...placed, subjects: placed.subjects!.slice(0, 1) };
     const start = viewpointCamera(single, 'start')!;
     expect(start.eye).toEqual([0, 0, EYE_HEIGHT]);
@@ -27,7 +27,7 @@ describe('вид из камеры', () => {
     expect(end.target[0]).toBeCloseTo(4, 9);
     expect(end.target[1]).toBeCloseTo(12, 9);
     expect(end.fov).toBe(30);
-    // Двое героев: прицел между ними, на расстоянии героя в фокусе (10 м).
+    // Двое героев: прицел между ними, на расстоянии главного героя (10 м).
     const pair = viewpointCamera(placed, 'start')!;
     const heading = (Math.atan2(pair.target[1], pair.target[0]) * 180) / Math.PI;
     expect(heading).toBeCloseTo((90 + (Math.atan2(10, 3) * 180) / Math.PI) / 2, 9);
@@ -48,7 +48,7 @@ describe('вид из камеры', () => {
     expect(near[0]).toBeGreaterThan(800);
   });
 
-  it('без героя в фокусе — горизонтально по стороне', () => {
+  it('без главного героя — горизонтально по стороне', () => {
     const camera = viewpointCamera({ location: 'yard', side: 'east', size: 'wide', camera: { start: [5, 5] } }, 'start')!;
     expect(camera.eye).toEqual([5, 5, EYE_HEIGHT]);
     expect(camera.target[0]).toBeCloseTo(-5, 9);
@@ -61,9 +61,9 @@ describe('вид из камеры', () => {
     expect(viewpointCamera({ ...placed, side: 'top' }, 'start')).toBeNull();
   });
 
-  it('герои — цилиндры высотой фигуры в своих точках кадра, первый в фокусе', () => {
+  it('герои — цилиндры высотой фигуры в своих точках кадра, первый главный', () => {
     const figures = subjectFigures(placed, 'end');
-    expect(figures.map((figure) => [figure.entity, figure.focus])).toEqual([
+    expect(figures.map((figure) => [figure.entity, figure.lead])).toEqual([
       ['hero', true],
       ['friend', false]
     ]);
@@ -82,7 +82,7 @@ describe('вид из камеры', () => {
     const heights = { hero: 1.2 };
     const start = viewpointCamera(single, 'start', heights)!;
     expect(start.eye[2]).toBe(10);
-    // Взгляд на середину роста героя в фокусе: с 10 м камера смотрит вниз.
+    // Взгляд на середину роста главного героя: с 10 м камера смотрит вниз.
     expect(start.target[2]).toBeCloseTo(0.6, 9);
     expect(viewpointCamera(single, 'end', heights)!.eye[2]).toBe(0.3);
     const figures = subjectFigures(placed, 'start', heights);

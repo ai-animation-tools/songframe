@@ -265,7 +265,7 @@ export function scenarioWorkflowOptions(mode: ScenarioStoryMode = 'prepare'): St
             ];
           }
           // Как в «Огороде»: после утверждения изменилась только разметка песни.
-          if (mode === 'manual') Object.assign(model.view, { canApproveCurrent: true, scenesNeedReview: true, changedInputs: ['timing'] });
+          if (mode === 'manual') Object.assign(model.view, { canApproveCurrent: true, scenesNeedReview: true, changedInputs: ['timing', 'cast'] });
           if (['ready', 'stale', 'applyConflict', 'applyFailure', 'scenes', 'revise'].includes(mode))
             Object.assign(model.view, {
               proposal: scenarioProposal(mode === 'scenes' ? 'scenes' : mode === 'revise' ? 'revise' : 'treatment', { stale: mode === 'stale' }),

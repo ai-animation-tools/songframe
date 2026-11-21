@@ -132,7 +132,9 @@ export function ScenarioWorkflowPanel({
         {view?.problems.length ? <ProblemList problems={view.problems} /> : null}
         {view?.scenesNeedReview && (
           <Alert severity="warning">
-            {scenarioTexts.workflow.scenesNeedReview(view.changedInputs, view.canApproveScenes ? 'scenes' : view.canApproveCurrent ? 'pair' : null)}
+            <LinkedText
+              text={scenarioTexts.workflow.scenesNeedReview(view.changedInputs, view.canApproveScenes ? 'scenes' : view.canApproveCurrent ? 'pair' : null)}
+            />
           </Alert>
         )}
         {view?.job && (

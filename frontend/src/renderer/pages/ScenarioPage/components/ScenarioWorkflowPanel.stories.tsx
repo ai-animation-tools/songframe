@@ -2,6 +2,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { commonTexts } from '@shared/texts/common';
+import { navigationTexts } from '@shared/texts/navigation';
 import { scenarioTexts } from '@shared/texts/scenario';
 import { ScenarioWorkflowStory, scenarioWorkflowOptions, SCENARIO_APPLY_CONFLICT, SCENARIO_APPLY_FAILURE } from '../../../testing/scenarioWorkflowStories';
 
@@ -205,23 +206,25 @@ export const ManualApproval: Story = {
   parameters: { songframe: scenarioWorkflowOptions('manual') },
   play: async (context) => {
     const screen = await ready(context);
-    // Предупреждение называет фактическую причину и держится до утверждения сценария. Правка разметки сняла и утверждение
-    // пары: предупреждение называет оба шага по порядку — пару, затем сценарий.
-    const warning = scenarioTexts.workflow.scenesNeedReview(['timing'], 'pair');
-    await expect(screen.getByText(warning)).toBeVisible();
-    await expect(warning).toContain('разметка песни');
+    // Предупреждение называет фактическую причину и держится до утверждения сценария. Правка разметки и кастинга сняла и
+    // утверждение пары: предупреждение называет оба шага по порядку — пару, затем сценарий, — и ведёт на страницу кастинга.
+    const warning = scenarioTexts.workflow.scenesNeedReview(['timing', 'cast'], 'pair');
+    const alert = screen.getAllByRole('alert').find((item) => item.textContent === warning);
+    await expect(alert).toBeVisible();
+    await expect(warning).toContain('разметка песни, кастинг');
+    await expect(within(alert!).getByRole('link', { name: `«${navigationTexts.pages.cast}»` })).toBeVisible();
     await expect(warning).toContain(`«${scenarioTexts.workflow.approveTreatment}», затем «${scenarioTexts.workflow.approveScenes}»`);
     await expect(screen.getByRole('button', { name: scenarioTexts.workflow.createScenes })).toBeDisabled();
     await userEvent.click(screen.getByRole('button', { name: scenarioTexts.workflow.approveTreatment }));
     await waitFor(() => expect(screen.getByRole('button', { name: scenarioTexts.workflow.approveScenes })).toBeEnabled());
     await expect(screen.getByTestId('scenario-counts')).toHaveTextContent('Согласований: 1.');
     // Кнопка утверждения доступна: предупреждение называет шаг, который его снимает.
-    const withApprove = scenarioTexts.workflow.scenesNeedReview(['timing'], 'scenes');
+    const withApprove = scenarioTexts.workflow.scenesNeedReview(['timing', 'cast'], 'scenes');
     await expect(withApprove).toContain(`«${scenarioTexts.workflow.approveScenes}»`);
-    await expect(screen.getByText(withApprove)).toBeVisible();
+    await waitFor(() => expect(screen.getAllByRole('alert').find((item) => item.textContent === withApprove)).toBeVisible());
     await userEvent.click(screen.getByRole('button', { name: scenarioTexts.workflow.approveScenes }));
     await waitFor(() => expect(screen.queryByRole('button', { name: scenarioTexts.workflow.approveScenes })).not.toBeInTheDocument());
-    await expect(screen.queryByText(withApprove)).not.toBeInTheDocument();
+    await expect(screen.queryAllByRole('alert').find((item) => item.textContent === withApprove)).toBeUndefined();
     await expect(screen.getByTestId('scenario-counts')).toHaveTextContent('Согласований: 2. Обновлений редакторов: 0.');
     await expect(screen.getByTestId('scenario-counts')).toHaveTextContent('Запусков: 0. Применений: 0.');
   }

@@ -1810,6 +1810,194 @@
           ]
         }
       }
+    },
+    {
+      "name": "own-tilt",
+      "description": "Высокая камера со своим наклоном, который поднимается за план: сначала смотрит круто вниз под ноги — герой вдали выше верхнего края кадра, вода и вышка тоже; к концу камера поднимает взгляд — герой в кадре целиком, полотенце ушло под нижний край.",
+      "input": {
+        "viewpoint": {
+          "location": "beach",
+          "side": "south",
+          "size": "medium",
+          "camera": {
+            "start": [
+              0,
+              -2
+            ]
+          },
+          "heading": {
+            "start": 90
+          },
+          "camera_height": {
+            "start": 5
+          },
+          "tilt": {
+            "start": -40,
+            "end": -20
+          },
+          "subjects": [
+            {
+              "entity": "kid",
+              "start": [
+                0.5,
+                9
+              ]
+            }
+          ]
+        },
+        "scheme": "beach",
+        "heights": {
+          "kid": 1.3
+        }
+      },
+      "expected": {
+        "camera": {
+          "side": "south",
+          "size": "medium",
+          "fov": 40
+        },
+        "start": {
+          "looks": "на север",
+          "camera_height": 5,
+          "subjects": [
+            {
+              "entity": "kid",
+              "lead": true,
+              "in_frame": false,
+              "place": "над верхним краем кадра",
+              "distance": 11,
+              "height": 1.3,
+              "hidden_by": []
+            }
+          ],
+          "objects": [
+            {
+              "name": "Вода",
+              "in_frame": false,
+              "place": "над верхним краем кадра",
+              "distance": 22
+            },
+            {
+              "name": "Песок",
+              "in_frame": true,
+              "x": [
+                -1,
+                1
+              ],
+              "place": "во всю ширину кадра",
+              "distance": 4
+            },
+            {
+              "name": "Мостки",
+              "in_frame": true,
+              "x": [
+                -0.69,
+                0.69
+              ],
+              "place": "от левой трети до правой трети",
+              "distance": 4
+            },
+            {
+              "name": "Полотенце",
+              "in_frame": true,
+              "x": [
+                0.04,
+                0.32
+              ],
+              "place": "центр",
+              "distance": 6
+            },
+            {
+              "name": "Буй",
+              "in_frame": false,
+              "place": "над верхним краем кадра",
+              "distance": 34.1,
+              "height": 0.6
+            },
+            {
+              "name": "Вышка спасателя",
+              "in_frame": false,
+              "place": "над верхним краем кадра",
+              "distance": 13.9,
+              "height": 4
+            }
+          ]
+        },
+        "end": {
+          "looks": "на север",
+          "camera_height": 5,
+          "subjects": [
+            {
+              "entity": "kid",
+              "lead": true,
+              "in_frame": true,
+              "x": 0.12,
+              "place": "центр",
+              "distance": 11,
+              "height": 1.3,
+              "frame_height": 0.25,
+              "whole": true,
+              "hidden_by": []
+            }
+          ],
+          "objects": [
+            {
+              "name": "Вода",
+              "in_frame": true,
+              "x": [
+                -1,
+                1
+              ],
+              "place": "во всю ширину кадра",
+              "distance": 22
+            },
+            {
+              "name": "Песок",
+              "in_frame": true,
+              "x": [
+                -1,
+                1
+              ],
+              "place": "во всю ширину кадра",
+              "distance": 8.1
+            },
+            {
+              "name": "Мостки",
+              "in_frame": true,
+              "x": [
+                -0.34,
+                0.34
+              ],
+              "place": "от левой трети до правой трети",
+              "distance": 8.1
+            },
+            {
+              "name": "Полотенце",
+              "in_frame": false,
+              "place": "под нижним краем кадра",
+              "distance": 6
+            },
+            {
+              "name": "Буй",
+              "in_frame": false,
+              "place": "над верхним краем кадра",
+              "distance": 34.1,
+              "height": 0.6
+            },
+            {
+              "name": "Вышка спасателя",
+              "in_frame": true,
+              "x": [
+                -1,
+                -0.92
+              ],
+              "place": "от левого края до левой трети",
+              "distance": 13.9,
+              "height": 4
+            }
+          ]
+        }
+      }
     }
   ]
 }

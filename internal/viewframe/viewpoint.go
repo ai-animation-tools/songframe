@@ -24,7 +24,7 @@ type Path struct {
 	End   *Point `json:"end,omitempty"`
 }
 
-// Pair — величина на первом кадре и, если меняется за план, на последнем (направление, высота камеры).
+// Pair — величина на первом кадре и, если меняется за план, на последнем (направление, высота, наклон камеры).
 type Pair struct {
 	Start float64  `json:"start"`
 	End   *float64 `json:"end,omitempty"`
@@ -45,6 +45,7 @@ type Viewpoint struct {
 	Camera       *Path     `json:"camera,omitempty"`
 	Heading      *Pair     `json:"heading,omitempty"`
 	CameraHeight *Pair     `json:"camera_height,omitempty"`
+	Tilt         *Pair     `json:"tilt,omitempty"`
 	Subjects     []Subject `json:"subjects,omitempty"`
 }
 
@@ -208,12 +209,16 @@ func (v Viewpoint) LookHeading(phase string) (float64, bool) {
 	return sideHeading(v.Side)
 }
 
-// Pitch — наклон взгляда на кадре phase в градусах, минус — вниз; так же считает вид из камеры. Камера смотрит
+// Pitch — наклон взгляда на кадре phase в градусах, минус — вниз; так же считает вид из камеры. Свой наклон
+// человека (tilt) берётся как есть. Без него камера смотрит
 // на середину роста главного героя на его расстоянии; без героя или с героем в точке камеры — горизонтально.
 // Камера со своим направлением без поворота (heading без end) не поворачивается и по высоте: наклон первого
 // кадра держится весь план, как у неподвижной камеры, тележки или крана. Камера, которая целится в героев или
 // поворачивается сама, ведёт главного героя и наклоном.
 func (v Viewpoint) Pitch(phase string, heights map[string]float64) float64 {
+	if v.Tilt != nil {
+		return pairValue(v.Tilt, phase)
+	}
 	if v.Heading != nil && v.Heading.End == nil {
 		phase = PhaseStart
 	}
@@ -237,10 +242,11 @@ func moves(path *Path) bool {
 	return path != nil && path.End != nil && distance(path.Start, *path.End) > epsilon
 }
 
-// Changes — меняется ли кадр за план: движется камера или герой, камера поворачивается или меняет высоту.
+// Changes — меняется ли кадр за план: движется камера или герой, камера поворачивается, меняет высоту или наклон.
 // Тогда факты считаются и для последнего кадра.
 func (v Viewpoint) Changes() bool {
-	if moves(v.Camera) || (v.Heading != nil && v.Heading.End != nil) || (v.CameraHeight != nil && v.CameraHeight.End != nil) {
+	if moves(v.Camera) || (v.Heading != nil && v.Heading.End != nil) || (v.CameraHeight != nil && v.CameraHeight.End != nil) ||
+		(v.Tilt != nil && v.Tilt.End != nil) {
 		return true
 	}
 	for index := range v.Subjects {

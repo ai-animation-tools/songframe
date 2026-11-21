@@ -33,6 +33,7 @@ type PhaseFacts struct {
 }
 
 // SubjectFacts — герой на кадре. X — место по горизонтали от −1 (левый край) до +1 (правый), только в кадре.
+// Фигура целиком выше или ниже кадра в кадр не входит: место — над верхним или под нижним краем.
 // FrameHeight — доля высоты кадра, которую занимает фигура; Whole — видна ли она целиком, от ног до макушки.
 // Height — рост из кастинга, если задан; без него фигура считается условной (FigureHeight). HiddenBy — герои и
 // объекты, которые закрывают от камеры середину фигуры.
@@ -165,6 +166,14 @@ func subjectFacts(camera view, viewpoint Viewpoint, scheme *schemes.Scheme, heig
 	bottom, okBottom := camera.screenY(at, 0)
 	top, okTop := camera.screenY(at, height)
 	if okBottom && okTop {
+		// Своим наклоном камеру можно увести от героя: фигура целиком выше или ниже кадра в него не входит.
+		if bottom > 1+epsilon || top < -1-epsilon {
+			facts.X, facts.InFrame, facts.Place = nil, false, placeBelow
+			if bottom > 1+epsilon {
+				facts.Place = placeAbove
+			}
+			return facts
+		}
 		visible := (clamp(top) - clamp(bottom)) / 2
 		facts.FrameHeight = ptr(round(math.Max(visible, 0), 2))
 		facts.Whole = ptr(bottom >= -1-epsilon && top <= 1+epsilon)

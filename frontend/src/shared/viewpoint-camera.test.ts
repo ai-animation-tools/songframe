@@ -100,6 +100,11 @@ describe('вид из камеры', () => {
     expect(lookPitch(aimed, 'end', heights)).toBeCloseTo(Math.atan2(0.65 - 0.9, reach), 12);
     // Поворачивающаяся камера тоже ведёт героя.
     expect(lookPitch({ ...approach, heading: { start: 90, end: 80 } }, 'end', heights)).toBeCloseTo(Math.atan2(0.65 - 0.9, reach), 12);
+    // Свой наклон человека берётся как есть, на каждом кадре свой.
+    const tilted = { ...approach, tilt: { start: -40, end: -20 } };
+    expect(lookPitch(tilted, 'start', heights)).toBeCloseTo((-40 * Math.PI) / 180, 12);
+    expect(lookPitch(tilted, 'end', heights)).toBeCloseTo((-20 * Math.PI) / 180, 12);
+    expect(viewpointCamera(tilted, 'end', heights)!.target[2]).toBeCloseTo(0.9 + reach * Math.tan((-20 * Math.PI) / 180), 9);
   });
 
   it('своя высота камеры и рост героев из кастинга', () => {

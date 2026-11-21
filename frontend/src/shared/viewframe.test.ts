@@ -2,7 +2,7 @@
  * Общая таблица случаев фактов кадра (testdata/golden/viewframe/cases.json): Go считает по ней полные факты для
  * агентов (internal/viewframe), здесь та же таблица проверяет карту точки съёмки — направление взгляда, попадание
  * героев в кадр, расстояние до объектов схемы и их попадание в сектор обзора. Так карта и агент не расходятся;
- * отсечение по высоте кадра есть только у Go, и для таких объектов проверяется вложенность, а не равенство.
+ * отсечение по высоте кадра есть только у Go, и для таких героев и объектов проверяется вложенность, а не равенство.
  */
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
@@ -11,7 +11,7 @@ import { distance, footprintView, inFrame, lookHeading, pathPoint, type SceneVie
 
 interface PhaseFacts {
   looks: string;
-  subjects: { entity: string; in_frame: boolean; distance: number }[];
+  subjects: { entity: string; in_frame: boolean; place: string; distance: number }[];
   objects: { name: string; in_frame: boolean; place: string; distance: number }[];
 }
 
@@ -55,7 +55,8 @@ describe('Факты кадра: общая таблица с Go', () => {
         for (const subject of facts.subjects) {
           const path = viewpoint.subjects!.find((candidate) => candidate.entity === subject.entity)!;
           const at = pathPoint(path, phase)!;
-          expect(inFrame(viewpoint, phase, at), subject.entity).toBe(subject.in_frame);
+          // Герой выше или ниже кадра у Go не в кадре, а карта судит только по горизонтали: для неё он в секторе.
+          expect(inFrame(viewpoint, phase, at), subject.entity).toBe(subject.in_frame || VERTICAL_OUT.has(subject.place));
           expect(round1(distance(camera, at)), subject.entity).toBe(subject.distance);
         }
         for (const object of facts.objects) {

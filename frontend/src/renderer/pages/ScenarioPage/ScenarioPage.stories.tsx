@@ -398,10 +398,20 @@ export const ViewpointFullscreen: Story = {
     await expect(dialog.getByRole('spinbutton', { name: viewpointTexts.cameraHeight })).toHaveValue(10);
     const end = dialog.getByRole('spinbutton', { name: viewpointTexts.cameraHeightEnd });
     await userEvent.type(end, '2.5{Enter}');
+    // Наклон ползунками: круто вниз на первом кадре, к последнему камера поднимает взгляд; итог — в заголовке панели.
+    const tiltSlider = (phase: 'start' | 'end'): HTMLElement =>
+      dialog.getAllByRole('slider').find((slider) => slider.closest(`[data-camera-tilt-phase="${phase}"]`))!;
+    tiltSlider('start').focus();
+    await userEvent.keyboard('{Home}');
+    tiltSlider('end').focus();
+    await userEvent.keyboard('{Home}{ArrowRight}{ArrowRight}{ArrowRight}');
+    await expect(dialog.getByText(viewpointTexts.tiltOwnMoves)).toBeVisible();
+    await expect(document.querySelector('[data-camera-fields]')).toHaveTextContent('наклон −90° → −87°');
     // «Сохранить» в шапке окна записывает сценарий; закрытие окна ничего не спрашивает.
     await userEvent.click(dialog.getByRole('button', { name: commonTexts.save }));
     await waitFor(() => expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений сценария: 1'));
     await expect(scenarioStateInspection().saved.scenes!.scenes.find((shot) => shot.id === 'M03')!.viewpoint!.camera_height).toEqual({ start: 10, end: 2.5 });
+    await expect(scenarioStateInspection().saved.scenes!.scenes.find((shot) => shot.id === 'M03')!.viewpoint!.tilt).toEqual({ start: -90, end: -87 });
     await userEvent.click(dialog.getByRole('button', { name: commonTexts.close }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     // Расстановка живёт только в окне карты; бейдж блока говорит, что герои на схеме.
@@ -433,6 +443,13 @@ export const ViewpointCameraWindow: Story = {
     const presets = within(dialog.getByLabelText(viewpointTexts.cameraHeightPresets));
     await userEvent.click(presets.getByRole('button', { name: viewpointTexts.cameraHeightPreset({ name: viewpointTexts.heightPresets.drone, metres: '10' }) }));
     await waitFor(() => expect(scenarioCameraWindowInspection().states.at(-1)!.viewpoint.camera_height).toEqual({ start: 10 }));
+    // Наклон ползунком тоже сразу уходит в окно; «Наклон по герою» возвращает автоматический.
+    const tilt = dialog.getAllByRole('slider').find((slider) => slider.closest('[data-camera-tilt-phase="start"]'))!;
+    tilt.focus();
+    await userEvent.keyboard('{Home}');
+    await waitFor(() => expect(scenarioCameraWindowInspection().states.at(-1)!.viewpoint.tilt).toEqual({ start: -90 }));
+    await userEvent.click(dialog.getByRole('button', { name: viewpointTexts.tiltReset }));
+    await waitFor(() => expect(scenarioCameraWindowInspection().states.at(-1)!.viewpoint.tilt).toBeUndefined());
     // Зум в окне меняет угол обзора точки: поле карты и следующее состояние окна.
     scenarioCameraWindowMessage({ type: 'fov', fov: 16 });
     await waitFor(() => expect((dialog.getByRole('spinbutton', { name: viewpointTexts.fov }) as HTMLInputElement).value).toBe('16'));

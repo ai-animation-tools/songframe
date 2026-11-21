@@ -6,6 +6,7 @@ import {
   cameraHeight,
   distance,
   leadSubject,
+  ownTilt,
   lookHeading,
   pathPoint,
   pointAt,
@@ -58,11 +59,13 @@ export function viewpointCamera(viewpoint: SceneViewpoint, phase: ViewpointPhase
 
 /**
  * Наклон взгляда на кадре phase, радианы, минус — вниз; так же считает Go (viewframe.Viewpoint.Pitch) для фактов
- * кадра агента. Камера смотрит на середину фигуры главного героя на его расстоянии; без героя или с героем в точке
+ * кадра агента. Свой наклон человека (tilt) берётся как есть. Без него камера смотрит на середину фигуры главного героя на его расстоянии; без героя или с героем в точке
  * камеры — горизонтально. Камера со своим направлением без поворота держит наклон первого кадра весь план: она не
  * поворачивается и по высоте. Камера, которая целится в героев или поворачивается, ведёт главного героя и наклоном.
  */
 export function lookPitch(viewpoint: SceneViewpoint, phase: ViewpointPhase, heights: FigureHeights = {}): number {
+  const own = ownTilt(viewpoint, phase);
+  if (own !== null) return (own * Math.PI) / 180;
   const from: ViewpointPhase = viewpoint.heading && viewpoint.heading.end === undefined ? 'start' : phase;
   const subject = leadSubject(viewpoint);
   const at = pathPoint(viewpoint.camera, from);

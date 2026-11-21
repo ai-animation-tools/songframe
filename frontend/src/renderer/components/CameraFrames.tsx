@@ -2,7 +2,7 @@ import { scenarioTexts } from '@shared/texts/scenario';
 import { useMemo, type ReactElement } from 'react';
 import { Box, Stack, Typography } from '@mui/material';
 import type { Scheme } from '@shared/schemes';
-import { heightMoves, moves, type SceneViewpoint, type ViewpointPhase } from '@shared/viewpoint';
+import { heightMoves, moves, tiltMoves, type SceneViewpoint, type ViewpointPhase } from '@shared/viewpoint';
 import { subjectFigures, viewpointCamera, type FigureHeights } from '@shared/viewpoint-camera';
 import { SchemeVolumeView, type VolumeExtra } from './SchemeVolumeView';
 
@@ -32,7 +32,11 @@ export function CameraFrames({
 }): ReactElement {
   const frames = useMemo(() => {
     const phases: ViewpointPhase[] =
-      moves(viewpoint.camera) || viewpoint.heading?.end !== undefined || heightMoves(viewpoint) || (viewpoint.subjects ?? []).some(moves)
+      moves(viewpoint.camera) ||
+      viewpoint.heading?.end !== undefined ||
+      heightMoves(viewpoint) ||
+      tiltMoves(viewpoint) ||
+      (viewpoint.subjects ?? []).some(moves)
         ? ['start', 'end']
         : ['start'];
     return phases.map((phase) => ({

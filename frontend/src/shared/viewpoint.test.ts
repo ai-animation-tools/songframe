@@ -16,6 +16,10 @@ import {
   removePoint,
   setHeading,
   setCameraHeight,
+  setTilt,
+  ownTilt,
+  tiltMoves,
+  withoutTilt,
   cameraHeight,
   setLead,
   setPoint,
@@ -331,5 +335,26 @@ describe('высота камеры', () => {
     // Подъём с уровня глаз хранит начало явно.
     expect(setCameraHeight(base, 'end', 5).camera_height).toEqual({ start: 1.6, end: 5 });
     expect(setCameraHeight(base, 'start', 9999).camera_height).toEqual({ start: 500 });
+  });
+});
+
+describe('свой наклон камеры', () => {
+  const base: SceneViewpoint = { location: 'yard', side: 'south', size: 'wide', camera: { start: [0, 0] } };
+
+  it('без своего — по герою; свой округляется, прижимается к ±90°, конец без начала берёт начало по герою', () => {
+    expect(ownTilt(base, 'start')).toBeNull();
+    const down = setTilt(base, 'start', -30.4);
+    expect(down.tilt).toEqual({ start: -30 });
+    expect(ownTilt(down, 'end')).toBe(-30);
+    expect(tiltMoves(down)).toBe(false);
+    const raise = setTilt(down, 'end', -10);
+    expect(raise.tilt).toEqual({ start: -30, end: -10 });
+    expect(tiltMoves(raise)).toBe(true);
+    // Конец, равный началу, не хранится.
+    expect(setTilt(raise, 'end', -30).tilt).toEqual({ start: -30 });
+    expect(setTilt(base, 'start', -120).tilt).toEqual({ start: -90 });
+    expect(setTilt(base, 'end', 20, -3.2).tilt).toEqual({ start: -3, end: 20 });
+    expect(withoutTilt(raise, 'end').tilt).toEqual({ start: -30 });
+    expect(withoutTilt(raise).tilt).toBeUndefined();
   });
 });

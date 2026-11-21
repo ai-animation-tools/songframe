@@ -12,6 +12,7 @@ import {
   Divider,
   MenuItem,
   Paper,
+  Slider,
   Stack,
   TextField,
   ToggleButton,
@@ -46,19 +47,24 @@ import {
   linkedShapes,
   lookHeading,
   moves,
+  ownTilt,
   pathPoint,
   removePoint,
   setLead,
   setCameraHeight,
   setHeading,
+  setTilt,
   setPoint,
   sideFromPoints,
   syncSide,
   targetPath,
+  tiltMoves,
   viewpointFov,
   withFov,
   withoutHeading,
   withoutPoints,
+  withoutTilt,
+  MAX_TILT,
   type SceneViewpoint,
   type ViewpointPath,
   type ViewpointPhase,
@@ -79,7 +85,7 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import CloseIcon from '@mui/icons-material/Close';
 import PushPinIcon from '@mui/icons-material/PushPin';
 import { ActionIconButton } from '../../../components/ActionIconButton';
-import type { FigureHeights } from '@shared/viewpoint-camera';
+import { lookPitch, type FigureHeights } from '@shared/viewpoint-camera';
 import { castEntityRoute } from '../../../components/castRoutes';
 
 const texts = scenarioTexts.viewpoint;
@@ -111,6 +117,13 @@ const targetOf = (key: string): ViewpointTarget => (key === 'camera' ? 'camera' 
 
 /** Метры с одним знаком для подписей. */
 const metres = (value: number): string => formatMetres(Math.round(value * 10) / 10);
+/** Наклон в градусах для подписи: целое со знаком «−» вниз. */
+const degrees = (value: number): string => (value < 0 ? `−${Math.abs(value)}` : `${value}`);
+/** Наклон камеры на кадре phase в целых градусах: свой или по главному герою. */
+const tiltDegrees = (viewpoint: SceneViewpoint, phase: ViewpointPhase, heights: FigureHeights): number =>
+  ownTilt(viewpoint, phase) ?? Math.round((lookPitch(viewpoint, phase, heights) * 180) / Math.PI);
+/** Метки ползунка наклона: отвесно вниз, наискось, горизонт и вверх. */
+const TILT_MARKS = [-MAX_TILT, -45, 0, 45, MAX_TILT].map((value) => ({ value, label: `${degrees(value)}°` }));
 
 /** Состояние пути под мини-схемой: не на схеме, стоит или на сколько движется. */
 const pathState = (path: ViewpointPath | undefined): string =>
@@ -342,6 +355,11 @@ function ViewpointPlacement({
   const eye = heightMoves(viewpoint)
     ? `${metres(cameraHeight(viewpoint, 'start'))} → ${metres(cameraHeight(viewpoint, 'end'))}`
     : metres(cameraHeight(viewpoint, 'start'));
+  const tilt = !viewpoint.tilt
+    ? null
+    : tiltMoves(viewpoint)
+      ? `${degrees(tiltDegrees(viewpoint, 'start', heights))}° → ${degrees(tiltDegrees(viewpoint, 'end', heights))}°`
+      : `${degrees(tiltDegrees(viewpoint, 'start', heights))}°`;
   // Поля камеры свёрнуты по умолчанию: в заголовке — их итог, чтобы видеть его, не раскрывая.
   const cameraPanel = (
     <Accordion variant="outlined" disableGutters defaultExpanded={false} sx={{ minWidth: 0 }} data-camera-fields="">
@@ -349,7 +367,7 @@ function ViewpointPlacement({
         <Stack sx={{ minWidth: 0 }}>
           <Typography variant="subtitle2">{texts.cameraSettings}</Typography>
           <Typography variant="body2" color="text.secondary">
-            {texts.cameraSummary({ size: texts.sizes[viewpoint.size], fov, height: eye })}
+            {texts.cameraSummary({ size: texts.sizes[viewpoint.size], fov, height: eye, tilt })}
           </Typography>
         </Stack>
       </AccordionSummary>
@@ -676,6 +694,45 @@ export function ViewpointBlock({
             ))}
           </Stack>
         </Stack>
+      )}
+      {current.side === 'top' ? null : (
+        <Box data-camera-tilt="">
+          {(['start', 'end'] as const).map((phase) => {
+            const value = tiltDegrees(current, phase, heights);
+            const label = `camera-tilt-${phase}`;
+            return (
+              <Box key={phase} sx={{ px: 1 }}>
+                <Typography variant="body2" id={label}>
+                  {phase === 'start' ? texts.tiltStart({ degrees: degrees(value) }) : texts.tiltEnd({ degrees: degrees(value) })}
+                </Typography>
+                <Slider
+                  size="small"
+                  value={value}
+                  min={-MAX_TILT}
+                  max={MAX_TILT}
+                  step={1}
+                  marks={TILT_MARKS}
+                  disabled={!editable}
+                  valueLabelDisplay="auto"
+                  valueLabelFormat={(next) => `${degrees(next)}°`}
+                  slotProps={{ input: { 'aria-labelledby': label } }}
+                  data-camera-tilt-phase={phase}
+                  onChange={(_, next) => onChange(setTilt(current, phase, next as number, tiltDegrees(current, 'start', heights)))}
+                />
+              </Box>
+            );
+          })}
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }} useFlexGap>
+            <Typography variant="caption" color="text.secondary">
+              {!current.tilt ? texts.tiltAuto : tiltMoves(current) ? texts.tiltOwnMoves : texts.tiltOwn}
+            </Typography>
+            {current.tilt && editable ? (
+              <Button size="small" startIcon={<RestartAltIcon />} onClick={() => onChange(withoutTilt(current))}>
+                {texts.tiltReset}
+              </Button>
+            ) : null}
+          </Stack>
+        </Box>
       )}
     </Stack>
   );

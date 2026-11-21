@@ -34,6 +34,15 @@ export interface ViewpointHeight {
   end?: number;
 }
 
+/** Свой наклон взгляда камеры на первом кадре и, если меняется, на последнем: градусы [−90, 90], минус — вниз. */
+export interface ViewpointTilt {
+  start: number;
+  end?: number;
+}
+
+/** Предел своего наклона камеры, градусы (как проверяет Go): отвесно вниз или вверх. */
+export const MAX_TILT = 90;
+
 /** Высота камеры по умолчанию, м: съёмка с рук или штатива на уровне глаз. */
 export const DEFAULT_CAMERA_HEIGHT = 1.6;
 /** Границы своей высоты камеры, м (как проверяет Go): от земли до съёмки с дрона. */
@@ -58,6 +67,8 @@ export interface SceneViewpoint {
   heading?: ViewpointHeading;
   /** Своя высота камеры; нет — уровень глаз (DEFAULT_CAMERA_HEIGHT). */
   camera_height?: ViewpointHeight;
+  /** Свой наклон камеры; нет — камера наклоняется к главному герою (lookPitch). */
+  tilt?: ViewpointTilt;
   /**
    * Герои на схеме; первый — главный: на середину его роста наклоняется камера (со своим направлением без поворота —
    * по первому кадру на весь план, lookPitch). Камера целится так, чтобы в кадр вошли все.
@@ -297,6 +308,39 @@ export function setCameraHeight(viewpoint: SceneViewpoint, phase: ViewpointPhase
   const keepEnd = end !== undefined && end !== start;
   if (start === DEFAULT_CAMERA_HEIGHT && !keepEnd) return rest;
   return { ...rest, camera_height: { start, ...(keepEnd ? { end } : {}) } };
+}
+
+/** Свой наклон камеры на кадре phase, градусы (на последнем кадре — конец, иначе начало); без своего — null. */
+export function ownTilt(viewpoint: SceneViewpoint, phase: ViewpointPhase): number | null {
+  const own = viewpoint.tilt;
+  if (!own) return null;
+  return phase === 'end' ? (own.end ?? own.start) : own.start;
+}
+
+/** Меняется ли свой наклон камеры за план. */
+export function tiltMoves(viewpoint: SceneViewpoint): boolean {
+  return viewpoint.tilt?.end !== undefined;
+}
+
+/**
+ * Свой наклон камеры на кадре phase, округлённый до градуса и прижатый к границам. Без своего наклона начало
+ * берётся из from — текущего наклона по герою, чтобы конец не задавался без начала. Конец, равный началу, не
+ * хранится.
+ */
+export function setTilt(viewpoint: SceneViewpoint, phase: ViewpointPhase, degrees: number, from = 0): SceneViewpoint {
+  const clampTilt = (value: number): number => Math.round(Math.min(MAX_TILT, Math.max(-MAX_TILT, value)));
+  const value = clampTilt(degrees);
+  const start = phase === 'start' ? value : clampTilt(viewpoint.tilt?.start ?? from);
+  const end = phase === 'end' ? value : viewpoint.tilt?.end;
+  const keepEnd = end !== undefined && end !== start;
+  return { ...viewpoint, tilt: { start, ...(keepEnd ? { end } : {}) } };
+}
+
+/** Без своего наклона на последнем кадре (phase 'end') или совсем (без phase): камера снова наклоняется к герою. */
+export function withoutTilt(viewpoint: SceneViewpoint, phase?: ViewpointPhase): SceneViewpoint {
+  const { tilt, ...rest } = viewpoint;
+  if (phase === 'end' && tilt) return { ...rest, tilt: { start: tilt.start } };
+  return rest;
 }
 
 /** Есть ли у пути движение: конец задан и отличается от начала. */

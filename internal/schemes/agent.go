@@ -17,15 +17,42 @@ func AgentView(project string) (any, bool) {
 	}
 	stripped := make([]Scheme, len(document.Schemes))
 	for index, scheme := range document.Schemes {
-		objects := make([]Object, len(scheme.Objects))
-		for position, object := range scheme.Objects {
-			object.Color = ""
-			objects[position] = object
-		}
-		scheme.Objects = objects
-		stripped[index] = scheme
+		stripped[index] = withoutColor(scheme)
 	}
-	data, err := json.Marshal(stripped)
+	return jsonValue(stripped)
+}
+
+// AgentLocation — схема локации location для агентов плана (описание, видеопромпт, опоры) как значение
+// JSON, без цвета объектов, как в AgentView. Факты кадра называют, что видно и где, а схема — форму,
+// протяжённость и высоту ориентиров: прямое ли ограждение, где кончается дом. Нет файла, схемы этой
+// локации или файл повреждён — false, и ключа в контексте нет.
+func AgentLocation(project, location string) (any, bool) {
+	document, _, err := Read(project)
+	if err != nil {
+		return nil, false
+	}
+	for _, scheme := range document.Schemes {
+		if scheme.Location == location {
+			return jsonValue(withoutColor(scheme))
+		}
+	}
+	return nil, false
+}
+
+// withoutColor — копия схемы без цвета объектов: цвет нужен только холсту редактора.
+func withoutColor(scheme Scheme) Scheme {
+	objects := make([]Object, len(scheme.Objects))
+	for position, object := range scheme.Objects {
+		object.Color = ""
+		objects[position] = object
+	}
+	scheme.Objects = objects
+	return scheme
+}
+
+// jsonValue — значение dynvalue из сериализации v; ошибка — false.
+func jsonValue(v any) (any, bool) {
+	data, err := json.Marshal(v)
 	if err != nil {
 		return nil, false
 	}

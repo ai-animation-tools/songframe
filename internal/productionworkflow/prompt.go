@@ -112,6 +112,10 @@ func agentContext(c *Context, input contextInput) string {
 	if c.Frame != nil {
 		value.Set("frame", c.Frame)
 	}
+	// Схема локации — рядом с фактами кадра: по ней агент берёт форму и размеры ориентиров.
+	if c.Scheme != nil {
+		value.Set("scheme", c.Scheme)
+	}
 	value.Set("brief", input.briefs)
 	value.Set("settings", c.Settings)
 	if c.Workflow == nil {

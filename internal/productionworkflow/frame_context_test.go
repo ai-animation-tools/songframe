@@ -10,7 +10,7 @@ import (
 )
 
 // TestAgentContextFrame — план с точкой съёмки получает в контексте агента факты кадра по схеме своей
-// локации; план без точки съёмки ключа frame не получает, его контекст прежний.
+// локации и саму схему без цвета; план без точки съёмки ключей frame и scheme не получает, его контекст прежний.
 func TestAgentContextFrame(t *testing.T) {
 	run := ownRun(t)
 	scenesPath := filepath.Join(run.project, "plan", "scenes.json")
@@ -54,6 +54,7 @@ func TestAgentContextFrame(t *testing.T) {
 				Objects []map[string]any `json:"objects"`
 			} `json:"start"`
 		} `json:"frame"`
+		Scheme map[string]any `json:"scheme"`
 	}
 	read := func(shot string) facts {
 		t.Helper()
@@ -86,7 +87,18 @@ func TestAgentContextFrame(t *testing.T) {
 	if _, ok := start.Objects[0]["color"]; ok {
 		t.Fatalf("цвет в фактах: %+v", start.Objects[0])
 	}
-	if other, _ := dynvalue.Get(list[1], "id").(string); read(other).Frame != nil {
-		t.Fatalf("%s без точки съёмки получил факты кадра", other)
+	if other, _ := dynvalue.Get(list[1], "id").(string); read(other).Frame != nil || read(other).Scheme != nil {
+		t.Fatalf("%s без точки съёмки получил факты кадра или схему", other)
+	}
+	// Рядом с фактами — схема локации точки съёмки, без цвета.
+	if got.Scheme == nil || got.Scheme["location"] != "pier" {
+		t.Fatalf("схема локации: %+v", got.Scheme)
+	}
+	objects, _ := got.Scheme["objects"].([]any)
+	if len(objects) != 1 {
+		t.Fatalf("объекты схемы: %+v", got.Scheme)
+	}
+	if _, ok := objects[0].(map[string]any)["color"]; ok {
+		t.Fatalf("цвет в схеме: %+v", objects[0])
 	}
 }

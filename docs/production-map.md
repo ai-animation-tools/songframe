@@ -285,6 +285,7 @@ flowchart LR
     cast["cast и references: сущности плана,<br/>их изображения и примечания к ним"]
     brief["brief: врезка непрерывности<br/>на первый и последний кадр;<br/>stateSources: откуда каждое значение"]
     frame["frame: факты кадра по схеме локации<br/>только у плана с точкой съёмки"]
+    scheme["scheme: схема локации точки<br/>без цвета: форма и высота ориентиров"]
     tech["settings, capabilities, windowSeconds,<br/>allowedPaths, keyframeCount,<br/>speech, lipSync, manualGeneration"]
     current["existing, description, prompt, keyframes:<br/>что уже есть в попытке"]
     note["note: замечание доработки"]
@@ -300,7 +301,7 @@ flowchart LR
   agent --> refusal["или отказ stage: blocked<br/>со списком противоречий"]
 
   class skill,guide,rules app
-  class scene,cast,brief,frame,tech,current app
+  class scene,cast,brief,frame,scheme,tech,current app
   class note user
   class frames app
   class agent agent
@@ -329,6 +330,7 @@ flowchart LR
     approved["approvedFrames:<br/>уже утверждённые опоры"]
     previous["previousFrames:<br/>снятый кандидат при доработке"]
     notes["notes: указания и замечания к опорам"]
+    layout["frame и scheme: факты кадра и схема<br/>только у плана с точкой съёмки"]
   end
   subgraph work["Рабочая папка задания"]
     direction LR
@@ -342,7 +344,7 @@ flowchart LR
   check -- "ровно запрошенные опоры,<br/>настоящие изображения,<br/>копии входов не изменены" --> candidate["Кандидаты Kxx<br/>копируются в проект"]
   check -- "иначе" --> rejected["Ответ отклонён"]
 
-  class howto,list,refs,approved,previous,copies app
+  class howto,list,refs,approved,previous,layout,copies app
   class notes user
   class agent agent
   class files,check,candidate app

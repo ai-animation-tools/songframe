@@ -18,6 +18,7 @@ import (
 	"songframe/internal/production"
 	"songframe/internal/projectfile"
 	"songframe/internal/scenario"
+	"songframe/internal/schemes"
 	"songframe/internal/sources"
 	"songframe/internal/speech"
 	"songframe/internal/viewframe"
@@ -98,6 +99,9 @@ type Context struct {
 	// Frame — факты кадра точки съёмки плана (internal/viewframe) как значение JSON; nil — у плана нет
 	// точки съёмки, ключ frame в контекст агента не пишется.
 	Frame any
+	// Scheme — схема локации точки съёмки плана без цвета (schemes.AgentLocation); nil — нет точки съёмки
+	// или схемы её локации, ключ scheme в контекст не пишется.
+	Scheme any
 
 	framesApproved, promptApproved *bool
 }
@@ -252,6 +256,9 @@ func ReadContext(path, shot, requested string) (*Context, error) {
 			if context.Frame, err = frame.Tree(); err != nil {
 				return nil, err
 			}
+		}
+		if scheme, ok := schemes.AgentLocation(project, dynvalue.ToString(dynvalue.Get(viewpoint, "location"))); ok {
+			context.Scheme = scheme
 		}
 	}
 	manifest, err := readJSON(filepath.Join(project, "source", "manifest.json"))

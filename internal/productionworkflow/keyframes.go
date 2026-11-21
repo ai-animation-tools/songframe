@@ -250,10 +250,17 @@ func (k *KeyframeImages) Start(input mediaapi.ImagesInput, request agentexec.Ima
 	if len(notes) > 0 {
 		context.Set("notes", &dynvalue.Array{Items: notes})
 	}
+	layout := input.Frame != nil
+	if layout {
+		context.Set("frame", input.Frame)
+		if input.Scheme != nil {
+			context.Set("scheme", input.Scheme)
+		}
+	}
 	job, err = k.Agents.StartImages(agents.StartInput{
 		Project: project,
 		Task:    textImagesJobTitle(input.Shot, strings.Join(ids, ", "), providers.Title(request.Provider, generationProviderFallback)),
-		Prompt:  textImagesPrompt(len(approved) > 0, len(notes) > 0, shotFrameCopies, len(previous) > 0),
+		Prompt:  textImagesPrompt(len(approved) > 0, len(notes) > 0, shotFrameCopies, len(previous) > 0, layout),
 		Context: dynvalue.Stringify(context),
 		Place:   &agents.Place{Page: "production", Shot: input.Shot},
 	}, directory, request.Agent)

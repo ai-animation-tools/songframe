@@ -368,3 +368,30 @@ func TestKeyframeJobCollectedAfterRestart(t *testing.T) {
 		t.Fatalf("после сбора остались папки %v", names)
 	}
 }
+
+// План с точкой съёмки: задание опор получает факты кадра и схему места, а инструкция велит передать
+// генератору ракурс видимыми признаками и сверить результат; без точки съёмки ни ключей, ни абзаца нет.
+func TestKeyframeImagesLayout(t *testing.T) {
+	images, manager, input := keyframesFixture(t)
+	if _, err := images.Start(input, agentexec.ImagesRequest{Provider: "test-agent", RequestSha: "sha", Agent: agents.Settings{Provider: "codex"}}); err != nil {
+		t.Fatal(err)
+	}
+	plain := manager.images[0]
+	if strings.Contains(plain.input.Context, `"frame"`) || strings.Contains(plain.input.Context, `"scheme"`) || strings.Contains(plain.input.Prompt, "scheme") {
+		t.Fatalf("без точки съёмки: %s\n%s", plain.input.Context, plain.input.Prompt)
+	}
+	frame, _ := dynvalue.Parse([]byte(`{"camera":{"side":"south","size":"detail","fov":30},"start":{"looks":"на север","camera_height":1.6,"tilt":33,"subjects":[],"objects":[]}}`))
+	scheme, _ := dynvalue.Parse([]byte(`{"id":"s1","location":"pier","objects":[{"id":"o1","name":"Ограждение","shape":{"type":"line","points":[[0,0],[0,10]]},"height":1}]}`))
+	input.Frame, input.Scheme = frame, scheme
+	if _, err := images.Start(input, agentexec.ImagesRequest{Provider: "test-agent", RequestSha: "sha", Agent: agents.Settings{Provider: "codex"}}); err != nil {
+		t.Fatal(err)
+	}
+	start := manager.images[1]
+	context, _ := dynvalue.Parse([]byte(start.input.Context))
+	if dynvalue.Get(dynvalue.Get(context, "frame"), "start") == nil || dynvalue.Get(dynvalue.Get(context, "scheme"), "location") != "pier" {
+		t.Fatalf("frame и scheme в контексте: %s", start.input.Context)
+	}
+	if !strings.Contains(start.input.Prompt, "видимыми признаками") || !strings.Contains(start.input.Prompt, "не больше одного повтора") {
+		t.Fatalf("инструкция без ракурса и проверки: %s", start.input.Prompt)
+	}
+}

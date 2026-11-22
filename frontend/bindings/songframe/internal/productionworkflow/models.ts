@@ -172,6 +172,12 @@ export interface View {
     "generationMethod"?: string;
 
     /**
+     * StaticShot — статичный кадр (Context.StaticShot): опор не меньше двух, предел провайдера
+     * видео к выбору их числа не относится.
+     */
+    "staticShot"?: boolean;
+
+    /**
      * PromptMaxChars — предел длины видеопромпта провайдера (Context.PromptLimit): длиннее него
      * промпт не утверждается; 0 — предела нет.
      */

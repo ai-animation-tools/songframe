@@ -40,6 +40,9 @@ type Rules struct {
 	// Keyframes — число опор, выбранное пользователем для этапа description; 0 — «авто»: агент
 	// выбирает сам в пределах 2–20.
 	Keyframes int
+	// Static — статичный кадр: опоры — K01 и состояния (middle) внутри окна, конечной опоры и
+	// правила длительности запроса нет.
+	Static bool
 	// Own — свой текст пользователя (предложение с отметкой own): промпт опоры может быть пустым,
 	// такую опору пользователь делает своим файлом. В дерево правил не входит: признак берётся из
 	// предложения при каждом разборе.
@@ -77,6 +80,10 @@ func (r Rules) Tree() *dynvalue.Object {
 	if r.Keyframes > 0 {
 		tree.Set("keyframeCount", float64(r.Keyframes))
 	}
+	// Признак статичного кадра пишется только у такого плана: записи остальных не меняются.
+	if r.Static {
+		tree.Set("staticShot", true)
+	}
 	return tree
 }
 
@@ -89,6 +96,7 @@ func RulesFromTree(value any) Rules {
 	}
 	rules.Project, _ = dynvalue.Get(value, "project").(string)
 	rules.Manual = dynvalue.Get(value, "manualGeneration") == true
+	rules.Static = dynvalue.Get(value, "staticShot") == true
 	if count, ok := dynvalue.Get(value, "keyframeCount").(float64); ok && dynvalue.IsInteger(count) && count > 0 {
 		rules.Keyframes = int(count)
 	}
@@ -330,7 +338,12 @@ func parseDescription(value *dynvalue.Object, rules Rules) error {
 	if !rules.Manual && (len(frames) < 1 || len(frames) > mediaproviders.DefaultKeyframeLimit) {
 		return errors.New(textDescriptionInvalid)
 	}
-	if err := CheckDuration(seconds, rules.WindowSeconds, rules.DurationRule); err != nil {
+	// Статичный кадр собирается локально: запроса видео нет, правило длительности не действует,
+	// а состояний после K01 нужно хотя бы одно.
+	if rules.Static && len(frames) < 2 {
+		return errors.New(textStaticStatesRequired)
+	}
+	if err := CheckDuration(seconds, rules.WindowSeconds, rules.DurationRule); err != nil && !rules.Static {
 		return err
 	}
 	if rules.LipSync != nil && (seconds < rules.LipSync.Min || seconds > rules.LipSync.Max) {
@@ -363,7 +376,7 @@ func parseDescription(value *dynvalue.Object, rules Rules) error {
 		role := "middle"
 		if index == 0 {
 			role = "first"
-		} else if index == len(frames)-1 {
+		} else if index == len(frames)-1 && !rules.Static {
 			role = "last"
 		}
 		time, timeOK := frame.Value("timeSeconds").(float64)
@@ -380,7 +393,12 @@ func parseDescription(value *dynvalue.Object, rules Rules) error {
 		if !valid {
 			return errors.New(textFramePlanInvalid)
 		}
-		if (role == "first" && time != 0) || (role == "last" && time != seconds) || time > seconds {
+		if rules.Static {
+			// Состояние видно со своего времени до следующего: оно начинается внутри окна плана.
+			if (role == "first" && time != 0) || time >= rules.WindowSeconds {
+				return errors.New(textStaticStateTime)
+			}
+		} else if (role == "first" && time != 0) || (role == "last" && time != seconds) || time > seconds {
 			return errors.New(textFrameBoundariesInvalid)
 		}
 		previous = time

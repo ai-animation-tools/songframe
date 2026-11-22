@@ -336,8 +336,10 @@ func (t *workflowTool) readProject() any {
 // planKeyframes — каркас K01 (первый кадр), промежуточные по времени и
 // конечная опора на границе запроса; длительность проверяется правилом generation.video проекта.
 // single — только K01: видео плана создаётся вне приложения по одной опоре, промежуточных и
-// конечной нет. Принятые опоры с той же ролью и временем сохраняются.
-func (t *workflowTool) planKeyframes(dirArg string, requestSeconds toolrt.Int, middles []middle, single bool) (*toolrt.Dict, error) {
+// конечной нет. static — статичный кадр: видео собирается из опор-состояний локально, поэтому
+// правило длительности запроса не действует, конечной опоры нет, а состояния (middle) лежат
+// строго внутри монтажного окна. Принятые опоры с той же ролью и временем сохраняются.
+func (t *workflowTool) planKeyframes(dirArg string, requestSeconds toolrt.Int, middles []middle, single, static bool) (*toolrt.Dict, error) {
 	directory, err := t.packageDir(dirArg, true)
 	if err != nil {
 		return nil, err
@@ -362,8 +364,10 @@ func (t *workflowTool) planKeyframes(dirArg string, requestSeconds toolrt.Int, m
 	if err != nil {
 		return nil, err
 	}
-	switch rule {
-	case "exact_window":
+	switch {
+	case static:
+		// Запроса видео нет: длительность нужна только как граница времени состояний.
+	case rule == "exact_window":
 		number, err := toolrt.Float(window)
 		if err != nil {
 			return nil, err
@@ -374,7 +378,7 @@ func (t *workflowTool) planKeyframes(dirArg string, requestSeconds toolrt.Int, m
 		if !toolrt.Equal(requestSeconds, window) {
 			return nil, valueError("Длительность запроса должна равняться монтажному окну по правилу exact_window.")
 		}
-	case "min_supported_not_less_than_window":
+	case rule == "min_supported_not_less_than_window":
 		less, err := toolrt.Less(requestSeconds, window)
 		if err != nil {
 			return nil, err
@@ -407,13 +411,26 @@ func (t *workflowTool) planKeyframes(dirArg string, requestSeconds toolrt.Int, m
 		}
 		return lessText(sorted[a].note, sorted[b].note)
 	})
+	limit := request
+	if static {
+		if limit, err = toolrt.Float(window); err != nil {
+			return nil, err
+		}
+	}
 	for _, item := range sorted {
-		if !(0 < item.seconds && item.seconds < request) {
+		if !(0 < item.seconds && item.seconds < limit) {
+			if static {
+				return nil, valueError("Опора-состояние статичного кадра должна начинаться внутри окна плана.")
+			}
 			return nil, valueError("Промежуточная опора должна лежать внутри длительности запроса.")
 		}
 		points = append(points, point{item.seconds, "middle", item.note})
 	}
-	if single {
+	if static {
+		if len(middles) == 0 {
+			return nil, valueError("У статичного кадра нужна хотя бы одна опора-состояние после K01.")
+		}
+	} else if single {
 		if len(middles) > 0 {
 			return nil, valueError("У плана с одной опорой нет промежуточных опор.")
 		}

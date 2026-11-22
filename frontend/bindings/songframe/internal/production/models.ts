@@ -64,6 +64,12 @@ export interface AcceptedKit {
     "ownVideo"?: boolean;
 
     /**
+     * Static — статичный кадр: видео собрано приложением из опор-состояний (generation.static),
+     * промпта и запроса нет; Images — сами состояния по порядку.
+     */
+    "static"?: boolean;
+
+    /**
      * Prompt — текст видеопромпта, переданного в генерацию.
      */
     "prompt": string | null;
@@ -443,6 +449,12 @@ export interface ShotProduction {
      * DerivedFrom — источник материала по актуальному derived_from сценария.
      */
     "derivedFrom": string | null;
+
+    /**
+     * StaticShot — статичный кадр по сценарию (scene.static_shot): видео собирается из опор
+     * приложением, запроса видео и повтора по нему нет.
+     */
+    "staticShot"?: boolean;
     "attention": string | null;
     "asset": Asset | null;
     "packages": (PackageView | null)[];

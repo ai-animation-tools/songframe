@@ -8,7 +8,18 @@ import { useNavigate } from 'react-router-dom';
 import type { VideoReviewView } from '@shared/video-review';
 import { videoReviewTexts } from '@shared/texts/video-review';
 import type { Api } from '@shared/api';
-import type { AcceptedKit, AppState, ShotSpend, BrokenPackage, JobInfo, PackageView, ProductionView, ShotProduction } from '@shared/types';
+import type {
+  AcceptedKit,
+  AppState,
+  ShotSpend,
+  BrokenPackage,
+  EffectParamSpec,
+  JobInfo,
+  PackageView,
+  ProductionView,
+  ShotProduction,
+  StaticShotView
+} from '@shared/types';
 import type { ProductionFramePrompt, ProductionProposal, ProductionRequestOptions, ProductionWorkflowView } from '@shared/production-workflow';
 import { registerMediaProviderForTests } from '@shared/media-providers';
 import { productionTexts } from '@shared/texts/production';
@@ -135,10 +146,29 @@ interface PageModel {
   promptVariants: string[];
   /** Папки, открытые в файловом менеджере (shell.openPath), по порядку. */
   openedPaths: string[];
+  /** Сборок предпросмотра статичного кадра (production.buildStatic). */
+  staticBuilds: number;
+  /** Сохранённые рецепты статичного кадра по папке попытки: кадры смены и параметры. */
+  staticRecipes: Map<string, { from: number[]; params: Record<string, number> }>;
+  /** Последний предпросмотр статичного кадра по папке попытки: собран ли по текущему рецепту и его версия. */
+  staticPreviews: Map<string, { fresh: boolean; version: string }>;
+  /** Папка попытки каждого задания сборки и приёмки статичного кадра: по ней снимок называет идущее задание. */
+  staticJobs: Map<string, string>;
   subscribe(listener: () => void): () => void;
   revision(): number;
 }
 const models = new WeakMap<Api, PageModel>();
+
+/** Параметры сборки статичного кадра, как internal/effects.StaticParams. */
+export const STATIC_STORY_SPECS: EffectParamSpec[] = [
+  { name: 'threshold', title: 'Порог различия опор', min: 0, max: 0.5, default: 0.012, step: 0.001 },
+  { name: 'dilate', title: 'Расширение области смены, пиксели', min: 0, max: 64, default: 14, step: 1 },
+  { name: 'feather', title: 'Растушёвка области смены, пиксели', min: 0, max: 64, default: 12, step: 1 },
+  { name: 'transition', title: 'Переход при смене, кадры', min: 0, max: 30, default: 3, step: 1 },
+  { name: 'push_in', title: 'Наезд за план, доля', min: 0, max: 0.3, default: 0.03, step: 0.005 },
+  { name: 'center_x', title: 'Центр наезда по горизонтали', min: 0, max: 1, default: 0.5, step: 0.01 },
+  { name: 'center_y', title: 'Центр наезда по вертикали', min: 0, max: 1, default: 0.5, step: 0.01 }
+];
 
 export function productionPageOptions(options: ProductionPageModelOptions, route = '/project/production', workspaceWidth?: number): StoryOptions {
   return {
@@ -183,6 +213,10 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
           tools: { providers: { test: true } }
         },
         jobs: [],
+        staticBuilds: 0,
+        staticRecipes: new Map(),
+        staticPreviews: new Map(),
+        staticJobs: new Map(),
         reads: 0,
         decisions: 0,
         selections: 0,
@@ -225,6 +259,37 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
           if (pkg) return { shot, pkg };
         }
         throw new Error('Пакет не найден: обновите страницу.');
+      };
+      // Шаг «Сборка» статичного кадра: опоры попытки, кадры смены по рецепту или по времени опор, предпросмотр.
+      const staticView = (shot: ShotProduction, pkg: PackageView): StaticShotView => {
+        const fps = 30;
+        const frames = Math.round((shot.end - shot.start) * fps);
+        const recipe = model.staticRecipes.get(pkg.dir);
+        const states = pkg.keyframes.map((frame, index) => ({
+          frame: frame.id,
+          timeSeconds: frame.time_seconds,
+          fromFrame: recipe?.from[index] ?? Math.round(frame.time_seconds * fps),
+          path: frame.imagePath ?? '',
+          approved: frame.approved
+        }));
+        const preview = model.staticPreviews.get(pkg.dir);
+        return {
+          shot: shot.id,
+          fps,
+          frames,
+          states,
+          params: { ...Object.fromEntries(STATIC_STORY_SPECS.map((spec) => [spec.name, spec.default])), ...recipe?.params },
+          specs: STATIC_STORY_SPECS,
+          problem:
+            states.length < 2
+              ? 'Нужны базовая опора K01 и хотя бы одно состояние после неё: подготовьте описание.'
+              : states.every((state) => state.approved)
+                ? ''
+                : 'Сначала утвердите все опоры: сборка берёт только утверждённые.',
+          preview: preview ? { path: STORY_VIDEO_PATH, fresh: preview.fresh, version: preview.version } : null,
+          saved: !!recipe,
+          jobId: model.jobs.find((job) => job.status === 'running' && model.staticJobs.get(job.id) === pkg.dir)?.id ?? ''
+        };
       };
       // Как хеш workflow в Go: токен есть у каждого пакета и меняется при любой записи.
       let writes = 0;
@@ -463,6 +528,70 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
             shot.stageLabel = pkg.stageLabel;
             publish();
           },
+          // Как internal/staticshot: моменты смены по времени опор, пока рецепт не сохранён; предпросмотр
+          // устаревает при сохранении нового рецепта; приёмка — заданием, только свежего предпросмотра.
+          staticShot: async (project, dir) => {
+            const { shot, pkg } = find(project, dir);
+            return structuredClone(staticView(shot, pkg));
+          },
+          saveStaticRecipe: async (project, dir, recipe) => {
+            const { shot, pkg } = find(project, dir);
+            if (recipe.states.map((state) => state.frame).join() !== pkg.keyframes.map((frame) => frame.id).join())
+              throw new Error('Рецепт сборки относится к другим опорам: обновите страницу.');
+            model.staticRecipes.set(dir, { from: recipe.states.map((state) => state.from_frame), params: { ...recipe.params } });
+            const preview = model.staticPreviews.get(dir);
+            if (preview) model.staticPreviews.set(dir, { ...preview, fresh: false });
+            publish();
+            return structuredClone(staticView(shot, pkg));
+          },
+          buildStatic: async (project, dir) => {
+            const { shot } = find(project, dir);
+            if (model.jobs.some((job) => job.status === 'running')) throw new Error('Пакет занят: дождитесь окончания операции.');
+            model.staticBuilds++;
+            const job = deliveryJob('tool', {
+              id: `static-${shot.id}-${model.staticBuilds}`,
+              project: PAGE_PROJECT,
+              title: `Сборка ${shot.id}`,
+              startedAt: DATE
+            });
+            model.jobs = [...model.jobs, job];
+            model.staticJobs.set(job.id, dir);
+            publish();
+            later(PAGE_ACCEPT_MS, () => {
+              model.jobs = model.jobs.map((item) => (item.id === job.id ? { ...item, status: 'done', code: 0, finishedAt: DATE } : item));
+              model.staticPreviews.set(dir, { fresh: true, version: `build-${model.staticBuilds}` });
+              publish();
+            });
+            return structuredClone(job);
+          },
+          acceptStatic: async (project, shotId, dir, replace) => {
+            const { shot } = find(project, dir);
+            if (shot.id !== shotId) throw new Error('Попытка относится к другому плану.');
+            if (!model.staticPreviews.get(dir)?.fresh) throw new Error('Сначала соберите предпросмотр по текущим опорам и параметрам.');
+            if (shot.asset && !replace) throw new Error('Подтвердите замену принятого видео.');
+            model.accepts++;
+            const job = deliveryJob('accept', {
+              id: `accept-${shot.id}-${model.accepts}`,
+              project: PAGE_PROJECT,
+              title: `Приёмка ${shot.id}`,
+              startedAt: DATE
+            });
+            model.jobs = [...model.jobs, job];
+            model.staticJobs.set(job.id, dir);
+            publish();
+            later(PAGE_ACCEPT_MS, () => {
+              model.jobs = model.jobs.map((item) => (item.id === job.id ? { ...item, status: 'done', code: 0, finishedAt: DATE } : item));
+              Object.assign(shot, {
+                state: 'completed',
+                stageLabel: 'Принят',
+                attention: null,
+                packages: [],
+                asset: { dir: `${PAGE_PROJECT}/assets/shots/${shot.id}`, video: STORY_VIDEO_PATH, original: STORY_VIDEO_PATH }
+              } satisfies Partial<ShotProduction>);
+              publish();
+            });
+            return structuredClone(job);
+          },
           accept: async (project, shotId, dir, acceptOptions) => {
             const { shot, pkg } = find(project, dir);
             if (shot.id !== shotId || !pkg.resultToken || acceptOptions.expectedResultToken !== pkg.resultToken)
@@ -650,7 +779,11 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
             return reviewSnapshot(pkg);
           }
         },
-        jobs: { list: async () => structuredClone(model.jobs), get: fragment.overrides.jobs.get },
+        jobs: {
+          list: async () => structuredClone(model.jobs),
+          // Задания страницы (приёмка, сборка) отвечает модель, остальные — модель фрагмента.
+          get: async (id) => structuredClone(model.jobs.find((job) => job.id === id) ?? (await fragment.overrides.jobs.get(id)))
+        },
         productionWorkflow: {
           // Подготовка агентом показана отдельной группой историй; здесь есть только свой файл опоры, идущий мимо агента.
           view: async (project, shot, packageDir) => workflowSnapshot(project, shot, packageDir),
@@ -979,7 +1112,7 @@ export function ProductionPageStory({ links = [] }: { links?: StoryLink[] }): Re
             {model.ownVideoGenerations.join('; ') || 'нет'}. Возвратов промпта: {model.promptReopens.join(', ') || 'нет'}. Своих описаний:{' '}
             {model.ownSaves.join(', ') || 'нет'}. Способов генерации: {model.methodChanges.join(', ') || 'нет'}. Запросов приложения:{' '}
             {model.requestBuilds.join(', ') || 'нет'}. Вариантов промпта к отправке: {model.promptVariants.join(', ') || 'нет'}. Открытых папок:{' '}
-            {model.openedPaths.join(', ') || 'нет'}.
+            {model.openedPaths.join(', ') || 'нет'}. Сборок статичного кадра: {model.staticBuilds}.
           </Typography>
           <Typography variant="caption" color="text.secondary" data-testid="production-review-model">
             Проверок видео: {model.reviewStarts}. Отмен проверок: {model.reviewCancels}.

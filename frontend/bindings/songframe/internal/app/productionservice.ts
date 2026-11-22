@@ -26,6 +26,9 @@ import * as speech$0 from "../speech/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as spend$0 from "../spend/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as staticshot$0 from "../staticshot/models.js";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -36,6 +39,13 @@ import * as $models from "./models.js";
  */
 export function Accept(project: string, shot: string, packageDir: string, options: production$0.AcceptOptions): $CancellablePromise<jobs$0.Info> {
     return $Call.ByID(2297275747, project, shot, packageDir, options);
+}
+
+/**
+ * AcceptStatic — приёмка свежего предпросмотра статичного кадра в assets/shots/Mxx.
+ */
+export function AcceptStatic(project: string, shot: string, packageDir: string, replace: boolean): $CancellablePromise<jobs$0.Info> {
+    return $Call.ByID(2375962473, project, shot, packageDir, replace);
 }
 
 /**
@@ -76,6 +86,13 @@ export function AttachOwnVideo(project: string, shot: string, result: production
  */
 export function AttachResult(project: string, packageDir: string, files: string[]): $CancellablePromise<jobs$0.Info> {
     return $Call.ByID(1357132595, project, packageDir, files);
+}
+
+/**
+ * BuildStatic — задание сборки предпросмотра статичного кадра из утверждённых опор.
+ */
+export function BuildStatic(project: string, packageDir: string): $CancellablePromise<jobs$0.Info> {
+    return $Call.ByID(954240395, project, packageDir);
 }
 
 /**
@@ -225,6 +242,13 @@ export function Resume(project: string, packageDir: string): $CancellablePromise
 }
 
 /**
+ * SaveStaticRecipe — моменты смены и параметры сборки статичного кадра попытки.
+ */
+export function SaveStaticRecipe(project: string, packageDir: string, recipe: staticshot$0.Recipe): $CancellablePromise<staticshot$0.View> {
+    return $Call.ByID(351111350, project, packageDir, recipe);
+}
+
+/**
  * SelectImage — выбор кандидата опоры.
  */
 export function SelectImage(project: string, packageDir: string, index: number, expectedResultToken: string): $CancellablePromise<void> {
@@ -259,6 +283,14 @@ export function SpeechPlan(project: string, shot: string, packageDir: string): $
  */
 export function Spend(project: string, shot: string): $CancellablePromise<spend$0.Summary> {
     return $Call.ByID(1370488017, project, shot);
+}
+
+/**
+ * StaticShot — шаг «Сборка» попытки статичного кадра: опоры-состояния, моменты смены, параметры и
+ * последний предпросмотр. Только чтение.
+ */
+export function StaticShot(project: string, packageDir: string): $CancellablePromise<staticshot$0.View> {
+    return $Call.ByID(3327643333, project, packageDir);
 }
 
 /**

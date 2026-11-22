@@ -17,14 +17,20 @@ import (
 )
 
 // ParamSpec — описание числового параметра эффекта: по нему проверяется рецепт и строится
-// панель параметров в интерфейсе. Title — подпись для человека.
+// панель параметров в интерфейсе. Title — подпись для человека; Step — шаг значения на панели.
+// Целый шаг (1, 10) задают только целым параметрам (пиксели, кадры, слои, число капель, вариант
+// картины): Resolve отвергает у них дробные значения. Дробным параметрам шаг меньше единицы.
 type ParamSpec struct {
 	Name    string  `json:"name"`
 	Title   string  `json:"title"`
 	Min     float64 `json:"min"`
 	Max     float64 `json:"max"`
 	Default float64 `json:"default"`
+	Step    float64 `json:"step"`
 }
+
+// Integer — параметр принимает только целые значения.
+func (s ParamSpec) Integer() bool { return s.Step >= 1 && s.Step == math.Trunc(s.Step) }
 
 // Params — значения всех параметров эффекта после Resolve.
 type Params map[string]float64
@@ -42,7 +48,10 @@ func Resolve(specs []ParamSpec, given map[string]float64) (Params, error) {
 			value = spec.Default
 		}
 		if math.IsNaN(value) || math.IsInf(value, 0) || value < spec.Min || value > spec.Max {
-			return nil, fmt.Errorf("параметр %s = %v вне диапазона от %v до %v", spec.Name, value, spec.Min, spec.Max)
+			return nil, fmt.Errorf("«%s»: значение %v вне диапазона от %v до %v", spec.Title, value, spec.Min, spec.Max)
+		}
+		if spec.Integer() && value != math.Trunc(value) {
+			return nil, fmt.Errorf("«%s»: нужно целое значение, получено %v", spec.Title, value)
 		}
 		result[spec.Name] = value
 	}

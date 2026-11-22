@@ -6,7 +6,7 @@ import { productionTexts } from '@shared/texts/production';
  */
 import { useEffect, useRef, useState, type ReactElement, type ReactNode } from 'react';
 import { Box, Chip, LinearProgress, Paper, Stack, Step, StepButton, StepContent, StepLabel, Stepper, Typography } from '@mui/material';
-import { keyframeLimit, mediaProviderInfo, normalizeMediaProvider } from '@shared/media-providers';
+import { DEFAULT_KEYFRAME_LIMIT, keyframeLimit, mediaProviderInfo, normalizeMediaProvider } from '@shared/media-providers';
 import type { KeyframeNoteScope, ManualVideo, PackageView, PromptVariant, ShotProduction } from '@shared/types';
 import type { ProductionPass } from '@shared/production-workflow';
 import { BUSY_REASON } from '../constants';
@@ -39,6 +39,7 @@ import { OwnPromptDialog } from './OwnPromptDialog';
 import { GenerationMethodChoice } from './GenerationMethodChoice';
 import { ProductionSpeechPanel, SpeechSlice } from './ProductionSpeechPanel';
 import { ProductionWorkflowPanel } from './ProductionWorkflowPanel';
+import { StaticShotPanel } from './StaticShotPanel';
 
 /** Вопросы результата на случай, когда прежний ответ уже записан: решение доступно всегда. */
 function resultQuestion(pkg: PackageView): NonNullable<PackageView['pendingDecision']> | null {
@@ -581,6 +582,8 @@ export function ProductionPath({
             {pkg?.request?.kind !== 'image' ? resume : null}
           </>
         );
+      case 'assemble':
+        return pkg ? <StaticShotPanel key={pkg.dir} project={project} packageDir={pkg.dir} hasAsset={!!shot.asset} onApplied={() => onApplied(null)} /> : null;
       case 'result':
         return (
           <>
@@ -615,7 +618,7 @@ export function ProductionPath({
           shot={shot.id}
           windowSeconds={pkg?.timing?.window_seconds ?? shot.end - shot.start}
           initial={ownDescription}
-          limit={keyframeLimit(view?.videoProvider)}
+          limit={view?.staticShot ? DEFAULT_KEYFRAME_LIMIT : keyframeLimit(view?.videoProvider)}
           manual={!!view?.singleFrame}
           busy={workflow.busy}
           error={ownError}

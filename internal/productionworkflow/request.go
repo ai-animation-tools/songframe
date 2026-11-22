@@ -113,6 +113,8 @@ func requestAllowed(c *Context, change *RequestChange) error {
 	switch {
 	case c.DerivedFrom != "":
 		return errors.New(derivedshot.Reason(c.DerivedFrom))
+	case c.StaticShot:
+		return errors.New(textStaticNoVideoStage)
 	case c.PackageDir == "" || c.Workflow == nil:
 		return errors.New(textPackageUnavailable)
 	case len(c.Problems) > 0:

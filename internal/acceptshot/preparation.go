@@ -172,3 +172,31 @@ func referenceEntry(root, packageDir, staging, path string) (*toolrt.Dict, *tool
 	}
 	return toolcli.Record("plan_path", path), nil, nil
 }
+
+// StaticPreparation пишет preparation.json комплекта статичного кадра (internal/staticshot) по
+// попытке packageDir: описание плана, промпты опор с референсами и замечаниями, опоры-состояния
+// inputs (дескрипторы файлов комплекта) — как у обычной приёмки, только видео собрано приложением.
+// Возвращает generation.preparation: дескриптор индекса и файлы подготовки.
+func StaticPreparation(root, packageDir string, workflow *toolrt.Dict, shot, staging string, inputs []any) (*toolrt.Dict, error) {
+	frameData, err := collectPreparation(root, attemptData{packageDir: packageDir, workflow: workflow}, staging)
+	if err != nil {
+		return nil, err
+	}
+	pairs := []any{"schema_version", toolrt.NewInt(1), "shot", shot, "path_base", "asset_directory"}
+	if frameData.description != "" {
+		pairs = append(pairs, "description", frameData.description)
+	}
+	prep := toolcli.Record(append(pairs,
+		"generation_inputs", inputs, "frame_prompts", frameData.prompts, "references", frameData.references, "notes", []any{},
+		"reproduction_note", "Точные байты опор сохранены; видео собрано из них приложением по generation.static.")...)
+	if err := writeJSON(toolrt.JoinPath(staging, "preparation.json"), prep); err != nil {
+		return nil, err
+	}
+	index, err := descriptor(staging, "preparation.json")
+	if err != nil {
+		return nil, err
+	}
+	files := append([]any{}, inputs...)
+	files = append(files, frameData.files...)
+	return toolcli.Record("index", index, "files", files), nil
+}

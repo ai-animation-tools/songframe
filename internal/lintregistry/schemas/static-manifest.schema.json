@@ -1,0 +1,61 @@
+{
+  "title": "assets/shots/Mxx/manifest.json — комплект статичного кадра (kind static_video) или производного от него плана",
+  "type": "object",
+  "required": ["schema_version", "shot", "kind", "generation", "accepted_edit"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "shot": {"type": "string", "pattern": "^M\\d{2}(\\.\\d+)?$"},
+    "kind": {"enum": ["static_video", "derived_video"]},
+    "generation": {
+      "type": "object",
+      "required": ["source_shot", "original", "inputs", "static", "lipsync", "audio"],
+      "additionalProperties": false,
+      "properties": {
+        "source_shot": {"type": "string"},
+        "source_scene_sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+        "source_accepted_video_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "original": {"$ref": "#/$defs/file"},
+        "original_media": {"type": "object"},
+        "preparation": {"type": "object", "required": ["index", "files"],
+                        "properties": {"index": {"$ref": "#/$defs/file"}, "files": {"type": "array", "items": {"$ref": "#/$defs/file"}}}},
+        "inputs": {"type": "array", "minItems": 2, "items": {"$ref": "#/$defs/file"}},
+        "static": {"type": "object", "required": ["version", "states", "params", "ffmpeg_version"],
+                   "properties": {"version": {"type": "integer", "minimum": 1},
+                                  "states": {"type": "array", "minItems": 2, "items": {
+                                    "type": "object", "required": ["frame", "path", "from_frame"], "additionalProperties": false,
+                                    "properties": {"frame": {"type": "string", "minLength": 1}, "path": {"type": "string", "minLength": 1}, "from_frame": {"type": "integer", "minimum": 0}}}},
+                                  "params": {"type": "object"},
+                                  "ffmpeg_version": {"type": "string"}}},
+        "lipsync": {"const": false},
+        "audio": {"type": "null"}
+      }
+    },
+    "accepted_edit": {
+      "type": "object",
+      "required": ["video", "fps", "frames", "duration_seconds", "source_interval_seconds", "speed", "hold_first_seconds", "hold_last_seconds", "rebuild"],
+      "properties": {
+        "video": {"$ref": "#/$defs/file"},
+        "fps": {"enum": [24, 25, 30]},
+        "frames": {"type": "integer", "minimum": 1},
+        "duration_seconds": {"type": "number"},
+        "source_interval_seconds": {"type": "array", "minItems": 2, "items": {"type": "number"}},
+        "speed": {"type": "object", "required": ["factor", "ratio"],
+                  "properties": {"factor": {"type": "number"}, "ratio": {"type": "string"}}},
+        "repeat": {"type": "object", "required": ["full_cycles", "tail_frames", "cycle_frames"], "additionalProperties": false,
+                   "properties": {"full_cycles": {"type": "integer", "minimum": 0}, "tail_frames": {"type": "integer", "minimum": 0}, "cycle_frames": {"type": "integer", "minimum": 1}}},
+        "hold_first_seconds": {"type": "number"},
+        "hold_last_seconds": {"type": "number"},
+        "rebuild": {"type": "object", "required": ["stages", "source"],
+                    "properties": {"stages": {"type": "array", "minItems": 1, "items": {
+                      "type": "object", "required": ["input", "filter", "frames"],
+                      "properties": {"input": {"type": "string"}, "filter": {"type": "string", "minLength": 1}, "frames": {"type": "integer", "minimum": 1}}}},
+                                   "source": {"$ref": "#/$defs/file"}}}
+      }
+    }
+  },
+  "$defs": {
+    "file": {"type": "object", "required": ["path", "sha256"],
+             "properties": {"path": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+                            "bytes": {"type": "integer", "minimum": 0}, "root": {"enum": ["asset", "source"]}}}
+  }
+}

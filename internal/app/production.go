@@ -12,6 +12,7 @@ import (
 	"songframe/internal/scenarioworkflow"
 	"songframe/internal/speech"
 	"songframe/internal/spend"
+	"songframe/internal/staticshot"
 	"songframe/internal/wire"
 )
 
@@ -447,4 +448,35 @@ func (s *DashboardService) View(project string) (dashboard.View, error) {
 		view.Problems = append(view.Problems, problem)
 	}
 	return wire.Done(view, nil)
+}
+
+// StaticShot — шаг «Сборка» попытки статичного кадра: опоры-состояния, моменты смены, параметры и
+// последний предпросмотр. Только чтение.
+func (s *ProductionService) StaticShot(project, packageDir string) (staticshot.View, error) {
+	return wire.Done(s.production.StaticShot(project, packageDir))
+}
+
+// SaveStaticRecipe — моменты смены и параметры сборки статичного кадра попытки.
+func (s *ProductionService) SaveStaticRecipe(project, packageDir string, recipe staticshot.Recipe) (staticshot.View, error) {
+	if err := s.idle(project, packageDir); err != nil {
+		return staticshot.View{}, err
+	}
+	return wire.Done(s.production.SaveStaticRecipe(project, packageDir, recipe))
+}
+
+// BuildStatic — задание сборки предпросмотра статичного кадра из утверждённых опор.
+func (s *ProductionService) BuildStatic(project, packageDir string) (jobs.Info, error) {
+	if err := s.idle(project, packageDir); err != nil {
+		return jobs.Info{}, err
+	}
+	return wire.Done(s.production.BuildStatic(project, packageDir))
+}
+
+// AcceptStatic — приёмка свежего предпросмотра статичного кадра в assets/shots/Mxx.
+func (s *ProductionService) AcceptStatic(project, shot, packageDir string, replace bool) (jobs.Info, error) {
+	if err := s.idle(project, packageDir); err != nil {
+		return jobs.Info{}, err
+	}
+	projectgit.Before(context.Background(), project, projectgit.OperationShotAccept)
+	return wire.Done(s.production.AcceptStatic(project, shot, packageDir, replace))
 }

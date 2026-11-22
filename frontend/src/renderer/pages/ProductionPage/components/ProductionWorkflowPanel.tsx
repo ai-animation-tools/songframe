@@ -15,7 +15,7 @@ import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
 import VideoFileOutlinedIcon from '@mui/icons-material/VideoFileOutlined';
 import type { ProductionPass, ProductionWorkflowStart } from '@shared/production-workflow';
 import type { PackageView, PromptVariant } from '@shared/types';
-import { keyframeLimit, mediaProviderInfo } from '@shared/media-providers';
+import { DEFAULT_KEYFRAME_LIMIT, keyframeLimit, mediaProviderInfo } from '@shared/media-providers';
 import { AgentButton } from '../../../components';
 import { ActionButton } from '../../../components/ActionButton';
 import { AgentJobCard } from '../../../components/AgentJobCard';
@@ -100,7 +100,9 @@ export function ProductionWorkflowPanel({
   const [instruction, setInstruction] = useState('');
   // Число опор выбирается перед подготовкой описания; 0 — «авто». Речевой план ручной генерации — всегда одна опора.
   const [keyframes, setKeyframes] = useState(0);
-  const limit = keyframeLimit(view?.videoProvider);
+  // Статичному кадру видео не генерируется: предел провайдера видео к нему не относится, опор не меньше двух.
+  const limit = view?.staticShot ? DEFAULT_KEYFRAME_LIMIT : keyframeLimit(view?.videoProvider);
+  const lowest = view?.staticShot ? 2 : 1;
   useEffect(() => {
     if (reviseOpen) reviseArea.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, [reviseOpen]);
@@ -256,7 +258,7 @@ export function ProductionWorkflowPanel({
                 onChange={(event) => setKeyframes(Number(event.target.value))}
               >
                 {view?.singleFrame ? null : <MenuItem value={0}>{productionTexts.productionWorkflowPanel.keyframesAuto}</MenuItem>}
-                {Array.from({ length: limit }, (_, index) => index + 1).map((count) => (
+                {Array.from({ length: limit - lowest + 1 }, (_, index) => index + lowest).map((count) => (
                   <MenuItem key={count} value={count}>
                     {count}
                   </MenuItem>

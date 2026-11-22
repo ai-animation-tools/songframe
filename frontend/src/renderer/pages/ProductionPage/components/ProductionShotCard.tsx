@@ -1,7 +1,7 @@
 import { productionTexts } from '@shared/texts/production';
 /** Шапка выбранного плана: что за план, какая попытка и что сейчас; редкие действия — в меню. */
 import { useState, type ReactElement } from 'react';
-import { Alert, Box, Button, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Paper, TextField, Tooltip, Typography } from '@mui/material';
+import { Alert, Box, Button, Chip, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Paper, TextField, Tooltip, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import LooksOneOutlinedIcon from '@mui/icons-material/LooksOneOutlined';
@@ -80,12 +80,14 @@ export function ProductionShotCard({
   const attempt = attempts.find((pkg) => pkg.dir === selectedPackage) ?? null;
   const canDiscard = !!onDiscardAttempt && !!attempt && attempt.stage !== 'accepted' && !REQUEST_IN_FLIGHT.includes(attempt.request?.attemptStatus ?? '');
   const retryFrom = onRetryWithFrames && attempt && canRetryWithFrames(attempt) ? attempt : null;
-  const firstFrameFrom = onRetryFirstFrame && attempt && canRetryFirstFrame(attempt) ? attempt : null;
+  // Статичному кадру нужны базовая опора и хотя бы одно состояние: попытка с одной опорой ему не подходит.
+  const firstFrameFrom = onRetryFirstFrame && attempt && !shot.staticShot && canRetryFirstFrame(attempt) ? attempt : null;
   const paidAttempt = !!attempt && isPaidAttempt(attempt);
   // Видео, загруженное пользователем, удаляется с попыткой, а его стоимость уходит из расхода: подтверждение называет обе.
   const uploadedCost = attempt?.request?.manualGeneration?.cost;
   const uploaded = attempt?.request?.manualGeneration ? { cost: uploadedCost ? productionTexts.manualGeneration.costValue(uploadedCost) : null } : null;
-  const canRetry = !shot.derivedFrom && (shot.state === 'completed' || shot.packages.length > 0);
+  // Статичный кадр собирается без запроса видео: повторять по сохранённому запросу нечего.
+  const canRetry = !shot.derivedFrom && !shot.staticShot && (shot.state === 'completed' || shot.packages.length > 0);
   const waiting = (shot.derivedFrom ? [] : shot.packages).filter((pkg) => pkg.pendingDecision && pkg.dir !== selectedPackage);
   const sending = shot.packages.some((pkg) => ['submission_unknown', 'submitting'].includes(pkg.request?.attemptStatus ?? ''));
   // Несовместимость запроса устраняет пользователь, поэтому она важнее временной занятости.
@@ -103,6 +105,11 @@ export function ProductionShotCard({
             lipsync: shot.lipsync
           })}
         </Typography>
+        {shot.staticShot ? (
+          <Tooltip title={productionTexts.staticShot.badgeHint}>
+            <Chip size="small" color="info" label={productionTexts.staticShot.badge} />
+          </Tooltip>
+        ) : null}
         <Box sx={{ flex: 1 }} />
         {/* Постановку плана правят в реестре сцен; переход открывает её редактор у этого же плана. */}
         <ShotPageButton page="scenario" shot={shot.id} size="small" />

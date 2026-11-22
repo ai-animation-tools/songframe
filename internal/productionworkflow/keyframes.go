@@ -222,6 +222,19 @@ func (k *KeyframeImages) Start(input mediaapi.ImagesInput, request agentexec.Ima
 		item.Set("path", name)
 		previous = append(previous, item)
 	}
+	// Базовая опора статичного кадра: опора-состояние редактирует её, а не рисует кадр заново.
+	var stateBase *dynvalue.Object
+	if base := input.StateBase; base != nil && frameID.MatchString(base.ID) && mediafile.IsImage(base.Path) {
+		name := "base-" + base.ID + extname(base.Path)
+		digest, err := pinCopy(base.Path, filepath.Join(directory, name))
+		if err != nil {
+			return agents.Job{}, err
+		}
+		inputs = append(inputs, imagesInput{Path: base.Path, Copy: name, SHA256: digest})
+		stateBase = dynvalue.NewObject()
+		stateBase.Set("id", base.ID)
+		stateBase.Set("path", name)
+	}
 	notes := []any{}
 	if input.Notes != nil {
 		for _, note := range *input.Notes {
@@ -247,6 +260,9 @@ func (k *KeyframeImages) Start(input mediaapi.ImagesInput, request agentexec.Ima
 	if len(previous) > 0 {
 		context.Set("previousFrames", &dynvalue.Array{Items: previous})
 	}
+	if stateBase != nil {
+		context.Set("stateBase", stateBase)
+	}
 	if len(notes) > 0 {
 		context.Set("notes", &dynvalue.Array{Items: notes})
 	}
@@ -260,7 +276,7 @@ func (k *KeyframeImages) Start(input mediaapi.ImagesInput, request agentexec.Ima
 	job, err = k.Agents.StartImages(agents.StartInput{
 		Project: project,
 		Task:    textImagesJobTitle(input.Shot, strings.Join(ids, ", "), providers.Title(request.Provider, generationProviderFallback)),
-		Prompt:  textImagesPrompt(len(approved) > 0, len(notes) > 0, shotFrameCopies, len(previous) > 0, layout),
+		Prompt:  textImagesPrompt(len(approved) > 0, len(notes) > 0, shotFrameCopies, len(previous) > 0, layout, stateBase != nil),
 		Context: dynvalue.Stringify(context),
 		Place:   &agents.Place{Page: "production", Shot: input.Shot},
 	}, directory, request.Agent)

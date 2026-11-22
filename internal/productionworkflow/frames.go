@@ -209,6 +209,15 @@ func (w *Workflow) GenerateFrames(ctx context.Context, project, shot, packageDir
 	if previous := previousFrameFile(c, frame.ID); previous != "" {
 		input.PreviousFrames = []mediaapi.ApprovedFrame{{ID: frame.ID, Role: frame.Role, Path: previous}}
 	}
+	// Опора-состояние статичного кадра — правка утверждённой базовой опоры: при сборке из неё
+	// берётся только область, отличающаяся от базы, поэтому остальной кадр должен совпасть.
+	if c.StaticShot && frame.ID != "K01" {
+		for _, base := range approved {
+			if base.ID == "K01" {
+				input.StateBase = &mediaapi.ApprovedFrame{ID: base.ID, Role: base.Role, Path: base.Path}
+			}
+		}
+	}
 	job, err := w.generateImages(c.Project, input)
 	if err != nil {
 		return View{}, err

@@ -86,6 +86,9 @@ const (
 	textMethodProjectManual           = "Видео всех планов проекта создаётся вручную вне приложения: так выбрано в настройках проекта."
 	textMethodRequestReady            = "Запрос или пакет уже подготовлен: чтобы сменить способ, верните видеопромпт на доработку."
 	textManualKeyframeCount           = "Видео этого плана создаётся вне приложения по одной опоре: другое число опор выбрать нельзя."
+	textStaticStatesRequired          = "У статичного кадра нужна базовая опора K01 и хотя бы одно состояние после неё."
+	textStaticStateTime               = "У статичного кадра K01 начинается на 0 с, а каждое следующее состояние — внутри окна плана."
+	textStaticNoVideoStage            = "У статичного кадра нет видеопромпта и запроса видео: план собирается из опор на шаге «Сборка»."
 	textManualSingleFrame             = "Видео этого плана создаётся вне приложения: в описании должна быть ровно одна опора K01 на начале плана."
 	textFrameStructureInvalid         = "Неверная структура опоры."
 	textFramePlanInvalid              = "Неверные ID, роли, порядок, промпт или референсы опор."
@@ -359,4 +362,8 @@ func textModelResolution(value, allowed string) string {
 // textModelAspectRatio — модель не даёт пропорции проекта.
 func textModelAspectRatio(value, allowed string) string {
 	return "Модель не даёт пропорции проекта " + value + ": доступно " + allowed + "."
+}
+
+func textStaticKeyframeCountRange(limit int) string {
+	return "Статичному кадру нужны базовая опора и хотя бы одно состояние: выберите от 2 до " + fmt.Sprint(limit) + " опор или «авто»."
 }

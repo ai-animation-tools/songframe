@@ -48,6 +48,18 @@ describe('путь плана', () => {
     expect(planPath(shot(), approved, view()).current).toBe('request');
   });
 
+  it('статичный кадр после опор идёт на сборку без видеопромпта и запроса', () => {
+    const still = shot({ staticShot: true });
+    expect(planPath(still, null, view()).steps.map((step) => step.key)).toEqual(['description', 'frames', 'assemble', 'result']);
+    const framing = pkg({ stage: 'keyframes_review', keyframes: [frame('K01', true), frame('K02', false)] });
+    expect(planPath(still, framing, view()).current).toBe('frames');
+    const approved = pkg({ stage: 'prompt', keyframes: [frame('K01', true), frame('K02', true)] });
+    const path = planPath(still, approved, view());
+    expect(path.current).toBe('assemble');
+    expect(path.now).toBe('Сейчас: соберите предпросмотр из опор и примите его');
+    expect(path.steps.at(-1)?.summary).toBe('После сборки');
+  });
+
   it('ручная генерация заменяет запрос и генерацию одним шагом', () => {
     const manual = view({ manual: true });
     const keys = planPath(shot({ lipsync: true }), null, manual).steps.map((step) => step.key);

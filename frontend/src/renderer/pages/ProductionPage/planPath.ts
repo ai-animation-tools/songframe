@@ -7,7 +7,7 @@ import type { ProductionPass, ProductionWorkflowView } from '@shared/production-
 import type { PackageView, ShotProduction } from '@shared/types';
 import { formatClock } from '../../format';
 
-export type PlanStepKey = 'description' | 'frames' | 'prompt' | 'speech' | 'request' | 'generation' | 'result';
+export type PlanStepKey = 'description' | 'frames' | 'prompt' | 'speech' | 'request' | 'generation' | 'assemble' | 'result';
 export type PlanStepStatus = 'done' | 'current' | 'future';
 /** action — ход пользователя, wait — ждём агента или сервис, done — план принят. */
 export type PlanTone = 'action' | 'wait' | 'done';
@@ -122,6 +122,8 @@ function currentStep(shot: ShotProduction, pkg: PackageView | null, workflow: Pr
   const descriptionAccepted = pkg.decision?.stage === 'description_review' && pkg.decision.verdict === 'approve';
   if ((stage === 'description_review' && !descriptionAccepted) || !pkg.keyframes.length) return 'description';
   if (pkg.keyframes.some((frame) => !frame.approved)) return 'frames';
+  // Статичный кадр после опор собирается приложением: видеопромпта и запроса у него нет.
+  if (shot.staticShot) return 'assemble';
   if (!pkg.prompt?.approved) return 'prompt';
   if (shot.lipsync && !pkg.speech) return 'speech';
   return 'request';
@@ -150,6 +152,8 @@ function stepSummary(key: PlanStepKey, pkg: PackageView | null, manual: boolean)
       return manual ? texts.manualSummary : texts.requestSummary({ credits: pkg?.request?.creditsConsumed });
     case 'generation':
       return texts.generationSummary;
+    case 'assemble':
+      return texts.assembleSummary;
     case 'result':
       return texts.resultSummary;
   }
@@ -191,6 +195,8 @@ function nowState(
       // Без идущего получения приложение ничего не ждёт, даже если статус попытки ещё «отправлен».
       if (!receiving) return action(pkg?.request?.attemptStatus === 'submitting' ? texts.unknownSubmission : texts.receiveResult);
       return wait(texts.waitService);
+    case 'assemble':
+      return action(texts.assemble);
     case 'result':
       return action(texts.reviewResult);
   }
@@ -204,7 +210,9 @@ export function ownVideoAttempt(pkg: PackageView | null): boolean {
 /**
  * Шаги пути плана. Срез речи есть только у речевого плана; newAttempt — пользователь сам начал
  * новую попытку; receiving — приложение сейчас отправляет запрос или получает результат. У попытки
- * своего видео путь короткий: «Своё видео» (загрузка, если она не состоялась) и «Результат».
+ * своего видео путь короткий: «Своё видео» (загрузка, если она не состоялась) и «Результат». У
+ * статичного кадра после опор — «Сборка»: приложение собирает видео из опор, предпросмотр
+ * принимается там же.
  */
 export function planPath(
   shot: ShotProduction,
@@ -217,7 +225,9 @@ export function planPath(
   const own = ownVideoAttempt(pkg);
   const keys: PlanStepKey[] = own
     ? ['request', 'result']
-    : ['description', 'frames', 'prompt', ...(shot.lipsync ? (['speech'] as const) : []), 'request', ...(manual ? [] : (['generation'] as const)), 'result'];
+    : shot.staticShot
+      ? ['description', 'frames', 'assemble', 'result']
+      : ['description', 'frames', 'prompt', ...(shot.lipsync ? (['speech'] as const) : []), 'request', ...(manual ? [] : (['generation'] as const)), 'result'];
   const current = currentStep(shot, pkg, workflow, newAttempt);
   const index = keys.indexOf(current);
   const finished = current === 'result' && (pkg ? pkg.stage === 'accepted' : !!shot.asset);
@@ -231,7 +241,9 @@ export function planPath(
         status === 'future'
           ? manual && key === 'request'
             ? texts.after.manual
-            : texts.after[key]
+            : shot.staticShot && key === 'result'
+              ? texts.after.staticResult
+              : texts.after[key]
           : status === 'done' || (key === 'frames' && !!pkg?.keyframes.length)
             ? stepSummary(key, pkg, manual)
             : null

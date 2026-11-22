@@ -195,6 +195,9 @@ type View struct {
 	CanBuildManual   bool   `json:"canBuildManual,omitempty"`
 	SingleFrame      bool   `json:"singleFrame,omitempty"`
 	GenerationMethod string `json:"generationMethod,omitempty"`
+	// StaticShot — статичный кадр (Context.StaticShot): опор не меньше двух, предел провайдера
+	// видео к выбору их числа не относится.
+	StaticShot bool `json:"staticShot,omitempty"`
 	// PromptMaxChars — предел длины видеопромпта провайдера (Context.PromptLimit): длиннее него
 	// промпт не утверждается; 0 — предела нет.
 	PromptMaxChars int `json:"promptMaxChars,omitempty"`
@@ -324,7 +327,7 @@ func (w *Workflow) view(project, shot, packageDir string) (View, error) {
 			Frames:   optional(framesReason(c, derived, common, imagePhase, framesApproved, descriptionApproved || frameRevision, undecided)),
 			Manual:   optional(manual),
 		},
-		Manual: c.Manual, SingleFrame: c.SingleFrame, GenerationMethod: generationMethod(c), CanBuildManual: c.Manual && manual == "" && !pending && !proposalPending && !busy, PromptMaxChars: c.PromptLimit(),
+		Manual: c.Manual, SingleFrame: c.SingleFrame, StaticShot: c.StaticShot, GenerationMethod: generationMethod(c), CanBuildManual: c.Manual && manual == "" && !pending && !proposalPending && !busy, PromptMaxChars: c.PromptLimit(),
 		CanPrepare: derived == "" && !busy && !imagePhase && scenarioApproved && len(c.Problems) == 0,
 		CanContinue: derived == "" && !c.SceneChanged && enabled && !imagePhase && nextStage != "" && nextStage != "description" &&
 			!(nextStage == "request" && speechMismatch != ""),
@@ -673,6 +676,9 @@ func (w *Workflow) prepare(input StartInput) (*preparedStart, error) {
 		}
 		prepared.target = c.PackageDir
 	}
+	if c.StaticShot && prepared.stage == "prompt" {
+		return nil, errors.New(textStaticNoVideoStage)
+	}
 	if prepared.keyframes, err = keyframeChoice(c, prepared.stage, input.Keyframes, input.Action != "prepare"); err != nil {
 		return nil, err
 	}
@@ -708,7 +714,11 @@ func keyframeChoice(c *Context, stage string, chosen *int, inherit bool) (int, e
 			return 0, nil
 		}
 		previous, ok := c.workflowValue("keyframe_count").(float64)
-		if !ok || !dynvalue.IsInteger(previous) || previous < 1 || int(previous) > mediaproviders.KeyframeLimit(c.Settings.Value("provider")) {
+		low, limit := 1.0, mediaproviders.KeyframeLimit(c.Settings.Value("provider"))
+		if c.StaticShot {
+			low, limit = 2, mediaproviders.DefaultKeyframeLimit
+		}
+		if !ok || !dynvalue.IsInteger(previous) || previous < low || int(previous) > limit {
 			return 0, nil
 		}
 		return int(previous), nil
@@ -718,6 +728,14 @@ func keyframeChoice(c *Context, stage string, chosen *int, inherit bool) (int, e
 			return 0, errors.New(textManualKeyframeCount)
 		}
 		return 0, nil
+	}
+	if c.StaticShot {
+		// Статичный кадр: база и хотя бы одно состояние; видео не генерируется, предел провайдера
+		// видео к нему не относится.
+		if *chosen < 2 || *chosen > mediaproviders.DefaultKeyframeLimit {
+			return 0, errors.New(textStaticKeyframeCountRange(mediaproviders.DefaultKeyframeLimit))
+		}
+		return *chosen, nil
 	}
 	if limit := mediaproviders.KeyframeLimit(c.Settings.Value("provider")); *chosen < 1 || *chosen > limit {
 		return 0, errors.New(textKeyframeCountRange(limit))
@@ -743,9 +761,10 @@ func (c *Context) reviseStage(next string) (string, error) {
 		return "", err
 	}
 	switch {
-	case prompt, frames:
+	case (prompt || frames) && !c.StaticShot:
 		return "prompt", nil
 	default:
+		// У статичного кадра видеопромпта нет: доработка после опор переделывает описание.
 		return "description", nil
 	}
 }

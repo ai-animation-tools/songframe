@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"songframe/internal/dynvalue"
+	"songframe/internal/mediaproviders"
 )
 
 // framesProposal — ответ описания с count опорами: K01 first на 0, K<count> last на 6, middle между.
@@ -87,5 +88,24 @@ func TestKeyframeChoice(t *testing.T) {
 	}
 	if got, err := keyframeChoice(c, "description", value(1), false); err != nil || got != 0 {
 		t.Fatalf("ручной план с одной опорой: %d %v", got, err)
+	}
+}
+
+// TestKeyframeChoiceStatic — статичному кадру нужны база и хотя бы одно состояние; предел
+// провайдера видео к нему не относится.
+func TestKeyframeChoiceStatic(t *testing.T) {
+	settings := dynvalue.NewObject()
+	settings.Set("provider", "kling")
+	c := &Context{Settings: settings, Workflow: dynvalue.NewObject(), StaticShot: true}
+	value := func(n int) *int { return &n }
+	limit := mediaproviders.DefaultKeyframeLimit
+	if _, err := keyframeChoice(c, "description", value(1), false); err == nil || err.Error() != textStaticKeyframeCountRange(limit) {
+		t.Fatalf("одна опора статичного кадра: %v", err)
+	}
+	if got, err := keyframeChoice(c, "description", value(12), false); err != nil || got != 12 {
+		t.Fatalf("сверх предела провайдера видео: %d %v", got, err)
+	}
+	if _, err := keyframeChoice(c, "description", value(limit+1), false); err == nil {
+		t.Fatal("сверх общего предела опор")
 	}
 }

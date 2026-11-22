@@ -51,6 +51,8 @@ import type {
   PromptLogSummary,
   RestorableSection,
   ShotSpend,
+  StaticShotRecipe,
+  StaticShotView,
   ProjectSpend,
   SpendRef,
   ResultMedia,
@@ -313,6 +315,14 @@ export interface Api {
     selectImage(project: string, packageDir: string, index: number, expectedResultToken: string): Promise<void>;
     regenerate(project: string, shot: string): Promise<JobInfo>;
     accept(project: string, shot: string, packageDir: string, options: AcceptOptions): Promise<JobInfo>;
+    /** Шаг «Сборка» попытки статичного кадра: опоры-состояния, моменты смены, параметры и последний предпросмотр. */
+    staticShot(project: string, packageDir: string): Promise<StaticShotView>;
+    /** Сохраняет моменты смены и параметры сборки статичного кадра; предпросмотр после этого устаревает. */
+    saveStaticRecipe(project: string, packageDir: string, recipe: StaticShotRecipe): Promise<StaticShotView>;
+    /** Задание сборки предпросмотра статичного кадра из утверждённых опор; пишет только папку попытки. */
+    buildStatic(project: string, packageDir: string): Promise<JobInfo>;
+    /** Приёмка свежего предпросмотра статичного кадра в assets; replace — согласие заменить принятый комплект. */
+    acceptStatic(project: string, shot: string, packageDir: string, replace: boolean): Promise<JobInfo>;
     contactSheet(project: string, packageDir: string): Promise<JobInfo>;
     park(project: string, packageDir: string): Promise<void>;
     /** Строки песни в окне речевого плана и предложенные границы среза. */

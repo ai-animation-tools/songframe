@@ -3,6 +3,7 @@ package projectviews
 import (
 	"math/big"
 	"sort"
+	"strconv"
 	"strings"
 
 	"songframe/internal/sceneregistry"
@@ -457,7 +458,7 @@ func packageReadme(sid string, manifest any) (string, error) {
 		return "[" + title + "](" + toolrt.Str(path) + ")", nil
 	}
 	links := []string{}
-	for _, item := range []struct {
+	items := []struct {
 		title     string
 		container any
 		keys      []string
@@ -465,7 +466,34 @@ func packageReadme(sid string, manifest any) (string, error) {
 		{"Полный оригинал", generation, []string{"original", "path"}},
 		{"Принятый монтаж", edit, []string{"video", "path"}},
 		{"Промпт", generation, []string{"prompt", "path"}},
-	} {
+	}
+	// Статичный кадр (и производный от него план) собран из опор-состояний: вместо промпта —
+	// ссылки на сами опоры.
+	kind, err := dictGet(manifest, "kind", nil)
+	if err != nil {
+		return "", err
+	}
+	recipe, err := dictGet(generation, "static", nil)
+	if err != nil {
+		return "", err
+	}
+	if toolrt.Equal(kind, "static_video") || recipe != nil {
+		items = items[:2]
+		items[0].title = "Сборка из опор"
+		inputs, err := get(generation, "inputs")
+		if err != nil {
+			return "", err
+		}
+		list, _ := inputs.([]any)
+		for index, input := range list {
+			items = append(items, struct {
+				title     string
+				container any
+				keys      []string
+			}{"Состояние " + strconv.Itoa(index+1), input, []string{"path"}})
+		}
+	}
+	for _, item := range items {
 		text, err := link(item.title, item.container, item.keys...)
 		if err != nil {
 			return "", err

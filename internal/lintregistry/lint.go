@@ -16,6 +16,7 @@ import (
 	"sort"
 	"strings"
 
+	"songframe/internal/assetpackage"
 	"songframe/internal/castregistry"
 	"songframe/internal/mediaadapters"
 	"songframe/internal/sceneregistry"
@@ -680,7 +681,13 @@ func lintAssets(root string, r *Report) error {
 		if packageValue == nil {
 			continue
 		}
-		for _, message := range validateSchema(packageValue, "manifest") {
+		// Статичный кадр (и производный от него план) собран из опор без промпта и запроса: у него своя
+		// схема комплекта.
+		schema := "manifest"
+		if document, ok := packageValue.(*toolrt.Dict); ok && assetpackage.StaticGeneration(document) {
+			schema = "static-manifest"
+		}
+		for _, message := range validateSchema(packageValue, schema) {
 			r.schemaError(name, message)
 		}
 		var request any

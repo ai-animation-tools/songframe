@@ -94,6 +94,9 @@ type Context struct {
 	SingleFrame bool
 	// DerivedFrom — план-источник производного плана; "" — план обычный.
 	DerivedFrom string
+	// StaticShot — статичный кадр (scene.static_shot): видео собирается из опор-состояний
+	// локально, этапов prompt и request нет.
+	StaticShot bool
 	// SceneChanged — постановка плана изменилась после подготовки пакета.
 	SceneChanged bool
 	// Frame — факты кадра точки съёмки плана (internal/viewframe) как значение JSON; nil — у плана нет
@@ -151,8 +154,9 @@ func ReadContext(path, shot, requested string) (*Context, error) {
 	_, resolutionString := settings.Value("resolution").(string)
 	_, aspectString := settings.Value("aspect_ratio").(string)
 	_, watermarkBool := settings.Value("watermark").(bool)
-	if !slices.Contains(durationRules, dynvalue.ToString(durationRule)) || !providerString || !resolutionString || !aspectString || !watermarkBool ||
-		!mediaproviders.Supports(settings.Value("provider"), mediaproviders.Video) {
+	// Статичный кадр видео не генерирует: настройки видео проекта ему не нужны.
+	if scene.Value("static_shot") != true && (!slices.Contains(durationRules, dynvalue.ToString(durationRule)) || !providerString || !resolutionString ||
+		!aspectString || !watermarkBool || !mediaproviders.Supports(settings.Value("provider"), mediaproviders.Video)) {
 		problems = append(problems, textVideoSettingsRequired())
 	}
 	// Речевой план у провайдера с липсинком ограничен допустимой длиной звука; у провайдера без
@@ -165,6 +169,7 @@ func ReadContext(path, shot, requested string) (*Context, error) {
 	context := &Context{
 		Project: project, Shot: shot, Settings: settings, Window: window, DurationRule: durationRule, Problems: problems, Manual: manual, SingleFrame: manual && scene.Value("lipsync") == true,
 		FramePrompts: &dynvalue.Array{Items: []any{}}, References: dynvalue.NewObject(),
+		StaticShot: scene.Value("static_shot") == true,
 	}
 	if requested != "" {
 		if context.PackageDir, err = PackagePath(project, requested); err != nil {
@@ -607,6 +612,7 @@ func (c *Context) RulesFor(stage string) Rules {
 		FramePrompts: c.FramePrompts,
 	}
 	rules.Manual = c.SingleFrame
+	rules.Static = c.StaticShot
 	if c.Scene.Value("lipsync") == true {
 		if provider, ok := videoProvider(c.Settings); ok && provider.LipSync != nil {
 			limits := *provider.LipSync

@@ -15,7 +15,7 @@
 
 ## Весь путь плана
 
-Три способа поставить план: обычное производство, своё готовое видео или производный план из уже принятого клипа. Речевой план добавляет срез речи; без липсинка у провайдера видео он идёт ручной генерацией.
+Четыре способа поставить план: обычное производство, своё готовое видео, производный план из уже принятого клипа или статичный кадр, собранный приложением из опор-состояний. Речевой план добавляет срез речи; без липсинка у провайдера видео он идёт ручной генерацией.
 
 ```mermaid
 flowchart TD
@@ -24,7 +24,10 @@ flowchart TD
   how -- "Загрузить своё видео" --> own["Своё видео<br/>MP4, источник, цена"]
   how -- "derived_from в сценарии" --> derived["Производный план<br/>обрезка, скорость, стоп-кадр, повтор"]
   desc --> kf["Опоры K01…Kn<br/>по одной, каждая утверждается"]
-  kf --> vp["Видеопромпт<br/>оригинал и перевод"]
+  kf --> still{"static_shot в сценарии?"}
+  still -- "да" --> assemble["Сборка из опор-состояний<br/>предпросмотр FFmpeg"]
+  assemble --> saccept["Приёмка статичного кадра<br/>static_video"]
+  still -- "нет" --> vp["Видеопромпт<br/>оригинал и перевод"]
   vp --> lip{"План с липсинком?"}
   lip -- "да" --> speech["Срез речи<br/>audio/speech.wav"]
   lip -- "нет" --> method
@@ -40,13 +43,14 @@ flowchart TD
   derived --> dprev["Предпросмотр FFmpeg"] --> daccept["Приёмка производного плана"]
   accept --> done(["План принят"])
   daccept --> done
+  saccept --> done
 
   class how,method,lip,own,manual,speech user
   class desc,vp agent
-  class kf,req,derived,dprev app
+  class kf,req,derived,dprev,still,assemble app
   class pay paid
   class gen service
-  class res,accept,daccept app
+  class res,accept,daccept,saccept app
   classDef user fill:#FAEEDA,stroke:#BA7517,color:#412402
   classDef agent fill:#EEEDFE,stroke:#534AB7,color:#26215C
   classDef app fill:#E6F1FB,stroke:#185FA5,color:#042C53
@@ -313,7 +317,7 @@ flowchart LR
   classDef bad fill:#F1EFE8,stroke:#5F5E5A,color:#2C2C2A,stroke-dasharray:4 3
 ```
 
-Приложение принимает описание, только если опоры идут подряд от `K01`, первая стоит в 0, последняя на границе запроса, число опор совпадает с выбранным, длительность подходит провайдеру, а референсы взяты из `allowedPaths`. Иначе предложение получает статус «Результат требует исправления».
+Приложение принимает описание, только если опоры идут подряд от `K01`, первая стоит в 0, последняя на границе запроса, число опор совпадает с выбранным, длительность подходит провайдеру, а референсы взяты из `allowedPaths`. У статичного кадра конечной опоры нет: K01 стоит в 0, остальные опоры — состояния со временем начала строго внутри окна, опор не меньше двух, правило длительности провайдера не применяется. Иначе предложение получает статус «Результат требует исправления».
 
 ### Опоры у провайдера-исполнителя
 
@@ -329,12 +333,13 @@ flowchart LR
     refs["references: подписи копий,<br/>чья это сущность или кадр какого плана"]
     approved["approvedFrames:<br/>уже утверждённые опоры"]
     previous["previousFrames:<br/>снятый кандидат при доработке"]
+    base["stateBase: утверждённая K01<br/>только у статичного кадра"]
     notes["notes: указания и замечания к опорам"]
     layout["frame и scheme: факты кадра и схема<br/>только у плана с точкой съёмки"]
   end
   subgraph work["Рабочая папка задания"]
     direction LR
-    copies["Копии только для чтения:<br/>reference-NN, approved-Kxx, previous-Kxx"]
+    copies["Копии только для чтения:<br/>reference-NN, approved-Kxx, previous-Kxx, base-K01"]
   end
   task --> agent(("Агент изображений<br/>пишет только в рабочую папку"))
   context --> agent
@@ -344,7 +349,7 @@ flowchart LR
   check -- "ровно запрошенные опоры,<br/>настоящие изображения,<br/>копии входов не изменены" --> candidate["Кандидаты Kxx<br/>копируются в проект,<br/>промпт генератора — на опору"]
   check -- "иначе" --> rejected["Ответ отклонён"]
 
-  class howto,list,refs,approved,previous,layout,copies app
+  class howto,list,refs,approved,previous,base,layout,copies app
   class notes user
   class agent agent
   class files,check,candidate app

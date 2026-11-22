@@ -460,6 +460,7 @@ export const productionTexts = {
       manual: 'Ручная генерация',
       ownVideo: 'Своё видео',
       generation: 'Генерация',
+      assemble: 'Сборка',
       result: 'Результат'
     },
     after: {
@@ -470,7 +471,9 @@ export const productionTexts = {
       request: 'После видеопромпта',
       manual: 'После среза речи',
       generation: 'После отправки',
-      result: 'После генерации'
+      assemble: 'После опор',
+      result: 'После генерации',
+      staticResult: 'После сборки'
     },
     framesSummary: ({ approved, frames }: { approved: number; frames: number }) => `Утверждено ${approved} из ${frames}`,
     descriptionSummary: ({ frames, seconds }: { frames: number; seconds: number | null | undefined }) =>
@@ -485,6 +488,8 @@ export const productionTexts = {
     uploadManual: 'создайте видео по пакету и загрузите его',
     manualUploading: 'видео загружается в попытку',
     resultSummary: 'Принят',
+    assembleSummary: 'Собран из опор',
+    assemble: 'соберите предпросмотр из опор и примите его',
     now: ({ text }: { text: string }) => `Сейчас: ${text}`,
     finished: 'План принят',
     agentWorking: 'ждём агента',
@@ -864,6 +869,49 @@ export const productionTexts = {
     instruction: 'Указание агенту',
     instructionHint: 'Необязательно. Сохранится в замечаниях к опорам; у платного провайдера войдёт в промпт, который вы подтверждаете перед отправкой.',
     noPrompt: ({ id }: { id: string }) => `У опоры ${id} нет промпта: загрузите её своим файлом или добавьте промпт в описании`
+  },
+  staticShot: {
+    heading: 'Сборка статичного кадра',
+    explanation:
+      'Видео собирается из утверждённых опор без генерации и оплаты: базовая опора видна с начала плана, каждое состояние сменяет предыдущее с указанного кадра, меняется только отличающаяся часть кадра. Опоры не изменяются.',
+    loading: 'Загружаю сборку',
+    states: 'Состояния',
+    base: 'Базовая опора',
+    state: ({ index }: { index: number }) => `Состояние ${index}`,
+    fromFrame: 'С кадра',
+    fromHint: ({ seconds }: { seconds: string }) => `с ${seconds}`,
+    baseHint: 'Видна с начала плана',
+    planLength: ({ frames, seconds }: { frames: number; seconds: string }) => `В плане ${frames} кадров (${seconds}).`,
+    params: 'Параметры сборки',
+    paramsHint: 'Значения по умолчанию подходят для большинства кадров. Меняйте их, если смена задевает лишнее или видна граница.',
+    range: ({ min, max }: { min: number; max: number }) => `от ${min} до ${max}`,
+    build: 'Собрать предпросмотр',
+    rebuild: 'Собрать заново',
+    preview: 'Предпросмотр',
+    previewVideo: 'Предпросмотр статичного кадра',
+    fresh: 'Собран по текущим опорам и параметрам',
+    stale: 'Устарел: опоры или параметры изменились',
+    accept: 'Принять',
+    acceptHint: 'Предпросмотр становится принятым видео плана; попытки плана удаляются.',
+    accepted: 'Статичный кадр принят',
+    saved: 'Параметры сборки сохранены',
+    dirty: 'Есть несохранённые правки',
+    busy: 'Идёт операция со сборкой',
+    noChanges: 'Правок нет',
+    previewMissing: 'Сначала соберите предпросмотр',
+    previewStale: 'Предпросмотр устарел: соберите его заново по текущим значениям',
+    frameInteger: ({ frame }: { frame: string }) => `${frame}: кадр смены — целое число`,
+    baseFromZero: 'Базовая опора видна с первого кадра плана',
+    frameOrder: ({ frame, frames }: { frame: string; frames: number }) =>
+      `${frame}: кадр смены должен быть позже предыдущего и раньше конца плана (${frames} кадров)`,
+    paramRange: ({ title, min, max }: { title: string; min: number; max: number }) => `«${title}»: число от ${min} до ${max}`,
+    retry: 'Повторить',
+    replaceTitle: 'Заменить принятое видео',
+    replaceDescription: ({ shot }: { shot: string }) =>
+      `У ${shot} уже есть принятое видео. Прежний комплект переедет в assets/replaced, новый займёт его место.`,
+    replace: 'Заменить',
+    badge: 'Статичный кадр',
+    badgeHint: 'Видео собирается приложением из опор-состояний: видеопромпта и платного запроса нет.'
   },
   videoPlayer: {
     fullscreen: 'На весь экран'

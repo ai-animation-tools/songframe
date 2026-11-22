@@ -69,6 +69,8 @@ func methodReason(c *Context, view View, method string) (string, error) {
 	switch {
 	case c.DerivedFrom != "":
 		return derivedshot.Reason(c.DerivedFrom), nil
+	case c.StaticShot:
+		return textStaticNoVideoStage, nil
 	case c.SingleFrame:
 		return textMethodSingleFrame, nil
 	case mediaproviders.ManualVideo(c.Settings.Value("provider"), false):

@@ -544,6 +544,13 @@ func renderEdit(ctx context.Context, original, filter string, frames toolrt.Int,
 
 // acceptanceFingerprint — отпечаток постановки, по которой сделан комплект (scene_sha256 пакета),
 // и текущий отпечаток плана.
+// AcceptanceFingerprint — отпечаток постановки, по которой принимается план (scene_sha256 пакета
+// или текущий), и текущий отпечаток; их расхождение — предупреждение «постановка изменилась».
+// Общий для всех видов приёмки: статичный кадр (internal/staticshot) пишет тот же отпечаток.
+func AcceptanceFingerprint(registry *toolrt.Dict, shot string, workflow *toolrt.Dict, root string) (string, string, error) {
+	return acceptanceFingerprint(registry, shot, workflow, root)
+}
+
 func acceptanceFingerprint(registry *toolrt.Dict, shot string, workflow *toolrt.Dict, root string) (string, string, error) {
 	initial, err := sceneregistry.InitialStatesFor(root)
 	if err != nil {
@@ -567,6 +574,9 @@ func acceptanceFingerprint(registry *toolrt.Dict, shot string, workflow *toolrt.
 	return text, current, nil
 }
 
+// RetireKit — retireKit для других видов приёмки (статичный кадр).
+func RetireKit(root, shot string) (string, error) { return retireKit(root, shot) }
+
 // retireKit — прежний комплект целиком переезжает в assets/replaced/Mxx/<время>: оплаченные
 // оригиналы и манифест не удаляются.
 func retireKit(root, shot string) (string, error) {
@@ -583,6 +593,11 @@ func retireKit(root, shot string) (string, error) {
 		return "", toolrt.OSErrorFrom(err, current)
 	}
 	return archive, nil
+}
+
+// CleanWork — cleanWork для других видов приёмки: после переноса комплекта удаляет попытки плана.
+func CleanWork(root, shot, packageDir string) ([]any, error) {
+	return cleanWork(root, shot, packageDir, packageDir, nil)
 }
 
 // cleanWork — после проверки комплекта удаляет переданный пакет, все пакеты плана в plan/batches и

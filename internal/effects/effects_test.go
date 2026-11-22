@@ -48,7 +48,7 @@ func digest(f *Frame) string {
 }
 
 func TestResolve(t *testing.T) {
-	specs := []ParamSpec{{"a", "", 0, 10, 3}, {"b", "", -1, 1, 0}}
+	specs := []ParamSpec{{"a", "", 0, 10, 3, 1}, {"b", "", -1, 1, 0, 0.1}}
 	got, err := Resolve(specs, map[string]float64{"b": 0.5})
 	if err != nil || got["a"] != 3 || got["b"] != 0.5 {
 		t.Fatalf("Resolve = %v, %v", got, err)
@@ -57,6 +57,7 @@ func TestResolve(t *testing.T) {
 		"вне диапазона": {"a": 11},
 		"бесконечность": {"b": math.Inf(1)},
 		"неизвестный":   {"c": 1},
+		"дробное целое": {"a": 2.5},
 	} {
 		if _, err := Resolve(specs, given); err == nil {
 			t.Errorf("%s: нет ошибки", name)

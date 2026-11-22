@@ -26,6 +26,9 @@ type AcceptedKit struct {
 	// OwnVideo — своё видео плана (generation.own_video): описания нет, входы и промпт — только если их
 	// указал пользователь при загрузке.
 	OwnVideo bool `json:"ownVideo,omitempty"`
+	// Static — статичный кадр: видео собрано приложением из опор-состояний (generation.static),
+	// промпта и запроса нет; Images — сами состояния по порядку.
+	Static bool `json:"static,omitempty"`
 	// Prompt — текст видеопромпта, переданного в генерацию.
 	Prompt *string `json:"prompt"`
 	// PromptVariants — оригинал и перевод видеопромпта, если попытка их предлагала: отправленный
@@ -68,7 +71,8 @@ func AcceptedKitFor(project, shot string) (*AcceptedKit, error) {
 	if !dynvalue.IsRecord(generation) {
 		return nil, nil
 	}
-	kit := &AcceptedKit{Images: []AcceptedImage{}, OwnVideo: dynvalue.StrictEqual(dynvalue.Get(generation, "own_video"), true)}
+	kit := &AcceptedKit{Images: []AcceptedImage{}, OwnVideo: dynvalue.StrictEqual(dynvalue.Get(generation, "own_video"), true),
+		Static: dynvalue.IsRecord(dynvalue.Get(generation, "static"))}
 	if path, err := existingAssetFile(dir, dynvalue.GetPath(generation, "request", "path")); err != nil {
 		return nil, err
 	} else if path != nil {

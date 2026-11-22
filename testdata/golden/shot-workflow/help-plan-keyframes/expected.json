@@ -1,6 +1,6 @@
 {
   "code": 0,
-  "stdout": "использование: shot_workflow plan-keyframes [-h] --dir DIR --request-seconds\n                                            REQUEST_SECONDS\n                                            [--middle СЕК:ЗАМЕТКА] [--single]\n\nпараметры:\n  -h, --help            показать справку и выйти\n  --dir DIR\n  --request-seconds REQUEST_SECONDS\n  --middle СЕК:ЗАМЕТКА\n  --single              Одна опора K01 на начале плана: видео создаётся вне\n                        приложения\n",
+  "stdout": "использование: shot_workflow plan-keyframes [-h] --dir DIR --request-seconds\n                                            REQUEST_SECONDS\n                                            [--middle СЕК:ЗАМЕТКА] [--single]\n                                            [--static]\n\nпараметры:\n  -h, --help            показать справку и выйти\n  --dir DIR\n  --request-seconds REQUEST_SECONDS\n  --middle СЕК:ЗАМЕТКА\n  --single              Одна опора K01 на начале плана: видео создаётся вне\n                        приложения\n  --static              Статичный кадр: K01 и опоры-состояния внутри окна, без\n                        конечной опоры и правила длительности\n",
   "stderr": "",
   "unhandled": false,
   "files": {},

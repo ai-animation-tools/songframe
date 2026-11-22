@@ -112,7 +112,11 @@ func (w *Workflow) prepareOwn(input OwnInput) (string, string, error) {
 		if c.SingleFrame && count != 1 {
 			return "", "", errors.New(textManualSingleFrame)
 		}
-		if limit := mediaproviders.KeyframeLimit(c.Settings.Value("provider")); count < 1 || count > limit {
+		if c.StaticShot {
+			if count < 2 || count > mediaproviders.DefaultKeyframeLimit {
+				return "", "", errors.New(textStaticKeyframeCountRange(mediaproviders.DefaultKeyframeLimit))
+			}
+		} else if limit := mediaproviders.KeyframeLimit(c.Settings.Value("provider")); count < 1 || count > limit {
 			return "", "", errors.New(textKeyframeCountRange(limit))
 		}
 		if !c.SingleFrame {

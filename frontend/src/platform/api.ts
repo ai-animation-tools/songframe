@@ -15,6 +15,7 @@ import type {
   PromptLogRecord,
   PromptLogSummary,
   ShotSpend,
+  StaticShotView,
   ProjectSpend,
   ResultMedia,
   AnimaticView,
@@ -878,6 +879,15 @@ export function createApi(b: Bindings): Api {
   api.production.regenerate = (project, shot) => call('production.regenerate', async () => toJob(await (await production()).Regenerate(project, shot)), false);
   api.production.accept = (project, shot, packageDir, options) =>
     call('production.accept', async () => toJob(await (await production()).Accept(project, shot, packageDir, options)), false);
+  api.production.staticShot = (project, packageDir) =>
+    call('production.staticShot', async () => (await (await production()).StaticShot(project, packageDir)) as StaticShotView);
+  api.production.saveStaticRecipe = (project, packageDir, recipe) =>
+    call('production.saveStaticRecipe', async () => (await (await production()).SaveStaticRecipe(project, packageDir, recipe)) as StaticShotView, true);
+  // Сборка предпросмотра и приёмка статичного кадра — задания с рендером FFmpeg: срок оболочки не ставится.
+  api.production.buildStatic = (project, packageDir) =>
+    call('production.buildStatic', async () => toJob(await (await production()).BuildStatic(project, packageDir)), false);
+  api.production.acceptStatic = (project, shot, packageDir, replace) =>
+    call('production.acceptStatic', async () => toJob(await (await production()).AcceptStatic(project, shot, packageDir, replace)), false);
   // Сводка пакета — задание contact_sheet; срез речи режет cut_speech (до минуты на длинной песне),
   // поэтому срок ожидания оболочки не ставится.
   api.production.contactSheet = (project, packageDir) =>

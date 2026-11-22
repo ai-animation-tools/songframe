@@ -598,6 +598,8 @@ export interface AcceptedKit {
   manualGeneration?: ManualGeneration;
   /** Своё видео плана: описания нет; опоры и видеопромпт — только если пользователь указал их при загрузке. */
   ownVideo?: boolean;
+  /** Статичный кадр: видео собрано приложением из опор-состояний, промпта и запроса нет; images — сами состояния. */
+  static?: boolean;
   /** Видеопромпт, переданный в генерацию. */
   prompt: string | null;
   /** Оригинал и перевод видеопромпта, если попытка их предлагала; selected — отправленный вариант. */
@@ -886,6 +888,8 @@ export interface ShotProduction {
   staleReason?: string | null;
   /** Источник материала по актуальному derived_from сценария; иначе null. */
   derivedFrom: string | null;
+  /** Статичный кадр по сценарию: видео собирает приложение из опор-состояний, запроса видео нет. */
+  staticShot?: boolean;
   /** Пакет плана ждёт действия пользователя: вопрос, подтверждение запроса, просмотр результата, запуск доработки. */
   attention: string | null;
   /**
@@ -1226,4 +1230,48 @@ export interface DashboardView {
   shots: DashboardShot[];
   summary: { total: number; completed: number; stale: number; progress: number; planned: number; duration: number; completedSeconds: number };
   problems: string[];
+}
+
+/** Числовой параметр эффекта или сборки: подпись, диапазон, значение по умолчанию и шаг (1 — целое). */
+export interface EffectParamSpec {
+  name: string;
+  title: string;
+  min: number;
+  max: number;
+  default: number;
+  step: number;
+}
+
+/** Опора-состояние статичного кадра: время из описания, кадр смены по рецепту и файл опоры. */
+export interface StaticShotState {
+  frame: string;
+  timeSeconds: number;
+  fromFrame: number;
+  path: string;
+  approved: boolean;
+}
+
+/** Шаг «Сборка» попытки статичного кадра: состояния, параметры, причина недоступности и последний предпросмотр. */
+export interface StaticShotView {
+  shot: string;
+  fps: number;
+  frames: number;
+  states: StaticShotState[];
+  params: Record<string, number>;
+  specs: EffectParamSpec[];
+  /** Почему собрать нельзя; пусто — можно. */
+  problem: string;
+  /** fresh — собран из текущих опор и параметров: только такой предпросмотр принимается. */
+  preview: { path: string; fresh: boolean; version: string } | null;
+  /** Рецепт сохранён пользователем; иначе моменты смены по времени опор и параметры по умолчанию. */
+  saved: boolean;
+  /** Идущее задание сборки или приёмки этой попытки: открытая заново панель продолжает следить за ним; пусто — задания нет. */
+  jobId: string;
+}
+
+/** Рецепт сборки статичного кадра: кадр смены каждой опоры по порядку и параметры. */
+export interface StaticShotRecipe {
+  schema_version: number;
+  states: { frame: string; from_frame: number }[];
+  params: Record<string, number>;
 }

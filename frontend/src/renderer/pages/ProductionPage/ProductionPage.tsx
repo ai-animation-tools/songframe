@@ -124,13 +124,14 @@ export function ProductionPage(): ReactElement {
       <PageActionBar barRef={toolbarRef}>
         <ProductionToolbar view={view} filter={filter} onFilter={setFilter} onRefresh={() => void load()} />
       </PageActionBar>
-      {!shot?.derivedFrom ? <AiProblemAlert kinds={['agent', 'image', 'video']} /> : null}
+      {/* Статичный кадр собирается из опор: сервис видео ему не нужен. */}
+      {!shot?.derivedFrom ? <AiProblemAlert kinds={shot?.staticShot ? ['agent', 'image'] : ['agent', 'image', 'video']} /> : null}
       {view.problems.length ? (
         <Alert severity="warning">
           <LinkedText text={view.problems.join(' ')} />
         </Alert>
       ) : null}
-      {shot?.derivedFrom ? null : !Object.values(view.tools.providers).every(Boolean) ? (
+      {shot?.derivedFrom || shot?.staticShot ? null : !Object.values(view.tools.providers).every(Boolean) ? (
         <Alert severity="info">{productionTexts.productionPage.paidProviderMissing}</Alert>
       ) : null}
 
@@ -172,7 +173,7 @@ export function ProductionPage(): ReactElement {
                     onDiscardBroken={discardBroken}
                     now={shot.derivedFrom || path?.key !== pathKey ? null : { text: path.value.now, tone: path.value.tone }}
                     onNewAttempt={shot.derivedFrom || (!shot.packages.length && !shot.asset) ? undefined : () => selectPackage('__new__')}
-                    onOwnVideo={shot.derivedFrom ? undefined : () => setOwnVideo({ shot: shot.id, busy: false, error: null })}
+                    onOwnVideo={shot.derivedFrom || shot.staticShot ? undefined : () => setOwnVideo({ shot: shot.id, busy: false, error: null })}
                     onDiscardAttempt={discardPackage}
                     onRetryWithFrames={retryWithFrames}
                     onRetryFirstFrame={retryFirstFrame}

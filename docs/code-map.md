@@ -152,6 +152,7 @@
 | [`internal/spend`](../internal/spend) | Ведёт журнал расходов проекта plan/spend.json — платные отправки и стоимость материалов, созданных вне приложения, — и считает по нему расход плана. |
 | [`internal/acceptance`](../internal/acceptance) | Определяет, какие комплекты assets/shots/Mxx приняты по текущей постановке. |
 | [`internal/acceptshot`](../internal/acceptshot) | Принимает генерацию плана: инструмент accept_shot собирает комплект assets/shots/Mxx по контракту assets. |
+| [`internal/staticshot`](../internal/staticshot) | Производство плана «Статичный кадр» (scene.static_shot): после утверждения опор попытки план собирается локально из опор-состояний (internal/effects) вместо видеопромпта и платного запроса, а принятый предпросмотр становится комплектом assets/shots/Mxx вида static_video. |
 | [`internal/assetpackage`](../internal/assetpackage) | Проверяет комплект принятого ассета и разрешает его файлы. |
 | [`internal/verifyassetreplay`](../internal/verifyassetreplay) | Проверяет воспроизведение всех принятых комплектов планов из индекса assets/shots/manifest.json (инструмент verify_asset_replay). |
 | [`internal/videoreview`](../internal/videoreview) | Проверяет полученное видео агентом: кадры по PTS, сверка с утверждёнными опорами и отчёт с наблюдениями (videoReview.view/start/cancel). |

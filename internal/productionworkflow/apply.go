@@ -3,6 +3,7 @@ package productionworkflow
 import (
 	"context"
 	"errors"
+	"math"
 	"os"
 	"path/filepath"
 	"slices"
@@ -311,9 +312,16 @@ func (w *Workflow) applyDescription(ctx context.Context, plan *applyPlan) error 
 	if err := writeProjectFile(filepath.Join(target, "description.md"), []byte(dynvalue.ToString(after.Value("description"))+"\n")); err != nil {
 		return err
 	}
-	args := []string{"plan-keyframes", "--dir", target, "--request-seconds", dynvalue.ToString(after.Value("requestSeconds"))}
 	rules := plan.stored.Rules()
-	if rules.Manual || len(keyframes) == 1 {
+	requestSeconds := dynvalue.ToString(after.Value("requestSeconds"))
+	if rules.Static {
+		// Запроса видео у статичного кадра нет: длительность попытки — окно плана целыми секундами.
+		requestSeconds = dynvalue.ToString(math.Ceil(rules.WindowSeconds))
+	}
+	args := []string{"plan-keyframes", "--dir", target, "--request-seconds", requestSeconds}
+	if rules.Static {
+		args = append(args, "--static")
+	} else if rules.Manual || len(keyframes) == 1 {
 		args = append(args, "--single")
 	}
 	for _, frame := range keyframes {

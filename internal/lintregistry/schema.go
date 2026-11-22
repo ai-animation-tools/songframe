@@ -25,7 +25,7 @@ var (
 func loadSchema(name string) *toolrt.Dict {
 	schemasOnce.Do(func() {
 		schemas = map[string]*toolrt.Dict{}
-		for _, kind := range []string{"cast", "manifest", "request", "scenes", "workflow"} {
+		for _, kind := range []string{"cast", "manifest", "request", "scenes", "static-manifest", "workflow"} {
 			data, err := schemaFiles.ReadFile("schemas/" + kind + ".schema.json")
 			if err != nil {
 				panic(err)

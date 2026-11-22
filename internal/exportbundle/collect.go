@@ -245,7 +245,12 @@ func addVideo(row *toolrt.Dict, sid, folder string, kit any, fps int64) error {
 	set("repeat_full_cycles", r.get(repeat, "full_cycles", ""))
 	set("repeat_tail_frames", r.get(repeat, "tail_frames", ""))
 	set("repeat_cycle_frames", r.get(repeat, "cycle_frames", ""))
-	set("prompt", shotPath(sid, r.item(generation, "prompt", "path")))
+	// Статичный кадр собран из опор без промпта: столбец остаётся пустым.
+	if r.get(generation, "static", nil) != nil {
+		set("prompt", "")
+	} else {
+		set("prompt", shotPath(sid, r.item(generation, "prompt", "path")))
+	}
 	if toolrt.Truthy(r.get(generation, "request", nil)) {
 		set("request", shotPath(sid, r.item(generation, "request", "path")))
 	} else {

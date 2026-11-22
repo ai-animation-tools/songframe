@@ -6,6 +6,8 @@ import (
 	"image/draw"
 	_ "image/jpeg" // опоры бывают JPEG
 	_ "image/png"
+
+	_ "golang.org/x/image/webp" // исполнитель опор может отдать WebP
 	"math"
 	"os"
 	"runtime"
@@ -70,7 +72,7 @@ func encode(v float32) uint8 {
 	return toSRGB[int(v*float32(len(toSRGB)-1)+0.5)]
 }
 
-// LoadImage читает PNG или JPEG в линейный кадр.
+// LoadImage читает PNG, JPEG или WebP в линейный кадр.
 func LoadImage(path string) (*Frame, error) {
 	file, err := os.Open(path)
 	if err != nil {

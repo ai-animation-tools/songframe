@@ -30,6 +30,20 @@ var sha256Hex = regexp.MustCompile(`^[0-9a-f]{64}$`)
 var imageSuffixes = map[string]bool{".png": true, ".jpg": true, ".jpeg": true, ".webp": true, ".gif": true}
 
 // Тексты отказов; их показывают инструменты, формулировки зафиксированы эталонами.
+// StaticKind — вид комплекта статичного кадра: ролик собран локально из опор-состояний
+// (internal/staticshot), промпта и запроса генерации нет.
+const StaticKind = "static_video"
+
+// StaticGeneration — генерация комплекта собрана из опор-состояний: вид static_video либо
+// производный план, унаследовавший generation.static источника.
+func StaticGeneration(manifest *toolrt.Dict) bool {
+	if toolrt.Equal(manifest.Value("kind"), StaticKind) {
+		return true
+	}
+	generation, ok := manifest.Value("generation").(*toolrt.Dict)
+	return ok && generation.Has("static")
+}
+
 const (
 	textOutsideAsset  = "Файл комплекта находится вне папки ассета."
 	textUnknownRoot   = "Неизвестный корень файла комплекта."
@@ -44,6 +58,7 @@ const (
 	textSameFiles     = "Оригинал и принятый монтаж должны быть разными файлами."
 	textNoInputs      = "В комплекте отсутствуют кадры или промпт генерации."
 	textNoRequest     = "В комплекте нет технического снимка запроса generation-request.json."
+	textNoStatic      = "В комплекте статичного кадра нет рецепта сборки из опор-состояний."
 	textNoAudio       = "В комплекте липсинка отсутствует входное аудио."
 	textNoReplay      = "Не сохранены параметры воспроизведения принятого монтажа."
 	textDuration      = "Длительность принятого монтажа расходится с числом кадров."
@@ -275,21 +290,34 @@ func ValidatePackage(path, shotID, root string) (*toolrt.Dict, error) {
 	if !toolrt.Truthy(inputs) && !toolrt.Equal(generationValue.(*toolrt.Dict).Value("own_video"), true) {
 		return nil, toolrt.New(toolrt.ValueError, textNoInputs)
 	}
-	prompt, err := item(generationValue, "prompt")
-	if err != nil {
-		return nil, err
-	}
-	if !toolrt.Truthy(prompt) {
-		return nil, toolrt.New(toolrt.ValueError, textNoInputs)
-	}
-	// Снимок запроса обязателен: провайдер, модель, параметры и ID либо явная причина его отсутствия.
 	generation := generationValue.(*toolrt.Dict)
-	request, isDict := generation.Value("request").(*toolrt.Dict)
-	if !isDict {
-		return nil, toolrt.New(toolrt.ValueError, textNoRequest)
-	}
-	if !toolrt.Truthy(request.Value("path")) {
-		return nil, toolrt.New(toolrt.ValueError, textNoRequest)
+	if StaticGeneration(document) {
+		// Статичный кадр собран локально из опор-состояний: промпта и запроса генерации у него нет,
+		// повторить сборку позволяет рецепт generation.static. Производный план от статичного
+		// кадра наследует ту же генерацию.
+		static, isDict := generation.Value("static").(*toolrt.Dict)
+		if !isDict {
+			return nil, toolrt.New(toolrt.ValueError, textNoStatic)
+		}
+		if states, ok := static.Value("states").([]any); !ok || len(states) < 2 {
+			return nil, toolrt.New(toolrt.ValueError, textNoStatic)
+		}
+	} else {
+		prompt, err := item(generationValue, "prompt")
+		if err != nil {
+			return nil, err
+		}
+		if !toolrt.Truthy(prompt) {
+			return nil, toolrt.New(toolrt.ValueError, textNoInputs)
+		}
+		// Снимок запроса обязателен: провайдер, модель, параметры и ID либо явная причина его отсутствия.
+		request, isDict := generation.Value("request").(*toolrt.Dict)
+		if !isDict {
+			return nil, toolrt.New(toolrt.ValueError, textNoRequest)
+		}
+		if !toolrt.Truthy(request.Value("path")) {
+			return nil, toolrt.New(toolrt.ValueError, textNoRequest)
+		}
 	}
 	lipsync, err := item(generation, "lipsync")
 	if err != nil {

@@ -42,6 +42,8 @@ func (w *Workflow) CreateOwnVideo(ctx context.Context, project, shot string, gen
 	switch {
 	case c.DerivedFrom != "":
 		return "", errors.New(derivedshot.Reason(c.DerivedFrom))
+	case c.StaticShot:
+		return "", errors.New(textStaticNoVideoStage)
 	case w.busy[key(c.Project, shot)] || slices.ContainsFunc(w.options.Agents.List(c.Project), func(job agents.Job) bool { return job.Status == "running" }):
 		return "", errors.New(textOperationBusy)
 	case w.store.Read(c.Project, shot).active():

@@ -46,10 +46,13 @@ type ShotProduction struct {
 	// RegenerateProblem — известная причина недоступности повтора по сохранённому запросу.
 	RegenerateProblem *string `json:"regenerateProblem"`
 	// DerivedFrom — источник материала по актуальному derived_from сценария.
-	DerivedFrom *string        `json:"derivedFrom"`
-	Attention   *string        `json:"attention"`
-	Asset       *Asset         `json:"asset"`
-	Packages    []*PackageView `json:"packages"`
+	DerivedFrom *string `json:"derivedFrom"`
+	// StaticShot — статичный кадр по сценарию (scene.static_shot): видео собирается из опор
+	// приложением, запроса видео и повтора по нему нет.
+	StaticShot bool           `json:"staticShot,omitempty"`
+	Attention  *string        `json:"attention"`
+	Asset      *Asset         `json:"asset"`
+	Packages   []*PackageView `json:"packages"`
 	// Proposal — непринятое предложение агента производства (добавляет сервис приложения из
 	// прохода агента); отсутствует в виде самого пакета production.
 	Proposal json.RawMessage `json:"proposal,omitempty"`
@@ -487,6 +490,10 @@ func shotProduction(project string, scene any, id string, packages []*PackageVie
 	if source := derivedshot.Source(scene); source != "" {
 		shot.DerivedFrom = &source
 		shot.RegenerateProblem = optional(derivedshot.Reason(source))
+	} else if dynvalue.StrictEqual(dynvalue.Get(scene, "static_shot"), true) {
+		// Статичный кадр собирается из опор без запроса видео: повторять нечего, нужна новая попытка.
+		shot.StaticShot = true
+		shot.RegenerateProblem = optional(textRetryStatic(id))
 	} else if dynvalue.StrictEqual(dynvalue.Get(scene, "lipsync"), true) && manualProvider(selected) {
 		// Речевой план у провайдера без липсинка делается вручную вне приложения: сохранённый запрос
 		// сервису повторять нельзя, нужна новая попытка с пакетом ручной генерации.

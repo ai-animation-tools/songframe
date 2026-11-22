@@ -1132,7 +1132,7 @@ func Apply(ctx context.Context, draftValue any, rootPath string, updateViews boo
 	for index, sid := range prepared.shots {
 		shots[index] = sid
 	}
-	registryDigest, err := sha(join(root, sceneregistry.ScenesPath))
+	registryDigest, err := sceneregistry.AnimaticDigestFile(join(root, sceneregistry.ScenesPath))
 	if err != nil {
 		return nil, err
 	}

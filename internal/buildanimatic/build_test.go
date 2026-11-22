@@ -95,14 +95,15 @@ func TestFailedEncodingPreservesLatest(t *testing.T) {
 }
 
 // TestChangesDuringBuild — входы, изменённые между кодированием и публикацией, останавливают
-// сборку без замены latest; изменение только настроек генерации — нет.
+// сборку без замены latest; изменение только настроек генерации или оформления сценария — нет.
 func TestChangesDuringBuild(t *testing.T) {
 	cases := []struct {
 		name, file, text, message string
 	}{
 		{"generation", "plan/project.json", `{"schema_version": 1, "name": "Тестовый клип", "animatic_video": "test-output.mp4", "fps": 30, "generation": {"video": {"provider": "test", "model": "новая"}}}`, ""},
 		{"project", "plan/project.json", `{"schema_version": 1, "name": "Изменилось во время сборки", "animatic_video": "test-output.mp4", "fps": 30}`, textProjectChanged},
-		{"registry", "plan/scenes.json", "", textRegistryChanged},
+		{"registry", "plan/scenes.json", "action", textRegistryChanged},
+		{"registry-format", "plan/scenes.json", "", ""},
 		{"track", "source/track.mp3", "", textTrackChanged},
 		{"input", "plan/animatic/cards/M02.png", "", textInputChanged},
 		{"card-source", "source/pier.png", "", textCardSourceChanged},
@@ -122,8 +123,11 @@ func TestChangesDuringBuild(t *testing.T) {
 					if isNullDecode(args) {
 						path := filepath.Join(project, filepath.FromSlash(c.file))
 						text := c.text
-						if text == "" {
+						switch text {
+						case "":
 							text = string(readFile(t, path)) + " "
+						case "action":
+							text = strings.Replace(string(readFile(t, path)), `"action": "`, `"action": "Правка во время сборки. `, 1)
 						}
 						writeFile(t, path, text)
 					}

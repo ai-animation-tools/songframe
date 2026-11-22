@@ -12,7 +12,7 @@
 
 | Каталог | Что проверяет (Go) | Случаев |
 | --- | --- | --- |
-| `status/` | `status.Compute` (статус проекта), открытие `app.ProjectService.Open`, принятие планов `acceptance.Compute` | 38 |
+| `status/` | `status.Compute` (статус проекта), открытие `app.ProjectService.Open`, принятие планов `acceptance.Compute` | 39 |
 | `timing-view/` | `timing.ViewProject` | 18 |
 | `timing-save/` | `timing.SaveProject`, `timing.Prepare`, сохранение через `app` | 7 |
 | `timing-validation/cases.json` | `timing.Validate` | 33 |

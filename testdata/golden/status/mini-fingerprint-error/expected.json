@@ -14,8 +14,8 @@
     "shotsTotal": 3,
     "shotsDone": 0,
     "animaticBuilt": true,
-    "animaticFresh": false,
-    "animaticApproved": false
+    "animaticFresh": true,
+    "animaticApproved": true
   },
   "problems": [
     "Постановку планов не удалось сверить с принятыми комплектами: M02: изменения состояния должны быть объектом.",

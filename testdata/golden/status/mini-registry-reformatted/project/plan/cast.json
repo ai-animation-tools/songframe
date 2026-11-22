@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "entities": [
+    {
+      "id": "world",
+      "kind": "world",
+      "name": "Мир сцены",
+      "short_name": "Мир",
+      "role": "",
+      "appearance": "",
+      "images": [],
+      "initial_state": {
+        "time_of_day": "вечер"
+      }
+    },
+    {
+      "id": "mira",
+      "kind": "character",
+      "name": "Мира",
+      "short_name": "Мира",
+      "role": "Музыкант",
+      "appearance": "Музыкант с фонариком",
+      "images": [
+        "heroes/mira.png"
+      ],
+      "initial_state": {
+        "position": "у причала"
+      }
+    }
+  ],
+  "properties": {}
+}

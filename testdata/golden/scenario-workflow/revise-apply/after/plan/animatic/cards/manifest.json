@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "generated_from": "plan/scenes.json",
-  "registry_sha256": "dbaaeda56a673ad8b6b49911fa44c875899e3a5fdd5fcacac62bc964fd8ab78a",
+  "registry_sha256": "c467a6965a7cd23062bbc413e25e0bb93cb99c7c0f1411964a35ff185d45a166",
   "project_inputs": {
     "name": "Пробный клип"
   },

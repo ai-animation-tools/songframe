@@ -270,7 +270,7 @@ func animaticFresh(sources *Sources, project *toolrt.Dict, latest string, hashes
 	if err != nil {
 		return false, err
 	}
-	registry, err := sources.TextSHA("plan/scenes.json")
+	registry, err := sources.ScenesDigest()
 	if err != nil {
 		return false, err
 	}

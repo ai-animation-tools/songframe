@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"sort"
 
+	"songframe/internal/sceneregistry"
 	"songframe/internal/toolrt"
 )
 
@@ -117,8 +118,18 @@ func (s *Sources) JSON(path string) (any, error) {
 	return toolrt.LoadsJSON(text)
 }
 
+// ScenesDigest — отпечаток сценария plan/scenes.json для аниматика и карточек
+// (sceneregistry.AnimaticDigestFile); файл вне множества — та же ошибка, что у Text.
+func (s *Sources) ScenesDigest() (string, error) {
+	const path = "plan/scenes.json"
+	if !s.files[path] {
+		return "", toolrt.Raise(toolrt.ValueError, "Нет обязательного файла: %s", path)
+	}
+	return sceneregistry.AnimaticDigestFile(s.path(path))
+}
+
 // TextSHA — SHA-256 (hex) текста файла, снова закодированного в UTF-8: отпечаток после
-// декодирования и перевода строк (не байтов файла), как его записывают квитанции.
+// декодирования и перевода строк (не байтов файла), как его записывает индекс комплектов.
 func (s *Sources) TextSHA(path string) (string, error) {
 	text, err := s.Text(path)
 	if err != nil {

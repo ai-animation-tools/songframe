@@ -7,7 +7,7 @@
   "video_duration": 9,
   "source_audio": "source/track.mp3",
   "source_audio_sha256": "fb0797e290b774181fa7fdbeadc0bd9849889152fca5dc3555a766bb33dfae2b",
-  "scene_registry_sha256": "4984e7d493c142ad6754677a2aa0b5e14b5bbe5693cb2448fdb00ed5cb45e4dd",
+  "scene_registry_sha256": "52bbc0fe1be6cb1535f84e371f0d4c4b88b62035a6debcc81ee8d504ca51d853",
   "project_inputs": {
     "name": "Мини-клип",
     "animatic_video": "mini-animatic.mp4"

@@ -255,7 +255,7 @@ type registryShot struct {
 func Prepare(ctx context.Context, spec any, root string) (*toolrt.Dict, error) {
 	root = toolrt.ResolvePath(root)
 	scenesPath := toolrt.JoinPath(root, "plan", "scenes.json")
-	registryDigest, err := sha(scenesPath)
+	registryDigest, err := sceneregistry.AnimaticDigestFile(scenesPath)
 	if err != nil {
 		return nil, err
 	}
@@ -393,7 +393,7 @@ func Prepare(ctx context.Context, spec any, root string) (*toolrt.Dict, error) {
 	}
 	filter := "aresample=44100,atrim=start_sample=" + samples(audioStart, fps).String() + ":end_sample=" + samples(end, fps).String() +
 		",asetpts=PTS-STARTPTS,apad=whole_len=" + samples(total, fps).String() + ",atrim=end_sample=" + samples(total, fps).String()
-	if digest, err := sha(scenesPath); err != nil {
+	if digest, err := sceneregistry.AnimaticDigestFile(scenesPath); err != nil {
 		return nil, err
 	} else if digest != registryDigest {
 		return nil, valueError(textRegistryPrep)
@@ -721,7 +721,7 @@ func checkCard(root, sid, path string, receipt *any, scenesPath string) error {
 		if err != nil {
 			return err
 		}
-		current, err := sha(scenesPath)
+		current, err := sceneregistry.AnimaticDigestFile(scenesPath)
 		if err != nil {
 			return err
 		}
@@ -1061,7 +1061,7 @@ func render(ctx context.Context, plan *toolrt.Dict, root, temporary string) erro
 			return valueError(textInputChanged)
 		}
 	}
-	if digest, err := sha(toolrt.JoinPath(root, "plan", "scenes.json")); err != nil {
+	if digest, err := sceneregistry.AnimaticDigestFile(toolrt.JoinPath(root, "plan", "scenes.json")); err != nil {
 		return err
 	} else if digest != plan.Value("scene_registry_sha256") {
 		return valueError(textRegistryRun)

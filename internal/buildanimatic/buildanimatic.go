@@ -457,7 +457,7 @@ func checkReceipt(root string, receipt any, project *toolrt.Dict) error {
 	if err != nil {
 		return err
 	}
-	current, err := sha(toolrt.JoinPath(root, "plan/scenes.json"))
+	current, err := sceneregistry.AnimaticDigestFile(toolrt.JoinPath(root, "plan/scenes.json"))
 	if err != nil {
 		return err
 	}
@@ -801,7 +801,7 @@ var metadataSpecial = regexp.MustCompile(`([\\=;#])`)
 // latest заменяется только после всех проверок; временные файлы сборки удаляются в любом случае.
 func Build(ctx context.Context, root string, planOnly bool, out func(line string) error) (*toolrt.Dict, error) {
 	root = toolrt.ResolvePath(root)
-	registryDigest, err := sha(toolrt.JoinPath(root, "plan/scenes.json"))
+	registryDigest, err := sceneregistry.AnimaticDigestFile(toolrt.JoinPath(root, "plan/scenes.json"))
 	if err != nil {
 		return nil, err
 	}
@@ -1074,7 +1074,7 @@ func checkInputs(root string, shots []*toolrt.Dict, prepared *plan, registryDige
 			}
 		}
 	}
-	if digest, err := sha(toolrt.JoinPath(root, "plan/scenes.json")); err != nil {
+	if digest, err := sceneregistry.AnimaticDigestFile(toolrt.JoinPath(root, "plan/scenes.json")); err != nil {
 		return err
 	} else if digest != registryDigest {
 		return toolrt.New(toolrt.ValueError, textRegistryChanged)

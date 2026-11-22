@@ -5,7 +5,8 @@
   "base": "checks-base",
   "covers": [
     "strip",
-    "rstrip"
+    "rstrip",
+    "visual_direction не входит в отпечаток аниматика и карточек"
   ],
   "stubbedMedia": [],
   "args": [],

@@ -122,7 +122,7 @@ type receipt struct {
 }
 
 // loadReceipt — существующая plan/animatic/cards/manifest.json, если она подтверждает входы
-// текущих карточек: объект, тот же отпечаток текста реестра, те же поля проекта и те же хеши
+// текущих карточек: объект, тот же отпечаток сценария для аниматика, те же поля проекта и те же хеши
 // референсов, cards — объект. Любая ошибка чтения или вычисления означает «квитанции нет»: тогда
 // карточки перерисовываются, а исключение, если оно есть, возникнет при перерисовке.
 func loadReceipt(sources *projectviews.Sources, prepared *projectviews.Prepared) *receipt {
@@ -138,7 +138,7 @@ func loadReceipt(sources *projectviews.Sources, prepared *projectviews.Prepared)
 	if !ok {
 		return nil
 	}
-	registry, err := sources.TextSHA("plan/scenes.json")
+	registry, err := sources.ScenesDigest()
 	if err != nil || !toolrt.Equal(document.Value("registry_sha256"), registry) {
 		return nil
 	}
@@ -327,11 +327,11 @@ func referenceHashes(sources *projectviews.Sources, prepared *projectviews.Prepa
 	return result, nil
 }
 
-// cardsReceipt — текст plan/animatic/cards/manifest.json: отпечаток текста реестра, поля проекта
+// cardsReceipt — текст plan/animatic/cards/manifest.json: отпечаток сценария для аниматика, поля проекта
 // для карточек, хеши референсов и записи карточек; JSON с отступом два пробела, не-ASCII без
 // экранирования и перевод строки в конце.
 func cardsReceipt(sources *projectviews.Sources, prepared *projectviews.Prepared, cards *toolrt.Dict) (string, error) {
-	registry, err := sources.TextSHA("plan/scenes.json")
+	registry, err := sources.ScenesDigest()
 	if err != nil {
 		return "", err
 	}

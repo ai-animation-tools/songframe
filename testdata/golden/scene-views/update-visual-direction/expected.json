@@ -1,11 +1,10 @@
 {
   "code": 0,
-  "stdout": "Обновлено представлений: 3.\n",
+  "stdout": "Обновлено представлений: 2.\n",
   "stderr": "",
   "unhandled": false,
   "files": {
     "ROADMAP.md": "changed",
-    "plan/animatic/cards/manifest.json": "changed",
     "plan/context/characters.md": "changed"
   },
   "recheck": {

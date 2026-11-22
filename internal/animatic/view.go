@@ -8,6 +8,7 @@ import (
 
 	"songframe/internal/dynvalue"
 	"songframe/internal/projectfs"
+	"songframe/internal/sceneregistry"
 )
 
 // Тексты ошибок принятия аниматика.
@@ -141,7 +142,7 @@ func inspect(project string) (View, State, error) {
 	state := State{}
 	manifestPath := filepath.Join(project, "plan", "animatic", "latest", "manifest.json")
 	manifest := readJSON(manifestPath)
-	registry, hasRegistry := digestText(filepath.Join(project, "plan", "scenes.json"))
+	registry, hasRegistry := scenesDigest(filepath.Join(project, "plan", "scenes.json"))
 	status := readStatus(project)
 	cards := readJSON(filepath.Join(project, "plan", "animatic", "cards", "manifest.json"))
 	view.CardsFresh = dynvalue.Truthy(cards) && hasRegistry && dynvalue.StrictEqual(dynvalue.Get(cards, "registry_sha256"), registry)
@@ -228,11 +229,11 @@ func inspect(project string) (View, State, error) {
 	return view, state, nil
 }
 
-// digestText — cachedFileDigest реестра как (строка, есть ли файл).
-func digestText(path string) (string, bool) {
-	digest := digestOf(path)
-	text, ok := digest.(string)
-	return text, ok
+// scenesDigest — отпечаток сценария для аниматика (sceneregistry.AnimaticDigestFile); false —
+// сценария нет или он не читается.
+func scenesDigest(path string) (string, bool) {
+	digest, err := sceneregistry.AnimaticDigestFile(path)
+	return digest, err == nil
 }
 
 // shotList — планы манифеста для плеера: значения по умолчанию, числа через Number и

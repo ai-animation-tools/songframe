@@ -4,7 +4,8 @@
   "project": "project",
   "covers": [
     "sceneComparisonFailed",
-    "все комплекты stale (scene_changed)"
+    "все комплекты stale (scene_changed)",
+    "state_changes не входят в отпечаток аниматика: аниматик свежий"
   ],
   "stubbedMedia": []
 }

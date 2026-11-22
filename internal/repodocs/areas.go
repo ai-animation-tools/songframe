@@ -113,7 +113,7 @@ var Areas = []Area{
 			"internal/animatic", "internal/animaticcards", "internal/buildanimatic",
 			"internal/buildreview", "internal/montage", "internal/applymontage",
 			"internal/derivedshot", "internal/derivedworkflow", "internal/deriveshot",
-			"internal/exportbundle", "internal/builtoutput",
+			"internal/exportbundle", "internal/builtoutput", "internal/effects",
 		},
 		Pages: []string{"AnimaticPage", "MontagePage", "MontagePlayerPage"},
 	},

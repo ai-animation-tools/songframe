@@ -31,7 +31,6 @@ import (
 	"songframe/internal/acceptshot"
 	"songframe/internal/assetpackage"
 	"songframe/internal/effects"
-	"songframe/internal/mediacmd"
 	"songframe/internal/projectfs"
 	"songframe/internal/sceneregistry"
 	"songframe/internal/toolcli"
@@ -445,17 +444,6 @@ func fresh(directory string, view View) bool {
 	return err == nil && digest == stored.VideoSHA256
 }
 
-// ffmpegVersion — первая строка ffmpeg -version (входит в квитанцию и комплект: от неё зависят
-// байты ролика).
-func ffmpegVersion(ctx context.Context) (string, error) {
-	result, err := mediacmd.Run(ctx, mediacmd.FFmpeg(), "-version")
-	if err != nil {
-		return "", err
-	}
-	line, _, _ := strings.Cut(string(result.Stdout), "\n")
-	return strings.TrimSpace(line), nil
-}
-
 // Build собирает предпросмотр попытки packageDir: опоры-состояния по рецепту в ролик длиной плана
 // в кадре проекта. log получает строки хода сборки. Ролик пишется во временный файл и переносится
 // на место предпросмотра только целиком; квитанция — после него.
@@ -485,7 +473,7 @@ func Build(ctx context.Context, root, packageDir string, log func(string)) (View
 	if err != nil {
 		return View{}, err
 	}
-	version, err := ffmpegVersion(ctx)
+	version, err := effects.FFmpegVersion(ctx)
 	if err != nil {
 		return View{}, err
 	}

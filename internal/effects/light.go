@@ -6,12 +6,16 @@ import "math"
 // кадру: нарастает по кривой между долями плана start и end, с лёгким дрожанием. Три
 // составляющие: подсветка уже освещённых поверхностей (умножение — тёмное небо остаётся тёмным,
 // металл с бликами светлеет), контур на краях, обращённых к источнику (по градиенту яркости
-// кадра), и слабая дымка луча в воздухе. Эффект добавляет себя в Context.Lights: дождь после
+// кадра), и слабая дымка луча в воздухе. Луч можно сузить конусом с направлением на экране. Эффект добавляет себя в Context.Lights: дождь после
 // него подсвечивает капли в луче.
 type light struct {
 	p      Params
 	sx, sy float64
 	radius float64
+	// dx, dy — направление луча на экране (единичный вектор), half — половина конуса, радианы;
+	// half ≥ π — свет во все стороны.
+	dx, dy float64
+	half   float64
 	color  [3]float32
 	level  float32
 	lum    []float32
@@ -19,7 +23,7 @@ type light struct {
 
 func init() {
 	register(Kind{
-		ID: "light", Title: "Свет", Version: 1,
+		ID: "light", Title: "Свет", Version: 1, Order: 10,
 		Params: []ParamSpec{
 			{"source_x", "Источник по горизонтали, доля кадра", -1, 2, -0.15, 0.01},
 			{"source_y", "Источник по вертикали, доля кадра", -1, 2, 1.25, 0.01},
@@ -35,6 +39,8 @@ func init() {
 			{"surface", "Подсветка поверхностей", 0, 10, 1.5, 0.1},
 			{"rim", "Контур со стороны света", 0, 10, 2, 0.1},
 			{"haze", "Дымка луча", 0, 1, 0.04, 0.01},
+			{"direction", "Направление луча, градусы: 0 — вправо, 90 — вверх", 0, 360, 45, 1},
+			{"cone", "Ширина луча, градусы: 360 — во все стороны", 10, 360, 360, 1},
 		},
 		New: func(p Params, size Size) Effect {
 			return &light{
@@ -43,6 +49,9 @@ func init() {
 				sy:     p["source_y"] * float64(size.Height),
 				radius: p["radius"] * math.Hypot(float64(size.Width), float64(size.Height)),
 				color:  [3]float32{float32(p["color_r"]), float32(p["color_g"]), float32(p["color_b"])},
+				dx:     math.Cos(p["direction"] * math.Pi / 180),
+				dy:     -math.Sin(p["direction"] * math.Pi / 180),
+				half:   p["cone"] * math.Pi / 360,
 				lum:    make([]float32, size.Width*size.Height),
 			}
 		},
@@ -59,14 +68,22 @@ func (l *light) levelAt(ctx *Context) float32 {
 	return float32(math.Max(0, a*l.p["intensity"]*(1+l.p["flicker"]*n)))
 }
 
-// falloff — доля света в точке: 1 у источника, 0 на дальности radius.
+// falloff — доля света в точке: 1 у источника, 0 на дальности radius; вне конуса луча — 0, к его
+// краю свет мягко гаснет (последняя треть половины конуса).
 func (l *light) falloff(x, y float64) float32 {
-	d := math.Hypot(x-l.sx, y-l.sy) / l.radius
+	distance := math.Hypot(x-l.sx, y-l.sy)
+	d := distance / l.radius
 	if d >= 1 {
 		return 0
 	}
 	v := float32(1 - d)
-	return v * v
+	v *= v
+	if l.half < math.Pi && distance > 0 {
+		cos := ((x-l.sx)*l.dx + (y-l.sy)*l.dy) / distance
+		angle := math.Acos(math.Max(-1, math.Min(1, cos)))
+		v *= float32(1 - smoothstep(l.half*0.66, l.half, angle))
+	}
+	return v
 }
 
 // At — свет в точке текущего кадра (для дождя).

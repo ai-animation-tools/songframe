@@ -83,7 +83,7 @@ func TestRegistry(t *testing.T) {
 			seen[spec.Name] = true
 		}
 	}
-	if strings.Join(ids, ",") != "grain,light,rain" {
+	if strings.Join(ids, ",") != "light,rain,grain" {
 		t.Fatalf("эффекты %v", ids)
 	}
 	if _, err := Build([]Step{{ID: "snow"}}, Size{4, 4, 1}); err == nil {
@@ -262,5 +262,65 @@ func TestRender(t *testing.T) {
 	})
 	if !errors.Is(err, process.ErrCanceled) && !errors.Is(err, context.Canceled) {
 		t.Fatalf("отмена: %v", err)
+	}
+}
+
+// meanYUV — средние Y, U, V первого кадра ролика.
+func meanYUV(t *testing.T, path string) [3]float64 {
+	t.Helper()
+	data, err := exec.Command("ffmpeg", "-v", "error", "-i", path, "-frames:v", "1", "-vf", "format=yuv444p", "-f", "rawvideo", "-").Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	plane := len(data) / 3
+	var mean [3]float64
+	for channel := range mean {
+		for _, value := range data[channel*plane : (channel+1)*plane] {
+			mean[channel] += float64(value)
+		}
+		mean[channel] /= float64(plane)
+	}
+	return mean
+}
+
+// TestVideoRoundTrip — ролик с пометкой bt709 после декодирования и кодирования без эффекта
+// сохраняет значения YUV (матрица на обоих концах одна); ролик короче нужного — ошибка Close.
+func TestVideoRoundTrip(t *testing.T) {
+	requireFFmpeg(t)
+	directory := t.TempDir()
+	source := filepath.Join(directory, "tagged.mp4")
+	if output, err := exec.Command("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=c=0x20C040:size=320x180:rate=30",
+		"-frames:v", "4", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", source).CombinedOutput(); err != nil {
+		t.Fatalf("ffmpeg: %v %s", err, output)
+	}
+	size := Size{320, 180, 4}
+	video, err := OpenVideo(context.Background(), source, size)
+	if err != nil {
+		t.Fatal(err)
+	}
+	output := filepath.Join(directory, "out.mp4")
+	renderErr := Render(context.Background(), Job{Source: video, FPS: 30, Output: output}, nil)
+	if err := video.Close(); renderErr == nil {
+		renderErr = err
+	}
+	if renderErr != nil {
+		t.Fatal(renderErr)
+	}
+	want, got := meanYUV(t, source), meanYUV(t, output)
+	for channel := range want {
+		if math.Abs(want[channel]-got[channel]) > 1.5 {
+			t.Fatalf("YUV до %v, после %v", want, got)
+		}
+	}
+
+	short, err := OpenVideo(context.Background(), source, Size{320, 180, 10})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for frame := 0; frame < 10; frame++ {
+		short.Frame(frame)
+	}
+	if err := short.Close(); err == nil || !strings.Contains(err.Error(), "меньше кадров") {
+		t.Fatalf("короткий ролик: %v", err)
 	}
 }

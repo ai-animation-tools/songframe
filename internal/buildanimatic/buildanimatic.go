@@ -39,6 +39,7 @@ import (
 	"songframe/internal/mediacmd"
 	"songframe/internal/projectviews"
 	"songframe/internal/sceneregistry"
+	"songframe/internal/shoteffects"
 	"songframe/internal/toolcli"
 	"songframe/internal/toolrt"
 )
@@ -377,7 +378,8 @@ func preparePlan(ctx context.Context, root string) (*plan, error) {
 }
 
 // acceptedEdit — ветка готовой сцены prepare_plan: accepted_edit.video комплекта совпадает с
-// планом по ID, SHA-256, fps и числу кадров; план получает media=video и путь клипа.
+// планом по ID, SHA-256, fps и числу кадров; план получает media=video и путь клипа — ролика со
+// свежим эффектом плана, если он есть (shoteffects.MontageVideo), иначе принятого видео.
 func acceptedEdit(root, folder, manifest string, shot *toolrt.Dict, fps int64) (string, error) {
 	pkg, err := toolrt.LoadJSONFile(manifest)
 	if err != nil {
@@ -440,6 +442,10 @@ func acceptedEdit(root, folder, manifest string, shot *toolrt.Dict, fps int64) (
 	}
 	if mismatch {
 		return "", toolrt.New(toolrt.ValueError, textEditMismatch(shot.Value("id")))
+	}
+	// Свежий эффект плана заменяет принятое видео в монтаже; кадры и длина у него те же.
+	if video, err := shoteffects.MontageVideo(root, toolrt.Str(shot.Value("id"))); err == nil && video.Effect {
+		source = video.Absolute
 	}
 	path, err := relative(source, root)
 	if err != nil {

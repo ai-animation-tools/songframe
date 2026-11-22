@@ -448,6 +448,19 @@ func frameCount(value any) string {
 }
 
 // readme — README.md пакета: пояснение полей и оговорки для монтажёра.
+// effectNote — пояснение к планам с эффектом поверх принятого видео (дождь, свет, зерно), если
+// такие есть: их принятый клип — ролик с эффектом, а рецепт пересборки описывает видео без него.
+func effectNote(rows []*toolrt.Dict) string {
+	for _, row := range rows {
+		if row.Value("effect") == true {
+			return "- Планы с `effect: true` в `bundle.json` идут с эффектом поверх принятого видео: " +
+				"`accepted_clip` и `accepted_sha256` — ролик с эффектом, а `rebuild_input` и source in/out " +
+				"воспроизводят принятое видео без эффекта.\n"
+		}
+	}
+	return ""
+}
+
 func readme(bundle *toolrt.Dict, copied int) string {
 	rate := frameRateLabel(bundleFPS(bundle))
 	rows := rowsOf(bundle)
@@ -500,7 +513,8 @@ func readme(bundle *toolrt.Dict, copied int) string {
 		"- `repeat_full_cycles`, `repeat_tail_frames`, `repeat_cycle_frames` — число полных повторов, " +
 			"кадров последнего хвоста и кадров одного цикла. EDL содержит отдельное событие для каждого " +
 			"повтора и хвоста; FCPXML использует точный принятый клип.",
-		"- Планы с `source_shot`, отличным от `shot`, собраны из чужой " +
+		effectNote(rows) +
+			"- Планы с `source_shot`, отличным от `shot`, собраны из чужой " +
 			"генерации; `rebuild_input` " +
 			"указывает фактический вход.",
 		"- Для речевых планов (`lipsync`) `speech_wav` — точный срез " +

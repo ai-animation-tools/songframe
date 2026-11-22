@@ -14,6 +14,7 @@ SongFrame — комплекс для производства музыкаль�
 | [docs/scenario-workflow.md](docs/scenario-workflow.md) | Сценарный проход и применение предложений |
 | [docs/timing.md](docs/timing.md) | Разметка песни: текст, автоматическая разметка, редактор таймингов |
 | [docs/montage.md](docs/montage.md) | Аниматик, монтаж, производные планы, экспорт для монтажёра |
+| [docs/effects.md](docs/effects.md) | Эффекты кадра: дождь, свет, зерно, эффект поверх принятого плана |
 | [docs/agents.md](docs/agents.md), [docs/agent-image-limits.md](docs/agent-image-limits.md) | Запуск агентов и ограничения изображений |
 | [docs/ui/](docs/ui/README.md) | Правила интерфейса, текстов и Storybook |
 | [resources/README.md](resources/README.md) | Встроенные шаблон, промпты, документы провайдеров и шрифты |

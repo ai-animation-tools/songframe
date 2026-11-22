@@ -17,6 +17,7 @@ import (
 	"songframe/internal/dynvalue"
 	"songframe/internal/filedigest"
 	"songframe/internal/projectfile"
+	"songframe/internal/shoteffects"
 )
 
 var sha256Pattern = regexp.MustCompile(`^[a-f0-9]{64}$`)
@@ -211,9 +212,16 @@ func inputProblems(project string, manifest *dynvalue.Object) ([]string, error) 
 				}
 				selected = toSlash(dynvalue.Relative(project, dynvalue.Resolve(filepath.Dir(assetPath), text)))
 			}
+			digest := dynvalue.GetPath(edit, "video", "sha256")
+			// Свежий эффект плана заменяет в монтаже принятое видео (shoteffects.MontageVideo).
+			if id, ok := shotID.(string); ok {
+				if video, err := shoteffects.MontageVideo(project, id); err == nil && video.Effect {
+					selected, digest = video.Path, video.SHA256
+				}
+			}
 			expected := dynvalue.Coalesce(dynvalue.GetKey(sources, path), dynvalue.Get(shot, "sha256"))
 			if !dynvalue.StrictEqual(dynvalue.Get(asset, "shot"), shotID) || !dynvalue.StrictEqual(selected, path) ||
-				!dynvalue.StrictEqual(dynvalue.GetPath(edit, "video", "sha256"), expected) ||
+				!dynvalue.StrictEqual(digest, expected) ||
 				(fps != 0 && !dynvalue.StrictEqual(dynvalue.Get(edit, "fps"), fps)) || !dynvalue.StrictEqual(dynvalue.Get(edit, "frames"), dynvalue.Get(shot, "frames")) {
 				problems = append(problems, acceptedEditChanged(shotID))
 			}

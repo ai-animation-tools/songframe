@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 
 	"songframe/internal/mediacmd"
 	"songframe/internal/process"
@@ -85,4 +86,15 @@ func stderrTail(stderr []byte) string {
 		return ""
 	}
 	return ": " + mediacmd.Tail(stderr, 2000)
+}
+
+// FFmpegVersion — первая строка ffmpeg -version: вызывающие записывают её в рецепт результата,
+// потому что от сборки FFmpeg зависят байты закодированного ролика.
+func FFmpegVersion(ctx context.Context) (string, error) {
+	result, err := mediacmd.Run(ctx, mediacmd.FFmpeg(), "-version")
+	if err != nil {
+		return "", err
+	}
+	line, _, _ := strings.Cut(string(result.Stdout), "\n")
+	return strings.TrimSpace(line), nil
 }

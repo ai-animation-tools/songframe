@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"songframe/internal/sceneregistry"
+	"songframe/internal/shoteffects"
 	"songframe/internal/toolrt"
 )
 
@@ -283,6 +284,25 @@ func animaticFresh(sources *Sources, project *toolrt.Dict, latest string, hashes
 	match, err := ProjectInputsMatch(document, project, true)
 	if err != nil || !match {
 		return false, err
+	}
+	// Эффект плана (shoteffects.MontageVideo): появившийся, снятый или устаревший эффект делает
+	// сборку устаревшей, как и на странице «Аниматик», даже если прежний файл сборки на месте с
+	// теми же байтами. Планы без эффекта ни в сборке, ни сейчас здесь не сверяются по пути.
+	listed, err := dictGet(document, "shots", nil)
+	if err != nil {
+		return false, err
+	}
+	shots, _ := listed.([]any)
+	for _, raw := range shots {
+		shot, ok := raw.(*toolrt.Dict)
+		if !ok || !toolrt.Equal(shot.Value("media"), "video") {
+			continue
+		}
+		video, err := shoteffects.MontageVideo(sources.Root, toolrt.Str(shot.Value("id")))
+		built := strings.HasPrefix(toolrt.Str(shot.Value("path")), "assets/effects/")
+		if err == nil && (built || video.Effect) && !toolrt.Equal(shot.Value("path"), video.Path) {
+			return false, nil
+		}
 	}
 	dict, ok := hashes.(*toolrt.Dict)
 	if !ok || dict.Len() == 0 {

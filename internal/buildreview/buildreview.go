@@ -25,6 +25,7 @@ import (
 	"songframe/internal/assetpackage"
 	"songframe/internal/mediacmd"
 	"songframe/internal/sceneregistry"
+	"songframe/internal/shoteffects"
 	"songframe/internal/toolcli"
 	"songframe/internal/toolrt"
 )
@@ -502,6 +503,10 @@ func prepareShot(ctx context.Context, root string, config any, byID map[string]r
 		kind, origin = "video", "accepted_edit"
 		if path, err = acceptedEdit(packagePath, sid, sceneFrames, fps); err != nil {
 			return nil, err
+		}
+		// Проба стыка показывает план, каким он войдёт в монтаж: со свежим эффектом, если он есть.
+		if video, err := shoteffects.MontageVideo(root, sid); err == nil && video.Effect {
+			path = video.Absolute
 		}
 	default:
 		kind, origin = "card", "registry_card"

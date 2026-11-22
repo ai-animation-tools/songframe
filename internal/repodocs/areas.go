@@ -108,12 +108,12 @@ var Areas = []Area{
 	},
 	{
 		Title: "Аниматик и монтаж",
-		Docs:  []string{"docs/montage.md", "resources/templates/project/plan/animatic/README.md"},
+		Docs:  []string{"docs/montage.md", "docs/effects.md", "resources/templates/project/plan/animatic/README.md"},
 		Packages: []string{
 			"internal/animatic", "internal/animaticcards", "internal/buildanimatic",
 			"internal/buildreview", "internal/montage", "internal/applymontage",
 			"internal/derivedshot", "internal/derivedworkflow", "internal/deriveshot",
-			"internal/exportbundle", "internal/builtoutput", "internal/effects",
+			"internal/exportbundle", "internal/builtoutput", "internal/effects", "internal/shoteffects",
 		},
 		Pages: []string{"AnimaticPage", "MontagePage", "MontagePlayerPage"},
 	},

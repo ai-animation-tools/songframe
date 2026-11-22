@@ -89,13 +89,18 @@ type Effect interface {
 }
 
 // Kind — регистрируемый вид эффекта. Version меняется вместе с изменением результата при тех же
-// параметрах: по ней вызывающие отличают устаревший производный файл.
+// параметрах: по ней вызывающие отличают устаревший производный файл. WindAngle — имя параметра
+// экранного наклона, который вызывающий может вычислить из ветра и направления камеры
+// (ScreenAngle); "" — эффект от ветра не зависит. Order — место в цепочке по умолчанию: свет
+// раньше дождя (капли подсвечиваются им), зерно последним (ложится поверх всего).
 type Kind struct {
-	ID      string
-	Title   string
-	Version int
-	Params  []ParamSpec
-	New     func(p Params, size Size) Effect
+	ID        string
+	Title     string
+	Version   int
+	Order     int
+	Params    []ParamSpec
+	WindAngle string
+	New       func(p Params, size Size) Effect
 }
 
 // Size — размер и длина ролика, которые эффект знает при создании.
@@ -113,13 +118,18 @@ func register(kind Kind) {
 	registry[kind.ID] = kind
 }
 
-// Kinds — зарегистрированные эффекты по идентификатору.
+// Kinds — зарегистрированные эффекты в порядке цепочки (Order, затем идентификатор).
 func Kinds() []Kind {
 	result := make([]Kind, 0, len(registry))
 	for _, kind := range registry {
 		result = append(result, kind)
 	}
-	sort.Slice(result, func(i, j int) bool { return result[i].ID < result[j].ID })
+	sort.Slice(result, func(i, j int) bool {
+		if result[i].Order != result[j].Order {
+			return result[i].Order < result[j].Order
+		}
+		return result[i].ID < result[j].ID
+	})
 	return result
 }
 

@@ -173,7 +173,7 @@
 
 ## Аниматик и монтаж
 
-Документы: [docs/montage.md](montage.md), [resources/templates/project/plan/animatic/README.md](../resources/templates/project/plan/animatic/README.md).
+Документы: [docs/montage.md](montage.md), [docs/effects.md](effects.md), [resources/templates/project/plan/animatic/README.md](../resources/templates/project/plan/animatic/README.md).
 
 | Пакет | Назначение |
 | --- | --- |
@@ -189,6 +189,7 @@
 | [`internal/exportbundle`](../internal/exportbundle) | Собирает пакет для монтажёра из сценария, манифестов комплектов и разметки песни (инструмент export_edit_bundle). |
 | [`internal/builtoutput`](../internal/builtoutput) | Задаёт границы удаления готовых результатов: удалять можно только обычные папки и файлы непосредственно в plan/batches выбранного проекта. |
 | [`internal/effects`](../internal/effects) | Библиотека локальных эффектов кадра: план из опор-состояний («статичный кадр») и эффекты поверх кадров (дождь, свет, зерно). |
+| [`internal/shoteffects`](../internal/shoteffects) | Эффекты поверх принятого плана (дождь, свет, зерно из internal/effects): рецепт и производный ролик плана рядом с комплектом и единственная точка выбора видео плана для монтажа. |
 
 | Страница | Назначение |
 | --- | --- |

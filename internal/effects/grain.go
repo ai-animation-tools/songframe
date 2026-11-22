@@ -8,7 +8,7 @@ type grain struct{ amount float32 }
 
 func init() {
 	register(Kind{
-		ID: "grain", Title: "Зерно", Version: 1,
+		ID: "grain", Title: "Зерно", Version: 1, Order: 30,
 		Params: []ParamSpec{{"amount", "Сила зерна", 0, 0.2, 0.025, 0.001}},
 		New: func(p Params, size Size) Effect {
 			return &grain{amount: float32(p["amount"])}

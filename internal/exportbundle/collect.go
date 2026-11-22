@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	"songframe/internal/sceneregistry"
+	"songframe/internal/shoteffects"
 	"songframe/internal/toolcli"
 	"songframe/internal/toolrt"
 )
@@ -308,6 +309,13 @@ func shotRow(root string, scene *toolrt.Dict, fps int64) (*toolrt.Dict, error) {
 		}
 		if err := addVideo(row, sid, folder, kit, fps); err != nil {
 			return nil, err
+		}
+		// Монтажёр получает план, каким он вошёл в аниматик: со свежим эффектом, если он есть.
+		if video, err := shoteffects.MontageVideo(root, sid); err == nil && video.Effect {
+			row.Set("accepted_clip", video.Path)
+			row.Set("accepted_sha256", video.SHA256)
+			// Признак только у таких планов: пакет без эффектов не меняется.
+			row.Set("effect", true)
 		}
 	}
 	return row, nil

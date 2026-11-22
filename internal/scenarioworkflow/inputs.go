@@ -180,10 +180,20 @@ func partsDigest(data []byte) *string {
 // fileHash — для source/manifest.json — отпечаток входов, для partsKey — отпечаток частей
 // сценария, для остальных путей — SHA-256 байтов; nil — файла нет. Ошибка чтения существующего
 // файла возвращается ошибкой, а не «нет файла».
+//
+// SHA-256 байтов берётся из кэша filedigest: вид прохода опрашивается при каждом обновлении
+// страницы производства, а неизменные исходники (изображения и аудио) иначе перечитывались бы
+// целиком каждый раз. Если кэш файл не отдал (нет пути, не файл, ошибка чтения), путь проходит
+// прежнее чтение, чтобы различить «нет файла» и ошибку.
 func fileHash(project, relative string) (*string, error) {
 	file := relative
 	if relative == partsKey {
 		file = "plan/scenes.json"
+	}
+	if relative != partsKey && relative != "source/manifest.json" {
+		if digest, ok := filedigest.File(filepath.Join(project, filepath.FromSlash(file))); ok {
+			return &digest, nil
+		}
 	}
 	data, err := os.ReadFile(filepath.Join(project, filepath.FromSlash(file)))
 	if errors.Is(err, fs.ErrNotExist) {

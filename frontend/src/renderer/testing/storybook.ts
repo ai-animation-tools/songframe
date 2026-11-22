@@ -387,6 +387,7 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
     diagnostics: {
       reportRendererError: guardedSync(merged.diagnostics.reportRendererError),
       crashNotice: guardedAsync(merged.diagnostics.crashNotice),
+      previousSession: guardedAsync(merged.diagnostics.previousSession),
       saveReport: guardedAsync(merged.diagnostics.saveReport)
     },
     environment: {
@@ -394,7 +395,8 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
       loginProvider: guardedAsync(merged.environment.loginProvider),
       cancelLogin: guardedAsync(merged.environment.cancelLogin),
       onLoginUrl: guardedSync(merged.environment.onLoginUrl),
-      providerAuth: guardedAsync(merged.environment.providerAuth)
+      providerAuth: guardedAsync(merged.environment.providerAuth),
+      providerBalance: guardedAsync(merged.environment.providerBalance)
     },
     tools: {
       run: guardedAsync(merged.tools.run)

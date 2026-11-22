@@ -2,11 +2,15 @@ package app
 
 import (
 	"context"
+	"errors"
+	"math"
 	"sync"
+	"time"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 
 	"songframe/internal/agents"
+	"songframe/internal/mediaadapters"
 	"songframe/internal/mediaapi"
 	"songframe/internal/providers"
 	"songframe/internal/wire"
@@ -63,6 +67,42 @@ func (s *EnvironmentService) Check(ctx context.Context, requestID string) ([]med
 // ProviderAuth — состояние входа в платного провайдера без генерации.
 func (s *EnvironmentService) ProviderAuth(ctx context.Context, provider string) (agents.ProviderAuth, error) {
 	return s.layer.ProviderAuth(ctx, provider)
+}
+
+// balanceTimeout — предел запроса остатка: он информационный и не должен задерживать страницу долго.
+const balanceTimeout = 30 * time.Second
+
+// ProviderBalance — остаток кредитов платного провайдера и время его запроса (UTC, ISO 8601).
+// Единицы — те, что отдаёт адаптер; приложение показывает их как кредиты.
+type ProviderBalance struct {
+	Credits   float64 `json:"credits"`
+	CheckedAt string  `json:"checkedAt"`
+}
+
+// ProviderBalance — остаток кредитов провайдера через AccountReader его адаптера (бесплатный запрос, как в
+// cost_check). nil без ошибки — остаток недоступен: адаптер его не отдаёт, сервис не ответил или вход не
+// выполнен; страница тогда просто не показывает строку. Ошибка — только для провайдера, который не платный.
+// Результат не кэшируется: страница сама решает, когда спросить заново.
+func (s *EnvironmentService) ProviderBalance(ctx context.Context, provider string) (*ProviderBalance, error) {
+	paid, ok := providers.PaidAdapter(provider)
+	if !ok {
+		return nil, errors.New("Провайдер не поддерживает запрос остатка.")
+	}
+	adapter, ok := mediaadapters.Get(paid.ID)
+	if !ok {
+		return nil, nil
+	}
+	reader, ok := adapter.(mediaapi.AccountReader)
+	if !ok {
+		return nil, nil
+	}
+	ctx, cancel := context.WithTimeout(ctx, balanceTimeout)
+	defer cancel()
+	account, err := reader.Account(ctx, balanceTimeout)
+	if err != nil || account.Balance == nil || math.IsNaN(*account.Balance) || math.IsInf(*account.Balance, 0) {
+		return nil, nil
+	}
+	return &ProviderBalance{Credits: *account.Balance, CheckedAt: time.Now().UTC().Format("2006-01-02T15:04:05.000Z")}, nil
 }
 
 // LoginProvider — вход в платного провайдера: приложение открывает страницу авторизации в

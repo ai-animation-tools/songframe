@@ -1,3 +1,5 @@
+import { plural } from '../plural';
+
 /** Тексты диагностики среды; владельцы исключений описаны в @link ../../../docs/ui/texts.md. */
 export const environmentTexts = {
   // Подписи строки Git из проверки среды Go; providers.TestTextsMatchFrontend сверяет их с этим словарём.
@@ -39,6 +41,9 @@ export const environmentTexts = {
   browserNotOpened: 'Если браузер не открылся, {link}.',
   openLogin: 'откройте страницу входа',
   checkingLogin: 'Проверка входа',
+  // Единицы остатка — как отдаёт адаптер провайдера; время запроса уже отформатировано вызывающим кодом.
+  balance: ({ credits, checkedAt }: { credits: number; checkedAt: string }) =>
+    `Остаток: ${credits.toLocaleString('ru-RU', { maximumFractionDigits: 2 })} ${plural(credits, 'кредит', 'кредита', 'кредитов')} · запрошен ${checkedAt}`,
   changeAccount: 'Сменить аккаунт',
   login: 'Войти',
   checkLogin: 'Проверить вход',

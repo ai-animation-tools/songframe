@@ -4,13 +4,15 @@
       "id": "M02",
       "reason": "изменена постановка плана",
       "state": "completed",
-      "produced": true
+      "produced": true,
+      "accepted": true
     },
     {
       "id": "M03",
       "reason": "изменена постановка плана",
       "state": "progress",
-      "produced": true
+      "produced": true,
+      "accepted": false
     }
   ]
 }

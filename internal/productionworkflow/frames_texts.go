@@ -97,6 +97,13 @@ func textImagesFramesIncomplete(provider string) string {
 	return provider + " вернул не все согласованные опоры."
 }
 
+// textImagesFramesModerated — генератор изображений отклонил опору по правилам содержания:
+// пользователю нужно переформулировать опору, а не повторять запрос.
+func textImagesFramesModerated(provider string) string {
+	return provider + " сообщил, что генератор изображений отклонил опору по правилам содержания. " +
+		"Переформулируйте опору нейтрально: опишите, что видно в кадре, без угрозы."
+}
+
 func textImageProviderMismatch(provider string) string {
 	return "Выберите " + provider + " для изображений в настройках проекта."
 }
@@ -153,5 +160,7 @@ func textImagesPrompt(approved, notes, shotFrames, previous, layout bool) string
 		"Если встроенный image tool недоступен, сообщи об этом и не подменяй его другим способом. " +
 		"Не изменяй референсы, исходный проект или принятые материалы. " +
 		"В prompt каждого результата верни дословно промпт, который ты передал генератору для этого изображения (после повтора — последний). " +
-		`Финальный ответ — один JSON без Markdown: {"schemaVersion":1,"stage":"frames","images":[{"id":"K01","path":"K01.png","prompt":"промпт генератора"}]}.`
+		`Финальный ответ — один JSON без Markdown: {"schemaVersion":1,"stage":"frames","images":[{"id":"K01","path":"K01.png","prompt":"промпт генератора"}]}. ` +
+		"Если какое-то изображение не создано, не добавляй его в images и добавь в ответ поле reason — одной-двумя фразами, что именно произошло, " +
+		"дословно с сообщением генератора об отказе; если генератор отклонил запрос по правилам содержания (модерация), добавь ещё moderation=true."
 }

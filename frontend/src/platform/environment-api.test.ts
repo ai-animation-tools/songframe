@@ -109,6 +109,7 @@ describe('environment', () => {
         {
           environment: {
             ProviderAuth: async (provider: string) => (calls.push(`auth ${provider}`), { status: 'authenticated' }),
+            ProviderBalance: async (provider: string) => (calls.push(`balance ${provider}`), { credits: 12.5, checkedAt: '2026-11-22T10:00:00.000Z' }),
             LoginProvider: async (provider: string) => {
               hub.emit('environment:loginUrl', { provider, url: 'https://example.test/authorize' });
               return { ok: true, message: 'Вход выполнен.' };
@@ -124,11 +125,12 @@ describe('environment', () => {
     await Promise.resolve();
     await new Promise((resolve) => setTimeout(resolve, 0));
     await expect(api.environment.providerAuth('kling')).resolves.toEqual({ status: 'authenticated' });
+    await expect(api.environment.providerBalance('kling')).resolves.toEqual({ credits: 12.5, checkedAt: '2026-11-22T10:00:00.000Z' });
     await expect(api.environment.loginProvider('kling')).resolves.toEqual({ ok: true, message: 'Вход выполнен.' });
     await api.environment.cancelLogin('kling');
     off();
     expect(urls).toEqual([{ provider: 'kling', url: 'https://example.test/authorize' }]);
-    expect(calls).toEqual(['auth kling', 'cancel kling']);
+    expect(calls).toEqual(['auth kling', 'balance kling', 'cancel kling']);
   });
 
   it('возможности медиа передают объявления моделей как есть', async () => {

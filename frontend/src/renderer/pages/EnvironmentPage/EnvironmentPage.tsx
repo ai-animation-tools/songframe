@@ -6,7 +6,7 @@ import { navigationTexts } from '@shared/texts/navigation';
 import { type ReactElement, useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Stack, Typography } from '@mui/material';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
-import type { EnvironmentCheck } from '@shared/types';
+import type { EnvironmentCheck, ProviderBalance } from '@shared/types';
 import { useApp } from '../../state';
 import { ApplicationResources, EnvironmentDiagnostics } from './components';
 import { ActionButton } from '../../components/ActionButton';
@@ -22,11 +22,34 @@ export function EnvironmentPage(): ReactElement {
   // Состояние входа по id платного провайдера: строки и кнопки входа задают проверки среды (loginProvider).
   const [auth, setAuth] = useState<Record<string, { status: ProviderAuthStatus; message?: string }>>({});
   const [loggingIn, setLoggingIn] = useState<Record<string, boolean>>({});
+  // Остаток кредитов по id провайдера: запрашивается без блокировки страницы и только при выполненном входе.
+  const [balances, setBalances] = useState<Record<string, ProviderBalance>>({});
+  // Номер последнего запроса остатка: поздний ответ прежнего запроса не затирает свежий.
+  const balanceRequest = useRef<Record<string, number>>({});
   const authInFlight = useRef(new Map<string, Promise<void>>());
   const loginInFlight = useRef(new Set<string>());
   const mounted = useRef(false);
   const inFlight = useRef<Promise<void> | null>(null);
   const lastChecks = useRef<EnvironmentCheck[] | null>(null);
+
+  const refreshBalance = useCallback((provider: string, authenticated: boolean): void => {
+    const request = (balanceRequest.current[provider] ?? 0) + 1;
+    balanceRequest.current[provider] = request;
+    const apply = (balance: ProviderBalance | null): void => {
+      if (!mounted.current || balanceRequest.current[provider] !== request) return;
+      setBalances((previous) => {
+        const next = { ...previous };
+        if (balance) next[provider] = balance;
+        else delete next[provider];
+        return next;
+      });
+    };
+    if (!authenticated) return apply(null);
+    // Недоступный остаток не ошибка: строка просто не показывается.
+    void Promise.resolve()
+      .then(() => window.api.environment.providerBalance(provider))
+      .then(apply, () => apply(null));
+  }, []);
 
   const checkAuth = useCallback(
     (provider: string): Promise<void> => {
@@ -40,9 +63,11 @@ export function EnvironmentPage(): ReactElement {
         .then((result) => {
           if (!mounted.current) return;
           setAuth((previous) => ({ ...previous, [provider]: { status: result.status, message: result.message } }));
+          refreshBalance(provider, result.status === 'authenticated');
         })
         .catch((reason) => {
           if (!mounted.current) return;
+          refreshBalance(provider, false);
           setAuth((previous) => ({ ...previous, [provider]: { status: 'unknown', message: environmentTexts.authCheckFailed(describeError(reason)) } }));
         })
         .finally(() => {
@@ -51,7 +76,7 @@ export function EnvironmentPage(): ReactElement {
       authInFlight.current.set(provider, pending);
       return pending;
     },
-    [describeError]
+    [describeError, refreshBalance]
   );
 
   const load = useCallback((): Promise<void> => {
@@ -169,6 +194,7 @@ export function EnvironmentPage(): ReactElement {
         offline: !online,
         onLogin: () => login(provider),
         onCheck: () => checkAuth(provider),
+        balance: balances[provider],
         authorizeUrl: authorizeUrls[provider],
         onCancel: () => void window.api.environment.cancelLogin(provider)
       }

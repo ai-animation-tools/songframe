@@ -48,6 +48,8 @@ type ShotState struct {
 	State string
 	// Produced — есть принятый комплект (asset) или хотя бы один пакет плана.
 	Produced bool
+	// Accepted — есть принятый комплект (manifest): без него Produced означает лишь попытку в работе.
+	Accepted bool
 }
 
 // ShotStates — состояние каждого плана сохранённого реестра plan/scenes.json по тем же
@@ -128,7 +130,7 @@ func ShotStates(project string) (map[string]ShotState, error) {
 		} else if troubled := troubledState(mine); troubled != "" {
 			state = troubled
 		}
-		result[dynvalue.ToString(rawID)] = ShotState{State: state, Produced: hasManifest || len(mine) > 0}
+		result[dynvalue.ToString(rawID)] = ShotState{State: state, Produced: hasManifest || len(mine) > 0, Accepted: hasManifest}
 	}
 	return result, nil
 }

@@ -62,12 +62,12 @@ describe('window.api.cast и window.api.scenario', () => {
     const api = createApi(
       bindings({
         Status: async () => 'ready',
-        SaveImpact: async () => ({ shots: [{ id: 'M01', reason: 'сдвинуты границы плана', state: 'completed', produced: true }] })
+        SaveImpact: async () => ({ shots: [{ id: 'M01', reason: 'сдвинуты границы плана', state: 'completed', produced: true, accepted: true }] })
       })
     );
     await expect(api.scenario.status('/клип')).resolves.toBe('ready');
     await expect(api.scenario.saveImpact('/клип', {} as ScenesFile)).resolves.toEqual({
-      shots: [{ id: 'M01', reason: 'сдвинуты границы плана', state: 'completed', produced: true }]
+      shots: [{ id: 'M01', reason: 'сдвинуты границы плана', state: 'completed', produced: true, accepted: true }]
     });
   });
 

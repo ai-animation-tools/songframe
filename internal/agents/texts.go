@@ -134,6 +134,10 @@ func withReason(text, reason string) string {
 	return text + " Сообщение агента: «" + reason + "»"
 }
 
+// WithReason — withReason для других пакетов: общая фраза и дословное сообщение агента в том же
+// виде, что в ошибках самого агента.
+func WithReason(text, reason string) string { return withReason(text, reason) }
+
 func textAuthorizationFailed(reason string) string {
 	return withReason("Агент сообщил об ошибке входа. Проверьте авторизацию в настройках.", reason)
 }

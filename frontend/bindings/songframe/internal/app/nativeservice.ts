@@ -79,6 +79,14 @@ export function PreviewReady(session: string): $CancellablePromise<void> {
 }
 
 /**
+ * PreviousSession сообщает о сбое прошлого сеанса на весь текущий сеанс (в отличие от одноразового CrashNotice).
+ * Без сбоя возвращает nil; страница журнала заданий показывает по нему предупреждение.
+ */
+export function PreviousSession(): $CancellablePromise<diagnostics$0.PreviousSessionInfo | null> {
+    return $Call.ByID(3837815554);
+}
+
+/**
  * ReportRendererError сохраняет ошибку любого окна в изолированный журнал приложения.
  */
 export function ReportRendererError(report: diagnostics$0.RendererErrorReport): $CancellablePromise<void> {

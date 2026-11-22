@@ -394,14 +394,18 @@ func (k *KeyframeImages) Collect(job agents.Job) ([]mediaapi.FrameCandidate, err
 	}
 	parsed, err := dynvalue.Parse([]byte(job.Result))
 	if err != nil {
-		return nil, errors.New(textImagesFileListMissing(title))
+		return nil, errors.New(fileListMissingMessage(title, job.Result))
 	}
 	response, ok := parsed.(*dynvalue.Object)
 	if !ok {
 		return nil, errors.New(textImagesFileListMissing(title))
 	}
 	images, imagesOK := dynvalue.AsArray(response.Value("images"))
-	if response.Value("schemaVersion") != float64(1) || response.Value("stage") != "frames" || keys(response, "schemaVersion", "stage", "images") != nil || !imagesOK {
+	_, reasonIsText := response.Value("reason").(string)
+	_, moderationIsFlag := response.Value("moderation").(bool)
+	if response.Value("schemaVersion") != float64(1) || response.Value("stage") != "frames" ||
+		keys(response, "schemaVersion", "stage", "images", "reason", "moderation") != nil || !imagesOK ||
+		(response.Has("reason") && !reasonIsText) || (response.Has("moderation") && !moderationIsFlag) {
 		return nil, errors.New(textImagesResultInvalid)
 	}
 	candidates := make([]mediaapi.FrameCandidate, 0, len(images))
@@ -437,7 +441,7 @@ func (k *KeyframeImages) Collect(job agents.Job) ([]mediaapi.FrameCandidate, err
 	if len(candidates) != len(ids) || len(unique) != len(ids) || slices.ContainsFunc(candidates, func(candidate mediaapi.FrameCandidate) bool {
 		return !slices.Contains(expected, candidate.ID)
 	}) {
-		return nil, errors.New(textImagesFramesIncomplete(title))
+		return nil, errors.New(framesIncompleteMessage(title, job.Result))
 	}
 	result := make([]mediaapi.FrameCandidate, len(expected))
 	for index, id := range expected {
@@ -445,6 +449,54 @@ func (k *KeyframeImages) Collect(job agents.Job) ([]mediaapi.FrameCandidate, err
 		result[index] = candidates[position]
 	}
 	return result, nil
+}
+
+// executorReason — причина, по которой исполнитель опор вернул не всё: необязательное поле reason
+// ответа (дословное сообщение генератора) либо, если ответ не JSON, сам текст агента. Текст очищен
+// от секретов и ограничен так же, как показанный ответ агента. moderated — генератор отклонил
+// запрос по правилам содержания: об этом исполнитель сообщает полем moderation (формат задан
+// заданием опор), а в обычном тексте причины узнаётся по словам об модерации и правилах содержания.
+func executorReason(raw string) (reason string, moderated bool) {
+	parsed, err := dynvalue.Parse([]byte(raw))
+	if err != nil {
+		reason = AgentResponseText(raw, "frames")
+	} else {
+		text, _ := dynvalue.Get(parsed, "reason").(string)
+		reason = AgentResponseText(text, "frames")
+		moderated = dynvalue.Get(parsed, "moderation") == true
+	}
+	return reason, moderated || moderationWording(reason)
+}
+
+// moderationMarkers — фразы отказа генератора по правилам содержания (в нижнем регистре).
+var moderationMarkers = []string{"moderation", "content policy", "safety system", "модерац", "правилам содержания", "политике содержания"}
+
+// moderationWording — в тексте причины названа модерация генератора.
+func moderationWording(reason string) bool {
+	lowered := strings.ToLower(reason)
+	return slices.ContainsFunc(moderationMarkers, func(marker string) bool { return strings.Contains(lowered, marker) })
+}
+
+// fileListMissingMessage — ошибка ответа, не разобранного как список опор: обычно это текст агента
+// (например, отказ генератора). Он показывается вместе с общей фразой, а явная модерация
+// называется понятным отказом.
+func fileListMissingMessage(title, raw string) string {
+	reason, moderated := executorReason(raw)
+	if moderated {
+		return agents.WithReason(textImagesFramesModerated(title), reason)
+	}
+	return agents.WithReason(textImagesFileListMissing(title), reason)
+}
+
+// framesIncompleteMessage — ошибка неполного ответа исполнителя опор: общая фраза либо, если
+// генератор отклонил запрос по правилам содержания, понятный отказ; в обоих случаях с причиной,
+// названной исполнителем. Без причины в ответе текст остаётся прежней общей фразой.
+func framesIncompleteMessage(title, raw string) string {
+	reason, moderated := executorReason(raw)
+	if moderated {
+		return agents.WithReason(textImagesFramesModerated(title), reason)
+	}
+	return agents.WithReason(textImagesFramesIncomplete(title), reason)
 }
 
 // generatorPrompts — промпты генератора из ответа задания опор raw (поле prompt элементов images)

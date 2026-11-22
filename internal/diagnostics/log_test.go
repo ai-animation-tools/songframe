@@ -87,3 +87,42 @@ func TestConcurrentReports(t *testing.T) {
 		t.Fatal("экспорт потерял ошибку")
 	}
 }
+
+// TestPreviousSessionKeptAndPanicRecorded: сбой прошлого сеанса виден весь сеанс после потребления уведомления,
+// а паника попадает в app.log и не превращается в штатный выход при отложенном Close.
+func TestPreviousSessionKeptAndPanicRecorded(t *testing.T) {
+	directory := t.TempDir()
+	first, err := Open(directory)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first.PreviousSession() != nil {
+		t.Fatal("чистый профиль объявлен аварийным")
+	}
+	if err := first.RecordPanic("сбой теста", []byte("стек")); err != nil {
+		t.Fatal(err)
+	}
+	if err := first.Close(); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(filepath.Join(directory, "logs", "app.log"))
+	if err != nil || !strings.Contains(string(data), "сбой теста") {
+		t.Fatalf("паника не записана: %v %s", err, data)
+	}
+	second, err := Open(directory)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer second.Close()
+	if second.CrashNotice() == nil {
+		t.Fatal("сбой после паники не найден")
+	}
+	previous := second.PreviousSession()
+	if previous == nil || !previous.Crashed || previous.StartedAt == nil || previous.Version == nil {
+		t.Fatalf("сведения о сбое потеряны после уведомления: %+v", previous)
+	}
+	report, err := second.Report()
+	if err != nil || !strings.Contains(string(report), "Прошлый сеанс завершился аварийно") {
+		t.Fatalf("отчёт без сведений о сбое: %v", err)
+	}
+}

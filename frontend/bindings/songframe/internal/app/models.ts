@@ -112,3 +112,12 @@ export interface ProjectHistoryEntry {
     "lastOpened": string;
     "exists": boolean;
 }
+
+/**
+ * ProviderBalance — остаток кредитов платного провайдера и время его запроса (UTC, ISO 8601).
+ * Единицы — те, что отдаёт адаптер; приложение показывает их как кредиты.
+ */
+export interface ProviderBalance {
+    "credits": number;
+    "checkedAt": string;
+}

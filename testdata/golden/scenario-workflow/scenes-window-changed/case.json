@@ -1170,7 +1170,7 @@
           "task": "ai-clip-scenario:scenes",
           "permissions": "read-only",
           "inputHashes": {
-            "prompt": "19c6860f330ee7be571043445ef9a599dd4e25385b78cc8aba88374d7c7c6112",
+            "prompt": "d50d43c85dd9a9e3a634a4afa564f2cf9e6996b8d85add10545d386c62bfa86f",
             "context": "df4a6745191744bacf6152c83f474ad01962e71478b60f0d9741f90f29b446fa"
           },
           "status": "running",
@@ -2340,7 +2340,7 @@
           "task": "ai-clip-scenario:scenes",
           "permissions": "read-only",
           "inputHashes": {
-            "prompt": "19c6860f330ee7be571043445ef9a599dd4e25385b78cc8aba88374d7c7c6112",
+            "prompt": "d50d43c85dd9a9e3a634a4afa564f2cf9e6996b8d85add10545d386c62bfa86f",
             "context": "df4a6745191744bacf6152c83f474ad01962e71478b60f0d9741f90f29b446fa"
           },
           "status": "completed",

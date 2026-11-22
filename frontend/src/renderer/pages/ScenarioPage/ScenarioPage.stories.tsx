@@ -109,6 +109,21 @@ export const Overview: Story = {
   }
 };
 
+export const StateColumnHeadings: Story = {
+  name: 'Состояние героев и мира · заметные заголовки колонок «Первый кадр» и «Последний кадр»',
+  tags: ['ci'],
+  play: async (context) => {
+    const screen = await ready(context);
+    await editorHeading(screen, 'M01');
+    const before = within(await screen.findByTestId('state-column-before'));
+    const after = within(screen.getByTestId('state-column-after'));
+    await expect(before.getByRole('heading', { name: scenarioTexts.state.beforeHeading })).toBeVisible();
+    await expect(before.getByText(scenarioTexts.state.beforeHeadingHint)).toBeVisible();
+    await expect(after.getByRole('heading', { name: scenarioTexts.state.afterHeading })).toBeVisible();
+    await expect(after.getByText(scenarioTexts.state.afterHeadingHint)).toBeVisible();
+  }
+};
+
 export const OpenShotFromRoute: Story = {
   name: 'Переход по ?shot=M03 · смена плана на открытой странице без потери правок',
   tags: CANVAS_ONLY,
@@ -207,6 +222,46 @@ const clickPreview = (preview: Element, x: number, y: number): void => {
 };
 const previewOf = async (screen: Screen, scope: Screen = screen): Promise<SVGSVGElement> =>
   (await scope.findByRole('application', { name: viewpointTexts.preview({ title: 'Ворота' }) })) as unknown as SVGSVGElement;
+
+export const ViewpointCoordinates: Story = {
+  name: 'Точка съёмки · числовой ввод места и направления камеры',
+  tags: ['!autodocs', 'ci'],
+  parameters: { songframe: scenarioPageOptions({ route: '/project/scenario?shot=M03' }) },
+  play: async (context) => {
+    const screen = await ready(context);
+    await editorHeading(screen, 'M03');
+    await userEvent.click(viewpointBlock(screen));
+    await userEvent.click(await screen.findByRole('button', { name: viewpointTexts.create }));
+    const map = within(await screen.findByRole('dialog', { name: viewpointTexts.fullscreenTitle({ shot: 'M03' }) }));
+    const preview = await previewOf(screen, map);
+    clickPreview(preview, 0.3, 0.5);
+    await waitFor(() => expect(preview.querySelector('[data-camera]')).not.toBeNull());
+    await userEvent.click(within(map.getByRole('group', { name: viewpointTexts.target })).getByRole('button', { name: /Герой/ }));
+    clickPreview(preview, 0.7, 0.5);
+    await waitFor(() => expect(preview.querySelector('[data-subject="hero"]')).not.toBeNull());
+    // Факты кадра запрашиваются по текущей расстановке: по ним видно, что числа записаны в точку.
+    const agentFacts = document.querySelector<HTMLElement>('[data-agent-facts]')!;
+    await userEvent.click(within(agentFacts).getByRole('button', { name: new RegExp(viewpointTexts.agentFacts) }));
+    const camera = within(map.getByRole('group', { name: `${viewpointTexts.coords}: ${viewpointTexts.camera}` }));
+    const x = camera.getByRole('spinbutton', { name: viewpointTexts.coordX });
+    await userEvent.clear(x);
+    await userEvent.type(x, '2.5{Enter}');
+    await waitFor(() => expect(scenarioFrameRequests().at(-1)?.camera?.start?.[0]).toBe(2.5));
+    // Направление числом становится своим направлением камеры, как поворот ромбом на схеме.
+    const heading = camera.getByRole('spinbutton', { name: viewpointTexts.headingField });
+    await userEvent.clear(heading);
+    await userEvent.type(heading, '101{Enter}');
+    await waitFor(() => expect(scenarioFrameRequests().at(-1)?.heading?.start).toBe(101));
+    await expect(document.querySelector('[data-viewpoint-row="camera"]')).toHaveTextContent(viewpointTexts.headingOwn);
+    // У героя — только место: направление задаёт камера.
+    const hero = within(map.getByRole('group', { name: new RegExp(`^${viewpointTexts.coords}: Герой`) }));
+    await expect(hero.queryByRole('spinbutton', { name: viewpointTexts.headingField })).toBeNull();
+    const y = hero.getByRole('spinbutton', { name: viewpointTexts.coordY });
+    await userEvent.clear(y);
+    await userEvent.type(y, '-1{Enter}');
+    await waitFor(() => expect(scenarioFrameRequests().at(-1)?.subjects?.[0]?.start?.[1]).toBe(-1));
+  }
+};
 
 export const ViewpointSet: Story = {
   name: 'Точка съёмки · карта во весь экран: камера и герои, дом со схемы, сторона по точкам, движение, свой угол и запись',

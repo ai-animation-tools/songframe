@@ -65,6 +65,8 @@ type ImpactShot struct {
 	Reason   string `json:"reason"`
 	State    string `json:"state"`
 	Produced bool   `json:"produced"`
+	// Accepted — у плана есть принятый комплект; при Produced без Accepted есть только попытка в работе.
+	Accepted bool `json:"accepted"`
 }
 
 // Impact — ScenarioSaveImpact, ответ scenario.saveImpact.
@@ -282,7 +284,7 @@ func SaveImpact(project string, draft any) (Impact, error) {
 	for _, shot := range shots {
 		item := ImpactShot{ID: shot.id, Reason: shot.reason, State: production.StatePlanned}
 		if state, ok := states[shot.id]; ok {
-			item.State, item.Produced = state.State, state.Produced
+			item.State, item.Produced, item.Accepted = state.State, state.Produced, state.Accepted
 		}
 		result.Shots = append(result.Shots, item)
 	}

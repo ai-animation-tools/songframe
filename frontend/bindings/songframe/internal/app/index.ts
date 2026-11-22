@@ -81,5 +81,6 @@ export type {
     PickFilter,
     PickOptions,
     PreviewInput,
-    ProjectHistoryEntry
+    ProjectHistoryEntry,
+    ProviderBalance
 } from "./models.js";

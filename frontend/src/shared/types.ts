@@ -448,6 +448,8 @@ export interface ScenarioImpactShot {
   state: ShotProductionState;
   /** Есть принятый комплект или пакет плана: только для них изменение означает новое производство. */
   produced: boolean;
+  /** Есть принятый комплект: при produced без accepted у плана только попытка в работе. */
+  accepted: boolean;
 }
 
 export interface ScenarioSaveImpact {
@@ -965,6 +967,12 @@ export interface JobInfo {
 
 /** Подпись и причина задания, прерванного закрытием программы. */
 export const JOB_INTERRUPTED_MESSAGE = projectDataTexts.jobInterrupted;
+
+/** Остаток кредитов платного провайдера: единицы — как отдаёт его адаптер; checkedAt — время запроса (UTC, ISO 8601). */
+export interface ProviderBalance {
+  credits: number;
+  checkedAt: string;
+}
 
 /** Сведения о прошлом сеансе программы для уведомления и отчёта разработчику. */
 export interface PreviousSessionInfo {

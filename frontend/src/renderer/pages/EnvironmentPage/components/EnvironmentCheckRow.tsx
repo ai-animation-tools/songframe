@@ -9,7 +9,8 @@ import ScheduleIcon from '@mui/icons-material/Schedule';
 import LoginIcon from '@mui/icons-material/Login';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import CloseIcon from '@mui/icons-material/Close';
-import type { EnvironmentCheck } from '@shared/types';
+import type { EnvironmentCheck, ProviderBalance } from '@shared/types';
+import { formatDateTime } from '../../../format';
 import { OFFLINE_MESSAGE } from '../../../network';
 import { ActionButton } from '../../../components/ActionButton';
 import { ExternalLink } from '../../../components/ExternalLink';
@@ -26,6 +27,8 @@ export interface ProviderLogin {
   offline: boolean;
   onLogin(): Promise<void>;
   onCheck?(): Promise<void>;
+  /** Остаток кредитов при выполненном входе; нет значения (undefined или null) — строка не показывается. */
+  balance?: ProviderBalance | null;
   /** Адрес страницы входа текущего ожидания: приложение открыло его в браузере, ссылка нужна, если браузер не открылся. */
   authorizeUrl?: string;
   onCancel?(): void;
@@ -115,6 +118,11 @@ export function EnvironmentCheckRow({ check, category, logins }: EnvironmentChec
                       : login.status === 'authenticated'
                         ? environmentTexts.authenticated
                         : environmentTexts.unauthenticated}
+                  </Typography>
+                )}
+                {completed && check.ok && login.status === 'authenticated' && login.balance && (
+                  <Typography variant="caption" component="span" display="block" color="text.secondary">
+                    {environmentTexts.balance({ credits: login.balance.credits, checkedAt: formatDateTime(login.balance.checkedAt) })}
                   </Typography>
                 )}
                 {login.loggingIn && (

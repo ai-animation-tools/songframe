@@ -75,6 +75,7 @@ import type {
   OwnVideoGeneration,
   PickOptions,
   PreviousSessionInfo,
+  ProviderBalance,
   RendererErrorReport,
   ProductionView,
   ProductionQuote,
@@ -401,6 +402,8 @@ export interface Api {
     reportRendererError(report: RendererErrorReport): void;
     /** Сведения об аварийном прошлом сеансе; один раз за запуск, иначе null. */
     crashNotice(): Promise<PreviousSessionInfo | null>;
+    /** Сбой прошлого сеанса на весь текущий сеанс (в отличие от одноразового crashNotice): время и версия запуска; null, если сбоя не было. */
+    previousSession(): Promise<PreviousSessionInfo | null>;
     /** Отчёт для разработчика через диалог сохранения; путь файла или null при отмене. */
     saveReport(): Promise<string | null>;
   };
@@ -413,6 +416,8 @@ export interface Api {
     /** Адрес авторизации текущего входа: страница показывает его ссылкой, если браузер не открылся. */
     onLoginUrl(listener: (value: { provider: string; url: string }) => void): () => void;
     providerAuth(provider: string): Promise<ProviderAuth>;
+    /** Остаток кредитов провайдера (бесплатный запрос к его аккаунту); null — недоступен, это не ошибка. Не кэшируется. */
+    providerBalance(provider: string): Promise<ProviderBalance | null>;
   };
   tools: {
     run(project: string, name: string, args: string[]): Promise<ToolResult>;

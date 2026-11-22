@@ -1,6 +1,6 @@
 import { scenarioTexts } from '@shared/texts/scenario';
 import type { ReactElement } from 'react';
-import { Box, MenuItem, Paper, TextField, Typography } from '@mui/material';
+import { alpha, Box, MenuItem, Paper, TextField, Typography } from '@mui/material';
 import type { CastProperty, SceneShot, ScenesFile, StateFrom } from '@shared/types';
 import type { EntityOption, ScenarioBrief } from '../types';
 import { DeltaEditor } from './DeltaEditor';
@@ -70,26 +70,51 @@ export function SceneStateEditor({
         </TextField>
       </Box>
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', xl: 'repeat(2, minmax(0, 1fr))' }, gap: 2 }}>
-        {(['before', 'after'] as const).map((phase) => (
-          <Box key={phase} sx={{ minWidth: 0 }}>
-            <Typography variant="subtitle2" gutterBottom>
-              {phase === 'before' ? scenarioTexts.state.beforeBlock : scenarioTexts.state.afterBlock}
-            </Typography>
-            <DeltaEditor
-              resetKey={resetKey}
-              key={`${shot.id}:${phase}`}
-              phase={phase}
-              reveal={reveal?.phase === phase ? reveal.entity : null}
-              delta={shot.state_changes[phase] ?? {}}
-              // Сравнение идёт с состоянием до правок этого блока: так видно, что план действительно меняет.
-              baseline={(brief?.[phase].shot === shot.id ? brief[phase].inherited : undefined) ?? {}}
-              entities={entityOptions}
-              propertiesOf={propertiesOf}
-              onChange={(entity, value) => setDelta(phase, entity, value)}
-              locked={locked}
-            />
-          </Box>
-        ))}
+        {(['before', 'after'] as const).map((phase) => {
+          // Колонки различаются цветом полосы и заголовка из палитры темы: primary — начало плана, secondary — его конец.
+          // В светлой теме заголовок берёт тёмный оттенок: основной оранжевый на светлом фоне не даёт контраста текста AA.
+          const color = phase === 'before' ? 'primary' : 'secondary';
+          return (
+            <Box
+              key={phase}
+              data-testid={`state-column-${phase}`}
+              sx={(theme) => ({
+                minWidth: 0,
+                p: 1.5,
+                borderRadius: 1,
+                border: 1,
+                borderColor: 'divider',
+                borderTop: 4,
+                borderTopColor: `${color}.main`,
+                bgcolor: alpha(theme.palette[color].main, theme.palette.mode === 'dark' ? 0.08 : 0.04)
+              })}
+            >
+              <Typography
+                variant="h6"
+                component="h3"
+                sx={(theme) => ({ lineHeight: 1.3, color: theme.palette.mode === 'dark' ? theme.palette[color].main : theme.palette[color].dark })}
+              >
+                {phase === 'before' ? scenarioTexts.state.beforeHeading : scenarioTexts.state.afterHeading}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" component="p" sx={{ mb: 1 }}>
+                {phase === 'before' ? scenarioTexts.state.beforeHeadingHint : scenarioTexts.state.afterHeadingHint}
+              </Typography>
+              <DeltaEditor
+                resetKey={resetKey}
+                key={`${shot.id}:${phase}`}
+                phase={phase}
+                reveal={reveal?.phase === phase ? reveal.entity : null}
+                delta={shot.state_changes[phase] ?? {}}
+                // Сравнение идёт с состоянием до правок этого блока: так видно, что план действительно меняет.
+                baseline={(brief?.[phase].shot === shot.id ? brief[phase].inherited : undefined) ?? {}}
+                entities={entityOptions}
+                propertiesOf={propertiesOf}
+                onChange={(entity, value) => setDelta(phase, entity, value)}
+                locked={locked}
+              />
+            </Box>
+          );
+        })}
       </Box>
     </Paper>
   );

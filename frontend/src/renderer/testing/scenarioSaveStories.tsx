@@ -17,7 +17,8 @@ export const SCENARIO_DRAFT = 'Олег осторожно открывает к
 const SAVED_ACTION = 'Олег открывает калитку.';
 const WAIT_REASON = scenarioTexts.save.wait;
 
-export function scenarioSaveShots(longList = false, stale = false): ScenarioImpactShot[] {
+/** attemptOnly — у плана M01 нет принятого комплекта, только попытка в работе. */
+export function scenarioSaveShots(longList = false, stale = false, attemptOnly = false): ScenarioImpactShot[] {
   return Array.from({ length: longList ? 28 : 3 }, (_, index) => ({
     id: `M${String(index + 1).padStart(2, '0')}`,
     reason:
@@ -27,7 +28,8 @@ export function scenarioSaveShots(longList = false, stale = false): ScenarioImpa
           ? 'Изменилось унаследованное состояние из M01: направление взгляда и положение калитки перед следующим действием.'
           : 'Изменился источник производного плана M01: требуется проверить соответствие сохранённого материала новой постановке.',
     state: index === 0 ? (stale ? 'stale' : 'completed') : index === 1 ? 'progress' : 'stale',
-    produced: true
+    produced: true,
+    accepted: !(attemptOnly && index === 0)
   }));
 }
 
@@ -102,13 +104,22 @@ function StoryError({ message }: { message: string | null }) {
 export interface ScenesSaveStoryProps {
   mode?: ScenesSaveMode;
   stale?: boolean;
+  attemptOnly?: boolean;
   longList?: boolean;
   busy?: boolean;
   failFirst?: boolean;
   delay?: number;
 }
 
-export function ScenesSaveStory({ mode = 'production', stale = false, longList = false, busy = false, failFirst = false, delay = 180 }: ScenesSaveStoryProps) {
+export function ScenesSaveStory({
+  mode = 'production',
+  stale = false,
+  attemptOnly = false,
+  longList = false,
+  busy = false,
+  failFirst = false,
+  delay = 180
+}: ScenesSaveStoryProps) {
   const [open, setOpen] = useState(true);
   const [draft, setDraft] = useState(SCENARIO_DRAFT);
   const [saved, setSaved] = useState(SAVED_ACTION);
@@ -121,7 +132,7 @@ export function ScenesSaveStory({ mode = 'production', stale = false, longList =
   const failed = useRef(false);
   const write = useStoryWrite();
   const locked = busy || write.running;
-  const shots = scenarioSaveShots(longList, stale);
+  const shots = scenarioSaveShots(longList, stale, attemptOnly);
   const reset = () => {
     write.cancel();
     setDraft(SCENARIO_DRAFT);

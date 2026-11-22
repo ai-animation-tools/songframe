@@ -524,6 +524,7 @@ export function createApi(b: Bindings): Api {
     void call('diagnostics.reportRendererError', async () => (await b.native()).ReportRendererError(report)).catch((error: unknown) => console.error(error));
   };
   api.diagnostics.crashNotice = () => call('diagnostics.crashNotice', async () => (await b.native()).CrashNotice());
+  api.diagnostics.previousSession = () => call('diagnostics.previousSession', async () => (await b.native()).PreviousSession());
   api.diagnostics.saveReport = () => call('diagnostics.saveReport', async () => (await b.native()).SaveReport(), false);
 
   api.projects.open = (path) => call('projects.open', async () => toStatus(await (await b.projects()).Open(path)));
@@ -808,6 +809,7 @@ export function createApi(b: Bindings): Api {
     );
   api.environment.providerAuth = (provider) =>
     call('environment.providerAuth', async () => toProviderAuth(await (await b.environment()).ProviderAuth(provider)), false);
+  api.environment.providerBalance = (provider) => call('environment.providerBalance', async () => (await b.environment()).ProviderBalance(provider), false);
   api.environment.loginProvider = (provider) => call('environment.loginProvider', async () => (await b.environment()).LoginProvider(provider), false);
   api.environment.cancelLogin = (provider) => call('environment.cancelLogin', async () => (await b.environment()).CancelLogin(provider));
   api.environment.onLoginUrl = (listener) => subscribe<{ provider: string; url: string }>(b.events, 'environment:loginUrl', listener);

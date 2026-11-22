@@ -133,13 +133,9 @@ describe('Видимые тексты и границы JSX сценария', (
     [
       { kind: 'plan', shot: 'M01', phase: 'before' },
       'M01 · первый кадр',
-      'Прокрутить к блоку «Состояние героев и мира» этого плана: значение задано в «Первый кадр (before)»'
+      'Прокрутить к блоку «Состояние героев и мира» этого плана: значение задано в «Первый кадр»'
     ],
-    [
-      { kind: 'plan', shot: 'M02', phase: 'after' },
-      'M02 · итог',
-      'Открыть план M02 и его блок «Состояние героев и мира»: значение задано в «Итог плана (after)»'
-    ]
+    [{ kind: 'plan', shot: 'M02', phase: 'after' }, 'M02 · итог', 'Открыть план M02 и его блок «Состояние героев и мира»: значение задано в «Последний кадр»']
   ] as const)('сохраняет источник врезки %j', (source, expected, title) => {
     const html = render(
       createElement(BriefSourceLink, { source, entity: 'hero', entityName: 'Герой <&>', currentShot: 'M01', leaveReason: null, onOpenShotState: noop })

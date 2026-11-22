@@ -192,3 +192,34 @@ export const ClientUnavailable: Story = {
     await expect(button).toHaveAttribute('title', 'Сначала устраните проблему, указанную в этой строке, и повторите проверку.');
   }
 };
+const STORY_BALANCE = { credits: 1250, checkedAt: '2026-11-22T10:15:30.000Z' };
+export const BalanceShown: Story = {
+  name: 'Вход выполнен · остаток кредитов со временем запроса',
+  tags: ['ci'],
+  render: () => <EnvironmentProviderStory initialStatus="authenticated" balance={STORY_BALANCE} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText('Вход выполнен.')).toBeVisible();
+    await expect(canvas.getByText(/^Остаток: 1\s250 кредитов · запрошен .*2026/)).toBeVisible();
+    await expect(canvas.getByRole('button', { name: 'Сменить аккаунт' })).toBeEnabled();
+  }
+};
+export const BalanceUnavailable: Story = {
+  name: 'Вход выполнен · остаток недоступен, строки нет',
+  tags: ['ci'],
+  render: () => <EnvironmentProviderStory initialStatus="authenticated" balance={null} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText('Вход выполнен.')).toBeVisible();
+    await expect(canvas.queryByText(/Остаток/)).not.toBeInTheDocument();
+  }
+};
+export const BalanceHiddenWithoutLogin: Story = {
+  name: 'Вход не выполнен · остаток не показывается',
+  render: () => <EnvironmentProviderStory initialStatus="unauthenticated" balance={STORY_BALANCE} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText('Вход не выполнен.')).toBeVisible();
+    await expect(canvas.queryByText(/Остаток/)).not.toBeInTheDocument();
+  }
+};

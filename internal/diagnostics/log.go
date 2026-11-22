@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"songframe/internal/appversion"
 )
 
 // PreviousSessionInfo сохраняет контракт уведомления о прошлом аварийном сеансе.
@@ -41,7 +43,9 @@ type Log struct {
 	directory string
 	marker    sessionMarker
 	previous  *PreviousSessionInfo
-	closed    bool
+	// previousKept — прошлый сбой на весь текущий сеанс: страница журнала показывает его, пока приложение открыто.
+	previousKept *PreviousSessionInfo
+	closed       bool
 }
 
 // Open начинает диагностический сеанс; ошибки создания профиля возвращаются владельцу приложения.
@@ -50,7 +54,7 @@ func Open(profileDir string) (*Log, error) {
 	if err := os.MkdirAll(directory, 0700); err != nil {
 		return nil, fmt.Errorf("создание журнала: %w", err)
 	}
-	result := &Log{directory: directory, marker: sessionMarker{StartedAt: time.Now().UTC().Format(time.RFC3339Nano), Version: "development"}}
+	result := &Log{directory: directory, marker: sessionMarker{StartedAt: time.Now().UTC().Format(time.RFC3339Nano), Version: appversion.Version}}
 	data, err := os.ReadFile(filepath.Join(directory, "session.json"))
 	if err == nil {
 		var previous sessionMarker
@@ -62,6 +66,7 @@ func Open(profileDir string) (*Log, error) {
 	} else if !os.IsNotExist(err) {
 		return nil, fmt.Errorf("чтение прошлого сеанса: %w", err)
 	}
+	result.previousKept = result.previous
 	if err := result.writeMarker(); err != nil {
 		return nil, err
 	}
@@ -103,6 +108,48 @@ func (l *Log) CrashNotice() *PreviousSessionInfo {
 	return result
 }
 
+// PreviousSession возвращает сведения о сбое прошлого сеанса на всё время текущего, в отличие от CrashNotice,
+// который потребляется один раз. Без сбоя возвращает nil.
+func (l *Log) PreviousSession() *PreviousSessionInfo {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.previousKept
+}
+
+// RecordPanic дописывает в app.log панику Go со стеком и закрывает сеанс без штатного маркера, чтобы следующий
+// запуск увидел сбой. Вызывающий после записи повторяет панику: журнал только сохраняет причину.
+func (l *Log) RecordPanic(value any, stack []byte) error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.closed {
+		return nil
+	}
+	// Дальнейший Close станет no-op: отложенное завершение сервисов при раскрутке паники не должно пометить сеанс чистым.
+	l.closed = true
+	entry := struct {
+		Time  string `json:"time"`
+		Panic struct {
+			Message string `json:"message"`
+			Stack   string `json:"stack"`
+		} `json:"panic"`
+	}{Time: time.Now().UTC().Format(time.RFC3339Nano)}
+	entry.Panic.Message = fmt.Sprint(value)
+	entry.Panic.Stack = string(stack)
+	data, err := json.Marshal(entry)
+	if err != nil {
+		return err
+	}
+	file, err := os.OpenFile(filepath.Join(l.directory, "app.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
+	if err != nil {
+		return err
+	}
+	_, writeErr := file.Write(append(data, '\n'))
+	if closeErr := file.Close(); writeErr == nil {
+		writeErr = closeErr
+	}
+	return writeErr
+}
+
 // ReportRendererError дописывает одну JSON-строку. Мьютекс исключает перемешивание ошибок разных окон.
 func (l *Log) ReportRendererError(report RendererErrorReport) error {
 	if report.Kind != "error" && report.Kind != "unhandledrejection" {
@@ -141,7 +188,18 @@ func (l *Log) Report() ([]byte, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	marker, _ := json.MarshalIndent(l.marker, "", "  ")
-	prefix := []byte("SongFrame — диагностический отчёт\nСеанс:\n" + string(marker) + "\nЖурнал (последние 4 МиБ):\n")
+	text := "SongFrame — диагностический отчёт\nСеанс:\n" + string(marker) + "\n"
+	if previous := l.previousKept; previous != nil {
+		text += "Прошлый сеанс завершился аварийно"
+		if previous.StartedAt != nil {
+			text += ": запуск " + *previous.StartedAt
+		}
+		if previous.Version != nil {
+			text += ", версия " + *previous.Version
+		}
+		text += "\n"
+	}
+	prefix := []byte(text + "Журнал (последние 4 МиБ):\n")
 	file, err := os.Open(filepath.Join(l.directory, "app.log"))
 	if os.IsNotExist(err) {
 		return append(prefix, []byte("Ошибок интерфейса не записано.\n")...), nil

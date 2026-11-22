@@ -27,7 +27,8 @@ const TEXTS = {
 
 /**
  * Подтверждение сохранения сценария, которое меняет постановку планов с принятым комплектом или пакетом. При обычном
- * сохранении по каждому такому плану выбирается «Переснять» (по умолчанию) или «Оставить принятым»: правка части
+ * сохранении по каждому такому плану выбирается «Переснять» (по умолчанию) или «Оставить принятым»; у плана с попыткой
+ * без принятого комплекта те же два выбора подписаны как «Начать попытку заново» и «Продолжить текущую попытку»: правка части
  * задевает все её планы, но видео части из них может уже подходить. Выбор передаётся в onConfirm списком keep.
  */
 export function ScenesSaveDialog({
@@ -68,9 +69,14 @@ export function ScenesSaveDialog({
       <Typography variant="subtitle2" sx={{ mt: 2 }}>
         {scenarioTexts.save.affectedShots({ count: request?.shots.length ?? 0 })}
       </Typography>
-      {choosing && request?.shots.some((shot) => shot.produced) ? (
+      {choosing && request?.shots.some((shot) => shot.accepted) ? (
         <Typography variant="body2" color="text.secondary">
           {scenarioTexts.save.choiceHint}
+        </Typography>
+      ) : null}
+      {choosing && request?.shots.some((shot) => shot.produced && !shot.accepted) ? (
+        <Typography variant="body2" color="text.secondary">
+          {scenarioTexts.save.attemptChoiceHint}
         </Typography>
       ) : null}
       {/* Длинный список прокручивается вместе с содержимым диалога: одна область прокрутки вместо вложенной. */}
@@ -78,6 +84,15 @@ export function ScenesSaveDialog({
         {(request?.shots ?? []).map((shot) => {
           const state = SHOT_STATE_LABELS[shot.state];
           const kept = keep.includes(shot.id);
+          // Без принятого комплекта у плана только попытка в работе: тот же выбор, но подписи о попытке, не о видео.
+          const labels = shot.accepted
+            ? { reshoot: choice.reshoot, keep: choice.keep, reshootHint: choice.reshootHint, keepHint: scenarioTexts.save.keepHint }
+            : {
+                reshoot: scenarioTexts.save.attemptRestart,
+                keep: scenarioTexts.save.attemptContinue,
+                reshootHint: scenarioTexts.save.attemptRestartHint,
+                keepHint: scenarioTexts.save.attemptContinueHint
+              };
           return (
             <ListItem key={shot.id} disableGutters sx={{ alignItems: 'flex-start', gap: 1 }}>
               <Typography variant="body2" fontWeight={700} id={`scenes-save-${shot.id}`} sx={{ fontFamily: 'monospace', minWidth: 48, flexShrink: 0 }}>
@@ -97,11 +112,11 @@ export function ScenesSaveDialog({
                         setKeep((current) => (event.target.value === 'keep' ? [...current, shot.id] : current.filter((id) => id !== shot.id)))
                       }
                     >
-                      <FormControlLabel value="reshoot" control={<Radio size="small" />} label={choice.reshoot} disabled={busy} />
-                      <FormControlLabel value="keep" control={<Radio size="small" />} label={choice.keep} disabled={busy} />
+                      <FormControlLabel value="reshoot" control={<Radio size="small" />} label={labels.reshoot} disabled={busy} />
+                      <FormControlLabel value="keep" control={<Radio size="small" />} label={labels.keep} disabled={busy} />
                     </RadioGroup>
                     <Typography variant="caption" color="text.secondary">
-                      {kept ? scenarioTexts.save.keepHint : choice.reshootHint}
+                      {kept ? labels.keepHint : labels.reshootHint}
                     </Typography>
                   </>
                 ) : null}

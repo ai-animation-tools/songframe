@@ -125,9 +125,9 @@ export const STORY_CHECK_REPORT: ScenarioCheckReport = {
       entities: ['hero'],
       title: 'Герой в сухой куртке под дождём',
       problem:
-        'У M02 в «Состояние героев и мира» → «Первый кадр (before)» у героя «Куртка» — «сухая» из начального состояния кастинга, а «Действие» идёт под дождём с M01.',
+        'У M02 в «Состояние героев и мира» → «Первый кадр» у героя «Куртка» — «сухая» из начального состояния кастинга, а «Действие» идёт под дождём с M01.',
       why: 'Опоры M02 и M03 покажут сухую куртку, хотя герой уже несколько планов мокнет.',
-      fix: 'У M02 в «Первый кадр (before)» задайте герою «Куртка» — «мокрая, тёмная от дождя».',
+      fix: 'У M02 в «Первый кадр» задайте герою «Куртка» — «мокрая, тёмная от дождя».',
       changes: [{ shot: 'M02', phase: 'before', entity: 'hero', property: 'coat', value: 'мокрая, тёмная от дождя' }],
       fixed: false,
       resolved: false
@@ -826,7 +826,8 @@ export function scenarioPageOptions({
                       ? 'Изменена собственная постановка плана: действие, камера или состояние героев.'
                       : scenarioTexts.main.impactGlobalRules,
                   state: produced.has(shot.id) ? 'completed' : 'planned',
-                  produced: produced.has(shot.id)
+                  produced: produced.has(shot.id),
+                  accepted: produced.has(shot.id)
                 }))
             };
           },

@@ -57,6 +57,31 @@ export const ProductionKeepOne: Story = {
   }
 };
 
+export const ProductionAttemptOnly: Story = {
+  name: 'Обычное сохранение · у M01 только попытка: подписи о попытке, у остальных о видео',
+  tags: ['ci'],
+  args: { attemptOnly: true },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const screen = within(canvasElement.ownerDocument.body);
+    const dialog = within(await screen.findByRole('dialog', { name: scenarioTexts.save.productionTitle }));
+    await expect(dialog.getByText(scenarioTexts.save.attemptChoiceHint)).toBeInTheDocument();
+    await expect(dialog.getByText(scenarioTexts.save.choiceHint)).toBeInTheDocument();
+    const group = (shot: string) => within(dialog.getByRole('radiogroup', { name: shot }));
+    // Принятое видео на M01 не упоминается: у плана только попытка.
+    await expect(group('M01').getByRole('radio', { name: scenarioTexts.save.attemptRestart })).toBeChecked();
+    await expect(group('M01').queryByRole('radio', { name: scenarioTexts.check.dialog.keep })).not.toBeInTheDocument();
+    await expect(group('M02').getByRole('radio', { name: scenarioTexts.check.dialog.keep })).toBeInTheDocument();
+    await expect(dialog.getAllByText(scenarioTexts.save.attemptRestartHint)).toHaveLength(1);
+    await userEvent.click(group('M01').getByRole('radio', { name: scenarioTexts.save.attemptContinue }));
+    await expect(dialog.getByText(scenarioTexts.save.attemptContinueHint)).toBeInTheDocument();
+    await userEvent.click(dialog.getByRole('button', { name: commonTexts.save }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    // Сохраняемый результат тот же, что у «оставить принятым»: план попадает в список keep.
+    await expect(canvas.getByTestId('kept')).toHaveTextContent('Оставлены принятыми: M01.');
+  }
+};
+
 export const Keep: Story = {
   name: 'Без производства · комплект и пакет сохраняют силу',
   args: { mode: 'keep' },

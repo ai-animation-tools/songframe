@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Alert, List, Stack } from '@mui/material';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import type { EnvironmentCheck } from '@shared/types';
+import type { EnvironmentCheck, ProviderBalance } from '@shared/types';
 import { commonTexts } from '@shared/texts/common';
 import { environmentTexts } from '@shared/texts/environment';
 import { providerTexts } from '@shared/texts/providers';
@@ -75,6 +75,8 @@ interface EnvironmentProviderStoryProps {
   checkStatus?: EnvironmentCheck['status'];
   checkOk?: boolean;
   allowCompletion?: boolean;
+  /** Остаток кредитов; показывается только при выполненном входе. */
+  balance?: ProviderBalance | null;
 }
 
 export function EnvironmentProviderStory({
@@ -84,7 +86,8 @@ export function EnvironmentProviderStory({
   failCheckOnce = false,
   checkStatus = 'done',
   checkOk = true,
-  allowCompletion = false
+  allowCompletion = false,
+  balance
 }: EnvironmentProviderStoryProps) {
   const [status, setStatus] = useState(initialStatus);
   const [waiting, setWaiting] = useState(initialWaiting);
@@ -131,6 +134,7 @@ export function EnvironmentProviderStory({
       setWaiting(true);
     },
     onCheck: checkLogin,
+    balance,
     onCancel: () => {
       setWaiting(false);
       setStatus('unauthenticated');

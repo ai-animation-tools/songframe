@@ -282,6 +282,7 @@ export function unconfiguredStoryApi(): Api {
     diagnostics: {
       reportRendererError: () => unconfigured('diagnostics.reportRendererError'),
       crashNotice: async () => unconfigured('diagnostics.crashNotice'),
+      previousSession: async () => unconfigured('diagnostics.previousSession'),
       saveReport: async () => unconfigured('diagnostics.saveReport')
     },
     environment: {
@@ -289,7 +290,8 @@ export function unconfiguredStoryApi(): Api {
       loginProvider: async () => unconfigured('environment.loginProvider'),
       cancelLogin: async () => unconfigured('environment.cancelLogin'),
       onLoginUrl: () => unconfigured('environment.onLoginUrl'),
-      providerAuth: async () => unconfigured('environment.providerAuth')
+      providerAuth: async () => unconfigured('environment.providerAuth'),
+      providerBalance: async () => unconfigured('environment.providerBalance')
     },
     tools: {
       run: async () => unconfigured('tools.run')

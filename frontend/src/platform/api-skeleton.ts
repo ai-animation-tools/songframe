@@ -267,6 +267,7 @@ export function apiSkeleton(): Api {
     diagnostics: {
       reportRendererError: stub('diagnostics.reportRendererError'),
       crashNotice: stub('diagnostics.crashNotice'),
+      previousSession: stub('diagnostics.previousSession'),
       saveReport: stub('diagnostics.saveReport')
     },
     environment: {
@@ -274,7 +275,8 @@ export function apiSkeleton(): Api {
       loginProvider: stub('environment.loginProvider'),
       cancelLogin: stub('environment.cancelLogin'),
       onLoginUrl: stub('environment.onLoginUrl'),
-      providerAuth: stub('environment.providerAuth')
+      providerAuth: stub('environment.providerAuth'),
+      providerBalance: stub('environment.providerBalance')
     },
     tools: {
       run: stub('tools.run')

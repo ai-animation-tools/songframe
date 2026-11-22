@@ -16,4 +16,9 @@ export interface ImpactShot {
     "reason": string;
     "state": string;
     "produced": boolean;
+
+    /**
+     * Accepted — у плана есть принятый комплект; при Produced без Accepted есть только попытка в работе.
+     */
+    "accepted": boolean;
 }

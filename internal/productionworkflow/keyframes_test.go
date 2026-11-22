@@ -127,7 +127,7 @@ func TestKeyframeImagesPreviousFrame(t *testing.T) {
 func TestKeyframeImagesCollectRefusals(t *testing.T) {
 	for _, test := range []struct{ name, file, answer, want string }{
 		// Ответ не JSON и отсутствующий файл кандидата дают понятные отказы.
-		{"не JSON", "", "Не могу нарисовать", "Тестовый агент изображений не вернул список файлов опор."},
+		{"не JSON", "", "Не могу нарисовать", "Тестовый агент изображений не вернул список файлов опор. Сообщение агента: «Не могу нарисовать»"},
 		{"нет файла", "", `{"schemaVersion":1,"stage":"frames","images":[{"id":"K01","path":"K01.png"}]}`, "Опора K01: нужен настоящий файл изображения в папке кандидатов."},
 		// Промпт генератора необязателен, но если он есть — строка.
 		{"промпт не строка", "K01.png", `{"schemaVersion":1,"stage":"frames","images":[{"id":"K01","path":"K01.png","prompt":1}]}`, textImagesFramePathInvalid},
@@ -138,6 +138,36 @@ func TestKeyframeImagesCollectRefusals(t *testing.T) {
 				t.Fatal(err)
 			}
 			job := finishJob(t, manager, test.file, test.answer)
+			if _, err := images.Collect(job); err == nil || err.Error() != test.want {
+				t.Fatalf("ошибка %v, ожидалась %q", err, test.want)
+			}
+		})
+	}
+}
+
+// Пустой или неполный ответ исполнителя опор показывает причину из ответа или текст агента, а явная
+// модерация генератора — отдельный отказ с советом переформулировать опору.
+func TestKeyframeImagesCollectReason(t *testing.T) {
+	const general = "Тестовый агент изображений вернул не все согласованные опоры."
+	const moderated = "Тестовый агент изображений сообщил, что генератор изображений отклонил опору по правилам содержания. " +
+		"Переформулируйте опору нейтрально: опишите, что видно в кадре, без угрозы."
+	for _, test := range []struct{ name, answer, want string }{
+		// Без причины текст прежний: общая фраза.
+		{"пусто без причины", `{"schemaVersion":1,"stage":"frames","images":[]}`, general},
+		{"пусто с причиной", `{"schemaVersion":1,"stage":"frames","images":[],"reason":"Генератор не ответил."}`, general + " Сообщение агента: «Генератор не ответил.»"},
+		{"модерация полем", `{"schemaVersion":1,"stage":"frames","images":[],"moderation":true,"reason":"Request was rejected."}`, moderated + " Сообщение агента: «Request was rejected.»"},
+		{"модерация без причины", `{"schemaVersion":1,"stage":"frames","images":[],"moderation":true}`, moderated},
+		{"модерация словами причины", `{"schemaVersion":1,"stage":"frames","images":[],"reason":"Blocked by the content policy."}`, moderated + " Сообщение агента: «Blocked by the content policy.»"},
+		{"модерация в тексте агента", "Генератор отклонил запрос: moderation_blocked.", moderated + " Сообщение агента: «Генератор отклонил запрос: moderation_blocked.»"},
+		{"причина не строка", `{"schemaVersion":1,"stage":"frames","images":[],"reason":1}`, textImagesResultInvalid},
+		{"moderation не флаг", `{"schemaVersion":1,"stage":"frames","images":[],"moderation":"да"}`, textImagesResultInvalid},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			images, manager, input := keyframesFixture(t)
+			if _, err := images.Start(input, agentexec.ImagesRequest{Provider: "test-agent", RequestSha: "sha", Agent: agents.Settings{Provider: "codex"}}); err != nil {
+				t.Fatal(err)
+			}
+			job := finishJob(t, manager, "", test.answer)
 			if _, err := images.Collect(job); err == nil || err.Error() != test.want {
 				t.Fatalf("ошибка %v, ожидалась %q", err, test.want)
 			}

@@ -66,11 +66,11 @@ describe('Параметры, ветвления и полные фразы сц
     expect(scenarioTexts.brief.lastShotFrame({ shot: id })).toBe('Последний кадр M<&>"/C:\\клип');
     expect(scenarioTexts.brief.propertyCode({ key: id })).toBe('Код свойства: M<&>"/C:\\клип');
     expect(scenarioTexts.brief.openCastState({ name: id })).toBe('Открыть начальное состояние «M<&>"/C:\\клип» на странице «Кастинг»');
-    expect(scenarioTexts.brief.scrollCurrentState({ block: '«Первый кадр (before)»' })).toBe(
-      'Прокрутить к блоку «Состояние героев и мира» этого плана: значение задано в «Первый кадр (before)»'
+    expect(scenarioTexts.brief.scrollCurrentState({ block: '«Первый кадр»' })).toBe(
+      'Прокрутить к блоку «Состояние героев и мира» этого плана: значение задано в «Первый кадр»'
     );
-    expect(scenarioTexts.brief.openShotState({ shot: id, block: '«Итог плана (after)»' })).toBe(
-      'Открыть план M<&>"/C:\\клип и его блок «Состояние героев и мира»: значение задано в «Итог плана (after)»'
+    expect(scenarioTexts.brief.openShotState({ shot: id, block: '«Последний кадр»' })).toBe(
+      'Открыть план M<&>"/C:\\клип и его блок «Состояние героев и мира»: значение задано в «Последний кадр»'
     );
     expect(scenarioTexts.comparison.imagesMissing({ name: id })).toBe('M<&>"/C:\\клип: изображения отсутствуют. Референс ещё нужно подготовить.');
     expect(scenarioTexts.comparison.changedField({ label: id })).toBe('изменено: M<&>"/C:\\клип');

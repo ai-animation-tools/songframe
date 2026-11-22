@@ -355,6 +355,8 @@ export const productionTexts = {
       frameExtensionMismatch: ({ frame }: { frame: unknown }) =>
         `Опора ${frame}: расширение не соответствует фактическому формату изображения. Исходный файл сохранён.`,
       framesIncomplete: ({ provider }: { provider: string }) => `${provider} вернул не все согласованные опоры.`,
+      framesModerated: ({ provider }: { provider: string }) =>
+        `${provider} сообщил, что генератор изображений отклонил опору по правилам содержания. Переформулируйте опору нейтрально: опишите, что видно в кадре, без угрозы.`,
       workDirectoryUnavailable: 'Рабочая папка опор недоступна. Подготовьте новое задание.',
       requestHashCorrupt: 'Повреждён SHA запроса опор.'
     },

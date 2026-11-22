@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"runtime/debug"
 	"time"
 
 	"songframe/internal/agents"
@@ -114,6 +115,14 @@ func run() error {
 		return err
 	}
 	defer native.ServiceShutdown()
+	// Регистрируется после ServiceShutdown и потому выполняется раньше: паника главной горутины попадает в app.log
+	// и не помечается штатным выходом. Затем она повторяется, процесс падает как обычно.
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			shell.RecordNativePanic(native, recovered, debug.Stack())
+			panic(recovered)
+		}
+	}()
 	// Профиль содержит временные изображения и компоненты, которые страницы показывают по URL.
 	if err := mediaServer.AllowRoot(profilePath); err != nil {
 		return err

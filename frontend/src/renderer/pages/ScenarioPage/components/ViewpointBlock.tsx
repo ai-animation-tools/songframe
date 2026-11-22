@@ -125,6 +125,14 @@ const tiltDegrees = (viewpoint: SceneViewpoint, phase: ViewpointPhase, heights: 
 /** Метки ползунка наклона: отвесно вниз, наискось, горизонт и вверх. */
 const TILT_MARKS = [-MAX_TILT, -45, 0, 45, MAX_TILT].map((value) => ({ value, label: `${degrees(value)}°` }));
 
+/** Координата для числового поля: метры схемы с точностью до сантиметра. */
+const coordinate = (value: number): number => Math.round(value * 100) / 100;
+/** Направление камеры на кадре phase для числового поля: целые градусы [0, 360), нет — у камеры сверху. */
+const headingValue = (viewpoint: SceneViewpoint, phase: ViewpointPhase): number | undefined => {
+  const heading = lookHeading(viewpoint, phase);
+  return heading === null ? undefined : ((Math.round(heading) % 360) + 360) % 360;
+};
+
 /** Состояние пути под мини-схемой: не на схеме, стоит или на сколько движется. */
 const pathState = (path: ViewpointPath | undefined): string =>
   !path ? texts.notPlaced : moves(path) ? texts.movesBy({ metres: metres(distance(path.start, path.end!)) }) : texts.still;
@@ -304,6 +312,55 @@ function ViewpointPlacement({
             {[pathState(path), fromCamera, key === 'camera' && path && viewpoint.heading ? texts.headingOwn : null].filter(Boolean).join(' · ')}
           </Typography>
         </Stack>
+        {editable && path ? coordinateFields(key, rowTarget, path) : null}
+      </Stack>
+    );
+  };
+
+  // Числовой ввод места (и у камеры — направления): точные значения, рассчитанные по фактам кадра, без подгонки мышью.
+  // Запись идёт теми же setPoint и setHeading, что щелчок и перетаскивание на схеме, поэтому ограничения схемы и
+  // пересчёт стороны общие. Конец пути — только у движущихся: движение по-прежнему задаётся на последнем кадре схемы.
+  const coordinateFields = (key: string, rowTarget: ViewpointTarget, path: ViewpointPath): ReactElement => {
+    const field = (label: string, value: number | undefined, commit: (value: number) => void, step = 0.1): ReactElement => (
+      <CommitNumberField
+        key={label}
+        label={label}
+        value={value}
+        disabled={false}
+        helperText=""
+        step={step}
+        width={118}
+        onCommit={(next) => next !== undefined && commit(next)}
+      />
+    );
+    const point = (phase: ViewpointPhase, axis: 0 | 1, value: number): void => {
+      const current = phase === 'end' ? path.end! : path.start;
+      update(setPoint(viewpoint, rowTarget, phase, axis === 0 ? [value, current[1]] : [current[0], value]));
+    };
+    const turns = key === 'camera' && (moves(camera) || viewpoint.heading?.end !== undefined);
+    return (
+      <Stack
+        spacing={0.75}
+        sx={{ pt: 0.75 }}
+        role="group"
+        aria-label={`${texts.coords}: ${key === 'camera' ? texts.camera : nameOf(key)}`}
+        data-viewpoint-coords={key}
+      >
+        <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
+          {field(texts.coordX, coordinate(path.start[0]), (value) => point('start', 0, value))}
+          {field(texts.coordY, coordinate(path.start[1]), (value) => point('start', 1, value))}
+          {path.end ? field(texts.coordXEnd, coordinate(path.end[0]), (value) => point('end', 0, value)) : null}
+          {path.end ? field(texts.coordYEnd, coordinate(path.end[1]), (value) => point('end', 1, value)) : null}
+        </Stack>
+        {key === 'camera' && viewpoint.side !== 'top' ? (
+          <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
+            {field(texts.headingField, headingValue(viewpoint, 'start'), (value) => update(setHeading(viewpoint, 'start', value)), 1)}
+            {turns ? field(texts.headingFieldEnd, headingValue(viewpoint, 'end'), (value) => update(setHeading(viewpoint, 'end', value)), 1) : null}
+          </Stack>
+        ) : null}
+        <Typography variant="caption" color="text.secondary">
+          {key === 'camera' && viewpoint.side !== 'top' ? `${texts.coordsHint}; ${texts.headingFieldHint}` : texts.coordsHint}
+        </Typography>
       </Stack>
     );
   };

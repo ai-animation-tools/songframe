@@ -4,13 +4,15 @@
       "id": "M02",
       "reason": "сдвинуты границы плана",
       "state": "completed",
-      "produced": true
+      "produced": true,
+      "accepted": true
     },
     {
       "id": "M02.5",
       "reason": "новый план в сценарии",
       "state": "planned",
-      "produced": false
+      "produced": false,
+      "accepted": false
     }
   ]
 }

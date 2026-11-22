@@ -251,6 +251,25 @@ func (s *NativeService) CrashNotice() (*diagnostics.PreviousSessionInfo, error) 
 	return log.CrashNotice(), nil
 }
 
+// PreviousSession сообщает о сбое прошлого сеанса на весь текущий сеанс (в отличие от одноразового CrashNotice).
+// Без сбоя возвращает nil; страница журнала заданий показывает по нему предупреждение.
+func (s *NativeService) PreviousSession() (*diagnostics.PreviousSessionInfo, error) {
+	log, err := s.diagnosticsLog()
+	if err != nil {
+		return nil, err
+	}
+	return log.PreviousSession(), nil
+}
+
+// RecordNativePanic пишет панику главной горутины в app.log и оставляет сеанс незавершённым, чтобы следующий запуск
+// показал сбой. Функция, а не метод: значение паники произвольно и не должно попадать в bindings.
+// Вызывается из main перед повторной паникой; паники других горутин сюда не попадают.
+func RecordNativePanic(s *NativeService, value any, stack []byte) {
+	if log, err := s.diagnosticsLog(); err == nil {
+		_ = log.RecordPanic(value, stack)
+	}
+}
+
 // SaveReport экспортирует диагностику только по выбранному в системном диалоге пути.
 func (s *NativeService) SaveReport() (*string, error) {
 	if s.desktop == nil {

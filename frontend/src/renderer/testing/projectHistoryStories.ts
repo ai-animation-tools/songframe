@@ -15,8 +15,8 @@ export const HISTORY_POINTS: ProjectPoint[] = [
 export const HISTORY_COMPARISON: ProjectScenarioComparison = {
   missing: false,
   shots: [
-    { id: 'M02', reason: 'изменена постановка плана', state: 'completed', produced: true },
-    { id: 'M04', reason: 'новый план', state: 'planned', produced: false }
+    { id: 'M02', reason: 'изменена постановка плана', state: 'completed', produced: true, accepted: true },
+    { id: 'M04', reason: 'новый план', state: 'planned', produced: false, accepted: false }
   ],
   removed: ['M07']
 };

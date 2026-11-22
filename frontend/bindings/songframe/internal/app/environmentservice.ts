@@ -22,6 +22,10 @@ import * as mediaapi$0 from "../mediaapi/models.js";
 // @ts-ignore: Unused imports
 import * as providers$0 from "../providers/models.js";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as $models from "./models.js";
+
 /**
  * CancelLogin прерывает ожидание входа.
  */
@@ -51,4 +55,14 @@ export function LoginProvider(provider: string): $CancellablePromise<providers$0
  */
 export function ProviderAuth(provider: string): $CancellablePromise<agents$0.ProviderAuth> {
     return $Call.ByID(815406332, provider);
+}
+
+/**
+ * ProviderBalance — остаток кредитов провайдера через AccountReader его адаптера (бесплатный запрос, как в
+ * cost_check). nil без ошибки — остаток недоступен: адаптер его не отдаёт, сервис не ответил или вход не
+ * выполнен; страница тогда просто не показывает строку. Ошибка — только для провайдера, который не платный.
+ * Результат не кэшируется: страница сама решает, когда спросить заново.
+ */
+export function ProviderBalance(provider: string): $CancellablePromise<$models.ProviderBalance | null> {
+    return $Call.ByID(2907479514, provider);
 }

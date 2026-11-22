@@ -227,6 +227,23 @@ export const Refused: Story = {
     await expect(canvas.getByRole('button', { name: labels.apply })).toBeDisabled();
   }
 };
+export const FramesModerated: Story = {
+  name: 'Опоры: генератор отклонил по правилам содержания · причина в уведомлении',
+  args: {
+    initialProposal: workflowProposal('frames', {
+      status: 'invalid',
+      after: null,
+      message: `${productionTexts.main.images.framesModerated({ provider: 'Codex' })} Сообщение агента: «The request was rejected by the content policy.»`
+    })
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const alert = canvas.getAllByRole('alert').find((item) => item.textContent?.includes('Переформулируйте опору нейтрально'));
+    await expect(alert).toBeDefined();
+    await expect(alert).toHaveTextContent('The request was rejected by the content policy.');
+    await expect(canvas.getByRole('button', { name: labels.apply })).toBeDisabled();
+  }
+};
 export const Failed: Story = {
   name: 'Задание завершилось ошибкой · прежние материалы сохранены',
   args: {

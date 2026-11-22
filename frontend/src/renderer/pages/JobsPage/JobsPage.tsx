@@ -5,11 +5,12 @@ import { useEffect, useState, type ReactElement } from 'react';
 import { ActionButton } from '../../components/ActionButton';
 import { usePageLoading } from '../../components/PageLoader';
 import { useSearchParams } from 'react-router-dom';
-import { Alert, Box, Chip, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
+import { Alert, AlertTitle, Box, Chip, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
 import BugReportOutlinedIcon from '@mui/icons-material/BugReportOutlined';
 import { PageActionBar } from '../../components/PageActionBar';
 import type { AgentJob } from '@shared/agents';
-import type { JobInfo } from '@shared/types';
+import type { JobInfo, PreviousSessionInfo } from '@shared/types';
+import { formatDateTime } from '../../format';
 import { AgentJobCard } from '../../components/AgentJobCard';
 import { AgentRetryDialog } from '../../components/AgentRetryDialog';
 import { useApp } from '../../state';
@@ -23,6 +24,20 @@ export function JobsPage(): ReactElement {
   // Пока журнал читается впервые, общий прелоадер оболочки показывает индикатор.
   usePageLoading(journal.loading && !journal.tools.length && !journal.agents.length);
   const [saving, setSaving] = useState(false);
+  // Сбой прошлого сеанса виден весь текущий сеанс; недоступность сведений не мешает странице.
+  const [previousCrash, setPreviousCrash] = useState<PreviousSessionInfo | null>(null);
+  useEffect(() => {
+    let active = true;
+    window.api.diagnostics
+      .previousSession()
+      .then((info) => {
+        if (active) setPreviousCrash(info?.crashed ? info : null);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, []);
   const [params, setParams] = useSearchParams();
   const selectedId = params.get('job');
   const [scope, setScope] = useState('current');
@@ -107,6 +122,22 @@ export function JobsPage(): ReactElement {
       <Typography variant="body2" color="text.secondary">
         {jobsTexts.description}
       </Typography>
+      {previousCrash && (
+        <Alert
+          severity="warning"
+          action={
+            <ActionButton color="inherit" size="small" disabled={saving} disabledReason={jobsTexts.savingReport} onClick={() => void saveReport()}>
+              {jobsTexts.saveReportShort}
+            </ActionButton>
+          }
+        >
+          <AlertTitle>{jobsTexts.previousCrashTitle}</AlertTitle>
+          {jobsTexts.previousCrash({
+            startedAt: previousCrash.startedAt ? formatDateTime(previousCrash.startedAt) : null,
+            version: previousCrash.version
+          })}
+        </Alert>
+      )}
       {journal.error && <Alert severity="error">{jobsTexts.refreshFailed({ reason: journal.error })}</Alert>}
       {!visible.length && <Typography color="text.secondary">{journal.loading ? jobsTexts.loading : jobsTexts.empty}</Typography>}
       {visible.map((entry) => (

@@ -1,0 +1,17 @@
+{
+  "description": "static_shot вместе с липсинком, у производного плана и не логическим значением.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "static_shot lipsync",
+    "static_shot derived_from",
+    "static_shot type"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ],
+  "remove": [],
+  "mkdir": []
+}

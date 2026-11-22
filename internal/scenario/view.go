@@ -256,6 +256,7 @@ func ValidateScenes(data, castValue any, fps float64, duration any) ([]string, e
 			problems = append(problems, textShotPrimaryReferenceMissing(sid))
 		}
 		problems = append(problems, viewpointProblems(sid, dynvalue.Get(scene, "viewpoint"), locations, shotReferences(scene))...)
+		problems = append(problems, staticShotProblems(sid, scene)...)
 	}
 	derived, err := DerivedFromProblems(scenes)
 	if err != nil {
@@ -336,6 +337,28 @@ func DerivedFromProblems(scenes []any) ([]string, error) {
 		}
 	}
 	return problems, nil
+}
+
+// staticShotProblems — проверка необязательного static_shot. Статичный кадр собирается из опор-
+// состояний без генерации видео, поэтому он несовместим с липсинком (нужна генерация с голосом) и с
+// производным планом (тот собирается из клипа другого плана). Отсутствующее поле — обычный план.
+func staticShotProblems(sid string, scene any) []string {
+	value := dynvalue.Get(scene, "static_shot")
+	if value == dynvalue.Undefined {
+		return nil
+	}
+	static, ok := value.(bool)
+	switch {
+	case !ok:
+		return []string{textStaticShotInvalid(sid)}
+	case !static:
+		return nil
+	case dynvalue.Get(scene, "lipsync") == true:
+		return []string{textStaticShotLipsync(sid)}
+	case dynvalue.Get(scene, "derived_from") != dynvalue.Undefined:
+		return []string{textStaticShotDerived(sid)}
+	}
+	return nil
 }
 
 // valueSet — множество значений из JSON (сравнение SameValueZero; NaN в JSON не встречается).

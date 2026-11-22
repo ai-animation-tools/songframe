@@ -37,6 +37,7 @@
         "notes": {"type": "string"},
         "references": {"type": "array", "items": {"type": "string"}},
         "lipsync": {"type": "boolean"},
+        "static_shot": {"type": "boolean"},
         "card": {"type": "object", "required": ["primary_reference"], "additionalProperties": false,
                  "properties": {"primary_reference": {"type": "string"}}},
         "state_from": {"anyOf": [{"type": "null"}, {"type": "string"},

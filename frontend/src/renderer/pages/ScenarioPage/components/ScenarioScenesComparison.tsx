@@ -29,6 +29,7 @@ export function ScenarioScenesComparison({
     { key: 'continuity', label: scenarioTexts.fields.continuity },
     { key: 'references', label: scenarioTexts.fields.references },
     { key: 'lipsync', label: scenarioTexts.fields.lipsync },
+    { key: 'static_shot', label: scenarioTexts.fields.staticShot },
     { key: 'card', label: scenarioTexts.fields.card },
     { key: 'state_from', label: scenarioTexts.fields.stateFrom },
     { key: 'state_changes', label: scenarioTexts.fields.stateChanges },

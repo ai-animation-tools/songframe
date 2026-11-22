@@ -37,7 +37,7 @@
 | `scene-registry/` | функции `internal/sceneregistry`, читающие проект, и запись принятых отпечатков | 21 |
 | `scene-scaffold/` | инструмент `scene_scaffold` через `tools.Run` (код, stdout, stderr; `plan/scenes.json` не меняется) | 54 |
 | `checks-base/project/` | общий вход проверок проекта — проект-образец (не домен, случаев нет) | — |
-| `lint-registry/` | инструмент `lint_registry` (`internal/lintregistry`) | 50 |
+| `lint-registry/` | инструмент `lint_registry` (`internal/lintregistry`) | 51 |
 | `check-assets/` | инструмент `check_assets` (`internal/checkassets`) | 33 |
 | `check-workspace/` | инструмент `check_workspace` (`internal/checkworkspace`) | 33 |
 | `shot-status/` | инструмент `shot_status` | 41 |

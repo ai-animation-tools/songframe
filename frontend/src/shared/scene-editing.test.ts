@@ -71,6 +71,14 @@ describe('объединение планов', () => {
     const derived = [shot('M01', 0, 60), shot('M02', 60, 120, { derived_from: { shot: 'M03' } }), shot('M03', 120, 180)];
     expect(mergeShots(derived, 1, 1)[1].derived_from).toBeUndefined();
   });
+
+  it('оставляет статичный кадр, только если статичны все части и нет липсинка', () => {
+    const still = (lipsync = false) => [shot('M01', 0, 60, { static_shot: true }), shot('M02', 60, 120, { static_shot: true, lipsync })];
+    expect(mergeShots(still(), 0, 1)[0].static_shot).toBe(true);
+    expect('static_shot' in mergeShots(still(true), 0, 1)[0]).toBe(false);
+    const mixed = [shot('M01', 0, 60, { static_shot: true }), shot('M02', 60, 120)];
+    expect('static_shot' in mergeShots(mixed, 0, 1)[0]).toBe(false);
+  });
 });
 
 describe('пометка незаполненной постановки', () => {

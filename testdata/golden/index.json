@@ -2758,6 +2758,16 @@
   },
   {
     "domain": "lint-registry",
+    "name": "static-shot",
+    "description": "static_shot вместе с липсинком, у производного плана и не логическим значением.",
+    "covers": [
+      "static_shot lipsync",
+      "static_shot derived_from",
+      "static_shot type"
+    ]
+  },
+  {
+    "domain": "lint-registry",
     "name": "scenes-scenes-dict",
     "description": "scenes — словарь: derived_from без списка.",
     "covers": [

@@ -85,6 +85,8 @@ export function SceneShotEditor({
     : nextLocked
       ? scenarioTexts.accepted.boundaryReason({ shot: nextLocked })
       : null;
+  // Почему статичный кадр недоступен: при липсинке и у производного плана; null — доступен.
+  const staticShotReason = shot.lipsync ? scenarioTexts.shot.staticShotLipsyncReason : shot.derived_from ? scenarioTexts.shot.staticShotDerivedReason : null;
   return (
     <Paper variant="outlined" sx={{ p: 2, minWidth: 0 }}>
       {locked ? (
@@ -226,20 +228,40 @@ export function SceneShotEditor({
             </MenuItem>
           ))}
         </TextField>
-        <FormControlLabel
-          sx={{ flex: '0 0 auto', mr: 0 }}
-          control={<Checkbox disabled={locked} checked={shot.lipsync} onChange={(e) => updateShot({ lipsync: e.target.checked })} />}
-          label={scenarioTexts.fields.lipsync}
-        />
+        {/* Липсинк и статичный кадр взаимоисключающие: у недоступной галочки подсказка называет
+            причину (describeChild: подсказка описывает поле, а не заменяет его имя); обёртка нужна,
+            чтобы подсказка показывалась у выключенного поля. */}
+        <Tooltip describeChild title={shot.static_shot ? scenarioTexts.shot.lipsyncStaticReason : ''}>
+          <FormControlLabel
+            sx={{ flex: '0 0 auto', mr: 0 }}
+            control={
+              <Checkbox disabled={locked || Boolean(shot.static_shot)} checked={shot.lipsync} onChange={(e) => updateShot({ lipsync: e.target.checked })} />
+            }
+            label={scenarioTexts.fields.lipsync}
+          />
+        </Tooltip>
+        <Tooltip describeChild title={staticShotReason ?? scenarioTexts.shot.staticShotHint}>
+          <FormControlLabel
+            sx={{ flex: '0 0 auto', mr: 0 }}
+            control={
+              <Checkbox
+                disabled={locked || staticShotReason !== null}
+                checked={Boolean(shot.static_shot)}
+                onChange={(e) => updateShot({ static_shot: e.target.checked ? true : undefined })}
+              />
+            }
+            label={scenarioTexts.fields.staticShot}
+          />
+        </Tooltip>
         {/* Подсказка о производном плане длинная для поля в строке, поэтому всплывает над ним;
             обёртка нужна, чтобы она показывалась и у закрытого поля принятого плана. */}
-        <Tooltip title={scenarioTexts.shot.derivedHint}>
+        <Tooltip title={shot.static_shot ? scenarioTexts.shot.derivedStaticReason : scenarioTexts.shot.derivedHint}>
           <Box sx={{ flex: '1 1 205px', minWidth: 0, maxWidth: 360 }}>
             <TextField
               select
               fullWidth
               size="small"
-              disabled={locked}
+              disabled={locked || Boolean(shot.static_shot)}
               label={scenarioTexts.fields.derivedFrom}
               value={shot.derived_from?.shot ?? ''}
               onChange={(e) => updateShot({ derived_from: e.target.value ? { shot: e.target.value } : undefined })}

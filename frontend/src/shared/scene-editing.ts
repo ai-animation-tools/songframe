@@ -194,6 +194,9 @@ export function mergeShots(list: readonly SceneShot[], index: number, count: num
     lipsync: group.some((shot) => shot.lipsync),
     state_changes: { ...(first.state_changes.before ? { before: first.state_changes.before } : {}), ...(after ? { after } : {}) }
   };
+  // Статичным объединённый план остаётся, только если статичны все части и липсинка нет.
+  if (group.every((shot) => shot.static_shot) && !merged.lipsync) merged.static_shot = true;
+  else delete merged.static_shot;
   if (title) merged.title = title;
   else delete merged.title;
   if (notes) merged.notes = notes;

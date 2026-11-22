@@ -1,0 +1,6 @@
+{
+  "code": 1,
+  "stdout": "{\n  \"errors\": [\n    {\n      \"level\": \"error\",\n      \"file\": \"plan/scenes.json\",\n      \"where\": \"$.scenes[3].static_shot\",\n      \"message\": \"ожидается логическое значение, найдено строка\"\n    },\n    {\n      \"level\": \"error\",\n      \"file\": \"plan/scenes.json\",\n      \"where\": \"M02.static_shot\",\n      \"message\": \"статичный кадр не сочетается с липсинком\"\n    },\n    {\n      \"level\": \"error\",\n      \"file\": \"plan/scenes.json\",\n      \"where\": \"M03.static_shot\",\n      \"message\": \"производный план не может быть статичным кадром\"\n    }\n  ],\n  \"warnings\": []\n}\n",
+  "stderr": "",
+  "unhandled": false
+}

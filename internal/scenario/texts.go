@@ -91,3 +91,12 @@ func textDerivedChainedSource(shot, source string) string {
 func textBriefShotMissing(shot string) string {
 	return shot + ": плана нет в сценарии."
 }
+func textStaticShotInvalid(shot string) string {
+	return shot + ": static_shot должен быть true или false."
+}
+func textStaticShotLipsync(shot string) string {
+	return shot + ": статичный кадр собирается из опор без генерации видео и не сочетается с липсинком; снимите одну из галочек."
+}
+func textStaticShotDerived(shot string) string {
+	return shot + ": производный план собирается из клипа другого плана и не может быть статичным кадром."
+}

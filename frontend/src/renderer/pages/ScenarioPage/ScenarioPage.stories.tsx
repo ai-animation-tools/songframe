@@ -180,6 +180,29 @@ export const OpenShotState: Story = {
   }
 };
 
+export const StaticShotToggle: Story = {
+  name: 'Статичный кадр · взаимоисключение с липсинком и производным планом',
+  tags: ['!autodocs', 'ci'],
+  parameters: { songframe: scenarioPageOptions({ route: '/project/scenario?shot=M02' }) },
+  play: async (context) => {
+    const screen = await ready(context);
+    await editorHeading(screen, 'M02');
+    const still = screen.getByRole('checkbox', { name: scenarioTexts.fields.staticShot });
+    const lipsync = screen.getByRole('checkbox', { name: scenarioTexts.fields.lipsync });
+    await expect(still).not.toBeChecked();
+    await userEvent.click(still);
+    await expect(still).toBeChecked();
+    // У статичного кадра нет генерации видео: липсинк и сборка из другого плана закрыты.
+    await expect(lipsync).toBeDisabled();
+    await expect(screen.getByRole('combobox', { name: scenarioTexts.fields.derivedFrom })).toHaveClass('Mui-disabled');
+    await expect(unsavedChip(screen)).toBeInTheDocument();
+    await userEvent.click(still);
+    await expect(lipsync).toBeEnabled();
+    await userEvent.click(lipsync);
+    await expect(screen.getByRole('checkbox', { name: scenarioTexts.fields.staticShot })).toBeDisabled();
+  }
+};
+
 export const AcceptedShotLocked: Story = {
   name: 'Принятый M02 · постановка закрыта, соседняя граница тоже',
   tags: ['!autodocs', 'ci'],

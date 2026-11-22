@@ -37,7 +37,7 @@ func TestSkills(t *testing.T) {
 		t.Fatal(err)
 	}
 	sum := sha256.Sum256([]byte(text))
-	if got := hex.EncodeToString(sum[:]); got != "f2f493f039fb053e56c023aacc41b8e59f977b0db5bc5984d3fb9bfb4e1c3b82" {
+	if got := hex.EncodeToString(sum[:]); got != "35b5bab01f709510705e37de226991310a0aa6509da4acf6eba286bdbf60f9fc" {
 		t.Errorf("ai-clip-scenario/SKILL.md: SHA-256 %s", got)
 	}
 	if _, err := Skill("missing"); err == nil {

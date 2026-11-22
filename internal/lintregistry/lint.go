@@ -94,19 +94,21 @@ var awaitingStages = []any{"ready", "needs_revision", "edit_review", "submitted"
 
 // Тексты проверок; дословно сверяются эталоном testdata/golden/lint-registry.
 const (
-	textFileMissing      = "файл отсутствует"
-	textAwaitingStage    = "пакет в очереди должен быть на этапе ready, needs_revision, edit_review, submitted, downloaded или image_request_choice/image_submitted/image_downloaded"
-	textSnapshotService  = "служебное поле времени, состояния или баланса не хранится в assets"
-	textSnapshotModel    = "снимок должен называть модель и промпт"
-	textSnapshotProvider = "снимок должен называть провайдера генерации"
-	textSnapshotID       = "поле обязательно; при неизвестном ID — null и причина в provenance"
-	textSnapshotReason   = "ID задания отсутствует, но причина не записана"
-	textStatusObject     = "файл должен быть объектом"
-	textNoWorld          = "нет сущности world: время суток, погода и стороны дороги негде хранить"
-	textReferencesDrift  = "карта references расходится с кастингом: сохраните кастинг, и карта обновится."
-	textCardReference    = "главный референс карточки не объявлен"
-	textAcceptedNoScene  = "отпечаток принятия плана, которого нет в сценарии"
-	textAcceptedNoKit    = "отпечаток принятия плана без комплекта в assets"
+	textFileMissing       = "файл отсутствует"
+	textAwaitingStage     = "пакет в очереди должен быть на этапе ready, needs_revision, edit_review, submitted, downloaded или image_request_choice/image_submitted/image_downloaded"
+	textSnapshotService   = "служебное поле времени, состояния или баланса не хранится в assets"
+	textSnapshotModel     = "снимок должен называть модель и промпт"
+	textSnapshotProvider  = "снимок должен называть провайдера генерации"
+	textSnapshotID        = "поле обязательно; при неизвестном ID — null и причина в provenance"
+	textSnapshotReason    = "ID задания отсутствует, но причина не записана"
+	textStatusObject      = "файл должен быть объектом"
+	textNoWorld           = "нет сущности world: время суток, погода и стороны дороги негде хранить"
+	textReferencesDrift   = "карта references расходится с кастингом: сохраните кастинг, и карта обновится."
+	textCardReference     = "главный референс карточки не объявлен"
+	textStaticShotLipsync = "статичный кадр не сочетается с липсинком"
+	textStaticShotDerived = "производный план не может быть статичным кадром"
+	textAcceptedNoScene   = "отпечаток принятия плана, которого нет в сценарии"
+	textAcceptedNoKit     = "отпечаток принятия плана без комплекта в assets"
 )
 
 // item — запись отчёта {level, file, where, message}.
@@ -338,6 +340,20 @@ func lintScenes(root string, r *Report) (any, error) {
 		if problem.Message != sceneregistry.DerivedFormat {
 			message := strings.TrimRight(strings.TrimPrefix(problem.Message, "derived_from "), ".")
 			r.error(sceneregistry.ScenesPath, toolrt.Str(problem.Shot)+".derived_from", message)
+		}
+	}
+	// Форму static_shot проверяет схема; здесь — несовместимость статичного кадра с липсинком и
+	// производным планом (то же правило, что при сохранении сценария).
+	for _, item := range list.([]any) {
+		scene, ok := item.(*toolrt.Dict)
+		if !ok || scene.Value("static_shot") != true {
+			continue
+		}
+		path := toolrt.Str(scene.Value("id")) + ".static_shot"
+		if scene.Value("lipsync") == true {
+			r.error(sceneregistry.ScenesPath, path, textStaticShotLipsync)
+		} else if scene.Has("derived_from") {
+			r.error(sceneregistry.ScenesPath, path, textStaticShotDerived)
 		}
 	}
 	return data, nil

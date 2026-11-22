@@ -18,7 +18,7 @@ import (
 // scenarioTexts.main (frontend/src/shared/texts/scenario.ts).
 
 // stagingFields — поля постановки, которые патч прохода revise может заменить.
-var stagingFields = []string{"title", "camera", "action", "continuity", "notes", "references", "lipsync", "card", "state_from", "state_changes", "derived_from"}
+var stagingFields = []string{"title", "camera", "action", "continuity", "notes", "references", "lipsync", "card", "state_from", "state_changes", "derived_from", "static_shot"}
 
 // placeholder — /ЗАПОЛНИТЬ/iu: незаполненное место шаблона в любом регистре.
 var placeholder = regexp.MustCompile(`(?i)ЗАПОЛНИТЬ`)
@@ -222,7 +222,7 @@ func checkScenesShape(value any) error {
 }
 
 // shotShape — общая форма плана: строки, целые кадры, список референсов, флаг липсинка, карточка
-// и необязательные title, notes и derived_from вида {"shot": "Mxx"}.
+// и необязательные title, notes, derived_from вида {"shot": "Mxx"} и static_shot.
 func shotShape(scene *dynvalue.Object) bool {
 	for _, key := range []string{"id", "original", "sequence", "camera", "action", "continuity"} {
 		if !isString(scene.Value(key)) {
@@ -237,6 +237,11 @@ func shotShape(scene *dynvalue.Object) bool {
 	}
 	for _, key := range []string{"title", "notes"} {
 		if value := scene.Value(key); value != dynvalue.Undefined && !isString(value) {
+			return false
+		}
+	}
+	if static := scene.Value("static_shot"); static != dynvalue.Undefined {
+		if _, ok := static.(bool); !ok {
 			return false
 		}
 	}
@@ -440,7 +445,8 @@ func proposalDocuments(raw, pass string, before Documents, scaffold any, selecte
 			}
 			patches[id] = patch
 		}
-		// derived_from: null в патче снимает признак производного плана; остальные поля заменяются целиком.
+		// derived_from: null в патче снимает признак производного плана, static_shot: false — признак
+		// статичного кадра (у обычного плана поля нет); остальные поля заменяются целиком.
 		shots := []any{}
 		for _, item := range arrayItems(dynvalue.Get(before.Scenes, "scenes")) {
 			next := dynvalue.Spread(item)
@@ -451,6 +457,9 @@ func proposalDocuments(raw, pass string, before Documents, scaffold any, selecte
 			}
 			if next.Value("derived_from") == nil {
 				next.Delete("derived_from")
+			}
+			if next.Value("static_shot") == false {
+				next.Delete("static_shot")
 			}
 			shots = append(shots, next)
 		}

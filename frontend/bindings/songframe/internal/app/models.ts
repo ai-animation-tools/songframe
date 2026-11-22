@@ -3,10 +3,16 @@
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as effects$0 from "../effects/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as jobs$0 from "../jobs/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as project$0 from "../project/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as shoteffects$0 from "../shoteffects/models.js";
 
 /**
  * AppState — снимок состояния приложения для window.api.app.state. Nullable-поля
@@ -19,6 +25,47 @@ export interface AppState {
     "current": string | null;
     "history": ProjectHistoryEntry[];
     "platform": string;
+}
+
+/**
+ * EffectKind — эффект для панели параметров: идентификатор, название, схема параметров и
+ * параметр наклона, который можно считать из ветра ("" — эффект от ветра не зависит).
+ */
+export interface EffectKind {
+    "id": string;
+    "title": string;
+    "params": effects$0.ParamSpec[];
+    "windAngle": string;
+}
+
+/**
+ * EffectShot — принятый план страницы с идущим заданием рендера ("" — задания нет).
+ */
+export interface EffectShot {
+    "shot": string;
+    "fps": number;
+    "frames": number;
+    "source": string;
+    "applied": boolean;
+    "steps": shoteffects$0.AppliedStep[];
+    "output": string;
+    "version": string;
+    "stale": string;
+    "title": string;
+    "start": number;
+    "end": number;
+    "camera": boolean;
+    "heading": number;
+    "problem": string;
+    "jobId": string;
+}
+
+/**
+ * EffectsView — effects:view.
+ */
+export interface EffectsView {
+    "kinds": EffectKind[];
+    "shots": EffectShot[];
 }
 
 /**

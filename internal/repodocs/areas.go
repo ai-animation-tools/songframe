@@ -115,7 +115,7 @@ var Areas = []Area{
 			"internal/derivedshot", "internal/derivedworkflow", "internal/deriveshot",
 			"internal/exportbundle", "internal/builtoutput", "internal/effects", "internal/shoteffects",
 		},
-		Pages: []string{"AnimaticPage", "MontagePage", "MontagePlayerPage"},
+		Pages: []string{"AnimaticPage", "MontagePage", "MontagePlayerPage", "EffectsPage"},
 	},
 	{
 		Title: "Агенты и провайдеры медиа",

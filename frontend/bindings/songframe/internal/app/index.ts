@@ -12,6 +12,7 @@ import * as ComponentsService from "./componentsservice.js";
 import * as CoverService from "./coverservice.js";
 import * as DashboardService from "./dashboardservice.js";
 import * as DerivedShotService from "./derivedshotservice.js";
+import * as EffectsService from "./effectsservice.js";
 import * as EnvironmentService from "./environmentservice.js";
 import * as JobsService from "./jobsservice.js";
 import * as MediaService from "./mediaservice.js";
@@ -46,6 +47,7 @@ export {
     CoverService,
     DashboardService,
     DerivedShotService,
+    EffectsService,
     EnvironmentService,
     JobsService,
     MediaService,
@@ -72,6 +74,9 @@ export {
 
 export type {
     AppState,
+    EffectKind,
+    EffectShot,
+    EffectsView,
     ExportBundleOptions,
     NativeCheckConfig,
     NativeCheckItem,

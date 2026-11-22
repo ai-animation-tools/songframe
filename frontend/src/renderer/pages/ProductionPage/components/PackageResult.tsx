@@ -9,7 +9,7 @@ import { ImageGallery } from '../../../components/ImageGallery';
 import { ImageThumbnail } from '../../../components/ImageThumbnail';
 import { ActionButton } from '../../../components/ActionButton';
 import { BUSY_REASON } from '../constants';
-import { VideoPlayer } from './VideoPlayer';
+import { VideoPlayer } from '../../../components/VideoPlayer';
 import { VideoReviewPanel } from './VideoReviewPanel';
 
 export function PackageResult({

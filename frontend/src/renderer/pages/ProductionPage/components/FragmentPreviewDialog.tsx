@@ -14,7 +14,7 @@ import { useApp } from '../../../state';
 import { formatClock, joinPath } from '../../../format';
 import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 import { JobStatus } from '../../../components/JobStatus';
-import { VideoPlayer } from './VideoPlayer';
+import { VideoPlayer } from '../../../components/VideoPlayer';
 
 const texts = productionTexts.fragmentPreview;
 

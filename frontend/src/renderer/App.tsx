@@ -21,6 +21,7 @@ import {
   PromptLogPage,
   NewProjectPage,
   MontagePage,
+  EffectsPage,
   MontagePlayerPage,
   CameraViewPage,
   ProjectPage,
@@ -149,6 +150,16 @@ export function App({ onReady }: { onReady?: () => Promise<void> }): ReactElemen
                 <RequireProject>
                   <RequireScenario title={navigationTexts.pages.montage}>
                     <MontagePage />
+                  </RequireScenario>
+                </RequireProject>
+              }
+            />
+            <Route
+              path="project/effects"
+              element={
+                <RequireProject>
+                  <RequireScenario title={navigationTexts.pages.effects}>
+                    <EffectsPage />
                   </RequireScenario>
                 </RequireProject>
               }

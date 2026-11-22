@@ -59,6 +59,7 @@ function bindings(
     montageWindow: missing,
     cameraWindow: missing,
     derivedShots: missing,
+    effects: missing,
     updates: missing,
     events: async () => ({ on: overrides.on ?? (() => () => undefined) })
   } as Bindings;

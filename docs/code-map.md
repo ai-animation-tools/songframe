@@ -196,6 +196,7 @@
 | [`AnimaticPage`](../frontend/src/renderer/pages/AnimaticPage/AnimaticPage.tsx) | Страница аниматика объединяет сборку, просмотр планов и принятие результата. |
 | [`MontagePage`](../frontend/src/renderer/pages/MontagePage/MontagePage.tsx) | Монтаж: ручная проба из принятых планов, её черновики, экспорт и применение к сценам. |
 | [`MontagePlayerPage`](../frontend/src/renderer/pages/MontagePlayerPage/MontagePlayerPage.tsx) | Отдельное окно воспроизводит несохранённый монтаж из основного окна, не создавая второй черновик. |
+| [`EffectsPage`](../frontend/src/renderer/pages/EffectsPage/EffectsPage.tsx) | Страница «Эффекты»: принятые планы слева, выбранный план справа — превью кадра «до» и «после», цепочка эффектов (дождь, свет, зерно) с параметрами, применение заданием и снятие эффекта. |
 
 ## Агенты и провайдеры медиа
 

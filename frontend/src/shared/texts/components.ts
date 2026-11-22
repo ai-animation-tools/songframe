@@ -2,6 +2,9 @@
 import { commonTexts } from './common';
 
 export const componentsTexts = {
+  videoPlayer: {
+    fullscreen: 'На весь экран'
+  },
   agent: {
     chooseInSettings: 'Выберите агента в форме настроек.',
     notSelected: 'Агент не выбран'

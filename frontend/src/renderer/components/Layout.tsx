@@ -33,6 +33,7 @@ import ForumOutlinedIcon from '@mui/icons-material/ForumOutlined';
 import HistoryIcon from '@mui/icons-material/History';
 import LibraryMusicIcon from '@mui/icons-material/LibraryMusic';
 import LightModeIcon from '@mui/icons-material/LightMode';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import MovieIcon from '@mui/icons-material/Movie';
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -66,6 +67,7 @@ const ICONS: Record<string, ReactElement> = {
   '/project/production': <BuildIcon />,
   '/project/scenes': <GridViewIcon />,
   '/project/montage': <MovieIcon />,
+  '/project/effects': <AutoAwesomeIcon />,
   '/project/checks': <FactCheckIcon />,
   '/project/animatic': <MovieIcon />,
   '/project/prompts': <ForumOutlinedIcon />,

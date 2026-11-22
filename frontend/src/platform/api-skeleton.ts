@@ -50,6 +50,12 @@ export function apiSkeleton(): Api {
       accept: stub('referenceImages.accept'),
       attach: stub('referenceImages.attach')
     },
+    effects: {
+      view: stub('effects.view'),
+      preview: stub('effects.preview'),
+      render: stub('effects.render'),
+      remove: stub('effects.remove')
+    },
     derivedShots: {
       view: stub('derivedShots.view'),
       save: stub('derivedShots.save'),

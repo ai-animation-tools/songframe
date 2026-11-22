@@ -41,6 +41,12 @@ export function unconfiguredStoryApi(): Api {
       close: async () => unconfigured('referenceImages.close'),
       attach: async () => unconfigured('referenceImages.attach')
     },
+    effects: {
+      view: async () => unconfigured('effects.view'),
+      preview: async () => unconfigured('effects.preview'),
+      render: async () => unconfigured('effects.render'),
+      remove: async () => unconfigured('effects.remove')
+    },
     derivedShots: {
       view: async () => unconfigured('derivedShots.view'),
       save: async () => unconfigured('derivedShots.save'),

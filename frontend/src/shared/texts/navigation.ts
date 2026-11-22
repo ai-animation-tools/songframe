@@ -12,6 +12,7 @@ export const navigationTexts = {
     production: 'Производство',
     scenes: 'Планы',
     montage: 'Монтаж пробы',
+    effects: 'Эффекты',
     checks: 'Проверки',
     animatic: 'Аниматик',
     prompts: 'Отправки',

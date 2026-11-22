@@ -44,6 +44,7 @@ function bindings(services: { environment?: Record<string, unknown>; media?: Rec
     montageWindow: missing,
     cameraWindow: missing,
     derivedShots: missing,
+    effects: missing,
     updates: missing,
     events
   } as Bindings;

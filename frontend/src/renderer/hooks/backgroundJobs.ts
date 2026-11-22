@@ -39,6 +39,8 @@ export function newDerivedResult(job: JobInfo, previousStatus: string | undefine
 
 export function ownerShowsResult(job: Pick<JobInfo, 'kind'> & Partial<Pick<JobInfo, 'steps'>>, route: string): boolean {
   if (job.steps?.some((step) => ['align_lyrics', 'separate_vocals'].includes(step.tool))) return route === '/project/timing';
+  // Ролик с эффектом плана: итог показывает страница «Эффекты».
+  if (job.steps?.some((step) => step.tool === 'shot_effects')) return route === '/project/effects';
   // Производные планы сообщает только общий наблюдатель, в том числе после повторного открытия производства.
   if (isDerivedJob(job)) return false;
   return OWNER_ROUTES[job.kind].includes(route);

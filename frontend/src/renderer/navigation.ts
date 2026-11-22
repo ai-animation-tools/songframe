@@ -19,6 +19,8 @@ export const NAV_PAGES: readonly NavPage[] = [
   { to: '/project/production', label: navigationTexts.pages.production, needsProject: true },
   { to: '/project/scenes', label: navigationTexts.pages.scenes, needsProject: true },
   { to: '/project/montage', label: navigationTexts.pages.montage, needsProject: true },
+  // Эффекты поверх принятых планов: дождь, свет, зерно; ролик с эффектом идёт в монтаж.
+  { to: '/project/effects', label: navigationTexts.pages.effects, needsProject: true },
   { to: '/project/checks', label: navigationTexts.pages.checks, needsProject: true },
   { to: '/project/animatic', label: navigationTexts.pages.animatic, needsProject: true },
   // Журнал отправок агенту и сервисам генерации: только чтение, без повторной отправки.

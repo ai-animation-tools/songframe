@@ -1035,7 +1035,7 @@ export const AcceptedPlan: Story = {
     // Пакета попытки после приёмки нет: шаги с пустыми итогами не показываются, только принятый комплект.
     await expect(await screen.findByText(kit.heading)).toBeInTheDocument();
     await expect(context.canvasElement.ownerDocument.querySelectorAll('[data-plan-step]')).toHaveLength(0);
-    await expect(screen.getAllByRole('button', { name: texts.videoPlayer.fullscreen })).toHaveLength(2);
+    await expect(screen.getAllByRole('button', { name: componentsTexts.videoPlayer.fullscreen })).toHaveLength(2);
     // Два видео нельзя перепутать: у каждого своя подпись.
     await expect(screen.getByText(texts.productionShotCard.acceptedVideo)).toBeInTheDocument();
     await expect(screen.getByText(texts.productionShotCard.originalVideo)).toBeInTheDocument();

@@ -25,6 +25,7 @@ import type {
 } from './scenario-workflow';
 import type { NotificationTarget } from './notifications';
 import type { DerivedShotApi } from './derived-shot';
+import type { EffectsApi } from './effects';
 import type { MontageApi } from './montage';
 import type { MontageWindowApi } from './montage-window';
 import type { CameraWindowApi } from './camera-window';
@@ -107,6 +108,8 @@ export interface Api {
   cover: CoverGenerationApi;
   referenceImages: ReferenceImageGenerationApi;
   derivedShots: DerivedShotApi;
+  /** Эффекты поверх принятых планов (дождь, свет, зерно): превью кадра, рендер, снятие. */
+  effects: EffectsApi;
   montage: MontageApi;
   montageWindow: MontageWindowApi;
   cameraWindow: CameraWindowApi;

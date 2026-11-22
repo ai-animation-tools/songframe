@@ -116,6 +116,7 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
     cover: { ...defaults.cover, ...overrides.cover },
     referenceImages: { ...defaults.referenceImages, ...overrides.referenceImages },
     derivedShots: { ...defaults.derivedShots, ...overrides.derivedShots },
+    effects: { ...defaults.effects, ...overrides.effects },
     montage: { ...defaults.montage, ...overrides.montage },
     montageWindow: { ...defaults.montageWindow, onMessage: message.subscribe, onClosed: closed.subscribe, ...overrides.montageWindow },
     cameraWindow: { ...defaults.cameraWindow, onMessage: cameraMessage.subscribe, onClosed: cameraClosed.subscribe, ...overrides.cameraWindow },
@@ -175,6 +176,12 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
       accept: guardedAsync(merged.referenceImages.accept),
       close: guardedAsync(merged.referenceImages.close),
       attach: guardedAsync(merged.referenceImages.attach)
+    },
+    effects: {
+      view: guardedAsync(merged.effects.view),
+      preview: guardedAsync(merged.effects.preview),
+      render: guardedAsync(merged.effects.render),
+      remove: guardedAsync(merged.effects.remove)
     },
     derivedShots: {
       view: guardedAsync(merged.derivedShots.view),

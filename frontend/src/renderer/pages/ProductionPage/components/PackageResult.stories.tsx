@@ -139,7 +139,7 @@ export const FullScreen: Story = {
     await waitFor(() => expect(video?.duration).toBe(8));
     if (video) video.currentTime = 3;
     await waitFor(() => expect(video?.currentTime).toBe(3));
-    await userEvent.click(canvas.getByRole('button', { name: productionTexts.videoPlayer.fullscreen }));
+    await userEvent.click(canvas.getByRole('button', { name: componentsTexts.videoPlayer.fullscreen }));
     const dialog = await screen.findByRole('dialog');
     const full = dialog.querySelector('video');
     await expect(full).toHaveAttribute('src', video?.getAttribute('src'));
@@ -149,7 +149,7 @@ export const FullScreen: Story = {
     await userEvent.click(within(dialog).getByRole('button', { name: componentsTexts.videoFullscreen.exit }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     await waitFor(() => expect(video?.currentTime).toBe(5));
-    await userEvent.click(canvas.getByRole('button', { name: productionTexts.videoPlayer.fullscreen }));
+    await userEvent.click(canvas.getByRole('button', { name: componentsTexts.videoPlayer.fullscreen }));
     await screen.findByRole('dialog');
     await userEvent.keyboard('{Escape}');
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());

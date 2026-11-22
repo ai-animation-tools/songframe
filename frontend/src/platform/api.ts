@@ -63,6 +63,7 @@ import type { MontageWindowEvent } from '@shared/montage-window';
 import type { CameraWindowEvent } from '@shared/camera-window';
 import type { MontageDraft, MontageView } from '@shared/montage';
 import type { DerivedShotView } from '@shared/derived-shot';
+import type { EffectsView } from '@shared/effects';
 import type { SchemesFile, SchemesView } from '@shared/schemes';
 import type { ViewFrame } from '@shared/viewframe';
 import type * as mediaapi from '../../bindings/songframe/internal/mediaapi/models';
@@ -175,6 +176,7 @@ export interface Bindings {
   montageWindow: () => Promise<typeof import('../../bindings/songframe/internal/app/montagewindowservice')>;
   cameraWindow: () => Promise<typeof import('../../bindings/songframe/internal/app/camerawindowservice')>;
   derivedShots: () => Promise<typeof import('../../bindings/songframe/internal/app/derivedshotservice')>;
+  effects: () => Promise<typeof import('../../bindings/songframe/internal/app/effectsservice')>;
   updates: () => Promise<typeof import('../../bindings/songframe/internal/app/updatesservice')>;
   events: EventSource;
 }
@@ -211,6 +213,7 @@ export const nativeBindings: Bindings = {
   montageWindow: () => import('../../bindings/songframe/internal/app/montagewindowservice'),
   cameraWindow: () => import('../../bindings/songframe/internal/app/camerawindowservice'),
   derivedShots: () => import('../../bindings/songframe/internal/app/derivedshotservice'),
+  effects: () => import('../../bindings/songframe/internal/app/effectsservice'),
   updates: () => import('../../bindings/songframe/internal/app/updatesservice'),
   events: async () => {
     const { Events } = await import('@wailsio/runtime');
@@ -681,6 +684,16 @@ export function createApi(b: Bindings): Api {
     build: (project, shot, recipe) => call('derivedShots.build', async () => derivedView((await b.derivedShots()).Build(project, shot, recipe)), false),
     accept: (project, shot, previewId, resultToken, replace) =>
       call('derivedShots.accept', async () => derivedView((await b.derivedShots()).Accept(project, shot, previewId, resultToken, replace)), false)
+  };
+
+  // Эффекты плана: Go отдаёт снимок страницы целиком; рендер — задание, превью — data: URL кадра.
+  const effectsView = async (view: Promise<EffectsView>): Promise<EffectsView> => await view;
+  api.effects = {
+    view: (project) => call('effects.view', async () => effectsView((await b.effects()).View(project))),
+    preview: (project, shot, steps, frame, width) =>
+      call('effects.preview', async () => (await b.effects()).Preview(project, shot, steps, frame, width), false),
+    render: (project, shot, steps) => call('effects.render', async () => toJob(await (await b.effects()).Render(project, shot, steps)), false),
+    remove: (project, shot) => call('effects.remove', async () => effectsView((await b.effects()).Remove(project, shot)), false)
   };
 
   // Сценарный проход агента. Go отдаёт статусы, проход и документы предложения строками и JSON

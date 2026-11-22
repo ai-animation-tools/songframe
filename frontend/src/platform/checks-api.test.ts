@@ -43,6 +43,7 @@ function bindings(checks: Record<string, unknown>): Bindings {
     montageWindow: missing,
     cameraWindow: missing,
     derivedShots: missing,
+    effects: missing,
     updates: missing,
     events: async () => ({ on: () => () => undefined })
   } as Bindings;

@@ -19,7 +19,7 @@ import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 import { JobStatus } from '../../../components/JobStatus';
 import { LinkedText } from '../../../components/LinkedText';
 import { useStaticShot } from '../useStaticShot';
-import { VideoPlayer } from './VideoPlayer';
+import { VideoPlayer } from '../../../components/VideoPlayer';
 
 const texts = productionTexts.staticShot;
 const seconds = productionTexts.productionSpeechPanel.seconds;

@@ -1,4 +1,4 @@
-import { productionTexts } from '@shared/texts/production';
+import { componentsTexts } from '@shared/texts/components';
 /**
  * Видео результата во всю ширину шага с кнопкой «На весь экран»: полный экран — общий просмотр
  * приложения (useVideoFullscreen), положение и звук переходят в него и обратно. Ссылка на элемент нужна переходам по таймкодам.
@@ -7,7 +7,7 @@ import { productionTexts } from '@shared/texts/production';
 import { useRef, type ReactElement, type Ref } from 'react';
 import { Box, Button } from '@mui/material';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
-import { useVideoFullscreen } from '../../../components/VideoFullscreen';
+import { useVideoFullscreen } from './VideoFullscreen';
 
 export function VideoPlayer({
   path,
@@ -37,7 +37,7 @@ export function VideoPlayer({
         style={{ width: '100%', display: 'block', borderRadius: 8, background: '#000' }}
       />
       <Button size="small" startIcon={<FullscreenIcon />} sx={{ mt: 0.5 }} onClick={fullscreen.open}>
-        {productionTexts.videoPlayer.fullscreen}
+        {componentsTexts.videoPlayer.fullscreen}
       </Button>
       {fullscreen.dialog}
     </Box>

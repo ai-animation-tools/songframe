@@ -1,0 +1,1 @@
+export { EffectsPage } from './EffectsPage';

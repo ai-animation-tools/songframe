@@ -17,5 +17,6 @@ export { SettingsPage } from './SettingsPage';
 export { SourcesPage } from './SourcesPage';
 export { TimingPage } from './TimingPage';
 export { MontagePage } from './MontagePage';
+export { EffectsPage } from './EffectsPage';
 export { MontagePlayerPage } from './MontagePlayerPage';
 export { CameraViewPage } from './CameraViewPage';

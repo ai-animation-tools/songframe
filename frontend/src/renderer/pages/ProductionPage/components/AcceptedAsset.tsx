@@ -3,7 +3,7 @@ import { productionTexts } from '@shared/texts/production';
 import { useEffect, useState, type ReactElement } from 'react';
 import { Alert, Box, Chip, Typography } from '@mui/material';
 import type { AssetEdit, ShotProduction } from '@shared/types';
-import { VideoPlayer } from './VideoPlayer';
+import { VideoPlayer } from '../../../components/VideoPlayer';
 
 const recipeTexts = productionTexts.productionShotCard.recipe;
 

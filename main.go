@@ -309,6 +309,8 @@ func run() error {
 		application.NewService(shell.NewPromptLogService()),
 		application.NewService(shell.NewProjectHistoryService()),
 		application.NewService(shell.NewDerivedShotService(jobManager)),
+		// Эффекты поверх принятых планов: превью кадра, рендер заданием, снятие эффекта.
+		application.NewService(shell.NewEffectsService(jobManager)),
 		// Второе окно плеера монтажа: одно окно у одного владельца, положение — в каталоге состояния.
 		application.NewService(montageWindow),
 		application.NewService(cameraWindow),

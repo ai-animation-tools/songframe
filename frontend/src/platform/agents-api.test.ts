@@ -41,6 +41,7 @@ function bindings(services: { agents?: Record<string, unknown>; ai?: Record<stri
     montageWindow: missing,
     cameraWindow: missing,
     derivedShots: missing,
+    effects: missing,
     updates: missing,
     scenarioWorkflow: missing,
     productionWorkflow: missing,

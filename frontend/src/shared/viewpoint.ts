@@ -270,6 +270,19 @@ export function removePoint(viewpoint: SceneViewpoint, target: ViewpointTarget, 
   return syncSide(next.length ? { ...rest, subjects: next } : rest);
 }
 
+/**
+ * Оставляет в точке съёмки только героев из референсов плана: карта ставит и показывает в строках только их,
+ * а проверка сценария героя вне референсов не принимает. Порядок сохраняется, поэтому без прежнего главного
+ * главным становится следующий герой. Без изменений возвращает тот же объект.
+ */
+export function withReferences(viewpoint: SceneViewpoint, references: readonly string[]): SceneViewpoint {
+  const subjects = viewpoint.subjects ?? [];
+  const kept = subjects.filter((subject) => references.includes(subject.entity));
+  if (kept.length === subjects.length) return viewpoint;
+  const { subjects: _subjects, ...rest } = viewpoint;
+  return syncSide(kept.length ? { ...rest, subjects: kept } : rest);
+}
+
 /** Делает героя главным: он становится первым, остальные сохраняют порядок. */
 export function setLead(viewpoint: SceneViewpoint, entity: string): SceneViewpoint {
   const subjects = viewpoint.subjects ?? [];

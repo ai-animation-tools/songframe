@@ -31,6 +31,7 @@ import {
   withFov,
   withoutHeading,
   withoutPoints,
+  withReferences,
   type SceneViewpoint
 } from './viewpoint';
 
@@ -199,6 +200,15 @@ describe('правка точек', () => {
     const withoutHero = removePoint(viewpoint, { entity: 'artem' }, 'start');
     expect('subjects' in withoutHero).toBe(false);
     expect(withoutPoints(viewpoint)).toEqual({ location: 'yard', side: 'south', size: 'wide' });
+  });
+
+  it('без референса герой уходит из точки, главным становится следующий', () => {
+    let viewpoint = setPoint(base, 'camera', 'start', [0, 0]);
+    viewpoint = setPoint(setPoint(viewpoint, { entity: 'artem' }, 'start', [0, 5]), { entity: 'boy' }, 'start', [1, 5]);
+    expect(withReferences(viewpoint, ['artem', 'boy', 'yard'])).toBe(viewpoint);
+    expect(withReferences(viewpoint, ['boy']).subjects).toEqual([{ entity: 'boy', start: [1, 5] }]);
+    expect('subjects' in withReferences(viewpoint, ['yard'])).toBe(false);
+    expect(withReferences(viewpoint, ['yard']).camera).toEqual({ start: [0, 0] });
   });
 });
 

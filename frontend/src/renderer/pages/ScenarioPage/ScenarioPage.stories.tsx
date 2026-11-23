@@ -286,6 +286,39 @@ export const ViewpointCoordinates: Story = {
   }
 };
 
+export const ViewpointReferenceRemoved: Story = {
+  name: 'Точка съёмки · герой, убранный из референсов, уходит и с карты',
+  tags: ['!autodocs', 'ci'],
+  parameters: { songframe: scenarioPageOptions({ route: '/project/scenario?shot=M03' }) },
+  play: async (context) => {
+    const screen = await ready(context);
+    await editorHeading(screen, 'M03');
+    await userEvent.click(viewpointBlock(screen));
+    await userEvent.click(await screen.findByRole('button', { name: viewpointTexts.create }));
+    let map = within(await screen.findByRole('dialog', { name: viewpointTexts.fullscreenTitle({ shot: 'M03' }) }));
+    let preview = await previewOf(screen, map);
+    clickPreview(preview, 0.3, 0.5);
+    await waitFor(() => expect(preview.querySelector('[data-camera]')).not.toBeNull());
+    await userEvent.click(within(map.getByRole('group', { name: viewpointTexts.target })).getByRole('button', { name: /Герой/ }));
+    clickPreview(preview, 0.7, 0.5);
+    await waitFor(() => expect(preview.querySelector('[data-subject="hero"]')).not.toBeNull());
+    await userEvent.click(map.getByRole('button', { name: commonTexts.close }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    // Референс убирается крестиком на его чипе в «В кадре (референсы)».
+    const references = screen.getByRole('combobox', { name: scenarioTexts.shot.references }).closest('.MuiAutocomplete-root') as HTMLElement;
+    const chip = within(references).getByRole('button', { name: /Герой/ });
+    await userEvent.click(chip.querySelector('.MuiChip-deleteIcon')!);
+    await waitFor(() => expect(within(references).queryByRole('button', { name: /Герой/ })).toBeNull());
+    // На карте нет ни точки героя, ни его строки; камера осталась на месте.
+    await userEvent.click(screen.getByRole('button', { name: viewpointTexts.openMap }));
+    map = within(await screen.findByRole('dialog', { name: viewpointTexts.fullscreenTitle({ shot: 'M03' }) }));
+    preview = await previewOf(screen, map);
+    await expect(preview.querySelector('[data-camera]')).not.toBeNull();
+    await expect(preview.querySelector('[data-subject="hero"]')).toBeNull();
+    await expect(map.queryByRole('group', { name: new RegExp(`^${viewpointTexts.coords}: Герой`) })).toBeNull();
+  }
+};
+
 export const ViewpointSet: Story = {
   name: 'Точка съёмки · карта во весь экран: камера и герои, дом со схемы, сторона по точкам, движение, свой угол и запись',
   tags: ['!autodocs', 'ci'],

@@ -13,6 +13,7 @@ import { MergeShotsDialog } from './MergeShotsDialog';
 import { ShotPageButton } from '../../../components/ShotPageButton';
 import { ActionButton } from '../../../components/ActionButton';
 import { ViewpointBlock } from './ViewpointBlock';
+import { withReferences } from '@shared/viewpoint';
 
 const noop = (): void => undefined;
 
@@ -204,8 +205,11 @@ export function SceneShotEditor({
           value={referenceOptions.filter((o) => shot.references.includes(o.id))}
           onChange={(_e, value) => {
             const ids = value.map((v) => v.id);
+            // Убранный из референсов герой уходит и с карты точки съёмки: иначе он остаётся точкой без строки.
+            const viewpoint = shot.viewpoint && withReferences(shot.viewpoint, ids);
             updateShot({
               references: ids.length ? ids : ['—'],
+              ...(viewpoint !== shot.viewpoint ? { viewpoint } : {}),
               card: {
                 primary_reference: ids.includes(shot.card.primary_reference) ? shot.card.primary_reference : (ids[0] ?? shot.card.primary_reference)
               }

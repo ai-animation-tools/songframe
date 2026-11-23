@@ -1201,7 +1201,7 @@
           "task": "ai-clip-scenario:revise",
           "permissions": "read-only",
           "inputHashes": {
-            "prompt": "3698a4ad094bdfd04961e96116e0ad111a0b32a9ae17d0a38d3ee9ed5e51c108",
+            "prompt": "efb700a2dcde8e950310831878fb7c55777afbf119f9b18bffb4bbebe5dd3166",
             "context": "303a83baf5644ffa3f430b0a36eb78d59712332357a5b936011f0f9344112dda"
           },
           "status": "running",
@@ -2373,7 +2373,7 @@
           "task": "ai-clip-scenario:revise",
           "permissions": "read-only",
           "inputHashes": {
-            "prompt": "3698a4ad094bdfd04961e96116e0ad111a0b32a9ae17d0a38d3ee9ed5e51c108",
+            "prompt": "efb700a2dcde8e950310831878fb7c55777afbf119f9b18bffb4bbebe5dd3166",
             "context": "303a83baf5644ffa3f430b0a36eb78d59712332357a5b936011f0f9344112dda"
           },
           "status": "completed",

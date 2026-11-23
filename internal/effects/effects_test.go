@@ -112,6 +112,39 @@ func TestDiffMaskCatchesFaintGlow(t *testing.T) {
 	}
 }
 
+// TestStaticShotPullOut — отъезд зеркален наезду: первый кадр отъезда — последний кадр наезда той
+// же силы, последний кадр отъезда — вся опора, как у неподвижного кадра.
+func TestStaticShotPullOut(t *testing.T) {
+	base := solid(64, 36, 10, 20, 30)
+	setRect(base, 8, 6, 20, 14, 200, 40, 0)
+	setRect(base, 44, 22, 58, 32, 0, 60, 220)
+	build := func(push float64) *StaticShot {
+		shot, err := NewStaticShot(base, []State{{base, 0}}, map[string]float64{"push_in": push}, Size{64, 36, 20})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return shot
+	}
+	in, out, still := build(0.2), build(-0.2), build(0)
+	same := func(a, b *Frame) bool {
+		for i := range a.Pix {
+			if a.Pix[i] != b.Pix[i] {
+				return false
+			}
+		}
+		return true
+	}
+	if !same(out.Frame(0), in.Frame(19)) {
+		t.Error("первый кадр отъезда не равен последнему кадру наезда")
+	}
+	if !same(out.Frame(19), still.Frame(0)) {
+		t.Error("последний кадр отъезда не равен всей опоре")
+	}
+	if same(out.Frame(0), still.Frame(0)) {
+		t.Error("отъезд начинается без приближения")
+	}
+}
+
 // TestStaticShot — вне области смены кадр повторяет базовую опору, внутри — состояние;
 // переход идёт между состояниями; ошибки состояний.
 func TestStaticShot(t *testing.T) {

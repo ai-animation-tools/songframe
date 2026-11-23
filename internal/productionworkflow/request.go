@@ -71,39 +71,62 @@ const (
 // задаётся о новом. Отправка — только после отдельного согласования.
 func (w *Workflow) PrepareRequest(ctx context.Context, project, shot, packageDir string, change *RequestChange) (View, error) {
 	w.mu.Lock()
+	c, err := w.checkRequest(project, shot, packageDir, change)
+	if err != nil {
+		w.mu.Unlock()
+		return View{}, err
+	}
+	// Подготовка ходит к провайдеру за доступом, объявлениями моделей и ценой и может идти дольше
+	// срока ожидания интерфейса. Как Start и Apply, она идёт без мьютекса: план отмечен busy, поэтому
+	// другие действия с ним отказывают «Дождитесь…», а вид плана и список предложений не ждут.
+	planKey := key(c.Project, shot)
+	w.busy[planKey] = true
+	w.mu.Unlock()
+	err = w.prepareRequest(ctx, c, change)
+	w.mu.Lock()
 	defer w.mu.Unlock()
-	canonical, err := dynvalue.Realpath(project)
+	delete(w.busy, planKey)
 	if err != nil {
 		return View{}, err
+	}
+	return w.view(c.Project, shot, c.PackageDir)
+}
+
+// checkRequest — под мьютексом: контекст попытки и причины, по которым запрос сейчас не готовится
+// (идёт задание, вопрос не закрыт, непринятое предложение).
+func (w *Workflow) checkRequest(project, shot, packageDir string, change *RequestChange) (*Context, error) {
+	canonical, err := dynvalue.Realpath(project)
+	if err != nil {
+		return nil, err
 	}
 	c, err := ReadContext(canonical, shot, packageDir)
 	if err != nil {
-		return View{}, err
+		return nil, err
 	}
-	planKey := key(canonical, shot)
-	if w.busy[planKey] || slices.ContainsFunc(w.options.Agents.List(canonical), func(job agents.Job) bool { return job.Status == "running" }) ||
+	if w.busy[key(canonical, shot)] || slices.ContainsFunc(w.options.Agents.List(canonical), func(job agents.Job) bool { return job.Status == "running" }) ||
 		(c.PackageDir != "" && w.options.IsPackageBusy != nil && w.options.IsPackageBusy(canonical, c.PackageDir)) {
-		return View{}, errors.New(textWaitForJob)
+		return nil, errors.New(textWaitForJob)
 	}
 	if err := requestAllowed(c, change); err != nil {
-		return View{}, err
+		return nil, err
 	}
 	if w.store.Read(canonical, shot).active() {
-		return View{}, errors.New(textResolveProposalFirstError)
+		return nil, errors.New(textResolveProposalFirstError)
 	}
-	w.busy[planKey] = true
-	defer delete(w.busy, planKey)
+	return c, nil
+}
+
+// prepareRequest — без мьютекса, план отмечен busy: папка request-NN, этап request_choice и вопрос
+// о запросе.
+func (w *Workflow) prepareRequest(ctx context.Context, c *Context, change *RequestChange) error {
 	requestName, err := w.buildRequest(ctx, c, change)
 	if err != nil {
-		return View{}, err
+		return err
 	}
-	if err := w.run(ctx, canonical, "shot_workflow", "set-stage", "--dir", c.PackageDir, "request_choice", "--request-dir", requestName); err != nil {
-		return View{}, err
+	if err := w.run(ctx, c.Project, "shot_workflow", "set-stage", "--dir", c.PackageDir, "request_choice", "--request-dir", requestName); err != nil {
+		return err
 	}
-	if err := w.run(ctx, canonical, "shot_workflow", "ask", "--dir", c.PackageDir, "--stage", "request_choice"); err != nil {
-		return View{}, err
-	}
-	return w.view(canonical, shot, c.PackageDir)
+	return w.run(ctx, c.Project, "shot_workflow", "ask", "--dir", c.PackageDir, "--stage", "request_choice")
 }
 
 // requestAllowed — причина, по которой запрос попытки сейчас не готовится; nil — можно. Без

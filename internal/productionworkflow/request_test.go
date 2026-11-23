@@ -11,6 +11,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"songframe/internal/dynvalue"
 	"songframe/internal/mediaadapters"
@@ -336,5 +337,55 @@ func TestPrepareRequestRefusals(t *testing.T) {
 	}
 	if _, err := workflow.PrepareRequest(ctx, run.project, "M01", dir, nil); err == nil || err.Error() != textStageUnavailable {
 		t.Fatalf("изменённый промпт: %v", err)
+	}
+}
+
+// TestPrepareRequestDoesNotBlockView — пока подготовка ждёт провайдера, вид плана и список
+// предложений отвечают сразу и показывают занятость, повторная подготовка отказывает; после
+// подготовки план свободен.
+func TestPrepareRequestDoesNotBlockView(t *testing.T) {
+	run := ownRun(t)
+	workflow := requestWorkflow(t, run)
+	dir := promptReady(t, run, 2)
+	entered, release := make(chan struct{}), make(chan struct{})
+	workflow.options.RequireVideoAccess = func(context.Context, string) error {
+		close(entered)
+		<-release
+		return nil
+	}
+	done := make(chan error, 1)
+	go func() {
+		_, err := workflow.PrepareRequest(context.Background(), run.project, "M01", dir, nil)
+		done <- err
+	}()
+	<-entered
+	answered := make(chan View, 1)
+	go func() {
+		workflow.PendingProposals(run.project)
+		view, err := workflow.View(run.project, "M01", dir)
+		if err != nil {
+			t.Error(err)
+		}
+		answered <- view
+	}()
+	select {
+	case view := <-answered:
+		if !view.Busy {
+			t.Error("вид плана во время подготовки не занят")
+		}
+	case <-time.After(5 * time.Second):
+		close(release)
+		t.Fatal("вид плана ждёт конца подготовки запроса")
+	}
+	if _, err := workflow.PrepareRequest(context.Background(), run.project, "M01", dir, nil); err == nil || err.Error() != textWaitForJob {
+		t.Errorf("повторная подготовка: %v", err)
+	}
+	close(release)
+	if err := <-done; err != nil {
+		t.Fatal(err)
+	}
+	view, err := workflow.View(run.project, "M01", dir)
+	if err != nil || view.Busy || view.Stage == nil || *view.Stage != "request_choice" {
+		t.Fatalf("после подготовки: busy %v, этап %v, %v", view.Busy, view.Stage, err)
 	}
 }

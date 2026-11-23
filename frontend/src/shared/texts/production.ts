@@ -975,6 +975,7 @@ export const productionTexts = {
     cancel: 'Отмена',
     amountLabel: ({ label }: { label: string }) => `Стоимость: ${label}`,
     missing: 'План принят до начала учёта расхода: записи принятого видео нет. Укажите его цену, если она известна.',
+    local: 'Видео собрано приложением из опор: без оплаты. В расход плана входят только опоры.',
     priceAccepted: 'Указать цену принятого видео',
     saved: 'Стоимость сохранена',
     acceptedTotal: ({ seconds, rejected }: { seconds: string; rejected: number }) =>

@@ -42,6 +42,16 @@ const UNPRICED: ShotSpend = {
   entries: [spendEntry('M02', { status: 'manual', accepted: true, editable: true, removed: true })]
 };
 
+/** План «Сборка из опор»: видео собрало приложение, в расходе только опора сервиса за 32 кредита. */
+const LOCAL: ShotSpend = {
+  ...emptySpend(),
+  attempts: 1,
+  images: 1,
+  local: true,
+  acceptedSeconds: 6,
+  entries: [spendEntry('M02', { kind: 'image', provider: TEST_PROVIDER, amount: 32, unit: 'credits', removed: true })]
+};
+
 /** Принят до начала учёта расхода: записей нет. */
 const MISSING: ShotSpend = { ...emptySpend(), missing: true, unpriced: 1, acceptedSeconds: 4 };
 
@@ -181,6 +191,21 @@ export const AcceptedWithoutEntry: Story = {
     await waitFor(() => expect(chips.getByText('300 кредитов')).toBeInTheDocument());
     await expect(dialog.queryByText(texts.missing)).not.toBeInTheDocument();
     await expect(dialog.getByText(texts.videoKit)).toBeInTheDocument();
+  }
+};
+
+export const LocalVideo: Story = {
+  name: 'Сборка из опор · видео без оплаты, цену не спрашивают',
+  tags: ['ci'],
+  args: { initial: initialBadge(LOCAL) },
+  parameters: { songframe: options(LOCAL) },
+  play: async ({ canvasElement }) => {
+    const chips = within(within(canvasElement).getByTestId('shot-spend'));
+    await expect(chips.queryByText(texts.chipUnpriced)).not.toBeInTheDocument();
+    const dialog = await openDialog(canvasElement);
+    await expect(dialog.getByText(texts.local)).toBeInTheDocument();
+    await expect(dialog.queryByText(texts.missing)).not.toBeInTheDocument();
+    await expect(dialog.queryByRole('button', { name: texts.priceAccepted })).not.toBeInTheDocument();
   }
 };
 

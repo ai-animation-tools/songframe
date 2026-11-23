@@ -13,7 +13,8 @@ import (
 
 // SpendFor — расход плана shot по журналу plan/spend.json и живым попыткам. Принятый результат —
 // по комплекту assets/shots/Mxx: номер генерации и SHA запроса из снимка generation-request.json,
-// длина материала — кадры accepted_edit на его fps. Только чтение.
+// длина материала — кадры accepted_edit на его fps, видео из опор — по generation.static.
+// Только чтение.
 func SpendFor(project, shot string) (spend.Summary, error) {
 	if !acceptedShotID.MatchString(shot) {
 		return spend.Summary{}, fmt.Errorf("неверный код плана: %q", shot)
@@ -35,7 +36,10 @@ func acceptedResult(project, shot string) *spend.Accepted {
 		return nil
 	}
 	kit := kitOf(project, shot)
-	return &spend.Accepted{Seconds: dynvalue.ToNumber(frames) / dynvalue.ToNumber(fps), GenerationID: kit.GenerationID, RequestSHA256: kit.RequestSHA256}
+	// Видео плана «Сборка из опор» собрало приложение: цену у него не спрашивают.
+	local := dynvalue.IsRecord(dynvalue.GetPath(manifest, "generation", "static"))
+	return &spend.Accepted{Seconds: dynvalue.ToNumber(frames) / dynvalue.ToNumber(fps), GenerationID: kit.GenerationID, RequestSHA256: kit.RequestSHA256,
+		Local: local}
 }
 
 // kitOf — чем принятое видео плана отмечено в журнале: провайдер, номер генерации и SHA запроса

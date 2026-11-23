@@ -202,6 +202,11 @@ export function ShotSpendDialog({
                   {texts.acceptedTotal({ seconds: spend.acceptedSeconds.toFixed(2).replace('.', ','), rejected: spend.rejected })}
                 </Typography>
               ) : null}
+              {spend.local ? (
+                <Typography variant="body2" data-testid="spend-local">
+                  {texts.local}
+                </Typography>
+              ) : null}
               {spend.perSecond.length ? (
                 <Typography variant="body2" fontWeight={500}>
                   {texts.perSecond}: {spend.perSecond.map((total) => `${spendAmount(total)} (${spendSource(total.provider)})`).join(' · ')}

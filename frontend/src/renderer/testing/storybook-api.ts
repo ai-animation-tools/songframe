@@ -238,6 +238,7 @@ export function unconfiguredStoryApi(): Api {
         unknown: 0,
         unpriced: 0,
         missing: false,
+        local: false,
         manual: 0,
         totals: [],
         acceptedSeconds: null,

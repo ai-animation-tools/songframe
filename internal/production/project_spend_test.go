@@ -82,3 +82,36 @@ func TestProjectSpendAcceptedWithoutEntry(t *testing.T) {
 		t.Fatalf("снимок комплекта изменён: %s", data)
 	}
 }
+
+// TestProjectSpendLocalVideo — видео плана «Сборка из опор» собрало приложение: записи в журнале у
+// него нет, но цену не спрашивают — ни «цена не указана» в клипе, ни предложения указать цену
+// принятого видео. Отклонённая платная генерация прежней попытки остаётся в расходе.
+func TestProjectSpendLocalVideo(t *testing.T) {
+	project := t.TempDir()
+	writeJSONFile(t, filepath.Join(project, "plan", "scenes.json"), map[string]any{"fps": 30, "scenes": []any{
+		map[string]any{"id": "M09", "static_shot": true},
+	}})
+	writeJSONFile(t, filepath.Join(project, "assets", "shots", "M09", "manifest.json"), map[string]any{
+		"shot": "M09", "kind": "static_video", "accepted_edit": map[string]any{"frames": 180, "fps": 30},
+		"generation": map[string]any{"original": map[string]any{"sha256": "o-M09"}, "static": map[string]any{"version": 1}},
+	})
+	writeJSONFile(t, filepath.Join(project, "plan", "spend.json"), map[string]any{"schema_version": 1, "entries": []any{
+		map[string]any{"shot": "M09", "attempt": "plan/batches/M09/A1", "kind": "video", "provider": "test-video", "status": "sent",
+			"request_sha256": "r-old", "amount": 40, "unit": "credits"},
+	}})
+
+	spend, err := production.ProjectSpendFor(project)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(spend.Unpriced) != 0 || len(spend.Shots) != 1 || spend.Shots[0].Missing || spend.Rejected != 1 {
+		t.Fatalf("расход клипа: %+v", spend)
+	}
+	summary, err := production.SpendFor(project, "M09")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !summary.Local || summary.Missing || summary.Unpriced != 0 || summary.AcceptedSeconds == nil || *summary.AcceptedSeconds != 6 {
+		t.Fatalf("расход плана: %+v", summary)
+	}
+}

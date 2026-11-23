@@ -19,6 +19,9 @@ type Accepted struct {
 	RequestSHA256 string
 	// Seconds — длина принятого материала (кадры комплекта / fps).
 	Seconds float64
+	// Local — видео собрано приложением из опор (план «Сборка из опор»): оплаты не было, поэтому
+	// записи принятого видео в журнале нет и быть не должно.
+	Local bool
 }
 
 // EntryView — запись расхода плана для окна «Расход Mxx»: что это, сколько стоило и можно ли
@@ -74,6 +77,8 @@ type Summary struct {
 	// Missing — план принят, а записи принятого видео в журнале нет (комплект принят до журнала):
 	// цену указывают через AddAccepted.
 	Missing bool `json:"missing"`
+	// Local — принятое видео собрано приложением из опор без оплаты; расход плана — только опоры.
+	Local bool `json:"local"`
 	// Manual — видео, созданные вне приложения (ручная генерация, своё видео).
 	Manual int `json:"manual"`
 	// Totals — известный расход по единицам, в порядке первого появления.
@@ -150,9 +155,10 @@ func Summarize(entries []Entry, shot string, accepted *Accepted) Summary {
 	}
 	if accepted != nil {
 		summary.Rejected = summary.Videos
+		summary.Local = accepted.Local
 		if acceptedFound {
 			summary.Rejected--
-		} else {
+		} else if !accepted.Local {
 			summary.Missing = true
 			summary.Unpriced++
 		}

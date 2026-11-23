@@ -1,6 +1,6 @@
 /** Общие снимки запроса и результата для локальных историй отправки, получения и приёмки. */
 import type { AcceptOptions, JobInfo, PackageView, ProductionQuote } from '@shared/types';
-import { DEFAULT_FPS } from '@shared/video';
+import { cutFrameOf, DEFAULT_FPS } from '@shared/video';
 import { productionTexts } from '@shared/texts/production';
 import { preparedPackage, queuedPackage } from './productionQueueStories';
 import { STORY_IMAGE_PATH, STORY_VIDEO_PATH } from './storybook';
@@ -68,15 +68,9 @@ export function deliveryQuote(pkg: PackageView, overrides: Partial<ProductionQuo
 export function assertDeliveryAcceptOptions(options: AcceptOptions): void {
   if (options.mode === 'full') return;
   const frame = (seconds: number | undefined): number => {
-    if (
-      typeof seconds !== 'number' ||
-      !Number.isFinite(seconds) ||
-      seconds < 0 ||
-      !Number.isSafeInteger(Math.round(seconds * DEFAULT_FPS)) ||
-      Math.abs(seconds * DEFAULT_FPS - Math.round(seconds * DEFAULT_FPS)) > 1e-6
-    )
-      throw new Error(productionTexts.main.package.acceptBoundsInvalid({ fps: DEFAULT_FPS }));
-    return Math.round(seconds * DEFAULT_FPS);
+    const value = typeof seconds === 'number' ? cutFrameOf(seconds, DEFAULT_FPS) : null;
+    if (value === null) throw new Error(productionTexts.main.package.acceptBoundsInvalid({ fps: DEFAULT_FPS }));
+    return value;
   };
   const start = frame(options.cutStart);
   const end = frame(options.cutEnd);

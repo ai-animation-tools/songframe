@@ -42,6 +42,7 @@ export const CutDefault: Story = {
     await expect(dialog.getByRole('spinbutton', { name: texts.cutStart })).toHaveValue(0);
     await expect(dialog.getByRole('spinbutton', { name: texts.cutEnd })).toHaveValue(5);
     await expect(dialog.getByRole('spinbutton', { name: texts.holdLast })).toHaveValue(0);
+    await expect(dialog.getByText(texts.cutFrame({ frame: 150 }))).toBeInTheDocument();
     await expect(dialog.getByText(/Оригинал длиной 8,00 с/)).toBeInTheDocument();
     await userEvent.click(dialog.getByRole('combobox', { name: texts.section }));
     const screen = within(canvasElement.ownerDocument.body);
@@ -231,8 +232,9 @@ export const InvalidCut: Story = {
     dialog = await open(canvasElement);
     await userEvent.clear(dialog.getByRole('spinbutton', { name: texts.cutStart }));
     await userEvent.type(dialog.getByRole('spinbutton', { name: texts.cutStart }), '0.01');
+    await expect(dialog.getByText(texts.cutBetween({ before: '0', after: '0,033' }))).toBeInTheDocument();
     await userEvent.click(dialog.getByRole('button', { name: texts.accept }));
-    await canvas.findByText('Границы участка должны быть конечными неотрицательными секундами на сетке 30 кадров/с.');
+    await canvas.findByText(productionTexts.main.package.acceptBoundsInvalid({ fps: 30 }));
     await closed(canvasElement);
     await expect(canvas.queryByText(/Задание приёмки:/)).not.toBeInTheDocument();
     dialog = await open(canvasElement);
@@ -240,6 +242,29 @@ export const InvalidCut: Story = {
     await expect(dialog.getByRole('spinbutton', { name: texts.cutEnd })).toHaveValue(5);
     await userEvent.click(dialog.getByRole('button', { name: texts.accept }));
     await done(canvasElement);
+  }
+};
+export const ThousandthsCut: Story = {
+  tags: ['ci'],
+  name: 'Участок с начала · секунды кадра до тысячных',
+  play: async ({ canvasElement }) => {
+    const dialog = await open(canvasElement);
+    const start = dialog.getByRole('spinbutton', { name: texts.cutStart });
+    const end = dialog.getByRole('spinbutton', { name: texts.cutEnd });
+    // 0,875 с — между кадрами 26 и 27: подсказка называет ближайшие границы.
+    await userEvent.clear(start);
+    await userEvent.type(start, '0.875');
+    await expect(dialog.getByText(texts.cutBetween({ before: '0,867', after: '0,9' }))).toBeInTheDocument();
+    // Кадр 25 — 0,833 с, конец 5,833 с — кадр 175: окно 150 кадров со сдвигом от начала.
+    await userEvent.clear(start);
+    await userEvent.type(start, '0.833');
+    await expect(dialog.getByText(texts.cutFrame({ frame: 25 }))).toBeInTheDocument();
+    await userEvent.clear(end);
+    await userEvent.type(end, '5.833');
+    await expect(dialog.getByText(texts.cutFrame({ frame: 175 }))).toBeInTheDocument();
+    await userEvent.click(dialog.getByRole('button', { name: texts.accept }));
+    await done(canvasElement);
+    await expect(within(canvasElement).getByText(/Переданные параметры:/)).toHaveTextContent('"cutStart":0.833');
   }
 };
 export const Running: Story = {

@@ -5,7 +5,7 @@ import type { ReactElement } from 'react';
 import { Alert, Box, Checkbox, FormControlLabel, MenuItem, Stack, TextField } from '@mui/material';
 import type { AcceptOptions } from '@shared/types';
 import type { AcceptTarget } from '../decisions';
-import { DEFAULT_FPS } from '@shared/video';
+import { cutFrameOf, cutSeconds, DEFAULT_FPS } from '@shared/video';
 import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 
 export function AcceptResultDialog({
@@ -28,6 +28,16 @@ export function AcceptResultDialog({
   // Без открытого диалога (target null) шкала не используется; DEFAULT_FPS лишь держит расчёт определённым.
   const fps = target?.fps ?? DEFAULT_FPS;
   const seconds = (frames?: number): string => ((frames ?? 0) / fps).toFixed(2).replace('.', ',');
+  // Граница участка вводится секундами до тысячных; стрелки поля шагают на кадр и тоже округляются.
+  const thousandths = (value: string): number => Math.round(Number(value) * 1000) / 1000;
+  // Подсказка под границей: кадр сетки проекта или соседние кадры, если граница между ними.
+  const boundary = (value: number): { helperText: string; error: boolean } => {
+    const frame = cutFrameOf(value, fps);
+    if (frame !== null) return { helperText: productionTexts.acceptResultDialog.cutFrame({ frame }), error: false };
+    const before = Math.max(0, Math.floor(value * fps));
+    const text = (index: number): string => String(cutSeconds(index, fps)).replace('.', ',');
+    return { helperText: productionTexts.acceptResultDialog.cutBetween({ before: text(before), after: text(before + 1) }), error: true };
+  };
   return (
     <ConfirmationDialog
       open={!!target}
@@ -93,16 +103,18 @@ export function AcceptResultDialog({
               type="number"
               label={productionTexts.acceptResultDialog.cutStart}
               value={options.cutStart}
-              onChange={(e) => onOptions({ ...options, cutStart: Number(e.target.value) })}
+              onChange={(e) => onOptions({ ...options, cutStart: thousandths(e.target.value) })}
               inputProps={{ step: 1 / fps }}
+              {...boundary(options.cutStart ?? 0)}
             />
             <TextField
               size="small"
               type="number"
               label={productionTexts.acceptResultDialog.cutEnd}
               value={options.cutEnd}
-              onChange={(e) => onOptions({ ...options, cutEnd: Number(e.target.value) })}
+              onChange={(e) => onOptions({ ...options, cutEnd: thousandths(e.target.value) })}
               inputProps={{ step: 1 / fps }}
+              {...boundary(options.cutEnd ?? 0)}
             />
             <TextField
               size="small"

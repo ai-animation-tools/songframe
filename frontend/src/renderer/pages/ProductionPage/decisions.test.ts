@@ -237,6 +237,8 @@ describe('участок приёмки по умолчанию', () => {
       cutEnd: 2,
       holdLast: 0
     });
+    // Окно 155 кадров — конец секундами кадра до тысячных, а не 5,166666666666667.
+    expect(defaultAcceptOptions({ shot: 'M08', dir: '/p', fps: 30, windowFrames: 155, originalFrames: 181 }).cutEnd).toBe(5.167);
   });
 });
 

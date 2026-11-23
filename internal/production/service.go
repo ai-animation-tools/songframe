@@ -1543,9 +1543,17 @@ type AcceptOptions struct {
 	HoldLast            float64  `json:"holdLast,omitempty"`
 }
 
-// cutFrame — UI задаёт секунды, accept_shot принимает кадры частоты проекта fps; неточные границы
-// не округляются молча. Неизвестная частота (fps = 0) проверяется первой: без неё нельзя ни
-// пересчитать границы, ни назвать сетку в отказе.
+// cutSecondsTolerance — допуск границы участка, секунды. Человек вводит секунды до тысячных
+// (кадр 25 при 30 кадрах/с — 0,833), поэтому граница в пределах половины тысячной от кадра сетки
+// приводится к нему; дальше — граница между кадрами, и она отклоняется. Соседние кадры при 24–30
+// кадрах/с отстоят на 33–42 мс, так что приведение однозначно. Тот же допуск у диалога приёмки
+// (cutFrameOf в frontend/src/shared/video.ts).
+const cutSecondsTolerance = 0.0005 + 1e-9
+
+// cutFrame — UI задаёт секунды, accept_shot принимает кадры частоты проекта fps. Граница между
+// кадрами не округляется молча: допускается только запись кадра с точностью до тысячных.
+// Неизвестная частота (fps = 0) проверяется первой: без неё нельзя ни пересчитать границы, ни
+// назвать сетку в отказе.
 func cutFrame(seconds *float64, fps float64) (int, error) {
 	if fps == 0 {
 		return 0, errors.New(projectfile.FrameRateInvalid)
@@ -1553,9 +1561,8 @@ func cutFrame(seconds *float64, fps float64) (int, error) {
 	if seconds == nil || math.IsInf(*seconds, 0) || math.IsNaN(*seconds) || *seconds < 0 {
 		return 0, errors.New(textAcceptBoundsInvalid(int(fps)))
 	}
-	frames := *seconds * fps
-	rounded := math.Floor(frames + 0.5)
-	if rounded > 1<<53-1 || math.Abs(frames-rounded) > 1e-6 {
+	rounded := math.Floor(*seconds*fps + 0.5)
+	if rounded > 1<<53-1 || math.Abs(*seconds-rounded/fps) > cutSecondsTolerance {
 		return 0, errors.New(textAcceptBoundsInvalid(int(fps)))
 	}
 	return int(rounded), nil

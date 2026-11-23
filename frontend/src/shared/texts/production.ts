@@ -167,7 +167,7 @@ export const productionTexts = {
       completeResultRequired: 'Сначала получите полный результат задания.',
       replacementConsentRequired: messages.replacementConsentRequired,
       acceptBoundsInvalid: ({ fps }: { fps: number }) =>
-        `Границы участка должны быть конечными неотрицательными секундами на сетке ${countLabel(fps, 'кадр', 'кадра', 'кадров')}/с.`,
+        `Границы участка должны быть конечными неотрицательными секундами на сетке ${countLabel(fps, 'кадр', 'кадра', 'кадров')}/с; секунды кадра достаточно указать до тысячных.`,
       acceptEndInvalid: 'Конец участка должен быть позже начала.',
       acceptSpeechRequired: 'Речевой план: сначала подготовьте WAV речи в блоке «Речь» этой попытки.',
       acceptJob: ({ shot }: { shot: string }) => `Приёмка ${shot}`,
@@ -614,6 +614,8 @@ export const productionTexts = {
     speed: 'Скорость',
     speedHint: 'множитель, например 1 или 0.8',
     holdLast: 'Удержать последний кадр, кадров',
+    cutFrame: ({ frame }: { frame: number }) => `кадр ${frame}`,
+    cutBetween: ({ before, after }: { before: string; after: string }) => `между кадрами: ${before} или ${after} с`,
     consequences: `Оригинал, принятый монтаж, кадры, промпт и сведения о приёмке будут сохранены в комплекте плана. Рабочие пакеты плана будут очищены, карточки и списки — обновлены.`
   },
   keyframeNoteScopeField: {

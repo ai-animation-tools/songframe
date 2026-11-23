@@ -3,6 +3,7 @@ import { productionTexts } from '@shared/texts/production';
 import type { Api } from '@shared/api';
 import { attemptLabel } from './planPath';
 import type { AcceptOptions, JobInfo, PackageView, ProductionView, ResultMedia } from '@shared/types';
+import { cutSeconds } from '@shared/video';
 
 export function decisionNoteKey(pkg: PackageView): string {
   return `${pkg.dir}\0${pkg.decisionToken ?? JSON.stringify(pkg.pendingDecision)}`;
@@ -76,17 +77,18 @@ export function withResultMedia(target: AcceptTarget, media: ResultMedia | null)
   return { ...target, originalFrames, frameMismatch: sameFrame ? undefined : { width: media.width, height: media.height, frameRate: media.frameRate } };
 }
 
-/** Оригинал короче окна удерживает последний кадр, длиннее — обрезается по окну; совпадающий принимается целиком. */
+/** Оригинал короче окна удерживает последний кадр, длиннее — обрезается по окну; совпадающий принимается целиком.
+ * Конец участка — секунды кадра до тысячных, как их вводит человек. */
 export function defaultAcceptOptions(target: AcceptTarget): AcceptOptions {
   const base: AcceptOptions = { mode: 'full', cutStart: 0, cutEnd: 0, speed: '1', holdFirst: 0, holdLast: 0 };
   const { windowFrames: window, originalFrames: original } = target;
   if (target.frameMismatch && window) {
     // Кадр или частота другие: участок по длине окна, недостающее удерживается последним кадром.
     const length = original ?? window;
-    return { ...base, mode: 'cut', cutEnd: Math.min(window, length) / target.fps, holdLast: Math.max(0, window - length) };
+    return { ...base, mode: 'cut', cutEnd: cutSeconds(Math.min(window, length), target.fps), holdLast: Math.max(0, window - length) };
   }
   if (!window || !original || window === original) return base;
-  return { ...base, mode: 'cut', cutEnd: Math.min(window, original) / target.fps, holdLast: Math.max(0, window - original) };
+  return { ...base, mode: 'cut', cutEnd: cutSeconds(Math.min(window, original), target.fps), holdLast: Math.max(0, window - original) };
 }
 
 export async function acceptShownResult(api: Api, project: string, target: AcceptTarget, options: AcceptOptions): Promise<JobInfo> {

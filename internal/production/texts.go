@@ -172,7 +172,7 @@ const (
 // приёмки должны попадать на кадровую сетку частоты проекта fps (24, 25 или 30 кадров/с).
 func textAcceptBoundsInvalid(fps int) string {
 	return "Границы участка должны быть конечными неотрицательными секундами на сетке " +
-		strconv.Itoa(fps) + " " + plural.Word(fps, "кадр", "кадра", "кадров") + "/с."
+		strconv.Itoa(fps) + " " + plural.Word(fps, "кадр", "кадра", "кадров") + "/с; секунды кадра достаточно указать до тысячных."
 }
 
 // textBundleFolderNotEmpty — productionTexts.main.bundleFolderNotEmpty.

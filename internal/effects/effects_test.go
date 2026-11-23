@@ -145,6 +145,38 @@ func TestStaticShotPullOut(t *testing.T) {
 	}
 }
 
+// TestStaticShotPushEnd — с концом наезда меньше 1 движение набирает всю силу к этой доле плана
+// и дальше стоит: кадр на конце равен последнему кадру наезда на весь план той же силы.
+func TestStaticShotPushEnd(t *testing.T) {
+	base := solid(64, 36, 10, 20, 30)
+	setRect(base, 8, 6, 20, 14, 200, 40, 0)
+	build := func(params map[string]float64) *StaticShot {
+		shot, err := NewStaticShot(base, []State{{base, 0}}, params, Size{64, 36, 21})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return shot
+	}
+	whole, early := build(map[string]float64{"push_in": 0.2}), build(map[string]float64{"push_in": 0.2, "push_end": 0.25})
+	same := func(a, b *Frame) bool {
+		for i := range a.Pix {
+			if a.Pix[i] != b.Pix[i] {
+				return false
+			}
+		}
+		return true
+	}
+	if !same(early.Frame(5), whole.Frame(20)) || !same(early.Frame(20), whole.Frame(20)) {
+		t.Error("наезд не набрал всю силу к концу наезда или продолжился после него")
+	}
+	if same(early.Frame(3), early.Frame(5)) {
+		t.Error("до конца наезда кадр не движется")
+	}
+	if !same(build(map[string]float64{"push_in": 0.2, "push_end": 1}).Frame(10), whole.Frame(10)) {
+		t.Error("конец наезда по умолчанию меняет сборку")
+	}
+}
+
 // TestStaticShot — вне области смены кадр повторяет базовую опору, внутри — состояние;
 // переход идёт между состояниями; ошибки состояний.
 func TestStaticShot(t *testing.T) {

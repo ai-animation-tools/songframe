@@ -592,6 +592,9 @@ export const StaticShotAssembly: Story = {
     await userEvent.type(moment, '60');
     await expect(panel.getByText(shotTexts.fromHint({ seconds: texts.productionSpeechPanel.seconds(2) }))).toBeInTheDocument();
     await expect(panel.getByText(shotTexts.dirty)).toBeInTheDocument();
+    // Наезд может закончиться раньше плана: по умолчанию движение идёт весь план.
+    await userEvent.click(panel.getByRole('button', { name: shotTexts.params }));
+    await expect(panel.getByRole('spinbutton', { name: 'Конец наезда или отъезда, доля плана' })).toHaveValue(1);
     // Сборка сохраняет черновик и запускает задание; предпросмотр появляется после его завершения.
     await userEvent.click(panel.getByRole('button', { name: shotTexts.build }));
     await waitFor(() => expect(counts(context)).toHaveTextContent('Сборок из опор: 1.'));

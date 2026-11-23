@@ -9,6 +9,7 @@ import (
 	"image"
 	"image/color"
 	"image/png"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,6 +18,7 @@ import (
 
 	"songframe/internal/assetpackage"
 	"songframe/internal/checkassets"
+	"songframe/internal/effects"
 	"songframe/internal/golden"
 	"songframe/internal/lintregistry"
 	"songframe/internal/mediacmd"
@@ -321,5 +323,32 @@ func TestSingleState(t *testing.T) {
 	}
 	if assets := checkassets.Run(root, []string{"M03"}); assets.Code != 0 {
 		t.Fatalf("check_assets: %d\n%s%s", assets.Code, assets.Stdout, assets.Stderr)
+	}
+}
+
+// TestPushEndDigest — конец наезда по умолчанию не меняет отпечаток рецепта: предпросмотр,
+// собранный до появления параметра, остаётся свежим. Другое значение отпечаток меняет.
+func TestPushEndDigest(t *testing.T) {
+	params, err := effects.Resolve(effects.StaticParams, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if params["push_end"] != 1 {
+		t.Fatalf("конец наезда по умолчанию: %v", params["push_end"])
+	}
+	states := []State{{Frame: "K01"}, {Frame: "K02", FromFrame: 33}}
+	legacy := maps.Clone(params)
+	delete(legacy, "push_end")
+	before := recipeDigest(Recipe{SchemaVersion: 1, Params: legacy, States: []RecipeState{{Frame: "K01"}, {Frame: "K02", FromFrame: 33}}})
+	if digest := recipeDigest(effective(View{Params: params, States: states})); digest != before {
+		t.Fatal("конец наезда по умолчанию изменил отпечаток")
+	}
+	if _, ok := params["push_end"]; !ok {
+		t.Fatal("отпечаток изменил параметры представления")
+	}
+	early := maps.Clone(params)
+	early["push_end"] = 0.25
+	if recipeDigest(effective(View{Params: early, States: states})) == before {
+		t.Fatal("конец наезда 0,25 не изменил отпечаток")
 	}
 }

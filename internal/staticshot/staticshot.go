@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"image"
 	"io"
+	"maps"
 	"math"
 	"os"
 	"path/filepath"
@@ -324,7 +325,14 @@ func readRecipe(directory string) (Recipe, bool, error) {
 
 // effective — рецепт, по которому будет собран план: текущие опоры с кадрами смены и параметры.
 func effective(view View) Recipe {
-	recipe := Recipe{SchemaVersion: 1, Params: view.Params}
+	params := view.Params
+	// Конец наезда по умолчанию (весь план) не входит в отпечаток: так сборки, сделанные до появления
+	// параметра, остаются свежими — их ролик тот же.
+	if value, ok := params["push_end"]; ok && value == 1 {
+		params = maps.Clone(params)
+		delete(params, "push_end")
+	}
+	recipe := Recipe{SchemaVersion: 1, Params: params}
 	for _, state := range view.States {
 		recipe.States = append(recipe.States, RecipeState{Frame: state.Frame, FromFrame: state.FromFrame})
 	}

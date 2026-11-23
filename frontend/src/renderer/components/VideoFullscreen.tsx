@@ -102,7 +102,12 @@ export function useVideoFullscreen(getVideo: () => HTMLVideoElement | null, labe
   }, [active]);
 
   const dialog = state ? (
-    <Dialog fullScreen open onClose={close} aria-label={label ?? componentsTexts.videoFullscreen.video} slotProps={{ paper: { sx: { bgcolor: '#000' } } }}>
+    <Dialog
+      fullScreen
+      open
+      onClose={close}
+      slotProps={{ paper: { 'aria-label': label ?? componentsTexts.videoFullscreen.video, sx: { bgcolor: '#000', backgroundImage: 'none' } } }}
+    >
       <video
         ref={fullscreen}
         src={state.src}

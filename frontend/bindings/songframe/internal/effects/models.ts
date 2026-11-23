@@ -14,4 +14,9 @@ export interface ParamSpec {
     "max": number;
     "default": number;
     "step": number;
+
+    /**
+     * Hint — подсказка человеку простыми словами: что меняет параметр и какие значения к чему ведут.
+     */
+    "hint": string;
 }

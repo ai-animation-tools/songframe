@@ -117,7 +117,8 @@ func Preview(ctx context.Context, root, shot string, steps []Step, t, width int)
 	return jpegURL(result, width)
 }
 
-// jpegURL — кадр в JPEG шириной width (не больше исходной) как data: URL.
+// jpegURL — кадр в JPEG шириной width (не больше исходной) как data: URL. Полный размер — для
+// просмотра на весь экран: он сжимается бережнее, иначе JPEG сглаживает зерно.
 func jpegURL(frame *effects.Frame, width int) (string, error) {
 	buffer := make([]byte, frame.Width*frame.Height*3)
 	frame.RGB24(buffer)
@@ -148,8 +149,12 @@ func jpegURL(frame *effects.Frame, width int) (string, error) {
 			picture.Pix[offset+3] = 255
 		}
 	}
+	quality := 88
+	if width == frame.Width {
+		quality = 96
+	}
 	var data bytes.Buffer
-	if err := jpeg.Encode(&data, picture, &jpeg.Options{Quality: 88}); err != nil {
+	if err := jpeg.Encode(&data, picture, &jpeg.Options{Quality: quality}); err != nil {
 		return "", err
 	}
 	return "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(data.Bytes()), nil

@@ -119,7 +119,7 @@ export function StaticShotPanel({
                   label={spec.title}
                   value={draft.params[spec.name] ?? ''}
                   disabled={form.busy}
-                  helperText={texts.range({ min: spec.min, max: spec.max })}
+                  helperText={`${spec.hint} ${texts.range({ min: spec.min, max: spec.max })}`}
                   slotProps={{ htmlInput: { min: spec.min, max: spec.max, step: spec.step } }}
                   onChange={(event) => form.change({ ...draft, params: { ...draft.params, [spec.name]: event.target.value } })}
                 />

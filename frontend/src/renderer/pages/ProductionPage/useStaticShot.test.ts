@@ -13,8 +13,8 @@ const view: StaticShotView = {
   ],
   params: { dilate: 14, push_in: 0.03 },
   specs: [
-    { name: 'dilate', title: 'Расширение', min: 0, max: 64, default: 14, step: 1 },
-    { name: 'push_in', title: 'Наезд', min: 0, max: 0.3, default: 0.03, step: 0.005 }
+    { name: 'dilate', title: 'Расширение', min: 0, max: 64, default: 14, step: 1, hint: '' },
+    { name: 'push_in', title: 'Наезд', min: 0, max: 0.3, default: 0.03, step: 0.005, hint: '' }
   ],
   problem: '',
   preview: null,

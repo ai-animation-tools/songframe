@@ -27,6 +27,8 @@ type ParamSpec struct {
 	Max     float64 `json:"max"`
 	Default float64 `json:"default"`
 	Step    float64 `json:"step"`
+	// Hint — подсказка человеку простыми словами: что меняет параметр и какие значения к чему ведут.
+	Hint string `json:"hint"`
 }
 
 // Integer — параметр принимает только целые значения.
@@ -94,8 +96,10 @@ type Effect interface {
 // (ScreenAngle); "" — эффект от ветра не зависит. Order — место в цепочке по умолчанию: свет
 // раньше дождя (капли подсвечиваются им), зерно последним (ложится поверх всего).
 type Kind struct {
-	ID        string
-	Title     string
+	ID    string
+	Title string
+	// Hint — когда и зачем применять эффект и что получится; показывается на странице «Эффекты».
+	Hint      string
 	Version   int
 	Order     int
 	Params    []ParamSpec

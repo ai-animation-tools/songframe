@@ -3,6 +3,7 @@
  * эффектов каждого плана, превью кадра «до» и «после», задание рендера и снятие эффекта.
  * Черновик живёт в странице до «Применить»: Go пишет рецепт только вместе с готовым роликом.
  * Превью пересчитывается с задержкой после правки; поздний ответ прежнего запроса отбрасывается.
+ * На весь экран кадр запрашивается в полном размере ролика.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -13,6 +14,8 @@ import { useApp } from '../../state';
 
 /** Ширина кадра превью: вдвое меньше кадра ролика, этого хватает для подбора на глаз. */
 export const PREVIEW_WIDTH = 960;
+/** Ширина кадра на весь экран — полный кадр ролика: при уменьшении зерно и тонкие капли усредняются. */
+export const FULL_WIDTH = 1920;
 /** Задержка пересчёта превью после правки: ползунок не запускает кадр на каждом шаге. */
 export const PREVIEW_DELAY_MS = 350;
 const JOB_POLL_MS = 1000;
@@ -28,6 +31,8 @@ export function useEffectsPage() {
   const [drafts, setDrafts] = useState<Record<string, EffectStep[]>>({});
   const [frames, setFrames] = useState<Record<string, number>>({});
   const [mode, setMode] = useState<PreviewMode>('after');
+  // Кадр открыт на весь экран: превью запрашивается в полном размере.
+  const [full, setFull] = useState(false);
   const [preview, setPreview] = useState<{ key: string; url: string | null; error: string | null; loading: boolean }>({
     key: '',
     url: null,
@@ -95,7 +100,8 @@ export function useEffectsPage() {
 
   // Превью: «до» — кадр без эффектов, «после» — с черновиком. Ключ запроса отличает поздние ответы.
   const previewSteps = mode === 'before' ? [] : draft;
-  const previewKey = selected && !selected.problem ? JSON.stringify([project, selected.shot, frame, previewSteps]) : '';
+  const width = full ? FULL_WIDTH : PREVIEW_WIDTH;
+  const previewKey = selected && !selected.problem ? JSON.stringify([project, selected.shot, frame, previewSteps, width]) : '';
   useEffect(() => {
     if (!previewKey || !selected) {
       setPreview({ key: '', url: null, error: null, loading: false });
@@ -105,7 +111,7 @@ export function useEffectsPage() {
     setPreview((value) => ({ ...value, key: previewKey, loading: true }));
     const timer = setTimeout(() => {
       window.api.effects
-        .preview(project, selected.shot, previewSteps, frame, PREVIEW_WIDTH)
+        .preview(project, selected.shot, previewSteps, frame, width)
         .then((url) => {
           if (active) setPreview({ key: previewKey, url, error: null, loading: false });
         })
@@ -117,7 +123,7 @@ export function useEffectsPage() {
       active = false;
       clearTimeout(timer);
     };
-    // previewKey включает проект, план, кадр и шаги: остальные зависимости из него следуют.
+    // previewKey включает проект, план, кадр, шаги и ширину: остальные зависимости из него следуют.
   }, [previewKey]);
 
   // Задание рендера: запущенное здесь или идущее на открытом плане (из снимка, страница открыта заново).
@@ -220,6 +226,8 @@ export function useEffectsPage() {
     setFrame,
     mode,
     setMode,
+    full,
+    setFull,
     // Пока считается новый кадр, прежний остаётся на экране с признаком загрузки.
     preview: preview.key === previewKey ? preview : { ...preview, error: null, loading: !!previewKey },
     busy,

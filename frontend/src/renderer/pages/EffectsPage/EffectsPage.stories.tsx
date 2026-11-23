@@ -4,6 +4,7 @@ import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { effectsTexts as texts } from '@shared/texts/effects';
 import { EFFECTS_KIT_PROBLEM, EFFECTS_STALE_REASON, effectsPageInspection, effectsPageOptions } from '../../testing/effectsPageStories';
 import { EffectsPage } from './EffectsPage';
+import { FULL_WIDTH, PREVIEW_WIDTH } from './useEffectsPage';
 
 const meta = {
   title: 'Страницы/Эффекты',
@@ -22,16 +23,21 @@ function body(canvasElement: HTMLElement): ReturnType<typeof within> {
 }
 
 export const Applied: Story = {
-  name: 'Свежий эффект · превью до и после, ролик',
+  name: 'Свежий эффект · подсказки, превью до и после, ролик',
   tags: ['ci'],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    const screen = body(canvasElement);
     await canvas.findByText(texts.status.fresh);
     // Дождь по ветру: наклон считает Go, ползунка наклона нет, компас показывает направление.
     await expect(canvas.getByRole('switch', { name: texts.wind.toggle })).toBeChecked();
     await expect(canvas.getByRole('slider', { name: texts.wind.compass({ direction: 20 }) })).toBeVisible();
     await expect(canvas.queryByText('Наклон, градусы от вертикали')).toBeNull();
-    await expect(canvasElement.querySelector('video')).toBeInTheDocument();
+    // У эффекта — описание «когда и зачем», у параметра — подсказка по фокусу на названии.
+    await expect(canvas.getByText(/^Дождь поверх принятого плана/)).toBeVisible();
+    canvas.getByText('Плотность, капель на мегапиксель').parentElement?.focus();
+    await screen.findByRole('tooltip', { name: /морось/ });
+    await expect(canvas.getByRole('slider', { name: 'Плотность, капель на мегапиксель' })).toHaveAccessibleDescription(/морось/);
     await canvas.findByRole('img', { name: texts.previewAlt({ shot: 'M01', frame: 36 }) }, WAIT);
     await waitFor(() => expect(effectsPageInspection().previews.at(-1)?.steps.length).toBe(2), WAIT);
     // «До» — кадр без эффектов.
@@ -39,6 +45,33 @@ export const Applied: Story = {
     await waitFor(() => expect(effectsPageInspection().previews.at(-1)?.steps).toEqual([]), WAIT);
     // Без правок применять нечего.
     await expect(canvas.getByRole('button', { name: texts.apply })).toBeDisabled();
+    // Ролик — соседняя вкладка: с эффектом и принятое видео.
+    await expect(canvasElement.querySelector('video')).toBeNull();
+    await userEvent.click(canvas.getByRole('tab', { name: texts.video }));
+    await expect(canvas.getByLabelText(texts.videoAfter)).toBeInTheDocument();
+    await userEvent.click(canvas.getByRole('button', { name: texts.videoBefore }));
+    await expect(canvas.getByLabelText(texts.videoBefore)).toBeInTheDocument();
+  }
+};
+
+export const FrameFullscreen: Story = {
+  name: 'Кадр на весь экран · полный размер, до и после',
+  tags: ['ci'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const screen = body(canvasElement);
+    await canvas.findByRole('img', { name: texts.previewAlt({ shot: 'M01', frame: 36 }) }, WAIT);
+    await waitFor(() => expect(effectsPageInspection().previews.at(-1)?.width).toBe(PREVIEW_WIDTH), WAIT);
+    await userEvent.click(canvas.getByRole('button', { name: 'На весь экран' }));
+    const dialog = await screen.findByRole('dialog', { name: texts.frameFullscreen });
+    // На весь экран кадр запрашивается в полном размере ролика: зерно не усредняется.
+    await waitFor(() => expect(effectsPageInspection().previews.at(-1)).toMatchObject({ width: FULL_WIDTH, frame: 36 }), WAIT);
+    await expect(within(dialog).getByRole('img', { name: texts.previewAlt({ shot: 'M01', frame: 36 }) })).toBeVisible();
+    await userEvent.click(within(dialog).getByRole('button', { name: texts.previewBefore }));
+    await waitFor(() => expect(effectsPageInspection().previews.at(-1)).toMatchObject({ width: FULL_WIDTH, steps: [] }), WAIT);
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Выйти из полноэкранного режима' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await waitFor(() => expect(effectsPageInspection().previews.at(-1)?.width).toBe(PREVIEW_WIDTH), WAIT);
   }
 };
 
@@ -60,11 +93,18 @@ export const AddAndApply: Story = {
     await expect(canvas.getByText('Наклон, градусы от вертикали')).toBeVisible();
     await canvas.findByText(texts.status.dirty);
     await waitFor(() => expect(effectsPageInspection().previews.at(-1)?.steps).toEqual([{ effect: 'rain', given: {} }]), WAIT);
+    // Ролика с эффектом ещё нет: на вкладке — заглушка с пояснением, принятое видео — переключателем.
+    await userEvent.click(canvas.getByRole('tab', { name: texts.video }));
+    await expect(canvas.getByText(texts.videoNone)).toBeVisible();
+    await expect(canvasElement.querySelector('video')).toBeNull();
     await userEvent.click(canvas.getByRole('button', { name: texts.apply }));
     await expect(effectsPageInspection().renders).toEqual([{ shot: 'M02', steps: [{ effect: 'rain', given: {} }] }]);
     await screen.findByText(texts.applied, undefined, WAIT);
     await canvas.findByText(texts.status.fresh, undefined, WAIT);
     await expect(canvas.queryByText(texts.status.dirty)).toBeNull();
+    // Готовый ролик заменяет заглушку.
+    await waitFor(() => expect(canvas.getByLabelText(texts.videoAfter)).toBeInTheDocument(), WAIT);
+    await expect(canvas.queryByText(texts.videoNone)).toBeNull();
   }
 };
 
@@ -103,6 +143,8 @@ export const Remove: Story = {
     await screen.findByText(texts.removed);
     await canvas.findByText(texts.status.none);
     await expect(effectsPageInspection().removed).toEqual(['M01']);
+    await userEvent.click(canvas.getByRole('tab', { name: texts.video }));
+    await expect(canvas.getByText(texts.videoNone)).toBeVisible();
     await expect(canvasElement.querySelector('video')).toBeNull();
   }
 };

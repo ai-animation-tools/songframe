@@ -1,16 +1,36 @@
 /**
- * Выбранный принятый план на странице «Эффекты»: состояние эффекта, превью кадра «до» и «после»,
- * цепочка эффектов с параметрами, «Взять параметры с плана», «Применить» и «Убрать эффект»,
- * ролик с эффектом рядом с принятым видео. Рендер и файлы — в Go (effects.render/remove).
+ * Выбранный принятый план на странице «Эффекты»: состояние эффекта, вкладки «Кадр» (превью «до» и
+ * «после», на весь экран — в полном размере) и «Ролик» (принятое видео и ролик с эффектом; пока
+ * ролика нет — заглушка с пояснением), цепочка эффектов с параметрами, «Взять параметры с плана»,
+ * «Применить» и «Убрать эффект». Рендер и файлы — в Go (effects.render/remove).
  */
 import { useState, type ReactElement } from 'react';
-import { Alert, Box, Chip, CircularProgress, Menu, MenuItem, Paper, Slider, Stack, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  Menu,
+  MenuItem,
+  Paper,
+  Slider,
+  Stack,
+  Tab,
+  Tabs,
+  ToggleButton,
+  ToggleButtonGroup,
+  Typography
+} from '@mui/material';
+import FullscreenIcon from '@mui/icons-material/Fullscreen';
+import MovieFilterIcon from '@mui/icons-material/MovieFilter';
 import AddIcon from '@mui/icons-material/Add';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import LayersClearIcon from '@mui/icons-material/LayersClear';
 import { shotLabel, type EffectKind, type EffectShot, type EffectStep } from '@shared/effects';
+import { componentsTexts } from '@shared/texts/components';
 import { effectsTexts as texts } from '@shared/texts/effects';
 import { ActionButton } from '../../../components/ActionButton';
 import { DestructiveButton } from '../../../components/DestructiveButton';
@@ -21,6 +41,21 @@ import { formatClock } from '../../../format';
 import type { JobInfo } from '@shared/types';
 import type { PreviewMode } from '../useEffectsPage';
 import { EffectStepCard } from './EffectStepCard';
+import { FrameFullscreen } from './FrameFullscreen';
+
+/** Вкладки медиа плана: кадр превью и ролик. */
+type MediaTab = 'frame' | 'video';
+
+/** Место кадра и заглушки ролика: одинаковый размер, вкладки не прыгают при переключении. */
+const MEDIA_BOX = {
+  position: 'relative',
+  width: '100%',
+  maxWidth: 880,
+  aspectRatio: '16 / 9',
+  bgcolor: 'action.hover',
+  borderRadius: 1,
+  overflow: 'hidden'
+} as const;
 
 export function EffectShotPanel({
   shot,
@@ -30,6 +65,7 @@ export function EffectShotPanel({
   dirty,
   frame,
   mode,
+  full,
   preview,
   busy,
   job,
@@ -39,6 +75,7 @@ export function EffectShotPanel({
   onChange,
   onFrame,
   onMode,
+  onFull,
   onApply,
   onReset,
   onRemove,
@@ -52,6 +89,8 @@ export function EffectShotPanel({
   dirty: boolean;
   frame: number;
   mode: PreviewMode;
+  /** Кадр открыт на весь экран: превью приходит в полном размере. */
+  full: boolean;
   preview: { url: string | null; error: string | null; loading: boolean };
   busy: boolean;
   job: JobInfo | null;
@@ -61,6 +100,7 @@ export function EffectShotPanel({
   onChange(steps: EffectStep[]): void;
   onFrame(frame: number): void;
   onMode(mode: PreviewMode): void;
+  onFull(full: boolean): void;
   onApply(): void;
   onReset(): void;
   onRemove(): void;
@@ -68,7 +108,10 @@ export function EffectShotPanel({
 }): ReactElement {
   const [addAnchor, setAddAnchor] = useState<HTMLElement | null>(null);
   const [copyAnchor, setCopyAnchor] = useState<HTMLElement | null>(null);
+  const [tab, setTab] = useState<MediaTab>('frame');
   const [video, setVideo] = useState<'after' | 'before'>('after');
+  // Ролик с эффектом есть и не снимается: пока эффект убирается, файл не держится плеером.
+  const output = shot.applied && !!shot.output && !releasing;
   const byId = new Map(kinds.map((kind) => [kind.id, kind]));
   const missing = kinds.filter((kind) => !draft.some((step) => step.effect === kind.id));
   // Цепочка идёт в порядке реестра: свет раньше дождя, зерно последним.
@@ -103,68 +146,114 @@ export function EffectShotPanel({
         <LinkedText text={status} />
       </Alert>
 
-      <Paper variant="outlined" sx={{ p: 2 }}>
-        <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap', mb: 1 }}>
-          <Typography variant="subtitle1" sx={{ flex: 1 }}>
-            {texts.preview}
-          </Typography>
-          <ToggleButtonGroup
-            size="small"
-            exclusive
-            value={mode}
-            onChange={(_, next: PreviewMode | null) => next && onMode(next)}
-            aria-label={texts.previewCompare}
-          >
-            <ToggleButton value="before">{texts.previewBefore}</ToggleButton>
-            <ToggleButton value="after">{texts.previewAfter}</ToggleButton>
-          </ToggleButtonGroup>
-        </Stack>
-        <Box sx={{ position: 'relative', width: '100%', maxWidth: 880, aspectRatio: '16 / 9', bgcolor: 'action.hover', borderRadius: 1, overflow: 'hidden' }}>
-          {preview.url ? (
-            <Box
-              component="img"
-              src={preview.url}
-              alt={texts.previewAlt({ shot: shot.shot, frame })}
-              sx={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', opacity: preview.loading ? 0.6 : 1 }}
-            />
-          ) : null}
-          {preview.loading ? (
-            <Stack
-              direction="row"
-              spacing={1}
-              sx={{ position: 'absolute', top: 8, left: 8, alignItems: 'center', bgcolor: 'background.paper', px: 1, borderRadius: 1 }}
-            >
-              <CircularProgress size={14} aria-hidden />
-              <Typography variant="caption">{texts.previewLoading}</Typography>
-            </Stack>
-          ) : null}
+      <Paper variant="outlined" sx={{ minWidth: 0 }}>
+        <Tabs value={tab} onChange={(_, next: MediaTab) => setTab(next)} aria-label={texts.media} sx={{ borderBottom: 1, borderColor: 'divider', px: 1 }}>
+          <Tab value="frame" label={texts.preview} id="effect-tab-frame" aria-controls="effect-panel-frame" />
+          <Tab value="video" label={texts.video} id="effect-tab-video" aria-controls="effect-panel-video" />
+        </Tabs>
+        <Box sx={{ p: 2 }} role="tabpanel" id={`effect-panel-${tab}`} aria-labelledby={`effect-tab-${tab}`}>
+          {tab === 'frame' ? (
+            <>
+              <ToggleButtonGroup
+                size="small"
+                exclusive
+                value={mode}
+                onChange={(_, next: PreviewMode | null) => next && onMode(next)}
+                aria-label={texts.previewCompare}
+                sx={{ mb: 1 }}
+              >
+                <ToggleButton value="before">{texts.previewBefore}</ToggleButton>
+                <ToggleButton value="after">{texts.previewAfter}</ToggleButton>
+              </ToggleButtonGroup>
+              <Box sx={MEDIA_BOX}>
+                {preview.url ? (
+                  <Box
+                    component="img"
+                    src={preview.url}
+                    alt={texts.previewAlt({ shot: shot.shot, frame })}
+                    sx={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', opacity: preview.loading ? 0.6 : 1 }}
+                  />
+                ) : null}
+                {preview.loading ? (
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{ position: 'absolute', top: 8, left: 8, alignItems: 'center', bgcolor: 'background.paper', px: 1, borderRadius: 1 }}
+                  >
+                    <CircularProgress size={14} aria-hidden />
+                    <Typography variant="caption">{texts.previewLoading}</Typography>
+                  </Stack>
+                ) : null}
+              </Box>
+              <Button size="small" startIcon={<FullscreenIcon />} sx={{ mt: 0.5 }} disabled={!preview.url} onClick={() => onFull(true)}>
+                {componentsTexts.videoPlayer.fullscreen}
+              </Button>
+              {preview.error && !full ? (
+                <Alert severity="error" sx={{ mt: 1 }}>
+                  <LinkedText text={preview.error} />
+                </Alert>
+              ) : null}
+              <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mt: 1 }}>
+                <Typography variant="body2" id="effect-preview-frame" sx={{ flex: '0 0 auto' }}>
+                  {texts.previewFrame}
+                </Typography>
+                <Slider
+                  size="small"
+                  min={0}
+                  max={Math.max(0, shot.frames - 1)}
+                  step={1}
+                  value={frame}
+                  aria-labelledby="effect-preview-frame"
+                  valueLabelDisplay="auto"
+                  onChange={(_, value) => onFrame(Array.isArray(value) ? value[0] : value)}
+                />
+                <Typography variant="body2" color="text.secondary" sx={{ flex: '0 0 auto', fontVariantNumeric: 'tabular-nums' }}>
+                  {frame} / {Math.max(0, shot.frames - 1)}
+                </Typography>
+              </Stack>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                {texts.previewHint}
+              </Typography>
+              {full ? (
+                <FrameFullscreen
+                  url={preview.url}
+                  alt={texts.previewAlt({ shot: shot.shot, frame })}
+                  loading={preview.loading}
+                  error={preview.error}
+                  mode={mode}
+                  onMode={onMode}
+                  onClose={() => onFull(false)}
+                />
+              ) : null}
+            </>
+          ) : (
+            <>
+              <ToggleButtonGroup
+                size="small"
+                exclusive
+                value={video}
+                onChange={(_, next: 'after' | 'before' | null) => next && setVideo(next)}
+                aria-label={texts.video}
+                sx={{ mb: 1 }}
+              >
+                <ToggleButton value="before">{texts.videoBefore}</ToggleButton>
+                <ToggleButton value="after">{texts.videoAfter}</ToggleButton>
+              </ToggleButtonGroup>
+              {video === 'before' ? (
+                <VideoPlayer key="before" path={shot.source} label={texts.videoBefore} />
+              ) : output ? (
+                <VideoPlayer key="after" path={shot.output} version={shot.version} label={texts.videoAfter} />
+              ) : (
+                <Stack sx={{ ...MEDIA_BOX, alignItems: 'center', justifyContent: 'center', textAlign: 'center', p: 3 }} spacing={1.5}>
+                  {busy ? <CircularProgress size={28} aria-hidden /> : <MovieFilterIcon color="disabled" sx={{ fontSize: 48 }} aria-hidden />}
+                  <Typography color="text.secondary" sx={{ maxWidth: 520 }}>
+                    {busy ? texts.videoRendering : texts.videoNone}
+                  </Typography>
+                </Stack>
+              )}
+            </>
+          )}
         </Box>
-        {preview.error ? (
-          <Alert severity="error" sx={{ mt: 1 }}>
-            <LinkedText text={preview.error} />
-          </Alert>
-        ) : null}
-        <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mt: 1 }}>
-          <Typography variant="body2" id="effect-preview-frame" sx={{ flex: '0 0 auto' }}>
-            {texts.previewFrame}
-          </Typography>
-          <Slider
-            size="small"
-            min={0}
-            max={Math.max(0, shot.frames - 1)}
-            step={1}
-            value={frame}
-            aria-labelledby="effect-preview-frame"
-            valueLabelDisplay="auto"
-            onChange={(_, value) => onFrame(Array.isArray(value) ? value[0] : value)}
-          />
-          <Typography variant="body2" color="text.secondary" sx={{ flex: '0 0 auto', fontVariantNumeric: 'tabular-nums' }}>
-            {frame} / {Math.max(0, shot.frames - 1)}
-          </Typography>
-        </Stack>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-          {texts.previewHint}
-        </Typography>
       </Paper>
 
       <Stack spacing={1.5}>
@@ -268,31 +357,6 @@ export function EffectShotPanel({
         </Alert>
       ) : null}
       <JobStatus job={job ?? undefined} />
-
-      {shot.applied && shot.output && !releasing ? (
-        <Paper variant="outlined" sx={{ p: 2 }}>
-          <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap', mb: 1 }}>
-            <Typography variant="subtitle1" sx={{ flex: 1 }}>
-              {texts.video}
-            </Typography>
-            <ToggleButtonGroup
-              size="small"
-              exclusive
-              value={video}
-              onChange={(_, next: 'after' | 'before' | null) => next && setVideo(next)}
-              aria-label={texts.video}
-            >
-              <ToggleButton value="before">{texts.videoBefore}</ToggleButton>
-              <ToggleButton value="after">{texts.videoAfter}</ToggleButton>
-            </ToggleButtonGroup>
-          </Stack>
-          {video === 'after' ? (
-            <VideoPlayer key="after" path={shot.output} version={shot.version} label={texts.videoAfter} />
-          ) : (
-            <VideoPlayer key="before" path={shot.source} label={texts.videoBefore} />
-          )}
-        </Paper>
-      ) : null}
     </Stack>
   );
 }

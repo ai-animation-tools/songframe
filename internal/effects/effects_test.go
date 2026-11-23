@@ -48,7 +48,7 @@ func digest(f *Frame) string {
 }
 
 func TestResolve(t *testing.T) {
-	specs := []ParamSpec{{"a", "", 0, 10, 3, 1}, {"b", "", -1, 1, 0, 0.1}}
+	specs := []ParamSpec{{"a", "", 0, 10, 3, 1, ""}, {"b", "", -1, 1, 0, 0.1, ""}}
 	got, err := Resolve(specs, map[string]float64{"b": 0.5})
 	if err != nil || got["a"] != 3 || got["b"] != 0.5 {
 		t.Fatalf("Resolve = %v, %v", got, err)
@@ -66,21 +66,27 @@ func TestResolve(t *testing.T) {
 }
 
 // TestRegistry — у каждого эффекта значения по умолчанию в диапазоне, имена параметров не
-// повторяются, а неизвестный эффект в рецепте — ошибка.
+// повторяются, у эффекта и каждого параметра (и статичного кадра) есть подсказка человеку, а
+// неизвестный эффект в рецепте — ошибка.
 func TestRegistry(t *testing.T) {
 	kinds := Kinds()
 	var ids []string
 	for _, kind := range kinds {
 		ids = append(ids, kind.ID)
-		if kind.Version < 1 || kind.Title == "" {
-			t.Errorf("%s: версия %d, подпись %q", kind.ID, kind.Version, kind.Title)
+		if kind.Version < 1 || kind.Title == "" || kind.Hint == "" {
+			t.Errorf("%s: версия %d, подпись %q, подсказка %q", kind.ID, kind.Version, kind.Title, kind.Hint)
 		}
 		seen := map[string]bool{}
 		for _, spec := range kind.Params {
-			if seen[spec.Name] || spec.Title == "" || spec.Default < spec.Min || spec.Default > spec.Max {
+			if seen[spec.Name] || spec.Title == "" || spec.Hint == "" || spec.Default < spec.Min || spec.Default > spec.Max {
 				t.Errorf("%s: параметр %+v", kind.ID, spec)
 			}
 			seen[spec.Name] = true
+		}
+	}
+	for _, spec := range StaticParams {
+		if spec.Title == "" || spec.Hint == "" {
+			t.Errorf("статичный кадр: параметр %+v", spec)
 		}
 	}
 	if strings.Join(ids, ",") != "light,rain,grain" {

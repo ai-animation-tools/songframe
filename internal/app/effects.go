@@ -28,11 +28,12 @@ func NewEffectsService(manager *jobs.Manager) *EffectsService {
 	return &EffectsService{manager: manager, running: map[string]string{}}
 }
 
-// EffectKind — эффект для панели параметров: идентификатор, название, схема параметров и
-// параметр наклона, который можно считать из ветра ("" — эффект от ветра не зависит).
+// EffectKind — эффект для панели параметров: идентификатор, название, подсказка «когда и зачем»,
+// схема параметров и параметр наклона, который можно считать из ветра ("" — эффект от ветра не зависит).
 type EffectKind struct {
 	ID        string              `json:"id"`
 	Title     string              `json:"title"`
+	Hint      string              `json:"hint"`
 	Params    []effects.ParamSpec `json:"params"`
 	WindAngle string              `json:"windAngle"`
 }
@@ -83,7 +84,7 @@ func (s *EffectsService) View(project string) (EffectsView, error) {
 	}
 	view := EffectsView{Kinds: []EffectKind{}, Shots: make([]EffectShot, 0, len(shots))}
 	for _, kind := range effects.Kinds() {
-		view.Kinds = append(view.Kinds, EffectKind{ID: kind.ID, Title: kind.Title, Params: kind.Params, WindAngle: kind.WindAngle})
+		view.Kinds = append(view.Kinds, EffectKind{ID: kind.ID, Title: kind.Title, Hint: kind.Hint, Params: kind.Params, WindAngle: kind.WindAngle})
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()

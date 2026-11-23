@@ -1,11 +1,13 @@
 /**
- * Эффект цепочки плана: ползунки параметров по схеме из реестра Go, сброс к значениям по
- * умолчанию и удаление из плана. У дождя — ветер: с ним наклон считает Go из ветра и камеры
+ * Эффект цепочки плана: описание «когда и зачем», ползунки параметров по схеме из реестра Go с
+ * подсказкой у названия (наведение или фокус), сброс к значениям по умолчанию и удаление из плана. У дождя — ветер: с ним наклон считает Go из ветра и камеры
  * плана, поэтому ползунок наклона скрыт; без ветра наклон задаётся ползунком.
  */
 import { useId, type ReactElement } from 'react';
 import { Alert, Box, Chip, FormControlLabel, IconButton, Paper, Slider, Stack, Switch, Tooltip, Typography } from '@mui/material';
+import { visuallyHidden } from '@mui/utils';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import type { EffectParamSpec } from '@shared/types';
 import { stepValue, withValue, type EffectKind, type EffectStep } from '@shared/effects';
@@ -30,10 +32,20 @@ function ParamSlider({
   const id = useId();
   return (
     <Box sx={{ minWidth: 0 }}>
-      <Stack direction="row" spacing={1} sx={{ alignItems: 'baseline', justifyContent: 'space-between' }}>
-        <Typography variant="body2" id={id} sx={{ overflowWrap: 'anywhere' }}>
-          {spec.title}
-        </Typography>
+      <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+        <Tooltip title={spec.hint} placement="top-start" describeChild>
+          <Stack
+            direction="row"
+            spacing={0.5}
+            tabIndex={0}
+            sx={{ alignItems: 'center', minWidth: 0, cursor: 'help', borderRadius: 0.5, '&:focus-visible': { outline: 2, outlineColor: 'primary.main' } }}
+          >
+            <Typography variant="body2" id={id} sx={{ overflowWrap: 'anywhere' }}>
+              {spec.title}
+            </Typography>
+            <InfoOutlinedIcon color="action" sx={{ fontSize: 16, flex: '0 0 auto' }} aria-hidden />
+          </Stack>
+        </Tooltip>
         <Typography variant="body2" color={changed ? 'primary' : 'text.secondary'} sx={{ fontVariantNumeric: 'tabular-nums', flex: '0 0 auto' }}>
           {value}
         </Typography>
@@ -46,9 +58,13 @@ function ParamSlider({
         value={value}
         disabled={disabled}
         aria-labelledby={id}
+        slotProps={{ input: { 'aria-describedby': `${id}-hint` } }}
         valueLabelDisplay="auto"
         onChange={(_, next) => onChange(Array.isArray(next) ? next[0] : next)}
       />
+      <Box component="span" id={`${id}-hint`} sx={visuallyHidden}>
+        {spec.hint}
+      </Box>
     </Box>
   );
 }
@@ -101,6 +117,9 @@ export function EffectStepCard({
           </span>
         </Tooltip>
       </Stack>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        {kind.hint}
+      </Typography>
       {kind.windAngle ? (
         <Box sx={{ mb: 2 }}>
           <FormControlLabel
@@ -138,13 +157,29 @@ export function EffectStepCard({
               />
               <Stack spacing={1} sx={{ flex: '1 1 220px', minWidth: 0 }}>
                 <ParamSlider
-                  spec={{ name: 'wind-direction', title: texts.wind.direction, min: 0, max: 359, default: DEFAULT_WIND.direction, step: 1 }}
+                  spec={{
+                    name: 'wind-direction',
+                    title: texts.wind.direction,
+                    min: 0,
+                    max: 359,
+                    default: DEFAULT_WIND.direction,
+                    step: 1,
+                    hint: texts.wind.directionHint
+                  }}
                   value={step.wind.direction}
                   disabled={disabled}
                   onChange={(direction) => step.wind && onChange({ ...step, wind: { ...step.wind, direction } })}
                 />
                 <ParamSlider
-                  spec={{ name: 'wind-strength', title: texts.wind.strength, min: 0, max: 3, default: DEFAULT_WIND.strength, step: 0.05 }}
+                  spec={{
+                    name: 'wind-strength',
+                    title: texts.wind.strength,
+                    min: 0,
+                    max: 3,
+                    default: DEFAULT_WIND.strength,
+                    step: 0.05,
+                    hint: texts.wind.strengthHint
+                  }}
                   value={step.wind.strength}
                   disabled={disabled}
                   onChange={(strength) => step.wind && onChange({ ...step, wind: { ...step.wind, strength } })}

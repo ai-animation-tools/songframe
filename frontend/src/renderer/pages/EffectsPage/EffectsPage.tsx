@@ -93,6 +93,7 @@ export function EffectsPage(): ReactElement {
                 dirty={page.dirty}
                 frame={page.frame}
                 mode={page.mode}
+                full={page.full}
                 preview={page.preview}
                 busy={page.busy}
                 job={page.job}
@@ -102,6 +103,7 @@ export function EffectsPage(): ReactElement {
                 onChange={page.change}
                 onFrame={page.setFrame}
                 onMode={page.setMode}
+                onFull={page.setFull}
                 onApply={() => void page.apply()}
                 onReset={page.reset}
                 onRemove={() => void page.remove()}

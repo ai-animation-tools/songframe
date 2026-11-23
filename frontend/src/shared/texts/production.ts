@@ -884,7 +884,7 @@ export const productionTexts = {
     planLength: ({ frames, seconds }: { frames: number; seconds: string }) => `В плане ${frames} кадров (${seconds}).`,
     params: 'Параметры сборки',
     paramsHint: 'Значения по умолчанию подходят для большинства кадров. Меняйте их, если смена задевает лишнее или видна граница.',
-    range: ({ min, max }: { min: number; max: number }) => `от ${min} до ${max}`,
+    range: ({ min, max }: { min: number; max: number }) => `Допустимо от ${min} до ${max}.`,
     build: 'Собрать предпросмотр',
     rebuild: 'Собрать заново',
     preview: 'Предпросмотр',

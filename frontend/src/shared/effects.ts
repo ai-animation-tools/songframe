@@ -29,6 +29,8 @@ export interface AppliedEffectStep extends EffectStep {
 export interface EffectKind {
   id: string;
   title: string;
+  /** Когда и зачем применять эффект и что получится. */
+  hint: string;
   params: EffectParamSpec[];
   windAngle: string;
 }

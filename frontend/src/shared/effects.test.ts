@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { EffectParamSpec } from './types';
 import { editableSteps, sameSteps, shotLabel, stepValue, withValue } from './effects';
 
-const density: EffectParamSpec = { name: 'density', title: 'Плотность', min: 0, max: 5000, default: 900, step: 10 };
+const density: EffectParamSpec = { name: 'density', title: 'Плотность', min: 0, max: 5000, default: 900, step: 10, hint: '' };
 
 describe('черновик эффектов', () => {
   it('хранит только изменённые значения', () => {

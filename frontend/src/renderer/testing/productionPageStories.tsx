@@ -161,13 +161,69 @@ const models = new WeakMap<Api, PageModel>();
 
 /** Параметры сборки статичного кадра, как internal/effects.StaticParams. */
 export const STATIC_STORY_SPECS: EffectParamSpec[] = [
-  { name: 'threshold', title: 'Порог различия опор', min: 0, max: 0.5, default: 0.012, step: 0.001 },
-  { name: 'dilate', title: 'Расширение области смены, пиксели', min: 0, max: 64, default: 14, step: 1 },
-  { name: 'feather', title: 'Растушёвка области смены, пиксели', min: 0, max: 64, default: 12, step: 1 },
-  { name: 'transition', title: 'Переход при смене, кадры', min: 0, max: 30, default: 3, step: 1 },
-  { name: 'push_in', title: 'Наезд за план, доля', min: 0, max: 0.3, default: 0.03, step: 0.005 },
-  { name: 'center_x', title: 'Центр наезда по горизонтали', min: 0, max: 1, default: 0.5, step: 0.01 },
-  { name: 'center_y', title: 'Центр наезда по вертикали', min: 0, max: 1, default: 0.5, step: 0.01 }
+  {
+    name: 'threshold',
+    title: 'Порог различия опор',
+    min: 0,
+    max: 0.5,
+    default: 0.012,
+    step: 0.001,
+    hint: 'Насколько опора состояния должна отличаться от базовой, чтобы место считалось изменившимся. Меньше — подхватываются слабые отличия (свечение лампы), больше — только заметные.'
+  },
+  {
+    name: 'dilate',
+    title: 'Расширение области смены, пиксели',
+    min: 0,
+    max: 64,
+    default: 14,
+    step: 1,
+    hint: 'На сколько расширить найденную область смены. Больше — смена захватывает края предметов целиком и не оставляет обрывков прежнего состояния.'
+  },
+  {
+    name: 'feather',
+    title: 'Растушёвка области смены, пиксели',
+    min: 0,
+    max: 64,
+    default: 12,
+    step: 1,
+    hint: 'Мягкость границы области смены. Больше — граница незаметнее, меньше — резче.'
+  },
+  {
+    name: 'transition',
+    title: 'Переход при смене, кадры',
+    min: 0,
+    max: 30,
+    default: 3,
+    step: 1,
+    hint: 'Длина перехода между состояниями. 0 — смена мгновенная, несколько кадров — короткое растворение.'
+  },
+  {
+    name: 'push_in',
+    title: 'Наезд за план, доля',
+    min: 0,
+    max: 0.3,
+    default: 0.03,
+    step: 0.005,
+    hint: 'Медленный наезд камеры за план: 0 — кадр неподвижен, 0,03 — приближение на 3%, чтобы статичный кадр не выглядел фотографией.'
+  },
+  {
+    name: 'center_x',
+    title: 'Центр наезда по горизонтали',
+    min: 0,
+    max: 1,
+    default: 0.5,
+    step: 0.01,
+    hint: 'К какой точке идёт наезд по горизонтали: 0 — левый край, 0,5 — центр, 1 — правый край.'
+  },
+  {
+    name: 'center_y',
+    title: 'Центр наезда по вертикали',
+    min: 0,
+    max: 1,
+    default: 0.5,
+    step: 0.01,
+    hint: 'К какой точке идёт наезд по вертикали: 0 — верх, 0,5 — центр, 1 — низ.'
+  }
 ];
 
 export function productionPageOptions(options: ProductionPageModelOptions, route = '/project/production', workspaceWidth?: number): StoryOptions {

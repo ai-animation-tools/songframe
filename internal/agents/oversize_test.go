@@ -83,7 +83,7 @@ func TestJSONLinesOversizeRefused(t *testing.T) {
 }
 
 // TestClaudeOversize — пропускается только событие user с результатом инструмента; оно отмечает
-// завершение инструмента так же, как обычный разбор. Codex длинные строки не пропускает.
+// завершение инструмента так же, как обычный разбор.
 func TestClaudeOversize(t *testing.T) {
 	adapter := NewAdapter(Claude).(OversizeHandler)
 	prefix := []byte(claudeImageResult(oversizePrefix))[:oversizePrefix]
@@ -100,8 +100,59 @@ func TestClaudeOversize(t *testing.T) {
 			t.Fatalf("пропущено событие %.40s", line)
 		}
 	}
-	if _, ok := NewAdapter(Codex).(OversizeHandler); ok {
-		t.Fatal("Codex не печатает прочитанные файлы и длинные строки не пропускает")
+}
+
+// codexImageItem — событие codex exec с элементом встроенной генерации изображения: результат
+// в base64 заданного размера идёт после типа элемента.
+func codexImageItem(size int) string {
+	return `{"type":"item.completed","item":{"id":"item_4","type":"image_generation","status":"completed","result":"` +
+		strings.Repeat("A", size) + `"}}`
+}
+
+// TestCodexOversize — пропускаются длинные события служебных элементов; команда отмечает ход
+// инструмента, а длинные agent_message, error и прочие события остаются ошибкой.
+func TestCodexOversize(t *testing.T) {
+	adapter := NewAdapter(Codex).(OversizeHandler)
+	if updates, skip := adapter.Oversize([]byte(codexImageItem(oversizePrefix))[:oversizePrefix]); !skip || len(updates) != 0 {
+		t.Fatalf("изображение: %v %+v", skip, updates)
+	}
+	command := func(kind string) []byte {
+		return []byte(`{"type":"` + kind + `","item":{"id":"item_5","type":"command_execution","command":"/bin/sh -c 'echo ` + strings.Repeat("A", 2000) + `'"}}`)[:oversizePrefix]
+	}
+	if updates, skip := adapter.Oversize(command("item.started")); !skip || len(updates) != 1 || updates[0].Type != UpdateToolStarted || updates[0].Tool != "command_execution" {
+		t.Fatalf("начало команды: %v %+v", skip, updates)
+	}
+	if updates, skip := adapter.Oversize(command("item.completed")); !skip || len(updates) != 1 || updates[0].Type != UpdateToolFinished {
+		t.Fatalf("конец команды: %v %+v", skip, updates)
+	}
+	for _, line := range []string{
+		`{"type":"item.completed","item":{"id":"item_6","type":"agent_message","text":"` + strings.Repeat("я", 600) + `"}}`,
+		`{"type":"item.completed","item":{"id":"item_7","type":"error","message":"` + strings.Repeat("я", 600) + `"}}`,
+		`{"type":"turn.failed","error":{"message":"` + strings.Repeat("я", 600) + `"}}`,
+	} {
+		if _, skip := adapter.Oversize([]byte(line)[:oversizePrefix]); skip {
+			t.Fatalf("пропущено событие %.50s", line)
+		}
+	}
+}
+
+// TestManagerCodexImageGeneration — задание Codex со встроенной генерацией изображения завершается
+// результатом: событие элемента с base64 больше предела строки и общего предела вывода.
+func TestManagerCodexImageGeneration(t *testing.T) {
+	image := codexImageItem(DefaultLineBytes * 2)
+	rules := append(append([]fakeRule{}, codexReady...), fakeRule{Prefix: []string{"-a"}, Lines: []string{
+		`{"type":"thread.started","thread_id":"th"}`,
+		image,
+		`{"type":"item.completed","item":{"id":"item_9","type":"agent_message","text":"Готово"}}`,
+		`{"type":"turn.completed","usage":{}}`,
+	}})
+	manager, _, _ := testManager(t, &Settings{Provider: Codex}, map[string]fakeScenario{"codex": {Rules: rules}}, Options{OutputBytes: len(image)})
+	log := watch(manager)
+	if _, err := manager.Start(StartInput{Project: testProject(t, "{}"), Task: "T", Prompt: "P"}); err != nil {
+		t.Fatal(err)
+	}
+	if event := log.wait(t); event.Job.Status != StatusCompleted || event.Job.Result != "Готово" {
+		t.Fatalf("итог %+v", event.Job)
 	}
 }
 

@@ -420,6 +420,33 @@ func (a *codexAdapter) Input(prompt string, _ []Image) (string, error) { return 
 // codexTools — элементы, которые показываются как работа инструмента.
 var codexTools = map[string]bool{"command_execution": true, "mcp_tool_call": true, "web_search": true, "file_change": true}
 
+// codexItemEvent опознаёт по началу строки событие элемента codex exec и его тип. Тип элемента
+// идёт сразу за id, до содержимого, поэтому виден в начале даже многомегабайтной строки.
+var codexItemEvent = regexp.MustCompile(`^\s*\{"type":"(item\.(?:started|updated|completed))","item":\{"id":"[^"]*","type":"([a-z_]+)"`)
+
+// Oversize пропускает длинное событие служебного элемента. Встроенная генерация изображений
+// кладёт в событие результат в base64, а модель бывает передаёт его в аргументах команды; приложению
+// из таких событий нужен только ход инструмента, картинку агент сохраняет файлом. Длинное
+// agent_message и error не пропускаются: из них берутся результат и причина сбоя.
+func (a *codexAdapter) Oversize(prefix []byte) ([]Update, bool) {
+	match := codexItemEvent.FindSubmatch(prefix)
+	if match == nil {
+		return nil, false
+	}
+	kind, itemType := string(match[1]), string(match[2])
+	switch {
+	case itemType == "agent_message" || itemType == "error":
+		return nil, false
+	case codexTools[itemType]:
+		update := UpdateToolStarted
+		if kind == "item.completed" {
+			update = UpdateToolFinished
+		}
+		return []Update{{Type: update, Tool: itemType}}, true
+	}
+	return nil, true
+}
+
 func (a *codexAdapter) Parse(value *dynvalue.Object) ([]Update, error) {
 	kind := value.Value("type")
 	switch kind {

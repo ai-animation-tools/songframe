@@ -102,19 +102,19 @@ func TestClaudeOversize(t *testing.T) {
 	}
 }
 
-// codexImageItem — событие codex exec с элементом встроенной генерации изображения: результат
-// в base64 заданного размера идёт после типа элемента.
-func codexImageItem(size int) string {
-	return `{"type":"item.completed","item":{"id":"item_4","type":"image_generation","status":"completed","result":"` +
-		strings.Repeat("A", size) + `"}}`
+// codexImageCommand — событие codex exec с командой, в аргументы которой модель передала base64
+// сгенерированного изображения заданного размера.
+func codexImageCommand(size int) string {
+	return `{"type":"item.started","item":{"id":"item_4","type":"command_execution","command":"/bin/sh -c 'echo ` +
+		strings.Repeat("A", size) + ` | base64 -d > frame.png'","status":"in_progress"}}`
 }
 
 // TestCodexOversize — пропускаются длинные события служебных элементов; команда отмечает ход
-// инструмента, а длинные agent_message, error и прочие события остаются ошибкой.
+// инструмента, а длинные agent_message, error и события вне элементов остаются ошибкой.
 func TestCodexOversize(t *testing.T) {
 	adapter := NewAdapter(Codex).(OversizeHandler)
-	if updates, skip := adapter.Oversize([]byte(codexImageItem(oversizePrefix))[:oversizePrefix]); !skip || len(updates) != 0 {
-		t.Fatalf("изображение: %v %+v", skip, updates)
+	if updates, skip := adapter.Oversize([]byte(`{"type":"item.completed","item":{"id":"item_3","type":"reasoning","text":"` + strings.Repeat("я", 600) + `"}}`)[:oversizePrefix]); !skip || len(updates) != 0 {
+		t.Fatalf("служебный элемент: %v %+v", skip, updates)
 	}
 	command := func(kind string) []byte {
 		return []byte(`{"type":"` + kind + `","item":{"id":"item_5","type":"command_execution","command":"/bin/sh -c 'echo ` + strings.Repeat("A", 2000) + `'"}}`)[:oversizePrefix]
@@ -136,10 +136,10 @@ func TestCodexOversize(t *testing.T) {
 	}
 }
 
-// TestManagerCodexImageGeneration — задание Codex со встроенной генерацией изображения завершается
-// результатом: событие элемента с base64 больше предела строки и общего предела вывода.
+// TestManagerCodexImageGeneration — задание Codex завершается результатом, даже если модель передала
+// base64 изображения в аргументах команды: событие больше предела строки и общего предела вывода.
 func TestManagerCodexImageGeneration(t *testing.T) {
-	image := codexImageItem(DefaultLineBytes * 2)
+	image := codexImageCommand(DefaultLineBytes * 2)
 	rules := append(append([]fakeRule{}, codexReady...), fakeRule{Prefix: []string{"-a"}, Lines: []string{
 		`{"type":"thread.started","thread_id":"th"}`,
 		image,

@@ -1,28 +1,32 @@
 /**
  * Эффект цепочки плана — сворачиваемая панель (Accordion): свёрнутый эффект не мешает настраивать
  * соседний, в заголовке видно, сколько параметров изменено. Внутри — описание «когда и зачем»,
- * ползунки параметров по схеме из реестра Go с подсказкой у названия (наведение или фокус), а
- * после них действия: сброс к значениям по умолчанию и удаление из плана. У дождя — ветер: с ним
- * наклон считает Go из ветра и камеры плана, поэтому ползунок наклона скрыт; без ветра наклон
- * задаётся ползунком.
+ * числовые поля параметров по схеме из реестра Go с подсказкой, диапазоном и значением по умолчанию,
+ * а после них действия: сброс к значениям по умолчанию и удаление из плана. У дождя — ветер: с ним
+ * наклон считает Go из ветра и камеры плана, поэтому поле наклона скрыто; без ветра наклон
+ * задаётся полем.
  */
-import { useId, type ReactElement } from 'react';
-import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Chip, FormControlLabel, Slider, Stack, Switch, Tooltip, Typography } from '@mui/material';
+import type { ReactElement } from 'react';
+import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Chip, FormControlLabel, Stack, Switch, Typography } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { visuallyHidden } from '@mui/utils';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import type { EffectParamSpec } from '@shared/types';
-import { stepValue, withValue, type EffectKind, type EffectStep } from '@shared/effects';
+import { roundToStep, stepValue, withValue, type EffectKind, type EffectStep } from '@shared/effects';
 import { effectsTexts as texts } from '@shared/texts/effects';
 import { ActionButton } from '../../../components/ActionButton';
+import { NumberField } from '../../../components/NumberField';
 import { WindCompass } from './WindCompass';
 
 /** Ветер по умолчанию при включении: на восток, умеренный. */
 const DEFAULT_WIND = { direction: 0, strength: 0.4 };
 
-function ParamSlider({
+/**
+ * Параметр эффекта — числовое поле: значение вписывается точно, стрелки поля меняют его на шаг.
+ * Под полем — подсказка реестра, допустимый диапазон и значение по умолчанию. Число вне диапазона
+ * поле подсвечивает и в черновик не отдаёт; принятое значение округляется до точности шага.
+ */
+function ParamField({
   spec,
   value,
   disabled,
@@ -33,44 +37,17 @@ function ParamSlider({
   disabled?: boolean;
   onChange(value: number): void;
 }): ReactElement {
-  const changed = value !== spec.default;
-  const id = useId();
   return (
-    <Box sx={{ minWidth: 0 }}>
-      <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-        <Tooltip title={spec.hint} placement="top-start" describeChild>
-          <Stack
-            direction="row"
-            spacing={0.5}
-            tabIndex={0}
-            sx={{ alignItems: 'center', minWidth: 0, cursor: 'help', borderRadius: 0.5, '&:focus-visible': { outline: 2, outlineColor: 'primary.main' } }}
-          >
-            <Typography variant="body2" id={id} sx={{ overflowWrap: 'anywhere' }}>
-              {spec.title}
-            </Typography>
-            <InfoOutlinedIcon color="action" sx={{ fontSize: 16, flex: '0 0 auto' }} aria-hidden />
-          </Stack>
-        </Tooltip>
-        <Typography variant="body2" color={changed ? 'primary' : 'text.secondary'} sx={{ fontVariantNumeric: 'tabular-nums', flex: '0 0 auto' }}>
-          {value}
-        </Typography>
-      </Stack>
-      <Slider
-        size="small"
-        min={spec.min}
-        max={spec.max}
-        step={spec.step}
-        value={value}
-        disabled={disabled}
-        aria-labelledby={id}
-        slotProps={{ input: { 'aria-describedby': `${id}-hint` } }}
-        valueLabelDisplay="auto"
-        onChange={(_, next) => onChange(Array.isArray(next) ? next[0] : next)}
-      />
-      <Box component="span" id={`${id}-hint`} sx={visuallyHidden}>
-        {spec.hint}
-      </Box>
-    </Box>
+    <NumberField
+      label={spec.title}
+      value={value}
+      min={spec.min}
+      max={spec.max}
+      step={spec.step}
+      disabled={disabled}
+      helperText={texts.paramHelper({ hint: spec.hint, min: spec.min, max: spec.max, value: spec.default })}
+      onChange={(next) => next !== undefined && onChange(roundToStep(next, spec.step))}
+    />
   );
 }
 
@@ -143,7 +120,7 @@ export function EffectStepCard({
                   onChange={(direction) => step.wind && onChange({ ...step, wind: { ...step.wind, direction } })}
                 />
                 <Stack spacing={1} sx={{ flex: '1 1 220px', minWidth: 0 }}>
-                  <ParamSlider
+                  <ParamField
                     spec={{
                       name: 'wind-direction',
                       title: texts.wind.direction,
@@ -157,7 +134,7 @@ export function EffectStepCard({
                     disabled={disabled}
                     onChange={(direction) => step.wind && onChange({ ...step, wind: { ...step.wind, direction } })}
                   />
-                  <ParamSlider
+                  <ParamField
                     spec={{
                       name: 'wind-strength',
                       title: texts.wind.strength,
@@ -179,9 +156,9 @@ export function EffectStepCard({
             ) : null}
           </Box>
         ) : null}
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', columnGap: 3, rowGap: 0.5 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 1.5 }}>
           {specs.map((spec) => (
-            <ParamSlider
+            <ParamField
               key={spec.name}
               spec={spec}
               value={stepValue(step, spec)}

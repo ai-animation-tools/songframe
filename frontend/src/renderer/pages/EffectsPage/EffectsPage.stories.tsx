@@ -28,7 +28,6 @@ export const Applied: Story = {
   tags: ['ci'],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const screen = body(canvasElement);
     await canvas.findByText(texts.status.fresh);
     // Планы — карточки с первой опорой, эффектами плана и отметкой «В монтаже» или «Устарел».
     const list = canvas.getByRole('list', { name: texts.listLabel });
@@ -39,24 +38,23 @@ export const Applied: Story = {
     await expect(within(current).getByText(texts.fresh)).toBeVisible();
     await expect(within(list).getByText(texts.noEffect)).toBeVisible();
     await expect(within(list).getByText(texts.stale)).toBeVisible();
-    // Дождь по ветру: наклон считает Go, ползунка наклона нет, компас показывает направление.
+    // Дождь по ветру: наклон считает Go, поля наклона нет, компас показывает направление.
     await expect(canvas.getByRole('switch', { name: texts.wind.toggle })).toBeChecked();
     await expect(canvas.getByRole('slider', { name: texts.wind.compass({ direction: 20 }) })).toBeVisible();
     await expect(canvas.queryByText('Наклон, градусы от вертикали')).toBeNull();
-    // У эффекта — описание «когда и зачем», у параметра — подсказка по фокусу на названии.
+    // У эффекта — описание «когда и зачем», у параметра — числовое поле с подсказкой, диапазоном и значением по умолчанию.
     await expect(canvas.getByText(/^Дождь поверх принятого плана/)).toBeVisible();
-    canvas.getByText('Плотность, капель на мегапиксель').parentElement?.focus();
-    await screen.findByRole('tooltip', { name: /морось/ });
-    await expect(canvas.getByRole('slider', { name: 'Плотность, капель на мегапиксель' })).toHaveAccessibleDescription(/морось/);
+    const density = canvas.getByRole('spinbutton', { name: 'Плотность, капель на мегапиксель' });
+    await expect(density).toHaveAccessibleDescription(/морось.*Допустимо от \d+ до \d+, по умолчанию \d+\./);
     // Панель эффекта сворачивается: параметры дождя скрыты, отметка изменений остаётся в заголовке.
     const rain = canvas.getByRole('button', { name: /^Дождь/ });
     await expect(rain).toHaveAttribute('aria-expanded', 'true');
     await expect(within(rain).getByText(texts.changed({ count: 3 }))).toBeVisible();
     await userEvent.click(rain);
     await expect(rain).toHaveAttribute('aria-expanded', 'false');
-    await waitFor(() => expect(canvas.queryByRole('slider', { name: 'Плотность, капель на мегапиксель' })).toBeNull());
+    await waitFor(() => expect(canvas.queryByRole('spinbutton', { name: 'Плотность, капель на мегапиксель' })).toBeNull());
     await userEvent.click(rain);
-    await canvas.findByRole('slider', { name: 'Плотность, капель на мегапиксель' });
+    await canvas.findByRole('spinbutton', { name: 'Плотность, капель на мегапиксель' });
     await canvas.findByRole('img', { name: texts.previewAlt({ shot: 'M01', frame: 36 }) }, WAIT);
     await waitFor(() => expect(effectsPageInspection().previews.at(-1)?.steps.length).toBe(2), WAIT);
     // «До» — кадр без эффектов.
@@ -108,10 +106,10 @@ export const AddAndApply: Story = {
     await expect(canvas.getByRole('button', { name: texts.apply })).toBeDisabled();
     await userEvent.click(canvas.getByRole('button', { name: texts.add }));
     await userEvent.click(await screen.findByRole('menuitem', { name: 'Дождь' }));
-    // У плана нет направления камеры: ветер недоступен, наклон — ползунком.
+    // У плана нет направления камеры: ветер недоступен, наклон — полем.
     await expect(canvas.getByRole('switch', { name: texts.wind.toggle })).toBeDisabled();
     await expect(canvas.getByText(texts.wind.noCamera)).toBeVisible();
-    await expect(canvas.getByText('Наклон, градусы от вертикали')).toBeVisible();
+    await expect(canvas.getByRole('spinbutton', { name: 'Наклон, градусы от вертикали' })).toBeVisible();
     await canvas.findByText(texts.status.dirty);
     await waitFor(() => expect(effectsPageInspection().previews.at(-1)?.steps).toEqual([{ effect: 'rain', given: {} }]), WAIT);
     // Ролика с эффектом ещё нет: на вкладке — заглушка с пояснением, принятое видео — переключателем.
@@ -130,13 +128,27 @@ export const AddAndApply: Story = {
 };
 
 export const CopyFromShot: Story = {
-  name: 'Взять параметры с плана · сброс',
+  name: 'Числовые поля · взять параметры с плана · сброс',
   tags: ['ci'],
   parameters: { songframe: effectsPageOptions({ shot: 'M02' }) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const screen = body(canvasElement);
     await canvas.findByText(texts.status.none);
+    // Свой эффект черновика: значение вписывается точно, число вне диапазона поле не принимает.
+    await userEvent.click(canvas.getByRole('button', { name: texts.add }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Свет' }));
+    const intensity = canvas.getByRole('spinbutton', { name: 'Сила' });
+    await userEvent.clear(intensity);
+    await userEvent.type(intensity, '15');
+    await waitFor(() => expect(effectsPageInspection().previews.at(-1)?.steps).toEqual([{ effect: 'light', given: { intensity: 15 } }]), WAIT);
+    await userEvent.clear(intensity);
+    await userEvent.type(intensity, '25');
+    await expect(intensity).toHaveAttribute('aria-invalid', 'true');
+    await userEvent.clear(intensity);
+    await userEvent.type(intensity, '15.5');
+    await expect(intensity).toHaveAttribute('aria-invalid', 'false');
+    // Эффекты источника добавляются к черновику: несохранённый свет остаётся.
     await userEvent.click(canvas.getByRole('button', { name: texts.copyFrom }));
     const source = await screen.findByRole('menuitem', { name: /^M01/ });
     // Устаревший эффект M03 тоже годится как источник параметров.
@@ -144,8 +156,19 @@ export const CopyFromShot: Story = {
     await userEvent.click(source);
     await screen.findByText(texts.copied({ shot: 'M01' }));
     await canvas.findByText(texts.status.dirty);
-    await expect(canvas.getByText('Дождь')).toBeVisible();
-    await expect(canvas.getByText('Зерно')).toBeVisible();
+    await expect(canvas.getByRole('button', { name: /^Свет/ })).toBeVisible();
+    await expect(canvas.getByRole('button', { name: /^Дождь/ })).toBeVisible();
+    await expect(canvas.getByRole('button', { name: /^Зерно/ })).toBeVisible();
+    await waitFor(
+      () =>
+        expect(
+          effectsPageInspection()
+            .previews.at(-1)
+            ?.steps.map((step) => step.effect)
+        ).toEqual(['light', 'rain', 'grain']),
+      WAIT
+    );
+    await expect(effectsPageInspection().previews.at(-1)?.steps[0]).toEqual({ effect: 'light', given: { intensity: 15.5 } });
     await userEvent.click(canvas.getByRole('button', { name: texts.reset }));
     await canvas.findByText(texts.chainEmpty);
   }

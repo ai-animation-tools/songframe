@@ -101,6 +101,26 @@ export function withValue(step: EffectStep, spec: EffectParamSpec, value: number
   return { ...step, given };
 }
 
+/**
+ * Значение с точностью шага параметра: 0,47 − 0,01 в двоичной арифметике даёт 0,45999999999999996,
+ * а в рецепт и на экран должно попасть 0,46. Сетка шага не навязывается: округляются только знаки.
+ */
+export function roundToStep(value: number, step: number): number {
+  const decimals = (String(step).split('.')[1] ?? '').length;
+  return Number(value.toFixed(decimals));
+}
+
+/**
+ * Цепочка черновика после «Взять параметры с плана»: эффекты источника заменяют такие же эффекты
+ * черновика, остальные эффекты черновика остаются со своими значениями. Порядок — по реестру
+ * (order — идентификаторы эффектов в порядке цепочки), как при добавлении эффекта.
+ */
+export function mergeSteps(draft: EffectStep[], source: EffectStep[], order: string[]): EffectStep[] {
+  const taken = new Set(source.map((step) => step.effect));
+  const rank = (step: EffectStep): number => order.indexOf(step.effect);
+  return [...draft.filter((step) => !taken.has(step.effect)), ...source].sort((a, b) => rank(a) - rank(b));
+}
+
 /** Одинаковы ли цепочки (черновик и сохранённый рецепт). */
 export function sameSteps(a: EffectStep[], b: EffectStep[]): boolean {
   const norm = (steps: EffectStep[]) =>

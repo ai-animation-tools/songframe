@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { JobInfo } from '@shared/types';
-import { editableSteps, sameSteps, type EffectShot, type EffectStep, type EffectsView } from '@shared/effects';
+import { editableSteps, mergeSteps, sameSteps, type EffectShot, type EffectStep, type EffectsView } from '@shared/effects';
 import { effectsTexts as texts } from '@shared/texts/effects';
 import { useApp } from '../../state';
 
@@ -16,7 +16,7 @@ import { useApp } from '../../state';
 export const PREVIEW_WIDTH = 960;
 /** Ширина кадра на весь экран — полный кадр ролика: при уменьшении зерно и тонкие капли усредняются. */
 export const FULL_WIDTH = 1920;
-/** Задержка пересчёта превью после правки: ползунок не запускает кадр на каждом шаге. */
+/** Задержка пересчёта превью после правки: ввод числа не запускает кадр на каждой цифре. */
 export const PREVIEW_DELAY_MS = 350;
 const JOB_POLL_MS = 1000;
 
@@ -200,7 +200,13 @@ export function useEffectsPage() {
 
   const copyFrom = (source: EffectShot): void => {
     if (!selected || busy) return;
-    change(editableSteps(source.steps));
+    change(
+      mergeSteps(
+        draft,
+        editableSteps(source.steps),
+        (view?.kinds ?? []).map((kind) => kind.id)
+      )
+    );
     notify(texts.copied({ shot: source.shot }), 'info');
   };
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { EffectParamSpec } from './types';
-import { editableSteps, sameSteps, shotLabel, stepValue, withValue } from './effects';
+import { editableSteps, mergeSteps, roundToStep, sameSteps, shotLabel, stepValue, withValue, type EffectStep } from './effects';
 
 const density: EffectParamSpec = { name: 'density', title: 'Плотность', min: 0, max: 5000, default: 900, step: 10, hint: '' };
 
@@ -29,6 +29,32 @@ describe('черновик эффектов', () => {
     expect(sameSteps([{ effect: 'rain', given: { a: 1, b: 2 } }], [{ effect: 'rain', given: { b: 2, a: 1 }, wind: null }])).toBe(true);
     expect(sameSteps([{ effect: 'rain', given: {} }], [{ effect: 'rain', given: {}, wind: { direction: 0, strength: 0.4 } }])).toBe(false);
     expect(sameSteps([], [{ effect: 'grain', given: {} }])).toBe(false);
+  });
+});
+
+describe('точность и копирование параметров', () => {
+  it('округляет значение до знаков шага без навязывания сетки', () => {
+    expect(roundToStep(0.47 - 0.01, 0.01)).toBe(0.46);
+    expect(roundToStep(0.305, 0.1)).toBe(0.3);
+    expect(roundToStep(1234.6, 10)).toBe(1235);
+    expect(roundToStep(0.123, 0.05)).toBe(0.12);
+  });
+
+  it('эффекты источника заменяют такие же, остальные эффекты черновика остаются по порядку реестра', () => {
+    const draft: EffectStep[] = [
+      { effect: 'light', given: { intensity: 15 } },
+      { effect: 'rain', given: { density: 500 } }
+    ];
+    const source: EffectStep[] = [
+      { effect: 'rain', given: { density: 2000 }, wind: { direction: 20, strength: 0.3 } },
+      { effect: 'grain', given: {} }
+    ];
+    expect(mergeSteps(draft, source, ['light', 'rain', 'grain'])).toEqual([
+      { effect: 'light', given: { intensity: 15 } },
+      { effect: 'rain', given: { density: 2000 }, wind: { direction: 20, strength: 0.3 } },
+      { effect: 'grain', given: {} }
+    ]);
+    expect(mergeSteps([], source, ['light', 'rain', 'grain'])).toEqual(source);
   });
 });
 

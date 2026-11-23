@@ -80,13 +80,13 @@ export function ProductionShotCard({
   const attempt = attempts.find((pkg) => pkg.dir === selectedPackage) ?? null;
   const canDiscard = !!onDiscardAttempt && !!attempt && attempt.stage !== 'accepted' && !REQUEST_IN_FLIGHT.includes(attempt.request?.attemptStatus ?? '');
   const retryFrom = onRetryWithFrames && attempt && canRetryWithFrames(attempt) ? attempt : null;
-  // Повтор с первой опорой готовит новый видеопромпт и запрос; статичный кадр собирается без них.
+  // Повтор с первой опорой готовит новый видеопромпт и запрос; план из опор собирается без них.
   const firstFrameFrom = onRetryFirstFrame && attempt && !shot.staticShot && canRetryFirstFrame(attempt) ? attempt : null;
   const paidAttempt = !!attempt && isPaidAttempt(attempt);
   // Видео, загруженное пользователем, удаляется с попыткой, а его стоимость уходит из расхода: подтверждение называет обе.
   const uploadedCost = attempt?.request?.manualGeneration?.cost;
   const uploaded = attempt?.request?.manualGeneration ? { cost: uploadedCost ? productionTexts.manualGeneration.costValue(uploadedCost) : null } : null;
-  // Статичный кадр собирается без запроса видео: повторять по сохранённому запросу нечего.
+  // План из опор собирается без запроса видео: повторять по сохранённому запросу нечего.
   const canRetry = !shot.derivedFrom && !shot.staticShot && (shot.state === 'completed' || shot.packages.length > 0);
   const waiting = (shot.derivedFrom ? [] : shot.packages).filter((pkg) => pkg.pendingDecision && pkg.dir !== selectedPackage);
   const sending = shot.packages.some((pkg) => ['submission_unknown', 'submitting'].includes(pkg.request?.attemptStatus ?? ''));

@@ -64,7 +64,7 @@ export interface AcceptedKit {
     "ownVideo"?: boolean;
 
     /**
-     * Static — статичный кадр: видео собрано приложением из опор-состояний (generation.static),
+     * Static — план «Сборка из опор»: видео собрано приложением из состояний (generation.static),
      * промпта и запроса нет; Images — сами состояния по порядку.
      */
     "static"?: boolean;
@@ -451,7 +451,7 @@ export interface ShotProduction {
     "derivedFrom": string | null;
 
     /**
-     * StaticShot — статичный кадр по сценарию (scene.static_shot): видео собирается из опор
+     * StaticShot — план «Сборка из опор» по сценарию (scene.static_shot): видео собирается из опор
      * приложением, запроса видео и повтора по нему нет.
      */
     "staticShot"?: boolean;

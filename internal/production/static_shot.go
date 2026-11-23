@@ -13,7 +13,7 @@ import (
 	"songframe/internal/staticshot"
 )
 
-// StaticShot — шаг «Сборка» попытки статичного кадра (staticshot.Read) с идущим заданием этой
+// StaticShot — шаг «Сборка» попытки плана из опор (staticshot.Read) с идущим заданием этой
 // попытки, если оно есть. Только чтение.
 func (s *Service) StaticShot(project, packageDir string) (staticshot.View, error) {
 	directory, err := checkedPackage(project, packageDir)
@@ -42,7 +42,7 @@ func (s *Service) SaveStaticRecipe(project, packageDir string, recipe staticshot
 	return staticshot.SaveRecipe(project, directory, recipe)
 }
 
-// BuildStatic — задание «Сборка Mxx»: предпросмотр статичного кадра из утверждённых опор по
+// BuildStatic — задание «Сборка Mxx»: предпросмотр плана из опор из утверждённых опор по
 // рецепту попытки. Задание отмечается за пакетом: до его конца другие операции получают «пакет
 // занят». Пишет только static/ попытки.
 func (s *Service) BuildStatic(project, packageDir string) (jobs.Info, error) {
@@ -77,7 +77,7 @@ func (s *Service) BuildStatic(project, packageDir string) (jobs.Info, error) {
 	return info, nil
 }
 
-// AcceptStatic — задание «Приёмка Mxx» статичного кадра: свежий предпросмотр становится комплектом
+// AcceptStatic — задание «Приёмка Mxx» плана из опор: свежий предпросмотр становится комплектом
 // static_video, представления сцены обновляются, попытки плана удаляются (их расход сначала
 // переносится в журнал). Замена принятого комплекта — только с явным согласием replace.
 func (s *Service) AcceptStatic(project, shot, packageDir string, replace bool) (jobs.Info, error) {

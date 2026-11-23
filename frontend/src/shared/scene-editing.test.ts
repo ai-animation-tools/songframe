@@ -72,7 +72,7 @@ describe('объединение планов', () => {
     expect(mergeShots(derived, 1, 1)[1].derived_from).toBeUndefined();
   });
 
-  it('оставляет статичный кадр, только если статичны все части и нет липсинка', () => {
+  it('оставляет сборку из опор, только если все части собираются из опор и нет липсинка', () => {
     const still = (lipsync = false) => [shot('M01', 0, 60, { static_shot: true }), shot('M02', 60, 120, { static_shot: true, lipsync })];
     expect(mergeShots(still(), 0, 1)[0].static_shot).toBe(true);
     expect('static_shot' in mergeShots(still(true), 0, 1)[0]).toBe(false);

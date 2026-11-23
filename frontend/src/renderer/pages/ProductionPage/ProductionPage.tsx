@@ -124,7 +124,7 @@ export function ProductionPage(): ReactElement {
       <PageActionBar barRef={toolbarRef}>
         <ProductionToolbar view={view} filter={filter} onFilter={setFilter} onRefresh={() => void load()} />
       </PageActionBar>
-      {/* Статичный кадр собирается из опор: сервис видео ему не нужен. */}
+      {/* План из опор собирается приложением: сервис видео ему не нужен. */}
       {!shot?.derivedFrom ? <AiProblemAlert kinds={shot?.staticShot ? ['agent', 'image'] : ['agent', 'image', 'video']} /> : null}
       {view.problems.length ? (
         <Alert severity="warning">

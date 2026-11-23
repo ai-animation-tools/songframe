@@ -26,7 +26,7 @@ type AcceptedKit struct {
 	// OwnVideo — своё видео плана (generation.own_video): описания нет, входы и промпт — только если их
 	// указал пользователь при загрузке.
 	OwnVideo bool `json:"ownVideo,omitempty"`
-	// Static — статичный кадр: видео собрано приложением из опор-состояний (generation.static),
+	// Static — план «Сборка из опор»: видео собрано приложением из состояний (generation.static),
 	// промпта и запроса нет; Images — сами состояния по порядку.
 	Static bool `json:"static,omitempty"`
 	// Prompt — текст видеопромпта, переданного в генерацию.

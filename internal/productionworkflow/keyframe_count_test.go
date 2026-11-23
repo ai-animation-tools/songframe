@@ -91,7 +91,7 @@ func TestKeyframeChoice(t *testing.T) {
 	}
 }
 
-// TestKeyframeChoiceStatic — статичному кадру хватает базовой опоры, состояния необязательны;
+// TestKeyframeChoiceStatic — плану из опор хватает базовой опоры, состояния необязательны;
 // предел провайдера видео к нему не относится.
 func TestKeyframeChoiceStatic(t *testing.T) {
 	settings := dynvalue.NewObject()
@@ -100,10 +100,10 @@ func TestKeyframeChoiceStatic(t *testing.T) {
 	value := func(n int) *int { return &n }
 	limit := mediaproviders.DefaultKeyframeLimit
 	if got, err := keyframeChoice(c, "description", value(1), false); err != nil || got != 1 {
-		t.Fatalf("одна опора статичного кадра: %d %v", got, err)
+		t.Fatalf("одна опора плана из опор: %d %v", got, err)
 	}
 	if _, err := keyframeChoice(c, "description", value(-1), false); err == nil || err.Error() != textStaticKeyframeCountRange(limit) {
-		t.Fatalf("статичный кадр без опор: %v", err)
+		t.Fatalf("план из опор без опор: %v", err)
 	}
 	if got, err := keyframeChoice(c, "description", value(12), false); err != nil || got != 12 {
 		t.Fatalf("сверх предела провайдера видео: %d %v", got, err)

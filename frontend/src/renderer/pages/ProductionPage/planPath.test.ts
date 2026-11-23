@@ -48,7 +48,7 @@ describe('путь плана', () => {
     expect(planPath(shot(), approved, view()).current).toBe('request');
   });
 
-  it('статичный кадр после опор идёт на сборку без видеопромпта и запроса', () => {
+  it('план из опор идёт на сборку без видеопромпта и запроса', () => {
     const still = shot({ staticShot: true });
     expect(planPath(still, null, view()).steps.map((step) => step.key)).toEqual(['description', 'frames', 'assemble', 'result']);
     const framing = pkg({ stage: 'keyframes_review', keyframes: [frame('K01', true), frame('K02', false)] });

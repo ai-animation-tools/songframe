@@ -467,7 +467,7 @@ func packageReadme(sid string, manifest any) (string, error) {
 		{"Принятый монтаж", edit, []string{"video", "path"}},
 		{"Промпт", generation, []string{"prompt", "path"}},
 	}
-	// Статичный кадр (и производный от него план) собран из опор-состояний: вместо промпта —
+	// План «Сборка из опор» (и производный от него план) собран из состояний: вместо промпта —
 	// ссылки на сами опоры.
 	kind, err := dictGet(manifest, "kind", nil)
 	if err != nil {

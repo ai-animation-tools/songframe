@@ -40,7 +40,7 @@ type Rules struct {
 	// Keyframes — число опор, выбранное пользователем для этапа description; 0 — «авто»: агент
 	// выбирает сам в пределах 2–20.
 	Keyframes int
-	// Static — статичный кадр: опоры — K01 и состояния (middle) внутри окна, конечной опоры и
+	// Static — план из опор: опоры — K01 и состояния (middle) внутри окна, конечной опоры и
 	// правила длительности запроса нет.
 	Static bool
 	// Own — свой текст пользователя (предложение с отметкой own): промпт опоры может быть пустым,
@@ -80,7 +80,7 @@ func (r Rules) Tree() *dynvalue.Object {
 	if r.Keyframes > 0 {
 		tree.Set("keyframeCount", float64(r.Keyframes))
 	}
-	// Признак статичного кадра пишется только у такого плана: записи остальных не меняются.
+	// Признак плана из опор пишется только у такого плана: записи остальных не меняются.
 	if r.Static {
 		tree.Set("staticShot", true)
 	}
@@ -338,7 +338,7 @@ func parseDescription(value *dynvalue.Object, rules Rules) error {
 	if !rules.Manual && (len(frames) < 1 || len(frames) > mediaproviders.DefaultKeyframeLimit) {
 		return errors.New(textDescriptionInvalid)
 	}
-	// Статичный кадр собирается локально: запроса видео нет и правило длительности не действует.
+	// План из опор собирается локально: запроса видео нет и правило длительности не действует.
 	// Хватает одной K01 — неподвижный кадр с наездом сборки; опоры-состояния после неё необязательны.
 	if err := CheckDuration(seconds, rules.WindowSeconds, rules.DurationRule); err != nil && !rules.Static {
 		return err

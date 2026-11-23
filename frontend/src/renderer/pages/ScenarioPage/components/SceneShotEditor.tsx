@@ -85,7 +85,7 @@ export function SceneShotEditor({
     : nextLocked
       ? scenarioTexts.accepted.boundaryReason({ shot: nextLocked })
       : null;
-  // Почему статичный кадр недоступен: при липсинке и у производного плана; null — доступен.
+  // Почему сборка из опор недоступна: при липсинке и у производного плана; null — доступен.
   const staticShotReason = shot.lipsync ? scenarioTexts.shot.staticShotLipsyncReason : shot.derived_from ? scenarioTexts.shot.staticShotDerivedReason : null;
   return (
     <Paper variant="outlined" sx={{ p: 2, minWidth: 0 }}>
@@ -228,7 +228,7 @@ export function SceneShotEditor({
             </MenuItem>
           ))}
         </TextField>
-        {/* Липсинк и статичный кадр взаимоисключающие: у недоступной галочки подсказка называет
+        {/* Липсинк и сборка из опор взаимоисключающие: у недоступной галочки подсказка называет
             причину (describeChild: подсказка описывает поле, а не заменяет его имя); обёртка нужна,
             чтобы подсказка показывалась у выключенного поля. */}
         <Tooltip describeChild title={shot.static_shot ? scenarioTexts.shot.lipsyncStaticReason : ''}>

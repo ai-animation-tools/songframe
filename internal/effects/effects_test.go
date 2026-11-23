@@ -66,7 +66,7 @@ func TestResolve(t *testing.T) {
 }
 
 // TestRegistry — у каждого эффекта значения по умолчанию в диапазоне, имена параметров не
-// повторяются, у эффекта и каждого параметра (и статичного кадра) есть подсказка человеку, а
+// повторяются, у эффекта и каждого параметра (и плана из опор) есть подсказка человеку, а
 // неизвестный эффект в рецепте — ошибка.
 func TestRegistry(t *testing.T) {
 	kinds := Kinds()
@@ -86,7 +86,7 @@ func TestRegistry(t *testing.T) {
 	}
 	for _, spec := range StaticParams {
 		if spec.Title == "" || spec.Hint == "" {
-			t.Errorf("статичный кадр: параметр %+v", spec)
+			t.Errorf("сборка из опор: параметр %+v", spec)
 		}
 	}
 	if strings.Join(ids, ",") != "light,rain,grain" {

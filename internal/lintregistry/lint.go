@@ -106,8 +106,8 @@ const (
 	textNoWorld           = "нет сущности world: время суток, погода и стороны дороги негде хранить"
 	textReferencesDrift   = "карта references расходится с кастингом: сохраните кастинг, и карта обновится."
 	textCardReference     = "главный референс карточки не объявлен"
-	textStaticShotLipsync = "статичный кадр не сочетается с липсинком"
-	textStaticShotDerived = "производный план не может быть статичным кадром"
+	textStaticShotLipsync = "план из опор не сочетается с липсинком"
+	textStaticShotDerived = "производный план нельзя собрать из опор"
 	textAcceptedNoScene   = "отпечаток принятия плана, которого нет в сценарии"
 	textAcceptedNoKit     = "отпечаток принятия плана без комплекта в assets"
 )
@@ -343,7 +343,7 @@ func lintScenes(root string, r *Report) (any, error) {
 			r.error(sceneregistry.ScenesPath, toolrt.Str(problem.Shot)+".derived_from", message)
 		}
 	}
-	// Форму static_shot проверяет схема; здесь — несовместимость статичного кадра с липсинком и
+	// Форму static_shot проверяет схема; здесь — несовместимость плана из опор с липсинком и
 	// производным планом (то же правило, что при сохранении сценария).
 	for _, item := range list.([]any) {
 		scene, ok := item.(*toolrt.Dict)
@@ -681,7 +681,7 @@ func lintAssets(root string, r *Report) error {
 		if packageValue == nil {
 			continue
 		}
-		// Статичный кадр (и производный от него план) собран из опор без промпта и запроса: у него своя
+		// План «Сборка из опор» (и производный от него план) собран без промпта и запроса: у него своя
 		// схема комплекта.
 		schema := "manifest"
 		if document, ok := packageValue.(*toolrt.Dict); ok && assetpackage.StaticGeneration(document) {

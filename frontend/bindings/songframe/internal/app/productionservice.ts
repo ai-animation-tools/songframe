@@ -42,7 +42,7 @@ export function Accept(project: string, shot: string, packageDir: string, option
 }
 
 /**
- * AcceptStatic — приёмка свежего предпросмотра статичного кадра в assets/shots/Mxx.
+ * AcceptStatic — приёмка свежего предпросмотра плана из опор в assets/shots/Mxx.
  */
 export function AcceptStatic(project: string, shot: string, packageDir: string, replace: boolean): $CancellablePromise<jobs$0.Info> {
     return $Call.ByID(2375962473, project, shot, packageDir, replace);
@@ -89,7 +89,7 @@ export function AttachResult(project: string, packageDir: string, files: string[
 }
 
 /**
- * BuildStatic — задание сборки предпросмотра статичного кадра из утверждённых опор.
+ * BuildStatic — задание сборки предпросмотра плана из опор из утверждённых опор.
  */
 export function BuildStatic(project: string, packageDir: string): $CancellablePromise<jobs$0.Info> {
     return $Call.ByID(954240395, project, packageDir);
@@ -242,7 +242,7 @@ export function Resume(project: string, packageDir: string): $CancellablePromise
 }
 
 /**
- * SaveStaticRecipe — моменты смены и параметры сборки статичного кадра попытки.
+ * SaveStaticRecipe — моменты смены и параметры сборки плана из опор попытки.
  */
 export function SaveStaticRecipe(project: string, packageDir: string, recipe: staticshot$0.Recipe): $CancellablePromise<staticshot$0.View> {
     return $Call.ByID(351111350, project, packageDir, recipe);
@@ -286,7 +286,7 @@ export function Spend(project: string, shot: string): $CancellablePromise<spend$
 }
 
 /**
- * StaticShot — шаг «Сборка» попытки статичного кадра: опоры-состояния, моменты смены, параметры и
+ * StaticShot — шаг «Сборка» попытки плана из опор: опоры-состояния, моменты смены, параметры и
  * последний предпросмотр. Только чтение.
  */
 export function StaticShot(project: string, packageDir: string): $CancellablePromise<staticshot$0.View> {

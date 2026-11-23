@@ -446,7 +446,7 @@ func proposalDocuments(raw, pass string, before Documents, scaffold any, selecte
 			patches[id] = patch
 		}
 		// derived_from: null в патче снимает признак производного плана, static_shot: false — признак
-		// статичного кадра (у обычного плана поля нет); остальные поля заменяются целиком.
+		// плана из опор (у обычного плана поля нет); остальные поля заменяются целиком.
 		shots := []any{}
 		for _, item := range arrayItems(dynvalue.Get(before.Scenes, "scenes")) {
 			next := dynvalue.Spread(item)

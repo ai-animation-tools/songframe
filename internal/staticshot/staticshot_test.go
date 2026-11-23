@@ -23,7 +23,7 @@ import (
 	"songframe/internal/sceneviews"
 )
 
-// project — копия общего образца проверок, где план M03 отмечен статичным кадром, а его попытка
+// project — копия общего образца проверок, где план M03 отмечен планом из опор, а его попытка
 // M03-attempt-01 несёт две утверждённые опоры: базовую и состояние с 1,5 с.
 func project(t *testing.T) (string, string) {
 	t.Helper()
@@ -175,7 +175,7 @@ func TestFrameSize(t *testing.T) {
 	}
 }
 
-// TestNotStatic — попытка плана без static_shot не собирается как статичный кадр.
+// TestNotStatic — попытка плана без static_shot не собирается как план из опор.
 func TestNotStatic(t *testing.T) {
 	root, directory := project(t)
 	scenesPath := filepath.Join(root, "plan", "scenes.json")
@@ -297,7 +297,7 @@ func TestBuildAndAccept(t *testing.T) {
 	}
 }
 
-// TestSingleState — статичный кадр из одной K01: неподвижный кадр с наездом сборки без смен.
+// TestSingleState — план из опор из одной K01: неподвижный кадр с наездом сборки без смен.
 // Он собирается, принимается и проходит проверки комплекта, как кадр с состояниями.
 func TestSingleState(t *testing.T) {
 	if _, err := exec.LookPath(mediacmd.FFmpeg()); err != nil {

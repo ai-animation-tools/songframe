@@ -450,13 +450,13 @@ func (s *DashboardService) View(project string) (dashboard.View, error) {
 	return wire.Done(view, nil)
 }
 
-// StaticShot — шаг «Сборка» попытки статичного кадра: опоры-состояния, моменты смены, параметры и
+// StaticShot — шаг «Сборка» попытки плана из опор: опоры-состояния, моменты смены, параметры и
 // последний предпросмотр. Только чтение.
 func (s *ProductionService) StaticShot(project, packageDir string) (staticshot.View, error) {
 	return wire.Done(s.production.StaticShot(project, packageDir))
 }
 
-// SaveStaticRecipe — моменты смены и параметры сборки статичного кадра попытки.
+// SaveStaticRecipe — моменты смены и параметры сборки плана из опор попытки.
 func (s *ProductionService) SaveStaticRecipe(project, packageDir string, recipe staticshot.Recipe) (staticshot.View, error) {
 	if err := s.idle(project, packageDir); err != nil {
 		return staticshot.View{}, err
@@ -464,7 +464,7 @@ func (s *ProductionService) SaveStaticRecipe(project, packageDir string, recipe 
 	return wire.Done(s.production.SaveStaticRecipe(project, packageDir, recipe))
 }
 
-// BuildStatic — задание сборки предпросмотра статичного кадра из утверждённых опор.
+// BuildStatic — задание сборки предпросмотра плана из опор из утверждённых опор.
 func (s *ProductionService) BuildStatic(project, packageDir string) (jobs.Info, error) {
 	if err := s.idle(project, packageDir); err != nil {
 		return jobs.Info{}, err
@@ -472,7 +472,7 @@ func (s *ProductionService) BuildStatic(project, packageDir string) (jobs.Info, 
 	return wire.Done(s.production.BuildStatic(project, packageDir))
 }
 
-// AcceptStatic — приёмка свежего предпросмотра статичного кадра в assets/shots/Mxx.
+// AcceptStatic — приёмка свежего предпросмотра плана из опор в assets/shots/Mxx.
 func (s *ProductionService) AcceptStatic(project, shot, packageDir string, replace bool) (jobs.Info, error) {
 	if err := s.idle(project, packageDir); err != nil {
 		return jobs.Info{}, err

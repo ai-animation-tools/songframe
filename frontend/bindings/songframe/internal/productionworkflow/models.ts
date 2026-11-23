@@ -172,7 +172,7 @@ export interface View {
     "generationMethod"?: string;
 
     /**
-     * StaticShot — статичный кадр (Context.StaticShot): опор от одной (K01 и необязательные
+     * StaticShot — план из опор (Context.StaticShot): опор от одной (K01 и необязательные
      * состояния), предел провайдера видео к выбору их числа не относится.
      */
     "staticShot"?: boolean;

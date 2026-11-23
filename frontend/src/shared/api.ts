@@ -318,13 +318,13 @@ export interface Api {
     selectImage(project: string, packageDir: string, index: number, expectedResultToken: string): Promise<void>;
     regenerate(project: string, shot: string): Promise<JobInfo>;
     accept(project: string, shot: string, packageDir: string, options: AcceptOptions): Promise<JobInfo>;
-    /** Шаг «Сборка» попытки статичного кадра: опоры-состояния, моменты смены, параметры и последний предпросмотр. */
+    /** Шаг «Сборка» попытки плана из опор: опоры-состояния, моменты смены, параметры и последний предпросмотр. */
     staticShot(project: string, packageDir: string): Promise<StaticShotView>;
-    /** Сохраняет моменты смены и параметры сборки статичного кадра; предпросмотр после этого устаревает. */
+    /** Сохраняет моменты смены и параметры сборки из опор; предпросмотр после этого устаревает. */
     saveStaticRecipe(project: string, packageDir: string, recipe: StaticShotRecipe): Promise<StaticShotView>;
-    /** Задание сборки предпросмотра статичного кадра из утверждённых опор; пишет только папку попытки. */
+    /** Задание сборки предпросмотра из опор из утверждённых опор; пишет только папку попытки. */
     buildStatic(project: string, packageDir: string): Promise<JobInfo>;
-    /** Приёмка свежего предпросмотра статичного кадра в assets; replace — согласие заменить принятый комплект. */
+    /** Приёмка свежего предпросмотра сборки из опор в assets; replace — согласие заменить принятый комплект. */
     acceptStatic(project: string, shot: string, packageDir: string, replace: boolean): Promise<JobInfo>;
     contactSheet(project: string, packageDir: string): Promise<JobInfo>;
     park(project: string, packageDir: string): Promise<void>;

@@ -100,7 +100,7 @@ export function ProductionWorkflowPanel({
   const [instruction, setInstruction] = useState('');
   // Число опор выбирается перед подготовкой описания; 0 — «авто». Речевой план ручной генерации — всегда одна опора.
   const [keyframes, setKeyframes] = useState(0);
-  // Статичному кадру видео не генерируется: предел провайдера видео к нему не относится. Одна опора — неподвижный
+  // Плану из опор видео не генерируется: предел провайдера видео к нему не относится. Одна опора — неподвижный
   // кадр с наездом сборки, больше — смены состояний.
   const limit = view?.staticShot ? DEFAULT_KEYFRAME_LIMIT : keyframeLimit(view?.videoProvider);
   useEffect(() => {

@@ -94,7 +94,7 @@ type Context struct {
 	SingleFrame bool
 	// DerivedFrom — план-источник производного плана; "" — план обычный.
 	DerivedFrom string
-	// StaticShot — статичный кадр (scene.static_shot): видео собирается из опор-состояний
+	// StaticShot — план «Сборка из опор» (scene.static_shot): видео собирается из состояний
 	// локально, этапов prompt и request нет.
 	StaticShot bool
 	// SceneChanged — постановка плана изменилась после подготовки пакета.
@@ -154,7 +154,7 @@ func ReadContext(path, shot, requested string) (*Context, error) {
 	_, resolutionString := settings.Value("resolution").(string)
 	_, aspectString := settings.Value("aspect_ratio").(string)
 	_, watermarkBool := settings.Value("watermark").(bool)
-	// Статичный кадр видео не генерирует: настройки видео проекта ему не нужны.
+	// План из опор видео не генерирует: настройки видео проекта ему не нужны.
 	if scene.Value("static_shot") != true && (!slices.Contains(durationRules, dynvalue.ToString(durationRule)) || !providerString || !resolutionString ||
 		!aspectString || !watermarkBool || !mediaproviders.Supports(settings.Value("provider"), mediaproviders.Video)) {
 		problems = append(problems, textVideoSettingsRequired())

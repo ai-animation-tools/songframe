@@ -146,20 +146,20 @@ interface PageModel {
   promptVariants: string[];
   /** Папки, открытые в файловом менеджере (shell.openPath), по порядку. */
   openedPaths: string[];
-  /** Сборок предпросмотра статичного кадра (production.buildStatic). */
+  /** Сборок предпросмотра из опор (production.buildStatic). */
   staticBuilds: number;
-  /** Сохранённые рецепты статичного кадра по папке попытки: кадры смены и параметры. */
+  /** Сохранённые рецепты сборки из опор по папке попытки: кадры смены и параметры. */
   staticRecipes: Map<string, { from: number[]; params: Record<string, number> }>;
-  /** Последний предпросмотр статичного кадра по папке попытки: собран ли по текущему рецепту и его версия. */
+  /** Последний предпросмотр сборки из опор по папке попытки: собран ли по текущему рецепту и его версия. */
   staticPreviews: Map<string, { fresh: boolean; version: string }>;
-  /** Папка попытки каждого задания сборки и приёмки статичного кадра: по ней снимок называет идущее задание. */
+  /** Папка попытки каждого задания сборки и приёмки плана из опор: по ней снимок называет идущее задание. */
   staticJobs: Map<string, string>;
   subscribe(listener: () => void): () => void;
   revision(): number;
 }
 const models = new WeakMap<Api, PageModel>();
 
-/** Параметры сборки статичного кадра, как internal/effects.StaticParams. */
+/** Параметры сборки из опор, как internal/effects.StaticParams. */
 export const STATIC_STORY_SPECS: EffectParamSpec[] = [
   {
     name: 'threshold',
@@ -204,7 +204,7 @@ export const STATIC_STORY_SPECS: EffectParamSpec[] = [
     max: 0.3,
     default: 0.03,
     step: 0.005,
-    hint: 'Медленное движение камеры за план, чтобы статичный кадр не выглядел фотографией: 0,03 — наезд на 3% к центру наезда, −0,05 — отъезд: план начинается приближенным на 5% и к концу раскрывается до всей опоры; 0 — кадр неподвижен. Шире опоры отъезд не раскроет, а сильное приближение (больше 0,1 по модулю) смягчает картинку.'
+    hint: 'Медленное движение камеры за план, чтобы кадр не выглядел фотографией: 0,03 — наезд на 3% к центру наезда, −0,05 — отъезд: план начинается приближенным на 5% и к концу раскрывается до всей опоры; 0 — кадр неподвижен. Шире опоры отъезд не раскроет, а сильное приближение (больше 0,1 по модулю) смягчает картинку.'
   },
   {
     name: 'center_x',
@@ -316,7 +316,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
         }
         throw new Error('Пакет не найден: обновите страницу.');
       };
-      // Шаг «Сборка» статичного кадра: опоры попытки, кадры смены по рецепту или по времени опор, предпросмотр.
+      // Шаг «Сборка» плана из опор: опоры попытки, кадры смены по рецепту или по времени опор, предпросмотр.
       const staticView = (shot: ShotProduction, pkg: PackageView): StaticShotView => {
         const fps = 30;
         const frames = Math.round((shot.end - shot.start) * fps);
@@ -1168,7 +1168,7 @@ export function ProductionPageStory({ links = [] }: { links?: StoryLink[] }): Re
             {model.ownVideoGenerations.join('; ') || 'нет'}. Возвратов промпта: {model.promptReopens.join(', ') || 'нет'}. Своих описаний:{' '}
             {model.ownSaves.join(', ') || 'нет'}. Способов генерации: {model.methodChanges.join(', ') || 'нет'}. Запросов приложения:{' '}
             {model.requestBuilds.join(', ') || 'нет'}. Вариантов промпта к отправке: {model.promptVariants.join(', ') || 'нет'}. Открытых папок:{' '}
-            {model.openedPaths.join(', ') || 'нет'}. Сборок статичного кадра: {model.staticBuilds}.
+            {model.openedPaths.join(', ') || 'нет'}. Сборок из опор: {model.staticBuilds}.
           </Typography>
           <Typography variant="caption" color="text.secondary" data-testid="production-review-model">
             Проверок видео: {model.reviewStarts}. Отмен проверок: {model.reviewCancels}.

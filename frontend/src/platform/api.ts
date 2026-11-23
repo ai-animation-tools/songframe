@@ -896,7 +896,7 @@ export function createApi(b: Bindings): Api {
     call('production.staticShot', async () => (await (await production()).StaticShot(project, packageDir)) as StaticShotView);
   api.production.saveStaticRecipe = (project, packageDir, recipe) =>
     call('production.saveStaticRecipe', async () => (await (await production()).SaveStaticRecipe(project, packageDir, recipe)) as StaticShotView, true);
-  // Сборка предпросмотра и приёмка статичного кадра — задания с рендером FFmpeg: срок оболочки не ставится.
+  // Сборка предпросмотра и приёмка плана из опор — задания с рендером FFmpeg: срок оболочки не ставится.
   api.production.buildStatic = (project, packageDir) =>
     call('production.buildStatic', async () => toJob(await (await production()).BuildStatic(project, packageDir)), false);
   api.production.acceptStatic = (project, shot, packageDir, replace) =>

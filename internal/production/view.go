@@ -47,7 +47,7 @@ type ShotProduction struct {
 	RegenerateProblem *string `json:"regenerateProblem"`
 	// DerivedFrom — источник материала по актуальному derived_from сценария.
 	DerivedFrom *string `json:"derivedFrom"`
-	// StaticShot — статичный кадр по сценарию (scene.static_shot): видео собирается из опор
+	// StaticShot — план «Сборка из опор» по сценарию (scene.static_shot): видео собирается из опор
 	// приложением, запроса видео и повтора по нему нет.
 	StaticShot bool           `json:"staticShot,omitempty"`
 	Attention  *string        `json:"attention"`
@@ -491,7 +491,7 @@ func shotProduction(project string, scene any, id string, packages []*PackageVie
 		shot.DerivedFrom = &source
 		shot.RegenerateProblem = optional(derivedshot.Reason(source))
 	} else if dynvalue.StrictEqual(dynvalue.Get(scene, "static_shot"), true) {
-		// Статичный кадр собирается из опор без запроса видео: повторять нечего, нужна новая попытка.
+		// План из опор собирается без запроса видео: повторять нечего, нужна новая попытка.
 		shot.StaticShot = true
 		shot.RegenerateProblem = optional(textRetryStatic(id))
 	} else if dynvalue.StrictEqual(dynvalue.Get(scene, "lipsync"), true) && manualProvider(selected) {

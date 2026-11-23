@@ -1,4 +1,4 @@
-// Package staticshot — производство плана «Статичный кадр» (scene.static_shot): после утверждения
+// Package staticshot — производство плана «Сборка из опор» (scene.static_shot): после утверждения
 // опор попытки план собирается локально из опор-состояний (internal/effects) вместо видеопромпта и
 // платного запроса, а принятый предпросмотр становится комплектом assets/shots/Mxx вида
 // static_video.
@@ -37,7 +37,7 @@ import (
 	"songframe/internal/toolrt"
 )
 
-// Kind — вид комплекта статичного кадра в manifest.json.
+// Kind — вид комплекта плана из опор в manifest.json.
 const Kind = assetpackage.StaticKind
 
 // Размер кадра сборки — кадр проекта, как у принятого монтажа видео сервиса.
@@ -61,7 +61,7 @@ type RecipeState struct {
 	FromFrame int    `json:"from_frame"`
 }
 
-// Recipe — что пользователь задаёт на шаге «Сборка»: моменты смены и параметры статичного кадра
+// Recipe — что пользователь задаёт на шаге «Сборка»: моменты смены и параметры плана из опор
 // (effects.StaticParams). Отсутствующий параметр — значение по умолчанию.
 type Recipe struct {
 	SchemaVersion int                `json:"schema_version"`
@@ -90,7 +90,7 @@ type Preview struct {
 	Version string `json:"version"`
 }
 
-// View — шаг «Сборка» попытки статичного плана.
+// View — шаг «Сборка» попытки плана из опор.
 type View struct {
 	Shot   string              `json:"shot"`
 	FPS    int64               `json:"fps"`
@@ -144,7 +144,7 @@ func fileSHA(path string) (string, int64, error) {
 	return hex.EncodeToString(hash.Sum(nil)), size, nil
 }
 
-// planWindow — частота и длина плана shot по сценарию; план должен быть статичным кадром.
+// planWindow — частота и длина плана shot по сценарию; план должен собираться из опор.
 func planWindow(root, shot string) (*toolrt.Dict, int64, int, error) {
 	registry, err := sceneregistry.Load(root)
 	if err != nil {
@@ -717,7 +717,7 @@ func stage(root, staging, directory string, workflow *toolrt.Dict, view View, st
 			"speed", toolcli.Record("factor", 1.0, "ratio", "1", "selected_source_seconds", seconds, "motion_output_seconds", seconds, "duration_change_seconds", 0.0),
 			"hold_first_seconds", 0.0,
 			"hold_last_seconds", 0.0,
-			"audio_policy", "Звука нет: статичный кадр собран из опор.",
+			"audio_policy", "Звука нет: план собран из опор.",
 			"montage_source", video,
 			"rebuild", toolcli.Record(
 				"stages", []any{toolcli.Record("input", "original.mp4", "filter", filter, "frames", toolrt.NewInt(frames))},

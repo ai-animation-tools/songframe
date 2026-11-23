@@ -538,15 +538,15 @@ export const RetryFirstFrame: Story = {
   }
 };
 
-/** Статичный кадр: обе опоры утверждены, попытка ждёт сборки; видеопромпта и запроса у плана нет. */
+/** Сборка из опор: обе опоры утверждены, попытка ждёт сборки; видеопромпта и запроса у плана нет. */
 const staticShots = () =>
   baseShots({
     staticShot: true,
-    // Прежнее принятое видео плана: статичный кадр заменяет его после подтверждения.
+    // Прежнее принятое видео плана: сборка из опор заменяет его после подтверждения.
     asset: { dir: '/mock/Клип у старых ворот/assets/shots/M02', video: STORY_VIDEO_PATH, original: STORY_VIDEO_PATH },
     stageLabel: 'Опоры утверждены',
     attention: null,
-    regenerateProblem: 'M02: статичный кадр собирается из опор без запроса видео; для новой версии начните новую попытку.',
+    regenerateProblem: 'M02: план из опор собирается без запроса видео; для новой версии начните новую попытку.',
     packages: [
       keyframePackage({
         keyframeNotes: [],
@@ -562,13 +562,13 @@ const staticShots = () =>
   });
 export const StaticShotAssembly: Story = {
   tags: ['ci'],
-  name: 'Статичный кадр · сборка из опор: момент смены, предпросмотр, устаревание и приёмка',
+  name: 'Сборка из опор: момент смены, предпросмотр, устаревание и приёмка',
   parameters: { songframe: options({ shots: staticShots }) },
   play: async (context) => {
     const screen = screenOf(context);
     const shotTexts = texts.staticShot;
     let panel = within(await screen.findByTestId('static-shot-panel', {}, POLL_TIMEOUT));
-    // Путь статичного кадра: видеопромпта, запроса и генерации нет, текущий шаг — сборка.
+    // Путь сборки из опор: видеопромпта, запроса и генерации нет, текущий шаг — сборка.
     await expect(planStep(context, 'prompt')).toBeNull();
     await expect(planStep(context, 'request')).toBeNull();
     await expect(screen.getByText(steps.now({ text: steps.assemble }))).toBeInTheDocument();
@@ -594,7 +594,7 @@ export const StaticShotAssembly: Story = {
     await expect(panel.getByText(shotTexts.dirty)).toBeInTheDocument();
     // Сборка сохраняет черновик и запускает задание; предпросмотр появляется после его завершения.
     await userEvent.click(panel.getByRole('button', { name: shotTexts.build }));
-    await waitFor(() => expect(counts(context)).toHaveTextContent('Сборок статичного кадра: 1.'));
+    await waitFor(() => expect(counts(context)).toHaveTextContent('Сборок из опор: 1.'));
     // Переход к другому плану и обратно во время сборки: панель снова следит за идущим заданием.
     await userEvent.click(screen.getByText('M01', { selector: 'p' }));
     await shotHeading(context, 'M01');

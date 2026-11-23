@@ -2,7 +2,7 @@ package staticshot
 
 import "strconv"
 
-// Тексты ошибок и записей сборки статичного кадра.
+// Тексты ошибок и записей сборки плана из опор.
 const (
 	textPackageOutside    = "Попытка должна лежать в plan/batches проекта."
 	textWorkflowInvalid   = "workflow.json попытки повреждён."
@@ -13,11 +13,11 @@ const (
 	textRecipeFrames      = "Рецепт сборки относится к другим опорам: обновите страницу."
 	textPreviewMissing    = "Сначала соберите предпросмотр."
 	textPreviewStale      = "Предпросмотр устарел: моменты смены, параметры или опоры изменились после сборки. Соберите заново."
-	textRebuildNote       = "Статичный кадр: опоры-состояния собраны локально (internal/effects); пересборка — по generation.static."
+	textRebuildNote       = "План из опор: опоры-состояния собраны локально (internal/effects); пересборка — по generation.static."
 )
 
 func textNotStatic(shot string) string {
-	return shot + ": план не отмечен в сценарии как статичный кадр."
+	return shot + ": план не отмечен в сценарии как план из опор."
 }
 
 func textWindowInvalid(shot string) string {

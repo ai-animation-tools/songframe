@@ -1,4 +1,4 @@
-/** Черновик сборки статичного кадра проверяется до записи: кадры смены и диапазоны параметров. */
+/** Черновик сборки из опор проверяется до записи: кадры смены и диапазоны параметров. */
 import { describe, expect, it } from 'vitest';
 import type { StaticShotView } from '@shared/types';
 import { staticDraft, staticRecipe } from './useStaticShot';
@@ -22,7 +22,7 @@ const view: StaticShotView = {
   jobId: ''
 };
 
-describe('рецепт статичного кадра', () => {
+describe('рецепт сборки из опор', () => {
   it('черновик по снимку даёт тот же рецепт', () => {
     expect(staticRecipe(view, staticDraft(view))).toEqual({
       schema_version: 1,

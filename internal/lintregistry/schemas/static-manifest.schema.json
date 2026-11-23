@@ -1,5 +1,5 @@
 {
-  "title": "assets/shots/Mxx/manifest.json — комплект статичного кадра (kind static_video) или производного от него плана",
+  "title": "assets/shots/Mxx/manifest.json — комплект плана из опор (kind static_video) или производного от него плана",
   "type": "object",
   "required": ["schema_version", "shot", "kind", "generation", "accepted_edit"],
   "properties": {

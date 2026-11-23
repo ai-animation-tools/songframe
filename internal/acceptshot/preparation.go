@@ -173,7 +173,7 @@ func referenceEntry(root, packageDir, staging, path string) (*toolrt.Dict, *tool
 	return toolcli.Record("plan_path", path), nil, nil
 }
 
-// StaticPreparation пишет preparation.json комплекта статичного кадра (internal/staticshot) по
+// StaticPreparation пишет preparation.json комплекта плана из опор (internal/staticshot) по
 // попытке packageDir: описание плана, промпты опор с референсами и замечаниями, опоры-состояния
 // inputs (дескрипторы файлов комплекта) — как у обычной приёмки, только видео собрано приложением.
 // Возвращает generation.preparation: дескриптор индекса и файлы подготовки.

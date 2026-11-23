@@ -442,10 +442,10 @@ func TestImagesPromptApprovedBase(t *testing.T) {
 	}
 }
 
-// TestImagesPromptStateBase — абзац о базовой опоре статичного кадра есть только у опоры-состояния.
+// TestImagesPromptStateBase — абзац о базовой опоре плана из опор есть только у опоры-состояния.
 func TestImagesPromptStateBase(t *testing.T) {
 	state := textImagesPrompt(true, false, false, false, false, true)
-	for _, want := range []string{"stateBase — базовая опора статичного кадра", "передай stateBase генератору первым входом", "Композицию, ракурс"} {
+	for _, want := range []string{"stateBase — базовая опора плана из опор", "передай stateBase генератору первым входом", "Композицию, ракурс"} {
 		if !strings.Contains(state, want) {
 			t.Fatalf("нет %q: %s", want, state)
 		}

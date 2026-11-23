@@ -41,7 +41,7 @@
 
 ## pass=revise: доработка выбранных планов
 
-Ответ: `{"schemaVersion":1,"pass":"revise","patches":[{"id":"M01","action":"..."}]}`. Для каждого выбранного ID верни только изменяемые поля постановки: `title`, `notes`, `camera`, `action`, `continuity`, `references`, `lipsync`, `card`, `state_from`, `state_changes`, `derived_from` (`null` снимает признак производного плана), `static_shot` (`false` снимает признак статичного кадра). `id` выбирает план и не меняется.
+Ответ: `{"schemaVersion":1,"pass":"revise","patches":[{"id":"M01","action":"..."}]}`. Для каждого выбранного ID верни только изменяемые поля постановки: `title`, `notes`, `camera`, `action`, `continuity`, `references`, `lipsync`, `card`, `state_from`, `state_changes`, `derived_from` (`null` снимает признак производного плана), `static_shot` (`false` снимает признак сборки из опор). `id` выбирает план и не меняется.
 
 Меняй только то, чего касается замечание, и только планы из `selectedIds`. Запрещены поля других планов, кадровые окна, `original`, `sequence`, логлайн, части и другие общие поля сценария. Соседи переданы только как контекст: не переписывай их молча и не расширяй список ID. Конфликт с соседями не устраняй их правкой: его решает пользователь в редакторе.
 
@@ -79,4 +79,4 @@
 - Размер ответа не больше 256 KiB.
 
 
-Режим приложения: output=proposal, pass=revise. Верни ровно один JSON без Markdown, без записи файлов и вызовов инструментов производства. Оболочка: {"schemaVersion":1,"pass":"revise","patches":[{"id":"выбранный ID",...поля постановки}] }. Не меняй source, timing и assets. Конец песни равен timing.duration_decoded. Сохраняй ID, original, sequence и кадровые окна каркаса. Для revise разрешены только title, camera, action, continuity, notes, references, lipsync, card, state_from, state_changes, derived_from, static_shot выбранных ID; derived_from: null снимает признак производного плана, static_shot: false — признак статичного кадра. Не меняй глобальные поля и остальные сцены. Заполни постановку без ЗАПОЛНИТЬ; используй только объявленные изображения и свойства кастинга.
+Режим приложения: output=proposal, pass=revise. Верни ровно один JSON без Markdown, без записи файлов и вызовов инструментов производства. Оболочка: {"schemaVersion":1,"pass":"revise","patches":[{"id":"выбранный ID",...поля постановки}] }. Не меняй source, timing и assets. Конец песни равен timing.duration_decoded. Сохраняй ID, original, sequence и кадровые окна каркаса. Для revise разрешены только title, camera, action, continuity, notes, references, lipsync, card, state_from, state_changes, derived_from, static_shot выбранных ID; derived_from: null снимает признак производного плана, static_shot: false — признак сборки из опор. Не меняй глобальные поля и остальные сцены. Заполни постановку без ЗАПОЛНИТЬ; используй только объявленные изображения и свойства кастинга.

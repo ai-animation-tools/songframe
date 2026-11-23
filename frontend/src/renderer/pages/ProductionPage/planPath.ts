@@ -122,7 +122,7 @@ function currentStep(shot: ShotProduction, pkg: PackageView | null, workflow: Pr
   const descriptionAccepted = pkg.decision?.stage === 'description_review' && pkg.decision.verdict === 'approve';
   if ((stage === 'description_review' && !descriptionAccepted) || !pkg.keyframes.length) return 'description';
   if (pkg.keyframes.some((frame) => !frame.approved)) return 'frames';
-  // Статичный кадр после опор собирается приложением: видеопромпта и запроса у него нет.
+  // План из опор собирается приложением: видеопромпта и запроса у него нет.
   if (shot.staticShot) return 'assemble';
   if (!pkg.prompt?.approved) return 'prompt';
   if (shot.lipsync && !pkg.speech) return 'speech';
@@ -211,7 +211,7 @@ export function ownVideoAttempt(pkg: PackageView | null): boolean {
  * Шаги пути плана. Срез речи есть только у речевого плана; newAttempt — пользователь сам начал
  * новую попытку; receiving — приложение сейчас отправляет запрос или получает результат. У попытки
  * своего видео путь короткий: «Своё видео» (загрузка, если она не состоялась) и «Результат». У
- * статичного кадра после опор — «Сборка»: приложение собирает видео из опор, предпросмотр
+ * плана из опор — «Сборка»: приложение собирает видео из опор, предпросмотр
  * принимается там же.
  */
 export function planPath(

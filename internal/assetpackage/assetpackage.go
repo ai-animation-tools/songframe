@@ -30,7 +30,7 @@ var sha256Hex = regexp.MustCompile(`^[0-9a-f]{64}$`)
 var imageSuffixes = map[string]bool{".png": true, ".jpg": true, ".jpeg": true, ".webp": true, ".gif": true}
 
 // Тексты отказов; их показывают инструменты, формулировки зафиксированы эталонами.
-// StaticKind — вид комплекта статичного кадра: ролик собран локально из опор-состояний
+// StaticKind — вид комплекта плана из опор: ролик собран локально из состояний
 // (internal/staticshot), промпта и запроса генерации нет.
 const StaticKind = "static_video"
 
@@ -58,7 +58,7 @@ const (
 	textSameFiles     = "Оригинал и принятый монтаж должны быть разными файлами."
 	textNoInputs      = "В комплекте отсутствуют кадры или промпт генерации."
 	textNoRequest     = "В комплекте нет технического снимка запроса generation-request.json."
-	textNoStatic      = "В комплекте статичного кадра нет рецепта сборки из опор-состояний."
+	textNoStatic      = "В комплекте плана из опор нет рецепта сборки."
 	textNoAudio       = "В комплекте липсинка отсутствует входное аудио."
 	textNoReplay      = "Не сохранены параметры воспроизведения принятого монтажа."
 	textDuration      = "Длительность принятого монтажа расходится с числом кадров."
@@ -292,8 +292,8 @@ func ValidatePackage(path, shotID, root string) (*toolrt.Dict, error) {
 	}
 	generation := generationValue.(*toolrt.Dict)
 	if StaticGeneration(document) {
-		// Статичный кадр собран локально из опор-состояний: промпта и запроса генерации у него нет,
-		// повторить сборку позволяет рецепт generation.static. Производный план от статичного
+		// План «Сборка из опор» собран локально из состояний: промпта и запроса генерации у него нет,
+		// повторить сборку позволяет рецепт generation.static. Производный план от плана из опор
 		// кадра наследует ту же генерацию.
 		static, isDict := generation.Value("static").(*toolrt.Dict)
 		if !isDict {

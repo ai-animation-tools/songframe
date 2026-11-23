@@ -181,7 +181,7 @@ export const OpenShotState: Story = {
 };
 
 export const StaticShotToggle: Story = {
-  name: 'Статичный кадр · взаимоисключение с липсинком и производным планом',
+  name: 'Сборка из опор · взаимоисключение с липсинком и производным планом',
   tags: ['!autodocs', 'ci'],
   parameters: { songframe: scenarioPageOptions({ route: '/project/scenario?shot=M02' }) },
   play: async (context) => {
@@ -192,7 +192,7 @@ export const StaticShotToggle: Story = {
     await expect(still).not.toBeChecked();
     await userEvent.click(still);
     await expect(still).toBeChecked();
-    // У статичного кадра нет генерации видео: липсинк и сборка из другого плана закрыты.
+    // У сборки из опор нет генерации видео: липсинк и сборка из другого плана закрыты.
     await expect(lipsync).toBeDisabled();
     await expect(screen.getByRole('combobox', { name: scenarioTexts.fields.derivedFrom })).toHaveClass('Mui-disabled');
     await expect(unsavedChip(screen)).toBeInTheDocument();

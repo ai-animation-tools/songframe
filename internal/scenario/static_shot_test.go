@@ -7,7 +7,7 @@ import (
 	"songframe/internal/dynvalue"
 )
 
-// TestStaticShotProblems — статичный кадр не сочетается с липсинком и производным планом;
+// TestStaticShotProblems — план из опор не сочетается с липсинком и производным планом;
 // отсутствующее поле и false — обычный план.
 func TestStaticShotProblems(t *testing.T) {
 	scene := func(fields map[string]any) any {
@@ -24,7 +24,7 @@ func TestStaticShotProblems(t *testing.T) {
 	}{
 		{"нет поля", map[string]any{"lipsync": true}, ""},
 		{"false", map[string]any{"static_shot": false, "lipsync": true}, ""},
-		{"статичный", map[string]any{"static_shot": true, "lipsync": false}, ""},
+		{"из опор", map[string]any{"static_shot": true, "lipsync": false}, ""},
 		{"не логическое", map[string]any{"static_shot": "да"}, "true или false"},
 		{"с липсинком", map[string]any{"static_shot": true, "lipsync": true}, "липсинком"},
 		{"производный", map[string]any{"static_shot": true, "lipsync": false, "derived_from": scene(map[string]any{"shot": "M01"})}, "производный план"},

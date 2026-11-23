@@ -195,7 +195,7 @@ type View struct {
 	CanBuildManual   bool   `json:"canBuildManual,omitempty"`
 	SingleFrame      bool   `json:"singleFrame,omitempty"`
 	GenerationMethod string `json:"generationMethod,omitempty"`
-	// StaticShot — статичный кадр (Context.StaticShot): опор от одной (K01 и необязательные
+	// StaticShot — план из опор (Context.StaticShot): опор от одной (K01 и необязательные
 	// состояния), предел провайдера видео к выбору их числа не относится.
 	StaticShot bool `json:"staticShot,omitempty"`
 	// PromptMaxChars — предел длины видеопромпта провайдера (Context.PromptLimit): длиннее него
@@ -730,7 +730,7 @@ func keyframeChoice(c *Context, stage string, chosen *int, inherit bool) (int, e
 		return 0, nil
 	}
 	if c.StaticShot {
-		// Статичный кадр: база и необязательные состояния; видео не генерируется, предел провайдера
+		// План из опор: база и необязательные состояния; видео не генерируется, предел провайдера
 		// видео к нему не относится.
 		if *chosen < 1 || *chosen > mediaproviders.DefaultKeyframeLimit {
 			return 0, errors.New(textStaticKeyframeCountRange(mediaproviders.DefaultKeyframeLimit))
@@ -764,7 +764,7 @@ func (c *Context) reviseStage(next string) (string, error) {
 	case (prompt || frames) && !c.StaticShot:
 		return "prompt", nil
 	default:
-		// У статичного кадра видеопромпта нет: доработка после опор переделывает описание.
+		// У плана из опор видеопромпта нет: доработка после опор переделывает описание.
 		return "description", nil
 	}
 }

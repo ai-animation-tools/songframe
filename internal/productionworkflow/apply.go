@@ -315,7 +315,7 @@ func (w *Workflow) applyDescription(ctx context.Context, plan *applyPlan) error 
 	rules := plan.stored.Rules()
 	requestSeconds := dynvalue.ToString(after.Value("requestSeconds"))
 	if rules.Static {
-		// Запроса видео у статичного кадра нет: длительность попытки — окно плана целыми секундами.
+		// Запроса видео у плана из опор нет: длительность попытки — окно плана целыми секундами.
 		requestSeconds = dynvalue.ToString(math.Ceil(rules.WindowSeconds))
 	}
 	args := []string{"plan-keyframes", "--dir", target, "--request-seconds", requestSeconds}

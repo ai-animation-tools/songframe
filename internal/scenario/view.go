@@ -339,7 +339,7 @@ func DerivedFromProblems(scenes []any) ([]string, error) {
 	return problems, nil
 }
 
-// staticShotProblems — проверка необязательного static_shot. Статичный кадр собирается из опор-
+// staticShotProblems — проверка необязательного static_shot. План «Сборка из опор» собирается из опор-
 // состояний без генерации видео, поэтому он несовместим с липсинком (нужна генерация с голосом) и с
 // производным планом (тот собирается из клипа другого плана). Отсутствующее поле — обычный план.
 func staticShotProblems(sid string, scene any) []string {

@@ -546,7 +546,7 @@ func renderEdit(ctx context.Context, original, filter string, frames toolrt.Int,
 // и текущий отпечаток плана.
 // AcceptanceFingerprint — отпечаток постановки, по которой принимается план (scene_sha256 пакета
 // или текущий), и текущий отпечаток; их расхождение — предупреждение «постановка изменилась».
-// Общий для всех видов приёмки: статичный кадр (internal/staticshot) пишет тот же отпечаток.
+// Общий для всех видов приёмки: план из опор (internal/staticshot) пишет тот же отпечаток.
 func AcceptanceFingerprint(registry *toolrt.Dict, shot string, workflow *toolrt.Dict, root string) (string, string, error) {
 	return acceptanceFingerprint(registry, shot, workflow, root)
 }
@@ -574,7 +574,7 @@ func acceptanceFingerprint(registry *toolrt.Dict, shot string, workflow *toolrt.
 	return text, current, nil
 }
 
-// RetireKit — retireKit для других видов приёмки (статичный кадр).
+// RetireKit — retireKit для других видов приёмки (план из опор).
 func RetireKit(root, shot string) (string, error) { return retireKit(root, shot) }
 
 // retireKit — прежний комплект целиком переезжает в assets/replaced/Mxx/<время>: оплаченные

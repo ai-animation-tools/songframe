@@ -222,7 +222,7 @@ func (k *KeyframeImages) Start(input mediaapi.ImagesInput, request agentexec.Ima
 		item.Set("path", name)
 		previous = append(previous, item)
 	}
-	// Базовая опора статичного кадра: опора-состояние редактирует её, а не рисует кадр заново.
+	// Базовая опора плана из опор: опора-состояние редактирует её, а не рисует кадр заново.
 	var stateBase *dynvalue.Object
 	if base := input.StateBase; base != nil && frameID.MatchString(base.ID) && mediafile.IsImage(base.Path) {
 		name := "base-" + base.ID + extname(base.Path)

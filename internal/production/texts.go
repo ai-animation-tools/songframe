@@ -372,14 +372,14 @@ func textShotFrame(shot, position string) string {
 	return "последний кадр плана " + shot
 }
 
-// Тексты сборки статичного кадра.
+// Тексты сборки плана из опор.
 const (
-	textStaticBuildStep       = "сборка статичного кадра"
+	textStaticBuildStep       = "сборка плана из опор"
 	textStaticPreviewRequired = "Сначала соберите предпросмотр по текущим опорам и параметрам."
 )
 
 func textStaticBuildJob(shot string) string { return "Сборка " + shot }
 
 func textRetryStatic(shot string) string {
-	return shot + ": статичный кадр собирается из опор без запроса видео; для новой версии начните новую попытку."
+	return shot + ": план из опор собирается без запроса видео; для новой версии начните новую попытку."
 }

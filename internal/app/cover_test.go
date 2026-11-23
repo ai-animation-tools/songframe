@@ -75,10 +75,10 @@ func TestReferenceAttachTarget(t *testing.T) {
 	generator, id := newCoverSession(t)
 	service := NewReferenceImagesService(generator, nil)
 	service.attached[id] = "oleg"
-	if err := service.Attach(id, "boat"); err == nil || err.Error() != textTargetChanged {
+	if err := service.Attach(id, "boat", ""); err == nil || err.Error() != textTargetChanged {
 		t.Fatalf("другая сущность: %v", err)
 	}
-	if err := service.Attach(id, "oleg"); err == nil || err.Error() == textTargetChanged {
+	if err := service.Attach(id, "oleg", ""); err == nil || err.Error() == textTargetChanged {
 		t.Fatalf("та же сущность без готового изображения: %v", err)
 	}
 }

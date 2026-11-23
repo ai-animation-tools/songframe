@@ -80,6 +80,7 @@ type stepInput struct {
 	AllowUnknownCost *bool           `json:"allowUnknownCost"`
 	Crop             json.RawMessage `json:"crop"`
 	Entity           string          `json:"entity"`
+	View             string          `json:"view"`
 	Path             string          `json:"path"`
 	Base64           string          `json:"base64"`
 }
@@ -811,7 +812,7 @@ func runScenario(t *testing.T, scenario goldenScenario) []byte {
 			if stepErr = err; err != nil {
 				break
 			}
-			if stepErr = referenceimage.Attach(owner, step.Entity, accepted); stepErr == nil {
+			if stepErr = referenceimage.Attach(owner, step.Entity, accepted, step.View); stepErr == nil {
 				result = accepted
 			}
 		case "close":

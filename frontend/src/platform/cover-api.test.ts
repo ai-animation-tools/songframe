@@ -108,7 +108,9 @@ describe('window.api.cover и window.api.referenceImages', () => {
     expect(reference.Context).toHaveBeenLastCalledWith('/клип', { idea: '' });
     await expect(api.referenceImages.accept('session-1')).resolves.toMatchObject({ prompt: 'Лодка' });
     await api.referenceImages.attach('session-1', 'boat');
-    expect(reference.Attach).toHaveBeenCalledWith('session-1', 'boat');
+    expect(reference.Attach).toHaveBeenCalledWith('session-1', 'boat', '');
+    await api.referenceImages.attach('session-1', 'boat', 'side');
+    expect(reference.Attach).toHaveBeenLastCalledWith('session-1', 'boat', 'side');
   });
 
   it('показывает отказ Go своим текстом и не ограничивает подготовку сроком оболочки', async () => {

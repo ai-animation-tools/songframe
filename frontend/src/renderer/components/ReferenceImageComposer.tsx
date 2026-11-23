@@ -1,11 +1,13 @@
 /** Выбор разделов остаётся отделён от ручного текста; возврат к сборке требует явного подтверждения. */
 import { useState, type ReactElement } from 'react';
-import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Checkbox, FormControlLabel, Stack, Typography } from '@mui/material';
+import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Checkbox, FormControlLabel, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import EditIcon from '@mui/icons-material/Edit';
 import { sourcesTexts } from '@shared/texts/sources';
 import { commonTexts } from '@shared/texts/common';
+import { REFERENCE_VIEW_LABELS } from '@shared/types';
+import { REFERENCE_VIEW_PROMPTS, type ReferencePromptOptions } from '@shared/reference-image-generation';
 import { REFERENCE_SECTION_LABELS, REFERENCE_SECTION_ORDER, type useReferenceImageComposer } from '../hooks/useReferenceImageComposer';
 import { ActionButton } from './ActionButton';
 import { ConfirmationDialog } from './ConfirmationDialog';
@@ -60,23 +62,12 @@ export function ReferenceImageComposer({
         </Alert>
       )}
       {composer.manual && <Alert severity="info">{sourcesTexts.referenceManualPrompt}</Alert>}
-      {/* Фон задаётся почти у каждого референса, поэтому галочка видна без раскрытия конструктора. */}
-      <Stack spacing={0}>
-        <FormControlLabel
-          label={sourcesTexts.referencePlainBackground}
-          control={
-            <Checkbox
-              checked={composer.plainBackground}
-              disabled={disabled || composer.manual}
-              onChange={(_event, checked) => onChange(() => composer.changePlainBackground(checked))}
-              slotProps={{ input: { 'aria-describedby': 'reference-plain-background-hint' } }}
-            />
-          }
-        />
-        <Typography id="reference-plain-background-hint" variant="caption" color="text.secondary">
-          {sourcesTexts.referencePlainBackgroundHint}
-        </Typography>
-      </Stack>
+      {/* Параметры задаются почти у каждого референса, поэтому видны без раскрытия конструктора. */}
+      <ReferenceOptionsPanel
+        options={composer.options}
+        disabled={disabled || composer.manual}
+        onChange={(patch) => onChange(() => composer.changeOptions(patch))}
+      />
       {/* Согласования и ошибки остаются видимыми; внутри свёрнуты только выбор разделов и их полный текст. */}
       <Accordion
         disableGutters
@@ -183,6 +174,109 @@ export function ReferenceImageComposer({
         confirmDisabled={disabled}
         confirmDisabledReason={sourcesTexts.referenceConstructorBusy}
       />
+    </Stack>
+  );
+}
+
+/** Ракурсы, которые можно выбрать: «Другое» — вид без указания, поэтому в списке его нет. */
+const VIEW_ORDER = Object.keys(REFERENCE_VIEW_PROMPTS) as NonNullable<ReferencePromptOptions['view']>[];
+
+/** Галочка параметра с пояснением, связанным с ней для экранного диктора. */
+function OptionCheckbox({
+  id,
+  label,
+  hint,
+  checked,
+  disabled,
+  onChange
+}: {
+  id: string;
+  label: string;
+  hint: string;
+  checked: boolean;
+  disabled: boolean;
+  onChange(checked: boolean): void;
+}): ReactElement {
+  return (
+    <Stack spacing={0} sx={{ minWidth: 0 }}>
+      <FormControlLabel
+        label={label}
+        control={
+          <Checkbox checked={checked} disabled={disabled} onChange={(_event, value) => onChange(value)} slotProps={{ input: { 'aria-describedby': id } }} />
+        }
+      />
+      <Typography id={id} variant="caption" color="text.secondary">
+        {hint}
+      </Typography>
+    </Stack>
+  );
+}
+
+/** Ракурс и указания исполнителю: фон, объект целиком, ровный свет. */
+function ReferenceOptionsPanel({
+  options,
+  disabled,
+  onChange
+}: {
+  options: ReferencePromptOptions;
+  disabled: boolean;
+  onChange(patch: Partial<ReferencePromptOptions>): void;
+}): ReactElement {
+  const face = options.view === 'face';
+  return (
+    <Stack component="section" aria-label={sourcesTexts.referenceOptions} spacing={1}>
+      <Typography variant="subtitle2">{sourcesTexts.referenceOptions}</Typography>
+      <Typography variant="caption" color="text.secondary">
+        {sourcesTexts.referenceOptionsHint}
+      </Typography>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: 1.5, alignItems: 'start' }}>
+        {/* Пояснение отдельной подписью: helperText недоступного поля бледнеет ниже нормы контраста. */}
+        <Stack spacing={0.5} sx={{ minWidth: 0 }}>
+          <TextField
+            select
+            size="small"
+            label={sourcesTexts.referenceView}
+            value={options.view ?? ''}
+            disabled={disabled}
+            slotProps={{ select: { SelectDisplayProps: { 'aria-describedby': 'reference-view-hint' } } }}
+            onChange={(event) => onChange({ view: (event.target.value || null) as ReferencePromptOptions['view'] })}
+          >
+            <MenuItem value="">{sourcesTexts.referenceViewNone}</MenuItem>
+            {VIEW_ORDER.map((view) => (
+              <MenuItem key={view} value={view}>
+                {REFERENCE_VIEW_LABELS[view]}
+              </MenuItem>
+            ))}
+          </TextField>
+          <Typography id="reference-view-hint" variant="caption" color="text.secondary">
+            {sourcesTexts.referenceViewHint}
+          </Typography>
+        </Stack>
+        <OptionCheckbox
+          id="reference-whole-object-hint"
+          label={sourcesTexts.referenceWholeObject}
+          hint={face ? sourcesTexts.referenceWholeObjectFace : sourcesTexts.referenceWholeObjectHint}
+          checked={options.wholeObject && !face}
+          disabled={disabled || face}
+          onChange={(wholeObject) => onChange({ wholeObject })}
+        />
+        <OptionCheckbox
+          id="reference-plain-background-hint"
+          label={sourcesTexts.referencePlainBackground}
+          hint={sourcesTexts.referencePlainBackgroundHint}
+          checked={options.plainBackground}
+          disabled={disabled}
+          onChange={(plainBackground) => onChange({ plainBackground })}
+        />
+        <OptionCheckbox
+          id="reference-even-light-hint"
+          label={sourcesTexts.referenceEvenLight}
+          hint={sourcesTexts.referenceEvenLightHint}
+          checked={options.evenLight}
+          disabled={disabled}
+          onChange={(evenLight) => onChange({ evenLight })}
+        />
+      </Box>
     </Stack>
   );
 }

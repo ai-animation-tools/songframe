@@ -3,6 +3,7 @@ import { sourcesTexts } from '@shared/texts/sources';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReferenceImageGenerationInput } from '@shared/reference-image-generation';
 import type { CoverCrop, CoverGenerationApproval, CoverGenerationSession } from '@shared/cover-generation';
+import type { ReferenceView } from '@shared/types';
 import { MEDIA_PROVIDERS } from '@shared/media-providers';
 import { priceAllowsGeneration } from '@shared/generation-consent';
 import { aiActionProblem } from '@shared/ai-access';
@@ -12,6 +13,8 @@ export interface ImageGenerationResult {
   id: string;
   path: string;
   prompt?: string;
+  /** Ракурс, выбранный в конструкторе референса; null или нет — не задан. */
+  view?: ReferenceView | null;
 }
 
 export function useImageGeneration(project: string, mode: 'cover' | 'reference' = 'cover', referenceInput?: ReferenceImageGenerationInput) {

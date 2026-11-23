@@ -160,7 +160,7 @@ describe('генерация для сохранённой сущности ка
       path: '/tmp/full.png',
       prompt: 'Герой'
     });
-    expect(api.attach).toHaveBeenCalledExactlyOnceWith('accepted', 'hero');
+    expect(api.attach).toHaveBeenCalledExactlyOnceWith('accepted', 'hero', undefined);
     expect(api.view).toHaveBeenCalledExactlyOnceWith('/project-a');
     expect(api.close).toHaveBeenCalledExactlyOnceWith('accepted');
     expect(fixture.notify).toHaveBeenCalledWith('Изображение добавлено к сущности и сохранено в исходниках', 'success');
@@ -177,8 +177,8 @@ describe('генерация для сохранённой сущности ка
     expect(api.close).not.toHaveBeenCalled();
     await accept(result);
     expect(api.attach.mock.calls).toEqual([
-      ['accepted', 'hero'],
-      ['accepted', 'hero']
+      ['accepted', 'hero', undefined],
+      ['accepted', 'hero', undefined]
     ]);
   });
 

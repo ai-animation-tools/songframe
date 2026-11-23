@@ -67,8 +67,9 @@ func (s *ReferenceImagesService) Accept(id string) (referenceimage.Result, error
 }
 
 // Attach принимает оригинал и добавляет его в исходники и к сохранённой сущности кастинга, не
-// заменяя прежние изображения. Повтор для той же сущности ничего не меняет.
-func (s *ReferenceImagesService) Attach(id, entityID string) error {
+// заменяя прежние изображения; view — ракурс из окна генерации, пустой — вид по умолчанию. Повтор
+// для той же сущности ничего не меняет.
+func (s *ReferenceImagesService) Attach(id, entityID, view string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if previous, ok := s.attached[id]; ok && previous != entityID {
@@ -82,7 +83,7 @@ func (s *ReferenceImagesService) Attach(id, entityID string) error {
 	if err != nil {
 		return err
 	}
-	if err := referenceimage.Attach(project, entityID, result); err != nil {
+	if err := referenceimage.Attach(project, entityID, result, view); err != nil {
 		return err
 	}
 	s.attached[id] = entityID

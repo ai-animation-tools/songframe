@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -26,6 +27,7 @@ const (
 	textManifestMissing = "Сначала сохраните исходники проекта на странице «Исходники»."
 	textEntityMissing   = "Сущность больше не существует. Обновите кастинг и выберите её заново."
 	textImageInvalid    = "Оригинал изображения отсутствует или имеет неверный формат."
+	textUnknownView     = "Неизвестный вид изображения референса: %q."
 )
 
 // Result — ReferenceImageResult контракта: принятый полный оригинал сессии референса. Path —
@@ -54,16 +56,19 @@ var kindDirPattern = regexp.MustCompile(`^[a-z][a-z0-9_-]*$`)
 // оригинал к сохранённой сущности кастинга и в исходники, не заменяя прежние изображения.
 //
 // Файл копируется в source/<папка типа>/<сущность>-generated-<ID сессии><расширение>, рядом —
-// точный промпт (<файл>.prompt.txt). В описи референс сущности получает новый вид (full, если
-// видов ещё не было, иначе other) с SHA-256 и размером скопированных байтов, в кастинге путь
-// дописывается в images сущности. Если у сущности ещё нет референса, он создаётся с её
+// точный промпт (<файл>.prompt.txt). В описи референс сущности получает новое изображение с SHA-256 и размером скопированных байтов, в кастинге путь
+// дописывается в images сущности. Вид изображения — view, выбранный в окне генерации (ракурс
+// из промпта); пустой view — full, если изображений ещё не было, иначе other. Если у сущности ещё нет референса, он создаётся с её
 // названием и описанием; тип world хранится среди референсов стиля, а тип без своей папки
 // получает свободную папку с суффиксом -2, -3, … без переименования прежних данных.
 //
 // Оригинал архива не меняется. Повтор для того же результата (renderer упал после ответа)
 // ничего не пишет. Отказ после начала записи возвращает точные байты описи и кастинга и удаляет
 // только созданные этим вызовом файлы.
-func Attach(project, entityID string, result Result) error {
+func Attach(project, entityID string, result Result, view string) error {
+	if view != "" && !sources.IsReferenceView(view) {
+		return fmt.Errorf(textUnknownView, view)
+	}
 	manifestValue := sources.ReadManifest(project)
 	manifest, ok := manifestValue.(*dynvalue.Object)
 	if !ok {
@@ -185,9 +190,11 @@ func Attach(project, entityID string, result Result) error {
 				return dynvalue.FsError("open", imagePath, err)
 			}
 			sum := sha256.Sum256(data)
-			view := "full"
-			if len(files.Items) > 0 {
-				view = "other"
+			if view == "" {
+				view = "full"
+				if len(files.Items) > 0 {
+					view = "other"
+				}
 			}
 			file := dynvalue.NewObject()
 			file.Set("path", relative)

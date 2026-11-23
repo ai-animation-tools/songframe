@@ -793,7 +793,7 @@ export function createApi(b: Bindings): Api {
   }
   api.cover.accept = (id, crop) => call('cover.accept', async () => (await b.cover()).Accept(id, crop));
   api.referenceImages.accept = (id) => call('referenceImages.accept', async () => (await b.referenceImages()).Accept(id));
-  api.referenceImages.attach = (id, entityId) => call('referenceImages.attach', async () => (await b.referenceImages()).Attach(id, entityId));
+  api.referenceImages.attach = (id, entityId, view) => call('referenceImages.attach', async () => (await b.referenceImages()).Attach(id, entityId, view ?? ''));
   api.referenceImages.context = (project, drafts) => call('referenceImages.context', async () => (await b.referenceImages()).Context(project, drafts ?? null));
 
   // Строки «Среды»: события environment:progress относятся к вызову по requestId; подписка

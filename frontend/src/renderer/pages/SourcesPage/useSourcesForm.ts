@@ -459,7 +459,14 @@ export function useSourcesForm() {
                       ...reference,
                       files: [
                         ...reference.files,
-                        { key: nextKey(), sourcePath: result.path, view: reference.files.length ? 'other' : 'full', note: '', prompt: result.prompt ?? '' }
+                        {
+                          key: nextKey(),
+                          sourcePath: result.path,
+                          // Ракурс из окна генерации; без него — как у загрузки: первый «В полный рост», дальше «Другое».
+                          view: result.view ?? (reference.files.length ? 'other' : 'full'),
+                          note: '',
+                          prompt: result.prompt ?? ''
+                        }
                       ]
                     }
                   : reference

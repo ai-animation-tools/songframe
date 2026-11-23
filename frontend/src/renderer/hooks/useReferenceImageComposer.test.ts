@@ -1,7 +1,11 @@
 import type * as React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  EVEN_LIGHT_PROMPT,
   PLAIN_BACKGROUND_PROMPT,
+  REFERENCE_VIEW_PROMPTS,
+  WHOLE_OBJECT_PROMPT,
+  defaultReferenceOptions,
   plainBackgroundByDefault,
   type ReferenceImageContext,
   type ReferenceImageContextDrafts
@@ -164,16 +168,30 @@ it('включает примечания только явно и обновл�
   expect(RenderHook(undefined, true, note).prompt).not.toContain(note);
 });
 
-describe('светлый однородный фон', () => {
-  it('включён по умолчанию у объектов и выключен у локации, стиля и мира', () => {
+describe('параметры изображения референса', () => {
+  const base = 'Создай изображение референса. Объект: дом.';
+  const object = defaultReferenceOptions('character');
+
+  it('у объектов включены, у локации, стиля и мира выключены, ракурс не задан', () => {
     expect(['character', 'vehicle', 'prop', 'animal', undefined].map(plainBackgroundByDefault)).toEqual([true, true, true, true, true]);
     expect(['location', 'style', 'world'].map(plainBackgroundByDefault)).toEqual([false, false, false]);
+    expect(object).toEqual({ plainBackground: true, wholeObject: true, evenLight: true, view: null });
+    expect(defaultReferenceOptions('location')).toEqual({ plainBackground: false, wholeObject: false, evenLight: false, view: null });
   });
 
-  it('идёт сразу за объектом и пропадает, когда галочку сняли', () => {
-    const base = 'Создай изображение референса. Объект: дом.';
-    const on = composeReferencePrompt(base, 'Красная крыша', null, DEFAULT_REFERENCE_SECTIONS, '', true);
-    expect(on.startsWith(`${base}\n\n${PLAIN_BACKGROUND_PROMPT}\n\n`)).toBe(true);
-    expect(composeReferencePrompt(base, 'Красная крыша', null, DEFAULT_REFERENCE_SECTIONS, '', false)).not.toContain(PLAIN_BACKGROUND_PROMPT);
+  it('идут сразу за объектом: ракурс, целиком, фон, свет', () => {
+    const prompt = composeReferencePrompt(base, 'Красная крыша', null, DEFAULT_REFERENCE_SECTIONS, '', { ...object, view: 'side' });
+    const lines = [REFERENCE_VIEW_PROMPTS.side, WHOLE_OBJECT_PROMPT, PLAIN_BACKGROUND_PROMPT, EVEN_LIGHT_PROMPT].join('\n');
+    expect(prompt.startsWith(`${base}\n\n${lines}\n\n`)).toBe(true);
+  });
+
+  it('снятый параметр не попадает в промпт, а у крупного плана лица нет «целиком»', () => {
+    const off = composeReferencePrompt(base, '', null, DEFAULT_REFERENCE_SECTIONS, '', { ...object, plainBackground: false, evenLight: false });
+    expect(off).not.toContain(PLAIN_BACKGROUND_PROMPT);
+    expect(off).not.toContain(EVEN_LIGHT_PROMPT);
+    const face = composeReferencePrompt(base, '', null, DEFAULT_REFERENCE_SECTIONS, '', { ...object, view: 'face' });
+    expect(face).toContain(REFERENCE_VIEW_PROMPTS.face);
+    expect(face).not.toContain(WHOLE_OBJECT_PROMPT);
+    expect(composeReferencePrompt(base, '', null, DEFAULT_REFERENCE_SECTIONS)).toBe(base);
   });
 });

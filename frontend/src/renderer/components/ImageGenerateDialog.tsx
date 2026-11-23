@@ -24,7 +24,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import CheckIcon from '@mui/icons-material/Check';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import { plainBackgroundByDefault, type ReferenceImageContextDrafts, type ReferenceImageOption } from '@shared/reference-image-generation';
+import { defaultReferenceOptions, type ReferenceImageContextDrafts, type ReferenceImageOption } from '@shared/reference-image-generation';
 import type { CoverCrop, CoverGenerationSession } from '@shared/cover-generation';
 import { MEDIA_PROVIDERS, mediaProviderInfo } from '@shared/media-providers';
 import { canAgreeToUnknownCost, formatCredits, priceAllowsGeneration, priceNotice } from '@shared/generation-consent';
@@ -54,7 +54,7 @@ interface Props {
   referenceInput?: { images: ReferenceImageOption[] };
   referenceContextDrafts?: ReferenceImageContextDrafts;
   referenceDescription?: string;
-  /** Вид референса (character, location…): от него зависит, включён ли светлый фон по умолчанию. */
+  /** Вид референса (character, location…): от него зависят параметры изображения по умолчанию. */
   referenceKind?: string;
   acceptedHint?: string;
   onAccepted: (result: ImageGenerationResult) => void | Promise<void>;
@@ -98,7 +98,7 @@ export function ImageGenerateDialog({
     basePrompt: initialPrompt ?? '',
     description: referenceDescription,
     supportNotes: supports.notes,
-    plainBackground: plainBackgroundByDefault(referenceKind),
+    options: defaultReferenceOptions(referenceKind),
     drafts: referenceContextDrafts
   });
   const prompt = reference ? composer.prompt : coverPrompt;
@@ -598,7 +598,8 @@ export function ImageGenerateDialog({
             onClick={() => {
               if (reference || crop)
                 void accept(crop, async (result) => {
-                  await onAccepted(result);
+                  // Ракурс из конструктора становится видом изображения при привязке.
+                  await onAccepted(reference ? { ...result, view: composer.options.view } : result);
                   if (alive.current) onClose();
                 });
             }}

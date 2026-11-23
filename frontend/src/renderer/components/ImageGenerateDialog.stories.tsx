@@ -6,7 +6,13 @@ import { Alert, Box, Stack, Typography } from '@mui/material';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { sourcesTexts } from '@shared/texts/sources';
 import { commonTexts } from '@shared/texts/common';
-import { PLAIN_BACKGROUND_PROMPT, referenceImagePrompt } from '@shared/reference-image-generation';
+import {
+  EVEN_LIGHT_PROMPT,
+  PLAIN_BACKGROUND_PROMPT,
+  REFERENCE_VIEW_PROMPTS,
+  WHOLE_OBJECT_PROMPT,
+  referenceImagePrompt
+} from '@shared/reference-image-generation';
 import type { ImageGenerationResult } from '../hooks/useImageGeneration';
 import {
   completeImageStoryCreate,
@@ -46,7 +52,7 @@ function ImageStory({
   const [accepted, setAccepted] = useState(false);
   const onAccepted = useCallback(
     async (result: ImageGenerationResult): Promise<void> => {
-      if (mode === 'reference') await window.api.referenceImages.attach(result.id, 'character-oleg');
+      if (mode === 'reference') await window.api.referenceImages.attach(result.id, 'character-oleg', result.view);
       setAccepted(true);
     },
     [mode]
@@ -230,15 +236,48 @@ export const ReferencePlainBackground: Story = {
     await expect(prompt.value).toContain(PLAIN_BACKGROUND_PROMPT);
   }
 };
+export const ReferenceViewAttach: Story = {
+  tags: ['ci'],
+  name: 'Референс — ракурс в промпте и виде изображения, у лица нет «целиком»',
+  args: { mode: 'reference', referenceKind: 'character' },
+  play: async (context) => {
+    const screen = screenOf(context);
+    const prompt = await screen.findByRole<HTMLTextAreaElement>('textbox', { name: sourcesTexts.referenceImagePrompt });
+    const whole = screen.getByRole('checkbox', { name: sourcesTexts.referenceWholeObject });
+    await expect(whole).toBeChecked();
+    await expect(screen.getByRole('checkbox', { name: sourcesTexts.referenceEvenLight })).toBeChecked();
+    await waitFor(() => expect(prompt.value).toContain(WHOLE_OBJECT_PROMPT));
+    await expect(prompt.value).toContain(EVEN_LIGHT_PROMPT);
+    const pick = async (label: string) => {
+      await userEvent.click(screen.getByRole('combobox', { name: sourcesTexts.referenceView }));
+      await userEvent.click(await screen.findByRole('option', { name: label }));
+    };
+    // Крупный план лица — не целиком: галочка недоступна, указание пропадает.
+    await pick('Лицо');
+    await expect(prompt.value).toContain(REFERENCE_VIEW_PROMPTS.face);
+    await expect(whole).toBeDisabled();
+    await expect(prompt.value).not.toContain(WHOLE_OBJECT_PROMPT);
+    await pick('Сбоку');
+    await expect(prompt.value).toContain(REFERENCE_VIEW_PROMPTS.side);
+    await expect(prompt.value).not.toContain(REFERENCE_VIEW_PROMPTS.face);
+    await expect(prompt.value).toContain(WHOLE_OBJECT_PROMPT);
+    // Принятое изображение получает выбранный ракурс как вид.
+    await candidate(context);
+    await userEvent.click(screen.getByRole('button', { name: sourcesTexts.accept }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await expect(imageStoryInspection()).toMatchObject({ attachments: ['character-oleg'], attachedViews: ['side'] });
+  }
+};
 export const ReferenceLocationBackground: Story = {
   tags: ['ci'],
-  name: 'Референс локации — светлый фон по умолчанию выключен',
+  name: 'Референс локации — фон, целиком и свет по умолчанию выключены',
   args: { mode: 'reference', referenceKind: 'location' },
   play: async (context) => {
     const screen = screenOf(context);
     const prompt = await screen.findByRole<HTMLTextAreaElement>('textbox', { name: sourcesTexts.referenceImagePrompt });
-    await expect(screen.getByRole('checkbox', { name: sourcesTexts.referencePlainBackground })).not.toBeChecked();
-    await expect(prompt.value).not.toContain(PLAIN_BACKGROUND_PROMPT);
+    for (const label of [sourcesTexts.referencePlainBackground, sourcesTexts.referenceWholeObject, sourcesTexts.referenceEvenLight])
+      await expect(screen.getByRole('checkbox', { name: label })).not.toBeChecked();
+    for (const line of [PLAIN_BACKGROUND_PROMPT, WHOLE_OBJECT_PROMPT, EVEN_LIGHT_PROMPT]) await expect(prompt.value).not.toContain(line);
   }
 };
 export const ReferenceContextAndSupports: Story = {
@@ -476,12 +515,14 @@ export const ReferenceLongStyle: Story = {
       if (screen.getByRole<HTMLInputElement>('checkbox', { name: sourcesTexts.referenceVisualStyle }).disabled) throw new Error('Контекст ещё читается.');
     });
     await expect(prompt.value).not.toContain(IMAGE_STORY_STYLE);
+    const before = prompt.value;
     await userEvent.click(screen.getByRole('checkbox', { name: sourcesTexts.referenceVisualStyle }));
     await expect(prompt.value).toContain(`80. ${IMAGE_STORY_STYLE}`);
     await expect(prompt.value).toContain('Общие визуальные правила:');
     await userEvent.click(screen.getByRole('checkbox', { name: sourcesTexts.referenceVisualStyle }));
     await expect(prompt.value).not.toContain(`80. ${IMAGE_STORY_STYLE}`);
-    await expect(prompt.value.length).toBeLessThan(400);
+    // Снятый раздел возвращает промпт к прежнему тексту целиком.
+    await expect(prompt.value).toBe(before);
   }
 };
 export const ReferenceGalleryDuringSnapshot: Story = {

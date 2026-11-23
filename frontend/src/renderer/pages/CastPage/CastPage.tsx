@@ -299,7 +299,7 @@ export function CastPage(): ReactElement {
           onAccepted={async (result) => {
             if (!projectCurrent()) throw new Error(sourcesTexts.referenceTargetChanged);
             // При ошибке окно остаётся открытым: повторяется привязка принятого оригинала, а не генерация.
-            await window.api.referenceImages.attach(result.id, generationTarget.entity.id);
+            await window.api.referenceImages.attach(result.id, generationTarget.entity.id, result.view);
             if (!projectCurrent()) return;
             await load();
             await refresh();

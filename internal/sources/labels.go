@@ -26,6 +26,13 @@ var referenceViews = map[string]string{
 	"other": "Другое",
 }
 
+// IsReferenceView — view один из видов изображения референса (full, face, front, side, back, top,
+// other).
+func IsReferenceView(view string) bool {
+	_, ok := referenceViews[view]
+	return ok
+}
+
 // noteLabelMax — наибольшая длина начала заметки в подписи, в символах.
 const noteLabelMax = 40
 

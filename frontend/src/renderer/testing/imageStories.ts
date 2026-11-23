@@ -50,6 +50,8 @@ export interface ImageModelInspection {
   creates: { mode: 'cover' | 'reference'; project: string; prompt: string; input?: ReferenceImageGenerationInput }[];
   generations: number;
   attachments: string[];
+  /** Ракурс каждой привязки по порядку; null — не задан. */
+  attachedViews: (string | null)[];
   sessions: CoverGenerationSession[];
 }
 let activeCreateRelease: (() => void) | null = null;
@@ -76,7 +78,7 @@ export function createImageModel(options: ImageModelOptions = {}): {
   completeAttachment(): void;
   dispose(): void;
 } {
-  const inspection: ImageModelInspection = { contexts: [], closes: [], creates: [], generations: 0, attachments: [], sessions: [] };
+  const inspection: ImageModelInspection = { contexts: [], closes: [], creates: [], generations: 0, attachments: [], attachedViews: [], sessions: [] };
   const sessions = new Map<string, CoverGenerationSession>();
   const accepted = new Set<string>();
   const polls = new Map<string, number>();
@@ -255,7 +257,7 @@ export function createImageModel(options: ImageModelOptions = {}): {
       accepted.add(id);
       return { id, path: IMAGE_STORY_PATH, prompt: session.prompt };
     },
-    attach: async (id, entityId) => {
+    attach: async (id, entityId, view) => {
       ready(id);
       if (!accepted.has(id)) throw new Error('Сначала примите полный оригинал.');
       if (options.failAttachmentOnce && ++attachment === 1) throw new Error(IMAGE_ATTACHMENT_ERROR);
@@ -271,6 +273,7 @@ export function createImageModel(options: ImageModelOptions = {}): {
         if (disposed) return;
       }
       inspection.attachments.push(entityId);
+      inspection.attachedViews.push(view ?? null);
     }
   };
   return {

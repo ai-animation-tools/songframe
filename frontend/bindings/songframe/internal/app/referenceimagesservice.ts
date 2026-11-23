@@ -30,10 +30,11 @@ export function Accept(id: string): $CancellablePromise<referenceimage$0.Result>
 
 /**
  * Attach принимает оригинал и добавляет его в исходники и к сохранённой сущности кастинга, не
- * заменяя прежние изображения. Повтор для той же сущности ничего не меняет.
+ * заменяя прежние изображения; view — ракурс из окна генерации, пустой — вид по умолчанию. Повтор
+ * для той же сущности ничего не меняет.
  */
-export function Attach(id: string, entityID: string): $CancellablePromise<void> {
-    return $Call.ByID(212583848, id, entityID);
+export function Attach(id: string, entityID: string, view: string): $CancellablePromise<void> {
+    return $Call.ByID(212583848, id, entityID, view);
 }
 
 /**

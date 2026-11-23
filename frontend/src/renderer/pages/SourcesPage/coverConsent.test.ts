@@ -52,7 +52,12 @@ vi.mock('../../state', () => ({
 }));
 // Этот стенд проверяет согласование уже подготовленного запроса; чтение/сборка контекста покрыты тестами конструктора.
 vi.mock('../../hooks/useReferenceImageComposer', () => ({
-  useReferenceImageComposer: () => ({ prompt: fixture.session?.prompt ?? '', ready: fixture.contextReady, loading: !fixture.contextReady })
+  useReferenceImageComposer: () => ({
+    prompt: fixture.session?.prompt ?? '',
+    ready: fixture.contextReady,
+    loading: !fixture.contextReady,
+    options: { plainBackground: true, wholeObject: true, evenLight: true, view: null }
+  })
 }));
 vi.mock('../../hooks/useImageGeneration', () => ({
   useImageGeneration: () => ({
@@ -261,7 +266,7 @@ describe('согласование обложки с текстами слова
       expect(crop).toBeNull();
       expect(onClose).not.toHaveBeenCalled();
       await apply({ id: 'reference-session', path: '/tmp/wide.png', prompt: 'Герой' });
-      expect(onAccepted).toHaveBeenCalledExactlyOnceWith({ id: 'reference-session', path: '/tmp/wide.png', prompt: 'Герой' });
+      expect(onAccepted).toHaveBeenCalledExactlyOnceWith({ id: 'reference-session', path: '/tmp/wide.png', prompt: 'Герой', view: null });
       expect(onClose).toHaveBeenCalledTimes(1);
     } finally {
       restore();

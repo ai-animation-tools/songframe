@@ -6,7 +6,7 @@ import "strconv"
 const (
 	textPackageOutside    = "Попытка должна лежать в plan/batches проекта."
 	textWorkflowInvalid   = "workflow.json попытки повреждён."
-	textStatesRequired    = "Нужны базовая опора K01 и хотя бы одно состояние после неё: подготовьте описание."
+	textStatesRequired    = "Нужна базовая опора K01: подготовьте описание."
 	textFramesNotApproved = "Сначала утвердите все опоры: сборка берёт только утверждённые."
 	textBaseFromZero      = "Базовая опора K01 видна с первого кадра плана."
 	textRecipeInvalid     = "static/recipe.json попытки повреждён: сохраните сборку заново."

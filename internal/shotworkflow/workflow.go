@@ -336,9 +336,9 @@ func (t *workflowTool) readProject() any {
 // planKeyframes — каркас K01 (первый кадр), промежуточные по времени и
 // конечная опора на границе запроса; длительность проверяется правилом generation.video проекта.
 // single — только K01: видео плана создаётся вне приложения по одной опоре, промежуточных и
-// конечной нет. static — статичный кадр: видео собирается из опор-состояний локально, поэтому
-// правило длительности запроса не действует, конечной опоры нет, а состояния (middle) лежат
-// строго внутри монтажного окна. Принятые опоры с той же ролью и временем сохраняются.
+// конечной нет. static — статичный кадр: видео собирается из K01 и необязательных опор-состояний локально,
+// поэтому правило длительности запроса не действует, конечной опоры нет, а состояния (middle)
+// лежат строго внутри монтажного окна. Принятые опоры с той же ролью и временем сохраняются.
 func (t *workflowTool) planKeyframes(dirArg string, requestSeconds toolrt.Int, middles []middle, single, static bool) (*toolrt.Dict, error) {
 	directory, err := t.packageDir(dirArg, true)
 	if err != nil {
@@ -426,15 +426,14 @@ func (t *workflowTool) planKeyframes(dirArg string, requestSeconds toolrt.Int, m
 		}
 		points = append(points, point{item.seconds, "middle", item.note})
 	}
-	if static {
-		if len(middles) == 0 {
-			return nil, valueError("У статичного кадра нужна хотя бы одна опора-состояние после K01.")
-		}
-	} else if single {
+	// Статичному кадру хватает K01: опоры-состояния необязательны, конечной опоры нет.
+	switch {
+	case static:
+	case single:
 		if len(middles) > 0 {
 			return nil, valueError("У плана с одной опорой нет промежуточных опор.")
 		}
-	} else {
+	default:
 		points = append(points, point{request, "last", "конечный кадр"})
 	}
 	items, err := keyframes(data)

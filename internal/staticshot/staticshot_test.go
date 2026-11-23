@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"image"
 	"image/color"
 	"image/png"
@@ -25,6 +26,13 @@ import (
 // project — копия общего образца проверок, где план M03 отмечен статичным кадром, а его попытка
 // M03-attempt-01 несёт две утверждённые опоры: базовую и состояние с 1,5 с.
 func project(t *testing.T) (string, string) {
+	t.Helper()
+	return projectStates(t, 0, 1.5)
+}
+
+// projectStates — тот же образец с утверждёнными опорами на секундах seconds: первая — K01 на 0,
+// следующие — состояния.
+func projectStates(t *testing.T, seconds ...float64) (string, string) {
 	t.Helper()
 	base, err := golden.Root()
 	if err != nil {
@@ -49,13 +57,13 @@ func project(t *testing.T) (string, string) {
 	var workflow map[string]any
 	readJSON(t, workflowPath, &workflow)
 	frames := []any{}
-	for index, seconds := range []float64{0, 1.5} {
-		id := []string{"K01", "K02"}[index]
+	for index, seconds := range seconds {
+		id := fmt.Sprintf("K%02d", index+1)
 		name := "frames/" + id + ".png"
 		shade := uint8(40 + 120*index)
 		writePNG(t, filepath.Join(directory, filepath.FromSlash(name)), shade)
 		frames = append(frames, map[string]any{
-			"id": id, "role": []string{"first", "middle"}[index], "time_seconds": seconds, "note": "состояние",
+			"id": id, "role": map[bool]string{true: "first", false: "middle"}[index == 0], "time_seconds": seconds, "note": "состояние",
 			"path": name, "sha256": digest(t, filepath.Join(directory, filepath.FromSlash(name))), "approved": true,
 		})
 	}
@@ -286,5 +294,32 @@ func TestBuildAndAccept(t *testing.T) {
 	}
 	if _, err := Accept(ctx, root, directory, AcceptOptions{}); err == nil {
 		t.Fatal("повторная приёмка удалённой попытки прошла")
+	}
+}
+
+// TestSingleState — статичный кадр из одной K01: неподвижный кадр с наездом сборки без смен.
+// Он собирается, принимается и проходит проверки комплекта, как кадр с состояниями.
+func TestSingleState(t *testing.T) {
+	if _, err := exec.LookPath(mediacmd.FFmpeg()); err != nil {
+		t.Skip("нет FFmpeg")
+	}
+	root, directory := projectStates(t, 0)
+	ctx := context.Background()
+	view, err := Build(ctx, root, directory, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if view.Problem != "" || len(view.States) != 1 || view.Preview == nil || !view.Preview.Fresh {
+		t.Fatalf("сборка из одной опоры: %+v", view)
+	}
+	if _, err := Accept(ctx, root, directory, AcceptOptions{Clean: true}); err != nil {
+		t.Fatal(err)
+	}
+	manifest := filepath.Join(root, "assets", "shots", "M03", "manifest.json")
+	if _, err := assetpackage.ValidatePackage(manifest, "M03", root); err != nil {
+		t.Fatal(err)
+	}
+	if assets := checkassets.Run(root, []string{"M03"}); assets.Code != 0 {
+		t.Fatalf("check_assets: %d\n%s%s", assets.Code, assets.Stdout, assets.Stderr)
 	}
 }

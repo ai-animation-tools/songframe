@@ -338,11 +338,8 @@ func parseDescription(value *dynvalue.Object, rules Rules) error {
 	if !rules.Manual && (len(frames) < 1 || len(frames) > mediaproviders.DefaultKeyframeLimit) {
 		return errors.New(textDescriptionInvalid)
 	}
-	// Статичный кадр собирается локально: запроса видео нет, правило длительности не действует,
-	// а состояний после K01 нужно хотя бы одно.
-	if rules.Static && len(frames) < 2 {
-		return errors.New(textStaticStatesRequired)
-	}
+	// Статичный кадр собирается локально: запроса видео нет и правило длительности не действует.
+	// Хватает одной K01 — неподвижный кадр с наездом сборки; опоры-состояния после неё необязательны.
 	if err := CheckDuration(seconds, rules.WindowSeconds, rules.DurationRule); err != nil && !rules.Static {
 		return err
 	}

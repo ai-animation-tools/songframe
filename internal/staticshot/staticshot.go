@@ -263,10 +263,10 @@ func sameFrames(states []RecipeState, current []State) bool {
 	return true
 }
 
-// problem — почему план пока не собрать: нужны базовая опора и хотя бы одно состояние, все
-// утверждены, K01 с кадра 0, смены строго по возрастанию внутри плана.
+// problem — почему план пока не собрать: нужна базовая опора (состояния после неё необязательны),
+// все опоры утверждены, K01 с кадра 0, смены строго по возрастанию внутри плана.
 func problem(view View) string {
-	if len(view.States) < 2 {
+	if len(view.States) < 1 {
 		return textStatesRequired
 	}
 	for index, state := range view.States {

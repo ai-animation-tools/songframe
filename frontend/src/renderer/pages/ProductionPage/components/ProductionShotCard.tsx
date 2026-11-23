@@ -80,7 +80,7 @@ export function ProductionShotCard({
   const attempt = attempts.find((pkg) => pkg.dir === selectedPackage) ?? null;
   const canDiscard = !!onDiscardAttempt && !!attempt && attempt.stage !== 'accepted' && !REQUEST_IN_FLIGHT.includes(attempt.request?.attemptStatus ?? '');
   const retryFrom = onRetryWithFrames && attempt && canRetryWithFrames(attempt) ? attempt : null;
-  // Статичному кадру нужны базовая опора и хотя бы одно состояние: попытка с одной опорой ему не подходит.
+  // Повтор с первой опорой готовит новый видеопромпт и запрос; статичный кадр собирается без них.
   const firstFrameFrom = onRetryFirstFrame && attempt && !shot.staticShot && canRetryFirstFrame(attempt) ? attempt : null;
   const paidAttempt = !!attempt && isPaidAttempt(attempt);
   // Видео, загруженное пользователем, удаляется с попыткой, а его стоимость уходит из расхода: подтверждение называет обе.

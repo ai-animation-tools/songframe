@@ -299,7 +299,7 @@ func ValidatePackage(path, shotID, root string) (*toolrt.Dict, error) {
 		if !isDict {
 			return nil, toolrt.New(toolrt.ValueError, textNoStatic)
 		}
-		if states, ok := static.Value("states").([]any); !ok || len(states) < 2 {
+		if states, ok := static.Value("states").([]any); !ok || len(states) < 1 {
 			return nil, toolrt.New(toolrt.ValueError, textNoStatic)
 		}
 	} else {

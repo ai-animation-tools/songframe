@@ -195,8 +195,8 @@ type View struct {
 	CanBuildManual   bool   `json:"canBuildManual,omitempty"`
 	SingleFrame      bool   `json:"singleFrame,omitempty"`
 	GenerationMethod string `json:"generationMethod,omitempty"`
-	// StaticShot — статичный кадр (Context.StaticShot): опор не меньше двух, предел провайдера
-	// видео к выбору их числа не относится.
+	// StaticShot — статичный кадр (Context.StaticShot): опор от одной (K01 и необязательные
+	// состояния), предел провайдера видео к выбору их числа не относится.
 	StaticShot bool `json:"staticShot,omitempty"`
 	// PromptMaxChars — предел длины видеопромпта провайдера (Context.PromptLimit): длиннее него
 	// промпт не утверждается; 0 — предела нет.
@@ -714,11 +714,11 @@ func keyframeChoice(c *Context, stage string, chosen *int, inherit bool) (int, e
 			return 0, nil
 		}
 		previous, ok := c.workflowValue("keyframe_count").(float64)
-		low, limit := 1.0, mediaproviders.KeyframeLimit(c.Settings.Value("provider"))
+		limit := mediaproviders.KeyframeLimit(c.Settings.Value("provider"))
 		if c.StaticShot {
-			low, limit = 2, mediaproviders.DefaultKeyframeLimit
+			limit = mediaproviders.DefaultKeyframeLimit
 		}
-		if !ok || !dynvalue.IsInteger(previous) || previous < low || int(previous) > limit {
+		if !ok || !dynvalue.IsInteger(previous) || previous < 1 || int(previous) > limit {
 			return 0, nil
 		}
 		return int(previous), nil
@@ -730,9 +730,9 @@ func keyframeChoice(c *Context, stage string, chosen *int, inherit bool) (int, e
 		return 0, nil
 	}
 	if c.StaticShot {
-		// Статичный кадр: база и хотя бы одно состояние; видео не генерируется, предел провайдера
+		// Статичный кадр: база и необязательные состояния; видео не генерируется, предел провайдера
 		// видео к нему не относится.
-		if *chosen < 2 || *chosen > mediaproviders.DefaultKeyframeLimit {
+		if *chosen < 1 || *chosen > mediaproviders.DefaultKeyframeLimit {
 			return 0, errors.New(textStaticKeyframeCountRange(mediaproviders.DefaultKeyframeLimit))
 		}
 		return *chosen, nil

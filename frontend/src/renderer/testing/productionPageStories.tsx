@@ -337,8 +337,8 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
           params: { ...Object.fromEntries(STATIC_STORY_SPECS.map((spec) => [spec.name, spec.default])), ...recipe?.params },
           specs: STATIC_STORY_SPECS,
           problem:
-            states.length < 2
-              ? 'Нужны базовая опора K01 и хотя бы одно состояние после неё: подготовьте описание.'
+            states.length < 1
+              ? 'Нужна базовая опора K01: подготовьте описание.'
               : states.every((state) => state.approved)
                 ? ''
                 : 'Сначала утвердите все опоры: сборка берёт только утверждённые.',

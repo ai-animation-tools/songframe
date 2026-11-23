@@ -2,6 +2,7 @@ package mediarequest
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -149,5 +150,59 @@ func TestWorkPathReferenceArchive(t *testing.T) {
 	archive := filepath.Join(root, "plan", "reference-images")
 	if _, err := WorkPath(root, archive); err == nil || err.Error() != textWorkDir {
 		t.Fatalf("корень архива: ожидался отказ %q, получено %v", textWorkDir, err)
+	}
+}
+
+// flakyAdapter — адаптер, у которого первые fails опросов состояния обрываются (сеть), а затем
+// сервис сообщает failed. calls считает опросы.
+type flakyAdapter struct {
+	fails int
+	calls *int
+}
+
+func (flakyAdapter) Submit(context.Context, string, *toolrt.Dict, *toolrt.Dict, time.Duration) (mediaapi.SubmitResult, error) {
+	return mediaapi.SubmitResult{GenerationID: "gen-1"}, nil
+}
+
+func (a flakyAdapter) Poll(context.Context, string, *toolrt.Dict, *toolrt.Dict, time.Duration) (mediaapi.PollResult, error) {
+	*a.calls++
+	if *a.calls <= a.fails {
+		return mediaapi.PollResult{}, errors.New("connection reset")
+	}
+	return mediaapi.PollResult{Status: "failed", ServiceStatus: "failed"}, nil
+}
+
+// TestWatchPollRetry — сбой опроса не обрывает watch: попытка опрашивается снова, о сбое одна
+// строка, итог — статус сервиса. После pollAttempts сбоев подряд попытка получает ошибку опроса.
+func TestWatchPollRetry(t *testing.T) {
+	restore := sleep
+	sleep = func(context.Context, float64) error { return nil }
+	defer func() { sleep = restore }()
+	for _, test := range []struct {
+		fails  int
+		status string
+		calls  int
+	}{{fails: 2, status: "failed", calls: 3}, {fails: pollAttempts, status: "error", calls: pollAttempts}} {
+		calls := 0
+		unregister := mediaadapters.Register("flaky", flakyAdapter{fails: test.fails, calls: &calls})
+		root, work, sha := prepared(t, "flaky")
+		if _, err := Submit(context.Background(), root, work, sha, nil, 60); err != nil {
+			t.Fatal(err)
+		}
+		lines := []string{}
+		entries, err := Watch(context.Background(), root, []string{work}, 30, 5, 60, func(line string) { lines = append(lines, line) })
+		unregister()
+		if err != nil || len(entries) != 1 {
+			t.Fatalf("watch: %v, %v", entries, err)
+		}
+		if status := entries[0].State.Value("status"); status != test.status || calls != test.calls {
+			t.Fatalf("сбоев %d: статус %v, опросов %d", test.fails, status, calls)
+		}
+		if lines[0] != "request: "+textPollRetry {
+			t.Fatalf("строки watch: %q", lines)
+		}
+		if test.status == "error" && entries[0].State.Value("detail") != textPollFailed {
+			t.Fatalf("причина: %v", entries[0].State.Value("detail"))
+		}
 	}
 }

@@ -73,6 +73,7 @@ const (
 	textNotUnknown       = "Действие доступно только попытке с неизвестным исходом отправки и без ID задания."
 	textWatchLimits      = "Ожидание — от 1 до 120 минут, интервал — от 5 до 300 секунд."
 	textWatchTimeout     = "время ожидания вышло; задание не отменено, повторите watch"
+	textPollRetry        = "не удалось запросить состояние, повторю через интервал"
 	textKind             = "Вид медиа должен быть image или video."
 	textManualRequest    = "Запрос ручной генерации не отправляется сервису: загрузите видео, созданное по пакету."
 	textNotManual        = "Действие доступно только пакету ручной генерации, ещё не получившему видео."
@@ -84,6 +85,14 @@ const (
 )
 
 func valueError(message string) error { return toolrt.New(toolrt.ValueError, message) }
+
+// errPollFailed — отказ опроса состояния у сервиса (сеть, ответ без статуса). Отдельное значение
+// нужно watch: он отличает временный сбой опроса от остальных отказов попытки по errors.Is.
+var errPollFailed = valueError(textPollFailed)
+
+// pollAttempts — сколько опросов подряд одной попытки watch может провалить, прежде чем отказать:
+// единичный сетевой сбой не обрывает долгое ожидание, постоянный (нет доступа) не тянется до конца срока.
+const pollAttempts = 5
 
 // Часы попытки: монотонное время в секундах, ожидание с отменой и время UTC отметок решений.
 // Тесты и эталоны подменяют их детерминированными (ожидание продвигает часы), чтобы опрос
@@ -986,14 +995,14 @@ func resume(ctx context.Context, workDir, generationID string, waitSeconds, inte
 func poll(ctx context.Context, service mediaadapters.Adapter, directory string, request, state *toolrt.Dict, timeout float64) (mediaapi.PollResult, error) {
 	poller, ok := service.(mediaapi.Poller)
 	if !ok {
-		return mediaapi.PollResult{}, valueError(textPollFailed)
+		return mediaapi.PollResult{}, errPollFailed
 	}
 	answer, err := poller.Poll(ctx, directory, request, state.Clone(), mediaapi.Seconds(timeout))
 	if err != nil && ctx.Err() != nil {
 		return mediaapi.PollResult{}, ctx.Err()
 	}
 	if err != nil || !pollStatuses[answer.Status] {
-		return mediaapi.PollResult{}, valueError(textPollFailed)
+		return mediaapi.PollResult{}, errPollFailed
 	}
 	return answer, nil
 }
@@ -1313,6 +1322,8 @@ type WatchEntry struct {
 // нескольких попыток. Опрашивает их по очереди (resume без ожидания), report получает строку
 // «<папка>: <статус>» только при смене статуса или ошибке попытки. Итог — в порядке завершения;
 // по истечении времени незавершённые получают {status, detail}, задания не отменяются.
+// Сбой опроса сервиса повторяется на следующем круге: report узнаёт о первом сбое подряд, а
+// ошибкой попытки он становится после pollAttempts неудач подряд.
 func Watch(ctx context.Context, root string, directories []string, maxMinutes, interval, timeout float64, report func(string)) ([]WatchEntry, error) {
 	if !(1 <= maxMinutes && maxMinutes <= 120) || !(5 <= interval && interval <= 300) {
 		return nil, valueError(textWatchLimits)
@@ -1331,10 +1342,21 @@ func Watch(ctx context.Context, root string, directories []string, maxMinutes, i
 		}
 	}
 	results := []WatchEntry{}
+	failures := map[string]int{}
 	deadline := monotonic() + maxMinutes*60
 	for len(order) > 0 {
 		for _, directory := range append([]string(nil), order...) {
 			state, err := resume(ctx, directory, "", 0, 15, timeout)
+			if errors.Is(err, errPollFailed) {
+				if failures[directory]++; failures[directory] < pollAttempts {
+					if failures[directory] == 1 {
+						report(toolrt.PathName(directory) + ": " + textPollRetry)
+					}
+					continue
+				}
+			} else {
+				delete(failures, directory)
+			}
 			if err != nil {
 				if !toolrt.Is(err, toolrt.ValueError) && !mediaapi.IsNotSubmitted(err) {
 					return results, err

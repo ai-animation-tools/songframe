@@ -419,8 +419,9 @@ func (k *KeyframeImages) Collect(job agents.Job) ([]mediaapi.FrameCandidate, err
 	images, imagesOK := dynvalue.AsArray(response.Value("images"))
 	_, reasonIsText := response.Value("reason").(string)
 	_, moderationIsFlag := response.Value("moderation").(bool)
-	if response.Value("schemaVersion") != float64(1) || response.Value("stage") != "frames" ||
-		keys(response, "schemaVersion", "stage", "images", "reason", "moderation") != nil || !imagesOK ||
+	// Лишние поля ответа и записей опор не читаются и результат не отменяют: агент иногда дописывает
+	// свои пометки, а годные изображения из-за них терять нельзя — генерация долгая и ограничена.
+	if response.Value("schemaVersion") != float64(1) || response.Value("stage") != "frames" || !imagesOK ||
 		(response.Has("reason") && !reasonIsText) || (response.Has("moderation") && !moderationIsFlag) {
 		return nil, errors.New(textImagesResultInvalid)
 	}
@@ -433,7 +434,7 @@ func (k *KeyframeImages) Collect(job agents.Job) ([]mediaapi.FrameCandidate, err
 		id, idOK := item.Value("id").(string)
 		path, pathOK := item.Value("path").(string)
 		_, promptOK := item.Value("prompt").(string)
-		if !idOK || !pathOK || keys(item, "id", "path", "prompt") != nil || (item.Has("prompt") && !promptOK) {
+		if !idOK || !pathOK || (item.Has("prompt") && !promptOK) {
 			return nil, errors.New(textImagesFramePathInvalid)
 		}
 		file := dynvalue.Resolve(directory, path)

@@ -478,3 +478,17 @@ func TestKeyframeImagesGeneratorPrompt(t *testing.T) {
 		t.Fatal("задание не просит вернуть промпт генератора")
 	}
 }
+
+// Пометки агента в лишних полях ответа и записи опоры результат не отменяют: годная опора принимается.
+func TestKeyframeImagesCollectIgnoresExtraFields(t *testing.T) {
+	images, manager, input := keyframesFixture(t)
+	if _, err := images.Start(input, agentexec.ImagesRequest{Provider: "test-agent", RequestSha: "sha", Agent: agents.Settings{Provider: "codex"}}); err != nil {
+		t.Fatal(err)
+	}
+	answer := `{"schemaVersion":1,"stage":"frames","images":[{"id":"K01","path":"K01.png","prompt":"Лодка","note":"x"}],"notes":"Сохранён результат повтора."}`
+	job := finishJob(t, manager, "K01.png", answer)
+	candidates, err := images.Collect(job)
+	if err != nil || len(candidates) != 1 || candidates[0].ID != "K01" {
+		t.Fatalf("кандидаты %v, ошибка %v", candidates, err)
+	}
+}

@@ -94,8 +94,8 @@
     "5dc6ee4ba6cc4979a8a76630ad703f6d5f33cdd4990c350b1a4e97edcbe16541": "{\n  \"proposal\": {\n    \"id\": \"<id>\",\n    \"jobId\": \"job-1\",\n    \"stage\": \"frames\",\n    \"status\": \"ready\",\n    \"stale\": false,\n    \"before\": \"[{\\\"id\\\":\\\"K01\\\",\\\"role\\\":\\\"first\\\",\\\"time_seconds\\\":0,\\\"note\\\":\\\"опора K01\\\",\\\"path\\\":null,\\\"sha256\\\":null,\\\"approved\\\":false},{\\\"id\\\":\\\"K02\\\",\\\"role\\\":\\\"last\\\",\\\"time_seconds\\\":9,\\\"note\\\":\\\"опора K02\\\",\\\"path\\\":null,\\\"sha256\\\":null,\\\"approved\\\":false}]\",\n    \"after\": {\n      \"schemaVersion\": 1,\n      \"stage\": \"frames\",\n      \"images\": [\n        {\n          \"id\": \"K01\",\n          \"path\": \"plan/batches/proposals/M01/K01.png\"\n        }\n      ]\n    }\n  },\n  \"packageDir\": \"plan/batches/M01-attempt-01\",\n  \"target\": \"plan/batches/M01-attempt-01\",\n  \"hashes\": {\n    \"plan/batches/M01-attempt-01/\": \"62a7cc3412fc9d9d5717a38009486ed84611f845db2539f34c0f46566caff5c9\",\n    \"plan/batches/M01-attempt-01/description.md\": \"0169c11107f9508dc2413ca401259a5327340b38ae735a626fb670b9c08a9d69\",\n    \"plan/batches/M01-attempt-01/keyframe-prompts.json\": \"5d0b3755a10dbcb6d3cbcf7096d3e0335dca1d8389e2865c94dc2b970d4e32e4\",\n    \"plan/batches/M01-attempt-01/workflow.json\": \"7a58a283880b425ff5dabde560cca1f072032be5e977086863952aee71368ece\",\n    \"plan/cast.json\": \"efbaf4c0b64ed7149577eea0ee06d03adeea24a25af0c9a79da530acf962c8bf\",\n    \"plan/project.json\": \"073448c98d17609c65a32a618dc42a43ebf13fd7322520b7137a35cee3768637\",\n    \"plan/scenes.json\": \"21ace587f4d4a1ba7170cacd7d61beee17adc894d0aef818862e8b90a001ef4e\",\n    \"source/description.md\": \"73740c9758b5cd11ad19bacccc63760d4c63b532bedaff13ed2a2f55bd3d0037\",\n    \"source/locations/pier.png\": \"d226dce6924121c33e7c79a6a65da395c0d2398e0486033d46484a528c7f900e\",\n    \"source/manifest.json\": \"9003b4e856f2fd18ee7449c3a04a7c28253c7bc722162ec55d1eca4b91af29dc\",\n    \"source/text.md\": \"bc8939f30286d2e4b2c4154fa819f4c245e58563ba787f9fa345abb222ece0a0\",\n    \"source/track.mp3\": \"d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640\",\n    \"source/vehicles/boat.png\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n  },\n  \"rules\": {\n    \"stage\": \"frames\",\n    \"windowSeconds\": 8,\n    \"durationRule\": \"min_supported_strictly_greater_than_window\",\n    \"requestSeconds\": 9,\n    \"allowedPaths\": [\n      \"source/description.md\",\n      \"source/locations/pier.png\",\n      \"source/text.md\",\n      \"source/track.mp3\",\n      \"source/vehicles/boat.png\"\n    ],\n    \"framePrompts\": [\n      {\n        \"id\": \"K01\",\n        \"role\": \"first\",\n        \"timeSeconds\": 0,\n        \"prompt\": \"Лодка у берега\",\n        \"referencePaths\": [\n          \"source/vehicles/boat.png\"\n        ]\n      }\n    ],\n    \"lipSync\": null\n  },\n  \"imageJob\": true,\n  \"imageProvider\": \"codex\",\n  \"imageHashes\": {\n    \"plan/batches/proposals/M01/K01.png\": \"d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3\"\n  }\n}\n",
     "24187370897ed5c4c792b10356c5e217b0526f3470596eba0f5f465a3d60e9d0": "{\n  \"proposal\": {\n    \"id\": \"<id>\",\n    \"jobId\": \"job-1\",\n    \"stage\": \"frames\",\n    \"status\": \"ready\",\n    \"stale\": false,\n    \"before\": \"[{\\\"id\\\":\\\"K01\\\",\\\"role\\\":\\\"first\\\",\\\"time_seconds\\\":0,\\\"note\\\":\\\"опора K01\\\",\\\"path\\\":\\\"frames/K01.png\\\",\\\"sha256\\\":\\\"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\\\",\\\"approved\\\":true},{\\\"id\\\":\\\"K02\\\",\\\"role\\\":\\\"last\\\",\\\"time_seconds\\\":9,\\\"note\\\":\\\"опора K02\\\",\\\"path\\\":null,\\\"sha256\\\":null,\\\"approved\\\":false}]\",\n    \"after\": {\n      \"schemaVersion\": 1,\n      \"stage\": \"frames\",\n      \"images\": [\n        {\n          \"id\": \"K02\",\n          \"path\": \"plan/batches/proposals/M01/K02.png\"\n        }\n      ]\n    }\n  },\n  \"packageDir\": \"plan/batches/M01-attempt-01\",\n  \"target\": \"plan/batches/M01-attempt-01\",\n  \"hashes\": {\n    \"plan/batches/M01-attempt-01/\": \"855d706f671e4d2a9253cd809b1649627fc7434de652578b5f5a927777f40fc8\",\n    \"plan/batches/M01-attempt-01/description.md\": \"0169c11107f9508dc2413ca401259a5327340b38ae735a626fb670b9c08a9d69\",\n    \"plan/batches/M01-attempt-01/frames/\": \"851540aae73c3005019949623e92cbe785fcb7b2ac623b210d26f324d5a9c977\",\n    \"plan/batches/M01-attempt-01/frames/K01.png\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\",\n    \"plan/batches/M01-attempt-01/keyframe-prompts.json\": \"5d0b3755a10dbcb6d3cbcf7096d3e0335dca1d8389e2865c94dc2b970d4e32e4\",\n    \"plan/batches/M01-attempt-01/workflow.json\": \"a06e8ebdd60083a53155e4b0b08ef49192ced00c34123ea4c44b8fbd0d753f74\",\n    \"plan/cast.json\": \"efbaf4c0b64ed7149577eea0ee06d03adeea24a25af0c9a79da530acf962c8bf\",\n    \"plan/project.json\": \"073448c98d17609c65a32a618dc42a43ebf13fd7322520b7137a35cee3768637\",\n    \"plan/scenes.json\": \"21ace587f4d4a1ba7170cacd7d61beee17adc894d0aef818862e8b90a001ef4e\",\n    \"source/description.md\": \"73740c9758b5cd11ad19bacccc63760d4c63b532bedaff13ed2a2f55bd3d0037\",\n    \"source/locations/pier.png\": \"d226dce6924121c33e7c79a6a65da395c0d2398e0486033d46484a528c7f900e\",\n    \"source/manifest.json\": \"9003b4e856f2fd18ee7449c3a04a7c28253c7bc722162ec55d1eca4b91af29dc\",\n    \"source/text.md\": \"bc8939f30286d2e4b2c4154fa819f4c245e58563ba787f9fa345abb222ece0a0\",\n    \"source/track.mp3\": \"d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640\",\n    \"source/vehicles/boat.png\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n  },\n  \"rules\": {\n    \"stage\": \"frames\",\n    \"windowSeconds\": 8,\n    \"durationRule\": \"min_supported_strictly_greater_than_window\",\n    \"requestSeconds\": 9,\n    \"allowedPaths\": [\n      \"plan/batches/M01-attempt-01/frames/K01.png\",\n      \"source/description.md\",\n      \"source/locations/pier.png\",\n      \"source/text.md\",\n      \"source/track.mp3\",\n      \"source/vehicles/boat.png\"\n    ],\n    \"framePrompts\": [\n      {\n        \"id\": \"K02\",\n        \"role\": \"last\",\n        \"timeSeconds\": 9,\n        \"prompt\": \"Лодка у пристани\",\n        \"referencePaths\": [\n          \"source/vehicles/boat.png\"\n        ]\n      }\n    ],\n    \"lipSync\": null\n  },\n  \"imageJob\": true,\n  \"imageProvider\": \"codex\",\n  \"imageHashes\": {\n    \"plan/batches/proposals/M01/K02.png\": \"d36f8b83b04fff225e082ffcd6766174861938956de674efdc976180f63ee3bd\"\n  }\n}\n",
     "e96d42d4412e5bf66ccfaf4a8683e1e062721b2ceb4fbeed11ccfe353a24841c": "{\n  \"proposal\": {\n    \"id\": \"<id>\",\n    \"jobId\": \"job-18\",\n    \"stage\": \"frames\",\n    \"status\": \"ready\",\n    \"stale\": false,\n    \"before\": \"[{\\\"id\\\":\\\"K01\\\",\\\"role\\\":\\\"first\\\",\\\"time_seconds\\\":0,\\\"note\\\":\\\"опора K01\\\",\\\"path\\\":null,\\\"sha256\\\":null,\\\"approved\\\":false},{\\\"id\\\":\\\"K02\\\",\\\"role\\\":\\\"last\\\",\\\"time_seconds\\\":9,\\\"note\\\":\\\"опора K02\\\",\\\"path\\\":null,\\\"sha256\\\":null,\\\"approved\\\":false}]\",\n    \"after\": {\n      \"schemaVersion\": 1,\n      \"stage\": \"frames\",\n      \"images\": [\n        {\n          \"id\": \"K01\",\n          \"path\": \"plan/batches/proposals/M01/K01.png\"\n        }\n      ]\n    }\n  },\n  \"packageDir\": \"plan/batches/M01-attempt-01\",\n  \"target\": \"plan/batches/M01-attempt-01\",\n  \"hashes\": {\n    \"plan/batches/M01-attempt-01/\": \"62a7cc3412fc9d9d5717a38009486ed84611f845db2539f34c0f46566caff5c9\",\n    \"plan/batches/M01-attempt-01/description.md\": \"0169c11107f9508dc2413ca401259a5327340b38ae735a626fb670b9c08a9d69\",\n    \"plan/batches/M01-attempt-01/keyframe-prompts.json\": \"5d0b3755a10dbcb6d3cbcf7096d3e0335dca1d8389e2865c94dc2b970d4e32e4\",\n    \"plan/batches/M01-attempt-01/workflow.json\": \"7a58a283880b425ff5dabde560cca1f072032be5e977086863952aee71368ece\",\n    \"plan/cast.json\": \"efbaf4c0b64ed7149577eea0ee06d03adeea24a25af0c9a79da530acf962c8bf\",\n    \"plan/project.json\": \"073448c98d17609c65a32a618dc42a43ebf13fd7322520b7137a35cee3768637\",\n    \"plan/scenes.json\": \"21ace587f4d4a1ba7170cacd7d61beee17adc894d0aef818862e8b90a001ef4e\",\n    \"source/description.md\": \"73740c9758b5cd11ad19bacccc63760d4c63b532bedaff13ed2a2f55bd3d0037\",\n    \"source/locations/pier.png\": \"d226dce6924121c33e7c79a6a65da395c0d2398e0486033d46484a528c7f900e\",\n    \"source/manifest.json\": \"9003b4e856f2fd18ee7449c3a04a7c28253c7bc722162ec55d1eca4b91af29dc\",\n    \"source/text.md\": \"bc8939f30286d2e4b2c4154fa819f4c245e58563ba787f9fa345abb222ece0a0\",\n    \"source/track.mp3\": \"d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640\",\n    \"source/vehicles/boat.png\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n  },\n  \"rules\": {\n    \"stage\": \"frames\",\n    \"windowSeconds\": 8,\n    \"durationRule\": \"min_supported_strictly_greater_than_window\",\n    \"requestSeconds\": 9,\n    \"allowedPaths\": [\n      \"source/description.md\",\n      \"source/locations/pier.png\",\n      \"source/text.md\",\n      \"source/track.mp3\",\n      \"source/vehicles/boat.png\"\n    ],\n    \"framePrompts\": [\n      {\n        \"id\": \"K01\",\n        \"role\": \"first\",\n        \"timeSeconds\": 0,\n        \"prompt\": \"Лодка у берега\",\n        \"referencePaths\": [\n          \"source/vehicles/boat.png\"\n        ]\n      }\n    ],\n    \"lipSync\": null\n  },\n  \"imageJob\": true,\n  \"imageProvider\": \"codex\",\n  \"imageHashes\": {\n    \"plan/batches/proposals/M01/K01.png\": \"d08c3189eeacb8c966cb6789381d7a4928b868750d376a1677fe52a042cc3fc3\"\n  }\n}\n",
-    "48f7d35274498562b10272686aff53a29294aa592cfc3f8cdb9c81db18d9b5b7": "Создай перечисленные опорные изображения встроенным инструментом генерации изображений. Используй только переданные копии референсов. references — что на каждой копии: file — имя копии, entity — ID сущности кастинга, name — её имя, kind — вид (например, character — персонаж, location — место, prop — предмет). Когда промпт опоры или notes называют референс по имени (референс «Мастерская»), это копия с таким name; не определяй принадлежность копии по её содержимому. Передай генератору все копии из referencePaths создаваемой опоры и в его промпте назови по name, какая копия чья. Сохрани каждый результат как Kxx.png, Kxx.jpg или Kxx.webp в текущей папке, сохраняя фактический формат генератора. Не используй внешние сервисы генерации, API-ключи или другие генераторы. Если встроенный image tool недоступен, сообщи об этом и не подменяй его другим способом. Не изменяй референсы, исходный проект или принятые материалы. В prompt каждого результата верни дословно промпт, который ты передал генератору для этого изображения (после повтора — последний). Финальный ответ — один JSON без Markdown: {\"schemaVersion\":1,\"stage\":\"frames\",\"images\":[{\"id\":\"K01\",\"path\":\"K01.png\",\"prompt\":\"промпт генератора\"}]}. Если какое-то изображение не создано, не добавляй его в images и добавь в ответ поле reason — одной-двумя фразами, что именно произошло, дословно с сообщением генератора об отказе; если генератор отклонил запрос по правилам содержания (модерация), добавь ещё moderation=true.",
-    "da1ce1be8aff4d03c08f682ac0bf845bb26fd0a4bb94682a175b8dbb95d5aee4": "Создай перечисленные опорные изображения встроенным инструментом генерации изображений. Используй только переданные копии референсов. references — что на каждой копии: file — имя копии, entity — ID сущности кастинга, name — её имя, kind — вид (например, character — персонаж, location — место, prop — предмет). Когда промпт опоры или notes называют референс по имени (референс «Мастерская»), это копия с таким name; не определяй принадлежность копии по её содержимому. Передай генератору все копии из referencePaths создаваемой опоры и в его промпте назови по name, какая копия чья. approvedFrames — уже утверждённые кадры этого же плана, основа создаваемой опоры: передай их генератору как референсы. Промпт опоры описывает кадр целиком, в том числе то, что совпадает с утверждёнными: сохрани как на них всё, что он прямо не меняет (внешность и одежду героев, форму и вид предметов, свет, место, ракурс, расстановку и направление транспорта и героев). Если notes создаваемой опоры просят взять за основу утверждённую опору, передай её генератору первым входом и редактируй её: меняй только названное в notes, остальное сохрани как на ней, даже если промпт опоры описывает кадр иначе. notes — исправления пользователя к прежним вариантам: выполни их, они важнее промпта опоры и совпадения с прежним результатом. Сохрани каждый результат как Kxx.png, Kxx.jpg или Kxx.webp в текущей папке, сохраняя фактический формат генератора. Не используй внешние сервисы генерации, API-ключи или другие генераторы. Если встроенный image tool недоступен, сообщи об этом и не подменяй его другим способом. Не изменяй референсы, исходный проект или принятые материалы. В prompt каждого результата верни дословно промпт, который ты передал генератору для этого изображения (после повтора — последний). Финальный ответ — один JSON без Markdown: {\"schemaVersion\":1,\"stage\":\"frames\",\"images\":[{\"id\":\"K01\",\"path\":\"K01.png\",\"prompt\":\"промпт генератора\"}]}. Если какое-то изображение не создано, не добавляй его в images и добавь в ответ поле reason — одной-двумя фразами, что именно произошло, дословно с сообщением генератора об отказе; если генератор отклонил запрос по правилам содержания (модерация), добавь ещё moderation=true.",
+    "75b58ae7a87c60ee122aab25cf0301b5598e42a6555d9ce1fcd8bfd34dc311d2": "Создай перечисленные опорные изображения встроенным инструментом генерации изображений. Используй только переданные копии референсов. references — что на каждой копии: file — имя копии, entity — ID сущности кастинга, name — её имя, kind — вид (например, character — персонаж, location — место, prop — предмет). Когда промпт опоры или notes называют референс по имени (референс «Мастерская»), это копия с таким name; не определяй принадлежность копии по её содержимому. Передай генератору все копии из referencePaths создаваемой опоры и в его промпте назови по name, какая копия чья. Сохрани каждый результат как Kxx.png, Kxx.jpg или Kxx.webp в текущей папке, сохраняя фактический формат генератора. Не используй внешние сервисы генерации, API-ключи или другие генераторы. Если встроенный image tool недоступен, сообщи об этом и не подменяй его другим способом. Не изменяй референсы, исходный проект или принятые материалы. В prompt каждого результата верни дословно промпт, который ты передал генератору для этого изображения (после повтора — последний). Финальный ответ — один JSON без Markdown: {\"schemaVersion\":1,\"stage\":\"frames\",\"images\":[{\"id\":\"K01\",\"path\":\"K01.png\",\"prompt\":\"промпт генератора\"}]}. Других полей в ответ и в элементы images не добавляй: собственные пометки о результате приложение не читает. Если какое-то изображение не создано, не добавляй его в images и добавь в ответ поле reason — одной-двумя фразами, что именно произошло, дословно с сообщением генератора об отказе; если генератор отклонил запрос по правилам содержания (модерация), добавь ещё moderation=true.",
+    "4dff626d5866ef4664e159db545cdbd844c3a7c83f0c9886324ba433ddc28b29": "Создай перечисленные опорные изображения встроенным инструментом генерации изображений. Используй только переданные копии референсов. references — что на каждой копии: file — имя копии, entity — ID сущности кастинга, name — её имя, kind — вид (например, character — персонаж, location — место, prop — предмет). Когда промпт опоры или notes называют референс по имени (референс «Мастерская»), это копия с таким name; не определяй принадлежность копии по её содержимому. Передай генератору все копии из referencePaths создаваемой опоры и в его промпте назови по name, какая копия чья. approvedFrames — уже утверждённые кадры этого же плана, основа создаваемой опоры: передай их генератору как референсы. Промпт опоры описывает кадр целиком, в том числе то, что совпадает с утверждёнными: сохрани как на них всё, что он прямо не меняет (внешность и одежду героев, форму и вид предметов, свет, место, ракурс, расстановку и направление транспорта и героев). Если notes создаваемой опоры просят взять за основу утверждённую опору, передай её генератору первым входом и редактируй её: меняй только названное в notes, остальное сохрани как на ней, даже если промпт опоры описывает кадр иначе. notes — исправления пользователя к прежним вариантам: выполни их, они важнее промпта опоры и совпадения с прежним результатом. Сохрани каждый результат как Kxx.png, Kxx.jpg или Kxx.webp в текущей папке, сохраняя фактический формат генератора. Не используй внешние сервисы генерации, API-ключи или другие генераторы. Если встроенный image tool недоступен, сообщи об этом и не подменяй его другим способом. Не изменяй референсы, исходный проект или принятые материалы. В prompt каждого результата верни дословно промпт, который ты передал генератору для этого изображения (после повтора — последний). Финальный ответ — один JSON без Markdown: {\"schemaVersion\":1,\"stage\":\"frames\",\"images\":[{\"id\":\"K01\",\"path\":\"K01.png\",\"prompt\":\"промпт генератора\"}]}. Других полей в ответ и в элементы images не добавляй: собственные пометки о результате приложение не читает. Если какое-то изображение не создано, не добавляй его в images и добавь в ответ поле reason — одной-двумя фразами, что именно произошло, дословно с сообщением генератора об отказе; если генератор отклонил запрос по правилам содержания (модерация), добавь ещё moderation=true.",
     "0aabca26a8dfa75f0e248f438fed3a7455de556938974474bf39f7f4537893cf": "{\n  \"proposal\": {\n    \"id\": \"<id>\",\n    \"jobId\": \"job-1\",\n    \"stage\": \"frames\",\n    \"status\": \"invalid\",\n    \"stale\": false,\n    \"before\": \"[{\\\"id\\\":\\\"K01\\\",\\\"role\\\":\\\"first\\\",\\\"time_seconds\\\":0,\\\"note\\\":\\\"опора K01\\\",\\\"path\\\":null,\\\"sha256\\\":null,\\\"approved\\\":false},{\\\"id\\\":\\\"K02\\\",\\\"role\\\":\\\"last\\\",\\\"time_seconds\\\":9,\\\"note\\\":\\\"опора K02\\\",\\\"path\\\":null,\\\"sha256\\\":null,\\\"approved\\\":false}]\",\n    \"after\": null,\n    \"message\": \"Codex не вернул список файлов опор. Сообщение агента: «Не могу нарисовать»\"\n  },\n  \"packageDir\": \"plan/batches/M01-attempt-01\",\n  \"target\": \"plan/batches/M01-attempt-01\",\n  \"hashes\": {\n    \"plan/batches/M01-attempt-01/\": \"62a7cc3412fc9d9d5717a38009486ed84611f845db2539f34c0f46566caff5c9\",\n    \"plan/batches/M01-attempt-01/description.md\": \"0169c11107f9508dc2413ca401259a5327340b38ae735a626fb670b9c08a9d69\",\n    \"plan/batches/M01-attempt-01/keyframe-prompts.json\": \"5d0b3755a10dbcb6d3cbcf7096d3e0335dca1d8389e2865c94dc2b970d4e32e4\",\n    \"plan/batches/M01-attempt-01/workflow.json\": \"7a58a283880b425ff5dabde560cca1f072032be5e977086863952aee71368ece\",\n    \"plan/cast.json\": \"efbaf4c0b64ed7149577eea0ee06d03adeea24a25af0c9a79da530acf962c8bf\",\n    \"plan/project.json\": \"073448c98d17609c65a32a618dc42a43ebf13fd7322520b7137a35cee3768637\",\n    \"plan/scenes.json\": \"21ace587f4d4a1ba7170cacd7d61beee17adc894d0aef818862e8b90a001ef4e\",\n    \"source/description.md\": \"73740c9758b5cd11ad19bacccc63760d4c63b532bedaff13ed2a2f55bd3d0037\",\n    \"source/locations/pier.png\": \"d226dce6924121c33e7c79a6a65da395c0d2398e0486033d46484a528c7f900e\",\n    \"source/manifest.json\": \"9003b4e856f2fd18ee7449c3a04a7c28253c7bc722162ec55d1eca4b91af29dc\",\n    \"source/text.md\": \"bc8939f30286d2e4b2c4154fa819f4c245e58563ba787f9fa345abb222ece0a0\",\n    \"source/track.mp3\": \"d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640\",\n    \"source/vehicles/boat.png\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n  },\n  \"rules\": {\n    \"stage\": \"frames\",\n    \"windowSeconds\": 8,\n    \"durationRule\": \"min_supported_strictly_greater_than_window\",\n    \"requestSeconds\": 9,\n    \"allowedPaths\": [\n      \"source/description.md\",\n      \"source/locations/pier.png\",\n      \"source/text.md\",\n      \"source/track.mp3\",\n      \"source/vehicles/boat.png\"\n    ],\n    \"framePrompts\": [\n      {\n        \"id\": \"K01\",\n        \"role\": \"first\",\n        \"timeSeconds\": 0,\n        \"prompt\": \"Лодка у берега\",\n        \"referencePaths\": [\n          \"source/vehicles/boat.png\"\n        ]\n      }\n    ],\n    \"lipSync\": null\n  },\n  \"imageJob\": true\n}\n",
     "99b667e6c674aa9d53283ede134d2d287f98e297af907848094bd3009006e7d9": "{\n  \"proposal\": {\n    \"id\": \"<id>\",\n    \"jobId\": \"job-2\",\n    \"stage\": \"frames\",\n    \"status\": \"invalid\",\n    \"stale\": false,\n    \"before\": \"[{\\\"id\\\":\\\"K01\\\",\\\"role\\\":\\\"first\\\",\\\"time_seconds\\\":0,\\\"note\\\":\\\"опора K01\\\",\\\"path\\\":null,\\\"sha256\\\":null,\\\"approved\\\":false},{\\\"id\\\":\\\"K02\\\",\\\"role\\\":\\\"last\\\",\\\"time_seconds\\\":9,\\\"note\\\":\\\"опора K02\\\",\\\"path\\\":null,\\\"sha256\\\":null,\\\"approved\\\":false}]\",\n    \"after\": null,\n    \"message\": \"Codex не вернул список файлов опор.\"\n  },\n  \"packageDir\": \"plan/batches/M01-attempt-01\",\n  \"target\": \"plan/batches/M01-attempt-01\",\n  \"hashes\": {\n    \"plan/batches/M01-attempt-01/\": \"62a7cc3412fc9d9d5717a38009486ed84611f845db2539f34c0f46566caff5c9\",\n    \"plan/batches/M01-attempt-01/description.md\": \"0169c11107f9508dc2413ca401259a5327340b38ae735a626fb670b9c08a9d69\",\n    \"plan/batches/M01-attempt-01/keyframe-prompts.json\": \"5d0b3755a10dbcb6d3cbcf7096d3e0335dca1d8389e2865c94dc2b970d4e32e4\",\n    \"plan/batches/M01-attempt-01/workflow.json\": \"7a58a283880b425ff5dabde560cca1f072032be5e977086863952aee71368ece\",\n    \"plan/cast.json\": \"efbaf4c0b64ed7149577eea0ee06d03adeea24a25af0c9a79da530acf962c8bf\",\n    \"plan/project.json\": \"073448c98d17609c65a32a618dc42a43ebf13fd7322520b7137a35cee3768637\",\n    \"plan/scenes.json\": \"21ace587f4d4a1ba7170cacd7d61beee17adc894d0aef818862e8b90a001ef4e\",\n    \"source/description.md\": \"73740c9758b5cd11ad19bacccc63760d4c63b532bedaff13ed2a2f55bd3d0037\",\n    \"source/locations/pier.png\": \"d226dce6924121c33e7c79a6a65da395c0d2398e0486033d46484a528c7f900e\",\n    \"source/manifest.json\": \"9003b4e856f2fd18ee7449c3a04a7c28253c7bc722162ec55d1eca4b91af29dc\",\n    \"source/text.md\": \"bc8939f30286d2e4b2c4154fa819f4c245e58563ba787f9fa345abb222ece0a0\",\n    \"source/track.mp3\": \"d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640\",\n    \"source/vehicles/boat.png\": \"4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe\"\n  },\n  \"rules\": {\n    \"stage\": \"frames\",\n    \"windowSeconds\": 8,\n    \"durationRule\": \"min_supported_strictly_greater_than_window\",\n    \"requestSeconds\": 9,\n    \"allowedPaths\": [\n      \"source/description.md\",\n      \"source/locations/pier.png\",\n      \"source/text.md\",\n      \"source/track.mp3\",\n      \"source/vehicles/boat.png\"\n    ],\n    \"framePrompts\": [\n      {\n        \"id\": \"K01\",\n        \"role\": \"first\",\n        \"timeSeconds\": 0,\n        \"prompt\": \"Лодка у берега\",\n        \"referencePaths\": [\n          \"source/vehicles/boat.png\"\n        ]\n      }\n    ],\n    \"lipSync\": null\n  },\n  \"imageJob\": true\n}\n"
   },
@@ -486,7 +486,7 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "48f7d35274498562b10272686aff53a29294aa592cfc3f8cdb9c81db18d9b5b7",
+              "prompt": "75b58ae7a87c60ee122aab25cf0301b5598e42a6555d9ce1fcd8bfd34dc311d2",
               "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
@@ -1533,7 +1533,7 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K02 · Codex",
-              "prompt": "da1ce1be8aff4d03c08f682ac0bf845bb26fd0a4bb94682a175b8dbb95d5aee4",
+              "prompt": "4dff626d5866ef4664e159db545cdbd844c3a7c83f0c9886324ba433ddc28b29",
               "context": "5982a9b800a0a9bb3f4760e42daf36b2c7e0cad8f33a9afe7461703bef5a1184",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
@@ -2023,7 +2023,7 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "48f7d35274498562b10272686aff53a29294aa592cfc3f8cdb9c81db18d9b5b7",
+              "prompt": "75b58ae7a87c60ee122aab25cf0301b5598e42a6555d9ce1fcd8bfd34dc311d2",
               "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
@@ -2276,7 +2276,7 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "48f7d35274498562b10272686aff53a29294aa592cfc3f8cdb9c81db18d9b5b7",
+              "prompt": "75b58ae7a87c60ee122aab25cf0301b5598e42a6555d9ce1fcd8bfd34dc311d2",
               "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
@@ -2529,7 +2529,7 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "48f7d35274498562b10272686aff53a29294aa592cfc3f8cdb9c81db18d9b5b7",
+              "prompt": "75b58ae7a87c60ee122aab25cf0301b5598e42a6555d9ce1fcd8bfd34dc311d2",
               "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
@@ -2543,8 +2543,7 @@
           "result": {
             "schemaVersion": 1,
             "stage": "frames",
-            "images": [],
-            "extra": 1
+            "images": {}
           },
           "local": "unchanged",
           "packages": "unchanged",
@@ -2624,7 +2623,7 @@
               "startedAt": "",
               "finishedAt": null,
               "exitCode": 0,
-              "result": "{\"schemaVersion\":1,\"stage\":\"frames\",\"images\":[],\"extra\":1}",
+              "result": "{\"schemaVersion\":1,\"stage\":\"frames\",\"images\":{}}",
               "log": ""
             }
           },
@@ -2787,7 +2786,7 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "48f7d35274498562b10272686aff53a29294aa592cfc3f8cdb9c81db18d9b5b7",
+              "prompt": "75b58ae7a87c60ee122aab25cf0301b5598e42a6555d9ce1fcd8bfd34dc311d2",
               "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
@@ -3046,7 +3045,7 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "48f7d35274498562b10272686aff53a29294aa592cfc3f8cdb9c81db18d9b5b7",
+              "prompt": "75b58ae7a87c60ee122aab25cf0301b5598e42a6555d9ce1fcd8bfd34dc311d2",
               "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
@@ -3063,8 +3062,7 @@
             "images": [
               {
                 "id": "K01",
-                "path": "K01.png",
-                "note": "x"
+                "path": 1
               }
             ]
           },
@@ -3146,7 +3144,7 @@
               "startedAt": "",
               "finishedAt": null,
               "exitCode": 0,
-              "result": "{\"schemaVersion\":1,\"stage\":\"frames\",\"images\":[{\"id\":\"K01\",\"path\":\"K01.png\",\"note\":\"x\"}]}",
+              "result": "{\"schemaVersion\":1,\"stage\":\"frames\",\"images\":[{\"id\":\"K01\",\"path\":1}]}",
               "log": ""
             }
           },
@@ -3309,7 +3307,7 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "48f7d35274498562b10272686aff53a29294aa592cfc3f8cdb9c81db18d9b5b7",
+              "prompt": "75b58ae7a87c60ee122aab25cf0301b5598e42a6555d9ce1fcd8bfd34dc311d2",
               "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
@@ -3571,7 +3569,7 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "48f7d35274498562b10272686aff53a29294aa592cfc3f8cdb9c81db18d9b5b7",
+              "prompt": "75b58ae7a87c60ee122aab25cf0301b5598e42a6555d9ce1fcd8bfd34dc311d2",
               "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
@@ -3860,7 +3858,7 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "48f7d35274498562b10272686aff53a29294aa592cfc3f8cdb9c81db18d9b5b7",
+              "prompt": "75b58ae7a87c60ee122aab25cf0301b5598e42a6555d9ce1fcd8bfd34dc311d2",
               "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
@@ -4122,7 +4120,7 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "48f7d35274498562b10272686aff53a29294aa592cfc3f8cdb9c81db18d9b5b7",
+              "prompt": "75b58ae7a87c60ee122aab25cf0301b5598e42a6555d9ce1fcd8bfd34dc311d2",
               "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
@@ -4410,7 +4408,7 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "48f7d35274498562b10272686aff53a29294aa592cfc3f8cdb9c81db18d9b5b7",
+              "prompt": "75b58ae7a87c60ee122aab25cf0301b5598e42a6555d9ce1fcd8bfd34dc311d2",
               "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
@@ -4699,7 +4697,7 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "48f7d35274498562b10272686aff53a29294aa592cfc3f8cdb9c81db18d9b5b7",
+              "prompt": "75b58ae7a87c60ee122aab25cf0301b5598e42a6555d9ce1fcd8bfd34dc311d2",
               "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
@@ -4988,7 +4986,7 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "48f7d35274498562b10272686aff53a29294aa592cfc3f8cdb9c81db18d9b5b7",
+              "prompt": "75b58ae7a87c60ee122aab25cf0301b5598e42a6555d9ce1fcd8bfd34dc311d2",
               "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
@@ -5277,7 +5275,7 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "48f7d35274498562b10272686aff53a29294aa592cfc3f8cdb9c81db18d9b5b7",
+              "prompt": "75b58ae7a87c60ee122aab25cf0301b5598e42a6555d9ce1fcd8bfd34dc311d2",
               "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
@@ -5570,7 +5568,7 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "48f7d35274498562b10272686aff53a29294aa592cfc3f8cdb9c81db18d9b5b7",
+              "prompt": "75b58ae7a87c60ee122aab25cf0301b5598e42a6555d9ce1fcd8bfd34dc311d2",
               "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
@@ -5827,7 +5825,7 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "48f7d35274498562b10272686aff53a29294aa592cfc3f8cdb9c81db18d9b5b7",
+              "prompt": "75b58ae7a87c60ee122aab25cf0301b5598e42a6555d9ce1fcd8bfd34dc311d2",
               "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
@@ -6133,7 +6131,7 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "48f7d35274498562b10272686aff53a29294aa592cfc3f8cdb9c81db18d9b5b7",
+              "prompt": "75b58ae7a87c60ee122aab25cf0301b5598e42a6555d9ce1fcd8bfd34dc311d2",
               "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
@@ -6443,7 +6441,7 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "48f7d35274498562b10272686aff53a29294aa592cfc3f8cdb9c81db18d9b5b7",
+              "prompt": "75b58ae7a87c60ee122aab25cf0301b5598e42a6555d9ce1fcd8bfd34dc311d2",
               "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
@@ -6753,7 +6751,7 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "48f7d35274498562b10272686aff53a29294aa592cfc3f8cdb9c81db18d9b5b7",
+              "prompt": "75b58ae7a87c60ee122aab25cf0301b5598e42a6555d9ce1fcd8bfd34dc311d2",
               "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
@@ -7059,7 +7057,7 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "48f7d35274498562b10272686aff53a29294aa592cfc3f8cdb9c81db18d9b5b7",
+              "prompt": "75b58ae7a87c60ee122aab25cf0301b5598e42a6555d9ce1fcd8bfd34dc311d2",
               "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {
@@ -7328,7 +7326,7 @@
             {
               "project": "<project>",
               "task": "Опоры M01: K01 · Codex",
-              "prompt": "48f7d35274498562b10272686aff53a29294aa592cfc3f8cdb9c81db18d9b5b7",
+              "prompt": "75b58ae7a87c60ee122aab25cf0301b5598e42a6555d9ce1fcd8bfd34dc311d2",
               "context": "ebf0188289e2cef96665d24ac32d870edac7c7ed110bbe200271db4bbbdf75b0",
               "workDir": "<local>/image-jobs/<id>",
               "config": {

@@ -46,11 +46,17 @@ import { FrameFullscreen } from './FrameFullscreen';
 /** Вкладки медиа плана: кадр превью и ролик. */
 type MediaTab = 'frame' | 'video';
 
-/** Место кадра и заглушки ролика: одинаковый размер, вкладки не прыгают при переключении. */
+/**
+ * Ширина кадра, ролика и заглушки: умеренная и одинаковая на любом окне — вкладки не прыгают, а
+ * параметры остаются рядом; крупно смотрят кнопкой «На весь экран».
+ */
+export const MEDIA_MAX_WIDTH = 640;
+
+/** Место кадра и заглушки ролика. */
 const MEDIA_BOX = {
   position: 'relative',
   width: '100%',
-  maxWidth: 880,
+  maxWidth: MEDIA_MAX_WIDTH,
   aspectRatio: '16 / 9',
   bgcolor: 'action.hover',
   borderRadius: 1,
@@ -240,9 +246,13 @@ export function EffectShotPanel({
                 <ToggleButton value="after">{texts.videoAfter}</ToggleButton>
               </ToggleButtonGroup>
               {video === 'before' ? (
-                <VideoPlayer key="before" path={shot.source} label={texts.videoBefore} />
+                <Box sx={{ maxWidth: MEDIA_MAX_WIDTH }}>
+                  <VideoPlayer key="before" path={shot.source} label={texts.videoBefore} />
+                </Box>
               ) : output ? (
-                <VideoPlayer key="after" path={shot.output} version={shot.version} label={texts.videoAfter} />
+                <Box sx={{ maxWidth: MEDIA_MAX_WIDTH }}>
+                  <VideoPlayer key="after" path={shot.output} version={shot.version} label={texts.videoAfter} />
+                </Box>
               ) : (
                 <Stack sx={{ ...MEDIA_BOX, alignItems: 'center', justifyContent: 'center', textAlign: 'center', p: 3 }} spacing={1.5}>
                   {busy ? <CircularProgress size={28} aria-hidden /> : <MovieFilterIcon color="disabled" sx={{ fontSize: 48 }} aria-hidden />}

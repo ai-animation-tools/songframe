@@ -4,6 +4,7 @@ import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { effectsTexts as texts } from '@shared/texts/effects';
 import { EFFECTS_KIT_PROBLEM, EFFECTS_STALE_REASON, effectsPageInspection, effectsPageOptions } from '../../testing/effectsPageStories';
 import { EffectsPage } from './EffectsPage';
+import { MEDIA_MAX_WIDTH } from './components/EffectShotPanel';
 import { FULL_WIDTH, PREVIEW_WIDTH } from './useEffectsPage';
 
 const meta = {
@@ -49,6 +50,8 @@ export const Applied: Story = {
     await expect(canvasElement.querySelector('video')).toBeNull();
     await userEvent.click(canvas.getByRole('tab', { name: texts.video }));
     await expect(canvas.getByLabelText(texts.videoAfter)).toBeInTheDocument();
+    // Плеер не шире кадра: крупно смотрят на весь экран.
+    await expect(canvas.getByLabelText(texts.videoAfter).getBoundingClientRect().width).toBeLessThanOrEqual(MEDIA_MAX_WIDTH);
     await userEvent.click(canvas.getByRole('button', { name: texts.videoBefore }));
     await expect(canvas.getByLabelText(texts.videoBefore)).toBeInTheDocument();
   }

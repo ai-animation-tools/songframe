@@ -1,10 +1,14 @@
 /**
- * Эффект цепочки плана: описание «когда и зачем», ползунки параметров по схеме из реестра Go с
- * подсказкой у названия (наведение или фокус), сброс к значениям по умолчанию и удаление из плана. У дождя — ветер: с ним наклон считает Go из ветра и камеры
- * плана, поэтому ползунок наклона скрыт; без ветра наклон задаётся ползунком.
+ * Эффект цепочки плана — сворачиваемая панель (Accordion): свёрнутый эффект не мешает настраивать
+ * соседний, в заголовке видно, сколько параметров изменено. Внутри — описание «когда и зачем»,
+ * ползунки параметров по схеме из реестра Go с подсказкой у названия (наведение или фокус), а
+ * после них действия: сброс к значениям по умолчанию и удаление из плана. У дождя — ветер: с ним
+ * наклон считает Go из ветра и камеры плана, поэтому ползунок наклона скрыт; без ветра наклон
+ * задаётся ползунком.
  */
 import { useId, type ReactElement } from 'react';
-import { Alert, Box, Chip, FormControlLabel, IconButton, Paper, Slider, Stack, Switch, Tooltip, Typography } from '@mui/material';
+import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Chip, FormControlLabel, Slider, Stack, Switch, Tooltip, Typography } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { visuallyHidden } from '@mui/utils';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
@@ -12,6 +16,7 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import type { EffectParamSpec } from '@shared/types';
 import { stepValue, withValue, type EffectKind, type EffectStep } from '@shared/effects';
 import { effectsTexts as texts } from '@shared/texts/effects';
+import { ActionButton } from '../../../components/ActionButton';
 import { WindCompass } from './WindCompass';
 
 /** Ветер по умолчанию при включении: на восток, умеренный. */
@@ -91,118 +96,115 @@ export function EffectStepCard({
   const specs = kind.params.filter((spec) => !(windy && spec.name === kind.windAngle));
   const changed = Object.keys(step.given).length + (step.wind ? 1 : 0);
   return (
-    <Paper variant="outlined" sx={{ p: 2, minWidth: 0 }}>
-      <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 1 }}>
-        <Typography variant="subtitle1" sx={{ flex: 1, minWidth: 0 }}>
-          {kind.title}
+    <Accordion variant="outlined" disableGutters defaultExpanded sx={{ minWidth: 0 }}>
+      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+        <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}>
+          <Typography variant="subtitle1">{kind.title}</Typography>
+          {changed ? <Chip size="small" label={texts.changed({ count: changed })} /> : null}
+        </Stack>
+      </AccordionSummary>
+      <AccordionDetails>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          {kind.hint}
         </Typography>
-        {changed ? <Chip size="small" label={texts.changed({ count: changed })} /> : null}
-        <Tooltip title={texts.resetStepHint}>
-          <span>
-            <IconButton
-              size="small"
-              aria-label={texts.resetStepHint}
-              disabled={disabled || !changed}
-              onClick={() => onChange({ effect: step.effect, given: {} })}
-            >
-              <RestartAltIcon fontSize="small" />
-            </IconButton>
-          </span>
-        </Tooltip>
-        <Tooltip title={texts.removeStep({ title: kind.title })}>
-          <span>
-            <IconButton size="small" aria-label={texts.removeStep({ title: kind.title })} disabled={disabled} onClick={onRemove}>
-              <DeleteOutlineIcon fontSize="small" />
-            </IconButton>
-          </span>
-        </Tooltip>
-      </Stack>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        {kind.hint}
-      </Typography>
-      {kind.windAngle ? (
-        <Box sx={{ mb: 2 }}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={windy}
-                disabled={disabled || (!camera && !windy)}
-                onChange={(event) => {
-                  if (event.target.checked) {
-                    const given = { ...step.given };
-                    delete given[kind.windAngle];
-                    onChange({ ...step, given, wind: { ...DEFAULT_WIND } });
-                  } else onChange({ effect: step.effect, given: step.given });
-                }}
-              />
-            }
-            label={texts.wind.toggle}
-          />
-          {!camera ? (
-            <Alert severity="info" sx={{ mt: 1 }}>
-              {texts.wind.noCamera}
-            </Alert>
-          ) : (
-            <Typography variant="body2" color="text.secondary">
-              {texts.wind.hint}
-            </Typography>
-          )}
-          {windy && step.wind ? (
-            <Stack direction="row" spacing={2} useFlexGap sx={{ mt: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
-              <WindCompass
-                direction={step.wind.direction}
-                heading={camera ? heading : null}
-                disabled={disabled}
-                onChange={(direction) => step.wind && onChange({ ...step, wind: { ...step.wind, direction } })}
-              />
-              <Stack spacing={1} sx={{ flex: '1 1 220px', minWidth: 0 }}>
-                <ParamSlider
-                  spec={{
-                    name: 'wind-direction',
-                    title: texts.wind.direction,
-                    min: 0,
-                    max: 359,
-                    default: DEFAULT_WIND.direction,
-                    step: 1,
-                    hint: texts.wind.directionHint
+        {kind.windAngle ? (
+          <Box sx={{ mb: 2 }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={windy}
+                  disabled={disabled || (!camera && !windy)}
+                  onChange={(event) => {
+                    if (event.target.checked) {
+                      const given = { ...step.given };
+                      delete given[kind.windAngle];
+                      onChange({ ...step, given, wind: { ...DEFAULT_WIND } });
+                    } else onChange({ effect: step.effect, given: step.given });
                   }}
-                  value={step.wind.direction}
+                />
+              }
+              label={texts.wind.toggle}
+            />
+            {!camera ? (
+              <Alert severity="info" sx={{ mt: 1 }}>
+                {texts.wind.noCamera}
+              </Alert>
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                {texts.wind.hint}
+              </Typography>
+            )}
+            {windy && step.wind ? (
+              <Stack direction="row" spacing={2} useFlexGap sx={{ mt: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
+                <WindCompass
+                  direction={step.wind.direction}
+                  heading={camera ? heading : null}
                   disabled={disabled}
                   onChange={(direction) => step.wind && onChange({ ...step, wind: { ...step.wind, direction } })}
                 />
-                <ParamSlider
-                  spec={{
-                    name: 'wind-strength',
-                    title: texts.wind.strength,
-                    min: 0,
-                    max: 3,
-                    default: DEFAULT_WIND.strength,
-                    step: 0.05,
-                    hint: texts.wind.strengthHint
-                  }}
-                  value={step.wind.strength}
-                  disabled={disabled}
-                  onChange={(strength) => step.wind && onChange({ ...step, wind: { ...step.wind, strength } })}
-                />
-                <Typography variant="body2" color="text.secondary">
-                  {texts.wind.fromWind}
-                </Typography>
+                <Stack spacing={1} sx={{ flex: '1 1 220px', minWidth: 0 }}>
+                  <ParamSlider
+                    spec={{
+                      name: 'wind-direction',
+                      title: texts.wind.direction,
+                      min: 0,
+                      max: 359,
+                      default: DEFAULT_WIND.direction,
+                      step: 1,
+                      hint: texts.wind.directionHint
+                    }}
+                    value={step.wind.direction}
+                    disabled={disabled}
+                    onChange={(direction) => step.wind && onChange({ ...step, wind: { ...step.wind, direction } })}
+                  />
+                  <ParamSlider
+                    spec={{
+                      name: 'wind-strength',
+                      title: texts.wind.strength,
+                      min: 0,
+                      max: 3,
+                      default: DEFAULT_WIND.strength,
+                      step: 0.05,
+                      hint: texts.wind.strengthHint
+                    }}
+                    value={step.wind.strength}
+                    disabled={disabled}
+                    onChange={(strength) => step.wind && onChange({ ...step, wind: { ...step.wind, strength } })}
+                  />
+                  <Typography variant="body2" color="text.secondary">
+                    {texts.wind.fromWind}
+                  </Typography>
+                </Stack>
               </Stack>
-            </Stack>
-          ) : null}
+            ) : null}
+          </Box>
+        ) : null}
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', columnGap: 3, rowGap: 0.5 }}>
+          {specs.map((spec) => (
+            <ParamSlider
+              key={spec.name}
+              spec={spec}
+              value={stepValue(step, spec)}
+              disabled={disabled}
+              onChange={(value) => onChange(withValue(step, spec, value))}
+            />
+          ))}
         </Box>
-      ) : null}
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', columnGap: 3, rowGap: 0.5 }}>
-        {specs.map((spec) => (
-          <ParamSlider
-            key={spec.name}
-            spec={spec}
-            value={stepValue(step, spec)}
-            disabled={disabled}
-            onChange={(value) => onChange(withValue(step, spec, value))}
-          />
-        ))}
-      </Box>
-    </Paper>
+        <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap', mt: 2 }}>
+          <ActionButton
+            startIcon={<RestartAltIcon />}
+            title={texts.resetStepHint}
+            disabled={disabled || !changed}
+            disabledReason={disabled ? texts.busy : texts.noChanges}
+            onClick={() => onChange({ effect: step.effect, given: {} })}
+          >
+            {texts.resetStep}
+          </ActionButton>
+          <ActionButton startIcon={<DeleteOutlineIcon />} disabled={disabled} disabledReason={texts.busy} onClick={onRemove}>
+            {texts.removeStep({ title: kind.title })}
+          </ActionButton>
+        </Stack>
+      </AccordionDetails>
+    </Accordion>
   );
 }

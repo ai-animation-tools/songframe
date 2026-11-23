@@ -48,6 +48,15 @@ export const Applied: Story = {
     canvas.getByText('Плотность, капель на мегапиксель').parentElement?.focus();
     await screen.findByRole('tooltip', { name: /морось/ });
     await expect(canvas.getByRole('slider', { name: 'Плотность, капель на мегапиксель' })).toHaveAccessibleDescription(/морось/);
+    // Панель эффекта сворачивается: параметры дождя скрыты, отметка изменений остаётся в заголовке.
+    const rain = canvas.getByRole('button', { name: /^Дождь/ });
+    await expect(rain).toHaveAttribute('aria-expanded', 'true');
+    await expect(within(rain).getByText(texts.changed({ count: 3 }))).toBeVisible();
+    await userEvent.click(rain);
+    await expect(rain).toHaveAttribute('aria-expanded', 'false');
+    await waitFor(() => expect(canvas.queryByRole('slider', { name: 'Плотность, капель на мегапиксель' })).toBeNull());
+    await userEvent.click(rain);
+    await canvas.findByRole('slider', { name: 'Плотность, капель на мегапиксель' });
     await canvas.findByRole('img', { name: texts.previewAlt({ shot: 'M01', frame: 36 }) }, WAIT);
     await waitFor(() => expect(effectsPageInspection().previews.at(-1)?.steps.length).toBe(2), WAIT);
     // «До» — кадр без эффектов.

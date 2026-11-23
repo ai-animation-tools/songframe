@@ -60,6 +60,23 @@ export function ReferenceImageComposer({
         </Alert>
       )}
       {composer.manual && <Alert severity="info">{sourcesTexts.referenceManualPrompt}</Alert>}
+      {/* Фон задаётся почти у каждого референса, поэтому галочка видна без раскрытия конструктора. */}
+      <Stack spacing={0}>
+        <FormControlLabel
+          label={sourcesTexts.referencePlainBackground}
+          control={
+            <Checkbox
+              checked={composer.plainBackground}
+              disabled={disabled || composer.manual}
+              onChange={(_event, checked) => onChange(() => composer.changePlainBackground(checked))}
+              slotProps={{ input: { 'aria-describedby': 'reference-plain-background-hint' } }}
+            />
+          }
+        />
+        <Typography id="reference-plain-background-hint" variant="caption" color="text.secondary">
+          {sourcesTexts.referencePlainBackgroundHint}
+        </Typography>
+      </Stack>
       {/* Согласования и ошибки остаются видимыми; внутри свёрнуты только выбор разделов и их полный текст. */}
       <Accordion
         disableGutters

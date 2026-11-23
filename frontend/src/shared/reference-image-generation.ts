@@ -41,6 +41,22 @@ export type ReferenceImageGenerationApi = Omit<CoverGenerationApi, 'accept' | 'c
   attach(id: string, entityId: string): Promise<void>;
 };
 
+/**
+ * Виды референсов, у которых светлый однородный фон по умолчанию выключен: место и стиль — это
+ * само окружение, а мир кастинга не изображается отдельным объектом. Остальные виды, включая
+ * пользовательские, — объект, который удобнее отделять от фона.
+ */
+const SCENE_KINDS = new Set(['location', 'style', 'world']);
+
+/** Включён ли светлый однородный фон по умолчанию для референса вида kind (неизвестный вид — объект). */
+export function plainBackgroundByDefault(kind: string | undefined): boolean {
+  return !SCENE_KINDS.has(kind ?? '');
+}
+
+/** Указание исполнителю о фоне; добавляется к промпту, пока галочка включена. */
+// eslint-disable-next-line no-restricted-syntax -- Инструкция генерации не относится к словарю UI.
+export const PLAIN_BACKGROUND_PROMPT = 'Фон — светлый однородный, без окружения и посторонних предметов: объект должен легко отделяться от фона.';
+
 /** Начальный промпт задаёт объект; пользователь уточняет его перед подготовкой запроса. */
 export function referenceImagePrompt(input: { name: string; description?: string; appearance?: string }): string {
   const details = [input.description?.trim(), input.appearance?.trim()].filter(Boolean).join('\n\n');

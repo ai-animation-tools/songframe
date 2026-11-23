@@ -24,7 +24,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import CheckIcon from '@mui/icons-material/Check';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import type { ReferenceImageContextDrafts, ReferenceImageOption } from '@shared/reference-image-generation';
+import { plainBackgroundByDefault, type ReferenceImageContextDrafts, type ReferenceImageOption } from '@shared/reference-image-generation';
 import type { CoverCrop, CoverGenerationSession } from '@shared/cover-generation';
 import { MEDIA_PROVIDERS, mediaProviderInfo } from '@shared/media-providers';
 import { canAgreeToUnknownCost, formatCredits, priceAllowsGeneration, priceNotice } from '@shared/generation-consent';
@@ -54,6 +54,8 @@ interface Props {
   referenceInput?: { images: ReferenceImageOption[] };
   referenceContextDrafts?: ReferenceImageContextDrafts;
   referenceDescription?: string;
+  /** Вид референса (character, location…): от него зависит, включён ли светлый фон по умолчанию. */
+  referenceKind?: string;
   acceptedHint?: string;
   onAccepted: (result: ImageGenerationResult) => void | Promise<void>;
   onClose: () => void;
@@ -68,6 +70,7 @@ export function ImageGenerateDialog({
   referenceInput,
   referenceContextDrafts,
   referenceDescription = '',
+  referenceKind,
   acceptedHint,
   onAccepted,
   onClose
@@ -95,6 +98,7 @@ export function ImageGenerateDialog({
     basePrompt: initialPrompt ?? '',
     description: referenceDescription,
     supportNotes: supports.notes,
+    plainBackground: plainBackgroundByDefault(referenceKind),
     drafts: referenceContextDrafts
   });
   const prompt = reference ? composer.prompt : coverPrompt;

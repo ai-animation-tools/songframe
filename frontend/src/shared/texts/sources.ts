@@ -99,6 +99,8 @@ export const sourcesTexts = {
   referenceGenerationTarget: ({ name }: { name: string }) => `Изображение для: ${name || 'референс без названия'}`,
   referencePromptHint: 'Выберите контекст и опоры, затем проверьте полный промпт. Отправляется только показанный текст и выбранные изображения.',
   referenceConstructor: 'Конструктор промпта',
+  referencePlainBackground: 'Светлый однородный фон',
+  referencePlainBackgroundHint: 'Объект на чистом светлом фоне без окружения: его проще отделить и узнать на опорах. Для локаций и стилей выключено.',
   referenceClipName: 'Название клипа',
   referenceLyrics: 'Текст песни',
   referenceIdea: 'Идея клипа',

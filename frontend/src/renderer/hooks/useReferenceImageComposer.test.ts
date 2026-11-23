@@ -1,7 +1,12 @@
 import type * as React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ReferenceImageContext, ReferenceImageContextDrafts } from '@shared/reference-image-generation';
-import { useReferenceImageComposer } from './useReferenceImageComposer';
+import {
+  PLAIN_BACKGROUND_PROMPT,
+  plainBackgroundByDefault,
+  type ReferenceImageContext,
+  type ReferenceImageContextDrafts
+} from '@shared/reference-image-generation';
+import { DEFAULT_REFERENCE_SECTIONS, composeReferencePrompt, useReferenceImageComposer } from './useReferenceImageComposer';
 
 const fixture = vi.hoisted(() => ({
   states: [] as unknown[],
@@ -157,4 +162,18 @@ it('включает примечания только явно и обновл�
   expect(RenderHook(undefined, true, note).prompt).toContain(note);
   RenderHook(undefined, true, note).change('supportNotes', false);
   expect(RenderHook(undefined, true, note).prompt).not.toContain(note);
+});
+
+describe('светлый однородный фон', () => {
+  it('включён по умолчанию у объектов и выключен у локации, стиля и мира', () => {
+    expect(['character', 'vehicle', 'prop', 'animal', undefined].map(plainBackgroundByDefault)).toEqual([true, true, true, true, true]);
+    expect(['location', 'style', 'world'].map(plainBackgroundByDefault)).toEqual([false, false, false]);
+  });
+
+  it('идёт сразу за объектом и пропадает, когда галочку сняли', () => {
+    const base = 'Создай изображение референса. Объект: дом.';
+    const on = composeReferencePrompt(base, 'Красная крыша', null, DEFAULT_REFERENCE_SECTIONS, '', true);
+    expect(on.startsWith(`${base}\n\n${PLAIN_BACKGROUND_PROMPT}\n\n`)).toBe(true);
+    expect(composeReferencePrompt(base, 'Красная крыша', null, DEFAULT_REFERENCE_SECTIONS, '', false)).not.toContain(PLAIN_BACKGROUND_PROMPT);
+  });
 });

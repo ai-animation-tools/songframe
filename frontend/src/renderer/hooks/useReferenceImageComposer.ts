@@ -1,6 +1,6 @@
 /** Конструктор собирает только выбранные разделы; ручной текст никогда не заменяется ответом чтения контекста. */
 import { useEffect, useRef, useState } from 'react';
-import type { ReferenceImageContext, ReferenceImageContextDrafts } from '@shared/reference-image-generation';
+import { PLAIN_BACKGROUND_PROMPT, type ReferenceImageContext, type ReferenceImageContextDrafts } from '@shared/reference-image-generation';
 import { sourcesTexts } from '@shared/texts/sources';
 import { useApp } from '../state';
 
@@ -24,16 +24,21 @@ export const REFERENCE_SECTION_LABELS: Record<ReferenceSection, string> = {
 };
 export const REFERENCE_SECTION_ORDER: ReferenceSection[] = ['clipName', 'lyrics', 'idea', 'description', 'visualStyle', 'supportNotes'];
 
-/** Контекст здесь обычный текст: выключенный раздел не попадает в запрос даже скрытым приложением. */
+/**
+ * Контекст здесь обычный текст: выключенный раздел не попадает в запрос даже скрытым приложением.
+ * Указание о светлом фоне идёт сразу за объектом, до разделов контекста.
+ */
 export function composeReferencePrompt(
   base: string,
   description: string,
   context: ReferenceImageContext | null,
   sections: ReferenceSections,
-  supportNotes = ''
+  supportNotes = '',
+  plainBackground = false
 ): string {
   return [
     base,
+    plainBackground ? PLAIN_BACKGROUND_PROMPT : '',
     ...REFERENCE_SECTION_ORDER.flatMap((key) => {
       const value = key === 'description' ? description : key === 'supportNotes' ? supportNotes : (context?.[key] ?? '');
       return sections[key] && value.trim() ? [`${REFERENCE_SECTION_LABELS[key]}:\n${value}`] : [];
@@ -49,6 +54,7 @@ export function useReferenceImageComposer({
   basePrompt,
   description = '',
   supportNotes = '',
+  plainBackground: initialPlainBackground = false,
   drafts
 }: {
   enabled: boolean;
@@ -56,13 +62,18 @@ export function useReferenceImageComposer({
   basePrompt: string;
   description?: string;
   supportNotes?: string;
+  /** Начальное состояние галочки светлого фона (plainBackgroundByDefault по виду референса). */
+  plainBackground?: boolean;
   drafts?: ReferenceImageContextDrafts;
 }) {
   const { describeError } = useApp();
   const [context, setContext] = useState<ReferenceImageContext | null>(null);
   const [sections, setSections] = useState<ReferenceSections>({ ...DEFAULT_REFERENCE_SECTIONS });
   const selected = useRef(sections);
-  const [prompt, setPrompt] = useState(() => composeReferencePrompt(basePrompt, description, null, DEFAULT_REFERENCE_SECTIONS, supportNotes));
+  const [plainBackground, setPlainBackground] = useState(initialPlainBackground);
+  const [prompt, setPrompt] = useState(() =>
+    composeReferencePrompt(basePrompt, description, null, DEFAULT_REFERENCE_SECTIONS, supportNotes, initialPlainBackground)
+  );
   const [manual, setManual] = useState(false);
   const manualRef = useRef(false);
   const [loading, setLoading] = useState(enabled);
@@ -104,16 +115,22 @@ export function useReferenceImageComposer({
     selected.current = next;
     setSections(next);
   };
+  // Как и разделы, галочка фона не трогает ручной текст: её меняют после «Собрать заново».
+  const changePlainBackground = (checked: boolean): void => {
+    if (manualRef.current) return;
+    setPlainBackground(checked);
+  };
   const rebuild = (): void => {
     manualRef.current = false;
     setManual(false);
   };
   // Сборка синхронна выбору опор; ручной итог хранится отдельно от автоматически вычисляемого текста.
-  const currentPrompt = manual ? prompt : composeReferencePrompt(basePrompt, description, context, sections, supportNotes);
+  const currentPrompt = manual ? prompt : composeReferencePrompt(basePrompt, description, context, sections, supportNotes, plainBackground);
   return {
     context,
     supportNotes,
     sections,
+    plainBackground,
     prompt: currentPrompt,
     manual,
     loading,
@@ -121,6 +138,7 @@ export function useReferenceImageComposer({
     ready: context !== null || manual,
     edit,
     change,
+    changePlainBackground,
     rebuild,
     withoutContext: () => edit(currentPrompt),
     retry: () => setAttempt((current) => current + 1)

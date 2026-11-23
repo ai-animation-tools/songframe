@@ -6,7 +6,7 @@ import { Alert, Box, Stack, Typography } from '@mui/material';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { sourcesTexts } from '@shared/texts/sources';
 import { commonTexts } from '@shared/texts/common';
-import { referenceImagePrompt } from '@shared/reference-image-generation';
+import { PLAIN_BACKGROUND_PROMPT, referenceImagePrompt } from '@shared/reference-image-generation';
 import type { ImageGenerationResult } from '../hooks/useImageGeneration';
 import {
   completeImageStoryCreate,
@@ -32,12 +32,15 @@ function ImageStory({
   mode = 'cover',
   withReferences = true,
   duplicateReference = false,
-  notesFixture = false
+  notesFixture = false,
+  referenceKind
 }: {
   mode?: 'cover' | 'reference';
   withReferences?: boolean;
   duplicateReference?: boolean;
   notesFixture?: boolean;
+  /** Вид референса: от него зависит галочка светлого фона по умолчанию. */
+  referenceKind?: string;
 }) {
   const [open, setOpen] = useState(true);
   const [accepted, setAccepted] = useState(false);
@@ -76,6 +79,7 @@ function ImageStory({
           target={IMAGE_STORY_TARGET}
           initialPrompt={mode === 'reference' ? referenceImagePrompt({ name: IMAGE_STORY_TARGET }) : IMAGE_STORY_PROMPT}
           referenceDescription={mode === 'reference' ? 'Красная куртка, тёмные волосы.' : undefined}
+          referenceKind={referenceKind}
           referenceInput={
             mode === 'reference'
               ? {
@@ -205,6 +209,36 @@ export const ReferenceComposer: Story = {
     await userEvent.click(await screen.findByRole('button', { name: 'Открыть генерацию' }));
     for (const label of [sourcesTexts.referenceSupports, sourcesTexts.referenceConstructor])
       await expect(screen.getByRole('button', { name: (name) => name.startsWith(label) })).toHaveAttribute('aria-expanded', 'false');
+  }
+};
+export const ReferencePlainBackground: Story = {
+  tags: ['ci'],
+  name: 'Референс — светлый однородный фон по умолчанию, снятие убирает указание',
+  args: { mode: 'reference', referenceKind: 'character' },
+  play: async (context) => {
+    const screen = screenOf(context);
+    const prompt = await screen.findByRole<HTMLTextAreaElement>('textbox', { name: sourcesTexts.referenceImagePrompt });
+    const background = screen.getByRole('checkbox', { name: sourcesTexts.referencePlainBackground });
+    // Галочка видна без раскрытия конструктора и включена у объекта.
+    await expect(background).toBeChecked();
+    await expect(background).toHaveAccessibleDescription(sourcesTexts.referencePlainBackgroundHint);
+    await waitFor(() => expect(prompt.value).toContain(PLAIN_BACKGROUND_PROMPT));
+    await userEvent.click(background);
+    await expect(background).not.toBeChecked();
+    await expect(prompt.value).not.toContain(PLAIN_BACKGROUND_PROMPT);
+    await userEvent.click(background);
+    await expect(prompt.value).toContain(PLAIN_BACKGROUND_PROMPT);
+  }
+};
+export const ReferenceLocationBackground: Story = {
+  tags: ['ci'],
+  name: 'Референс локации — светлый фон по умолчанию выключен',
+  args: { mode: 'reference', referenceKind: 'location' },
+  play: async (context) => {
+    const screen = screenOf(context);
+    const prompt = await screen.findByRole<HTMLTextAreaElement>('textbox', { name: sourcesTexts.referenceImagePrompt });
+    await expect(screen.getByRole('checkbox', { name: sourcesTexts.referencePlainBackground })).not.toBeChecked();
+    await expect(prompt.value).not.toContain(PLAIN_BACKGROUND_PROMPT);
   }
 };
 export const ReferenceContextAndSupports: Story = {

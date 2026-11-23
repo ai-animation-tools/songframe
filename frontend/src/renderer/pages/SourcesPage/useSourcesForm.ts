@@ -439,6 +439,7 @@ export function useSourcesForm() {
           target: generationReference.name || generationReference.id,
           initialPrompt: referenceImagePrompt({ name: generationReference.name }),
           referenceDescription: generationReference.description,
+          referenceKind: generationReference.kind,
           referenceContextDrafts: { idea, lyrics },
           // Берём текущий черновик и только изображения выбранного объекта, включая ещё не сохранённые загрузки.
           referenceInput: {

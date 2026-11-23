@@ -285,6 +285,7 @@ export function CastPage(): ReactElement {
           initialPrompt={referenceImagePrompt({ name: generationTarget.entity.name })}
           // Описание общее с исходниками; сюжетная роль остаётся отдельным полем кастинга.
           referenceDescription={generationTarget.entity.appearance}
+          referenceKind={generationTarget.entity.kind}
           referenceInput={{
             // Кастинг запускается после сохранения; привязки соседних сущностей не добавляются.
             images: generationTarget.entity.images.map((path) => {

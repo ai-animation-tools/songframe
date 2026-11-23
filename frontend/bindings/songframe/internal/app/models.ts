@@ -40,7 +40,8 @@ export interface EffectKind {
 }
 
 /**
- * EffectShot — принятый план страницы с идущим заданием рендера ("" — задания нет).
+ * EffectShot — принятый план страницы с идущим заданием рендера ("" — задания нет) и
+ * изображением карточки: первой опорой принятого комплекта, как на «Производстве» ("" — опор нет).
  */
 export interface EffectShot {
     "shot": string;
@@ -55,10 +56,12 @@ export interface EffectShot {
     "title": string;
     "start": number;
     "end": number;
+    "lipsync": boolean;
     "camera": boolean;
     "heading": number;
     "problem": string;
     "jobId": string;
+    "frame": string;
 }
 
 /**

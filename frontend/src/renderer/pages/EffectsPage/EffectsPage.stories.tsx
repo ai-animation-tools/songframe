@@ -30,6 +30,15 @@ export const Applied: Story = {
     const canvas = within(canvasElement);
     const screen = body(canvasElement);
     await canvas.findByText(texts.status.fresh);
+    // Планы — карточки с первой опорой, эффектами плана и отметкой «В монтаже» или «Устарел».
+    const list = canvas.getByRole('list', { name: texts.listLabel });
+    await expect(within(list).getAllByRole('listitem')).toHaveLength(4);
+    const current = within(list).getByRole('button', { current: true });
+    await expect(within(current).getByRole('img', { name: 'M01' })).toBeVisible();
+    await expect(within(current).getByText('Дождь + Зерно')).toBeVisible();
+    await expect(within(current).getByText(texts.fresh)).toBeVisible();
+    await expect(within(list).getByText(texts.noEffect)).toBeVisible();
+    await expect(within(list).getByText(texts.stale)).toBeVisible();
     // Дождь по ветру: наклон считает Go, ползунка наклона нет, компас показывает направление.
     await expect(canvas.getByRole('switch', { name: texts.wind.toggle })).toBeChecked();
     await expect(canvas.getByRole('slider', { name: texts.wind.compass({ direction: 20 }) })).toBeVisible();

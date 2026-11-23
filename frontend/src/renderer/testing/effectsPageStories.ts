@@ -6,7 +6,7 @@
  */
 import type { EffectParamSpec, JobInfo } from '@shared/types';
 import type { AppliedEffectStep, EffectKind, EffectShot, EffectStep, EffectsView } from '@shared/effects';
-import { STORY_VIDEO_PATH, type StoryOptions } from './storybook';
+import { STORY_IMAGE_PATH, STORY_VIDEO_PATH, type StoryOptions } from './storybook';
 
 export const EFFECTS_PAGE_PROJECT = '/mock/Клип у старых ворот';
 
@@ -134,9 +134,11 @@ function shot(id: string, title: string, start: number, extra: Partial<EffectSho
     version: '',
     stale: '',
     problem: '',
+    lipsync: false,
     camera: true,
     heading: 90,
     jobId: '',
+    frame: STORY_IMAGE_PATH,
     ...extra
   };
 }
@@ -153,7 +155,7 @@ function initialShots(): EffectShot[] {
       output: STORY_VIDEO_PATH,
       version: 'a'.repeat(64)
     }),
-    shot('M02', 'Мост над рекой на рассвете', 3, { camera: false, heading: 0 }),
+    shot('M02', 'Мост над рекой на рассвете', 3, { camera: false, heading: 0, lipsync: true }),
     shot('M03', 'Фонарь у старого причала', 6, {
       applied: true,
       steps: [applied({ effect: 'light', given: { intensity: 7 } })],
@@ -161,7 +163,7 @@ function initialShots(): EffectShot[] {
       version: 'b'.repeat(64),
       stale: EFFECTS_STALE_REASON
     }),
-    shot('M04', 'Пустая площадь', 9, { problem: EFFECTS_KIT_PROBLEM })
+    shot('M04', 'Пустая площадь', 9, { problem: EFFECTS_KIT_PROBLEM, frame: '' })
   ];
 }
 

@@ -15,7 +15,7 @@ import (
 )
 
 // Shot — план сценария с принятым комплектом для страницы эффектов: его эффект (State), строка
-// песни (поле original сценария — подпись плана в списке) и время в песне, есть ли у плана направление камеры (без него ветер дождя не применить) и
+// песни (поле original сценария — подпись плана в списке), время в песне, речевой ли план, есть ли у плана направление камеры (без него ветер дождя не применить) и
 // почему эффект недоступен (Problem: повреждённый комплект; тогда State содержит только Shot).
 // Heading — направление камеры первого кадра (градусы против часовой от востока, как ветер),
 // осмысленно при Camera: по нему страница рисует ветер относительно взгляда камеры.
@@ -24,6 +24,7 @@ type Shot struct {
 	Title   string  `json:"title"`
 	Start   float64 `json:"start"`
 	End     float64 `json:"end"`
+	Lipsync bool    `json:"lipsync"`
 	Camera  bool    `json:"camera"`
 	Heading float64 `json:"heading"`
 	Problem string  `json:"problem"`
@@ -51,7 +52,8 @@ func List(root string) ([]Shot, error) {
 		}
 		// Подпись — строка песни; у сцены без неё подписи нет, а не текст "undefined".
 		title, _ := dynvalue.Get(scene, "original").(string)
-		shot := Shot{Title: title}
+		lipsync, _ := dynvalue.Get(scene, "lipsync").(bool)
+		shot := Shot{Title: title, Lipsync: lipsync}
 		if fps > 0 {
 			start, _ := dynvalue.Get(scene, "start_frame").(float64)
 			end, _ := dynvalue.Get(scene, "end_frame_exclusive").(float64)

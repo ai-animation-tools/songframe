@@ -54,10 +54,14 @@ export interface EffectShot {
   version: string;
   stale: string;
   problem: string;
+  /** Речевой план (липсинк): отметка «Речь» на карточке. */
+  lipsync: boolean;
   camera: boolean;
   /** Направление камеры первого кадра (градусы против часовой от востока), если camera. */
   heading: number;
   jobId: string;
+  /** Изображение карточки: первая опора принятого комплекта; "" — опор нет, на карточке заглушка. */
+  frame: string;
 }
 
 export interface EffectsView {

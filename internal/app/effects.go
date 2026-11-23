@@ -4,11 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"sync"
 
+	"songframe/internal/dynvalue"
 	"songframe/internal/effects"
 	"songframe/internal/jobs"
+	"songframe/internal/production"
 	"songframe/internal/shoteffects"
 )
 
@@ -38,10 +41,12 @@ type EffectKind struct {
 	WindAngle string              `json:"windAngle"`
 }
 
-// EffectShot — принятый план страницы с идущим заданием рендера ("" — задания нет).
+// EffectShot — принятый план страницы с идущим заданием рендера ("" — задания нет) и
+// изображением карточки: первой опорой принятого комплекта, как на «Производстве» ("" — опор нет).
 type EffectShot struct {
 	shoteffects.Shot
 	JobID string `json:"jobId"`
+	Frame string `json:"frame"`
 }
 
 // EffectsView — effects:view.
@@ -89,9 +94,29 @@ func (s *EffectsService) View(project string) (EffectsView, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for _, shot := range shots {
-		view.Shots = append(view.Shots, EffectShot{Shot: shot, JobID: s.busyLocked(s.key(project, shot.State.Shot))})
+		view.Shots = append(view.Shots, EffectShot{Shot: shot, JobID: s.busyLocked(s.key(project, shot.State.Shot)), Frame: acceptedFrame(project, shot.State.Shot)})
 	}
 	return view, nil
+}
+
+// acceptedFrame — абсолютный путь первой опоры принятого комплекта плана для карточки списка;
+// "" — у комплекта нет изображений-входов (своё видео, производный план) или файла нет. Карточка
+// показывает изображение, а не видео: десятки видео в сетке держали бы по декодеру на каждое.
+func acceptedFrame(project, shot string) string {
+	dir := filepath.Join(project, "assets", "shots", shot)
+	manifest, found := dynvalue.ReadJSONFile(filepath.Join(dir, "manifest.json"))
+	if !found {
+		return ""
+	}
+	path, ok := dynvalue.Get(production.FirstFrameInput(manifest), "path").(string)
+	if !ok || !filepath.IsLocal(filepath.FromSlash(path)) {
+		return ""
+	}
+	full := filepath.Join(dir, filepath.FromSlash(path))
+	if info, err := os.Stat(full); err != nil || !info.Mode().IsRegular() {
+		return ""
+	}
+	return full
 }
 
 // Preview — effects:preview: кадр frame принятого видео плана с цепочкой steps, JPEG data: URL

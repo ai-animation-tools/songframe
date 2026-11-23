@@ -38,6 +38,10 @@ func TestEffectsService(t *testing.T) {
 	if len(view.Shots) != 2 || view.Shots[0].State.Shot != "M01" || view.Shots[0].Applied {
 		t.Fatalf("планы: %+v", view.Shots)
 	}
+	// Карточка плана — первая опора принятого комплекта, как на «Производстве».
+	if want := filepath.Join(project, "assets", "shots", "M01", "generation-input-1.png"); view.Shots[0].Frame != want {
+		t.Fatalf("кадр карточки %q, ждали %q", view.Shots[0].Frame, want)
+	}
 	if _, err := service.Render(project, "M01", []shoteffects.Step{{Effect: "snow"}}); err == nil {
 		t.Fatal("неизвестный эффект без ошибки")
 	}

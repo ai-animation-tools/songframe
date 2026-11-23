@@ -1,29 +1,37 @@
 /**
- * Страница «Эффекты»: принятые планы слева, выбранный план справа — превью кадра «до» и «после»,
+ * Страница «Эффекты»: принятые планы слева карточками, как на «Производстве», выбранный план справа — превью кадра «до» и «после»,
  * цепочка эффектов (дождь, свет, зерно) с параметрами, применение заданием и снятие эффекта.
  * Принятое видео и платный оригинал не меняются: ролик с эффектом и рецепт пишет Go в
  * assets/effects/Mxx/, монтаж берёт ролик, пока он свеж.
  */
 import type { ReactElement } from 'react';
-import { Alert, Box, Button, Chip, List, ListItem, ListItemButton, ListItemText, Paper, Stack, Typography } from '@mui/material';
+import { Alert, Box, Button, Chip, Stack, Typography } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { commonTexts } from '@shared/texts/common';
 import { effectsTexts as texts } from '@shared/texts/effects';
-import { shotLabel, type EffectShot } from '@shared/effects';
+import type { EffectKind, EffectShot } from '@shared/effects';
 import { LinkedText } from '../../components/LinkedText';
 import { ListDetailLayout } from '../../components/ListDetailLayout';
+import { ShotCard } from '../../components/ShotCard';
 import { usePageLoading } from '../../components/PageLoader';
-import { formatClock } from '../../format';
 import { useStickyTop } from '../../hooks/useStickyTop';
 import { EffectShotPanel } from './components/EffectShotPanel';
 import { useEffectsPage } from './useEffectsPage';
 
-/** Отметка плана в списке: эффекта нет, свеж, устарел, комплект недоступен. */
-function ShotChip({ shot }: { shot: EffectShot }): ReactElement {
-  if (shot.problem) return <Chip size="small" color="error" label={texts.problem} />;
-  if (shot.jobId) return <Chip size="small" color="info" label={texts.rendering} />;
-  if (!shot.applied) return <Chip size="small" variant="outlined" label={texts.noEffect} />;
-  return shot.stale ? <Chip size="small" color="warning" label={texts.stale} /> : <Chip size="small" color="success" label={texts.fresh} />;
+/** Отметка эффекта на карточке плана: идёт рендер, «В монтаже» или «Устарел»; без эффекта — нет отметки. */
+function ShotChip({ shot }: { shot: EffectShot }): ReactElement | null {
+  const sx = { height: 18 };
+  if (shot.problem) return null;
+  if (shot.jobId) return <Chip size="small" color="info" label={texts.rendering} sx={sx} />;
+  if (!shot.applied) return null;
+  return shot.stale ? <Chip size="small" color="warning" label={texts.stale} sx={sx} /> : <Chip size="small" color="success" label={texts.fresh} sx={sx} />;
+}
+
+/** Нижняя строка карточки: эффекты плана, «Без эффекта» или почему эффект недоступен. */
+function shotCaption(shot: EffectShot, kinds: EffectKind[]): string {
+  if (shot.problem) return texts.problem;
+  if (!shot.applied || !shot.steps.length) return texts.noEffect;
+  return shot.steps.map((step) => kinds.find((kind) => kind.id === step.effect)?.title ?? step.effect).join(' + ');
 }
 
 export function EffectsPage(): ReactElement {
@@ -65,23 +73,31 @@ export function EffectsPage(): ReactElement {
           minDetailWidth={640}
           stickyTop={stickyTop}
           list={
-            <Paper variant="outlined">
-              <List dense aria-label={texts.listLabel} disablePadding>
-                {shots.map((shot) => (
-                  <ListItem key={shot.shot} disablePadding>
-                    <ListItemButton selected={shot.shot === selected?.shot} onClick={() => page.select(shot.shot)}>
-                      <ListItemText
-                        primary={shotLabel(shot)}
-                        secondary={`${formatClock(shot.start)}–${formatClock(shot.end)}`}
-                        slotProps={{ primary: { noWrap: true } }}
-                        sx={{ minWidth: 0, mr: 1 }}
-                      />
-                      <ShotChip shot={shot} />
-                    </ListItemButton>
-                  </ListItem>
-                ))}
-              </List>
-            </Paper>
+            <Box
+              role="list"
+              aria-label={texts.listLabel}
+              sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 220px), 1fr))', gap: 1.5, minWidth: 0 }}
+            >
+              {shots.map((shot) => (
+                <Box role="listitem" key={shot.shot} sx={{ minWidth: 0 }}>
+                  <ShotCard
+                    shot={{
+                      id: shot.shot,
+                      title: shot.title,
+                      start: shot.start,
+                      end: shot.end,
+                      lipsync: shot.lipsync,
+                      state: shot.problem ? 'unknown' : 'completed',
+                      stageLabel: shotCaption(shot, view.kinds)
+                    }}
+                    imagePath={shot.frame || null}
+                    chips={<ShotChip shot={shot} />}
+                    selected={shot.shot === selected?.shot}
+                    onSelect={page.select}
+                  />
+                </Box>
+              ))}
+            </Box>
           }
           detail={
             selected ? (

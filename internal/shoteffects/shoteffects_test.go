@@ -278,7 +278,7 @@ func TestListAndPreview(t *testing.T) {
 	if len(shots) != 2 || shots[0].Shot != "M01" || shots[1].Shot != "M02" || !shots[0].Camera || shots[0].Heading != 90 || shots[1].Camera {
 		t.Fatalf("список: %+v", shots)
 	}
-	if shots[0].Title == "" || shots[0].End <= shots[0].Start || shots[0].Applied {
+	if shots[0].Title != "Вступление" || shots[1].Title != "Вечер зажёг фонари у воды" || shots[0].End <= shots[0].Start || shots[0].Applied {
 		t.Fatalf("план: %+v", shots[0])
 	}
 	if _, err := exec.LookPath(mediacmd.FFmpeg()); err != nil {

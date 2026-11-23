@@ -10,7 +10,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import LayersClearIcon from '@mui/icons-material/LayersClear';
-import type { EffectKind, EffectShot, EffectStep } from '@shared/effects';
+import { shotLabel, type EffectKind, type EffectShot, type EffectStep } from '@shared/effects';
 import { effectsTexts as texts } from '@shared/texts/effects';
 import { ActionButton } from '../../../components/ActionButton';
 import { DestructiveButton } from '../../../components/DestructiveButton';
@@ -80,9 +80,7 @@ export function EffectShotPanel({
   if (shot.problem)
     return (
       <Stack spacing={2}>
-        <Typography variant="h6">
-          {shot.shot} · {shot.title}
-        </Typography>
+        <Typography variant="h6">{shotLabel(shot)}</Typography>
         <Alert severity="error">
           <LinkedText text={shot.problem} />
         </Alert>
@@ -93,7 +91,7 @@ export function EffectShotPanel({
     <Stack spacing={2} sx={{ minWidth: 0 }} data-testid="effect-shot-panel">
       <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
         <Typography variant="h6" sx={{ minWidth: 0, overflowWrap: 'anywhere' }}>
-          {shot.shot} · {shot.title}
+          {shotLabel(shot)}
         </Typography>
         <Typography variant="body2" color="text.secondary">
           {formatClock(shot.start)}–{formatClock(shot.end)}
@@ -227,7 +225,7 @@ export function EffectShotPanel({
                   onCopy(other);
                 }}
               >
-                {other.shot} · {other.title} · {other.steps.map((step) => byId.get(step.effect)?.title ?? step.effect).join(', ')}
+                {shotLabel(other)} · {other.steps.map((step) => byId.get(step.effect)?.title ?? step.effect).join(', ')}
               </MenuItem>
             ))}
           </Menu>

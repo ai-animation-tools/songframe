@@ -107,3 +107,8 @@ export function sameSteps(a: EffectStep[], b: EffectStep[]): boolean {
     );
   return norm(a) === norm(b);
 }
+
+/** Подпись плана: номер и строка песни; у сцены без строки — только номер. */
+export function shotLabel(shot: Pick<EffectShot, 'shot' | 'title'>): string {
+  return shot.title ? `${shot.shot} · ${shot.title}` : shot.shot;
+}

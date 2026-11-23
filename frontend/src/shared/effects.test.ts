@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { EffectParamSpec } from './types';
-import { editableSteps, sameSteps, stepValue, withValue } from './effects';
+import { editableSteps, sameSteps, shotLabel, stepValue, withValue } from './effects';
 
 const density: EffectParamSpec = { name: 'density', title: 'Плотность', min: 0, max: 5000, default: 900, step: 10 };
 
@@ -29,5 +29,12 @@ describe('черновик эффектов', () => {
     expect(sameSteps([{ effect: 'rain', given: { a: 1, b: 2 } }], [{ effect: 'rain', given: { b: 2, a: 1 }, wind: null }])).toBe(true);
     expect(sameSteps([{ effect: 'rain', given: {} }], [{ effect: 'rain', given: {}, wind: { direction: 0, strength: 0.4 } }])).toBe(false);
     expect(sameSteps([], [{ effect: 'grain', given: {} }])).toBe(false);
+  });
+});
+
+describe('подпись плана', () => {
+  it('номер со строкой песни, без строки — только номер', () => {
+    expect(shotLabel({ shot: 'M01', title: 'Вступление' })).toBe('M01 · Вступление');
+    expect(shotLabel({ shot: 'M02', title: '' })).toBe('M02');
   });
 });

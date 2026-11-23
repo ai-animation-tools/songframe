@@ -14,8 +14,8 @@ import (
 	"songframe/internal/effects"
 )
 
-// Shot — план сценария с принятым комплектом для страницы эффектов: его эффект (State), название
-// и время в песне, есть ли у плана направление камеры (без него ветер дождя не применить) и
+// Shot — план сценария с принятым комплектом для страницы эффектов: его эффект (State), строка
+// песни (поле original сценария — подпись плана в списке) и время в песне, есть ли у плана направление камеры (без него ветер дождя не применить) и
 // почему эффект недоступен (Problem: повреждённый комплект; тогда State содержит только Shot).
 // Heading — направление камеры первого кадра (градусы против часовой от востока, как ветер),
 // осмысленно при Camera: по нему страница рисует ветер относительно взгляда камеры.
@@ -49,7 +49,9 @@ func List(root string) ([]Shot, error) {
 		if _, err := os.Stat(filepath.Join(root, "assets", "shots", id, "manifest.json")); err != nil {
 			continue
 		}
-		shot := Shot{Title: dynvalue.ToString(dynvalue.Get(scene, "title"))}
+		// Подпись — строка песни; у сцены без неё подписи нет, а не текст "undefined".
+		title, _ := dynvalue.Get(scene, "original").(string)
+		shot := Shot{Title: title}
 		if fps > 0 {
 			start, _ := dynvalue.Get(scene, "start_frame").(float64)
 			end, _ := dynvalue.Get(scene, "end_frame_exclusive").(float64)

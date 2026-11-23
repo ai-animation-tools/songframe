@@ -90,21 +90,21 @@ export const EFFECTS_KIT_PROBLEM = 'Комплект плана M04 повреж
 
 function initialShots(): EffectShot[] {
   return [
-    shot('M01', 'Олег у калитки под дождём', 0, {
+    shot('M01', 'Вступление: город под дождём', 0, {
       applied: true,
       steps: [applied(RAIN_WITH_WIND), applied({ effect: 'grain', given: {} })],
       output: STORY_VIDEO_PATH,
       version: 'a'.repeat(64)
     }),
-    shot('M02', 'Грядки на рассвете', 3, { camera: false, heading: 0 }),
-    shot('M03', 'Свет фонаря у сарая', 6, {
+    shot('M02', 'Мост над рекой на рассвете', 3, { camera: false, heading: 0 }),
+    shot('M03', 'Фонарь у старого причала', 6, {
       applied: true,
       steps: [applied({ effect: 'light', given: { intensity: 7 } })],
       output: STORY_VIDEO_PATH,
       version: 'b'.repeat(64),
       stale: EFFECTS_STALE_REASON
     }),
-    shot('M04', 'Пустая улица', 9, { problem: EFFECTS_KIT_PROBLEM })
+    shot('M04', 'Пустая площадь', 9, { problem: EFFECTS_KIT_PROBLEM })
   ];
 }
 

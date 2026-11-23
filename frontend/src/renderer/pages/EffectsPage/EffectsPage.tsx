@@ -9,7 +9,7 @@ import { Alert, Box, Button, Chip, List, ListItem, ListItemButton, ListItemText,
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { commonTexts } from '@shared/texts/common';
 import { effectsTexts as texts } from '@shared/texts/effects';
-import type { EffectShot } from '@shared/effects';
+import { shotLabel, type EffectShot } from '@shared/effects';
 import { LinkedText } from '../../components/LinkedText';
 import { ListDetailLayout } from '../../components/ListDetailLayout';
 import { usePageLoading } from '../../components/PageLoader';
@@ -71,7 +71,7 @@ export function EffectsPage(): ReactElement {
                   <ListItem key={shot.shot} disablePadding>
                     <ListItemButton selected={shot.shot === selected?.shot} onClick={() => page.select(shot.shot)}>
                       <ListItemText
-                        primary={`${shot.shot} · ${shot.title}`}
+                        primary={shotLabel(shot)}
                         secondary={`${formatClock(shot.start)}–${formatClock(shot.end)}`}
                         slotProps={{ primary: { noWrap: true } }}
                         sx={{ minWidth: 0, mr: 1 }}

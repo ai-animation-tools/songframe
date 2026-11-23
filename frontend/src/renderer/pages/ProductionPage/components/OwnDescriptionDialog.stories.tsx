@@ -24,10 +24,12 @@ interface OwnStoryProps {
   /** Первое сохранение отклоняется Go: окно остаётся открытым с причиной. */
   rejectFirst?: boolean;
   initial?: OwnDescriptionDraft;
+  /** План из опор: K01 и состояния со своим временем, без конечной опоры и длительности запроса. */
+  staticShot?: boolean;
 }
 
-function OwnDescriptionStory({ manual = false, limit = 4, rejectFirst = false, initial }: OwnStoryProps) {
-  const start = initial ?? initialDraft({ description: null, requestSeconds: null, framePrompts: [], window: 5.5, manual });
+function OwnDescriptionStory({ manual = false, limit = 4, rejectFirst = false, initial, staticShot = false }: OwnStoryProps) {
+  const start = initial ?? initialDraft({ description: null, requestSeconds: null, framePrompts: [], window: 5.5, manual, staticShot });
   const [open, setOpen] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
@@ -181,6 +183,30 @@ export const ManualSingle: Story = {
     await expect(body.getByText(texts.frameTitle({ id: 'K01', role: 'first' }))).toBeVisible();
     await expect(body.queryByRole('button', { name: texts.addFrame })).not.toBeInTheDocument();
     await expect(body.queryByRole('button', { name: texts.removeFrame({ id: 'K01' }) })).not.toBeInTheDocument();
+  }
+};
+
+export const StaticShot: Story = {
+  name: 'План из опор · состояния без конечной опоры',
+  tags: ['ci'],
+  args: { staticShot: true },
+  play: async (context) => {
+    const body = within(await dialog(context));
+    await expect(body.getByText(`${texts.staticFramesHint}.`)).toBeVisible();
+    // Длительность запроса у плана из опор не задают: запроса видео нет.
+    await expect(body.queryByRole('spinbutton', { name: texts.requestSeconds })).not.toBeInTheDocument();
+    await expect(body.getByText(texts.stateTitle({ id: 'K01', first: true }))).toBeVisible();
+    await userEvent.type(body.getByRole('textbox', { name: texts.description }), 'Фары разгораются до белого.');
+    await userEvent.click(body.getByRole('button', { name: texts.addFrame }));
+    await expect(body.getByText(texts.stateTitle({ id: 'K02', first: false }))).toBeVisible();
+    const time = body.getByRole('spinbutton', { name: texts.time });
+    await userEvent.clear(time);
+    await userEvent.type(time, '6');
+    await expect(save(context)).toBeDisabled();
+    await userEvent.clear(time);
+    await userEvent.type(time, '2.1');
+    await userEvent.click(save(context));
+    await expect(screenOf(context).getByTestId('own-saved')).toHaveTextContent('Фары разгораются до белого. | 6 с | K01/first/0/0, K02/middle/2.1/0');
   }
 };
 

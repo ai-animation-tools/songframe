@@ -1,7 +1,9 @@
 /**
  * Черновик своего описания плана: текст, длительность запроса и план опор. Роли и ID опор выводятся из их порядка (K01 — начало,
  * последняя — конец запроса), поэтому пользователь задаёт только время промежуточных опор, промпты и референсы. Промпт
- * опоры необязателен: опору без промпта нельзя создать, её загружают своим файлом. Окончательную
+ * опоры необязателен: опору без промпта нельзя создать, её загружают своим файлом. У плана из опор конечной опоры нет:
+ * K01 — первое состояние на 0 с, каждая следующая — состояние со своим временем строго внутри окна плана, а длительность
+ * запроса — окно, округлённое вверх (запроса видео нет, правило длительности не действует). Окончательную
  * проверку выполняет Go теми же правилами, что ответ агента; здесь — только то, что объясняет недоступность «Сохранить и принять».
  */
 import type { ProductionFramePrompt, ProductionOwnText } from '@shared/production-workflow';
@@ -19,6 +21,10 @@ export interface OwnDescriptionDraft {
   description: string;
   requestSeconds: string;
   frames: OwnFrameDraft[];
+  /** План из опор: опоры после K01 — состояния со своим временем внутри окна, конечной опоры нет. */
+  staticShot?: boolean;
+  /** Окно плана, секунды: граница времени состояния у плана из опор. */
+  windowSeconds?: number;
 }
 
 /** ID опоры по позиции: K01, K02… */
@@ -26,9 +32,9 @@ export function frameId(index: number): string {
   return `K${String(index + 1).padStart(2, '0')}`;
 }
 
-/** Роль опоры по позиции: одна опора — только начало плана. */
-export function frameRole(index: number, count: number): ProductionFramePrompt['role'] {
-  return index === 0 ? 'first' : index === count - 1 ? 'last' : 'middle';
+/** Роль опоры по позиции: одна опора — только начало плана; у плана из опор все после K01 — состояния (middle). */
+export function frameRole(index: number, count: number, staticShot = false): ProductionFramePrompt['role'] {
+  return index === 0 ? 'first' : index === count - 1 && !staticShot ? 'last' : 'middle';
 }
 
 /** Длительность запроса по умолчанию: наименьшее целое число секунд строго больше окна. */
@@ -46,17 +52,29 @@ export function initialDraft(input: {
   framePrompts: ProductionFramePrompt[];
   window: number;
   manual: boolean;
+  staticShot?: boolean;
 }): OwnDescriptionDraft {
-  const seconds = input.requestSeconds ?? defaultRequestSeconds(input.window);
+  const staticShot = !!input.staticShot;
+  const seconds = input.requestSeconds ?? (staticShot ? Math.ceil(input.window) : defaultRequestSeconds(input.window));
   const frames = input.framePrompts.length
     ? input.framePrompts.map((frame) => ({ time: String(frame.timeSeconds), prompt: frame.prompt, referencePaths: [...frame.referencePaths] }))
-    : Array.from({ length: input.manual ? 1 : 2 }, () => ({ time: '', prompt: '', referencePaths: [] }));
-  return { description: input.description ?? '', requestSeconds: String(seconds), frames: input.manual ? frames.slice(0, 1) : frames };
+    : Array.from({ length: input.manual || staticShot ? 1 : 2 }, () => ({ time: '', prompt: '', referencePaths: [] }));
+  const draft = { description: input.description ?? '', requestSeconds: String(seconds), frames: input.manual ? frames.slice(0, 1) : frames };
+  return staticShot ? { ...draft, staticShot, windowSeconds: input.window } : draft;
 }
 
-/** Новая промежуточная опора встаёт перед последней, посередине между соседями; к единственной опоре добавляется конец. */
+/**
+ * Новая промежуточная опора встаёт перед последней, посередине между соседями; к единственной опоре добавляется конец.
+ * У плана из опор новое состояние встаёт последним, посередине между временем предыдущего и концом окна.
+ */
 export function addFrame(draft: OwnDescriptionDraft): OwnDescriptionDraft {
   const frames = [...draft.frames];
+  if (draft.staticShot) {
+    const window = draft.windowSeconds ?? Number(draft.requestSeconds);
+    const before = frames.length > 1 ? Number(frames[frames.length - 1].time.replace(',', '.')) : 0;
+    const middle = Number.isFinite(window) && Number.isFinite(before) ? Math.round(((before + window) / 2) * 10) / 10 : '';
+    return { ...draft, frames: [...frames, { time: String(middle), prompt: '', referencePaths: [] }] };
+  }
   const seconds = Number(draft.requestSeconds);
   if (frames.length < 2) return { ...draft, frames: [...frames, { time: '', prompt: '', referencePaths: [] }] };
   const before = frames.length > 2 ? Number(frames[frames.length - 2].time) : 0;
@@ -67,7 +85,7 @@ export function addFrame(draft: OwnDescriptionDraft): OwnDescriptionDraft {
 
 /** Время опоры по позиции: начало — 0, конец — длительность запроса, промежуточная — значение поля. */
 function frameTime(draft: OwnDescriptionDraft, index: number): number {
-  const role = frameRole(index, draft.frames.length);
+  const role = frameRole(index, draft.frames.length, draft.staticShot);
   return role === 'first' ? 0 : role === 'last' ? Number(draft.requestSeconds) : Number(draft.frames[index].time.replace(',', '.'));
 }
 
@@ -79,9 +97,12 @@ export function draftProblem(draft: OwnDescriptionDraft, limit: number): string 
   if (draft.frames.length < 1 || draft.frames.length > limit) return texts.limit({ limit });
   for (let index = 0; index < draft.frames.length; index++) {
     const id = frameId(index);
-    if (frameRole(index, draft.frames.length) === 'middle') {
+    if (frameRole(index, draft.frames.length, draft.staticShot) === 'middle') {
       const time = frameTime(draft, index);
-      if (!Number.isFinite(time) || time <= frameTime(draft, index - 1) || time >= seconds) return texts.frameTimeInvalid({ id });
+      // Состояние плана из опор начинается внутри окна плана, промежуточная опора — внутри запроса.
+      const end = draft.staticShot ? (draft.windowSeconds ?? seconds) : seconds;
+      if (!Number.isFinite(time) || time <= frameTime(draft, index - 1) || time >= end)
+        return draft.staticShot ? texts.stateTimeInvalid({ id }) : texts.frameTimeInvalid({ id });
     }
   }
   return null;
@@ -95,7 +116,7 @@ export function ownText(draft: OwnDescriptionDraft): Extract<ProductionOwnText, 
     requestSeconds: Number(draft.requestSeconds),
     keyframes: draft.frames.map((frame, index) => ({
       id: frameId(index),
-      role: frameRole(index, draft.frames.length),
+      role: frameRole(index, draft.frames.length, draft.staticShot),
       timeSeconds: frameTime(draft, index),
       prompt: frame.prompt.trim(),
       referencePaths: frame.referencePaths

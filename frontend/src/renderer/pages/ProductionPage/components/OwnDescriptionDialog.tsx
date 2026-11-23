@@ -98,30 +98,32 @@ export function OwnDescriptionDialog({
           value={draft.description}
           onChange={(event) => setDraft({ ...draft, description: event.target.value })}
         />
-        <TextField
-          label={texts.requestSeconds}
-          type="number"
-          sx={{ maxWidth: 260 }}
-          slotProps={{ htmlInput: { min: 1, step: 1 } }}
-          helperText={texts.requestSecondsHint({ window: windowSeconds.toFixed(2).replace('.', ',') })}
-          value={draft.requestSeconds}
-          onChange={(event) => setDraft({ ...draft, requestSeconds: event.target.value })}
-        />
+        {!initial.staticShot ? (
+          <TextField
+            label={texts.requestSeconds}
+            type="number"
+            sx={{ maxWidth: 260 }}
+            slotProps={{ htmlInput: { min: 1, step: 1 } }}
+            helperText={texts.requestSecondsHint({ window: windowSeconds.toFixed(2).replace('.', ',') })}
+            value={draft.requestSeconds}
+            onChange={(event) => setDraft({ ...draft, requestSeconds: event.target.value })}
+          />
+        ) : null}
         <Box>
           <Typography variant="subtitle2">{texts.frames}</Typography>
           <Typography variant="body2" color="text.secondary">
-            {manual ? texts.manualSingle : `${texts.framesHint}. ${texts.limit({ limit })}.`}
+            {manual ? texts.manualSingle : draft.staticShot ? `${texts.staticFramesHint}.` : `${texts.framesHint}. ${texts.limit({ limit })}.`}
           </Typography>
         </Box>
         {draft.frames.map((frame, index) => {
           const id = frameId(index);
-          const role = frameRole(index, count);
+          const role = frameRole(index, count, draft.staticShot);
           return (
             <Paper key={index} variant="outlined" sx={{ p: 1.5 }}>
               <Stack spacing={1.5}>
                 <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                   <Typography variant="subtitle2" sx={{ flex: 1 }}>
-                    {texts.frameTitle({ id, role })}
+                    {draft.staticShot ? texts.stateTitle({ id, first: index === 0 }) : texts.frameTitle({ id, role })}
                   </Typography>
                   {role === 'middle' ? (
                     <TextField

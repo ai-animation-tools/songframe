@@ -48,4 +48,20 @@ describe('своё описание плана', () => {
     expect(draftProblem({ ...draft(['', '']), frames: [{ time: '', prompt: '', referencePaths: [] }] }, 20)).toBeNull();
     expect(draftProblem(draft(['', '3', '']), 20)).toBeNull();
   });
+
+  it('у плана из опор после K01 идут состояния внутри окна, конечной опоры нет', () => {
+    const start = initialDraft({ description: 'Фары разгораются.', requestSeconds: null, framePrompts: [], window: 4.43, manual: false, staticShot: true });
+    expect(start).toMatchObject({ requestSeconds: '5', frames: [{ time: '' }], staticShot: true, windowSeconds: 4.43 });
+    // Новое состояние встаёт последним, посередине между предыдущим и концом окна.
+    const two = addFrame(start);
+    expect(two.frames.map((frame) => frame.time)).toEqual(['', '2.2']);
+    expect(draftProblem(two, 20)).toBeNull();
+    expect(ownText({ ...two, frames: [two.frames[0], { ...two.frames[1], time: '2.1' }] }).keyframes).toEqual([
+      { id: 'K01', role: 'first', timeSeconds: 0, prompt: '', referencePaths: [] },
+      { id: 'K02', role: 'middle', timeSeconds: 2.1, prompt: '', referencePaths: [] }
+    ]);
+    // Состояние не позже конца окна, даже если запрос длиннее.
+    expect(draftProblem({ ...two, frames: [two.frames[0], { ...two.frames[1], time: '4.5' }] }, 20)).toBe(texts.stateTimeInvalid({ id: 'K02' }));
+    expect(draftProblem({ ...two, frames: [two.frames[0], { ...two.frames[1], time: '' }] }, 20)).toBe(texts.stateTimeInvalid({ id: 'K02' }));
+  });
 });

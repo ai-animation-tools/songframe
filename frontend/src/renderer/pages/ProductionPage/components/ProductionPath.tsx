@@ -221,7 +221,8 @@ export function ProductionPath({
         requestSeconds: pkg?.timing?.request_seconds,
         framePrompts: pkg ? (view?.framePrompts ?? []) : [],
         window: pkg?.timing?.window_seconds ?? shot.end - shot.start,
-        manual: !!view?.singleFrame
+        manual: !!view?.singleFrame,
+        staticShot: !!(view?.staticShot ?? shot.staticShot)
       })
     );
   };

@@ -172,8 +172,8 @@ export interface View {
     "generationMethod"?: string;
 
     /**
-     * StaticShot — статичный кадр (Context.StaticShot): опор не меньше двух, предел провайдера
-     * видео к выбору их числа не относится.
+     * StaticShot — статичный кадр (Context.StaticShot): опор от одной (K01 и необязательные
+     * состояния), предел провайдера видео к выбору их числа не относится.
      */
     "staticShot"?: boolean;
 

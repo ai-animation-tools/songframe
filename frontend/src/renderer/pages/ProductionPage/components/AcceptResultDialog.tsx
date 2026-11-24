@@ -1,11 +1,15 @@
 import { productionTexts } from '@shared/texts/production';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-/** Параметры переноса результата в assets с сохранением выбранного монтажного участка. */
+/**
+ * Параметры переноса результата в assets с сохранением выбранного монтажного участка. У участка —
+ * итог: сколько кадров получится в плане при скорости и удержании и совпадает ли это с окном плана
+ * (счёт тот же, что у Go, — cutResultFrames), чтобы несовпадение было видно до «Принять».
+ */
 import type { ReactElement } from 'react';
 import { Alert, Box, Checkbox, FormControlLabel, MenuItem, Stack, TextField } from '@mui/material';
 import type { AcceptOptions } from '@shared/types';
 import type { AcceptTarget } from '../decisions';
-import { cutFrameOf, cutSeconds, DEFAULT_FPS } from '@shared/video';
+import { cutFrameOf, cutResultFrames, cutSeconds, DEFAULT_FPS } from '@shared/video';
 import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 
 export function AcceptResultDialog({
@@ -38,6 +42,26 @@ export function AcceptResultDialog({
     const text = (index: number): string => String(cutSeconds(index, fps)).replace('.', ',');
     return { helperText: productionTexts.acceptResultDialog.cutBetween({ before: text(before), after: text(before + 1) }), error: true };
   };
+  // Итог участка, как его посчитает Go: сколько кадров получится в плане и совпадает ли с окном.
+  const result = (): { severity: 'success' | 'warning' | 'info' | 'error'; text: string } => {
+    const texts = productionTexts.acceptResultDialog;
+    const frames = cutResultFrames(
+      cutFrameOf(options.cutStart ?? 0, fps),
+      cutFrameOf(options.cutEnd ?? 0, fps),
+      options.speed ?? '1',
+      options.holdFirst ?? 0,
+      options.holdLast ?? 0
+    );
+    if (frames === null) return { severity: 'error', text: texts.cutResultInvalid };
+    const length = { frames, seconds: seconds(frames) };
+    const window = target?.windowFrames;
+    if (!window) return { severity: 'info', text: texts.cutResultLength(length) };
+    if (frames === window) return { severity: 'success', text: texts.cutResultFit(length) };
+    return frames < window
+      ? { severity: 'warning', text: texts.cutResultShort({ frames, window, missing: window - frames }) }
+      : { severity: 'warning', text: texts.cutResultLong({ frames, window, extra: frames - window }) };
+  };
+  const cutResult = options.mode === 'cut' ? result() : null;
   return (
     <ConfirmationDialog
       open={!!target}
@@ -133,6 +157,11 @@ export function AcceptResultDialog({
               inputProps={{ min: 0, step: 1 }}
             />
           </Box>
+        ) : null}
+        {cutResult ? (
+          <Alert severity={cutResult.severity} data-testid="accept-cut-result">
+            {cutResult.text}
+          </Alert>
         ) : null}
         <Alert severity="info">{productionTexts.acceptResultDialog.consequences}</Alert>
       </Stack>

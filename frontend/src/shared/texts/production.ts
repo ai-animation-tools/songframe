@@ -616,6 +616,14 @@ export const productionTexts = {
     holdLast: 'Удержать последний кадр, кадров',
     cutFrame: ({ frame }: { frame: number }) => `кадр ${frame}`,
     cutBetween: ({ before, after }: { before: string; after: string }) => `между кадрами: ${before} или ${after} с`,
+    cutResultFit: ({ frames, seconds }: { frames: number; seconds: string }) =>
+      `В плане: ${countLabel(frames, 'кадр', 'кадра', 'кадров')} (${seconds} с) — ровно окно плана.`,
+    cutResultShort: ({ frames, window, missing }: { frames: number; window: number; missing: number }) =>
+      `В плане: ${frames} из ${countLabel(window, 'кадра', 'кадров', 'кадров')} окна — не хватает ${missing}: удержите последний кадр или уменьшите скорость.`,
+    cutResultLong: ({ frames, window, extra }: { frames: number; window: number; extra: number }) =>
+      `В плане: ${countLabel(frames, 'кадр', 'кадра', 'кадров')} вместо ${window} в окне — лишних ${extra}: сократите участок или увеличьте скорость.`,
+    cutResultLength: ({ frames, seconds }: { frames: number; seconds: string }) => `В плане: ${countLabel(frames, 'кадр', 'кадра', 'кадров')} (${seconds} с).`,
+    cutResultInvalid: 'Длину результата не посчитать: границы участка должны стоять на кадрах, скорость — положительная дробь, например 1 или 0,8.',
     consequences: `Оригинал, принятый монтаж, кадры, промпт и сведения о приёмке будут сохранены в комплекте плана. Рабочие пакеты плана будут очищены, карточки и списки — обновлены.`
   },
   keyframeNoteScopeField: {

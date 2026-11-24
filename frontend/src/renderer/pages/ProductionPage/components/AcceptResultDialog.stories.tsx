@@ -53,6 +53,34 @@ export const CutDefault: Story = {
     await expect(within(canvasElement).getByText(/Переданные параметры:/)).toHaveTextContent('"expectedResultToken":"' + 'c'.repeat(64) + '"');
   }
 };
+export const CutResult: Story = {
+  tags: ['ci'],
+  name: 'Итог участка · длина в плане против окна при скорости и удержании',
+  play: async ({ canvasElement }) => {
+    const dialog = await open(canvasElement);
+    const result = (): HTMLElement => dialog.getByTestId('accept-cut-result');
+    const speed = dialog.getByRole('textbox', { name: texts.speed });
+    const hold = dialog.getByRole('spinbutton', { name: texts.holdLast });
+    // Участок 0–5 с при 30 к/с — 150 кадров, ровно окно.
+    await expect(result()).toHaveTextContent(texts.cutResultFit({ frames: 150, seconds: '5,00' }));
+    // Ускорение: 150 / 1,153 = 130,1 → 130 кадров, до окна не хватает 20.
+    await userEvent.clear(speed);
+    await userEvent.type(speed, '1,153');
+    await expect(result()).toHaveTextContent(texts.cutResultShort({ frames: 130, window: 150, missing: 20 }));
+    await userEvent.clear(hold);
+    await userEvent.type(hold, '20');
+    await expect(result()).toHaveTextContent(texts.cutResultFit({ frames: 150, seconds: '5,00' }));
+    // Замедление: 150 / 0,8 = 187,5 → 188 кадров и 20 удержания — лишних 58.
+    await userEvent.clear(speed);
+    await userEvent.type(speed, '0,8');
+    await expect(result()).toHaveTextContent(texts.cutResultLong({ frames: 208, window: 150, extra: 58 }));
+    await userEvent.clear(speed);
+    await userEvent.type(speed, '0');
+    await expect(result()).toHaveTextContent(texts.cutResultInvalid);
+    await userEvent.click(dialog.getByRole('button', { name: commonTexts.cancel }));
+    await closed(canvasElement);
+  }
+};
 export const FullDuration: Story = {
   name: 'Длительности совпали · принять оригинал целиком',
   args: { windowFrames: 240 },
@@ -60,6 +88,7 @@ export const FullDuration: Story = {
     const dialog = await open(canvasElement);
     await expect(dialog.getByRole('combobox', { name: texts.section })).toHaveTextContent(texts.full);
     await expect(dialog.queryByRole('spinbutton')).not.toBeInTheDocument();
+    await expect(dialog.queryByTestId('accept-cut-result')).not.toBeInTheDocument();
     await userEvent.click(dialog.getByRole('button', { name: texts.accept }));
     await done(canvasElement);
   }

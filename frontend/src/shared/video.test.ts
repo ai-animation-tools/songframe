@@ -6,7 +6,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { cutFrameOf, cutSeconds, FRAME_RATES, secondsToFrames } from './video';
+import { cutFrameOf, cutResultFrames, cutSeconds, FRAME_RATES, secondsToFrames } from './video';
 
 describe('сетка кадров build_review', () => {
   it('совпадает с допустимыми частотами реестра и принятых комплектов', () => {
@@ -38,5 +38,31 @@ describe('граница монтажного участка', () => {
   it('секунды кадра для поля — до тысячных и снова дают тот же кадр', () => {
     for (const fps of FRAME_RATES) for (let frame = 0; frame < 400; frame++) expect(cutFrameOf(cutSeconds(frame, fps), fps)).toBe(frame);
     expect(cutSeconds(155, 30)).toBe(5.167);
+  });
+});
+
+describe('длина принятого участка', () => {
+  it('считается как в build_review: частное скорости с округлением половины вверх и удержания', () => {
+    // 181 кадр при скорости 1,153 — 156,98 → 157 (окно M29 клипа 01).
+    expect(cutResultFrames(0, 181, '1.153')).toBe(157);
+    expect(cutResultFrames(0, 181, '1,153')).toBe(157);
+    expect(cutResultFrames(0, 120, '1')).toBe(120);
+    expect(cutResultFrames(30, 120, '0.8')).toBe(113); // 112,5 → 113: половина вверх
+    expect(cutResultFrames(0, 5, '2')).toBe(3); // 2,5 → 3
+    expect(cutResultFrames(0, 7, '2')).toBe(4); // 3,5 → 4
+    expect(cutResultFrames(0, 10, '3')).toBe(3); // 3,33 → 3
+    expect(cutResultFrames(0, 100, '1', 2, 5)).toBe(107);
+  });
+
+  it('не считает неверный участок, скорость и удержание', () => {
+    expect(cutResultFrames(null, 181, '1')).toBeNull();
+    expect(cutResultFrames(10, 10, '1')).toBeNull();
+    expect(cutResultFrames(0, 181, '')).toBeNull();
+    expect(cutResultFrames(0, 181, '0')).toBeNull();
+    expect(cutResultFrames(0, 181, '-1')).toBeNull();
+    expect(cutResultFrames(0, 181, '1.2.3')).toBeNull();
+    expect(cutResultFrames(0, 181, '1', -1)).toBeNull();
+    expect(cutResultFrames(0, 181, '1', 0, 1.5)).toBeNull();
+    expect(cutResultFrames(0, 1, '4')).toBeNull(); // 0,25 → 0: движение короче кадра
   });
 });

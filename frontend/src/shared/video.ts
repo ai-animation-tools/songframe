@@ -32,3 +32,27 @@ export function secondsToFrames(seconds: number, fps: number): number {
   const scaled = seconds * fps;
   return Math.floor(scaled + 0.5 + Number.EPSILON * Math.max(1, Math.abs(scaled)) * 4);
 }
+
+/**
+ * Длина принятого участка в кадрах, как её считает Go (build_review): кадры движения —
+ * (конец − начало) / скорость с округлением половины вверх, плюс удержания первого и последнего
+ * кадра. Скорость — десятичная дробь с точкой или запятой; частное считается точно в целых числах,
+ * чтобы граница округления (половина кадра) совпала с Go. null — граница участка не на сетке,
+ * скорость не положительная дробь, удержание не целое неотрицательное или движение короче кадра:
+ * такой участок Go отклонит сам.
+ */
+export function cutResultFrames(startFrame: number | null, endFrame: number | null, speed: string, holdFirst = 0, holdLast = 0): number | null {
+  if (startFrame === null || endFrame === null || endFrame <= startFrame) return null;
+  if (![holdFirst, holdLast].every((hold) => Number.isSafeInteger(hold) && hold >= 0)) return null;
+  const match = /^\s*(\d+)(?:[.,](\d*))?\s*$/.exec(speed);
+  if (!match) return null;
+  const fraction = match[2] ?? '';
+  const numerator = BigInt(match[1] + fraction);
+  const denominator = 10n ** BigInt(fraction.length);
+  if (numerator === 0n) return null;
+  // (span · den / num) с округлением половины вверх: ⌊(2 · span · den + num) / (2 · num)⌋.
+  const span = BigInt(endFrame - startFrame);
+  const motion = (2n * span * denominator + numerator) / (2n * numerator);
+  if (motion < 1n) return null;
+  return holdFirst + Number(motion) + holdLast;
+}

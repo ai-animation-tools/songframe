@@ -120,7 +120,8 @@ export function AcceptResultDialog({
               size="small"
               label={productionTexts.acceptResultDialog.speed}
               value={options.speed}
-              onChange={(e) => onOptions({ ...options, speed: e.target.value })}
+              // Запятая — привычная русская запись дроби; Go разбирает множитель только с точкой.
+              onChange={(e) => onOptions({ ...options, speed: e.target.value.replace(',', '.') })}
               helperText={productionTexts.acceptResultDialog.speedHint}
             />
             <TextField

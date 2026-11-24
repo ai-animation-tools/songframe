@@ -612,7 +612,7 @@ export const productionTexts = {
     cutStart: labels.startSeconds,
     cutEnd: labels.endSeconds,
     speed: 'Скорость',
-    speedHint: 'множитель, например 1 или 0.8',
+    speedHint: 'множитель, например 1 или 0,8',
     holdLast: 'Удержать последний кадр, кадров',
     cutFrame: ({ frame }: { frame: number }) => `кадр ${frame}`,
     cutBetween: ({ before, after }: { before: string; after: string }) => `между кадрами: ${before} или ${after} с`,

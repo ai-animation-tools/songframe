@@ -156,13 +156,14 @@ export const SpeechMissing: Story = {
   }
 };
 export const CancelEscape: Story = {
-  name: 'Escape сохраняет границы и скорость · явная отмена сбрасывает их',
+  name: 'Escape сохраняет границы и скорость · запятая в скорости · явная отмена сбрасывает их',
   play: async ({ canvasElement }) => {
     let dialog = await open(canvasElement);
     await userEvent.clear(dialog.getByRole('spinbutton', { name: texts.cutStart }));
     await userEvent.type(dialog.getByRole('spinbutton', { name: texts.cutStart }), '1');
     await userEvent.clear(dialog.getByRole('textbox', { name: texts.speed }));
-    await userEvent.type(dialog.getByRole('textbox', { name: texts.speed }), '0.8');
+    // Дробь с запятой поле записывает с точкой, как её разбирает Go.
+    await userEvent.type(dialog.getByRole('textbox', { name: texts.speed }), '0,8');
     await expectImplicitCloseBlocked(within(canvasElement.ownerDocument.body).getByRole('dialog'));
     await expect(dialog.getByRole('spinbutton', { name: texts.cutStart })).toHaveValue(1);
     await expect(dialog.getByRole('textbox', { name: texts.speed })).toHaveValue('0.8');

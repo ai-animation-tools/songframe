@@ -111,7 +111,12 @@ func Preview(ctx context.Context, root, shot string, steps []Step, t, width int)
 	if err != nil {
 		return "", err
 	}
-	frame, err := effects.DecodeFrame(ctx, filepath.Join(root, filepath.FromSlash(current.video.Path)), size, t)
+	// С «Реверсом» кадр t результата — кадр с конца принятого видео.
+	sourceFrame := t
+	if effects.Reversed(chainSteps) {
+		sourceFrame = current.frames - 1 - t
+	}
+	frame, err := effects.DecodeFrame(ctx, filepath.Join(root, filepath.FromSlash(current.video.Path)), size, sourceFrame)
 	if err != nil {
 		return "", err
 	}

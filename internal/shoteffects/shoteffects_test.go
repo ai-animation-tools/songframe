@@ -3,6 +3,7 @@ package shoteffects
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -257,6 +258,53 @@ func TestRender(t *testing.T) {
 	}
 }
 
+// TestRenderReverse — «Реверс» разворачивает принятое видео до остальных эффектов: первый кадр
+// ролика — последний кадр принятого видео; рецепт свеж и хранит шаг без параметров.
+func TestRenderReverse(t *testing.T) {
+	if _, err := exec.LookPath(mediacmd.FFmpeg()); err != nil {
+		t.Skip("нет FFmpeg")
+	}
+	root := project(t)
+	shortKit(t, root)
+	state, err := Render(context.Background(), root, "M01", []Step{{Effect: "reverse", Given: map[string]float64{}}, {Effect: "grain", Given: map[string]float64{"amount": 0}}}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !state.Applied || state.Stale != "" || len(state.Steps) != 2 || state.Steps[0].Effect != "reverse" || len(state.Steps[0].Params) != 0 {
+		t.Fatalf("состояние: %+v", state)
+	}
+	source := filepath.Join(root, "assets", "shots", "M01", "video.mp4")
+	first, last := frameBytes(t, source, 0), frameBytes(t, source, 5)
+	got := frameBytes(t, state.Output, 0)
+	if distance(got, last) >= distance(got, first) {
+		t.Fatal("первый кадр ролика ближе к первому кадру принятого видео, чем к последнему")
+	}
+}
+
+// frameBytes — кадр n ролика в gray 160×90.
+func frameBytes(t *testing.T, path string, n int) []byte {
+	t.Helper()
+	data, err := exec.Command(mediacmd.FFmpeg(), "-v", "error", "-i", path, "-vf", fmt.Sprintf(`select=eq(n\,%d),scale=160:90`, n),
+		"-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "gray", "-").Output()
+	if err != nil || len(data) != 160*90 {
+		t.Fatalf("кадр %d %s: %v", n, path, err)
+	}
+	return data
+}
+
+// distance — сумма модулей разностей байтов.
+func distance(a, b []byte) int {
+	sum := 0
+	for i := range a {
+		d := int(a[i]) - int(b[i])
+		if d < 0 {
+			d = -d
+		}
+		sum += d
+	}
+	return sum
+}
+
 // shortKitChanged записывает в комплект M01 другой SHA-256 видео, как после повторной приёмки.
 func shortKitChanged(t *testing.T, root string) {
 	t.Helper()
@@ -296,6 +344,18 @@ func TestListAndPreview(t *testing.T) {
 	}
 	if !strings.HasPrefix(clean, "data:image/jpeg;base64,") || clean == rain {
 		t.Fatal("превью без эффекта и с дождём совпадают")
+	}
+	// С «Реверсом» кадр 0 — последний кадр принятого видео.
+	last, err := Preview(context.Background(), root, "M01", nil, 5, 480)
+	if err != nil {
+		t.Fatal(err)
+	}
+	reversed, err := Preview(context.Background(), root, "M01", []Step{{Effect: "reverse", Given: map[string]float64{}}}, 0, 480)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reversed != last || reversed == clean {
+		t.Fatal("превью с реверсом — не последний кадр принятого видео")
 	}
 	if _, err := Preview(context.Background(), root, "M01", nil, 6, 480); err == nil {
 		t.Fatal("кадр за концом плана")

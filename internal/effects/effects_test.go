@@ -9,6 +9,8 @@ import (
 	"math"
 	"os/exec"
 	"path/filepath"
+	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -89,8 +91,11 @@ func TestRegistry(t *testing.T) {
 			t.Errorf("сборка из опор: параметр %+v", spec)
 		}
 	}
-	if strings.Join(ids, ",") != "light,rain,grain" {
+	if strings.Join(ids, ",") != "reverse,light,rain,grain" {
 		t.Fatalf("эффекты %v", ids)
+	}
+	if !Reversed([]Step{{ID: "grain"}, {ID: "reverse"}}) || Reversed([]Step{{ID: "rain"}, {ID: "snow"}}) {
+		t.Fatal("признак реверса в цепочке")
 	}
 	if _, err := Build([]Step{{ID: "snow"}}, Size{4, 4, 1}); err == nil {
 		t.Fatal("неизвестный эффект без ошибки")
@@ -393,5 +398,66 @@ func TestVideoRoundTrip(t *testing.T) {
 	}
 	if err := short.Close(); err == nil || !strings.Contains(err.Error(), "меньше кадров") {
 		t.Fatalf("короткий ролик: %v", err)
+	}
+}
+
+// TestReversedVideo — обратное чтение частями: кадр t — кадр n−1−t прямого чтения пиксель в пиксель
+// (части стыкуются без пропусков и повторов); короткий ролик — ошибка Close, остановка рендера
+// раньше конца — нет.
+func TestReversedVideo(t *testing.T) {
+	requireFFmpeg(t)
+	directory := t.TempDir()
+	source := filepath.Join(directory, "counter.mp4")
+	const frames = 2*reverseChunk + 7
+	if output, err := exec.Command("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc2=size=160x90:rate=30",
+		"-frames:v", strconv.Itoa(frames), "-c:v", "libx264", "-pix_fmt", "yuv420p", source).CombinedOutput(); err != nil {
+		t.Fatalf("ffmpeg: %v %s", err, output)
+	}
+	size := Size{160, 90, frames}
+	forward, err := OpenVideo(context.Background(), source, size)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := make([]*Frame, frames)
+	for i := range want {
+		want[i] = forward.Frame(i)
+	}
+	if err := forward.Close(); err != nil {
+		t.Fatal(err)
+	}
+	reversed, err := OpenVideoReversed(context.Background(), source, size)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < frames; i++ {
+		got := reversed.Frame(i)
+		if !reflect.DeepEqual(got.Pix, want[frames-1-i].Pix) {
+			t.Fatalf("кадр %d не совпал с кадром %d источника", i, frames-1-i)
+		}
+	}
+	if err := reversed.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	early, err := OpenVideoReversed(context.Background(), source, size)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 5; i++ {
+		early.Frame(i)
+	}
+	if err := early.Close(); err != nil {
+		t.Fatalf("остановка раньше конца: %v", err)
+	}
+
+	long, err := OpenVideoReversed(context.Background(), source, Size{160, 90, frames + 3})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < frames+3; i++ {
+		long.Frame(i)
+	}
+	if err := long.Close(); err == nil || !strings.Contains(err.Error(), "меньше кадров") {
+		t.Fatalf("ролик короче заявленного: %v", err)
 	}
 }

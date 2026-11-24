@@ -93,8 +93,9 @@ type Effect interface {
 // Kind — регистрируемый вид эффекта. Version меняется вместе с изменением результата при тех же
 // параметрах: по ней вызывающие отличают устаревший производный файл. WindAngle — имя параметра
 // экранного наклона, который вызывающий может вычислить из ветра и направления камеры
-// (ScreenAngle); "" — эффект от ветра не зависит. Order — место в цепочке по умолчанию: свет
-// раньше дождя (капли подсвечиваются им), зерно последним (ложится поверх всего).
+// (ScreenAngle); "" — эффект от ветра не зависит. Order — место в цепочке по умолчанию: реверс
+// первым (переставляет кадры источника), свет раньше дождя (капли подсвечиваются им), зерно
+// последним (ложится поверх всего).
 type Kind struct {
 	ID    string
 	Title string
@@ -104,7 +105,11 @@ type Kind struct {
 	Order     int
 	Params    []ParamSpec
 	WindAngle string
-	New       func(p Params, size Size) Effect
+	// Reverse — эффект не меняет пиксели, а переставляет кадры источника задом наперёд: вызывающий
+	// читает источник в обратном порядке (OpenVideoReversed), и остальные эффекты цепочки, где бы
+	// реверс в ней ни стоял, ложатся уже на развёрнутое видео со своим временем вывода.
+	Reverse bool
+	New     func(p Params, size Size) Effect
 }
 
 // Size — размер и длина ролика, которые эффект знает при создании.
@@ -148,6 +153,17 @@ func Lookup(id string) (Kind, bool) {
 type Step struct {
 	ID     string             `json:"id"`
 	Params map[string]float64 `json:"params,omitempty"`
+}
+
+// Reversed — есть ли в цепочке эффект, разворачивающий источник (Kind.Reverse). Неизвестные
+// идентификаторы не учитываются: их отвергает Build.
+func Reversed(steps []Step) bool {
+	for _, step := range steps {
+		if kind, ok := Lookup(step.ID); ok && kind.Reverse {
+			return true
+		}
+	}
+	return false
 }
 
 // Build создаёт цепочку эффектов рецепта в заданном порядке.

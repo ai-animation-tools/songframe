@@ -48,6 +48,12 @@ func decodeArgs(path string, size Size, filter string, frames int) []string {
 // OpenVideo запускает декодирование ролика path. Close обязателен: он останавливает FFmpeg и
 // возвращает ошибку декодирования.
 func OpenVideo(ctx context.Context, path string, size Size) (*VideoSource, error) {
+	return openVideo(ctx, path, size, "")
+}
+
+// openVideo — декодирование с дополнительным фильтром FFmpeg перед масштабированием (часть
+// обратного чтения — trim и reverse); size.Frames — сколько кадров даёт фильтр.
+func openVideo(ctx context.Context, path string, size Size, filter string) (*VideoSource, error) {
 	if size.Width <= 0 || size.Height <= 0 || size.Frames <= 0 {
 		return nil, fmt.Errorf("ролик %s: пустой размер %dx%d, кадров %d", path, size.Width, size.Height, size.Frames)
 	}
@@ -56,7 +62,7 @@ func OpenVideo(ctx context.Context, path string, size Size) (*VideoSource, error
 	source := &VideoSource{size: size, reader: reader, buffer: make([]byte, size.Width*size.Height*3), cancel: cancel, done: make(chan error, 1)}
 	go func() {
 		result, err := process.Run(ctx, process.Command{
-			Path: mediacmd.FFmpeg(), Args: decodeArgs(path, size, "", size.Frames), StderrLimit: 16 << 10,
+			Path: mediacmd.FFmpeg(), Args: decodeArgs(path, size, filter, size.Frames), StderrLimit: 16 << 10,
 			OnOutput: func(data []byte, stderr bool) {
 				if !stderr {
 					// Читатель закрыт (рендер остановлен): дальше декодировать незачем.
@@ -110,6 +116,89 @@ func (v *VideoSource) Close() error {
 	// Остановка после того, как все кадры прочитаны, — не ошибка.
 	if errors.Is(err, process.ErrCanceled) && v.next >= v.size.Frames {
 		return nil
+	}
+	return err
+}
+
+// reverseChunk — кадров в одной части обратного чтения. Фильтр reverse держит часть в памяти
+// FFmpeg (около 3 МБ на кадр 1080p в yuv420p), а каждая часть декодирует ролик с начала до своего
+// конца: часть в секунду при 30 кадрах/с ограничивает и память, и повторное декодирование.
+const reverseChunk = 30
+
+// ReversedVideo — кадры ролика в обратном порядке (эффект «Реверс»): кадр t — кадр
+// size.Frames−1−t источника. Ролик читается частями с конца: каждая часть — отдельный запуск FFmpeg
+// с фильтром trim по номерам кадров и reverse, который отдаёт её кадры уже развёрнутыми, поэтому
+// весь ролик в памяти не держится. Как и VideoSource, кадры берутся только подряд с нуля; ролик
+// короче size.Frames даёт ошибку Close.
+type ReversedVideo struct {
+	ctx  context.Context
+	path string
+	size Size
+	// part — читаемая часть, start — номер вывода её первого кадра, end — следующего после неё.
+	part       *VideoSource
+	start, end int
+	next       int
+	err        error
+}
+
+// OpenVideoReversed готовит обратное чтение ролика path; FFmpeg запускается на первом кадре.
+// Close обязателен.
+func OpenVideoReversed(ctx context.Context, path string, size Size) (*ReversedVideo, error) {
+	if size.Width <= 0 || size.Height <= 0 || size.Frames <= 0 {
+		return nil, fmt.Errorf("ролик %s: пустой размер %dx%d, кадров %d", path, size.Width, size.Height, size.Frames)
+	}
+	return &ReversedVideo{ctx: ctx, path: path, size: size}, nil
+}
+
+// Size — размер и длина ролика.
+func (r *ReversedVideo) Size() Size { return r.size }
+
+// Frame — следующий кадр развёрнутого ролика; t должен идти подряд с нуля.
+func (r *ReversedVideo) Frame(t int) *Frame {
+	if t != r.next && r.err == nil {
+		r.err = fmt.Errorf("кадры ролика читаются подряд: запрошен %d, следующий %d", t, r.next)
+	}
+	r.next = t + 1
+	if r.err == nil && (r.part == nil || t >= r.end) && t < r.size.Frames {
+		r.closePart()
+		// Кадры вывода [t, t+n) — кадры источника [last−n+1, last] в обратном порядке.
+		last := r.size.Frames - 1 - t
+		count := min(reverseChunk, last+1)
+		first := last - count + 1
+		filter := fmt.Sprintf("trim=start_frame=%d:end_frame=%d,setpts=PTS-STARTPTS,reverse", first, last+1)
+		part, err := openVideo(r.ctx, r.path, Size{Width: r.size.Width, Height: r.size.Height, Frames: count}, filter)
+		if err != nil {
+			r.err = err
+		} else {
+			r.part, r.start, r.end = part, t, t+count
+		}
+	}
+	if r.part == nil || r.err != nil {
+		return NewFrame(r.size.Width, r.size.Height)
+	}
+	return r.part.Frame(min(t, r.end-1) - r.start)
+}
+
+// closePart закрывает читаемую часть; её ошибка (ролик короче, сбой FFmpeg) остаётся первой.
+func (r *ReversedVideo) closePart() {
+	if r.part == nil {
+		return
+	}
+	if err := r.part.Close(); err != nil && r.err == nil {
+		r.err = err
+	}
+	r.part = nil
+}
+
+// Close останавливает декодирование и возвращает первую ошибку чтения или FFmpeg. Если рендер
+// остановлен раньше конца, остановка недочитанной части — не ошибка ролика.
+func (r *ReversedVideo) Close() error {
+	err := r.err
+	if r.part != nil {
+		if closeErr := r.part.Close(); err == nil && r.next >= r.size.Frames {
+			err = closeErr
+		}
+		r.part = nil
 	}
 	return err
 }

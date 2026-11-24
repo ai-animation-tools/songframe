@@ -400,7 +400,7 @@ func Render(ctx context.Context, root, shot string, steps []Step, log func(strin
 	}
 	output := file.Name()
 	file.Close()
-	video, err := effects.OpenVideo(ctx, source, size)
+	video, err := openSource(ctx, source, size, effects.Reversed(chainSteps))
 	if err != nil {
 		_ = os.Remove(output)
 		return State{}, err
@@ -440,6 +440,21 @@ func Render(ctx context.Context, root, shot string, steps []Step, log func(strin
 	}
 	removeOld(directory, name)
 	return Read(root, shot)
+}
+
+// videoSource — кадры принятого видео для рендера; Close останавливает FFmpeg.
+type videoSource interface {
+	effects.Source
+	Close() error
+}
+
+// openSource — принятое видео по порядку или задом наперёд, если в цепочке есть «Реверс»: кадры
+// переставляются до всех эффектов, и остальные ложатся на развёрнутое видео.
+func openSource(ctx context.Context, path string, size effects.Size, reversed bool) (videoSource, error) {
+	if reversed {
+		return effects.OpenVideoReversed(ctx, path, size)
+	}
+	return effects.OpenVideo(ctx, path, size)
 }
 
 // removeOld удаляет прежние ролики плана, кроме keep; занятый плеером файл остаётся до следующего

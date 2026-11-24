@@ -32,7 +32,7 @@ func TestEffectsService(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(view.Kinds) != 3 || view.Kinds[0].ID != "light" || view.Kinds[1].WindAngle != "angle" || view.Kinds[2].ID != "grain" {
+	if len(view.Kinds) != 4 || view.Kinds[0].ID != "reverse" || view.Kinds[0].Params == nil || view.Kinds[1].ID != "light" || view.Kinds[2].WindAngle != "angle" || view.Kinds[3].ID != "grain" {
 		t.Fatalf("эффекты: %+v", view.Kinds)
 	}
 	if len(view.Shots) != 2 || view.Shots[0].State.Shot != "M01" || view.Shots[0].Applied {

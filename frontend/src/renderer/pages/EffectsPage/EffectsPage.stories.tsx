@@ -127,6 +127,47 @@ export const AddAndApply: Story = {
   }
 };
 
+export const Reverse: Story = {
+  name: 'Реверс · эффект без параметров первым в цепочке',
+  tags: ['ci'],
+  parameters: { songframe: effectsPageOptions({ shot: 'M02' }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const screen = body(canvasElement);
+    await canvas.findByText(texts.status.none);
+    await userEvent.click(canvas.getByRole('button', { name: texts.add }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Зерно' }));
+    await userEvent.click(canvas.getByRole('button', { name: texts.add }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Реверс' }));
+    // Реверс встаёт первым: он разворачивает видео до остальных эффектов.
+    const cards = canvas.getAllByRole('button', { name: /^(Реверс|Зерно)/ });
+    await expect(cards.map((card) => card.textContent)).toEqual(['Реверс', 'Зерно']);
+    // Параметров нет: только описание и удаление, без полей и сброса.
+    await expect(canvas.getByText(/^Ролик плана идёт задом наперёд/)).toBeVisible();
+    await expect(canvas.getAllByRole('button', { name: texts.resetStep })).toHaveLength(1);
+    await expect(canvas.getByRole('button', { name: texts.removeStep({ title: 'Реверс' }) })).toBeEnabled();
+    await waitFor(
+      () =>
+        expect(effectsPageInspection().previews.at(-1)?.steps).toEqual([
+          { effect: 'reverse', given: {} },
+          { effect: 'grain', given: {} }
+        ]),
+      WAIT
+    );
+    await userEvent.click(canvas.getByRole('button', { name: texts.apply }));
+    await expect(effectsPageInspection().renders).toEqual([
+      {
+        shot: 'M02',
+        steps: [
+          { effect: 'reverse', given: {} },
+          { effect: 'grain', given: {} }
+        ]
+      }
+    ]);
+    await canvas.findByText(texts.status.fresh, undefined, WAIT);
+  }
+};
+
 export const CopyFromShot: Story = {
   name: 'Числовые поля · взять параметры с плана · сброс',
   tags: ['ci'],

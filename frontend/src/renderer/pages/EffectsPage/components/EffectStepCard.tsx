@@ -4,7 +4,7 @@
  * числовые поля параметров по схеме из реестра Go с подсказкой, диапазоном и значением по умолчанию,
  * а после них действия: сброс к значениям по умолчанию и удаление из плана. У дождя — ветер: с ним
  * наклон считает Go из ветра и камеры плана, поэтому поле наклона скрыто; без ветра наклон
- * задаётся полем.
+ * задаётся полем. У эффекта без параметров («Реверс») нет полей и сброса — только описание и удаление.
  */
 import type { ReactElement } from 'react';
 import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Chip, FormControlLabel, Stack, Switch, Typography } from '@mui/material';
@@ -72,6 +72,7 @@ export function EffectStepCard({
   const windy = !!kind.windAngle && !!step.wind;
   const specs = kind.params.filter((spec) => !(windy && spec.name === kind.windAngle));
   const changed = Object.keys(step.given).length + (step.wind ? 1 : 0);
+  const configurable = kind.params.length > 0 || !!kind.windAngle;
   return (
     <Accordion variant="outlined" disableGutters defaultExpanded sx={{ minWidth: 0 }}>
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -156,27 +157,31 @@ export function EffectStepCard({
             ) : null}
           </Box>
         ) : null}
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 1.5 }}>
-          {specs.map((spec) => (
-            <ParamField
-              key={spec.name}
-              spec={spec}
-              value={stepValue(step, spec)}
-              disabled={disabled}
-              onChange={(value) => onChange(withValue(step, spec, value))}
-            />
-          ))}
-        </Box>
-        <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap', mt: 2 }}>
-          <ActionButton
-            startIcon={<RestartAltIcon />}
-            title={texts.resetStepHint}
-            disabled={disabled || !changed}
-            disabledReason={disabled ? texts.busy : texts.noChanges}
-            onClick={() => onChange({ effect: step.effect, given: {} })}
-          >
-            {texts.resetStep}
-          </ActionButton>
+        {specs.length ? (
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 1.5 }}>
+            {specs.map((spec) => (
+              <ParamField
+                key={spec.name}
+                spec={spec}
+                value={stepValue(step, spec)}
+                disabled={disabled}
+                onChange={(value) => onChange(withValue(step, spec, value))}
+              />
+            ))}
+          </Box>
+        ) : null}
+        <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap', mt: specs.length ? 2 : 0 }}>
+          {configurable ? (
+            <ActionButton
+              startIcon={<RestartAltIcon />}
+              title={texts.resetStepHint}
+              disabled={disabled || !changed}
+              disabledReason={disabled ? texts.busy : texts.noChanges}
+              onClick={() => onChange({ effect: step.effect, given: {} })}
+            >
+              {texts.resetStep}
+            </ActionButton>
+          ) : null}
           <ActionButton startIcon={<DeleteOutlineIcon />} disabled={disabled} disabledReason={texts.busy} onClick={onRemove}>
             {texts.removeStep({ title: kind.title })}
           </ActionButton>

@@ -1148,7 +1148,7 @@
           "task": "ai-clip-scenario:treatment",
           "permissions": "read-only",
           "inputHashes": {
-            "prompt": "a7bb689af9418c2e191f2afa88a21c2f4d1833e53d91407e73b455317a53ab7c",
+            "prompt": "6697be31329054258253eef410b0b1819c470d305037fc197ba5cd8d7081f5e3",
             "context": "5a42aa369867d8ed4e324694600b39a23bf491b5c16ac6841539976c95264672"
           },
           "status": "running",

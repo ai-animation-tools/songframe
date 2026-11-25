@@ -30,8 +30,9 @@ func RenderFrame(source Source, chain []Effect, fps int64, t int) *Frame {
 	return frame
 }
 
-// Render кодирует ролик в H.264 без звука (параметры mediacmd.Encode, как у аниматика):
-// кадры считаются по порядку и идут потоком на вход FFmpeg через общий запуск процессов —
+// Render кодирует ролик в H.264 без звука (параметры mediacmd.Encode, как у аниматика, но без
+// B-кадров: их x264 сжимает сильнее, и на медленном движении камеры по мелкой фактуре — панорама,
+// наезд — кадр то резче, то мягче, что глаз читает как рывки хода): кадры считаются по порядку и идут потоком на вход FFmpeg через общий запуск процессов —
 // без shell, с отменой через ctx и завершением потомков. progress (может быть nil) получает
 // число готовых кадров после каждого кадра. При ошибке или отмене файл Output может остаться
 // неполным: запись во временный путь и перенос — забота вызывающего.
@@ -49,7 +50,7 @@ func Render(ctx context.Context, job Job, progress func(done, total int)) error 
 		"-frames:v", strconv.Itoa(size.Frames),
 	}
 	args = append(args, mediacmd.Encode(job.FPS)...)
-	args = append(args, job.Output)
+	args = append(args, "-bf", "0", job.Output)
 	produced := make(chan error, 1)
 	go func() {
 		buffer := make([]byte, size.Width*size.Height*3)

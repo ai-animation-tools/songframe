@@ -929,6 +929,7 @@ export const productionTexts = {
     fromFrame: 'С кадра',
     fromHint: ({ seconds }: { seconds: string }) => `с ${seconds}`,
     baseHint: 'Видна с начала плана',
+    galleryKind: 'Опора сборки',
     dissolve: 'Растворение всего кадра, с',
     dissolveOff: '0 — меняется только отличие от базовой опоры',
     dissolveOn: ({ frames }: { frames: number }) => `Весь кадр сменяется за ${frames} кадров`,

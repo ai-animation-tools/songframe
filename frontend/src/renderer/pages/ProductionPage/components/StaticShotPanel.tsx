@@ -1,11 +1,12 @@
 /**
  * Шаг «Сборка» плана из опор: опоры-состояния с кадрами смены и растворением всего кадра, параметры
  * сборки (наезд, отъезд, панорама по опоре шире кадра), предпросмотр и его приёмка. Опора в превью
- * показана целиком, чтобы у широкой панорамы было видно, по чему поедет кадр. Видео собирает Go (internal/staticshot) заданием; панель только показывает снимок
+ * показана целиком, чтобы у широкой панорамы было видно, по чему поедет кадр; щелчок открывает опоры в
+ * общей галерее. Видео собирает Go (internal/staticshot) заданием; панель только показывает снимок
  * и черновик значений. Принять можно лишь свежий предпросмотр, замена принятого видео — через
  * отдельное подтверждение.
  */
-import type { ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Chip, CircularProgress, Divider, Stack, TextField, Typography } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SaveIcon from '@mui/icons-material/Save';
@@ -17,6 +18,8 @@ import { commonTexts } from '@shared/texts/common';
 import { productionTexts } from '@shared/texts/production';
 import { ActionButton } from '../../../components/ActionButton';
 import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
+import { ImageGallery } from '../../../components/ImageGallery';
+import { ImageThumbnail } from '../../../components/ImageThumbnail';
 import { JobStatus } from '../../../components/JobStatus';
 import { LinkedText } from '../../../components/LinkedText';
 import { dissolveFrames, useStaticShot } from '../useStaticShot';
@@ -46,6 +49,8 @@ export function StaticShotPanel({
 }): ReactElement {
   const form = useStaticShot(project, packageDir, hasAsset, onApplied);
   const { view, draft, reasons } = form;
+  // Опора, открытая крупно в общей галерее; null — галерея закрыта.
+  const [opened, setOpened] = useState<number | null>(null);
   if (!view)
     return form.error ? (
       <Stack spacing={1} sx={{ alignItems: 'flex-start' }}>
@@ -62,6 +67,8 @@ export function StaticShotPanel({
         <Typography>{texts.loading}</Typography>
       </Stack>
     );
+  const stateLabel = (index: number): string => `${view.states[index].frame}: ${index === 0 ? texts.base : texts.state({ index: index + 1 })}`;
+  const images = view.states.flatMap((state, index) => (state.path ? [{ imagePath: state.path, label: stateLabel(index) }] : []));
   return (
     <Stack spacing={2} sx={{ minWidth: 0 }} data-testid="static-shot-panel">
       <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap', alignItems: 'center' }}>
@@ -85,13 +92,8 @@ export function StaticShotPanel({
           return (
             <Stack key={state.frame} spacing={1} sx={{ minWidth: 0 }}>
               {state.path ? (
-                <Box
-                  component="img"
-                  src={window.api.shell.fileUrl(state.path)}
-                  alt={`${state.frame}: ${index === 0 ? texts.base : texts.state({ index: index + 1 })}`}
-                  // Опора целиком: у широкой панорамы видно, по чему поедет кадр.
-                  sx={{ width: '100%', aspectRatio: '16 / 9', objectFit: 'contain', borderRadius: 1, bgcolor: 'action.hover' }}
-                />
+                // Опора целиком: у широкой панорамы видно, по чему поедет кадр; щелчок открывает её крупно.
+                <ImageThumbnail path={state.path} label={stateLabel(index)} onOpen={() => setOpened(index)} />
               ) : null}
               <Typography variant="body2">
                 {state.frame} · {index === 0 ? texts.base : texts.state({ index: index + 1 })}
@@ -205,6 +207,17 @@ export function StaticShotPanel({
             </ActionButton>
           </Box>
         </>
+      ) : null}
+      {opened !== null && images.length ? (
+        <ImageGallery
+          kind={texts.galleryKind}
+          images={images}
+          initialIndex={Math.max(
+            0,
+            images.findIndex((image) => image.label === stateLabel(opened))
+          )}
+          onClose={() => setOpened(null)}
+        />
       ) : null}
       <ConfirmationDialog
         open={form.replacement}

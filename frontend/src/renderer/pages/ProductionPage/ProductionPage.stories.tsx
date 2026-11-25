@@ -660,6 +660,12 @@ export const StaticShotDissolvePan: Story = {
     await userEvent.click(screen.getByText('M02', { selector: 'p' }));
     const reopened = within(await screen.findByTestId('static-shot-panel', {}, POLL_TIMEOUT));
     await expect(reopened.getByRole('spinbutton', { name: shotTexts.dissolve })).toHaveValue(1.5);
+    // Опора открывается крупно в общей галерее, как на шаге «Опоры».
+    await userEvent.click(reopened.getByRole('button', { name: componentsTexts.gallery.openLarge({ label: `K02: ${shotTexts.state({ index: 2 })}` }) }));
+    const gallery = within(await screen.findByRole('dialog'));
+    await expect(gallery.getByText(new RegExp(shotTexts.galleryKind))).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   }
 };
 

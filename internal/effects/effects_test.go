@@ -287,7 +287,7 @@ func requireFFmpeg(t *testing.T) {
 	}
 }
 
-// TestRender — ролик нужного размера, длины и частоты; отмена останавливает FFmpeg.
+// TestRender — ролик нужного размера, длины и частоты, без B-кадров; отмена останавливает FFmpeg.
 func TestRender(t *testing.T) {
 	requireFFmpeg(t)
 	base := solid(64, 36, 10, 10, 10)
@@ -327,6 +327,10 @@ func TestRender(t *testing.T) {
 	}
 	if s := info.Streams[0]; s.Width != 64 || s.Height != 36 || s.Rate != "30/1" || s.Frames != "15" {
 		t.Errorf("ролик %+v", s)
+	}
+	types, err := exec.Command("ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "frame=pict_type", "-of", "csv=p=0", output).Output()
+	if err != nil || strings.Contains(string(types), "B") {
+		t.Errorf("типы кадров: %q, %v", types, err)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())

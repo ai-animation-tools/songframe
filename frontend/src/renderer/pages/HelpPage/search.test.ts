@@ -76,6 +76,32 @@ describe('поиск по справке', () => {
     }
   });
 
+  it('находит статьи об эффектах, сборке из опор, приёмке участком и точке съёмки', () => {
+    const queries: Record<string, string> = {
+      эффекты: 'effects-page',
+      дождь: 'effects-page',
+      реверс: 'effects-page',
+      'свет погас': 'effects-timing-beam-wind',
+      'дождь по ветру': 'effects-timing-beam-wind',
+      'эффект устарел': 'effects-fresh-stale',
+      'сборка из опор': 'static-shot',
+      'собрать предпросмотр': 'static-shot',
+      'скорость по частям': 'accept-cut',
+      'подогнать конец под окно': 'accept-cut',
+      'изменить участок': 'accepted-kit-actions',
+      'взять текущий кадр': 'accepted-kit-actions',
+      'точка съёмки': 'viewpoint',
+      'сгенерировать изображение': 'reference-image-generation',
+      'загрузить другой файл': 'own-materials'
+    };
+    for (const [query, id] of Object.entries(queries)) {
+      expect(
+        searchGlossary(GLOSSARY, query).entries.map((entry) => entry.id),
+        query
+      ).toContain(id);
+    }
+  });
+
   it('находит нужные инструкции по естественным вопросам о монтаже', () => {
     const queries: Record<string, string> = {
       'переход между сценами': 'montage-cut-preview',

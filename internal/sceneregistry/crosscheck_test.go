@@ -10,19 +10,9 @@ import (
 	"songframe/internal/toolrt"
 )
 
-// modelDivergences — случаи cases.json, на которых отпечатки в модели toolrt (sceneregistry,
-// инструменты tools.run) и в модели dynvalue (internal/scenario.SceneFingerprints, страницы
-// приложения) расходятся по природе этих моделей.
-var modelDivergences = map[string]string{
-	// toolrt печатает дробное как 1.0, 1e-07, 1e+16, dynvalue — как 1, 1e-7, 10000000000000000.
-	"floats-in-scene": "запись чисел float",
-	// toolrt сортирует ключи по кодовым точкам, dynvalue — по кодовым единицам UTF-16:
-	// символ вне BMP (суррогатная пара) встаёт перед U+FF01 только в dynvalue.
-	"astral-keys": "порядок ключей вне BMP",
-}
-
 // TestFingerprintsMatchScenario доказывает, что отпечатки sceneregistry и internal/scenario совпадают
-// на корректных реестрах эталона: интерфейс и инструменты сверяют принятие по одному SHA.
+// на всех корректных реестрах эталона, включая дробные числа и ключи вне BMP: интерфейс и
+// инструменты сверяют принятие по одному SHA.
 func TestFingerprintsMatchScenario(t *testing.T) {
 	cases := golden.ValueFile(t, "scene-registry", "cases.json").([]any)
 	compared := 0
@@ -58,11 +48,7 @@ func TestFingerprintsMatchScenario(t *testing.T) {
 				same = same && pages.Value(sid) == tools.Value(sid)
 			}
 		}
-		reason, known := modelDivergences[name]
-		switch {
-		case same && known:
-			t.Errorf("%s: отпечатки совпали, хотя записано расхождение (%s)", name, reason)
-		case !same && !known:
+		if !same {
 			t.Errorf("%s: отпечатки toolrt и dynvalue расходятся (ошибка scenario: %v)", name, err)
 		}
 		compared++
@@ -70,5 +56,43 @@ func TestFingerprintsMatchScenario(t *testing.T) {
 	if compared < 10 {
 		t.Fatalf("сравнено только %d реестров", compared)
 	}
-	t.Logf("сравнено реестров: %d, известных расхождений: %d", compared, len(modelDivergences))
+	t.Logf("сравнено реестров: %d", compared)
+}
+
+// TestFingerprintIgnoresNumberSpelling доказывает, что запись числа в JSON (3.0 или 3) не меняет
+// отпечаток постановки ни в инструментах, ни на страницах: принятый план не устаревает, если
+// сценарий записан тем же числом в другой форме.
+func TestFingerprintIgnoresNumberSpelling(t *testing.T) {
+	registry := func(value string) string {
+		return `{"schema_version": 1, "fps": 30, "audio": {"path": "source/track.mp3", "end_seconds": "10"},
+"references": {"mira": {"name": "Мира", "path": "source/heroes/mira.png"}},
+"sequences": [{"id": "intro", "title": "Вступление"}],
+"scenes": [{"id": "M01", "original": "Инструментал", "sequence": "intro", "start_frame": 0,
+"end_frame_exclusive": 300, "camera": "Общий план", "action": "Мира стоит.", "continuity": "Вечер.",
+"references": ["mira"], "lipsync": false, "card": {"primary_reference": "mira"}, "state_from": null, "state_changes": {},
+"viewpoint": {"location": "pier", "camera": {"start": [12.2, ` + value + `]}, "tilt": {"start": -4}}}]}`
+	}
+	digests := map[string]bool{}
+	for _, value := range []string{"3", "3.0", "3e0"} {
+		text := registry(value)
+		tool, err := sceneregistry.SceneFingerprint(golden.ParseValue(t, text), "M01", nil)
+		if err != nil {
+			t.Fatalf("%s: %v", value, err)
+		}
+		data, err := dynvalue.Parse([]byte(text))
+		if err != nil {
+			t.Fatal(err)
+		}
+		pages, err := scenario.SceneFingerprints(data, dynvalue.NewObject())
+		if err != nil {
+			t.Fatalf("%s: %v", value, err)
+		}
+		if page := pages.Value("M01"); page != tool {
+			t.Errorf("%s: инструмент %s, страницы %v", value, tool, page)
+		}
+		digests[tool] = true
+	}
+	if len(digests) != 1 {
+		t.Errorf("запись числа меняет отпечаток: %v", digests)
+	}
 }

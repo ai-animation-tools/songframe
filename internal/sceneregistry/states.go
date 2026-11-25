@@ -4,6 +4,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 
+	"songframe/internal/dynvalue"
+	"songframe/internal/scenario"
 	"songframe/internal/toolrt"
 )
 
@@ -213,23 +215,32 @@ func SceneState(data any, sid string, initial *toolrt.Dict) (*toolrt.Dict, error
 	return toolrt.DeepCopy(state).(*toolrt.Dict), nil
 }
 
-// fingerprint — SHA-256 канонического JSON контекста плана в UTF-8: toolrt.DumpsJSON с ключами
-// по возрастанию и компактными разделителями, не-ASCII без экранирования.
+// fingerprint — SHA-256 канонического JSON контекста плана: план, направление части, общее
+// визуальное направление и вычисленное состояние. Канонический текст печатает scenario.CanonicalJSON,
+// как и отпечатки страниц приложения (scenario.SceneFingerprints): отпечаток, записанный
+// инструментом в пакет и статус принятия, сверяется с отпечатком страниц, поэтому одна и та же
+// постановка обязана давать один SHA. Контекст переводится в модель dynvalue через JSON-текст:
+// числа читаются как числа JSON, и 3.0 совпадает с 3, ключи упорядочены по кодовым единицам UTF-16.
 func fingerprint(scene, direction, visual, state any) (string, error) {
 	context := toolrt.NewDict()
 	context.Set("scene", scene)
 	context.Set("sequence_direction", direction)
 	context.Set("visual_direction", visual)
 	context.Set("state", state)
-	text, err := toolrt.DumpsJSON(context, toolrt.DumpOptions{SortKeys: true, Compact: true})
+	text, err := toolrt.DumpsJSON(context, toolrt.DumpOptions{SortKeys: true, Compact: true, RejectNaN: true})
 	if err != nil {
 		return "", err
 	}
+	// Одиночный суррогат в тексте плана в UTF-8 не записывается: ошибка, как у записи файлов.
 	data, err := toolrt.EncodeUTF8(text)
 	if err != nil {
 		return "", err
 	}
-	digest := sha256.Sum256(data)
+	value, err := dynvalue.Parse(data)
+	if err != nil {
+		return "", valueError("отпечаток постановки: %s", err.Error())
+	}
+	digest := sha256.Sum256([]byte(scenario.CanonicalJSON(value)))
 	return hex.EncodeToString(digest[:]), nil
 }
 

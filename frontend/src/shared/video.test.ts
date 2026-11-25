@@ -6,7 +6,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { cutFrameOf, cutResultFrames, cutSeconds, FRAME_RATES, secondsToFrames } from './video';
+import { cutFrameOf, cutResultFrames, cutSeconds, fitCutEnd, FRAME_RATES, secondsToFrames } from './video';
 
 describe('сетка кадров build_review', () => {
   it('совпадает с допустимыми частотами реестра и принятых комплектов', () => {
@@ -64,5 +64,35 @@ describe('длина принятого участка', () => {
     expect(cutResultFrames(0, 181, '1', -1)).toBeNull();
     expect(cutResultFrames(0, 181, '1', 0, 1.5)).toBeNull();
     expect(cutResultFrames(0, 1, '4')).toBeNull(); // 0,25 → 0: движение короче кадра
+  });
+});
+
+describe('конец участка под окно', () => {
+  it('даёт окно при скорости и удержаниях, как считает build_review', () => {
+    // Окно 279 кадров при скорости 0,9: отрезок 251 кадр (251 / 0,9 = 278,9 → 279).
+    expect(fitCutEnd(0, '0.9', 279)).toEqual({ endFrame: 251, frames: 279 });
+    expect(fitCutEnd(0, '0,9', 279, 0, 0, 300)).toEqual({ endFrame: 251, frames: 279 });
+    expect(fitCutEnd(30, '1', 120, 10, 5)).toEqual({ endFrame: 135, frames: 120 });
+    expect(fitCutEnd(0, '1.153', 157)).toMatchObject({ frames: 157 });
+    for (const speed of ['0.8', '1.25', '2', '3']) {
+      const fit = fitCutEnd(12, speed, 200, 7, 3);
+      expect(fit).toMatchObject({ frames: 200 });
+      if ('endFrame' in fit) expect(cutResultFrames(12, fit.endFrame, speed, 7, 3)).toBe(200);
+    }
+  });
+
+  it('при скорости меньше 1 без точного совпадения берёт ближайшую меньшую длину', () => {
+    // При скорости 0,5 каждый кадр отрезка — два кадра плана: 101 кадр не набрать.
+    expect(fitCutEnd(0, '0.5', 101)).toEqual({ endFrame: 50, frames: 100 });
+    // 180 / 0,95 = 189,47 → 189, 181 / 0,95 = 190,53 → 191: 190 кадров движения не набрать.
+    expect(fitCutEnd(12, '0.95', 200, 7, 3)).toEqual({ endFrame: 192, frames: 199 });
+  });
+
+  it('объясняет, почему конец не подобрать', () => {
+    expect(fitCutEnd(0, '0.9', 279, 0, 0, 240)).toEqual({ reason: 'originalTooShort', neededFrames: 251 });
+    expect(fitCutEnd(0, '1', 30, 20, 10)).toEqual({ reason: 'holdsTooLong' });
+    expect(fitCutEnd(null, '1', 30)).toEqual({ reason: 'invalid' });
+    expect(fitCutEnd(0, '0', 30)).toEqual({ reason: 'invalid' });
+    expect(fitCutEnd(0, '1', 30, 1.5)).toEqual({ reason: 'invalid' });
   });
 });

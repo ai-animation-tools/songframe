@@ -58,6 +58,11 @@ export function ProductionPage(): ReactElement {
     acceptDialog,
     setAcceptDialog,
     openAccept,
+    recutDialog,
+    setRecutDialog,
+    recutOptions,
+    setRecutOptions,
+    openRecut,
     acceptAfterUpload,
     acceptOptions,
     setAcceptOptions,
@@ -216,6 +221,7 @@ export function ProductionPage(): ReactElement {
                         onSubmit={() => setConfirmSend(selectedPackage)}
                         onSelectImage={(index) => selectedPackage && selectImage(selectedPackage, index)}
                         onAccept={() => selectedPackage && openAccept(selectedPackage, !!shot.asset, shot.lipsync)}
+                        onRecut={() => openRecut(shot)}
                         onRegenerate={() => setConfirmRegenerate(shot.id)}
                         onContactSheet={() =>
                           selectedPackage &&
@@ -327,10 +333,24 @@ export function ProductionPage(): ReactElement {
         options={acceptOptions}
         onOptions={setAcceptOptions}
         onClose={() => setAcceptDialog(null)}
+        onPreview={(options) => window.api.production.cutPreview(project, acceptDialog!.dir, options)}
         onConfirm={() => {
           const target = acceptDialog!;
           setAcceptDialog(null);
           void act(productionTexts.productionPage.acceptanceStarted, () => acceptShownResult(window.api, project, target, acceptOptions), target.dir);
+        }}
+      />
+      <AcceptResultDialog
+        kind="recut"
+        target={recutDialog}
+        options={recutOptions}
+        onOptions={setRecutOptions}
+        onClose={() => setRecutDialog(null)}
+        onPreview={(options) => window.api.production.recutPreview(project, recutDialog!.shot, options)}
+        onConfirm={() => {
+          const target = recutDialog!;
+          setRecutDialog(null);
+          void act(productionTexts.productionPage.recutStarted, () => window.api.production.recut(project, target.shot, recutOptions), target.dir, target.shot);
         }}
       />
     </Stack>

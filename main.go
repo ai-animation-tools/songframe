@@ -226,7 +226,7 @@ func run() error {
 		CheckImageBudget: shell.ReviewImageBudget(agentSettings),
 	})
 	shell.ConnectScenarioReview(projects, scenarioWorkflow)
-	productionService := production.New(production.Options{Jobs: jobManager, Layer: providerLayer})
+	productionService := production.New(production.Options{Jobs: jobManager, Layer: providerLayer, LocalDir: profilePath})
 	// Проход агента производства: записи предложений в каталоге состояния, тот же каталог моделей,
 	// что у настроек, и занятость пакета производственной операцией. Сценарий утверждён, когда
 	// утверждены кастинг и части, планы не требуют проверки.

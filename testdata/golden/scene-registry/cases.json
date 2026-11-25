@@ -3045,7 +3045,7 @@
   },
   {
     "name": "floats-in-scene",
-    "description": "Посторонние числа 1.0 и 1e-07 в плане: отпечаток печатает их как repr float.",
+    "description": "Посторонние числа 1.0, 1e-07 и 1e16 в плане: отпечаток печатает их как числа JSON (1, 1e-7, 10000000000000000), как страницы приложения.",
     "call": "registry",
     "args": {
       "data": "{\"schema_version\": 1, \"fps\": 30, \"audio\": {\"path\": \"source/track.mp3\", \"end_seconds\": \"10\"}, \"references\": {\"mira\": {\"name\": \"Мира\", \"path\": \"source/heroes/mira.png\"}, \"boat\": {\"name\": \"Лодка\", \"path\": \"source/vehicles/boat.png\"}}, \"visual_direction\": \"Тёплый вечер у воды.\", \"sequences\": [{\"id\": \"intro\", \"title\": \"Вступление\", \"direction\": \"Общий план причала.\"}, {\"id\": \"verse\", \"title\": \"Куплет\", \"direction\": \"Фонарики над водой.\"}], \"scenes\": [{\"id\": \"M01\", \"original\": \"Инструментал\", \"sequence\": \"intro\", \"start_frame\": 0, \"end_frame_exclusive\": 90, \"camera\": \"Общий план\", \"action\": \"Мира выходит на причал.\", \"continuity\": \"Вечер.\", \"references\": [\"mira\", \"boat\"], \"lipsync\": false, \"weight\": 1.0, \"tiny\": 1e-07, \"big\": 1e16, \"card\": {\"primary_reference\": \"mira\"}, \"state_from\": null, \"state_changes\": {\"after\": {\"mira\": {\"hands\": \"фонарь\"}, \"world\": {\"time_of_day\": null}}}}, {\"id\": \"M02\", \"original\": \"Вечер зажёг фонари\", \"sequence\": \"verse\", \"start_frame\": 90, \"end_frame_exclusive\": 200, \"camera\": \"Средний план\", \"action\": \"Мира поёт.\", \"continuity\": \"Фонарь в руке.\", \"references\": [\"mira\"], \"lipsync\": true, \"card\": {\"primary_reference\": \"mira\"}, \"state_from\": \"M01\", \"state_changes\": {\"before\": {\"boat\": {\"light\": \"горит\"}}, \"after\": {\"mira\": {\"hands\": null}}}}, {\"id\": \"M03\", \"original\": \"Повтор\", \"sequence\": \"verse\", \"start_frame\": 200, \"end_frame_exclusive\": 300, \"camera\": \"Общий план\", \"action\": \"Повтор вступления.\", \"continuity\": \"\", \"references\": [\"—\"], \"lipsync\": false, \"card\": {\"primary_reference\": \"boat\"}, \"state_from\": {\"scene\": \"M01\", \"phase\": \"same\"}, \"state_changes\": {}, \"derived_from\": {\"shot\": \"M01\"}}]}",
@@ -3056,7 +3056,7 @@
         "result": "\"ok\""
       },
       "fingerprints": {
-        "result": "{\"M01\": \"fe85d38c999cb98c8fef290235855b0127339cfa91df5ad6aa57f1c701aaa4ee\", \"M02\": \"add188ef1ceb3a865ea269835bc8aa3ee0810e54dc39712358eebd87eb4daa4d\", \"M03\": \"8158ff55a10aa55feb6c38f2fa861e2feff36f1cba776668c2807f4c337c4604\"}"
+        "result": "{\"M01\": \"5b81e90a79cfe48db25e74d9b695f19995add4e37b6fb57bf30bf13c73680ef9\", \"M02\": \"add188ef1ceb3a865ea269835bc8aa3ee0810e54dc39712358eebd87eb4daa4d\", \"M03\": \"8158ff55a10aa55feb6c38f2fa861e2feff36f1cba776668c2807f4c337c4604\"}"
       },
       "states": {
         "result": "{\"M01\": {\"before\": {\"mira\": {\"position\": \"у причала\"}, \"world\": {\"time_of_day\": \"вечер\", \"weather\": \"ясно\"}}, \"after\": {\"mira\": {\"position\": \"у причала\", \"hands\": \"фонарь\"}, \"world\": {\"weather\": \"ясно\"}}}, \"M02\": {\"before\": {\"mira\": {\"position\": \"у причала\", \"hands\": \"фонарь\"}, \"world\": {\"weather\": \"ясно\"}, \"boat\": {\"light\": \"горит\"}}, \"after\": {\"mira\": {\"position\": \"у причала\"}, \"world\": {\"weather\": \"ясно\"}, \"boat\": {\"light\": \"горит\"}}}, \"M03\": {\"before\": {\"mira\": {\"position\": \"у причала\"}, \"world\": {\"time_of_day\": \"вечер\", \"weather\": \"ясно\"}}, \"after\": {\"mira\": {\"position\": \"у причала\", \"hands\": \"фонарь\"}, \"world\": {\"weather\": \"ясно\"}}}}"
@@ -3077,7 +3077,7 @@
       },
       "fingerprint": {
         "M01": {
-          "result": "\"fe85d38c999cb98c8fef290235855b0127339cfa91df5ad6aa57f1c701aaa4ee\""
+          "result": "\"5b81e90a79cfe48db25e74d9b695f19995add4e37b6fb57bf30bf13c73680ef9\""
         },
         "M02": {
           "result": "\"add188ef1ceb3a865ea269835bc8aa3ee0810e54dc39712358eebd87eb4daa4d\""
@@ -3090,7 +3090,7 @@
   },
   {
     "name": "astral-keys",
-    "description": "Ключи с символами вне BMP: сортировка по кодовым точкам.",
+    "description": "Ключи с символами вне BMP: сортировка по кодовым единицам UTF-16, как у страниц приложения.",
     "call": "registry",
     "args": {
       "data": "{\"schema_version\": 1, \"fps\": 30, \"audio\": {\"path\": \"source/track.mp3\", \"end_seconds\": \"10\"}, \"references\": {\"mira\": {\"name\": \"Мира\", \"path\": \"source/heroes/mira.png\"}, \"boat\": {\"name\": \"Лодка\", \"path\": \"source/vehicles/boat.png\"}}, \"visual_direction\": \"Тёплый вечер у воды.\", \"sequences\": [{\"id\": \"intro\", \"title\": \"Вступление\", \"direction\": \"Общий план причала.\"}, {\"id\": \"verse\", \"title\": \"Куплет\", \"direction\": \"Фонарики над водой.\"}], \"scenes\": [{\"id\": \"M01\", \"original\": \"Инструментал\", \"sequence\": \"intro\", \"start_frame\": 0, \"end_frame_exclusive\": 90, \"camera\": \"Общий план\", \"action\": \"Мира выходит на причал.\", \"continuity\": \"Вечер.\", \"references\": [\"mira\", \"boat\"], \"lipsync\": false, \"card\": {\"primary_reference\": \"mira\"}, \"state_from\": null, \"state_changes\": {\"after\": {\"mira\": {\"hands\": \"фонарь\"}, \"world\": {\"time_of_day\": null}}}, \"😀\": 1, \"！\": 2, \"z\": 3}, {\"id\": \"M02\", \"original\": \"Вечер зажёг фонари\", \"sequence\": \"verse\", \"start_frame\": 90, \"end_frame_exclusive\": 200, \"camera\": \"Средний план\", \"action\": \"Мира поёт.\", \"continuity\": \"Фонарь в руке.\", \"references\": [\"mira\"], \"lipsync\": true, \"card\": {\"primary_reference\": \"mira\"}, \"state_from\": \"M01\", \"state_changes\": {\"before\": {\"boat\": {\"light\": \"горит\"}}, \"after\": {\"mira\": {\"hands\": null}}}}, {\"id\": \"M03\", \"original\": \"Повтор\", \"sequence\": \"verse\", \"start_frame\": 200, \"end_frame_exclusive\": 300, \"camera\": \"Общий план\", \"action\": \"Повтор вступления.\", \"continuity\": \"\", \"references\": [\"—\"], \"lipsync\": false, \"card\": {\"primary_reference\": \"boat\"}, \"state_from\": {\"scene\": \"M01\", \"phase\": \"same\"}, \"state_changes\": {}, \"derived_from\": {\"shot\": \"M01\"}}]}",
@@ -3101,7 +3101,7 @@
         "result": "\"ok\""
       },
       "fingerprints": {
-        "result": "{\"M01\": \"e9b810b307f3888ca8e2230168aa3f4e0c59ce1f7bd8585a307eb2c1a9bc3928\", \"M02\": \"add188ef1ceb3a865ea269835bc8aa3ee0810e54dc39712358eebd87eb4daa4d\", \"M03\": \"8158ff55a10aa55feb6c38f2fa861e2feff36f1cba776668c2807f4c337c4604\"}"
+        "result": "{\"M01\": \"7731a20dc42a87e981589df90dcb36397c086c47d010eb5f8df5067f69d6f123\", \"M02\": \"add188ef1ceb3a865ea269835bc8aa3ee0810e54dc39712358eebd87eb4daa4d\", \"M03\": \"8158ff55a10aa55feb6c38f2fa861e2feff36f1cba776668c2807f4c337c4604\"}"
       },
       "states": {
         "result": "{\"M01\": {\"before\": {\"mira\": {\"position\": \"у причала\"}, \"world\": {\"time_of_day\": \"вечер\", \"weather\": \"ясно\"}}, \"after\": {\"mira\": {\"position\": \"у причала\", \"hands\": \"фонарь\"}, \"world\": {\"weather\": \"ясно\"}}}, \"M02\": {\"before\": {\"mira\": {\"position\": \"у причала\", \"hands\": \"фонарь\"}, \"world\": {\"weather\": \"ясно\"}, \"boat\": {\"light\": \"горит\"}}, \"after\": {\"mira\": {\"position\": \"у причала\"}, \"world\": {\"weather\": \"ясно\"}, \"boat\": {\"light\": \"горит\"}}}, \"M03\": {\"before\": {\"mira\": {\"position\": \"у причала\"}, \"world\": {\"time_of_day\": \"вечер\", \"weather\": \"ясно\"}}, \"after\": {\"mira\": {\"position\": \"у причала\", \"hands\": \"фонарь\"}, \"world\": {\"weather\": \"ясно\"}}}}"
@@ -3122,7 +3122,7 @@
       },
       "fingerprint": {
         "M01": {
-          "result": "\"e9b810b307f3888ca8e2230168aa3f4e0c59ce1f7bd8585a307eb2c1a9bc3928\""
+          "result": "\"7731a20dc42a87e981589df90dcb36397c086c47d010eb5f8df5067f69d6f123\""
         },
         "M02": {
           "result": "\"add188ef1ceb3a865ea269835bc8aa3ee0810e54dc39712358eebd87eb4daa4d\""

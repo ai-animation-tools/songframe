@@ -81,6 +81,90 @@ export const CutResult: Story = {
     await closed(canvasElement);
   }
 };
+export const HoldFirstFitEnd: Story = {
+  tags: ['ci'],
+  name: 'Удержание первого кадра · конец участка подгоняется под окно',
+  play: async ({ canvasElement }) => {
+    const dialog = await open(canvasElement);
+    const result = (): HTMLElement => dialog.getByTestId('accept-cut-result');
+    const speed = dialog.getByRole('textbox', { name: texts.speed });
+    const first = dialog.getByRole('spinbutton', { name: texts.holdFirst });
+    // Кнопку ищем заново: с причиной недоступности ActionButton монтирует её внутри подсказки.
+    const fit = (): HTMLElement => dialog.getByRole('button', { name: texts.fitEnd });
+    await expect(first).toHaveValue(0);
+    // Замедление 0,8 и 30 кадров удержания первого: 120 кадров движения — отрезок 96 кадров, конец 3,2 с.
+    await userEvent.clear(speed);
+    await userEvent.type(speed, '0,8');
+    await userEvent.clear(first);
+    await userEvent.type(first, '30');
+    await expect(result()).toHaveTextContent(texts.cutResultLong({ frames: 218, window: 150, extra: 68 }));
+    await userEvent.click(fit());
+    await expect(dialog.getByRole('spinbutton', { name: texts.cutEnd })).toHaveValue(3.2);
+    await expect(result()).toHaveTextContent(texts.cutResultFit({ frames: 150, seconds: '5,00' }));
+    // Ускорение 2 без удержания: нужен конец 10 с, а оригинал 8 с — кнопка объясняет причину.
+    await userEvent.clear(first);
+    await userEvent.type(first, '0');
+    await userEvent.clear(speed);
+    await userEvent.type(speed, '2');
+    await expect(fit()).toBeDisabled();
+    await expect(fit()).toHaveAttribute('title', expect.stringContaining(texts.fitEndOriginal({ needed: '10,00', original: '8,00' })));
+    // Удержание на всё окно: подгонять нечего.
+    await userEvent.clear(first);
+    await userEvent.type(first, '150');
+    await expect(fit()).toHaveAttribute('title', expect.stringContaining(texts.fitEndHolds));
+    await userEvent.clear(first);
+    await userEvent.type(first, '30');
+    await userEvent.clear(speed);
+    await userEvent.type(speed, '0,8');
+    await userEvent.click(fit());
+    await userEvent.click(dialog.getByRole('button', { name: texts.accept }));
+    await done(canvasElement);
+    const submitted = within(canvasElement).getByText(/Переданные параметры:/);
+    await expect(submitted).toHaveTextContent('"holdFirst":30');
+    await expect(submitted).toHaveTextContent('"cutEnd":3.2');
+  }
+};
+export const CutPreviewWithLines: Story = {
+  tags: ['ci'],
+  name: 'Предпросмотр участка · под песню со строками, правка участка делает показ прежним',
+  play: async ({ canvasElement }) => {
+    const dialog = await open(canvasElement);
+    // Кнопку ищем заново: с причиной недоступности ActionButton монтирует её внутри подсказки.
+    const show = (): HTMLElement => dialog.getByRole('button', { name: texts.preview });
+    // Участок длиннее окна не собирается: кнопка называет причину.
+    await userEvent.clear(dialog.getByRole('textbox', { name: texts.speed }));
+    await userEvent.type(dialog.getByRole('textbox', { name: texts.speed }), '0,8');
+    await expect(show()).toBeDisabled();
+    await expect(show()).toHaveAttribute('title', expect.stringContaining(texts.previewMismatch));
+    await userEvent.clear(dialog.getByRole('textbox', { name: texts.speed }));
+    await userEvent.type(dialog.getByRole('textbox', { name: texts.speed }), '1');
+    await userEvent.click(show());
+    const preview = await dialog.findByTestId('cut-preview');
+    await expect(within(preview).getByLabelText(texts.previewLabel)).toBeInTheDocument();
+    const lines = within(preview).getAllByRole('listitem');
+    await expect(lines).toHaveLength(2);
+    await expect(lines[1]).toHaveAttribute('title', texts.previewLine({ text: 'И лодка ушла к маяку', start: '3,10' }));
+    await expect(within(canvasElement).getByText(/Параметры предпросмотра:/)).toHaveTextContent('"cutEnd":5');
+    // Правка участка после показа: ролик прежний, панель об этом говорит.
+    await userEvent.clear(dialog.getByRole('spinbutton', { name: texts.holdFirst }));
+    await userEvent.type(dialog.getByRole('spinbutton', { name: texts.holdFirst }), '3');
+    await expect(within(preview).getByText(texts.previewStale)).toBeInTheDocument();
+    await userEvent.click(dialog.getByRole('button', { name: commonTexts.cancel }));
+    await closed(canvasElement);
+    await expect(within(canvasElement).getByText('Вызовы production.cutPreview: 1.')).toBeInTheDocument();
+  }
+};
+export const CutPreviewNoLines: Story = {
+  name: 'Предпросмотр участка · без строк песни называет причину',
+  args: { previewLines: [], lyricProblem: 'Разметки песни нет: сначала разметьте строки на странице «Тайминги».' },
+  play: async ({ canvasElement }) => {
+    const dialog = await open(canvasElement);
+    await userEvent.click(dialog.getByRole('button', { name: texts.preview }));
+    const preview = await dialog.findByTestId('cut-preview');
+    await expect(within(preview).getByText(/Разметки песни нет/)).toBeInTheDocument();
+    await expect(within(preview).queryByRole('listitem')).not.toBeInTheDocument();
+  }
+};
 export const FullDuration: Story = {
   name: 'Длительности совпали · принять оригинал целиком',
   args: { windowFrames: 240 },

@@ -217,3 +217,44 @@ func brief(summary Summary) Summary {
 	summary.Entries = nil
 	return summary
 }
+
+// TestOwnVideoReuploaded — своё видео за 120 кредитов принято (попытка удалена), потом то же видео
+// с теми же опорами и промптом загружено заново в новую попытку со стоимостью 0: тот же SHA
+// запроса не заменяет запись прежней попытки, в журнале обе записи, расход плана — 120. Имя
+// прежней попытки занято журналом (UsedAttempts), повторный Sync запись новой попытки обновляет.
+func TestOwnVideoReuploaded(t *testing.T) {
+	root := t.TempDir()
+	own := func(amount int) map[string]any {
+		return map[string]any{"status": "downloaded", "request_sha256": "own",
+			"manual_generation": map[string]any{"source": "сайт", "cost": map[string]any{"amount": amount, "unit": "credits"}}}
+	}
+	request(t, root, "plan/batches/M30-attempt-01", "M30", "video", own(120))
+	if err := Sync(root); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.RemoveAll(filepath.Join(root, "plan/batches/M30-attempt-01")); err != nil {
+		t.Fatal(err)
+	}
+	used, err := UsedAttempts(root)
+	if err != nil || !used["plan/batches/M30-attempt-01"] {
+		t.Fatalf("занятые попытки %v, %v", used, err)
+	}
+	request(t, root, "plan/batches/M30-attempt-02", "M30", "video", own(0))
+	for range 2 {
+		if err := Sync(root); err != nil {
+			t.Fatal(err)
+		}
+	}
+	journal, err := readJournal(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(journal) != 2 || *journal[0].Amount != 120 || *journal[1].Amount != 0 {
+		t.Fatalf("журнал %+v", journal)
+	}
+	credits := ptr("credits")
+	got := brief(Summarize(entries(t, root), "M30", &Accepted{RequestSHA256: "own", Seconds: 10}))
+	if !reflect.DeepEqual(got.Totals, []Total{{Unit: credits, Amount: 120}}) {
+		t.Fatalf("сводка %+v", got)
+	}
+}

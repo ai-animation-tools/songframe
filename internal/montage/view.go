@@ -530,3 +530,15 @@ func viewLyrics(project string, view *View) error {
 	}
 	return nil
 }
+
+// Lyrics — строки песни на кадровой оси частоты fps, как у страницы монтажа (viewLyrics):
+// строки разметки, совпадающие с текстом песни, и причина, если строк нет (разметки нет, трек
+// сменился, строки не совпадают с текстом). Ничего не пишет. Нужен окну приёмки: строки над
+// шкалой предпросмотра участка.
+func Lyrics(project string, fps float64) ([]LyricLine, *string, error) {
+	view := &View{FPS: fps, LyricLines: []LyricLine{}}
+	if err := viewLyrics(project, view); err != nil {
+		return nil, nil, err
+	}
+	return view.LyricLines, view.LyricProblem, nil
+}

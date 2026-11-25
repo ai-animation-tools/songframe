@@ -103,6 +103,14 @@ export function ContactSheet(project: string, packageDir: string): $CancellableP
 }
 
 /**
+ * CutPreview — production:cutPreview: предпросмотр участка оригинала попытки так, как его примет
+ * приёмка (скорость, удержания, окно плана), под звук окна песни, со строками песни окна.
+ */
+export function CutPreview(project: string, packageDir: string, options: production$0.AcceptOptions): $CancellablePromise<production$0.CutPreview | null> {
+    return $Call.ByID(2194701175, project, packageDir, options);
+}
+
+/**
  * Decide — ответ на вопрос пакета (кроме send); promptVariant — вариант видеопромпта к отправке
  * при его утверждении (original, translation или пусто).
  */
@@ -180,6 +188,21 @@ export function ProjectSpend(project: string): $CancellablePromise<production$0.
  */
 export function Quote(project: string, packageDir: string, expectedSha: string, decisionToken: string): $CancellablePromise<production$0.Quote> {
     return $Call.ByID(2275532681, project, packageDir, expectedSha, decisionToken);
+}
+
+/**
+ * Recut — production:recut: новый участок принятого плана из оригинала комплекта, без повторной
+ * загрузки и новой записи расхода. Перед изменением комплекта — снимок Git клипа, как у приёмки.
+ */
+export function Recut(project: string, shot: string, options: production$0.AcceptOptions): $CancellablePromise<jobs$0.Info> {
+    return $Call.ByID(1371271534, project, shot, options);
+}
+
+/**
+ * RecutPreview — production:recutPreview: предпросмотр нового участка принятого плана под звук окна песни.
+ */
+export function RecutPreview(project: string, shot: string, options: production$0.AcceptOptions): $CancellablePromise<production$0.CutPreview | null> {
+    return $Call.ByID(1752094306, project, shot, options);
 }
 
 /**

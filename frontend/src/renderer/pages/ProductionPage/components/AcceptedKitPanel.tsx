@@ -6,17 +6,20 @@
  * (с переводом — оба варианта переключателем, «Скопировать» копирует показанный) и срез речи. Сведения читает Go
  * (production.acceptedKit) при показе; новая попытка возвращает обычный путь шагов. У своего видео опоры и промпт есть, только если их указали при загрузке; тогда они
  * показываются так же, как у генерации, а пустой промпт не показывается. «Открыть папку» показывает папку комплекта
- * в файловом менеджере ОС.
+ * в файловом менеджере ОС. «Изменить участок» открывает окно приёмки с прежним участком: тот же оригинал
+ * комплекта принимается заново с другими границами, скоростью и удержаниями.
  */
 import { useEffect, useState, type ReactElement } from 'react';
 import { Alert, Box, Button, Paper, Stack, Typography } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import ContentCutIcon from '@mui/icons-material/ContentCut';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import { commonTexts } from '@shared/texts/common';
 import { productionTexts } from '@shared/texts/production';
 import { mediaProviderInfo } from '@shared/media-providers';
 import type { AcceptedKit, PromptVariant, ShotProduction } from '@shared/types';
 import { useApp } from '../../../state';
+import { ActionButton } from '../../../components/ActionButton';
 import { AudioPlayer } from '../../../components/AudioPlayer';
 import { ImageGallery } from '../../../components/ImageGallery';
 import { ImageThumbnail } from '../../../components/ImageThumbnail';
@@ -35,7 +38,20 @@ function KitSource({ kit }: { kit: AcceptedKit }): ReactElement {
   return <Typography variant="body2">{provider ? texts.provider({ provider, id: kit.generationId }) : texts.noSource}</Typography>;
 }
 
-export function AcceptedKitPanel({ project, shot }: { project: string; shot: ShotProduction }): ReactElement | null {
+export function AcceptedKitPanel({
+  project,
+  shot,
+  busy = false,
+  busyReason,
+  onRecut
+}: {
+  project: string;
+  shot: ShotProduction;
+  /** У плана идёт операция: участок менять нельзя. */
+  busy?: boolean;
+  busyReason?: string;
+  onRecut?(): void;
+}): ReactElement | null {
   const { notify, describeError } = useApp();
   const [kit, setKit] = useState<AcceptedKit | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -92,6 +108,21 @@ export function AcceptedKitPanel({ project, shot }: { project: string; shot: Sho
           {texts.heading}
         </Typography>
         <AcceptedAsset asset={shot.asset} title={null} />
+        {onRecut ? (
+          <Box>
+            <ActionButton
+              size="small"
+              variant="outlined"
+              startIcon={<ContentCutIcon />}
+              title={texts.recutHint}
+              disabled={busy || !shot.asset.edit?.sourceInterval || !shot.asset.original}
+              disabledReason={busy ? (busyReason ?? null) : texts.recutUnavailable}
+              onClick={onRecut}
+            >
+              {texts.recut}
+            </ActionButton>
+          </Box>
+        ) : null}
         {error ? <Alert severity="error">{error}</Alert> : null}
         {kit ? (
           <>

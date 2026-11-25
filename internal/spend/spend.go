@@ -110,10 +110,16 @@ type live struct {
 }
 
 // same — две записи описывают одну отправку: по номеру генерации, а без номера — по SHA запроса.
-// Своя опора — по попытке, опоре и SHA файла.
+// Своя опора — по попытке, опоре и SHA файла. Видео вне приложения (ручная генерация, своё
+// видео) — по SHA запроса и папке попытки: повторная загрузка с теми же опорами и промптом даёт
+// тот же SHA, но это новый материал со своей стоимостью, и он не заменяет запись прежней попытки.
+// Папку прежней попытки новая не занимает (UsedAttempts).
 func same(a, b Entry) bool {
 	if a.Frame != "" || b.Frame != "" {
 		return a.Frame == b.Frame && a.Attempt == b.Attempt && a.FileSHA256 == b.FileSHA256
+	}
+	if a.Status == StatusManual && b.Status == StatusManual && a.GenerationID == nil && b.GenerationID == nil {
+		return a.RequestSHA256 != "" && a.RequestSHA256 == b.RequestSHA256 && a.Attempt == b.Attempt
 	}
 	if a.GenerationID != nil && b.GenerationID != nil {
 		return a.Provider == b.Provider && *a.GenerationID == *b.GenerationID
@@ -208,6 +214,23 @@ func equal(a, b Entry) bool {
 	left, _ := json.Marshal(a)
 	right, _ := json.Marshal(b)
 	return string(left) == string(right)
+}
+
+// UsedAttempts — папки попыток (от корня проекта через «/»), на которые ссылается журнал. Новая
+// попытка их не занимает: иначе её запись с тем же SHA запроса совпала бы с записью удалённой
+// при приёмке попытки и заменила бы её. Нет журнала — пусто; повреждённый журнал — ошибка.
+func UsedAttempts(root string) (map[string]bool, error) {
+	entries, err := readJournal(root)
+	if err != nil {
+		return nil, err
+	}
+	result := map[string]bool{}
+	for _, entry := range entries {
+		if !strings.HasPrefix(entry.Attempt, KitPrefix) {
+			result[entry.Attempt] = true
+		}
+	}
+	return result, nil
 }
 
 // Entries — расход проекта: журнал, дополненный живыми запросами. Ничего не пишет.

@@ -9,6 +9,7 @@ import type { VideoReviewView } from '@shared/video-review';
 import { videoReviewTexts } from '@shared/texts/video-review';
 import type { Api } from '@shared/api';
 import type {
+  AcceptOptions,
   AcceptedKit,
   AppState,
   ShotSpend,
@@ -117,6 +118,9 @@ interface PageModel {
   decisions: number;
   selections: number;
   accepts: number;
+  /** Новых участков принятого плана (production.recut) и последний переданный участок. */
+  recuts: number;
+  recutOptions: AcceptOptions | null;
   submissions: number;
   frameImports: number;
   frameNotes: string[];
@@ -286,6 +290,8 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
         decisions: 0,
         selections: 0,
         accepts: 0,
+        recuts: 0,
+        recutOptions: null,
         submissions: 0,
         frameImports: 0,
         frameNotes: [],
@@ -683,6 +689,43 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
                 packages: [],
                 asset: { dir: `${PAGE_PROJECT}/assets/shots/${shot.id}`, video: '/mock/story-derived-source-150.mp4', original: STORY_VIDEO_PATH }
               } satisfies Partial<ShotProduction>);
+              publish();
+            });
+            return structuredClone(job);
+          },
+          // Как Go: предпросмотр нового участка проверяет границы и отдаёт ролик витрины ровно в окно плана.
+          recutPreview: async (_project, shotId, recutOptions) => {
+            const shot = model.view.shots.find((item) => item.id === shotId);
+            if (!shot?.asset?.original) throw new Error('У плана нет принятого комплекта с оригиналом: обновите страницу.');
+            assertDeliveryAcceptOptions(recutOptions);
+            return { path: STORY_VIDEO_PATH, frames: Math.round((shot.end - shot.start) * 30), audio: true, lines: [], lyricProblem: null };
+          },
+          // Новый участок: задание, после done — рецепт участка комплекта по переданным границам.
+          recut: async (_project, shotId, recutOptions) => {
+            const shot = model.view.shots.find((item) => item.id === shotId);
+            if (!shot?.asset) throw new Error('У плана нет принятого комплекта с оригиналом: обновите страницу.');
+            assertDeliveryAcceptOptions(recutOptions);
+            if (model.jobs.some((job) => job.status === 'running')) throw new Error('У плана уже идёт задание: дождитесь его завершения.');
+            model.recuts++;
+            model.recutOptions = { ...recutOptions };
+            const job = deliveryJob('accept', { id: `recut-${shot.id}-${model.recuts}`, project: PAGE_PROJECT, title: `Участок ${shot.id}`, startedAt: DATE });
+            model.jobs = [...model.jobs, job];
+            publish();
+            later(PAGE_ACCEPT_MS, () => {
+              model.jobs = model.jobs.map((item) => (item.id === job.id ? { ...item, status: 'done', code: 0, finishedAt: DATE } : item));
+              const edit = shot.asset?.edit;
+              if (shot.asset && edit) {
+                shot.asset = {
+                  ...shot.asset,
+                  edit: {
+                    ...edit,
+                    sourceInterval: [recutOptions.cutStart ?? 0, recutOptions.cutEnd ?? 0],
+                    speed: recutOptions.speed ?? '1',
+                    holdFirst: (recutOptions.holdFirst ?? 0) / 30,
+                    holdLast: (recutOptions.holdLast ?? 0) / 30
+                  }
+                };
+              }
               publish();
             });
             return structuredClone(job);
@@ -1177,7 +1220,8 @@ export function ProductionPageStory({ links = [] }: { links?: StoryLink[] }): Re
             {model.ownVideoGenerations.join('; ') || 'нет'}. Возвратов промпта: {model.promptReopens.join(', ') || 'нет'}. Своих описаний:{' '}
             {model.ownSaves.join(', ') || 'нет'}. Способов генерации: {model.methodChanges.join(', ') || 'нет'}. Запросов приложения:{' '}
             {model.requestBuilds.join(', ') || 'нет'}. Вариантов промпта к отправке: {model.promptVariants.join(', ') || 'нет'}. Открытых папок:{' '}
-            {model.openedPaths.join(', ') || 'нет'}. Сборок из опор: {model.staticBuilds}.
+            {model.openedPaths.join(', ') || 'нет'}. Сборок из опор: {model.staticBuilds}. Новых участков: {model.recuts}
+            {model.recutOptions ? ` (${JSON.stringify(model.recutOptions)})` : ''}.
           </Typography>
           <Typography variant="caption" color="text.secondary" data-testid="production-review-model">
             Проверок видео: {model.reviewStarts}. Отмен проверок: {model.reviewCancels}.

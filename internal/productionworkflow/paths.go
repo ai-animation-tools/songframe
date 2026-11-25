@@ -10,6 +10,7 @@ import (
 
 	"songframe/internal/dynvalue"
 	"songframe/internal/sceneregistry"
+	"songframe/internal/spend"
 )
 
 // packageFolder — отдельный пакет plan/batches/<имя> или plan/awaiting/<имя> относительно проекта.
@@ -93,11 +94,19 @@ func PackagePath(project, path string) (string, error) {
 	return target, nil
 }
 
-// nextPackage — первый свободный plan/batches/<план>-attempt-NN.
+// nextPackage — первый свободный plan/batches/<план>-attempt-NN: папки нет, и журнал расхода на
+// неё не ссылается (spend.UsedAttempts). Попытки удаляются при приёмке, а запись их расхода
+// остаётся; новая попытка под тем же именем смешала бы свою запись с прежней. Повреждённый
+// журнал не мешает выбору: о нём сообщает сам расход.
 func nextPackage(project, shot string) string {
+	used, err := spend.UsedAttempts(project)
+	if err != nil {
+		used = map[string]bool{}
+	}
 	for number := 1; ; number++ {
-		path := filepath.Join(project, "plan", "batches", shot+"-attempt-"+twoDigits(number))
-		if !dynvalue.Exists(path) {
+		name := shot + "-attempt-" + twoDigits(number)
+		path := filepath.Join(project, "plan", "batches", name)
+		if !dynvalue.Exists(path) && !used["plan/batches/"+name] {
 			return path
 		}
 	}

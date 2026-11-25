@@ -2,14 +2,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Paper, Stack, Typography } from '@mui/material';
 import type { Api } from '@shared/api';
-import type { AcceptOptions, JobInfo, PackageView } from '@shared/types';
+import type { AcceptOptions, CutPreview, CutPreviewLine, JobInfo, PackageView } from '@shared/types';
 import { DEFAULT_FPS } from '@shared/video';
 import { ActionButton } from '../components/ActionButton';
 import { AcceptResultDialog } from '../pages/ProductionPage/components/AcceptResultDialog';
 import { acceptShownResult, acceptTargetFor, defaultAcceptOptions, withResultMedia, type AcceptTarget } from '../pages/ProductionPage/decisions';
 import type { ResultMedia } from '@shared/types';
 import { DELIVERY_PROJECT, DELIVERY_RESULT_TOKEN, deliveryJob, deliveryPackage, assertDeliveryAcceptOptions } from './deliveryStories';
-import { createStoryApi } from './storybook';
+import { createStoryApi, STORY_VIDEO_PATH } from './storybook';
 
 export interface AcceptResultStoryProps {
   hasAsset?: boolean;
@@ -21,7 +21,17 @@ export interface AcceptResultStoryProps {
   delay?: number;
   /** Настоящие параметры оригинала (production.resultMedia): своё видео другого кадра и частоты. */
   media?: ResultMedia;
+  /** Строки песни окна в предпросмотре участка; пустой список — строк нет. */
+  previewLines?: CutPreviewLine[];
+  /** Причина без строк песни в предпросмотре. */
+  lyricProblem?: string;
 }
+
+/** Строки песни окна по умолчанию: вторая начинается в окне и кончается после него. */
+const PREVIEW_LINES: CutPreviewLine[] = [
+  { text: 'Фонари зажглись над водой', start: 0.4, end: 2.6 },
+  { text: 'И лодка ушла к маяку', start: 3.1, end: 5.8 }
+];
 
 export function AcceptResultStory({
   hasAsset = false,
@@ -31,7 +41,9 @@ export function AcceptResultStory({
   changedAfterOpen = false,
   failFirst = false,
   delay = 850,
-  media
+  media,
+  previewLines = PREVIEW_LINES,
+  lyricProblem
 }: AcceptResultStoryProps) {
   const makePackage = (): PackageView => {
     const pkg = deliveryPackage();
@@ -49,6 +61,7 @@ export function AcceptResultStory({
   const [notice, setNotice] = useState<string | null>(null);
   const [calls, setCalls] = useState(0);
   const [submitted, setSubmitted] = useState<AcceptOptions | null>(null);
+  const [previews, setPreviews] = useState<AcceptOptions[]>([]);
   const backend = useRef({ token: pkg.resultToken, running: false, failed: false, changed: false, epoch: 0 });
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [session] = useState(() => {
@@ -66,7 +79,15 @@ export function AcceptResultStory({
       setSubmitted({ ...incoming });
       return deliveryJob('accept');
     };
-    return createStoryApi({ production: { accept } });
+    // Предпросмотр проверяет участок как Go и отдаёт ролик витрины ровно в окно плана.
+    const cutPreview: Api['production']['cutPreview'] = async (project, dir, incoming) => {
+      if (project !== DELIVERY_PROJECT || dir !== pkg.dir) throw new Error('Пакет не относится к показанному плану.');
+      assertDeliveryAcceptOptions(incoming);
+      setPreviews((list) => [...list, { ...incoming }]);
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      return { path: STORY_VIDEO_PATH, frames: windowFrames, audio: true, lines: previewLines, lyricProblem: lyricProblem ?? null } satisfies CutPreview;
+    };
+    return createStoryApi({ production: { accept, cutPreview } });
   });
   useEffect(
     () => () => {
@@ -130,6 +151,7 @@ export function AcceptResultStory({
     setNotice(null);
     setCalls(0);
     setSubmitted(null);
+    setPreviews([]);
   };
   return (
     <Stack spacing={2}>
@@ -167,6 +189,12 @@ export function AcceptResultStory({
             <ActionButton onClick={reset}>Сбросить модель</ActionButton>
           </Stack>
           <Typography variant="caption">Вызовы production.accept: {calls}.</Typography>
+          <Typography variant="caption">Вызовы production.cutPreview: {previews.length}.</Typography>
+          {previews.length ? (
+            <Typography variant="caption" sx={{ overflowWrap: 'anywhere' }}>
+              Параметры предпросмотра: {JSON.stringify(previews[previews.length - 1])}
+            </Typography>
+          ) : null}
           {submitted ? (
             <Typography variant="caption" sx={{ overflowWrap: 'anywhere' }}>
               Переданные параметры: {JSON.stringify(submitted)}
@@ -179,6 +207,7 @@ export function AcceptResultStory({
         options={options}
         onOptions={setOptions}
         onClose={() => setTarget(null)}
+        onPreview={(options) => session.api.production.cutPreview(DELIVERY_PROJECT, target!.dir, options)}
         onConfirm={() => {
           void confirm();
         }}

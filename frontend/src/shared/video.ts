@@ -56,3 +56,36 @@ export function cutResultFrames(startFrame: number | null, endFrame: number | nu
   if (motion < 1n) return null;
   return holdFirst + Number(motion) + holdLast;
 }
+
+/** Итог подгонки конца участка под окно: кадр конца или почему его не подобрать. */
+export type CutEndFit = { endFrame: number; frames: number } | { reason: 'invalid' | 'holdsTooLong' | 'originalTooShort'; neededFrames?: number };
+
+/**
+ * Конец участка, при котором план совпадёт с окном: кадры движения (конец − начало) / скорость с
+ * округлением половины вверх плюс удержания дают windowFrames (cutResultFrames). Среди концов,
+ * дающих окно, выбирается ближайший к windowFrames − удержания × скорость; при скорости меньше 1
+ * точного совпадения может не быть — тогда конец даёт ближайшую меньшую длину, недостающее
+ * пользователь добирает удержанием (итог участка покажет разницу). Конец не дальше оригинала
+ * (originalFrames, если известна длина).
+ */
+export function fitCutEnd(startFrame: number | null, speed: string, windowFrames: number, holdFirst = 0, holdLast = 0, originalFrames?: number): CutEndFit {
+  if (startFrame === null || !Number.isSafeInteger(windowFrames) || windowFrames <= 0) return { reason: 'invalid' };
+  if (cutResultFrames(0, 1000, speed, holdFirst, holdLast) === null) return { reason: 'invalid' };
+  const motion = windowFrames - holdFirst - holdLast;
+  if (motion < 1) return { reason: 'holdsTooLong' };
+  const factor = Number(speed.replace(',', '.'));
+  const guess = Math.max(1, Math.round(motion * factor));
+  // Длина движения не убывает с длиной отрезка: ищем рядом с оценкой самый длинный отрезок не длиннее окна.
+  let best: { span: number; frames: number } | null = null;
+  for (let span = Math.max(1, guess - 2); span <= guess + 2; span++) {
+    const frames = cutResultFrames(0, span, speed, holdFirst, holdLast);
+    if (frames === null || frames > windowFrames) continue;
+    if (!best || frames > best.frames || (frames === best.frames && Math.abs(span - motion * factor) < Math.abs(best.span - motion * factor))) {
+      best = { span, frames };
+    }
+  }
+  if (!best) return { reason: 'invalid' };
+  const endFrame = startFrame + best.span;
+  if (originalFrames !== undefined && endFrame > originalFrames) return { reason: 'originalTooShort', neededFrames: endFrame };
+  return { endFrame, frames: best.frames };
+}

@@ -11,6 +11,8 @@ export type {
     Bounds,
     Broken,
     Bundle,
+    CutPreview,
+    CutPreviewLine,
     Keyframe,
     ManualResult,
     OwnVideoGeneration,

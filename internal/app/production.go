@@ -301,6 +301,21 @@ func (s *ProductionService) Accept(project, shot, packageDir string, options pro
 	return wire.Done(s.production.Accept(project, shot, packageDir, options))
 }
 
+// Recut — production:recut: новый участок принятого плана из оригинала комплекта, без повторной
+// загрузки и новой записи расхода. Перед изменением комплекта — снимок Git клипа, как у приёмки.
+func (s *ProductionService) Recut(project, shot string, options production.AcceptOptions) (jobs.Info, error) {
+	if s.flow != nil && s.flow.Busy(project, shot, "") {
+		return jobs.Info{}, errors.New(textShotBusy)
+	}
+	projectgit.Before(context.Background(), project, projectgit.OperationShotAccept)
+	return wire.Done(s.production.Recut(project, shot, options))
+}
+
+// RecutPreview — production:recutPreview: предпросмотр нового участка принятого плана под звук окна песни.
+func (s *ProductionService) RecutPreview(ctx context.Context, project, shot string, options production.AcceptOptions) (*production.CutPreview, error) {
+	return wire.Done(s.production.RecutPreview(ctx, project, shot, options))
+}
+
 // ContactSheet — техническая сводка пакета: задание contact_sheet с одним шагом.
 func (s *ProductionService) ContactSheet(project, packageDir string) (jobs.Info, error) {
 	if err := s.idle(project, packageDir); err != nil {
@@ -369,6 +384,12 @@ func (s *ProductionService) PriceAccepted(project, shot string, amount float64, 
 // ffprobe; окно приёмки по ним решает, можно ли принять видео целиком. null — оригинала нет.
 func (s *ProductionService) ResultMedia(ctx context.Context, project, packageDir string) (*production.ResultMedia, error) {
 	return wire.Done(production.ResultMediaFor(ctx, project, packageDir))
+}
+
+// CutPreview — production:cutPreview: предпросмотр участка оригинала попытки так, как его примет
+// приёмка (скорость, удержания, окно плана), под звук окна песни, со строками песни окна.
+func (s *ProductionService) CutPreview(ctx context.Context, project, packageDir string, options production.AcceptOptions) (*production.CutPreview, error) {
+	return wire.Done(production.CutPreviewFor(ctx, project, packageDir, options))
 }
 
 // PrepareSpeech — точный срез WAV липсинка инструментом cut_speech; прежний срез пакета заменяется.

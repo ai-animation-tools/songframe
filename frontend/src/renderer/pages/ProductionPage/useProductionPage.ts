@@ -2,7 +2,7 @@ import { productionTexts } from '@shared/texts/production';
 /** Состояние производства и действия выбранного пакета; платная отправка требует подтверждения снимка. */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import type { AcceptOptions, BrokenPackage, JobInfo, KeyframeNoteScope, PackageView, ProductionView, PromptVariant } from '@shared/types';
+import type { AcceptOptions, BrokenPackage, JobInfo, KeyframeNoteScope, PackageView, ProductionView, PromptVariant, ShotProduction } from '@shared/types';
 import { useApp } from '../../state';
 import { VERDICT_LABELS, type ProductionFilter } from './constants';
 import { defaultAttempt } from './planPath';
@@ -16,6 +16,8 @@ import {
   acceptTargetFor,
   defaultAcceptOptions,
   withResultMedia,
+  recutOptionsFor,
+  recutTargetFor,
   type AcceptTarget
 } from './decisions';
 import { completeInScope, RequestScope } from '../../hooks/requestScope';
@@ -59,6 +61,18 @@ export function useProductionPage() {
   const [filter, setFilter] = useState<ProductionFilter>('all');
   const fps = useProjectFps();
   const [acceptDialog, setAcceptDialog] = useState<AcceptTarget | null>(null);
+  // «Изменить участок» принятого плана: то же окно приёмки, заполненное прежним участком комплекта.
+  const [recutDialog, setRecutDialog] = useState<AcceptTarget | null>(null);
+  const [recutOptions, setRecutOptions] = useState<AcceptOptions>({ mode: 'cut' });
+  const openRecut = useCallback(
+    (shot: ShotProduction) => {
+      const options = recutOptionsFor(shot, fps);
+      if (!options) return;
+      setRecutOptions(options);
+      setRecutDialog(recutTargetFor(shot, fps));
+    },
+    [fps]
+  );
   const [acceptOptions, setAcceptOptions] = useState<AcceptOptions>({ mode: 'full', cutStart: 0, cutEnd: 0, speed: '1', holdFirst: 0, holdLast: 0 });
   // Приёмка открывается с участком под окно плана, если длина оригинала заведомо другая.
   // Ключ открытого окна приёмки: поздний ответ ffprobe не открывает закрытое окно и не трогает другое.
@@ -502,6 +516,11 @@ export function useProductionPage() {
     acceptDialog,
     setAcceptDialog,
     openAccept,
+    recutDialog,
+    setRecutDialog,
+    recutOptions,
+    setRecutOptions,
+    openRecut,
     acceptAfterUpload,
     acceptOptions,
     setAcceptOptions,

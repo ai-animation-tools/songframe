@@ -542,6 +542,87 @@ func renderEdit(ctx context.Context, original, filter string, frames toolrt.Int,
 	return toolrt.New("StopIteration", "")
 }
 
+// CutPreview — параметры предпросмотра участка: кадры сетки проекта, скорость и удержания, как у --cut.
+type CutPreview struct {
+	Start, End          int64
+	Speed               string
+	HoldFirst, HoldLast int64
+}
+
+// RenderCut — участок оригинала original так, как его отрендерит приёмка участка (--cut): тот же
+// план buildreview (planEdit) и тот же рендер ровно в окно плана shot, без звука. Результат
+// пишется во временный файл рядом с target и переименовывается в target: незаконченный рендер
+// не выдаётся за готовый. Участок не по окну — та же ошибка, что у приёмки. Нужен предпросмотру
+// до приёмки: кадры предпросмотра и принятого видео совпадают.
+func RenderCut(ctx context.Context, root, shot, original string, cut CutPreview, target string) error {
+	root = toolrt.ResolvePath(root)
+	registry, err := sceneregistry.Load(root)
+	if err != nil {
+		return err
+	}
+	if err := sceneregistry.SameFPS(root, registry); err != nil {
+		return err
+	}
+	frames, err := windowFrames(registry, shot)
+	if err != nil {
+		return err
+	}
+	fps := sceneregistry.FPS(registry.Value("fps"))
+	bounds := [2]toolrt.Int{toolrt.NewInt(cut.Start), toolrt.NewInt(cut.End)}
+	speed := cut.Speed
+	if speed == "" {
+		speed = "1"
+	}
+	options := Options{Cut: &bounds, Speed: speed, HoldFirst: toolrt.NewInt(cut.HoldFirst), HoldLast: toolrt.NewInt(cut.HoldLast)}
+	plan, err := planEdit(ctx, shot, original, frames, fps, root, options)
+	if err != nil {
+		return err
+	}
+	partial := target + ".partial.mp4"
+	_ = os.Remove(partial)
+	if err := renderEdit(ctx, original, plan.filter, frames, partial, fps); err != nil {
+		_ = os.Remove(partial)
+		return err
+	}
+	if err := os.Rename(partial, target); err != nil {
+		_ = os.Remove(partial)
+		return toolrt.OSErrorFrom(err, target)
+	}
+	return nil
+}
+
+// windowFrames — длина окна плана shot в кадрах: end_frame_exclusive − start_frame.
+func windowFrames(registry *toolrt.Dict, shot string) (toolrt.Int, error) {
+	var scene *toolrt.Dict
+	scenes, _ := registry.Value("scenes").([]any)
+	for _, raw := range scenes {
+		if item := dict(raw); item != nil && toolrt.Equal(item.Value("id"), shot) {
+			scene = item
+			break
+		}
+	}
+	if scene == nil {
+		return toolrt.Int{}, valueError(shot + ": плана нет в сценарии.")
+	}
+	end, err := toolrt.Item(scene, "end_frame_exclusive")
+	if err != nil {
+		return toolrt.Int{}, err
+	}
+	start, err := toolrt.Item(scene, "start_frame")
+	if err != nil {
+		return toolrt.Int{}, err
+	}
+	difference, err := toolrt.Sub(end, start)
+	if err != nil {
+		return toolrt.Int{}, err
+	}
+	frames, err := strconv.ParseInt(toolrt.Str(difference), 10, 64)
+	if err != nil {
+		return toolrt.Int{}, toolrt.Raise(toolrt.TypeError, "число кадров плана должно быть целым")
+	}
+	return toolrt.NewInt(frames), nil
+}
+
 // acceptanceFingerprint — отпечаток постановки, по которой сделан комплект (scene_sha256 пакета),
 // и текущий отпечаток плана.
 // AcceptanceFingerprint — отпечаток постановки, по которой принимается план (scene_sha256 пакета
@@ -979,20 +1060,10 @@ func buildKit(ctx context.Context, root, shot string, frames toolrt.Int, fps int
 			return nil, "", err
 		}
 	}
-	speedValue, err := toolrt.NewDecimal(plan.speed)
+	speed, err := speedRecord(plan, fps)
 	if err != nil {
 		return nil, "", err
 	}
-	selectedValue, err := toolrt.NewDecimal(toolrt.IntFromBig(new(big.Int).Sub(plan.end, plan.start)))
-	if err != nil {
-		return nil, "", err
-	}
-	if selectedValue, err = selectedValue.Div(toolrt.DecimalInt(fps)); err != nil {
-		return nil, "", err
-	}
-	factor, _ := strconv.ParseFloat(speedValue.FormatF(), 64)
-	selected, _ := strconv.ParseFloat(selectedValue.FormatF(), 64)
-	ratio, _ := new(big.Rat).SetString(speedValue.FormatF())
 	video, err := descriptor(staging, "video.mp4")
 	if err != nil {
 		return nil, "", err
@@ -1133,13 +1204,7 @@ func buildKit(ctx context.Context, root, shot string, frames toolrt.Int, fps int
 			"source_interval_end_exclusive", true,
 			"source_frame_grid_fps", toolrt.NewInt(fps),
 			"still_source_time_seconds", nil,
-			"speed", toolcli.Record(
-				"factor", factor,
-				"ratio", ratio.RatString(),
-				"selected_source_seconds", selected,
-				"motion_output_seconds", intFloat(plan.motion)/float64(fps),
-				"duration_change_seconds", plan.durationChange,
-			),
+			"speed", speed,
 			"hold_first_seconds", intFloat(plan.holdFirst)/float64(fps),
 			"hold_last_seconds", intFloat(plan.holdLast)/float64(fps),
 			"audio_policy", audioPolicy,
@@ -1172,6 +1237,32 @@ func buildKit(ctx context.Context, root, shot string, frames toolrt.Int, fps int
 		return nil, "", toolrt.OSErrorFrom(err, staging)
 	}
 	return video, replaced, nil
+}
+
+// speedRecord — accepted_edit.speed участка plan: множитель, точная дробь, длина выбранного
+// отрезка оригинала и движения в плане, изменение длительности.
+func speedRecord(plan editPlan, fps int64) (*toolrt.Dict, error) {
+	speedValue, err := toolrt.NewDecimal(plan.speed)
+	if err != nil {
+		return nil, err
+	}
+	selectedValue, err := toolrt.NewDecimal(toolrt.IntFromBig(new(big.Int).Sub(plan.end, plan.start)))
+	if err != nil {
+		return nil, err
+	}
+	if selectedValue, err = selectedValue.Div(toolrt.DecimalInt(fps)); err != nil {
+		return nil, err
+	}
+	factor, _ := strconv.ParseFloat(speedValue.FormatF(), 64)
+	selected, _ := strconv.ParseFloat(selectedValue.FormatF(), 64)
+	ratio, _ := new(big.Rat).SetString(speedValue.FormatF())
+	return toolcli.Record(
+		"factor", factor,
+		"ratio", ratio.RatString(),
+		"selected_source_seconds", selected,
+		"motion_output_seconds", intFloat(plan.motion)/float64(fps),
+		"duration_change_seconds", plan.durationChange,
+	), nil
 }
 
 // sourceOrder — имена опций группы источника (--package, --work-dir) в порядке появления в

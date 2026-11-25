@@ -11,6 +11,7 @@ import (
 	"songframe/internal/jobs"
 	"songframe/internal/mediacmd"
 	"songframe/internal/production"
+	"songframe/internal/shoteffects"
 	"songframe/internal/tools"
 )
 
@@ -60,6 +61,24 @@ func probeVideo(t *testing.T, ffprobe, path string) (frames, rate, size string, 
 		}
 	}
 	return frames, rate, size, audio
+}
+
+// frameDigests — MD5 декодированных кадров видеопотока по порядку (framemd5 FFmpeg).
+func frameDigests(t *testing.T, ffmpeg, path string) []string {
+	t.Helper()
+	output, err := exec.Command(ffmpeg, "-v", "error", "-i", path, "-map", "0:v:0", "-f", "framemd5", "-").Output()
+	if err != nil {
+		t.Fatalf("framemd5 %s: %v", path, err)
+	}
+	digests := []string{}
+	for _, line := range strings.Split(string(output), "\n") {
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		fields := strings.Split(line, ",")
+		digests = append(digests, strings.TrimSpace(fields[len(fields)-1]))
+	}
+	return digests
 }
 
 func itoa(value int) string {
@@ -114,6 +133,23 @@ func TestPaidCycleWithRealRender(t *testing.T) {
 	}
 
 	start, end := 0.5, 4.5
+	// Предпросмотр участка до приёмки: тот же рендер, ровно окно плана; кадры сверяются с
+	// принятым видео после приёмки.
+	preview, err := production.CutPreviewFor(t.Context(), e.project, e.pkg, production.AcceptOptions{Mode: "cut", CutStart: &start, CutEnd: &end})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if preview.Frames != 120 || !strings.HasPrefix(preview.Path, filepath.Join(e.pkg, "preview")+string(filepath.Separator)) {
+		t.Fatalf("предпросмотр %+v", preview)
+	}
+	previewFrames := frameDigests(t, ffmpeg, preview.Path)
+	if again, err := production.CutPreviewFor(t.Context(), e.project, e.pkg, production.AcceptOptions{Mode: "cut", CutStart: &start, CutEnd: &end}); err != nil || again.Path != preview.Path {
+		t.Fatalf("повторный предпросмотр %+v, %v", again, err)
+	}
+	if _, err := production.CutPreviewFor(t.Context(), e.project, e.pkg, production.AcceptOptions{Mode: "cut", CutStart: &start, CutEnd: &end, Speed: "0.8"}); err == nil {
+		t.Fatal("участок не по окну принят предпросмотром")
+	}
+	view = e.view()
 	accepted, err := e.prod.Accept(e.project, "M03", e.pkg, production.AcceptOptions{Mode: "cut", ExpectedResultToken: view.ResultToken, CutStart: &start, CutEnd: &end})
 	if err != nil {
 		t.Fatal(err)
@@ -125,6 +161,9 @@ func TestPaidCycleWithRealRender(t *testing.T) {
 	frames, rate, size, audio := probeVideo(t, ffprobe, filepath.Join(kit, "video.mp4"))
 	if frames != "120" || rate != "30/1" || size != "1920x1080" || audio {
 		t.Fatalf("рендер участка: %s кадров, %s, %s, звук %v", frames, rate, size, audio)
+	}
+	if accepted := frameDigests(t, ffmpeg, filepath.Join(kit, "video.mp4")); strings.Join(accepted, "\n") != strings.Join(previewFrames, "\n") {
+		t.Fatalf("кадры предпросмотра (%d) и принятого видео (%d) различаются", len(previewFrames), len(accepted))
 	}
 	copied, err := os.ReadFile(filepath.Join(kit, "original.mp4"))
 	if err != nil || string(copied) != string(data) {
@@ -167,5 +206,69 @@ func TestPaidCycleWithRealRender(t *testing.T) {
 	}
 	if e.paid() != 1 {
 		t.Fatalf("приёмка отправила запрос: %d", e.paid())
+	}
+
+	// «Изменить участок»: эффект плана применён к принятому видео, затем участок меняется из
+	// оригинала комплекта с удержанием первого кадра. Меняются только видео и рецепт участка;
+	// оригинал, сведения о генерации, отпечаток постановки и расход прежние, эффект устаревает
+	// с прежней цепочкой.
+	if _, err := shoteffects.Render(t.Context(), e.project, "M03", []shoteffects.Step{{Effect: "reverse"}}, func(string) {}); err != nil {
+		t.Fatal(err)
+	}
+	statusBefore, err := os.ReadFile(filepath.Join(e.project, "plan", "production-status.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	recutStart, recutEnd := 1.0, 4.0
+	recutOptions := production.AcceptOptions{Mode: "cut", CutStart: &recutStart, CutEnd: &recutEnd, HoldFirst: 30}
+	recutPreview, err := e.prod.RecutPreview(t.Context(), e.project, "M03", recutOptions)
+	if err != nil || recutPreview.Frames != 120 {
+		t.Fatalf("предпросмотр нового участка %+v, %v", recutPreview, err)
+	}
+	recut, err := e.prod.Recut(e.project, "M03", recutOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if finished := e.wait(recut); finished.Status != jobs.StatusDone {
+		t.Fatalf("новый участок: %s", finished.Log)
+	}
+	if got := frameDigests(t, ffmpeg, filepath.Join(kit, "video.mp4")); strings.Join(got, "\n") != strings.Join(frameDigests(t, ffmpeg, recutPreview.Path), "\n") {
+		t.Fatal("кадры нового участка и его предпросмотра различаются")
+	}
+	if strings.Join(frameDigests(t, ffmpeg, filepath.Join(kit, "video.mp4")), "\n") == strings.Join(previewFrames, "\n") {
+		t.Fatal("видео комплекта не изменилось")
+	}
+	recutRaw, err := os.ReadFile(filepath.Join(kit, "manifest.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var recutManifest map[string]any
+	if err := json.Unmarshal(recutRaw, &recutManifest); err != nil {
+		t.Fatal(err)
+	}
+	before, _ := json.Marshal(manifest["generation"])
+	after, _ := json.Marshal(recutManifest["generation"])
+	if string(before) != string(after) {
+		t.Fatal("сведения о генерации комплекта изменились")
+	}
+	acceptedEdit := recutManifest["accepted_edit"].(map[string]any)
+	if acceptedEdit["hold_first_seconds"] != 1.0 || acceptedEdit["frames"] != 120.0 {
+		t.Fatalf("рецепт участка: %v", acceptedEdit)
+	}
+	if copied, err := os.ReadFile(filepath.Join(kit, "original.mp4")); err != nil || string(copied) != string(data) {
+		t.Fatal("оригинал комплекта изменился")
+	}
+	if statusAfter, err := os.ReadFile(filepath.Join(e.project, "plan", "production-status.json")); err != nil || string(statusAfter) != string(statusBefore) {
+		t.Fatalf("отпечаток постановки изменился: %v", err)
+	}
+	if summary, err := production.SpendFor(e.project, "M03"); err != nil || summary.Videos != 1 || summary.Attempts != 1 {
+		t.Fatalf("расход после нового участка: %+v %v", summary, err)
+	}
+	effect, err := shoteffects.Read(e.project, "M03")
+	if err != nil || effect.Stale == "" || len(effect.Steps) != 1 || effect.Steps[0].Effect != "reverse" {
+		t.Fatalf("эффект после нового участка: %+v %v", effect, err)
+	}
+	if e.paid() != 1 {
+		t.Fatalf("новый участок отправил запрос: %d", e.paid())
 	}
 }

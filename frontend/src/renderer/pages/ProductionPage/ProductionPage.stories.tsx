@@ -1069,6 +1069,36 @@ export const AcceptedPlan: Story = {
   }
 };
 
+export const AcceptedPlanRecut: Story = {
+  tags: ['ci'],
+  name: 'Принятый план · «Изменить участок» из оригинала комплекта с прежним участком',
+  parameters: { songframe: acceptedOptions({ acceptedKit: manualKit }) },
+  play: async (context) => {
+    const screen = screenOf(context);
+    const dialogTexts = texts.acceptResultDialog;
+    await expect(await screen.findByText(texts.acceptedKit.heading, {}, POLL_TIMEOUT)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: texts.acceptedKit.recut }));
+    const dialog = within(await screen.findByRole('dialog'));
+    await expect(dialog.getByText(dialogTexts.recutTitle({ shot: 'M01' }))).toBeInTheDocument();
+    // Окно открыто с прежним участком комплекта; выбора «целиком» и согласия на замену нет.
+    await expect(dialog.getByRole('spinbutton', { name: dialogTexts.cutEnd })).toHaveValue(3.4);
+    await expect(dialog.queryByRole('combobox', { name: dialogTexts.section })).not.toBeInTheDocument();
+    await expect(dialog.queryByRole('checkbox')).not.toBeInTheDocument();
+    await expect(dialog.getByText(dialogTexts.recutConsequences)).toBeInTheDocument();
+    // Окно плана 6 с — 180 кадров: удержание первого кадра и подгонка конца.
+    await userEvent.clear(dialog.getByRole('spinbutton', { name: dialogTexts.holdFirst }));
+    await userEvent.type(dialog.getByRole('spinbutton', { name: dialogTexts.holdFirst }), '30');
+    await userEvent.click(dialog.getByRole('button', { name: dialogTexts.fitEnd }));
+    await expect(dialog.getByRole('spinbutton', { name: dialogTexts.cutEnd })).toHaveValue(5);
+    await userEvent.click(dialog.getByRole('button', { name: dialogTexts.preview }));
+    await expect(await dialog.findByTestId('cut-preview')).toBeInTheDocument();
+    await userEvent.click(dialog.getByRole('button', { name: dialogTexts.recutConfirm }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await expect(await screen.findByText(/Новых участков: 1/, {}, POLL_TIMEOUT)).toHaveTextContent('"holdFirst":30');
+    // После задания подпись принятого участка — по новому рецепту.
+    await expect(await screen.findByText(/участок оригинала 0\.00–5\.00 с/, {}, POLL_TIMEOUT)).toBeInTheDocument();
+  }
+};
 export const AcceptedPlanProposal: Story = {
   tags: ['ci'],
   name: 'Принятый план · предложение новой попытки открыто без выбора в меню',

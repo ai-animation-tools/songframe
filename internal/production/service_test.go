@@ -699,6 +699,8 @@ func TestAcceptFullAndRegenerate(t *testing.T) {
 	if finished := e.wait(retry); finished.Status != jobs.StatusDone {
 		t.Fatalf("повтор %s", finished.Log)
 	}
+	// Приёмка удалила M03-attempt-01, но журнал расхода на неё ссылается: повтор берёт следующее имя.
+	e.pkg = filepath.Join(e.project, "plan", "batches", "M03-attempt-02")
 	retried := e.view()
 	if retried.Stage != "request_choice" || retried.Pending() == nil || retried.Request == nil || *retried.Request.AttemptStatus != "prepared" {
 		t.Fatalf("новый пакет: этап %s", retried.Stage)

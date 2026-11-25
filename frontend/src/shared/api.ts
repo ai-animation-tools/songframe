@@ -57,6 +57,7 @@ import type {
   ProjectSpend,
   SpendRef,
   ResultMedia,
+  CutPreview,
   AnimaticView,
   AppState,
   BriefResult,
@@ -342,6 +343,12 @@ export interface Api {
     priceAccepted(project: string, shot: string, amount: number, unit: string): Promise<void>;
     /** Длина, кадр и частота показанного оригинала попытки (ffprobe); null — оригинала нет. */
     resultMedia(project: string, packageDir: string): Promise<ResultMedia | null>;
+    /** Предпросмотр участка так, как его примет приёмка, под звук окна песни; ролик пишется в preview/ попытки. */
+    cutPreview(project: string, packageDir: string, options: AcceptOptions): Promise<CutPreview>;
+    /** Новый участок принятого плана из оригинала комплекта: без повторной загрузки и новой записи расхода. */
+    recut(project: string, shot: string, options: AcceptOptions): Promise<JobInfo>;
+    /** Предпросмотр нового участка принятого плана под звук окна песни; ролик — в каталоге состояния приложения. */
+    recutPreview(project: string, shot: string, options: AcceptOptions): Promise<CutPreview>;
     /** Режет точный WAV липсинка в audio/ пакета; без границ — по разметке «Таймингов». */
     prepareSpeech(project: string, packageDir: string, bounds?: { start: number; end: number }): Promise<PackageView>;
     /** Снова задать вопрос о полученном результате пакета приложения, если ответ уже записан. */

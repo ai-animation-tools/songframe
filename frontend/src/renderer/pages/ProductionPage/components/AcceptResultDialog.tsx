@@ -1,30 +1,42 @@
 import { productionTexts } from '@shared/texts/production';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import FitScreenIcon from '@mui/icons-material/FitScreen';
 /**
  * Параметры переноса результата в assets с сохранением выбранного монтажного участка. У участка —
  * итог: сколько кадров получится в плане при скорости и удержании и совпадает ли это с окном плана
  * (счёт тот же, что у Go, — cutResultFrames), чтобы несовпадение было видно до «Принять».
+ * «Подогнать конец под окно» подставляет конец, при котором план совпадёт с окном (fitCutEnd).
+ * «Показать участок под песню» собирает участок так, как его примет приёмка (CutPreviewPanel).
  */
 import type { ReactElement } from 'react';
 import { Alert, Box, Checkbox, FormControlLabel, MenuItem, Stack, TextField } from '@mui/material';
-import type { AcceptOptions } from '@shared/types';
+import type { AcceptOptions, CutPreview } from '@shared/types';
 import type { AcceptTarget } from '../decisions';
-import { cutFrameOf, cutResultFrames, cutSeconds, DEFAULT_FPS } from '@shared/video';
+import { cutFrameOf, cutResultFrames, cutSeconds, DEFAULT_FPS, fitCutEnd } from '@shared/video';
+import { ActionButton } from '../../../components/ActionButton';
 import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
+import { CutPreviewPanel } from './CutPreviewPanel';
 
 export function AcceptResultDialog({
   target,
   options,
   onOptions,
   onClose,
-  onConfirm
+  onConfirm,
+  onPreview,
+  kind = 'accept'
 }: {
   target: AcceptTarget | null;
   options: AcceptOptions;
   onOptions(value: AcceptOptions): void;
   onClose(): void;
   onConfirm(): void;
+  /** Предпросмотр участка (production.cutPreview); без него кнопки предпросмотра нет. */
+  onPreview?(options: AcceptOptions): Promise<CutPreview>;
+  /** accept — приёмка результата попытки; recut — новый участок уже принятого плана из оригинала комплекта. */
+  kind?: 'accept' | 'recut';
 }): ReactElement {
+  const recut = kind === 'recut';
   const durationMismatch = !!target?.windowFrames && !!target.originalFrames && target.windowFrames !== target.originalFrames;
   // Другой кадр или частота оригинала тоже закрывают «целиком»: видео приводится к кадру проекта участком.
   const frameMismatch = target?.frameMismatch;
@@ -62,17 +74,57 @@ export function AcceptResultDialog({
       : { severity: 'warning', text: texts.cutResultLong({ frames, window, extra: frames - window }) };
   };
   const cutResult = options.mode === 'cut' ? result() : null;
+  // Конец участка под окно плана: новое значение поля или причина, почему его не подобрать.
+  const fit = (): { end: number; reason: null } | { end: null; reason: string } => {
+    const texts = productionTexts.acceptResultDialog;
+    if (!target?.windowFrames) return { end: null, reason: texts.fitEndNoWindow };
+    const fitted = fitCutEnd(
+      cutFrameOf(options.cutStart ?? 0, fps),
+      options.speed ?? '1',
+      target.windowFrames,
+      options.holdFirst ?? 0,
+      options.holdLast ?? 0,
+      target.originalFrames
+    );
+    if ('endFrame' in fitted) return { end: cutSeconds(fitted.endFrame, fps), reason: null };
+    if (fitted.reason === 'holdsTooLong') return { end: null, reason: texts.fitEndHolds };
+    if (fitted.reason === 'originalTooShort')
+      return { end: null, reason: texts.fitEndOriginal({ needed: seconds(fitted.neededFrames), original: seconds(target.originalFrames) }) };
+    return { end: null, reason: texts.fitEndInvalid };
+  };
+  const fitted = options.mode === 'cut' ? fit() : null;
+  // Предпросмотр всегда собирается участком: «целиком» — это участок во всё окно со скоростью 1.
+  const previewOptions: AcceptOptions =
+    options.mode === 'cut'
+      ? {
+          mode: 'cut',
+          cutStart: options.cutStart,
+          cutEnd: options.cutEnd,
+          speed: options.speed ?? '1',
+          holdFirst: options.holdFirst ?? 0,
+          holdLast: options.holdLast ?? 0
+        }
+      : { mode: 'cut', cutStart: 0, cutEnd: cutSeconds(target?.windowFrames ?? 0, fps), speed: '1', holdFirst: 0, holdLast: 0 };
+  const previewReason =
+    !target?.windowFrames || (options.mode === 'cut' && cutResult?.severity !== 'success') ? productionTexts.acceptResultDialog.previewMismatch : null;
   return (
     <ConfirmationDialog
       open={!!target}
       explicitCancelOnly
       onClose={onClose}
-      title={productionTexts.acceptResultDialog.title({ shot: target?.shot ?? '' })}
+      title={(recut ? productionTexts.acceptResultDialog.recutTitle : productionTexts.acceptResultDialog.title)({ shot: target?.shot ?? '' })}
       onConfirm={onConfirm}
-      confirmLabel={target?.hasAsset ? productionTexts.acceptResultDialog.replace : productionTexts.acceptResultDialog.accept}
+      confirmLabel={
+        recut
+          ? productionTexts.acceptResultDialog.recutConfirm
+          : target?.hasAsset
+            ? productionTexts.acceptResultDialog.replace
+            : productionTexts.acceptResultDialog.accept
+      }
       confirmIcon={<CheckCircleIcon />}
       confirmColor="error"
-      confirmDisabled={!target?.resultToken || !!target?.speechMissing || (!!target?.hasAsset && !options.replaceExisting)}
+      // У нового участка принятого плана источник — сам комплект: токена результата и согласия на замену нет.
+      confirmDisabled={!recut && (!target?.resultToken || !!target?.speechMissing || (!!target?.hasAsset && !options.replaceExisting))}
       confirmDisabledReason={
         !target?.resultToken
           ? productionTexts.acceptResultDialog.resultUnconfirmed
@@ -107,18 +159,20 @@ export function AcceptResultDialog({
             })}
           </Alert>
         ) : null}
-        <TextField
-          select
-          size="small"
-          label={productionTexts.acceptResultDialog.section}
-          value={options.mode}
-          onChange={(e) => onOptions({ ...options, mode: e.target.value as AcceptOptions['mode'] })}
-        >
-          <MenuItem value="full" disabled={mismatch}>
-            {productionTexts.acceptResultDialog.full}
-          </MenuItem>
-          <MenuItem value="cut">{productionTexts.acceptResultDialog.cut}</MenuItem>
-        </TextField>
+        {recut ? null : (
+          <TextField
+            select
+            size="small"
+            label={productionTexts.acceptResultDialog.section}
+            value={options.mode}
+            onChange={(e) => onOptions({ ...options, mode: e.target.value as AcceptOptions['mode'] })}
+          >
+            <MenuItem value="full" disabled={mismatch}>
+              {productionTexts.acceptResultDialog.full}
+            </MenuItem>
+            <MenuItem value="cut">{productionTexts.acceptResultDialog.cut}</MenuItem>
+          </TextField>
+        )}
         {options.mode === 'cut' ? (
           // Две колонки оставляют место полной подписи удержания кадра и её единице измерения.
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: 1 }}>
@@ -151,6 +205,14 @@ export function AcceptResultDialog({
             <TextField
               size="small"
               type="number"
+              label={productionTexts.acceptResultDialog.holdFirst}
+              value={options.holdFirst ?? 0}
+              onChange={(e) => onOptions({ ...options, holdFirst: Number(e.target.value) })}
+              inputProps={{ min: 0, step: 1 }}
+            />
+            <TextField
+              size="small"
+              type="number"
               label={productionTexts.acceptResultDialog.holdLast}
               value={options.holdLast ?? 0}
               onChange={(e) => onOptions({ ...options, holdLast: Number(e.target.value) })}
@@ -158,12 +220,36 @@ export function AcceptResultDialog({
             />
           </Box>
         ) : null}
+        {fitted ? (
+          <Box>
+            <ActionButton
+              size="small"
+              variant="outlined"
+              startIcon={<FitScreenIcon />}
+              title={productionTexts.acceptResultDialog.fitEndHint}
+              disabled={fitted.end === null}
+              disabledReason={fitted.reason}
+              onClick={() => fitted.end !== null && onOptions({ ...options, cutEnd: fitted.end })}
+            >
+              {productionTexts.acceptResultDialog.fitEnd}
+            </ActionButton>
+          </Box>
+        ) : null}
         {cutResult ? (
           <Alert severity={cutResult.severity} data-testid="accept-cut-result">
             {cutResult.text}
           </Alert>
         ) : null}
-        <Alert severity="info">{productionTexts.acceptResultDialog.consequences}</Alert>
+        {target && onPreview ? (
+          <CutPreviewPanel
+            key={target.dir}
+            parameters={JSON.stringify(previewOptions)}
+            disabledReason={previewReason}
+            fps={fps}
+            onPreview={() => onPreview(previewOptions)}
+          />
+        ) : null}
+        <Alert severity="info">{recut ? productionTexts.acceptResultDialog.recutConsequences : productionTexts.acceptResultDialog.consequences}</Alert>
       </Stack>
     </ConfirmationDialog>
   );

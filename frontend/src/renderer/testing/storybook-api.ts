@@ -228,6 +228,9 @@ export function unconfiguredStoryApi(): Api {
       // Комплект без сведений генерации: принятые планы историй показывают только видео, пока модель не задана.
       acceptedKit: async () => null,
       resultMedia: async () => null,
+      cutPreview: async () => unconfigured('production.cutPreview'),
+      recut: async () => unconfigured('production.recut'),
+      recutPreview: async () => unconfigured('production.recutPreview'),
       spend: async () => ({
         attempts: 0,
         removed: 0,

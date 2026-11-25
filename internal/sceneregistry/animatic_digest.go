@@ -110,7 +110,7 @@ func projectItems(value any, project func(*toolrt.Dict) *toolrt.Dict) any {
 }
 
 // projectionDigest — SHA-256 канонического JSON значения: ключи по возрастанию, компактные
-// разделители, не-ASCII без экранирования, как у отпечатков планов.
+// разделители, не-ASCII без экранирования; аниматик сверяет его только с самим собой.
 func projectionDigest(value any) (string, error) {
 	text, err := toolrt.DumpsJSON(value, toolrt.DumpOptions{SortKeys: true, Compact: true})
 	if err != nil {

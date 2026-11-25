@@ -29,6 +29,7 @@ import (
 	"songframe/internal/requestsnapshot"
 	"songframe/internal/sceneregistry"
 	"songframe/internal/shotworkflow"
+	"songframe/internal/spend"
 	"songframe/internal/toolcli"
 	"songframe/internal/toolrt"
 )
@@ -378,18 +379,28 @@ func validateSavedSpec(ctx context.Context, spec *toolrt.Dict, shot string) erro
 	return err
 }
 
-// nextAttemptDir — plan/batches/Mxx-attempt-NN со следующим свободным номером.
+// nextAttemptDir — plan/batches/Mxx-attempt-NN со следующим номером после занятых: папок попыток
+// и попыток, на которые ссылается журнал расхода (spend.UsedAttempts), — удалённая при приёмке
+// попытка оставляет там запись, и новая под тем же именем смешала бы с ней свою.
 func nextAttemptDir(root, shot string) string {
 	batches := toolrt.JoinPath(root, "plan", "batches")
 	pattern := regexp.MustCompile(`^` + regexp.QuoteMeta(shot) + `-attempt-(\d+)$`)
-	next := int64(1)
-	found := false
+	names := []string{}
 	for _, path := range toolrt.Glob(batches, shot+"-attempt-*") {
-		if match := pattern.FindStringSubmatch(toolrt.PathName(path)); match != nil {
-			number, _ := strconv.ParseInt(match[1], 10, 64)
-			if !found || number+1 > next {
-				next, found = number+1, true
+		names = append(names, toolrt.PathName(path))
+	}
+	if used, err := spend.UsedAttempts(root); err == nil {
+		for attempt := range used {
+			if name, found := strings.CutPrefix(attempt, "plan/batches/"); found && !strings.Contains(name, "/") {
+				names = append(names, name)
 			}
+		}
+	}
+	next := int64(1)
+	for _, name := range names {
+		if match := pattern.FindStringSubmatch(name); match != nil {
+			number, _ := strconv.ParseInt(match[1], 10, 64)
+			next = max(next, number+1)
 		}
 	}
 	return toolrt.JoinPath(batches, shot+"-attempt-"+leftPad(next))

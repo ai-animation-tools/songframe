@@ -18,6 +18,7 @@ import type {
   StaticShotView,
   ProjectSpend,
   ResultMedia,
+  CutPreview,
   AnimaticView,
   AppState,
   BriefResult,
@@ -920,6 +921,12 @@ export function createApi(b: Bindings): Api {
     call('production.priceAccepted', async () => (await production()).PriceAccepted(project, shot, amount, unit), true);
   api.production.resultMedia = (project, packageDir) =>
     call('production.resultMedia', async () => (await (await production()).ResultMedia(project, packageDir)) as ResultMedia | null);
+  api.production.cutPreview = (project, packageDir, options) =>
+    call('production.cutPreview', async () => (await (await production()).CutPreview(project, packageDir, options)) as CutPreview);
+  api.production.recut = (project, shot, options) =>
+    call('production.recut', async () => toJob(await (await production()).Recut(project, shot, options)), false);
+  api.production.recutPreview = (project, shot, options) =>
+    call('production.recutPreview', async () => (await (await production()).RecutPreview(project, shot, options)) as CutPreview);
   api.production.acceptedKit = (project, shot) =>
     call('production.acceptedKit', async () => ((await (await production()).AcceptedKit(project, shot)) ?? null) as unknown as AcceptedKit | null);
   api.production.speechPlan = (project, shot, packageDir) =>

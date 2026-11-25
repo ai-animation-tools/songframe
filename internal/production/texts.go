@@ -152,6 +152,10 @@ const (
 	textCompleteResultRequired       = "Сначала получите полный результат задания."
 	textReplacementConsentRequired   = "У плана уже есть принятый комплект. Подтвердите замену в диалоге приёмки."
 	textAcceptEndInvalid             = "Конец участка должен быть позже начала."
+	textCutPreviewHolds              = "Удержания кадров — целые числа кадров не меньше 0."
+	textRecutNoKit                   = "У плана нет принятого комплекта с оригиналом: обновите страницу."
+	textRecutBusy                    = "У плана уже идёт задание: дождитесь его завершения."
+	textRecutStep                    = "новый участок из оригинала комплекта"
 	textAcceptSpeechRequired         = "Речевой план: сначала подготовьте WAV речи в блоке «Речь» этой попытки."
 	textReplaceAssetsStep            = "замена комплекта в assets"
 	textMoveAssetsStep               = "перенос в assets"
@@ -302,6 +306,7 @@ func textRetryJob(shot string) string        { return "Подготовка по
 func textRetrieveJob(shot string) string     { return "Получение " + shot }
 func textManualResultJob(shot string) string { return "Ручной результат " + shot }
 func textAcceptJob(shot string) string       { return "Приёмка " + shot }
+func textRecutJob(shot string) string        { return "Участок " + shot }
 func textContactSheetJob(name string) string { return "Сводка " + name }
 
 // TextSpeechDuration — отказ, когда длина среза речи выходит за пределы lipSync провайдера видео.

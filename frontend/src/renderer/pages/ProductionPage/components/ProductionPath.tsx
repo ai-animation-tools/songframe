@@ -81,6 +81,7 @@ export function ProductionPath({
   onDecide,
   onSubmit,
   onAccept,
+  onRecut,
   onRegenerate,
   onContactSheet,
   onResume,
@@ -123,6 +124,8 @@ export function ProductionPath({
   onDecide(verdict: string, noteScope?: KeyframeNoteScope, after?: () => Promise<void>, promptVariant?: PromptVariant): void;
   onSubmit(): void;
   onAccept(): void;
+  /** «Изменить участок» принятого плана: окно приёмки с прежним участком комплекта. */
+  onRecut(): void;
   onRegenerate(): void;
   onContactSheet(): void;
   onResume(): void;
@@ -662,7 +665,7 @@ export function ProductionPath({
       ) : null}
       {/* Приёмка удалила пакет попытки: шаги считались бы по пустоте, поэтому показывается принятый комплект. */}
       {!pkg && shot.asset && !newAttempt ? (
-        <AcceptedKitPanel project={project} shot={shot} />
+        <AcceptedKitPanel project={project} shot={shot} busy={busy} busyReason={busyReason} onRecut={onRecut} />
       ) : (
         <Paper variant="outlined" sx={{ p: 2 }}>
           <Stepper orientation="vertical" nonLinear activeStep={path.steps.findIndex((step) => step.key === path.current)}>

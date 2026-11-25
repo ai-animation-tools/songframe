@@ -2,7 +2,7 @@ import { productionTexts } from '@shared/texts/production';
 /** Черновик замечания и платное подтверждение относятся к показанному вопросу, а не ко всему плану. */
 import type { Api } from '@shared/api';
 import { attemptLabel } from './planPath';
-import type { AcceptOptions, JobInfo, PackageView, ProductionView, ResultMedia } from '@shared/types';
+import type { AcceptOptions, JobInfo, PackageView, ProductionView, ResultMedia, ShotProduction } from '@shared/types';
 import { cutSeconds } from '@shared/video';
 
 export function decisionNoteKey(pkg: PackageView): string {
@@ -89,6 +89,27 @@ export function defaultAcceptOptions(target: AcceptTarget): AcceptOptions {
   }
   if (!window || !original || window === original) return base;
   return { ...base, mode: 'cut', cutEnd: cutSeconds(Math.min(window, original), target.fps), holdLast: Math.max(0, window - original) };
+}
+
+/** Цель «Изменить участок» принятого плана: окно плана, папка комплекта; токена результата нет — источник сам комплект. */
+export function recutTargetFor(shot: ShotProduction, fps: number): AcceptTarget {
+  return { shot: shot.id, dir: shot.asset?.dir ?? '', fps, windowFrames: Math.round((shot.end - shot.start) * fps) };
+}
+
+/** Прежний участок принятого плана (accepted_edit): границы на кадрах до тысячных, скорость, удержания в кадрах.
+ * null — у комплекта нет участка оригинала (план не из видео или собран из опор). */
+export function recutOptionsFor(shot: ShotProduction, fps: number): AcceptOptions | null {
+  const edit = shot.asset?.edit;
+  if (!edit?.sourceInterval || !shot.asset?.original) return null;
+  const [start, end] = edit.sourceInterval;
+  return {
+    mode: 'cut',
+    cutStart: cutSeconds(Math.round(start * fps), fps),
+    cutEnd: cutSeconds(Math.round(end * fps), fps),
+    speed: edit.speed || '1',
+    holdFirst: Math.round(edit.holdFirst * fps),
+    holdLast: Math.round(edit.holdLast * fps)
+  };
 }
 
 export async function acceptShownResult(api: Api, project: string, target: AcceptTarget, options: AcceptOptions): Promise<JobInfo> {

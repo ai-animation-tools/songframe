@@ -621,6 +621,27 @@ export interface SpendTotal {
 }
 
 /** Параметры показанного оригинала попытки по ffprobe; 0 и пустая строка — величина неизвестна. */
+/** Строка песни на шкале предпросмотра участка: секунды от начала окна плана. */
+export interface CutPreviewLine {
+  text: string;
+  start: number;
+  end: number;
+}
+
+/** Предпросмотр участка в окне приёмки (production.cutPreview): ролик как будущая приёмка, под звук окна песни. */
+export interface CutPreview {
+  /** Абсолютный путь ролика в preview/ попытки: открывается через shell.fileUrl. */
+  path: string;
+  /** Длина ролика — ровно окно плана, кадров. */
+  frames: number;
+  /** В ролик наложен участок песни окна; false — файла песни нет. */
+  audio: boolean;
+  /** Строки песни, пересекающие окно. */
+  lines: CutPreviewLine[];
+  /** Почему строк нет: разметки нет, трек сменился и т. п. */
+  lyricProblem: string | null;
+}
+
 export interface ResultMedia {
   seconds: number;
   width: number;

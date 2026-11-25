@@ -171,6 +171,49 @@ export interface Bundle {
 }
 
 /**
+ * CutPreview — предпросмотр монтажного участка в окне приёмки: участок оригинала с той же
+ * скоростью и удержаниями, что у будущей приёмки (acceptshot.RenderCut), под звук окна песни, и
+ * строки песни, попадающие в окно, для отметок на шкале плеера.
+ */
+export interface CutPreview {
+    /**
+     * Path — абсолютный путь ролика предпросмотра в preview/ попытки (вне Git клипа, удаляется
+     * вместе с попыткой); renderer открывает его через shell.fileUrl.
+     */
+    "path": string;
+
+    /**
+     * Frames — длина ролика в кадрах: ровно окно плана.
+     */
+    "frames": number;
+
+    /**
+     * Audio — в ролик наложен участок песни окна плана; false — файла песни нет.
+     */
+    "audio": boolean;
+
+    /**
+     * Lines — строки песни, пересекающие окно, в секундах от начала окна (могут начинаться до
+     * него или кончаться после).
+     */
+    "lines": CutPreviewLine[];
+
+    /**
+     * LyricProblem — почему строк нет: разметки нет, трек сменился и т. п.
+     */
+    "lyricProblem": string | null;
+}
+
+/**
+ * CutPreviewLine — строка песни на шкале предпросмотра.
+ */
+export interface CutPreviewLine {
+    "text": string;
+    "start": number;
+    "end": number;
+}
+
+/**
  * Keyframe — PackageKeyframe: опора пакета из workflow.json. ImagePath — абсолютный путь
  * существующего изображения кандидата или принятой опоры. Note — значение workflow.json как есть
  * (отсутствует, null или строка).

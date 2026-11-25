@@ -411,16 +411,15 @@ func matchesDigest(path string, expected any) bool {
 	return dynvalue.Exists(path) && ok && expected == hash
 }
 
-// FramesApproved сообщает, что в пакете не меньше двух опор (в ручном режиме или по выбору одной
-// опоры, keyframe_count 1, — ровно одна), все
-// утверждены, файлы на месте и совпадают с утверждёнными SHA-256. Результат вычисляется один раз
-// на Context.
+// FramesApproved сообщает, что у пакета есть опоры и все они утверждены, файлы на месте и совпадают с
+// утверждёнными SHA-256. Одна опора — законный план: её выбирает пользователь (keyframe_count 1), ручная
+// генерация или сам агент описания при числе опор «авто». Результат вычисляется один раз на Context.
 func (c *Context) FramesApproved() (bool, error) {
 	if c.framesApproved != nil {
 		return *c.framesApproved, nil
 	}
 	frames := keyframes(c.Workflow)
-	result := len(frames) >= 2 || (len(frames) == 1 && (c.SingleFrame || c.workflowValue("keyframe_count") == float64(1)))
+	result := len(frames) > 0
 	for _, frame := range frames {
 		if !result {
 			break

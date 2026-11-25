@@ -4,10 +4,11 @@ import { productionTexts } from '@shared/texts/production';
  * (production.cutPreview), под звук окна песни и полоса строк песни под плеером. Полоса
  * показывает, где в окне звучит каждая строка и где сейчас плеер; щелчок по строке переводит
  * плеер к её началу. Показанный ролик относится к параметрам, с которыми его собрали: после
- * правки участка панель предупреждает, что ролик прежний.
+ * правки участка панель предупреждает, что ролик прежний. Сборка — один вызов без доли готовности,
+ * поэтому во время неё видны бегущая полоса и прошедшие секунды: окно не выглядит зависшим.
  */
 import { useEffect, useRef, useState, type ReactElement } from 'react';
-import { Alert, Box, ButtonBase, Stack, Typography } from '@mui/material';
+import { Alert, Box, ButtonBase, CircularProgress, LinearProgress, Stack, Typography } from '@mui/material';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import type { CutPreview } from '@shared/types';
 import { ActionButton } from '../../../components/ActionButton';
@@ -31,6 +32,7 @@ export function CutPreviewPanel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [time, setTime] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
   const video = useRef<HTMLVideoElement | null>(null);
   const alive = useRef(true);
   useEffect(
@@ -39,6 +41,14 @@ export function CutPreviewPanel({
     },
     []
   );
+  // Секунды сборки: таймер живёт только пока идёт сборка и очищается при её конце или закрытии окна.
+  useEffect(() => {
+    if (!loading) return;
+    setElapsed(0);
+    const started = Date.now();
+    const timer = window.setInterval(() => setElapsed(Math.floor((Date.now() - started) / 1000)), 1000);
+    return () => window.clearInterval(timer);
+  }, [loading]);
   const show = async (): Promise<void> => {
     setLoading(true);
     setError(null);
@@ -60,7 +70,7 @@ export function CutPreviewPanel({
         <ActionButton
           size="small"
           variant="outlined"
-          startIcon={<PlayCircleOutlineIcon />}
+          startIcon={loading ? <CircularProgress size={16} aria-hidden /> : <PlayCircleOutlineIcon />}
           title={texts.previewHint}
           disabled={!!disabledReason || loading}
           disabledReason={loading ? texts.previewLoading : disabledReason}
@@ -69,7 +79,12 @@ export function CutPreviewPanel({
           {texts.preview}
         </ActionButton>
       </Box>
-      {loading ? <Alert severity="info">{texts.previewLoading}</Alert> : null}
+      {loading ? (
+        <Alert severity="info" sx={{ '& .MuiAlert-message': { flexGrow: 1 } }}>
+          {texts.previewProgress({ seconds: elapsed })}
+          <LinearProgress sx={{ mt: 1 }} aria-label={texts.previewLoading} />
+        </Alert>
+      ) : null}
       {error ? <Alert severity="error">{error}</Alert> : null}
       {shown ? (
         <Box sx={{ maxWidth: 640 }} data-testid="cut-preview">

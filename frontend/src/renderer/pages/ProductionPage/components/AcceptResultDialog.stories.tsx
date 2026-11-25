@@ -169,7 +169,7 @@ export const SpeedParts: Story = {
 
 export const CutPreviewWithLines: Story = {
   tags: ['ci'],
-  name: 'Предпросмотр участка · под песню со строками, правка участка делает показ прежним',
+  name: 'Предпросмотр участка · сборка с полосой и секундами, под песню со строками, правка участка делает показ прежним',
   play: async ({ canvasElement }) => {
     const dialog = await open(canvasElement);
     // Кнопку ищем заново: с причиной недоступности ActionButton монтирует её внутри подсказки.
@@ -182,8 +182,13 @@ export const CutPreviewWithLines: Story = {
     await userEvent.clear(dialog.getByRole('textbox', { name: texts.speed }));
     await userEvent.type(dialog.getByRole('textbox', { name: texts.speed }), '1');
     await userEvent.click(show());
+    // Пока участок собирается, видны бегущая полоса и прошедшие секунды, а кнопка закрыта.
+    await expect(await dialog.findByRole('progressbar', { name: texts.previewLoading })).toBeInTheDocument();
+    await expect(dialog.getByText(texts.previewProgress({ seconds: 0 }))).toBeInTheDocument();
+    await expect(show()).toBeDisabled();
     const preview = await dialog.findByTestId('cut-preview');
     await expect(within(preview).getByLabelText(texts.previewLabel)).toBeInTheDocument();
+    await expect(dialog.queryByRole('progressbar', { name: texts.previewLoading })).not.toBeInTheDocument();
     const lines = within(preview).getAllByRole('listitem');
     await expect(lines).toHaveLength(2);
     await expect(lines[1]).toHaveAttribute('title', texts.previewLine({ text: 'И лодка ушла к маяку', start: '3,10' }));

@@ -84,7 +84,8 @@ export function AcceptResultStory({
       if (project !== DELIVERY_PROJECT || dir !== pkg.dir) throw new Error('Пакет не относится к показанному плану.');
       assertDeliveryAcceptOptions(incoming);
       setPreviews((list) => [...list, { ...incoming }]);
-      await new Promise((resolve) => setTimeout(resolve, 150));
+      // Сборка не мгновенная: история успевает увидеть полосу и секунды сборки.
+      await new Promise((resolve) => setTimeout(resolve, 600));
       return { path: STORY_VIDEO_PATH, frames: windowFrames, audio: true, lines: previewLines, lyricProblem: lyricProblem ?? null } satisfies CutPreview;
     };
     return createStoryApi({ production: { accept, cutPreview } });

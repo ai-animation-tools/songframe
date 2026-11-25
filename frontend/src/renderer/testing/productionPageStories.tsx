@@ -155,7 +155,7 @@ interface PageModel {
   /** Сборок предпросмотра из опор (production.buildStatic). */
   staticBuilds: number;
   /** Сохранённые рецепты сборки из опор по папке попытки: кадры смены и параметры. */
-  staticRecipes: Map<string, { from: number[]; params: Record<string, number> }>;
+  staticRecipes: Map<string, { from: number[]; dissolve: number[]; params: Record<string, number> }>;
   /** Последний предпросмотр сборки из опор по папке попытки: собран ли по текущему рецепту и его версия. */
   staticPreviews: Map<string, { fresh: boolean; version: string }>;
   /** Папка попытки каждого задания сборки и приёмки плана из опор: по ней снимок называет идущее задание. */
@@ -214,12 +214,12 @@ export const STATIC_STORY_SPECS: EffectParamSpec[] = [
   },
   {
     name: 'push_end',
-    title: 'Конец наезда или отъезда, доля плана',
+    title: 'Конец движения камеры, доля плана',
     min: 0.05,
     max: 1,
     default: 1,
     step: 0.01,
-    hint: 'К какой доле плана наезд или отъезд заканчивается, дальше кадр стоит: 1 — движение идёт весь план, 0,25 — набирает всю силу за первую четверть. Меньше 1 — когда движение должно успеть до смены опоры, например до перехода в белый кадр.'
+    hint: 'К какой доле плана наезд, отъезд или панорама заканчивается, дальше кадр стоит: 1 — движение идёт весь план, 0,25 — набирает всю силу за первую четверть. Меньше 1 — когда движение должно успеть до смены опоры, например до перехода в белый кадр.'
   },
   {
     name: 'center_x',
@@ -238,6 +238,24 @@ export const STATIC_STORY_SPECS: EffectParamSpec[] = [
     default: 0.5,
     step: 0.01,
     hint: 'К какой точке идёт наезд или от какой раскрывается отъезд, по вертикали: 0 — верх, 0,5 — центр, 1 — низ.'
+  },
+  {
+    name: 'pan_from',
+    title: 'Панорама: начало, доля',
+    min: 0,
+    max: 1,
+    default: 0.5,
+    step: 0.01,
+    hint: 'Где окно кадра стоит на широкой опоре в начале плана: 0 — у левого края (у опоры выше кадра — у верхнего), 1 — у правого (нижнего), 0,5 — по центру. Работает только у опоры шире или выше кадра 16:9, например у своей загруженной панорамы: у обычной опоры окну некуда ехать.'
+  },
+  {
+    name: 'pan_to',
+    title: 'Панорама: конец, доля',
+    min: 0,
+    max: 1,
+    default: 0.5,
+    step: 0.01,
+    hint: 'Где окно кадра стоит, когда движение закончилось («Конец движения камеры»): кадр медленно проезжает по опоре от начала к концу. Равно началу — панорамы нет; 0 → 1 — проезд слева направо через всю опору.'
   }
 ];
 
@@ -343,6 +361,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
           frame: frame.id,
           timeSeconds: frame.time_seconds,
           fromFrame: recipe?.from[index] ?? Math.round(frame.time_seconds * fps),
+          dissolveFrames: recipe?.dissolve[index] ?? 0,
           path: frame.imagePath ?? '',
           approved: frame.approved
         }));
@@ -612,7 +631,11 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
             const { shot, pkg } = find(project, dir);
             if (recipe.states.map((state) => state.frame).join() !== pkg.keyframes.map((frame) => frame.id).join())
               throw new Error('Рецепт сборки относится к другим опорам: обновите страницу.');
-            model.staticRecipes.set(dir, { from: recipe.states.map((state) => state.from_frame), params: { ...recipe.params } });
+            model.staticRecipes.set(dir, {
+              from: recipe.states.map((state) => state.from_frame),
+              dissolve: recipe.states.map((state) => state.dissolve_frames ?? 0),
+              params: { ...recipe.params }
+            });
             const preview = model.staticPreviews.get(dir);
             if (preview) model.staticPreviews.set(dir, { ...preview, fresh: false });
             publish();

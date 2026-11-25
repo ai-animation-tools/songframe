@@ -1,6 +1,7 @@
 /**
- * Шаг «Сборка» плана из опор: опоры-состояния с кадрами смены, параметры сборки, предпросмотр и
- * его приёмка. Видео собирает Go (internal/staticshot) заданием; панель только показывает снимок
+ * Шаг «Сборка» плана из опор: опоры-состояния с кадрами смены и растворением всего кадра, параметры
+ * сборки (наезд, отъезд, панорама по опоре шире кадра), предпросмотр и его приёмка. Опора в превью
+ * показана целиком, чтобы у широкой панорамы было видно, по чему поедет кадр. Видео собирает Go (internal/staticshot) заданием; панель только показывает снимок
  * и черновик значений. Принять можно лишь свежий предпросмотр, замена принятого видео — через
  * отдельное подтверждение.
  */
@@ -18,11 +19,18 @@ import { ActionButton } from '../../../components/ActionButton';
 import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 import { JobStatus } from '../../../components/JobStatus';
 import { LinkedText } from '../../../components/LinkedText';
-import { useStaticShot } from '../useStaticShot';
+import { dissolveFrames, useStaticShot } from '../useStaticShot';
 import { VideoPlayer } from '../../../components/VideoPlayer';
 
 const texts = productionTexts.staticShot;
 const seconds = productionTexts.productionSpeechPanel.seconds;
+
+/** Подсказка поля растворения: сколько кадров займёт смена всего кадра или что растворения нет. */
+function dissolveHint(text: string, fps: number): string {
+  const frames = dissolveFrames(text, fps);
+  if (frames === null) return ' ';
+  return frames > 0 ? texts.dissolveOn({ frames }) : texts.dissolveOff;
+}
 
 export function StaticShotPanel({
   project,
@@ -81,7 +89,8 @@ export function StaticShotPanel({
                   component="img"
                   src={window.api.shell.fileUrl(state.path)}
                   alt={`${state.frame}: ${index === 0 ? texts.base : texts.state({ index: index + 1 })}`}
-                  sx={{ width: '100%', aspectRatio: '16 / 9', objectFit: 'cover', borderRadius: 1, bgcolor: 'action.hover' }}
+                  // Опора целиком: у широкой панорамы видно, по чему поедет кадр.
+                  sx={{ width: '100%', aspectRatio: '16 / 9', objectFit: 'contain', borderRadius: 1, bgcolor: 'action.hover' }}
                 />
               ) : null}
               <Typography variant="body2">
@@ -92,11 +101,26 @@ export function StaticShotPanel({
                 type="number"
                 label={texts.fromFrame}
                 value={value}
-                disabled={form.busy || index === 0}
+                // Кадр базовой опоры не выключен, а закреплён: подсказка «Видна с начала плана» читается как обычная.
+                disabled={form.busy}
                 helperText={index === 0 ? texts.baseHint : Number.isInteger(frame) ? texts.fromHint({ seconds: seconds(frame / view.fps) }) : ' '}
-                slotProps={{ htmlInput: { min: index === 0 ? 0 : 1, max: view.frames - 1, step: 1 } }}
+                slotProps={{ htmlInput: { min: index === 0 ? 0 : 1, max: view.frames - 1, step: 1, readOnly: index === 0 } }}
                 onChange={(event) => form.change({ ...draft, from: draft.from.map((item, position) => (position === index ? event.target.value : item)) })}
               />
+              {index === 0 ? null : (
+                <TextField
+                  size="small"
+                  type="number"
+                  label={texts.dissolve}
+                  value={draft.dissolve[index] ?? ''}
+                  disabled={form.busy}
+                  helperText={dissolveHint(draft.dissolve[index] ?? '', view.fps)}
+                  slotProps={{ htmlInput: { min: 0, step: 0.1 } }}
+                  onChange={(event) =>
+                    form.change({ ...draft, dissolve: draft.dissolve.map((item, position) => (position === index ? event.target.value : item)) })
+                  }
+                />
+              )}
             </Stack>
           );
         })}

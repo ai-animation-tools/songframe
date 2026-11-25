@@ -9,6 +9,7 @@ const (
 	textStatesRequired    = "Нужна базовая опора K01: подготовьте описание."
 	textFramesNotApproved = "Сначала утвердите все опоры: сборка берёт только утверждённые."
 	textBaseFromZero      = "Базовая опора K01 видна с первого кадра плана."
+	textBaseDissolve      = "Базовая опора K01 видна сразу: растворения у неё нет."
 	textRecipeInvalid     = "static/recipe.json попытки повреждён: сохраните сборку заново."
 	textRecipeFrames      = "Рецепт сборки относится к другим опорам: обновите страницу."
 	textPreviewMissing    = "Сначала соберите предпросмотр."
@@ -56,4 +57,11 @@ func textFrameUnreadable(frame string) string {
 func textFrameSize(frame string, width, height int, base string, baseWidth, baseHeight int) string {
 	return frame + ": размер опоры " + strconv.Itoa(width) + "×" + strconv.Itoa(height) + ", а у базовой " + base + " — " +
 		strconv.Itoa(baseWidth) + "×" + strconv.Itoa(baseHeight) + ". Состояние собирается поверх базовой опоры: нужна картинка того же размера."
+}
+
+func textDissolveEnd(frame string, end int, last bool) string {
+	if last {
+		return frame + ": растворение должно закончиться не позже конца плана (" + strconv.Itoa(end) + " кадров)."
+	}
+	return frame + ": растворение должно закончиться не позже кадра смены следующей опоры (" + strconv.Itoa(end) + ")."
 }

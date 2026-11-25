@@ -124,7 +124,7 @@ func TestStaticShotPullOut(t *testing.T) {
 	setRect(base, 8, 6, 20, 14, 200, 40, 0)
 	setRect(base, 44, 22, 58, 32, 0, 60, 220)
 	build := func(push float64) *StaticShot {
-		shot, err := NewStaticShot(base, []State{{base, 0}}, map[string]float64{"push_in": push}, Size{64, 36, 20})
+		shot, err := NewStaticShot(base, []State{{Image: base, From: 0}}, map[string]float64{"push_in": push}, Size{64, 36, 20})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -156,7 +156,7 @@ func TestStaticShotPushEnd(t *testing.T) {
 	base := solid(64, 36, 10, 20, 30)
 	setRect(base, 8, 6, 20, 14, 200, 40, 0)
 	build := func(params map[string]float64) *StaticShot {
-		shot, err := NewStaticShot(base, []State{{base, 0}}, params, Size{64, 36, 21})
+		shot, err := NewStaticShot(base, []State{{Image: base, From: 0}}, params, Size{64, 36, 21})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -191,7 +191,7 @@ func TestStaticShot(t *testing.T) {
 	setRect(red, 10, 10, 16, 16, 0, 0, 0)
 	setRect(red, 40, 10, 46, 16, 220, 0, 0)
 	params := map[string]float64{"push_in": 0, "dilate": 2, "feather": 0, "transition": 3}
-	shot, err := NewStaticShot(base, []State{{base, 0}, {red, 10}}, params, Size{64, 36, 20})
+	shot, err := NewStaticShot(base, []State{{Image: base, From: 0}, {Image: red, From: 10}}, params, Size{64, 36, 20})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -209,10 +209,10 @@ func TestStaticShot(t *testing.T) {
 	}
 	for name, states := range map[string][]State{
 		"нет состояний":     nil,
-		"начало не с нуля":  {{base, 1}},
-		"не по возрастанию": {{base, 0}, {red, 0}},
-		"за концом плана":   {{base, 0}, {red, 20}},
-		"другого размера":   {{base, 0}, {solid(10, 10, 0, 0, 0), 5}},
+		"начало не с нуля":  {{Image: base, From: 1}},
+		"не по возрастанию": {{Image: base, From: 0}, {Image: red, From: 0}},
+		"за концом плана":   {{Image: base, From: 0}, {Image: red, From: 20}},
+		"другого размера":   {{Image: base, From: 0}, {Image: solid(10, 10, 0, 0, 0), From: 5}},
 	} {
 		if _, err := NewStaticShot(base, states, nil, Size{64, 36, 20}); err == nil {
 			t.Errorf("%s: нет ошибки", name)
@@ -227,7 +227,7 @@ func TestDeterministic(t *testing.T) {
 	setRect(base, 70, 30, 90, 50, 0, 180, 40)
 	size := Size{160, 90, 12}
 	build := func(seed float64) (Source, []Effect) {
-		shot, err := NewStaticShot(base, []State{{base, 0}}, nil, size)
+		shot, err := NewStaticShot(base, []State{{Image: base, From: 0}}, nil, size)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -292,7 +292,7 @@ func TestRender(t *testing.T) {
 	requireFFmpeg(t)
 	base := solid(64, 36, 10, 10, 10)
 	size := Size{64, 36, 15}
-	shot, err := NewStaticShot(base, []State{{base, 0}}, nil, size)
+	shot, err := NewStaticShot(base, []State{{Image: base, From: 0}}, nil, size)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -330,7 +330,7 @@ func TestRender(t *testing.T) {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	long, _ := NewStaticShot(base, []State{{base, 0}}, nil, Size{64, 36, 100000})
+	long, _ := NewStaticShot(base, []State{{Image: base, From: 0}}, nil, Size{64, 36, 100000})
 	err = Render(ctx, Job{Source: long, FPS: 30, Output: filepath.Join(t.TempDir(), "cancel.mp4")}, func(done, total int) {
 		if done == 5 {
 			cancel()
@@ -497,6 +497,75 @@ func TestLightFade(t *testing.T) {
 	for _, frame := range []int{80, 100} {
 		if got := fading(frame); got != 0 {
 			t.Fatalf("кадр %d после затухания: %v", frame, got)
+		}
+	}
+}
+
+// TestStaticShotDissolve — состояние с растворением сменяет весь кадр, а не только отличия от
+// базовой: до начала кадр базовый, в середине растворения — смесь, после — опора целиком; конец
+// растворения позже следующей смены или конца плана — ошибка.
+func TestStaticShotDissolve(t *testing.T) {
+	base := solid(64, 36, 200, 200, 200)
+	dusk := solid(64, 36, 20, 30, 90)
+	params := map[string]float64{"push_in": 0}
+	shot, err := NewStaticShot(base, []State{{Image: base, From: 0}, {Image: dusk, From: 4, Dissolve: 10}}, params, Size{64, 36, 20})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := pixel(shot.Frame(3), 5, 5); got != [3]uint8{200, 200, 200} {
+		t.Errorf("до растворения %v", got)
+	}
+	middle := pixel(shot.Frame(9), 5, 5)
+	if middle[0] <= 20 || middle[0] >= 200 {
+		t.Errorf("середина растворения %v", middle)
+	}
+	early, late := pixel(shot.Frame(5), 5, 5), pixel(shot.Frame(12), 5, 5)
+	if !(early[0] > middle[0] && middle[0] > late[0]) {
+		t.Errorf("растворение не идёт к опоре: %v %v %v", early, middle, late)
+	}
+	if got := pixel(shot.Frame(14), 5, 5); got != [3]uint8{20, 30, 90} {
+		t.Errorf("после растворения %v", got)
+	}
+	for name, states := range map[string][]State{
+		"за концом плана":        {{Image: base, From: 0}, {Image: dusk, From: 15, Dissolve: 6}},
+		"позже следующей смены":  {{Image: base, From: 0}, {Image: dusk, From: 4, Dissolve: 8}, {Image: base, From: 10}},
+		"у базовой опоры":        {{Image: base, From: 0, Dissolve: 3}},
+		"отрицательное значение": {{Image: base, From: 0}, {Image: dusk, From: 4, Dissolve: -1}},
+	} {
+		if _, err := NewStaticShot(base, states, params, Size{64, 36, 20}); err == nil {
+			t.Errorf("%s: нет ошибки", name)
+		}
+	}
+}
+
+// TestStaticShotPan — опора шире кадра без панорамы обрезается по центру, как раньше; панорама
+// 0 → 1 начинает план у левого края опоры и заканчивает у правого. У опоры в пропорциях кадра
+// панорама ничего не меняет.
+func TestStaticShotPan(t *testing.T) {
+	wide := solid(96, 18, 10, 10, 10)
+	setRect(wide, 0, 0, 8, 18, 250, 0, 0)
+	setRect(wide, 88, 0, 96, 18, 0, 0, 250)
+	size := Size{64, 36, 11}
+	pan, err := NewStaticShot(wide, []State{{Image: wide, From: 0}}, map[string]float64{"push_in": 0, "pan_from": 0, "pan_to": 1}, size)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := pixel(pan.Frame(0), 2, 18); got != [3]uint8{250, 0, 0} {
+		t.Errorf("начало панорамы — левый край опоры: %v", got)
+	}
+	if got := pixel(pan.Frame(10), 61, 18); got != [3]uint8{0, 0, 250} {
+		t.Errorf("конец панорамы — правый край опоры: %v", got)
+	}
+	still, _ := NewStaticShot(wide, []State{{Image: wide, From: 0}}, map[string]float64{"push_in": 0}, size)
+	if got := pixel(still.Frame(0), 2, 18); got != [3]uint8{10, 10, 10} {
+		t.Errorf("без панорамы опора обрезана по центру: %v", got)
+	}
+	frame := solid(64, 36, 30, 40, 50)
+	setRect(frame, 0, 0, 4, 36, 250, 0, 0)
+	plain, _ := NewStaticShot(frame, []State{{Image: frame, From: 0}}, map[string]float64{"push_in": 0, "pan_from": 0, "pan_to": 1}, size)
+	for _, t0 := range []int{0, 10} {
+		if got := pixel(plain.Frame(t0), 1, 18); got != [3]uint8{250, 0, 0} {
+			t.Errorf("опора в пропорциях кадра сдвинулась на кадре %d: %v", t0, got)
 		}
 	}
 }

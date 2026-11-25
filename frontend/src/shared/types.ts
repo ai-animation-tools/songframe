@@ -1287,11 +1287,13 @@ export interface EffectParamSpec {
   hint: string;
 }
 
-/** Опора-состояние сборки из опор: время из описания, кадр смены по рецепту и файл опоры. */
+/** Опора-состояние сборки из опор: время из описания, кадр смены и растворение по рецепту, файл опоры. */
 export interface StaticShotState {
   frame: string;
   timeSeconds: number;
   fromFrame: number;
+  /** Растворение всего кадра в кадрах: 0 — меняется только отличие от базовой опоры. */
+  dissolveFrames: number;
   path: string;
   approved: boolean;
 }
@@ -1317,6 +1319,7 @@ export interface StaticShotView {
 /** Рецепт сборки из опор: кадр смены каждой опоры по порядку и параметры. */
 export interface StaticShotRecipe {
   schema_version: number;
-  states: { frame: string; from_frame: number }[];
+  /** dissolve_frames — растворение всего кадра в кадрах; без поля — смена только отличий. */
+  states: { frame: string; from_frame: number; dissolve_frames?: number }[];
   params: Record<string, number>;
 }

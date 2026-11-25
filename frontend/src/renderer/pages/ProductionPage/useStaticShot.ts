@@ -11,23 +11,40 @@ import { useApp } from '../../state';
 
 const texts = productionTexts.staticShot;
 
-/** Черновик формы: кадры смены по порядку опор и параметры — строками, как их набирает пользователь. */
+/**
+ * Черновик формы: кадры смены и растворение в секундах по порядку опор и параметры — строками,
+ * как их набирает пользователь.
+ */
 export interface StaticShotDraft {
   from: string[];
+  dissolve: string[];
   params: Record<string, string>;
+}
+
+/** Секунды растворения для поля: до сотых, без хвостовых нулей. */
+function dissolveSeconds(frames: number, fps: number): string {
+  return String(Math.round((frames / fps) * 100) / 100);
 }
 
 /** Черновик по сохранённому снимку. */
 export function staticDraft(view: StaticShotView | null): StaticShotDraft {
   return {
     from: view?.states.map((state) => String(state.fromFrame)) ?? [],
+    dissolve: view?.states.map((state) => dissolveSeconds(state.dissolveFrames, view.fps)) ?? [],
     params: Object.fromEntries((view?.specs ?? []).map((spec) => [spec.name, String(view?.params[spec.name] ?? spec.default)]))
   };
 }
 
+/** Растворение состояния в кадрах проекта по секундам поля; null — не число или меньше 0. */
+export function dissolveFrames(text: string, fps: number): number | null {
+  const value = Number(text.trim().replace(',', '.'));
+  return text.trim() === '' || !Number.isFinite(value) || value < 0 ? null : Math.round(value * fps);
+}
+
 /**
  * Рецепт из черновика или текст первой ошибки: кадр смены — целое число, база с кадра 0, смены по
- * возрастанию внутри плана; параметр — число в своём диапазоне, целое при шаге 1.
+ * возрастанию внутри плана; растворение — секунды не меньше 0, кончается не позже следующей смены и
+ * конца плана (у базовой опоры его нет); параметр — число в своём диапазоне, целое при шаге 1.
  */
 export function staticRecipe(view: StaticShotView, draft: StaticShotDraft): StaticShotRecipe | string {
   const states: StaticShotRecipe['states'] = [];
@@ -38,6 +55,15 @@ export function staticRecipe(view: StaticShotView, draft: StaticShotDraft): Stat
     if (index === 0 && frame !== 0) return texts.baseFromZero;
     if (index > 0 && (frame <= states[index - 1].from_frame || frame >= view.frames)) return texts.frameOrder({ frame: state.frame, frames: view.frames });
     states.push({ frame: state.frame, from_frame: frame });
+  }
+  for (const [index, state] of states.entries()) {
+    if (index === 0) continue;
+    const frames = dissolveFrames(draft.dissolve[index] ?? '0', view.fps);
+    if (frames === null) return texts.dissolveNumber({ frame: state.frame });
+    const last = index === states.length - 1;
+    const end = last ? view.frames : states[index + 1].from_frame;
+    if (state.from_frame + frames > end) return texts.dissolveEnd({ frame: state.frame, end, last });
+    if (frames > 0) state.dissolve_frames = frames;
   }
   const params: Record<string, number> = {};
   for (const spec of view.specs) {

@@ -23,7 +23,7 @@
                    "properties": {"version": {"type": "integer", "minimum": 1},
                                   "states": {"type": "array", "minItems": 2, "items": {
                                     "type": "object", "required": ["frame", "path", "from_frame"], "additionalProperties": false,
-                                    "properties": {"frame": {"type": "string", "minLength": 1}, "path": {"type": "string", "minLength": 1}, "from_frame": {"type": "integer", "minimum": 0}}}},
+                                    "properties": {"frame": {"type": "string", "minLength": 1}, "path": {"type": "string", "minLength": 1}, "from_frame": {"type": "integer", "minimum": 0}, "dissolve_frames": {"type": "integer", "minimum": 1}}}},
                                   "params": {"type": "object"},
                                   "ffmpeg_version": {"type": "string"}}},
         "lipsync": {"const": false},

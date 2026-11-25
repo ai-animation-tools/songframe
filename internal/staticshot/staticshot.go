@@ -3,7 +3,7 @@
 // платного запроса, а принятый предпросмотр становится комплектом assets/shots/Mxx вида
 // static_video.
 //
-// Файлы попытки: static/recipe.json — моменты смены и параметры сборки, которые поправил
+// Файлы попытки: static/recipe.json — моменты смены, растворения и параметры сборки, которые поправил
 // пользователь (без файла — значения по опорам и по умолчанию); static/preview-<начало SHA>.mp4 —
 // последний предпросмотр; static/preview.json — квитанция предпросмотра: имя файла, частота,
 // SHA-256 рецепта, опор и ролика, версия сборки.
@@ -56,10 +56,13 @@ const (
 	receiptFile   = "static/preview.json"
 )
 
-// RecipeState — состояние рецепта: опора попытки и первый кадр плана, с которого она видна.
+// RecipeState — состояние рецепта: опора попытки, первый кадр плана, с которого она видна, и
+// растворение всего кадра в кадрах (0 — смена только отличий от базовой опоры; поле тогда не
+// пишется, и прежние рецепты читаются и хешируются как раньше).
 type RecipeState struct {
-	Frame     string `json:"frame"`
-	FromFrame int    `json:"from_frame"`
+	Frame          string `json:"frame"`
+	FromFrame      int    `json:"from_frame"`
+	DissolveFrames int    `json:"dissolve_frames,omitempty"`
 }
 
 // Recipe — что пользователь задаёт на шаге «Сборка»: моменты смены и параметры плана из опор
@@ -70,16 +73,17 @@ type Recipe struct {
 	Params        map[string]float64 `json:"params"`
 }
 
-// State — состояние для показа: опора, её время из описания, кадр смены, путь файла (абсолютный,
-// для медиасервера) и утверждена ли опора.
+// State — состояние для показа: опора, её время из описания, кадр смены, растворение всего кадра
+// в кадрах, путь файла (абсолютный, для медиасервера) и утверждена ли опора.
 type State struct {
-	Frame       string  `json:"frame"`
-	TimeSeconds float64 `json:"timeSeconds"`
-	FromFrame   int     `json:"fromFrame"`
-	Path        string  `json:"path"`
-	Approved    bool    `json:"approved"`
-	sha256      string
-	relative    string
+	Frame          string  `json:"frame"`
+	TimeSeconds    float64 `json:"timeSeconds"`
+	FromFrame      int     `json:"fromFrame"`
+	DissolveFrames int     `json:"dissolveFrames"`
+	Path           string  `json:"path"`
+	Approved       bool    `json:"approved"`
+	sha256         string
+	relative       string
 }
 
 // Preview — последний предпросмотр попытки: путь ролика, совпадает ли он с текущими рецептом и
@@ -228,6 +232,7 @@ func Read(root, packageDir string) (View, error) {
 		if sameFrames(recipe.States, view.States) {
 			for index := range view.States {
 				view.States[index].FromFrame = recipe.States[index].FromFrame
+				view.States[index].DissolveFrames = recipe.States[index].DissolveFrames
 			}
 		}
 	}
@@ -265,19 +270,28 @@ func sameFrames(states []RecipeState, current []State) bool {
 }
 
 // problem — почему план пока не собрать: нужна базовая опора (состояния после неё необязательны),
-// все опоры утверждены, K01 с кадра 0, смены строго по возрастанию внутри плана.
+// все опоры утверждены, K01 с кадра 0 и без растворения, смены строго по возрастанию внутри плана,
+// растворение заканчивается не позже следующей смены и конца плана.
 func problem(view View) string {
 	if len(view.States) < 1 {
 		return textStatesRequired
 	}
 	for index, state := range view.States {
+		end := view.Frames
+		if index+1 < len(view.States) {
+			end = view.States[index+1].FromFrame
+		}
 		switch {
 		case !state.Approved || state.Path == "":
 			return textFramesNotApproved
 		case index == 0 && state.FromFrame != 0:
 			return textBaseFromZero
+		case index == 0 && state.DissolveFrames != 0:
+			return textBaseDissolve
 		case index > 0 && (state.FromFrame <= view.States[index-1].FromFrame || state.FromFrame >= view.Frames):
 			return textStateOrder(state.Frame, view.Frames)
+		case state.DissolveFrames < 0 || (index > 0 && state.FromFrame >= 0 && state.FromFrame+state.DissolveFrames > end):
+			return textDissolveEnd(state.Frame, end, index+1 == len(view.States))
 		}
 	}
 	return ""
@@ -326,15 +340,18 @@ func readRecipe(directory string) (Recipe, bool, error) {
 // effective — рецепт, по которому будет собран план: текущие опоры с кадрами смены и параметры.
 func effective(view View) Recipe {
 	params := view.Params
-	// Конец наезда по умолчанию (весь план) не входит в отпечаток: так сборки, сделанные до появления
-	// параметра, остаются свежими — их ролик тот же.
-	if value, ok := params["push_end"]; ok && value == 1 {
-		params = maps.Clone(params)
-		delete(params, "push_end")
+	// Параметры, появившиеся позже, со значением по умолчанию (конец движения — весь план, панорама
+	// по центру) не входят в отпечаток: так сборки, сделанные до их появления, остаются свежими — их
+	// ролик тот же.
+	params = maps.Clone(params)
+	for name, neutral := range map[string]float64{"push_end": 1, "pan_from": 0.5, "pan_to": 0.5} {
+		if value, ok := params[name]; ok && value == neutral {
+			delete(params, name)
+		}
 	}
 	recipe := Recipe{SchemaVersion: 1, Params: params}
 	for _, state := range view.States {
-		recipe.States = append(recipe.States, RecipeState{Frame: state.Frame, FromFrame: state.FromFrame})
+		recipe.States = append(recipe.States, RecipeState{Frame: state.Frame, FromFrame: state.FromFrame, DissolveFrames: state.DissolveFrames})
 	}
 	return recipe
 }
@@ -354,6 +371,7 @@ func SaveRecipe(root, packageDir string, recipe Recipe) (View, error) {
 	}
 	for index := range view.States {
 		view.States[index].FromFrame = recipe.States[index].FromFrame
+		view.States[index].DissolveFrames = recipe.States[index].DissolveFrames
 	}
 	if message := problem(view); message != "" && message != textFramesNotApproved {
 		return View{}, errors.New(message)
@@ -474,7 +492,7 @@ func Build(ctx context.Context, root, packageDir string, log func(string)) (View
 		if err != nil {
 			return View{}, err
 		}
-		states = append(states, effects.State{Image: image, From: state.FromFrame})
+		states = append(states, effects.State{Image: image, From: state.FromFrame, Dissolve: state.DissolveFrames})
 	}
 	size := effects.Size{Width: Width, Height: Height, Frames: view.Frames}
 	shot, err := effects.NewStaticShot(base, states, view.Params, size)
@@ -674,7 +692,11 @@ func stage(root, staging, directory string, workflow *toolrt.Dict, view View, st
 		}
 		input.Set("role", textStateRole(index))
 		inputs = append(inputs, input)
-		states = append(states, toolcli.Record("frame", state.Frame, "path", name, "from_frame", toolrt.NewInt(int64(state.FromFrame))))
+		record := toolcli.Record("frame", state.Frame, "path", name, "from_frame", toolrt.NewInt(int64(state.FromFrame)))
+		if state.DissolveFrames > 0 {
+			record.Set("dissolve_frames", toolrt.NewInt(int64(state.DissolveFrames)))
+		}
+		states = append(states, record)
 	}
 	original, err := descriptor(staging, "original.mp4")
 	if err != nil {

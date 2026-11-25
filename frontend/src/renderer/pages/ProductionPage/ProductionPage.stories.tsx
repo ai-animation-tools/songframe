@@ -583,7 +583,7 @@ export const StaticShotAssembly: Story = {
     await expect(panel.queryByRole('button', { name: shotTexts.accept })).not.toBeInTheDocument();
     const moment = panel.getAllByRole('spinbutton', { name: shotTexts.fromFrame })[1];
     await expect(moment).toHaveValue(75);
-    await expect(panel.getAllByRole('spinbutton', { name: shotTexts.fromFrame })[0]).toBeDisabled();
+    await expect(panel.getAllByRole('spinbutton', { name: shotTexts.fromFrame })[0]).toHaveAttribute('readonly');
     // Смена позже конца плана не проходит проверку: сборка недоступна с причиной.
     await userEvent.clear(moment);
     await userEvent.type(moment, '900');
@@ -594,7 +594,7 @@ export const StaticShotAssembly: Story = {
     await expect(panel.getByText(shotTexts.dirty)).toBeInTheDocument();
     // Наезд может закончиться раньше плана: по умолчанию движение идёт весь план.
     await userEvent.click(panel.getByRole('button', { name: shotTexts.params }));
-    await expect(panel.getByRole('spinbutton', { name: 'Конец наезда или отъезда, доля плана' })).toHaveValue(1);
+    await expect(panel.getByRole('spinbutton', { name: 'Конец движения камеры, доля плана' })).toHaveValue(1);
     // Сборка сохраняет черновик и запускает задание; предпросмотр появляется после его завершения.
     await userEvent.click(panel.getByRole('button', { name: shotTexts.build }));
     await waitFor(() => expect(counts(context)).toHaveTextContent('Сборок из опор: 1.'));
@@ -623,6 +623,43 @@ export const StaticShotAssembly: Story = {
     await waitFor(() => expect(counts(context)).toHaveTextContent('Приёмок комплекта: 1.'));
     await expect(await screen.findByText(texts.acceptedKit.heading, {}, { timeout: 8000 })).toBeInTheDocument();
     await expect(context.canvasElement.ownerDocument.querySelectorAll('[data-plan-step]')).toHaveLength(0);
+  }
+};
+
+export const StaticShotDissolvePan: Story = {
+  tags: ['ci'],
+  name: 'Сборка из опор: растворение всего кадра у состояния и панорама в параметрах',
+  parameters: { songframe: options({ shots: staticShots }) },
+  play: async (context) => {
+    const screen = screenOf(context);
+    const shotTexts = texts.staticShot;
+    const panel = within(await screen.findByTestId('static-shot-panel', {}, POLL_TIMEOUT));
+    // Растворение есть только у состояний: базовая опора видна сразу.
+    const fields = panel.getAllByRole('spinbutton', { name: shotTexts.dissolve });
+    await expect(fields).toHaveLength(1);
+    const dissolve = fields[0];
+    await expect(dissolve).toHaveValue(0);
+    await expect(panel.getByText(shotTexts.dissolveOff)).toBeInTheDocument();
+    // Секунды переводятся в кадры проекта; растворение дальше конца плана не проходит проверку.
+    await userEvent.clear(dissolve);
+    await userEvent.type(dissolve, '100');
+    await expect(panel.getByRole('button', { name: shotTexts.build })).toBeDisabled();
+    await userEvent.clear(dissolve);
+    await userEvent.type(dissolve, '1.5');
+    await expect(panel.getByText(shotTexts.dissolveOn({ frames: 45 }))).toBeInTheDocument();
+    await expect(panel.getByRole('button', { name: shotTexts.build })).toBeEnabled();
+    // Панорама — параметры сборки: по умолчанию окно по центру опоры, движения нет.
+    await userEvent.click(panel.getByRole('button', { name: shotTexts.params }));
+    await expect(panel.getByRole('spinbutton', { name: 'Панорама: начало, доля' })).toHaveValue(0.5);
+    await expect(panel.getByRole('spinbutton', { name: 'Панорама: конец, доля' })).toHaveValue(0.5);
+    // Сохранённое растворение возвращается из рецепта после перехода к другому плану.
+    await userEvent.click(panel.getByRole('button', { name: commonTexts.save }));
+    await waitFor(() => expect(panel.queryByText(shotTexts.dirty)).not.toBeInTheDocument());
+    await userEvent.click(screen.getByText('M01', { selector: 'p' }));
+    await shotHeading(context, 'M01');
+    await userEvent.click(screen.getByText('M02', { selector: 'p' }));
+    const reopened = within(await screen.findByTestId('static-shot-panel', {}, POLL_TIMEOUT));
+    await expect(reopened.getByRole('spinbutton', { name: shotTexts.dissolve })).toHaveValue(1.5);
   }
 };
 

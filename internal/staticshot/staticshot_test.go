@@ -192,21 +192,24 @@ func TestNotStatic(t *testing.T) {
 	}
 }
 
-// TestRecipeChecks — рецепт сохраняет моменты смены, но отвергает чужие опоры, порядок и диапазон.
+// TestRecipeChecks — рецепт сохраняет моменты смены и растворение, но отвергает чужие опоры,
+// порядок, диапазон и растворение у базовой опоры или дальше конца плана.
 func TestRecipeChecks(t *testing.T) {
 	root, directory := project(t)
-	recipe := Recipe{States: []RecipeState{{Frame: "K01"}, {Frame: "K02", FromFrame: 60}}, Params: map[string]float64{"transition": 5}}
+	recipe := Recipe{States: []RecipeState{{Frame: "K01"}, {Frame: "K02", FromFrame: 60, DissolveFrames: 20}}, Params: map[string]float64{"transition": 5}}
 	view, err := SaveRecipe(root, directory, recipe)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !view.Saved || view.States[1].FromFrame != 60 || view.Params["transition"] != 5 {
+	if !view.Saved || view.States[1].FromFrame != 60 || view.States[1].DissolveFrames != 20 || view.Params["transition"] != 5 {
 		t.Fatalf("после сохранения: %+v", view)
 	}
 	for name, bad := range map[string]Recipe{
-		"чужая опора": {States: []RecipeState{{Frame: "K01"}, {Frame: "K09", FromFrame: 60}}},
-		"после конца": {States: []RecipeState{{Frame: "K01"}, {Frame: "K02", FromFrame: 120}}},
-		"база не с 0": {States: []RecipeState{{Frame: "K01", FromFrame: 3}, {Frame: "K02", FromFrame: 60}}},
+		"чужая опора":           {States: []RecipeState{{Frame: "K01"}, {Frame: "K09", FromFrame: 60}}},
+		"после конца":           {States: []RecipeState{{Frame: "K01"}, {Frame: "K02", FromFrame: 120}}},
+		"база не с 0":           {States: []RecipeState{{Frame: "K01", FromFrame: 3}, {Frame: "K02", FromFrame: 60}}},
+		"растворение базы":      {States: []RecipeState{{Frame: "K01", DissolveFrames: 5}, {Frame: "K02", FromFrame: 60}}},
+		"растворение за концом": {States: []RecipeState{{Frame: "K01"}, {Frame: "K02", FromFrame: 60, DissolveFrames: 500}}},
 		"вне диапазона": {States: []RecipeState{{Frame: "K01"}, {Frame: "K02", FromFrame: 60}},
 			Params: map[string]float64{"dilate": -5}},
 	} {
@@ -234,7 +237,7 @@ func TestBuildAndAccept(t *testing.T) {
 	if view.Preview == nil || !view.Preview.Fresh {
 		t.Fatalf("предпросмотр: %+v", view.Preview)
 	}
-	recipe := Recipe{States: []RecipeState{{Frame: "K01"}, {Frame: "K02", FromFrame: 50}}}
+	recipe := Recipe{States: []RecipeState{{Frame: "K01"}, {Frame: "K02", FromFrame: 50, DissolveFrames: 12}}}
 	if view, err = SaveRecipe(root, directory, recipe); err != nil || view.Preview == nil || view.Preview.Fresh {
 		t.Fatalf("после правки рецепта: %+v, %v", view.Preview, err)
 	}
@@ -268,7 +271,8 @@ func TestBuildAndAccept(t *testing.T) {
 	readJSON(t, manifest, &kit)
 	generation := kit["generation"].(map[string]any)
 	states := generation["static"].(map[string]any)["states"].([]any)
-	if kit["kind"] != Kind || len(states) != 2 || states[1].(map[string]any)["from_frame"] != 50.0 {
+	if kit["kind"] != Kind || len(states) != 2 || states[1].(map[string]any)["from_frame"] != 50.0 ||
+		states[1].(map[string]any)["dissolve_frames"] != 12.0 || states[0].(map[string]any)["dissolve_frames"] != nil {
 		t.Fatalf("манифест: %v", kit)
 	}
 	lint := lintregistry.Run(root, []string{})
@@ -326,8 +330,9 @@ func TestSingleState(t *testing.T) {
 	}
 }
 
-// TestPushEndDigest — конец наезда по умолчанию не меняет отпечаток рецепта: предпросмотр,
-// собранный до появления параметра, остаётся свежим. Другое значение отпечаток меняет.
+// TestPushEndDigest — конец движения, панорама по центру и отсутствие растворения не меняют
+// отпечаток рецепта: предпросмотр, собранный до появления этих настроек, остаётся свежим. Другие
+// значения отпечаток меняют.
 func TestPushEndDigest(t *testing.T) {
 	params, err := effects.Resolve(effects.StaticParams, nil)
 	if err != nil {
@@ -338,7 +343,9 @@ func TestPushEndDigest(t *testing.T) {
 	}
 	states := []State{{Frame: "K01"}, {Frame: "K02", FromFrame: 33}}
 	legacy := maps.Clone(params)
-	delete(legacy, "push_end")
+	for _, name := range []string{"push_end", "pan_from", "pan_to"} {
+		delete(legacy, name)
+	}
 	before := recipeDigest(Recipe{SchemaVersion: 1, Params: legacy, States: []RecipeState{{Frame: "K01"}, {Frame: "K02", FromFrame: 33}}})
 	if digest := recipeDigest(effective(View{Params: params, States: states})); digest != before {
 		t.Fatal("конец наезда по умолчанию изменил отпечаток")
@@ -350,5 +357,14 @@ func TestPushEndDigest(t *testing.T) {
 	early["push_end"] = 0.25
 	if recipeDigest(effective(View{Params: early, States: states})) == before {
 		t.Fatal("конец наезда 0,25 не изменил отпечаток")
+	}
+	pan := maps.Clone(params)
+	pan["pan_to"] = 1
+	if recipeDigest(effective(View{Params: pan, States: states})) == before {
+		t.Fatal("панорама не изменила отпечаток")
+	}
+	dissolve := []State{{Frame: "K01"}, {Frame: "K02", FromFrame: 33, DissolveFrames: 20}}
+	if recipeDigest(effective(View{Params: params, States: dissolve})) == before {
+		t.Fatal("растворение не изменило отпечаток")
 	}
 }

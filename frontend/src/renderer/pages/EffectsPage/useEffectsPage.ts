@@ -1,7 +1,8 @@
 /**
  * Состояние страницы «Эффекты»: снимок effects.view, выбранный план (?shot=), черновик цепочки
  * эффектов каждого плана, превью кадра «до» и «после», задание рендера и снятие эффекта.
- * Черновик живёт в странице до «Применить»: Go пишет рецепт только вместе с готовым роликом.
+ * Черновик живёт в странице до «Применить»: Go пишет рецепт только вместе с готовым роликом;
+ * dirtyShots — планы с непримененным черновиком (смена плана спрашивает подтверждение).
  * Превью пересчитывается с задержкой после правки; поздний ответ прежнего запроса отбрасывается.
  * На весь экран кадр запрашивается в полном размере ролика.
  */
@@ -89,6 +90,11 @@ export function useEffectsPage() {
   const saved = useMemo(() => (selected ? editableSteps(selected.steps) : []), [selected]);
   const draft = selected ? (drafts[selected.shot] ?? saved) : [];
   const dirty = !!selected && !sameSteps(draft, saved);
+  // Планы с непримененным черновиком: отметка на карточке и вопрос при смене плана.
+  const dirtyShots = useMemo(
+    () => new Set(shots.filter((shot) => drafts[shot.shot] && !sameSteps(drafts[shot.shot], editableSteps(shot.steps))).map((shot) => shot.shot)),
+    [drafts, shots]
+  );
   const frame = selected ? Math.min(frames[selected.shot] ?? Math.floor(selected.frames / 2), Math.max(0, selected.frames - 1)) : 0;
 
   const change = (steps: EffectStep[]): void => {
@@ -226,6 +232,7 @@ export function useEffectsPage() {
     select,
     draft,
     dirty,
+    dirtyShots,
     change,
     reset: () => selected && !busy && change(saved),
     frame,

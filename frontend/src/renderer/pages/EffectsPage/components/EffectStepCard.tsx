@@ -5,9 +5,9 @@
  * а после них действия: сброс к значениям по умолчанию и удаление из плана. У дождя — ветер: с ним
  * наклон считает Go из ветра и камеры плана, поэтому поле наклона скрыто; без ветра наклон
  * задаётся полем. У эффекта без параметров («Реверс») нет полей и сброса — только описание и удаление.
- * Моменты плана (planTime реестра) собраны в блок «Время»: поля в секундах плана со шкалой строк
- * песни, рецепт хранит доли. Источник и луч (beam реестра) ставятся мышью на кадре превью, их
- * поля — рядом с ним.
+ * Моменты плана (planTime реестра) собраны в блок «Время»: поля в секундах плана, рецепт хранит
+ * доли; отметки моментов и строки песни — на общей шкале под превью страницы. Источник и луч (beam
+ * реестра) ставятся ручками на общем превью: здесь их поля и переключатель ручек.
  */
 import type { ReactElement } from 'react';
 import {
@@ -44,8 +44,7 @@ import { effectsTexts as texts } from '@shared/texts/effects';
 import { ActionButton } from '../../../components/ActionButton';
 import { NumberField } from '../../../components/NumberField';
 import { WindCompass } from './WindCompass';
-import { BeamEditor } from './BeamEditor';
-import { formatSeconds, PlanTimeline } from './PlanTimeline';
+import { formatSeconds } from './PlanTimeline';
 
 /** Ветер по умолчанию при включении: на восток, умеренный. */
 const DEFAULT_WIND = { direction: 0, strength: 0.4 };
@@ -83,14 +82,14 @@ function ParamField({
 /** Сетка полей параметров. */
 const FIELDS = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 1.5 } as const;
 
-/** План, на кадре и времени которого настраивается эффект: шкала моментов и кадр превью. */
+/** План, на кадре и времени которого настраивается эффект: кадр превью и ручки на общем превью. */
 export interface EffectPlanContext {
-  shot: Pick<EffectShot, 'frames' | 'fps' | 'lines' | 'lyricProblem'>;
+  shot: Pick<EffectShot, 'frames' | 'fps'>;
   /** Номер кадра превью. */
   frame: number;
-  /** Кадр превью; null — пока не посчитан. */
-  frameUrl: string | null;
-  onFrame(frame: number): void;
+  /** Ручки источника и луча показаны на общем превью. */
+  handles: boolean;
+  onHandles(shown: boolean): void;
 }
 
 /**
@@ -263,7 +262,11 @@ export function EffectStepCard({
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
               {texts.beam.hint}
             </Typography>
-            <BeamEditor beam={beam} specs={kind.params} step={step} frameUrl={plan.frameUrl} disabled={disabled} onChange={onChange} />
+            <FormControlLabel
+              control={<Switch checked={plan.handles} onChange={(event) => plan.onHandles(event.target.checked)} />}
+              label={texts.beam.toggle({ title: kind.title })}
+              title={texts.beam.toggleHint}
+            />
             <Box sx={{ ...FIELDS, mt: 1.5 }}>{beamSpecs.map(field)}</Box>
           </Box>
         ) : null}
@@ -273,15 +276,7 @@ export function EffectStepCard({
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
               {texts.time.hint}
             </Typography>
-            <PlanTimeline
-              duration={planSeconds(plan.shot)}
-              lines={plan.shot.lines}
-              lyricProblem={plan.shot.lyricProblem}
-              marks={timeSpecs.map((spec) => ({ name: spec.name, title: spec.title, seconds: fractionToSeconds(stepValue(step, spec), plan.shot) }))}
-              current={plan.frame / plan.shot.fps}
-              onSeek={(seconds) => plan.onFrame(Math.min(plan.shot.frames - 1, Math.max(0, Math.round(seconds * plan.shot.fps))))}
-            />
-            <Box sx={{ ...FIELDS, mt: 1.5 }}>
+            <Box sx={FIELDS}>
               {timeSpecs.map((spec) => (
                 <PlanTimeField key={spec.name} spec={spec} step={step} plan={plan} disabled={disabled} onChange={onChange} />
               ))}

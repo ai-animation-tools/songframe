@@ -904,7 +904,11 @@ func Accept(ctx context.Context, root, shot string, options Options) (*toolrt.Di
 		return nil, valueError("Пакет относится к другому плану или не является видеозапросом.")
 	}
 	target := toolrt.JoinPath(root, "assets", "shots", shot)
-	if toolrt.Exists(target) && !options.Replace {
+	exists, err := kitExists(target)
+	if err != nil {
+		return nil, err
+	}
+	if exists && !options.Replace {
 		return nil, valueError(shot + ": комплект уже есть в assets; замена выбранной версии — отдельное решение (--replace).")
 	}
 	downloads, _ := attempt.Value("downloads").([]any)
@@ -1527,4 +1531,22 @@ func promptCounterpart(data attemptData) *promptVariant {
 	}
 	variant.source = source
 	return variant
+}
+
+// kitExists сообщает, что в target (assets/shots/Mxx) уже лежит принятый комплект. Пустая папка комплектом не
+// считается и удаляется: её оставляют откаты клипа, когда Git убирает файлы комплекта, но не каталог. Приложение
+// судит о принятом плане по manifest.json и такую попытку запускает без --replace, поэтому пустая папка не должна
+// останавливать приёмку.
+func kitExists(target string) (bool, error) {
+	entries, err := os.ReadDir(target)
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	if len(entries) > 0 {
+		return true, nil
+	}
+	return false, os.Remove(target)
 }

@@ -4,7 +4,7 @@ import { schemesTexts } from '@shared/texts/schemes';
 import type { Scheme } from '@shared/schemes';
 import { drawOrder, labelAnchor, objectColor, schemeBounds } from '@shared/scheme-editing';
 import { objectTopHeight, objectVolume, pickObject, triangleNormal, type Triangle, type Vec3 } from '@shared/scheme-volume';
-import { cameraMatrix, orbitCamera, pixelRay, projectPoint, type Camera3D } from '@shared/camera3d';
+import { cameraMatrix, GROUND_REACH, orbitCamera, pixelRay, projectPoint, type Camera3D } from '@shared/camera3d';
 
 /** Дополнительное тело сцены, которого нет в схеме: например, фигура героя точки съёмки. */
 export interface VolumeExtra {
@@ -102,23 +102,24 @@ function buildVertices(
   });
   for (const extra of extras) for (const triangle of extra.triangles) push(triangle, rgb(extra.color));
   const triangles = values.length / 27;
-  // Земля — последней: два треугольника под всей сценой.
+  // Земля — последней: два треугольника до самого горизонта (GROUND_REACH), сетка — только вокруг схемы.
   const bounds = schemeBounds(scheme.objects) ?? [-10, -10, 10, 10];
   const margin = Math.max(10, (bounds[2] - bounds[0] + bounds[3] - bounds[1]) / 2);
   const [x0, y0, x1, y1] = [bounds[0] - margin, bounds[1] - margin, bounds[2] + margin, bounds[3] + margin];
+  const [g0, h0, g1, h1] = [bounds[0] - GROUND_REACH, bounds[1] - GROUND_REACH, bounds[2] + GROUND_REACH, bounds[3] + GROUND_REACH];
   push(
     [
-      [x0, y0, -0.01],
-      [x1, y0, -0.01],
-      [x1, y1, -0.01]
+      [g0, h0, -0.01],
+      [g1, h0, -0.01],
+      [g1, h1, -0.01]
     ],
     ground
   );
   push(
     [
-      [x0, y0, -0.01],
-      [x1, y1, -0.01],
-      [x0, y1, -0.01]
+      [g0, h0, -0.01],
+      [g1, h1, -0.01],
+      [g0, h1, -0.01]
     ],
     ground
   );

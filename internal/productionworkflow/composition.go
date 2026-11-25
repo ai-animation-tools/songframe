@@ -32,7 +32,7 @@ const (
 	// compositionKey — поле workflow.json: false — снимок выключен для попытки.
 	compositionKey = "composition_snapshot"
 	// compositionVersion — версия отпечатка: меняется вместе с тем, как интерфейс рисует болванку.
-	compositionVersion = "1"
+	compositionVersion = "2"
 )
 
 // CompositionView — снимок вида из камеры в виде плана (View.Composition): включён ли, отпечаток и данные для

@@ -766,6 +766,45 @@ export const CompositionDrawn: Story = {
   }
 };
 
+export const CompositionUsed: Story = {
+  tags: ['ci'],
+  name: 'Схема композиции · опоры приняты: снимок в пройденном шаге без выключателя',
+  parameters: {
+    songframe: options({
+      shots: () =>
+        baseShots({
+          attention: null,
+          packages: [
+            {
+              ...noCandidates(),
+              keyframes: keyframePackage().keyframes.map((frame) => ({
+                ...frame,
+                imagePath: frame.imagePath ?? `${STORY_IMAGE_PATH}?frame=${frame.id}`,
+                approved: true
+              }))
+            }
+          ]
+        }),
+      composition: true,
+      workflowView: () => ({ imageProvider: 'codex' })
+    })
+  },
+  play: async (context) => {
+    const screen = screenOf(context);
+    const composition = productionTexts.composition;
+    await waitFor(() => expect(planStep(context, 'prompt')).not.toBeNull(), POLL_TIMEOUT);
+    // Пройденный шаг опор свёрнут: раскрывается щелчком по заголовку.
+    await userEvent.click(within(planStep(context, 'frames')).getAllByRole('button')[0]);
+    const frames = within(planStep(context, 'frames'));
+    await expect(await frames.findByText(composition.usedHint, {}, POLL_TIMEOUT)).toBeVisible();
+    await expect(frames.queryByRole('switch', { name: composition.label })).not.toBeInTheDocument();
+    await userEvent.click(frames.getByRole('button', { name: componentsTexts.gallery.openLarge({ label: composition.phases.start }) }));
+    await expect(await screen.findByRole('dialog')).toBeVisible();
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  }
+};
+
 /** Опора возвращена на доработку: подсказка советует создать её заново и уходит, пока опора создаётся. */
 const returnedFrame = () => ({
   ...noCandidates(),

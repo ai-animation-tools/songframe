@@ -1,7 +1,9 @@
 /**
  * «Схема композиции» в шаге опор плана с точкой съёмки: выключатель снимка вида из камеры и сам снимок, который
  * уйдёт агенту вместе с опорой. Снимок рисует и сохраняет useProductionWorkflow, как только он включён, а свежего
- * нет; здесь видно, готов ли он, и миниатюры открывают общий просмотр изображений.
+ * нет; здесь видно, готов ли он, и миниатюры открывают общий просмотр изображений. Без onToggle — пройденный шаг
+ * опор: только снимок, по которому создавались опоры, для сравнения с ними; выключатель возвращается вместе с шагом,
+ * когда опору отправляют на доработку.
  */
 import { useState, type ReactElement } from 'react';
 import { Box, Chip, FormControlLabel, Paper, Stack, Switch, Typography } from '@mui/material';
@@ -19,8 +21,9 @@ export function CompositionPanel({
 }: {
   composition: ProductionComposition;
   /** У плана идёт операция: выключатель недоступен. */
-  busy: boolean;
-  onToggle(enabled: boolean): void;
+  busy?: boolean;
+  /** Переключение снимка; без него панель только показывает снимок. */
+  onToggle?(enabled: boolean): void;
 }): ReactElement {
   const [active, setActive] = useState<number | null>(null);
   const gallery = composition.frames.map((frame) => ({ imagePath: frame.path, label: texts.phases[frame.phase] }));
@@ -28,11 +31,15 @@ export function CompositionPanel({
     <Paper variant="outlined" sx={{ p: 1.5 }} data-composition={composition.enabled ? 'on' : 'off'}>
       <Stack spacing={1}>
         <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
-          <FormControlLabel
-            control={<Switch checked={composition.enabled} disabled={busy} onChange={(_, checked) => onToggle(checked)} />}
-            label={texts.label}
-          />
-          {composition.enabled ? (
+          {onToggle ? (
+            <FormControlLabel
+              control={<Switch checked={composition.enabled} disabled={busy} onChange={(_, checked) => onToggle(checked)} />}
+              label={texts.label}
+            />
+          ) : (
+            <Typography variant="subtitle2">{texts.label}</Typography>
+          )}
+          {!onToggle ? null : composition.enabled ? (
             <Chip
               size="small"
               color={gallery.length ? 'success' : 'default'}
@@ -47,7 +54,7 @@ export function CompositionPanel({
           )}
         </Stack>
         <Typography variant="body2" color="text.secondary">
-          {texts.hint}
+          {onToggle ? texts.hint : texts.usedHint}
         </Typography>
         {composition.enabled && gallery.length ? (
           <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>

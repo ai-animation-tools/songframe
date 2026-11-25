@@ -443,6 +443,8 @@ export function ProductionPath({
             {current && view?.composition ? (
               <CompositionPanel composition={view.composition} busy={blocked} onToggle={(enabled) => void workflow.setComposition(enabled)} />
             ) : null}
+            {/* Пройденный шаг: снимок, по которому создавались опоры, — для сравнения с ними. */}
+            {!current && view?.composition?.enabled && view.composition.frames.length ? <CompositionPanel composition={view.composition} /> : null}
             {current && framesReason ? (
               <Typography variant="body2" color="text.secondary">
                 {framesReason}

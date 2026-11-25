@@ -388,3 +388,7 @@ func textStaticBuildJob(shot string) string { return "Сборка " + shot }
 func textRetryStatic(shot string) string {
 	return shot + ": план из опор собирается без запроса видео; для новой версии начните новую попытку."
 }
+
+func textFrameOutside(frame, frames int) string {
+	return fmt.Sprintf("Кадра %d в принятом видео нет: кадров %d.", frame, frames)
+}

@@ -255,3 +255,53 @@ export const Empty: Story = {
     await within(canvasElement).findByText(/^Принятых планов пока нет/);
   }
 };
+
+export const LightBeamAndTime: Story = {
+  name: 'Свет · источник и луч на кадре, время в секундах плана',
+  tags: ['ci'],
+  parameters: { songframe: effectsPageOptions({ shot: 'M02' }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const screen = body(canvasElement);
+    await canvas.findByText(texts.status.none);
+    await userEvent.click(canvas.getByRole('button', { name: texts.add }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Свет' }));
+    // Источник и луч — ручки на кадре; поля источника рядом с полем кадра.
+    const editor = canvas.getByRole('group', { name: texts.beam.label });
+    await expect(within(editor).getByRole('button', { name: texts.beam.source({ x: 0.1, y: 0.9 }) })).toBeVisible();
+    // Щелчок по полю ставит источник в эту точку: правая верхняя четверть кадра.
+    const box = editor.getBoundingClientRect();
+    const toClient = (fx: number, fy: number) => ({
+      clientX: box.left + ((fx + 0.4) / 1.8) * box.width,
+      clientY: box.top + ((fy + 0.4) / 1.8) * box.height
+    });
+    await userEvent.pointer([{ keys: '[MouseLeft]', target: editor, coords: toClient(0.75, 0.25) }]);
+    await waitFor(() => expect(canvas.getByRole('spinbutton', { name: 'Источник по горизонтали, доля кадра' })).toHaveValue(0.75));
+    await expect(canvas.getByRole('spinbutton', { name: 'Источник по вертикали, доля кадра' })).toHaveValue(0.25);
+    // Ручка направления поворачивается и клавиатурой.
+    const direction = within(editor).getByRole('button', { name: texts.beam.direction({ value: 45 }) });
+    direction.focus();
+    await userEvent.keyboard('{ArrowLeft}');
+    await expect(canvas.getByRole('spinbutton', { name: 'Направление луча, градусы: 0 — вправо, 90 — вверх' })).toHaveValue(46);
+    await waitFor(
+      () => expect(effectsPageInspection().previews.at(-1)?.steps).toEqual([{ effect: 'light', given: { source_x: 0.75, source_y: 0.25, direction: 46 } }]),
+      WAIT
+    );
+    // Моменты — в секундах плана (72 кадра по 24 в секунду: последний кадр — 2,96 с), рецепт хранит долю.
+    const scale = canvas.getByRole('group', { name: texts.time.scale });
+    await expect(within(scale).getByRole('img', { name: texts.time.mark({ title: 'Начало нарастания', seconds: '1,33' }) })).toBeInTheDocument();
+    const fade = canvas.getByRole('spinbutton', { name: texts.time.title({ title: 'Начало затухания' }) });
+    await expect(fade).toHaveValue(2.96);
+    await userEvent.clear(fade);
+    await userEvent.type(fade, '2');
+    await waitFor(() => expect(effectsPageInspection().previews.at(-1)?.steps[0]?.given.fade_start).toBe(0.6761), WAIT);
+    // Щелчок по строке песни показывает кадр её начала, кнопка у поля берёт время этого кадра.
+    await userEvent.click(within(scale).getByTitle(texts.time.line({ text: 'Город ждёт рассвета', start: '1,50' })));
+    await waitFor(() => expect(effectsPageInspection().previews.at(-1)?.frame).toBe(36), WAIT);
+    await userEvent.click(within(scale).getByTitle(texts.time.line({ text: 'Капли стучат по крышам', start: '0,00' })));
+    await waitFor(() => expect(effectsPageInspection().previews.at(-1)?.frame).toBe(0), WAIT);
+    await userEvent.click(canvas.getByRole('button', { name: texts.time.toFrame({ title: 'Полная сила' }) }));
+    await expect(canvas.getByRole('spinbutton', { name: texts.time.title({ title: 'Полная сила' }) })).toHaveValue(0);
+    await waitFor(() => expect(effectsPageInspection().previews.at(-1)?.steps[0]?.given.end).toBe(0), WAIT);
+  }
+};

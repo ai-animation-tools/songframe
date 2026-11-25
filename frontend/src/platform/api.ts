@@ -7,6 +7,7 @@
  */
 import type { Api } from '@shared/api';
 import type {
+  AcceptedFrame,
   AcceptedKit,
   ProjectHistoryStatus,
   ProjectPoint,
@@ -925,6 +926,8 @@ export function createApi(b: Bindings): Api {
     call('production.cutPreview', async () => (await (await production()).CutPreview(project, packageDir, options)) as CutPreview);
   api.production.recut = (project, shot, options) =>
     call('production.recut', async () => toJob(await (await production()).Recut(project, shot, options)), false);
+  api.production.takeFrame = (project, shot, frame) =>
+    call('production.takeFrame', async () => (await (await production()).TakeFrame(project, shot, frame)) as AcceptedFrame, false);
   api.production.recutPreview = (project, shot, options) =>
     call('production.recutPreview', async () => (await (await production()).RecutPreview(project, shot, options)) as CutPreview);
   api.production.acceptedKit = (project, shot) =>

@@ -40,13 +40,16 @@ function LabeledVideo({
   path,
   label,
   color,
-  caption
+  caption,
+  onVideo
 }: {
   path: string;
   label: string | null;
   color: 'info' | 'success';
   /** Подпись под плеером; функция получает размер кадра, когда видео загрузило метаданные. */
   caption: string | null | ((size: { width: number; height: number } | null) => string);
+  /** Узел видео плеера: владелец читает текущее время (кадр для «Взять кадр»). */
+  onVideo?(node: HTMLVideoElement | null): void;
 }): ReactElement {
   const [size, setSize] = useState<{ width: number; height: number } | null>(null);
   // Плеер вызывает ref при каждой отрисовке: узел хранится состоянием (тот же узел не перерисовывает),
@@ -63,11 +66,12 @@ function LabeledVideo({
     node.addEventListener('loadedmetadata', update);
     return () => node.removeEventListener('loadedmetadata', update);
   }, [node]);
+  useEffect(() => onVideo?.(node), [node, onVideo]);
   const text = typeof caption === 'function' ? caption(size) : caption;
   return (
     <Box sx={{ minWidth: 0 }}>
       {label ? <Chip size="small" color={color} label={label} sx={{ mb: 1 }} /> : null}
-      <VideoPlayer path={path} videoRef={typeof caption === 'function' ? setNode : undefined} />
+      <VideoPlayer path={path} videoRef={typeof caption === 'function' || onVideo ? setNode : undefined} />
       {text ? (
         <Typography component="p" variant="caption" color="text.secondary" sx={{ mt: 0.5, overflowWrap: 'anywhere' }}>
           {text}
@@ -77,13 +81,18 @@ function LabeledVideo({
   );
 }
 
-/** title — заголовок блока; null, когда блок вложен в «Принятый комплект» с собственным заголовком. */
+/**
+ * title — заголовок блока; null, когда блок вложен в «Принятый комплект» с собственным заголовком.
+ * onAcceptedVideo получает узел плеера принятого видео (не оригинала).
+ */
 export function AcceptedAsset({
   asset,
-  title = productionTexts.productionShotCard.accepted
+  title = productionTexts.productionShotCard.accepted,
+  onAcceptedVideo
 }: {
   asset: NonNullable<ShotProduction['asset']>;
   title?: string | null;
+  onAcceptedVideo?(node: HTMLVideoElement | null): void;
 }): ReactElement {
   const original = asset.original && asset.original !== asset.video ? asset.original : null;
   return (
@@ -116,6 +125,7 @@ export function AcceptedAsset({
             label={original ? productionTexts.productionShotCard.acceptedVideo : null}
             color="success"
             caption={asset.edit ? (size) => acceptedCaption(asset.edit!, size) : null}
+            onVideo={onAcceptedVideo}
           />
         ) : null}
       </Box>

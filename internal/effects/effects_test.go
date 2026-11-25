@@ -461,3 +461,42 @@ func TestReversedVideo(t *testing.T) {
 		t.Fatalf("ролик короче заявленного: %v", err)
 	}
 }
+
+// TestLightFade — сила «Света» по кадрам: без затухания — прежняя кривая нарастания, с
+// затуханием — держится полной между нарастанием и затуханием и гаснет к его концу.
+func TestLightFade(t *testing.T) {
+	kind, _ := Lookup("light")
+	level := func(given map[string]float64, frame, frames int) float64 {
+		given["flicker"] = 0
+		params, err := Resolve(kind.Params, given)
+		if err != nil {
+			t.Fatal(err)
+		}
+		l := kind.New(params, Size{Width: 4, Height: 4, Frames: frames}).(*light)
+		return float64(l.levelAt(&Context{Frame: frame, Frames: frames}))
+	}
+	const frames = 101
+	for frame := 0; frame < frames; frame++ {
+		t0 := float64(frame) / (frames - 1)
+		old := math.Pow(smoothstep(0.45, 1, t0), 2) * 4
+		if got := level(map[string]float64{}, frame, frames); math.Abs(got-old) > 1e-5 {
+			t.Fatalf("кадр %d без затухания: %v, прежде %v", frame, got, old)
+		}
+	}
+	fading := func(frame int) float64 {
+		return level(map[string]float64{"start": 0, "end": 0.2, "fade_start": 0.5, "fade_end": 0.8}, frame, frames)
+	}
+	for _, frame := range []int{20, 35, 50} {
+		if got := fading(frame); math.Abs(got-4) > 1e-5 {
+			t.Fatalf("кадр %d между нарастанием и затуханием: %v", frame, got)
+		}
+	}
+	if mid, late := fading(65), fading(75); !(mid < 4 && late < mid && late > 0) {
+		t.Fatalf("затухание не убывает: %v, %v", mid, late)
+	}
+	for _, frame := range []int{80, 100} {
+		if got := fading(frame); got != 0 {
+			t.Fatalf("кадр %d после затухания: %v", frame, got)
+		}
+	}
+}

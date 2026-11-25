@@ -121,6 +121,8 @@ interface PageModel {
   /** Новых участков принятого плана (production.recut) и последний переданный участок. */
   recuts: number;
   recutOptions: AcceptOptions | null;
+  /** Кадры принятого видео, взятые «Взять кадр»: план и номер кадра. */
+  takenFrames: string[];
   submissions: number;
   frameImports: number;
   frameNotes: string[];
@@ -292,6 +294,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
         accepts: 0,
         recuts: 0,
         recutOptions: null,
+        takenFrames: [],
         submissions: 0,
         frameImports: 0,
         frameNotes: [],
@@ -692,6 +695,17 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
               publish();
             });
             return structuredClone(job);
+          },
+          // Как Go: кадр принятого видео по номеру в пределах числа кадров — в папку загрузок под именем проекта.
+          takeFrame: async (project, shotId, frame) => {
+            const shot = model.view.shots.find((item) => item.id === shotId);
+            const edit = shot?.asset?.edit;
+            if (!edit) throw new Error(`Комплект плана ${shotId} повреждён: нет принятого монтажа accepted_edit.`);
+            if (!Number.isInteger(frame) || frame < 0 || frame >= edit.frames) throw new Error(`Кадра ${frame} в принятом видео нет: кадров ${edit.frames}.`);
+            model.takenFrames.push(`${shotId}:${frame}`);
+            publish();
+            const folder = `/mock/Загрузки/${project.split('/').at(-1)}`;
+            return { path: `${folder}/${shotId}-кадр-${String(frame).padStart(4, '0')}.png`, folder, frame };
           },
           // Как Go: предпросмотр нового участка проверяет границы и отдаёт ролик витрины ровно в окно плана.
           recutPreview: async (_project, shotId, recutOptions) => {
@@ -1221,7 +1235,7 @@ export function ProductionPageStory({ links = [] }: { links?: StoryLink[] }): Re
             {model.ownSaves.join(', ') || 'нет'}. Способов генерации: {model.methodChanges.join(', ') || 'нет'}. Запросов приложения:{' '}
             {model.requestBuilds.join(', ') || 'нет'}. Вариантов промпта к отправке: {model.promptVariants.join(', ') || 'нет'}. Открытых папок:{' '}
             {model.openedPaths.join(', ') || 'нет'}. Сборок из опор: {model.staticBuilds}. Новых участков: {model.recuts}
-            {model.recutOptions ? ` (${JSON.stringify(model.recutOptions)})` : ''}.
+            {model.recutOptions ? ` (${JSON.stringify(model.recutOptions)})` : ''}. Взятых кадров: {model.takenFrames.join(', ') || 'нет'}.
           </Typography>
           <Typography variant="caption" color="text.secondary" data-testid="production-review-model">
             Проверок видео: {model.reviewStarts}. Отмен проверок: {model.reviewCancels}.

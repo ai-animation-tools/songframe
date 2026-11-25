@@ -278,6 +278,7 @@ export function EffectShotPanel({
               step={step}
               camera={shot.camera}
               heading={shot.heading}
+              plan={{ shot, frame, frameUrl: preview.url, onFrame }}
               disabled={busy}
               onChange={(next) => onChange(draft.map((item, position) => (position === index ? next : item)))}
               onRemove={() => onChange(draft.filter((_, position) => position !== index))}

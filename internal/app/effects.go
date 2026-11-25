@@ -11,6 +11,7 @@ import (
 	"songframe/internal/dynvalue"
 	"songframe/internal/effects"
 	"songframe/internal/jobs"
+	"songframe/internal/montage"
 	"songframe/internal/production"
 	"songframe/internal/shoteffects"
 )
@@ -32,21 +33,37 @@ func NewEffectsService(manager *jobs.Manager) *EffectsService {
 }
 
 // EffectKind — эффект для панели параметров: идентификатор, название, подсказка «когда и зачем»,
-// схема параметров и параметр наклона, который можно считать из ветра ("" — эффект от ветра не зависит).
+// схема параметров, параметр наклона, который можно считать из ветра ("" — эффект от ветра не
+// зависит), параметры-моменты плана (поля в секундах) и параметры источника и луча, которые
+// ставятся мышью на кадре (nil — источника нет).
 type EffectKind struct {
 	ID        string              `json:"id"`
 	Title     string              `json:"title"`
 	Hint      string              `json:"hint"`
 	Params    []effects.ParamSpec `json:"params"`
 	WindAngle string              `json:"windAngle"`
+	PlanTime  []string            `json:"planTime"`
+	Beam      *effects.Beam       `json:"beam"`
 }
 
-// EffectShot — принятый план страницы с идущим заданием рендера ("" — задания нет) и
-// изображением карточки: первой опорой принятого комплекта, как на «Производстве» ("" — опор нет).
+// EffectLine — строка песни на шкале времени плана: секунды от начала плана (может начинаться до
+// него или кончаться после).
+type EffectLine struct {
+	Text  string  `json:"text"`
+	Start float64 `json:"start"`
+	End   float64 `json:"end"`
+}
+
+// EffectShot — принятый план страницы с идущим заданием рендера ("" — задания нет),
+// изображением карточки — первой опорой принятого комплекта, как на «Производстве» ("" — опор
+// нет), — и строками песни в окне плана для шкалы моментов эффекта; LyricProblem — почему строк
+// нет (разметки нет, трек сменился).
 type EffectShot struct {
 	shoteffects.Shot
-	JobID string `json:"jobId"`
-	Frame string `json:"frame"`
+	JobID        string       `json:"jobId"`
+	Frame        string       `json:"frame"`
+	Lines        []EffectLine `json:"lines"`
+	LyricProblem *string      `json:"lyricProblem"`
 }
 
 // EffectsView — effects:view.
@@ -89,14 +106,48 @@ func (s *EffectsService) View(project string) (EffectsView, error) {
 	}
 	view := EffectsView{Kinds: []EffectKind{}, Shots: make([]EffectShot, 0, len(shots))}
 	for _, kind := range effects.Kinds() {
-		view.Kinds = append(view.Kinds, EffectKind{ID: kind.ID, Title: kind.Title, Hint: kind.Hint, Params: kind.Params, WindAngle: kind.WindAngle})
+		planTime := append([]string{}, kind.PlanTime...)
+		view.Kinds = append(view.Kinds, EffectKind{ID: kind.ID, Title: kind.Title, Hint: kind.Hint, Params: kind.Params, WindAngle: kind.WindAngle, PlanTime: planTime, Beam: kind.Beam})
 	}
+	lyrics := map[int64]lyricsAt{}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for _, shot := range shots {
-		view.Shots = append(view.Shots, EffectShot{Shot: shot, JobID: s.busyLocked(s.key(project, shot.State.Shot)), Frame: acceptedFrame(project, shot.State.Shot)})
+		item := EffectShot{Shot: shot, JobID: s.busyLocked(s.key(project, shot.State.Shot)), Frame: acceptedFrame(project, shot.State.Shot), Lines: []EffectLine{}}
+		if fps := shot.State.FPS; fps > 0 && shot.Problem == "" {
+			found, ok := lyrics[fps]
+			if !ok {
+				found.lines, found.problem, err = montage.Lyrics(project, float64(fps))
+				if err != nil {
+					return EffectsView{}, err
+				}
+				lyrics[fps] = found
+			}
+			item.Lines, item.LyricProblem = planLines(found.lines, shot.Start, shot.End, float64(fps)), found.problem
+		}
+		view.Shots = append(view.Shots, item)
 	}
 	return view, nil
+}
+
+// lyricsAt — строки песни на кадровой оси одной частоты и причина, если строк нет.
+type lyricsAt struct {
+	lines   []montage.LyricLine
+	problem *string
+}
+
+// planLines — строки песни, пересекающие окно плана [start, end) секунд песни, в секундах от
+// начала плана.
+func planLines(lines []montage.LyricLine, start, end, fps float64) []EffectLine {
+	result := []EffectLine{}
+	for _, line := range lines {
+		from, to := line.StartFrame/fps, line.EndFrame/fps
+		if to <= start || from >= end {
+			continue
+		}
+		result = append(result, EffectLine{Text: line.Text, Start: from - start, End: to - start})
+	}
+	return result
 }
 
 // acceptedFrame — абсолютный путь первой опоры принятого комплекта плана для карточки списка;

@@ -7,6 +7,7 @@ import (
 
 	"songframe/internal/agents"
 	"songframe/internal/dashboard"
+	"songframe/internal/desktop"
 	"songframe/internal/jobs"
 	"songframe/internal/production"
 	"songframe/internal/scenarioworkflow"
@@ -314,6 +315,17 @@ func (s *ProductionService) Recut(project, shot string, options production.Accep
 // RecutPreview — production:recutPreview: предпросмотр нового участка принятого плана под звук окна песни.
 func (s *ProductionService) RecutPreview(ctx context.Context, project, shot string, options production.AcceptOptions) (*production.CutPreview, error) {
 	return wire.Done(s.production.RecutPreview(ctx, project, shot, options))
+}
+
+// TakeFrame — production:takeFrame: кадр frame принятого видео плана без эффекта в PNG полного
+// размера в папке загрузок пользователя под именем папки проекта — для референсов и своих опор.
+// Файлы проекта не меняются.
+func (s *ProductionService) TakeFrame(ctx context.Context, project, shot string, frame int) (*production.AcceptedFrame, error) {
+	folder, err := desktop.DownloadsDir()
+	if err != nil {
+		return nil, err
+	}
+	return wire.Done(production.TakeAcceptedFrame(ctx, project, shot, frame, folder))
 }
 
 // ContactSheet — техническая сводка пакета: задание contact_sheet с одним шагом.

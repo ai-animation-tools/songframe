@@ -205,6 +205,28 @@ func TestRender(t *testing.T) {
 		t.Fatalf("рецепт: %+v", recipe)
 	}
 
+	// Рецепт, сделанный до появления параметра со значением по умолчанию (затухание «Света»),
+	// свеж; изменённое сохранённое значение — нет.
+	recipePath := filepath.Join(root, "assets", "effects", "M01", "recipe.json")
+	older := recipe
+	older.Steps = append([]AppliedStep(nil), recipe.Steps...)
+	older.Steps[0].Params = map[string]float64{}
+	for name, value := range recipe.Steps[0].Params {
+		if name != "fade_start" && name != "fade_end" {
+			older.Steps[0].Params[name] = value
+		}
+	}
+	writeJSON(t, recipePath, older)
+	if state, _ := Read(root, "M01"); state.Stale != "" {
+		t.Fatalf("рецепт без нового параметра: %q", state.Stale)
+	}
+	older.Steps[0].Params["intensity"]++
+	writeJSON(t, recipePath, older)
+	if state, _ := Read(root, "M01"); state.Stale != textParamsChanged {
+		t.Fatalf("изменённое значение: %q", state.Stale)
+	}
+	writeJSON(t, recipePath, recipe)
+
 	// Повторный рендер того же рецепта даёт тот же ролик и не оставляет прежних файлов.
 	again, err := Render(ctx, root, "M01", steps, nil)
 	if err != nil || again.Output != state.Output {

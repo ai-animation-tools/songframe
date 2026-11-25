@@ -7,17 +7,20 @@
  * (production.acceptedKit) при показе; новая попытка возвращает обычный путь шагов. У своего видео опоры и промпт есть, только если их указали при загрузке; тогда они
  * показываются так же, как у генерации, а пустой промпт не показывается. «Открыть папку» показывает папку комплекта
  * в файловом менеджере ОС. «Изменить участок» открывает окно приёмки с прежним участком: тот же оригинал
- * комплекта принимается заново с другими границами, скоростью и удержаниями.
+ * комплекта принимается заново с другими границами, скоростью и удержаниями. «Взять кадр» сохраняет кадр, на котором
+ * стоит плеер принятого видео, в PNG полного размера вне клипа (production.takeFrame): кадр берётся из видео без
+ * эффектов; после сохранения — путь и «Открыть папку» с кадрами клипа.
  */
 import { useEffect, useState, type ReactElement } from 'react';
 import { Alert, Box, Button, Paper, Stack, Typography } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ContentCutIcon from '@mui/icons-material/ContentCut';
+import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import { commonTexts } from '@shared/texts/common';
 import { productionTexts } from '@shared/texts/production';
 import { mediaProviderInfo } from '@shared/media-providers';
-import type { AcceptedKit, PromptVariant, ShotProduction } from '@shared/types';
+import type { AcceptedFrame, AcceptedKit, PromptVariant, ShotProduction } from '@shared/types';
 import { useApp } from '../../../state';
 import { ActionButton } from '../../../components/ActionButton';
 import { AudioPlayer } from '../../../components/AudioPlayer';
@@ -58,6 +61,10 @@ export function AcceptedKitPanel({
   const [active, setActive] = useState<number | null>(null);
   // Показанный вариант видеопромпта: сначала отправленный в генерацию.
   const [shownPrompt, setShownPrompt] = useState<{ shot: string; variant: PromptVariant } | null>(null);
+  const [player, setPlayer] = useState<HTMLVideoElement | null>(null);
+  // Сохранённый кадр относится к своему плану: при смене плана сообщение не переносится.
+  const [taken, setTaken] = useState<{ shot: string; frame: AcceptedFrame; seconds: number } | null>(null);
+  const [taking, setTaking] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -100,6 +107,22 @@ export function AcceptedKitPanel({
   const openFolder = (dir: string): void => {
     window.api.shell.openPath(dir).catch((reason: unknown) => notify(describeError(reason), 'error'));
   };
+  const edit = shot.asset.edit;
+  const takeFrame = async (): Promise<void> => {
+    if (!edit || !player) return;
+    // Показанный кадр — тот, в чьём интервале стоит плеер; малый запас против погрешности currentTime.
+    const frame = Math.min(edit.frames - 1, Math.max(0, Math.floor(player.currentTime * edit.fps + 1e-3)));
+    setTaking(true);
+    try {
+      const result = await window.api.production.takeFrame(project, shot.id, frame);
+      setTaken({ shot: shot.id, frame: result, seconds: frame / edit.fps });
+    } catch (reason) {
+      notify(describeError(reason), 'error');
+    } finally {
+      setTaking(false);
+    }
+  };
+  const shownFrame = taken?.shot === shot.id ? taken : null;
 
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
@@ -107,9 +130,20 @@ export function AcceptedKitPanel({
         <Typography variant="subtitle1" fontWeight={600}>
           {texts.heading}
         </Typography>
-        <AcceptedAsset asset={shot.asset} title={null} />
-        {onRecut ? (
-          <Box>
+        <AcceptedAsset asset={shot.asset} title={null} onAcceptedVideo={setPlayer} />
+        <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
+          <ActionButton
+            size="small"
+            variant="outlined"
+            startIcon={<PhotoCameraIcon />}
+            title={texts.takeFrameHint}
+            disabled={!edit || !shot.asset.video || !player || taking}
+            disabledReason={taking ? texts.takeFrameBusy : texts.takeFrameNoVideo}
+            onClick={() => void takeFrame()}
+          >
+            {texts.takeFrame}
+          </ActionButton>
+          {onRecut ? (
             <ActionButton
               size="small"
               variant="outlined"
@@ -121,7 +155,26 @@ export function AcceptedKitPanel({
             >
               {texts.recut}
             </ActionButton>
-          </Box>
+          ) : null}
+        </Stack>
+        {shownFrame ? (
+          <Alert
+            severity="success"
+            onClose={() => setTaken(null)}
+            action={
+              <Button
+                color="inherit"
+                size="small"
+                startIcon={<FolderOpenIcon />}
+                title={texts.frameFolderHint}
+                onClick={() => openFolder(shownFrame.frame.folder)}
+              >
+                {texts.openFolder}
+              </Button>
+            }
+          >
+            {texts.frameTaken({ frame: shownFrame.frame.frame, seconds: shownFrame.seconds.toFixed(2).replace('.', ','), path: shownFrame.frame.path })}
+          </Alert>
         ) : null}
         {error ? <Alert severity="error">{error}</Alert> : null}
         {kit ? (

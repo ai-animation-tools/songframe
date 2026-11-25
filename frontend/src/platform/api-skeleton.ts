@@ -235,6 +235,7 @@ export function apiSkeleton(): Api {
       cutPreview: stub('production.cutPreview'),
       recut: stub('production.recut'),
       recutPreview: stub('production.recutPreview'),
+      takeFrame: stub('production.takeFrame'),
       prepareSpeech: stub('production.prepareSpeech'),
       reopenQuestion: stub('production.reopenQuestion'),
       discardAttempt: stub('production.discardAttempt'),

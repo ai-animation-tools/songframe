@@ -1099,6 +1099,26 @@ export const AcceptedPlanRecut: Story = {
     await expect(await screen.findByText(/участок оригинала 0\.00–5\.00 с/, {}, POLL_TIMEOUT)).toBeInTheDocument();
   }
 };
+export const AcceptedPlanTakeFrame: Story = {
+  tags: ['ci'],
+  name: 'Принятый план · «Взять кадр» принятого видео без эффектов и папка с кадром',
+  parameters: { songframe: acceptedOptions({ acceptedKit: manualKit }) },
+  play: async (context) => {
+    const screen = screenOf(context);
+    const kit = texts.acceptedKit;
+    await expect(await screen.findByText(kit.heading, {}, POLL_TIMEOUT)).toBeInTheDocument();
+    // Плеер стоит в начале: берётся кадр 0 принятого видео.
+    const take = () => screen.getByRole('button', { name: kit.takeFrame });
+    await waitFor(() => expect(take()).toBeEnabled(), POLL_TIMEOUT);
+    await userEvent.click(take());
+    const alert = await screen.findByText(/^Кадр 0 \(0,00 с\) принятого видео без эффектов сохранён: \/mock\/Загрузки\/.+\/M01-кадр-0000\.png$/);
+    await expect(await screen.findByText(/Взятых кадров: M01:0\./)).toBeInTheDocument();
+    // «Открыть папку» сообщения открывает папку кадров клипа, а не комплекта.
+    const message = alert.closest('[role="alert"]') as HTMLElement;
+    await userEvent.click(within(message).getByRole('button', { name: kit.openFolder }));
+    await expect(await screen.findByText(/Открытых папок: \/mock\/Загрузки\//)).toBeInTheDocument();
+  }
+};
 export const AcceptedPlanProposal: Story = {
   tags: ['ci'],
   name: 'Принятый план · предложение новой попытки открыто без выбора в меню',

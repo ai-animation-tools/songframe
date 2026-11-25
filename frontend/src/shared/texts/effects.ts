@@ -40,6 +40,28 @@ export const effectsTexts = {
     compass: ({ direction }: { direction: number }) => `Ветер на схеме: ${direction}°. Стрелка — куда дует, сектор — взгляд камеры`,
     fromWind: 'Наклон считается из ветра.'
   },
+  time: {
+    heading: 'Время',
+    hint: 'Моменты эффекта — в секундах от начала плана. Щелчок по шкале или по строке песни показывает кадр этого момента, кнопка у поля ставит время кадра превью.',
+    title: ({ title }: { title: string }) => `${title}, с`,
+    helper: ({ hint, max, value }: { hint: string; max: string; value: string }) => `${hint} Допустимо от 0 до ${max} с, по умолчанию ${value} с.`,
+    toFrame: ({ title }: { title: string }) => `«${title}» — время кадра превью`,
+    scale: 'Шкала плана: строки песни и моменты эффекта',
+    mark: ({ title, seconds }: { title: string; seconds: string }) => `${title}: ${seconds} с`,
+    line: ({ text, start }: { text: string; start: string }) => `${text} — с ${start} с`,
+    frame: ({ seconds }: { seconds: string }) => `Кадр превью: ${seconds} с`,
+    noLines: 'В окне плана строк песни нет.'
+  },
+  beam: {
+    heading: 'Источник и луч на кадре',
+    hint: 'Перетащите источник — его можно увести за край кадра, — ручку направления, край луча и дальность. Щелчок по полю ставит источник в эту точку. Поля ниже меняются вместе с ручками.',
+    label: 'Источник и луч света на кадре плана',
+    source: ({ x, y }: { x: number; y: number }) => `Источник: ${x} по горизонтали, ${y} по вертикали. Стрелки клавиатуры двигают его`,
+    direction: ({ value }: { value: number }) => `Направление луча: ${value}°. Стрелки клавиатуры поворачивают его`,
+    cone: ({ value }: { value: number }) => `Ширина луча: ${value}°. Стрелки клавиатуры меняют её`,
+    radius: ({ value }: { value: number }) => `Дальность: ${value}. Стрелки клавиатуры меняют её`,
+    outside: 'Источник дальше края поля: ручка стоит у края, точное место — в полях ниже.'
+  },
   copyFrom: 'Взять параметры с плана',
   copyFromNone: 'Ни у одного другого плана нет эффекта',
   copied: ({ shot }: { shot: string }) =>

@@ -27,6 +27,16 @@ export interface AcceptOptions {
 }
 
 /**
+ * AcceptedFrame — кадр принятого видео плана, сохранённый для работы вне клипа: файл PNG, папка
+ * с ним (её открывает «Открыть папку») и номер кадра в принятом видео.
+ */
+export interface AcceptedFrame {
+    "path": string;
+    "folder": string;
+    "frame": number;
+}
+
+/**
  * AcceptedImage — опора принятого комплекта: путь к файлу и роль входа так, как она записана
  * в манифесте (generation.inputs[].role, например «Первый кадр»); nil, если роль не записана.
  */

@@ -5,18 +5,47 @@
  * а после них действия: сброс к значениям по умолчанию и удаление из плана. У дождя — ветер: с ним
  * наклон считает Go из ветра и камеры плана, поэтому поле наклона скрыто; без ветра наклон
  * задаётся полем. У эффекта без параметров («Реверс») нет полей и сброса — только описание и удаление.
+ * Моменты плана (planTime реестра) собраны в блок «Время»: поля в секундах плана со шкалой строк
+ * песни, рецепт хранит доли. Источник и луч (beam реестра) ставятся мышью на кадре превью, их
+ * поля — рядом с ним.
  */
 import type { ReactElement } from 'react';
-import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Chip, FormControlLabel, Stack, Switch, Typography } from '@mui/material';
+import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Alert,
+  Box,
+  Chip,
+  FormControlLabel,
+  IconButton,
+  Stack,
+  Switch,
+  Tooltip,
+  Typography
+} from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import MyLocationIcon from '@mui/icons-material/MyLocation';
 import type { EffectParamSpec } from '@shared/types';
-import { roundToStep, stepValue, withValue, type EffectKind, type EffectStep } from '@shared/effects';
+import {
+  fractionToSeconds,
+  planSeconds,
+  roundToStep,
+  secondsToFraction,
+  stepValue,
+  withValue,
+  type EffectKind,
+  type EffectShot,
+  type EffectStep
+} from '@shared/effects';
 import { effectsTexts as texts } from '@shared/texts/effects';
 import { ActionButton } from '../../../components/ActionButton';
 import { NumberField } from '../../../components/NumberField';
 import { WindCompass } from './WindCompass';
+import { BeamEditor } from './BeamEditor';
+import { formatSeconds, PlanTimeline } from './PlanTimeline';
 
 /** Ветер по умолчанию при включении: на восток, умеренный. */
 const DEFAULT_WIND = { direction: 0, strength: 0.4 };
@@ -51,11 +80,72 @@ function ParamField({
   );
 }
 
+/** Сетка полей параметров. */
+const FIELDS = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 1.5 } as const;
+
+/** План, на кадре и времени которого настраивается эффект: шкала моментов и кадр превью. */
+export interface EffectPlanContext {
+  shot: Pick<EffectShot, 'frames' | 'fps' | 'lines' | 'lyricProblem'>;
+  /** Номер кадра превью. */
+  frame: number;
+  /** Кадр превью; null — пока не посчитан. */
+  frameUrl: string | null;
+  onFrame(frame: number): void;
+}
+
+/**
+ * Момент плана — поле в секундах: рецепт хранит долю длины плана, поле показывает и принимает
+ * секунды. Кнопка рядом ставит время кадра превью.
+ */
+function PlanTimeField({
+  spec,
+  step,
+  plan,
+  disabled,
+  onChange
+}: {
+  spec: EffectParamSpec;
+  step: EffectStep;
+  plan: EffectPlanContext;
+  disabled?: boolean;
+  onChange(step: EffectStep): void;
+}): ReactElement {
+  const duration = planSeconds(plan.shot);
+  const title = texts.time.title({ title: spec.title });
+  const set = (seconds: number): void => onChange(withValue(step, spec, secondsToFraction(seconds, plan.shot)));
+  return (
+    <Stack direction="row" spacing={0.5} sx={{ alignItems: 'flex-start' }}>
+      <NumberField
+        label={title}
+        value={fractionToSeconds(stepValue(step, spec), plan.shot)}
+        min={0}
+        max={Math.round(duration * 100) / 100}
+        step={0.1}
+        disabled={disabled}
+        helperText={texts.time.helper({
+          hint: spec.hint,
+          max: formatSeconds(duration),
+          value: formatSeconds(fractionToSeconds(spec.default, plan.shot))
+        })}
+        onChange={(next) => next !== undefined && set(next)}
+      />
+      <Tooltip title={texts.time.toFrame({ title: spec.title })}>
+        <span>
+          <IconButton aria-label={texts.time.toFrame({ title: spec.title })} disabled={disabled} onClick={() => set(plan.frame / plan.shot.fps)}>
+            <MyLocationIcon />
+          </IconButton>
+        </span>
+      </Tooltip>
+    </Stack>
+  );
+}
+
 export function EffectStepCard({
   kind,
   step,
   camera,
   heading,
+  plan,
   disabled,
   onChange,
   onRemove
@@ -65,12 +155,22 @@ export function EffectStepCard({
   /** У плана есть направление камеры: ветер применим. */
   camera: boolean;
   heading: number;
+  /** План с кадром превью: без него моменты и луч задаются обычными полями. */
+  plan?: EffectPlanContext;
   disabled?: boolean;
   onChange(step: EffectStep): void;
   onRemove(): void;
 }): ReactElement {
   const windy = !!kind.windAngle && !!step.wind;
-  const specs = kind.params.filter((spec) => !(windy && spec.name === kind.windAngle));
+  const beam = plan ? kind.beam : null;
+  const beamNames = beam ? [beam.x, beam.y, beam.direction, beam.cone, beam.radius] : [];
+  const timeNames = plan ? kind.planTime : [];
+  const field = (spec: EffectParamSpec): ReactElement => (
+    <ParamField key={spec.name} spec={spec} value={stepValue(step, spec)} disabled={disabled} onChange={(value) => onChange(withValue(step, spec, value))} />
+  );
+  const beamSpecs = kind.params.filter((spec) => beamNames.includes(spec.name));
+  const timeSpecs = kind.params.filter((spec) => timeNames.includes(spec.name));
+  const specs = kind.params.filter((spec) => !(windy && spec.name === kind.windAngle) && !beamNames.includes(spec.name) && !timeNames.includes(spec.name));
   const changed = Object.keys(step.given).length + (step.wind ? 1 : 0);
   const configurable = kind.params.length > 0 || !!kind.windAngle;
   return (
@@ -157,19 +257,38 @@ export function EffectStepCard({
             ) : null}
           </Box>
         ) : null}
-        {specs.length ? (
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 1.5 }}>
-            {specs.map((spec) => (
-              <ParamField
-                key={spec.name}
-                spec={spec}
-                value={stepValue(step, spec)}
-                disabled={disabled}
-                onChange={(value) => onChange(withValue(step, spec, value))}
-              />
-            ))}
+        {beam && plan && beamSpecs.length ? (
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle2">{texts.beam.heading}</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              {texts.beam.hint}
+            </Typography>
+            <BeamEditor beam={beam} specs={kind.params} step={step} frameUrl={plan.frameUrl} disabled={disabled} onChange={onChange} />
+            <Box sx={{ ...FIELDS, mt: 1.5 }}>{beamSpecs.map(field)}</Box>
           </Box>
         ) : null}
+        {plan && timeSpecs.length ? (
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle2">{texts.time.heading}</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              {texts.time.hint}
+            </Typography>
+            <PlanTimeline
+              duration={planSeconds(plan.shot)}
+              lines={plan.shot.lines}
+              lyricProblem={plan.shot.lyricProblem}
+              marks={timeSpecs.map((spec) => ({ name: spec.name, title: spec.title, seconds: fractionToSeconds(stepValue(step, spec), plan.shot) }))}
+              current={plan.frame / plan.shot.fps}
+              onSeek={(seconds) => plan.onFrame(Math.min(plan.shot.frames - 1, Math.max(0, Math.round(seconds * plan.shot.fps))))}
+            />
+            <Box sx={{ ...FIELDS, mt: 1.5 }}>
+              {timeSpecs.map((spec) => (
+                <PlanTimeField key={spec.name} spec={spec} step={step} plan={plan} disabled={disabled} onChange={onChange} />
+              ))}
+            </Box>
+          </Box>
+        ) : null}
+        {specs.length ? <Box sx={FIELDS}>{specs.map(field)}</Box> : null}
         <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap', mt: specs.length ? 2 : 0 }}>
           {configurable ? (
             <ActionButton

@@ -35,7 +35,6 @@ import (
 	"math"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 
 	"songframe/internal/cast"
@@ -261,6 +260,47 @@ func windAngle(kind effects.Kind, angle float64) float64 {
 
 func finite(value float64) bool { return !math.IsNaN(value) && !math.IsInf(value, 0) }
 
+// sameParams — дают ли сохранённые значения рецепта тот же результат, что текущие полные значения
+// шага. Параметр, которого в рецепте нет, совпадает, если у шага он по умолчанию: новый параметр
+// эффекта добавляется со значением, которое повторяет прежний результат (иначе меняется версия
+// эффекта), поэтому рецепт, сделанный до него, остаётся свежим.
+func sameParams(step AppliedStep, stored map[string]float64) bool {
+	kind, ok := effects.Lookup(step.Effect)
+	if !ok {
+		return false
+	}
+	defaults := make(map[string]float64, len(kind.Params))
+	for _, spec := range kind.Params {
+		defaults[spec.Name] = spec.Default
+	}
+	for name := range stored {
+		if _, known := step.Params[name]; !known {
+			return false
+		}
+	}
+	for name, value := range step.Params {
+		saved, found := stored[name]
+		if !found {
+			saved, found = defaults[name]
+		}
+		if !found || saved != value {
+			return false
+		}
+	}
+	return true
+}
+
+// AcceptedVideo — принятое видео комплекта плана без эффекта: абсолютный путь, частота и число
+// кадров из accepted_edit манифеста. Нужен там, где эффект плана попасть не должен: кадры принятого
+// видео для референсов и опор соседних планов.
+func AcceptedVideo(root, shot string) (string, int64, int, error) {
+	current, err := readKit(root, shot)
+	if err != nil {
+		return "", 0, 0, err
+	}
+	return filepath.Join(root, filepath.FromSlash(current.video.Path)), current.fps, current.frames, nil
+}
+
 // readRecipe — recipe.json плана; found=false — эффекта нет.
 func readRecipe(root, shot string) (Recipe, bool, error) {
 	data, err := os.ReadFile(filepath.Join(folder(root, shot), recipeName))
@@ -291,7 +331,7 @@ func stale(root string, recipe Recipe, current kit) string {
 		return err.Error()
 	}
 	for index, step := range applied {
-		if step.Version != recipe.Steps[index].Version || !reflect.DeepEqual(step.Params, recipe.Steps[index].Params) {
+		if step.Version != recipe.Steps[index].Version || !sameParams(step, recipe.Steps[index].Params) {
 			return textParamsChanged
 		}
 	}

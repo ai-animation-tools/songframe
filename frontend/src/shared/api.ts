@@ -42,6 +42,7 @@ import type {
   AcceptOptions,
   PackageView,
   SpeechPlan,
+  AcceptedFrame,
   AcceptedKit,
   ProjectCheckpointOperation,
   ProjectHistoryStatus,
@@ -349,6 +350,11 @@ export interface Api {
     recut(project: string, shot: string, options: AcceptOptions): Promise<JobInfo>;
     /** Предпросмотр нового участка принятого плана под звук окна песни; ролик — в каталоге состояния приложения. */
     recutPreview(project: string, shot: string, options: AcceptOptions): Promise<CutPreview>;
+    /**
+     * Кадр frame принятого видео плана без эффекта — PNG полного размера в папке загрузок под именем
+     * папки проекта: для референсов и своих опор. Файлы проекта не меняются.
+     */
+    takeFrame(project: string, shot: string, frame: number): Promise<AcceptedFrame>;
     /** Режет точный WAV липсинка в audio/ пакета; без границ — по разметке «Таймингов». */
     prepareSpeech(project: string, packageDir: string, bounds?: { start: number; end: number }): Promise<PackageView>;
     /** Снова задать вопрос о полученном результате пакета приложения, если ответ уже записан. */

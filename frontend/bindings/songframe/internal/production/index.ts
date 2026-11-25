@@ -3,6 +3,7 @@
 
 export type {
     AcceptOptions,
+    AcceptedFrame,
     AcceptedImage,
     AcceptedKit,
     AcceptedSpeech,

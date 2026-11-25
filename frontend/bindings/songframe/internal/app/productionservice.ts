@@ -324,6 +324,15 @@ export function Submit(project: string, packageDir: string, expectedSha: string,
 }
 
 /**
+ * TakeFrame — production:takeFrame: кадр frame принятого видео плана без эффекта в PNG полного
+ * размера в папке загрузок пользователя под именем папки проекта — для референсов и своих опор.
+ * Файлы проекта не меняются.
+ */
+export function TakeFrame(project: string, shot: string, frame: number): $CancellablePromise<production$0.AcceptedFrame | null> {
+    return $Call.ByID(2914708265, project, shot, frame);
+}
+
+/**
  * View — production.view: планы, пакеты, сломанные папки и проблемы; непринятые предложения
  * агента видны в списке и попадают в «Ждут вашего действия».
  */

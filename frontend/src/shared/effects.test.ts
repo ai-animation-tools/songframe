@@ -1,6 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import type { EffectParamSpec } from './types';
-import { editableSteps, mergeSteps, roundToStep, sameSteps, shotLabel, stepValue, withValue, type EffectStep } from './effects';
+import {
+  editableSteps,
+  mergeSteps,
+  roundToStep,
+  sameSteps,
+  shotLabel,
+  stepValue,
+  withValue,
+  type EffectStep,
+  planSeconds,
+  fractionToSeconds,
+  secondsToFraction,
+  beamGeometry,
+  dragSource,
+  dragDirection,
+  dragCone,
+  dragRadius
+} from './effects';
 
 const density: EffectParamSpec = { name: 'density', title: 'Плотность', min: 0, max: 5000, default: 900, step: 10, hint: '' };
 
@@ -62,5 +79,47 @@ describe('подпись плана', () => {
   it('номер со строкой песни, без строки — только номер', () => {
     expect(shotLabel({ shot: 'M01', title: 'Вступление' })).toBe('M01 · Вступление');
     expect(shotLabel({ shot: 'M02', title: '' })).toBe('M02');
+  });
+});
+
+describe('моменты плана в секундах', () => {
+  const shot = { frames: 101, fps: 25 };
+  it('доля ↔ секунды по времени последнего кадра', () => {
+    expect(planSeconds(shot)).toBe(4);
+    expect(fractionToSeconds(0.45, shot)).toBe(1.8);
+    expect(secondsToFraction(1.8, shot)).toBe(0.45);
+  });
+  it('секунды ставятся на ближайший кадр и в пределы плана', () => {
+    expect(secondsToFraction(1.81, shot)).toBe(0.45);
+    expect(secondsToFraction(-1, shot)).toBe(0);
+    expect(secondsToFraction(99, shot)).toBe(1);
+    expect(secondsToFraction(1, { frames: 1, fps: 25 })).toBe(0);
+  });
+});
+
+describe('ручки луча', () => {
+  const spec = (name: string, min: number, max: number, step: number) => ({ name, title: name, min, max, default: 0, step, hint: '' });
+  const beam = { x: 'x', y: 'y', radius: 'r', direction: 'd', cone: 'c' };
+  const values: Record<string, number> = { x: 0.5, y: 0.5, r: 0.5, d: 0, c: 60 };
+  const geometry = beamGeometry(beam, (name) => values[name]);
+  it('геометрия в пикселях полного кадра', () => {
+    expect(geometry.x).toBe(960);
+    expect(geometry.y).toBe(540);
+    expect(geometry.half).toBeCloseTo(Math.PI / 6);
+  });
+  it('источник — доли кадра в пределах параметра', () => {
+    expect(dragSource({ x: spec('x', -1, 2, 0.01), y: spec('y', -1, 2, 0.01) }, -288, 1620)).toEqual({ x: -0.15, y: 1.5 });
+    expect(dragSource({ x: spec('x', -1, 2, 0.01), y: spec('y', -1, 2, 0.01) }, -5000, 0)).toEqual({ x: -1, y: 0 });
+  });
+  it('направление — против часовой от направления вправо, экранная ось y вниз', () => {
+    expect(dragDirection(spec('d', 0, 360, 1), geometry, 960, 100)).toBe(90);
+    expect(dragDirection(spec('d', 0, 360, 1), geometry, 960, 900)).toBe(270);
+    expect(dragDirection(spec('d', 0, 360, 1), geometry, 100, 540)).toBe(180);
+  });
+  it('ширина — удвоенный угол от оси, дальность — расстояние в долях диагонали', () => {
+    expect(dragCone(spec('c', 10, 360, 1), geometry, 1960, 540 - 1000)).toBe(90);
+    expect(dragCone(spec('c', 10, 360, 1), geometry, 960, 540)).toBe(10);
+    expect(dragCone(spec('c', 10, 360, 1), geometry, 0, 540)).toBe(360);
+    expect(dragRadius(spec('r', 0.1, 3, 0.01), geometry, 960 + Math.hypot(1920, 1080), 540)).toBe(1);
   });
 });

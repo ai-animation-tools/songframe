@@ -75,6 +75,7 @@ export {
 export type {
     AppState,
     EffectKind,
+    EffectLine,
     EffectShot,
     EffectsView,
     ExportBundleOptions,

@@ -231,6 +231,7 @@ export function unconfiguredStoryApi(): Api {
       cutPreview: async () => unconfigured('production.cutPreview'),
       recut: async () => unconfigured('production.recut'),
       recutPreview: async () => unconfigured('production.recutPreview'),
+      takeFrame: async () => unconfigured('production.takeFrame'),
       spend: async () => ({
         attempts: 0,
         removed: 0,

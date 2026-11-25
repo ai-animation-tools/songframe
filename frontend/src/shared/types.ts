@@ -628,6 +628,13 @@ export interface CutPreviewLine {
   end: number;
 }
 
+/** Кадр принятого видео, сохранённый «Взять кадр»: файл PNG, папка с ним и номер кадра в принятом видео. */
+export interface AcceptedFrame {
+  path: string;
+  folder: string;
+  frame: number;
+}
+
 /** Предпросмотр участка в окне приёмки (production.cutPreview): ролик как будущая приёмка, под звук окна песни. */
 export interface CutPreview {
   /** Абсолютный путь ролика в preview/ попытки: открывается через shell.fileUrl. */

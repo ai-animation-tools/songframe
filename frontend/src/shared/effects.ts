@@ -25,7 +25,24 @@ export interface AppliedEffectStep extends EffectStep {
   params: Record<string, number>;
 }
 
-/** Эффект из реестра Go; windAngle — параметр наклона, который считается из ветра ("" — нет). */
+/**
+ * Имена параметров источника и луча, которые ставятся мышью на кадре: координаты источника —
+ * доли ширины и высоты кадра (за краем — меньше 0 или больше 1), дальность — доля диагонали,
+ * направление — градусы на экране против часовой от направления вправо, ширина — полный угол.
+ */
+export interface EffectBeam {
+  x: string;
+  y: string;
+  radius: string;
+  direction: string;
+  cone: string;
+}
+
+/**
+ * Эффект из реестра Go; windAngle — параметр наклона, который считается из ветра ("" — нет);
+ * planTime — параметры-моменты плана: рецепт хранит долю длины, поля показывают секунды;
+ * beam — источник и луч на кадре (null — у эффекта нет источника).
+ */
 export interface EffectKind {
   id: string;
   title: string;
@@ -33,6 +50,15 @@ export interface EffectKind {
   hint: string;
   params: EffectParamSpec[];
   windAngle: string;
+  planTime: string[];
+  beam: EffectBeam | null;
+}
+
+/** Строка песни на шкале плана: секунды от начала плана (может начинаться до него). */
+export interface EffectLine {
+  text: string;
+  start: number;
+  end: number;
 }
 
 /**
@@ -62,6 +88,10 @@ export interface EffectShot {
   jobId: string;
   /** Изображение карточки: первая опора принятого комплекта; "" — опор нет, на карточке заглушка. */
   frame: string;
+  /** Строки песни в окне плана для шкалы моментов эффекта. */
+  lines: EffectLine[];
+  /** Почему строк нет (разметки нет, трек сменился); null — строки есть или их в окне нет. */
+  lyricProblem: string | null;
 }
 
 export interface EffectsView {
@@ -137,4 +167,85 @@ export function sameSteps(a: EffectStep[], b: EffectStep[]): boolean {
 /** Подпись плана: номер и строка песни; у сцены без строки — только номер. */
 export function shotLabel(shot: Pick<EffectShot, 'shot' | 'title'>): string {
   return shot.title ? `${shot.shot} · ${shot.title}` : shot.shot;
+}
+
+/**
+ * Длина плана в секундах по оси моментов эффекта: доля 0 — первый кадр, 1 — последний, поэтому
+ * длина — время последнего кадра, а не всего ролика.
+ */
+export function planSeconds(shot: Pick<EffectShot, 'frames' | 'fps'>): number {
+  return shot.fps > 0 ? Math.max(0, shot.frames - 1) / shot.fps : 0;
+}
+
+/** Секунды плана момента, заданного долей; с точностью до сотой. */
+export function fractionToSeconds(fraction: number, shot: Pick<EffectShot, 'frames' | 'fps'>): number {
+  return Math.round(fraction * planSeconds(shot) * 100) / 100;
+}
+
+/**
+ * Доля плана для момента в секундах: момент ставится на ближайший кадр, доля — с точностью 4
+ * знака (на плане в 10 с это меньше десятой кадра), в пределах 0–1.
+ */
+export function secondsToFraction(seconds: number, shot: Pick<EffectShot, 'frames' | 'fps'>): number {
+  const last = Math.max(0, shot.frames - 1);
+  if (!last || !(shot.fps > 0)) return 0;
+  const frame = Math.min(last, Math.max(0, Math.round(seconds * shot.fps)));
+  return Number((frame / last).toFixed(4));
+}
+
+/** Ширина и высота полного кадра, в котором Go считает свет: геометрия луча — в его пикселях. */
+export const BEAM_FRAME = { width: 1920, height: 1080 } as const;
+
+/** Источник и луч в пикселях полного кадра: точка источника, дальность, направление и половина конуса (радианы). */
+export interface BeamGeometry {
+  x: number;
+  y: number;
+  radius: number;
+  direction: number;
+  half: number;
+}
+
+const DIAGONAL = Math.hypot(BEAM_FRAME.width, BEAM_FRAME.height);
+
+/** Геометрия луча по значениям параметров шага, как её считает Go. */
+export function beamGeometry(beam: EffectBeam, value: (name: string) => number): BeamGeometry {
+  return {
+    x: value(beam.x) * BEAM_FRAME.width,
+    y: value(beam.y) * BEAM_FRAME.height,
+    radius: value(beam.radius) * DIAGONAL,
+    direction: (value(beam.direction) * Math.PI) / 180,
+    half: (value(beam.cone) * Math.PI) / 360
+  };
+}
+
+/** Значение в пределах параметра с точностью его шага. */
+function fit(spec: EffectParamSpec, value: number): number {
+  return roundToStep(Math.min(spec.max, Math.max(spec.min, value)), spec.step);
+}
+
+/** Направление на экране из источника в точку: градусы 0–360 против часовой от направления вправо. */
+function screenDegrees(from: { x: number; y: number }, x: number, y: number): number {
+  return ((Math.atan2(from.y - y, x - from.x) * 180) / Math.PI + 360) % 360;
+}
+
+/** Новые значения источника, перенесённого в точку (x, y) пикселей полного кадра. */
+export function dragSource(specs: { x: EffectParamSpec; y: EffectParamSpec }, x: number, y: number): { x: number; y: number } {
+  return { x: fit(specs.x, x / BEAM_FRAME.width), y: fit(specs.y, y / BEAM_FRAME.height) };
+}
+
+/** Новое направление луча, когда его ручка перенесена в точку (x, y). */
+export function dragDirection(spec: EffectParamSpec, geometry: BeamGeometry, x: number, y: number): number {
+  return fit(spec, Math.round(screenDegrees(geometry, x, y)));
+}
+
+/** Новая дальность света, когда её ручка перенесена в точку (x, y): расстояние до источника. */
+export function dragRadius(spec: EffectParamSpec, geometry: BeamGeometry, x: number, y: number): number {
+  return fit(spec, Math.hypot(x - geometry.x, y - geometry.y) / DIAGONAL);
+}
+
+/** Новая ширина луча, когда ручка края конуса перенесена в точку (x, y): удвоенный угол от оси луча. */
+export function dragCone(spec: EffectParamSpec, geometry: BeamGeometry, x: number, y: number): number {
+  const axis = (geometry.direction * 180) / Math.PI;
+  const off = Math.abs(((screenDegrees(geometry, x, y) - axis + 540) % 360) - 180);
+  return fit(spec, Math.round(off * 2));
 }

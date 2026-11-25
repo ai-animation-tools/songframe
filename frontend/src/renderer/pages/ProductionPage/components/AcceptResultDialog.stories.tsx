@@ -167,6 +167,30 @@ export const SpeedParts: Story = {
   }
 };
 
+export const SpeedPartsFitHeld: Story = {
+  tags: ['ci'],
+  name: 'Скорость по частям · точного конца нет, недостающий кадр добран удержанием',
+  play: async ({ canvasElement }) => {
+    const dialog = await open(canvasElement);
+    const result = (): HTMLElement => dialog.getByTestId('accept-cut-result');
+    await userEvent.click(dialog.getByRole('switch', { name: texts.speedParts }));
+    // Первая часть 0–2,5 с даёт 75 кадров; остальным 75 кадрам окна при скорости 0,5 нужна
+    // половина кадра оригинала, поэтому точного конца нет.
+    const lastSpeed = dialog.getByRole('textbox', { name: texts.partSpeed({ index: 2 }) });
+    await userEvent.clear(lastSpeed);
+    await userEvent.type(lastSpeed, '0,5');
+    await userEvent.click(dialog.getByRole('button', { name: texts.fitEnd }));
+    await expect(dialog.getByRole('spinbutton', { name: texts.cutEnd })).toHaveValue(3.733);
+    await expect(dialog.getByRole('spinbutton', { name: texts.holdLast })).toHaveValue(1);
+    await expect(result()).toHaveTextContent(texts.cutResultFit({ frames: 150, seconds: '5,00' }));
+    await expect(dialog.getByTestId('accept-fit-note')).toHaveTextContent(texts.fitEndHeld({ frames: 1, speed: '0,5' }));
+    // Правка после подгонки убирает пояснение: оно относится только к поставленным значениям.
+    await userEvent.clear(dialog.getByRole('spinbutton', { name: texts.holdLast }));
+    await userEvent.type(dialog.getByRole('spinbutton', { name: texts.holdLast }), '0');
+    await expect(dialog.queryByTestId('accept-fit-note')).not.toBeInTheDocument();
+    await expect(result()).toHaveTextContent(texts.cutResultShort({ frames: 149, window: 150, missing: 1 }));
+  }
+};
 export const CutPreviewWithLines: Story = {
   tags: ['ci'],
   name: 'Предпросмотр участка · сборка с полосой и секундами, под песню со строками, правка участка делает показ прежним',

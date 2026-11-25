@@ -72,6 +72,8 @@ describe('конец участка под окно', () => {
     // Окно 279 кадров при скорости 0,9: отрезок 251 кадр (251 / 0,9 = 278,9 → 279).
     expect(fitCutEnd(0, '0.9', 279)).toEqual({ endFrame: 251, frames: 279 });
     expect(fitCutEnd(0, '0,9', 279, 0, 0, 300)).toEqual({ endFrame: 251, frames: 279 });
+    // Скорость 0,5 даёт только чётное число кадров движения: нечётному окну достаётся ближайшая меньшая длина.
+    expect(fitCutEnd(75, '0,5', 75)).toEqual({ endFrame: 112, frames: 74 });
     expect(fitCutEnd(30, '1', 120, 10, 5)).toEqual({ endFrame: 135, frames: 120 });
     expect(fitCutEnd(0, '1.153', 157)).toMatchObject({ frames: 157 });
     for (const speed of ['0.8', '1.25', '2', '3']) {

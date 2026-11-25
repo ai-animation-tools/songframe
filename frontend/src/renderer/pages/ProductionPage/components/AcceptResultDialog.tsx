@@ -11,7 +11,7 @@ import FitScreenIcon from '@mui/icons-material/FitScreen';
  * оригинала, последняя часть кончается концом участка и следует за ним; итог и подгонка конца
  * считают части по отдельности (partsResultFrames), подгонка двигает конец последней части.
  */
-import type { ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Alert, Box, Checkbox, FormControlLabel, IconButton, MenuItem, Stack, Switch, TextField, Tooltip, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -42,6 +42,8 @@ export function AcceptResultDialog({
   kind?: 'accept' | 'recut';
 }): ReactElement {
   const recut = kind === 'recut';
+  // Пояснение последней подгонки конца: видно, пока параметры окна те же, что подгонка поставила.
+  const [fitNote, setFitNote] = useState<{ key: string; text: string } | null>(null);
   const durationMismatch = !!target?.windowFrames && !!target.originalFrames && target.windowFrames !== target.originalFrames;
   // Другой кадр или частота оригинала тоже закрывают «целиком»: видео приводится к кадру проекта участком.
   const frameMismatch = target?.frameMismatch;
@@ -116,7 +118,9 @@ export function AcceptResultDialog({
   };
   const cutResult = options.mode === 'cut' ? result() : null;
   // Конец участка под окно плана: новое значение поля или причина, почему его не подобрать.
-  const fit = (): { end: number; reason: null } | { end: null; reason: string } => {
+  // Точного конца при скорости меньше 1 может не быть (скорость 0,5 даёт только чётное число кадров
+  // движения): тогда конец даёт ближайшую меньшую длину, а недостачу добирает удержание последнего кадра.
+  const fit = (): { end: number; holdLast: number; short: number; speed: string; reason: null } | { end: null; reason: string } => {
     const texts = productionTexts.acceptResultDialog;
     if (!target?.windowFrames) return { end: null, reason: texts.fitEndNoWindow };
     // С частями подгоняется последняя часть: окну остаётся то, что не заняли предыдущие части.
@@ -132,7 +136,10 @@ export function AcceptResultDialog({
       window -= taken;
     }
     const fitted = fitCutEnd(from, speed, window, options.holdFirst ?? 0, options.holdLast ?? 0, target.originalFrames);
-    if ('endFrame' in fitted) return { end: cutSeconds(fitted.endFrame, fps), reason: null };
+    if ('endFrame' in fitted) {
+      const short = window - fitted.frames;
+      return { end: cutSeconds(fitted.endFrame, fps), holdLast: (options.holdLast ?? 0) + short, short, speed, reason: null };
+    }
     if (fitted.reason === 'holdsTooLong') return { end: null, reason: parts ? texts.fitEndParts : texts.fitEndHolds };
     if (fitted.reason === 'originalTooShort')
       return { end: null, reason: texts.fitEndOriginal({ needed: seconds(fitted.neededFrames), original: seconds(target.originalFrames) }) };
@@ -351,11 +358,28 @@ export function AcceptResultDialog({
               title={productionTexts.acceptResultDialog.fitEndHint}
               disabled={fitted.end === null}
               disabledReason={fitted.reason}
-              onClick={() => fitted.end !== null && onOptions(setCutEnd(fitted.end))}
+              onClick={() => {
+                if (fitted.end === null) return;
+                const next = { ...setCutEnd(fitted.end), holdLast: fitted.holdLast };
+                onOptions(next);
+                setFitNote(
+                  fitted.short > 0
+                    ? {
+                        key: JSON.stringify(next),
+                        text: productionTexts.acceptResultDialog.fitEndHeld({ frames: fitted.short, speed: fitted.speed.replace('.', ',') })
+                      }
+                    : null
+                );
+              }}
             >
               {productionTexts.acceptResultDialog.fitEnd}
             </ActionButton>
           </Box>
+        ) : null}
+        {fitNote && fitNote.key === JSON.stringify(options) ? (
+          <Alert severity="info" data-testid="accept-fit-note">
+            {fitNote.text}
+          </Alert>
         ) : null}
         {cutResult ? (
           <Alert severity={cutResult.severity} data-testid="accept-cut-result">

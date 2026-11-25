@@ -63,9 +63,9 @@ type ObjectFacts struct {
 	Height   *float64    `json:"height,omitempty"`
 }
 
-// Compute считает факты кадра точки съёмки viewpoint по схеме локации scheme (nil — схемы нет) и росту героев
-// heights из кастинга. Ничего не читает и не пишет.
-func Compute(viewpoint Viewpoint, scheme *schemes.Scheme, heights map[string]float64) Frame {
+// Compute считает факты кадра точки съёмки viewpoint по схеме локации scheme (nil — схемы нет) и фигурам героев
+// cast из кастинга (рост, машины). Ничего не читает и не пишет.
+func Compute(viewpoint Viewpoint, scheme *schemes.Scheme, cast Cast) Frame {
 	frame := Frame{Camera: CameraFacts{Side: viewpoint.Side, Size: viewpoint.Size, Fov: round(viewpoint.FieldOfView(), 1)}}
 	switch {
 	case viewpoint.Side == "top":
@@ -75,9 +75,9 @@ func Compute(viewpoint Viewpoint, scheme *schemes.Scheme, heights map[string]flo
 	case viewpoint.Camera == nil:
 		frame.Note = noteNoCamera
 	default:
-		frame.Start = computePhase(viewpoint, scheme, heights, PhaseStart)
+		frame.Start = computePhase(viewpoint, scheme, cast, PhaseStart)
 		if viewpoint.Changes() {
-			frame.End = computePhase(viewpoint, scheme, heights, PhaseEnd)
+			frame.End = computePhase(viewpoint, scheme, cast, PhaseEnd)
 		}
 	}
 	return frame
@@ -93,15 +93,7 @@ type view struct {
 	vfov    float64
 }
 
-// figureHeight — рост героя из кастинга или условный.
-func figureHeight(heights map[string]float64, entity string) float64 {
-	if height, ok := heights[entity]; ok && height > 0 {
-		return height
-	}
-	return FigureHeight
-}
-
-func computePhase(viewpoint Viewpoint, scheme *schemes.Scheme, heights map[string]float64, phase string) *PhaseFacts {
+func computePhase(viewpoint Viewpoint, scheme *schemes.Scheme, cast Cast, phase string) *PhaseFacts {
 	eye, _ := pathPoint(viewpoint.Camera, phase)
 	heading, _ := viewpoint.LookHeading(phase)
 	fov := viewpoint.FieldOfView()
@@ -112,11 +104,11 @@ func computePhase(viewpoint Viewpoint, scheme *schemes.Scheme, heights map[strin
 		fov:     fov,
 		vfov:    2 * math.Atan(math.Tan(fov/2*math.Pi/180)/FrameAspect) * 180 / math.Pi,
 	}
-	camera.pitch = viewpoint.Pitch(phase, heights)
+	camera.pitch = viewpoint.Pitch(phase, cast)
 	facts := &PhaseFacts{Looks: compass(heading), CameraHeight: round(camera.height, 2), Subjects: []SubjectFacts{}, Objects: []ObjectFacts{}}
-	points := viewpoint.subjectPoints(phase)
+	figures := subjectFigures(viewpoint, cast, phase)
 	for index, subject := range viewpoint.Subjects {
-		facts.Subjects = append(facts.Subjects, subjectFacts(camera, viewpoint, scheme, heights, points, index, subject.Entity))
+		facts.Subjects = append(facts.Subjects, subjectFacts(camera, viewpoint, scheme, cast, figures, index, subject.Entity))
 	}
 	for _, object := range scheme.Objects {
 		facts.Objects = append(facts.Objects, objectFacts(camera, object))
@@ -143,10 +135,43 @@ func (camera view) screenY(at Point, z float64) (float64, bool) {
 	return up / depth / math.Tan(camera.vfov/2*math.Pi/180), true
 }
 
-func subjectFacts(camera view, viewpoint Viewpoint, scheme *schemes.Scheme, heights map[string]float64, points []Point, index int, entity string) SubjectFacts {
-	at := points[index]
+// figure — фигура героя на кадре: место, высота и, у машины, след на земле; у человека следа нет — он круг
+// радиусом FigureRadius.
+type figure struct {
+	at      Point
+	height  float64
+	vehicle *part
+}
+
+// subjectFigures — фигуры героев точки съёмки на кадре phase в порядке списка.
+func subjectFigures(viewpoint Viewpoint, cast Cast, phase string) []figure {
+	points := viewpoint.subjectPoints(phase)
+	figures := make([]figure, len(points))
+	for index, subject := range viewpoint.Subjects {
+		figures[index] = figure{at: points[index], height: cast.height(subject.Entity)}
+		if cast.Vehicles[subject.Entity] {
+			footprint := vehicleFootprint(points[index], viewpoint.Facing(index, phase))
+			figures[index].vehicle = &footprint
+		}
+	}
+	return figures
+}
+
+// spans — участки отрезка from→to (t от 0 до 1) внутри фигуры: следа машины или круга человека.
+func (f figure) spans(from, to Point) [][2]float64 {
+	if f.vehicle != nil {
+		return pieceSpans(from, to, *f.vehicle)
+	}
+	if span, ok := circleSpan(from, to, f.at, FigureRadius); ok {
+		return [][2]float64{span}
+	}
+	return nil
+}
+
+func subjectFacts(camera view, viewpoint Viewpoint, scheme *schemes.Scheme, cast Cast, figures []figure, index int, entity string) SubjectFacts {
+	at := figures[index].at
 	facts := SubjectFacts{Entity: entity, Lead: index == 0, Distance: round(distance(camera.eye, at), 1), HiddenBy: []string{}}
-	if height, ok := heights[entity]; ok && height > 0 {
+	if height, ok := cast.Heights[entity]; ok && height > 0 {
 		facts.Height = ptr(round(height, 2))
 	}
 	angle, ok := headingBetween(camera.eye, at)
@@ -162,7 +187,7 @@ func subjectFacts(camera view, viewpoint Viewpoint, scheme *schemes.Scheme, heig
 	}
 	x := camera.screenX(relative)
 	facts.X, facts.Place = ptr(round(x, 2)), thirdName(x)
-	height := figureHeight(heights, entity)
+	height := figures[index].height
 	bottom, okBottom := camera.screenY(at, 0)
 	top, okTop := camera.screenY(at, height)
 	if okBottom && okTop {
@@ -178,22 +203,29 @@ func subjectFacts(camera view, viewpoint Viewpoint, scheme *schemes.Scheme, heig
 		facts.FrameHeight = ptr(round(math.Max(visible, 0), 2))
 		facts.Whole = ptr(bottom >= -1-epsilon && top <= 1+epsilon)
 	}
-	facts.HiddenBy = hiddenBy(camera, viewpoint, scheme, heights, points, index, height)
+	facts.HiddenBy = hiddenBy(camera, viewpoint, scheme, figures, index)
 	return facts
 }
 
 // hiddenBy — кто и что закрывает от камеры середину фигуры героя index: линия взгляда от глаз камеры к середине его
-// роста проходит сквозь другого героя или объём объекта схемы ниже его верха и выше низа. Объект, связанный с
-// самим героем, его не заслоняет; плоские поверхности не заслоняют ничего.
-func hiddenBy(camera view, viewpoint Viewpoint, scheme *schemes.Scheme, heights map[string]float64, points []Point, index int, height float64) []string {
-	target := points[index]
+// роста проходит сквозь другого героя (круг человека или след машины) или объём объекта схемы ниже его верха и выше
+// низа. Объект, связанный с самим героем, его не заслоняет; плоские поверхности не заслоняют ничего.
+func hiddenBy(camera view, viewpoint Viewpoint, scheme *schemes.Scheme, figures []figure, index int) []string {
+	target, height := figures[index].at, figures[index].height
 	length := distance(camera.eye, target)
 	result := []string{}
 	if length < epsilon {
 		return result
 	}
-	// Перекрытие ищется до фигуры самого героя: то, что стоит вплотную за ним, его не закрывает.
+	// Перекрытие ищется до фигуры самого героя: то, что стоит вплотную за ним, его не закрывает. У машины граница —
+	// место, где взгляд входит в её след.
 	limit := math.Max(0, 1-FigureRadius/length)
+	if figures[index].vehicle != nil {
+		limit = 1
+		for _, span := range pieceSpans(camera.eye, target, *figures[index].vehicle) {
+			limit = math.Min(limit, span[0])
+		}
+	}
 	sight := func(t float64) float64 { return camera.height + (height/2-camera.height)*t }
 	blocks := func(spans [][2]float64, low, high float64) bool {
 		for _, span := range spans {
@@ -212,7 +244,7 @@ func hiddenBy(camera view, viewpoint Viewpoint, scheme *schemes.Scheme, heights 
 		if other == index {
 			continue
 		}
-		if span, ok := circleSpan(camera.eye, target, points[other], FigureRadius); ok && blocks([][2]float64{span}, 0, figureHeight(heights, subject.Entity)) {
+		if blocks(figures[other].spans(camera.eye, target), 0, figures[other].height) {
 			result = append(result, subject.Entity)
 		}
 	}

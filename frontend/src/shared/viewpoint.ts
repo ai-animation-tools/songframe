@@ -52,6 +52,11 @@ export const MAX_CAMERA_HEIGHT = 500;
 /** Герой плана на схеме: сущность из референсов плана и её путь. */
 export interface ViewpointSubject extends ViewpointPath {
   entity: string;
+  /**
+   * Куда герой смотрит передом, градусы [0, 360) как у направления камеры. Нужно стоящей машине: у движущейся
+   * направление следует из хода, без поля машина стоит передом к камере (subjectFacing).
+   */
+  facing?: number;
 }
 
 export interface SceneViewpoint {
@@ -137,6 +142,31 @@ export function sideOfHeading(heading: number): Exclude<ViewpointSide, 'top'> {
 /** Расстояние между точками, метры. */
 export function distance(a: SchemePoint, b: SchemePoint): number {
   return Math.hypot(b[0] - a[0], b[1] - a[1]);
+}
+
+/**
+ * Куда герой index смотрит передом на кадре phase, градусы против часовой стрелки от востока: своё направление
+ * facing; у движущегося — по ходу от start к end; иначе — к камере. Без камеры и хода — на восток. Так же считает Go
+ * (viewframe.Viewpoint.Facing): по направлению ставится фигура машины.
+ */
+export function subjectFacing(viewpoint: SceneViewpoint, index: number, phase: ViewpointPhase): number {
+  const subject = viewpoint.subjects![index];
+  if (subject.facing !== undefined) return ((subject.facing % 360) + 360) % 360;
+  if (moves(subject)) return headingBetween(subject.start, subject.end!) ?? 0;
+  const camera = pathPoint(viewpoint.camera, phase);
+  return (camera && headingBetween(pathPoint(subject, phase)!, camera)) ?? 0;
+}
+
+/** Точка съёмки, где герой entity смотрит передом в degrees (целые градусы [0, 360)); undefined — по умолчанию. */
+export function setFacing(viewpoint: SceneViewpoint, entity: string, degrees: number | undefined): SceneViewpoint {
+  return {
+    ...viewpoint,
+    subjects: (viewpoint.subjects ?? []).map((subject) => {
+      if (subject.entity !== entity) return subject;
+      const { facing: _previous, ...rest } = subject;
+      return degrees === undefined || !Number.isFinite(degrees) ? rest : { ...rest, facing: ((Math.round(degrees) % 360) + 360) % 360 };
+    })
+  };
 }
 
 /** Место на кадре phase: конец, если задан, иначе начало (неподвижный). */

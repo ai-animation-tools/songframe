@@ -66,7 +66,8 @@ import type { CameraWindowEvent } from '@shared/camera-window';
 import type { MontageDraft, MontageView } from '@shared/montage';
 import type { DerivedShotView } from '@shared/derived-shot';
 import type { EffectsView } from '@shared/effects';
-import type { SchemesFile, SchemesView } from '@shared/schemes';
+import type { Scheme, SchemesFile, SchemesView } from '@shared/schemes';
+import type { SceneViewpoint, ViewpointPhase } from '@shared/viewpoint';
 import type { ViewFrame } from '@shared/viewframe';
 import type * as mediaapi from '../../bindings/songframe/internal/mediaapi/models';
 import type { MediaCapabilities, MediaKind, ProviderAuth } from '@shared/media-providers';
@@ -296,10 +297,23 @@ function toProductionWorkflowView({
   approvedFrameIds,
   proposal,
   job,
+  composition,
   ...view
 }: productionworkflow.View): ProductionWorkflowView {
   return {
     ...view,
+    // Точка съёмки и схема приходят JSON как записаны в проекте: их форму проверяет сохранение сценария и схем.
+    ...(composition
+      ? {
+          composition: {
+            ...composition,
+            phases: composition.phases as ViewpointPhase[],
+            viewpoint: composition.viewpoint as SceneViewpoint,
+            scheme: composition.scheme as Scheme,
+            frames: composition.frames.map((frame) => ({ ...frame, phase: frame.phase as ViewpointPhase }))
+          }
+        }
+      : {}),
     ...(nextStage ? { nextStage: nextStage as ProductionPass } : {}),
     ...(reviseStage ? { reviseStage: reviseStage as NonNullable<ProductionWorkflowView['reviseStage']> } : {}),
     ...(generationMethod === 'manual' ? { generationMethod } : {}),
@@ -979,6 +993,14 @@ export function createApi(b: Bindings): Api {
   api.productionWorkflow.setGenerationMethod = (project, shot, packageDir, method) =>
     call('productionWorkflow.setGenerationMethod', async () =>
       productionWorkflow((await b.productionWorkflow()).SetGenerationMethod(project, shot, packageDir, method))
+    );
+  api.productionWorkflow.saveComposition = (project, shot, packageDir, digest, images) =>
+    call('productionWorkflow.saveComposition', async () =>
+      productionWorkflow((await b.productionWorkflow()).SaveComposition(project, shot, packageDir, digest, images))
+    );
+  api.productionWorkflow.setComposition = (project, shot, packageDir, enabled) =>
+    call('productionWorkflow.setComposition', async () =>
+      productionWorkflow((await b.productionWorkflow()).SetComposition(project, shot, packageDir, enabled))
     );
   api.productionWorkflow.saveOwn = (input) =>
     call('productionWorkflow.saveOwn', async () => productionWorkflow((await b.productionWorkflow()).SaveOwn(input)), false);

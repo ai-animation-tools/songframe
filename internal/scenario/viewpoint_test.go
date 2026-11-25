@@ -61,6 +61,9 @@ func TestViewpointProblems(t *testing.T) {
 		{"герой не объект", `{"location": "yard", "side": "south", "size": "wide", "subjects": ["ivan"]}`, []string{textViewpointSubjects("M01")}},
 		{"герой не из референсов", `{"location": "yard", "side": "south", "size": "wide", "subjects": [{"entity": "kirill", "start": [0, 0]}]}`,
 			[]string{textViewpointSubjectUnknown("M01", "kirill")}},
+		{"машина со своим направлением", `{"location": "yard", "side": "south", "size": "wide", "subjects": [{"entity": "ivan", "start": [0, 0], "facing": 270}]}`, []string{}},
+		{"направление героя вне круга", `{"location": "yard", "side": "south", "size": "wide", "subjects": [{"entity": "ivan", "start": [0, 0], "facing": 360}]}`,
+			[]string{textViewpointSubjects("M01")}},
 		{"герой дважды", `{"location": "yard", "side": "south", "size": "wide", "subjects": [{"entity": "ivan", "start": [0, 0]}, {"entity": "ivan", "start": [1, 1]}]}`,
 			[]string{textViewpointSubjectRepeated("M01", "ivan")}},
 	}

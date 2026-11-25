@@ -9,6 +9,41 @@ import * as json$0 from "../../../encoding/json/models.js";
 import * as agents$0 from "../agents/models.js";
 
 /**
+ * CompositionFrame — сохранённый снимок кадра phase (start или end), абсолютный путь PNG.
+ */
+export interface CompositionFrame {
+    "phase": string;
+    "path": string;
+}
+
+/**
+ * CompositionImage — снимок кадра от интерфейса: phase и PNG в base64.
+ */
+export interface CompositionImage {
+    "phase": string;
+    "data": string;
+}
+
+/**
+ * CompositionView — снимок вида из камеры в виде плана (View.Composition): включён ли, отпечаток и данные для
+ * рисования, кадры (start и, если кадр меняется, end) и сохранённые свежие файлы.
+ */
+export interface CompositionView {
+    "enabled": boolean;
+    "digest": string;
+    "phases": string[];
+    "viewpoint": json$0.RawMessage;
+    "scheme": json$0.RawMessage;
+    "heights": { [_ in string]: number };
+    "vehicles": string[];
+
+    /**
+     * Frames — сохранённые снимки, если они свежие; пусто — снимка нет или он устарел.
+     */
+    "frames": CompositionFrame[];
+}
+
+/**
  * FrameCandidate — ProductionFrameCandidate: кандидат опоры id в файле path (реальный путь).
  */
 export interface FrameCandidate {
@@ -187,6 +222,12 @@ export interface View {
      * Paid — попытка пакета уже оплачена: дальше только новая попытка или возврат с замечанием.
      */
     "paid": boolean;
+
+    /**
+     * Composition — снимок вида из камеры для опор (composition.go); nil — у плана нет точки съёмки с камерой
+     * и схемой, нет пакета или опоры создаёт не агент.
+     */
+    "composition"?: CompositionView | null;
 
     /**
      * ImageProvider и VideoProvider — generation.image.provider и generation.video.provider

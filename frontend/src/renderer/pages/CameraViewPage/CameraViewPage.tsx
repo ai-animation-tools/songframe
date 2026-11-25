@@ -52,7 +52,7 @@ export function CameraViewPage(): ReactElement {
             {texts.cameraViewHint({ eye, figure: metres(FIGURE_HEIGHT) })}
           </Typography>
           <Stack direction="row" spacing={1.5} sx={{ alignItems: 'stretch', minWidth: 0 }}>
-            <CameraFrames viewpoint={viewpoint} scheme={state.scheme} heights={state.heights} minFrameWidth={420} />
+            <CameraFrames viewpoint={viewpoint} scheme={state.scheme} heights={state.heights} vehicles={state.vehicles} minFrameWidth={420} />
             {/* Зум объектива: вверх — уже угол и крупнее кадр. Тот же угол, что в поле «Угол обзора» и у сектора на карте. */}
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', pt: 3, pb: 1 }} data-camera-zoom="">
               <Slider

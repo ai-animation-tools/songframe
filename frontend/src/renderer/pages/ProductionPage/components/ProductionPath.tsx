@@ -20,6 +20,7 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { ManualGeneration, ManualGenerationInfo } from './ManualGeneration';
 import { PackageDecision } from './PackageDecision';
 import { PackageKeyframes } from './PackageKeyframes';
+import { CompositionPanel } from './CompositionPanel';
 import { PackageNotices } from './PackageNotices';
 import { PackageRequest } from './PackageRequest';
 import { PackageResult } from './PackageResult';
@@ -439,6 +440,9 @@ export function ProductionPath({
       case 'frames':
         return (
           <>
+            {current && view?.composition ? (
+              <CompositionPanel composition={view.composition} busy={blocked} onToggle={(enabled) => void workflow.setComposition(enabled)} />
+            ) : null}
             {current && framesReason ? (
               <Typography variant="body2" color="text.secondary">
                 {framesReason}

@@ -1,6 +1,8 @@
 import { productionTexts } from './texts/production';
 /** Предметные задания производства; вопросы и решения принадлежат workflow.json пакета. */
 import type { AgentJob } from './agents';
+import type { Scheme } from './schemes';
+import type { SceneViewpoint, ViewpointPhase } from './viewpoint';
 
 export type ProductionPass = 'description' | 'frames' | 'prompt' | 'request';
 export interface ProductionFramePrompt {
@@ -104,6 +106,28 @@ export interface ProductionWorkflowStart {
 /** Способ генерации видео попытки: провайдер проекта или вручную вне приложения. */
 export type ProductionGenerationMethod = 'provider' | 'manual';
 
+/**
+ * Снимок вида из камеры — схема композиции опор плана с точкой съёмки. Go отдаёт всё, из чего снимок рисуется, и
+ * отпечаток этих данных; интерфейс рисует кадры phases и сохраняет их (productionWorkflow.saveComposition). frames —
+ * сохранённые свежие снимки; пусто — снимка нет или он устарел. enabled — выключатель «Схема композиции» попытки.
+ */
+export interface ProductionComposition {
+  enabled: boolean;
+  digest: string;
+  phases: ViewpointPhase[];
+  viewpoint: SceneViewpoint;
+  scheme: Scheme;
+  heights: Record<string, number>;
+  vehicles: string[];
+  frames: { phase: ViewpointPhase; path: string }[];
+}
+
+/** Снимок кадра phase для сохранения: PNG в base64. */
+export interface ProductionCompositionImage {
+  phase: ViewpointPhase;
+  data: string;
+}
+
 export interface ProductionWorkflowView {
   project: string;
   shot: string;
@@ -150,6 +174,8 @@ export interface ProductionWorkflowView {
   problems: string[];
   proposal: ProductionProposal | null;
   job: AgentJob | null;
+  /** Снимок вида из камеры для опор; нет — у плана нет камеры на схеме локации, попытки или опоры создаёт не агент. */
+  composition?: ProductionComposition;
 }
 export interface ProductionImagesInput {
   project: string;

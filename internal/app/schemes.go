@@ -29,6 +29,6 @@ func (s *SchemesService) Save(project string, document schemes.Document) (scheme
 // то же, что получит агент описания и видеопромпта. Карта присылает текущую, ещё не сохранённую точку, поэтому
 // факты видны до сохранения и запуска. Ничего не пишет.
 func (s *SchemesService) Frame(project string, viewpoint viewframe.Viewpoint) (viewframe.Frame, error) {
-	frame, _ := viewframe.ForProject(project, viewpoint, viewframe.CastHeights(cast.Read(project).Value))
+	frame, _ := viewframe.ForProject(project, viewpoint, viewframe.ReadCast(cast.Read(project).Value))
 	return frame, nil
 }

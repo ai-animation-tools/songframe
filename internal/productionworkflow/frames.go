@@ -218,6 +218,22 @@ func (w *Workflow) GenerateFrames(ctx context.Context, project, shot, packageDir
 			}
 		}
 	}
+	// Снимок вида из камеры — схема композиции опоры; включённый, но устаревший снимок останавливает генерацию:
+	// интерфейс снимет новый по текущей точке съёмки.
+	generation, err := projectGeneration(c.Project)
+	if err != nil {
+		return View{}, err
+	}
+	composition, err := c.composition(agentImageProvider(generation))
+	if err != nil {
+		return View{}, err
+	}
+	if snapshot, ok, err := compositionFor(composition, frame.Role); err != nil {
+		return View{}, err
+	} else if ok {
+		input.Composition = &mediaapi.CompositionSnapshot{ApprovedFrame: mediaapi.ApprovedFrame{ID: frame.ID, Role: snapshot.Phase, Path: snapshot.Path},
+			Characters: composition.figures - len(composition.Vehicles), Vehicles: len(composition.Vehicles)}
+	}
 	job, err := w.generateImages(c.Project, input)
 	if err != nil {
 		return View{}, err

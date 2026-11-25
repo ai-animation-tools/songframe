@@ -247,6 +247,12 @@
           "height": 4
         }
       ]
+    },
+    "lot": {
+      "id": "s3",
+      "location": "lot",
+      "title": "Пустырь",
+      "objects": []
     }
   },
   "cases": [
@@ -1997,6 +2003,242 @@
             }
           ]
         }
+      }
+    },
+    {
+      "name": "vehicle-facing-camera",
+      "description": "Стоящая машина без своего направления смотрит передом на камеру: коробка 4,6 × 1,8 м вдоль линии взгляда заслоняет героя сбоку от неё, хотя цилиндр человека на её месте не заслонил бы.",
+      "input": {
+        "viewpoint": {
+          "location": "lot",
+          "side": "south",
+          "size": "wide",
+          "camera": {
+            "start": [
+              0,
+              0
+            ]
+          },
+          "subjects": [
+            {
+              "entity": "hero",
+              "start": [
+                1.2,
+                10
+              ]
+            },
+            {
+              "entity": "car",
+              "start": [
+                0,
+                5
+              ]
+            }
+          ]
+        },
+        "scheme": "lot",
+        "heights": {
+          "hero": 1.8
+        },
+        "vehicles": [
+          "car"
+        ]
+      },
+      "expected": {
+        "camera": {
+          "side": "south",
+          "size": "wide",
+          "fov": 60
+        },
+        "start": {
+          "looks": "на север",
+          "camera_height": 1.6,
+          "subjects": [
+            {
+              "entity": "hero",
+              "lead": true,
+              "in_frame": true,
+              "x": 0.1,
+              "place": "центр",
+              "distance": 10.1,
+              "height": 1.8,
+              "frame_height": 0.27,
+              "whole": true,
+              "hidden_by": [
+                "car"
+              ]
+            },
+            {
+              "entity": "car",
+              "in_frame": true,
+              "x": -0.1,
+              "place": "центр",
+              "distance": 5,
+              "frame_height": 0.45,
+              "whole": true,
+              "hidden_by": []
+            }
+          ],
+          "objects": []
+        },
+        "end": null
+      }
+    },
+    {
+      "name": "vehicle-own-facing",
+      "description": "Машина со своим направлением (боком к камере) заслоняет героя, мимо которого машина передом к камере не проходит; высота машины без кастинга — типовые 1,5 м.",
+      "input": {
+        "viewpoint": {
+          "location": "lot",
+          "side": "south",
+          "size": "wide",
+          "camera": {
+            "start": [
+              0,
+              0
+            ]
+          },
+          "subjects": [
+            {
+              "entity": "hero",
+              "start": [
+                4,
+                10
+              ]
+            },
+            {
+              "entity": "car",
+              "start": [
+                0,
+                5
+              ],
+              "facing": 0
+            }
+          ]
+        },
+        "scheme": "lot",
+        "heights": {
+          "hero": 1.8
+        },
+        "vehicles": [
+          "car"
+        ]
+      },
+      "expected": {
+        "camera": {
+          "side": "south",
+          "size": "wide",
+          "fov": 60
+        },
+        "start": {
+          "looks": "на север",
+          "camera_height": 1.6,
+          "subjects": [
+            {
+              "entity": "hero",
+              "lead": true,
+              "in_frame": true,
+              "x": 0.33,
+              "place": "правая треть",
+              "distance": 10.8,
+              "height": 1.8,
+              "frame_height": 0.26,
+              "whole": true,
+              "hidden_by": [
+                "car"
+              ]
+            },
+            {
+              "entity": "car",
+              "in_frame": true,
+              "x": -0.33,
+              "place": "левая треть",
+              "distance": 5,
+              "frame_height": 0.46,
+              "whole": true,
+              "hidden_by": []
+            }
+          ],
+          "objects": []
+        },
+        "end": null
+      }
+    },
+    {
+      "name": "vehicle-default-facing-clear",
+      "description": "Тот же герой при машине без своего направления: машина стоит передом к камере и героя не заслоняет.",
+      "input": {
+        "viewpoint": {
+          "location": "lot",
+          "side": "south",
+          "size": "wide",
+          "camera": {
+            "start": [
+              0,
+              0
+            ]
+          },
+          "subjects": [
+            {
+              "entity": "hero",
+              "start": [
+                4,
+                10
+              ]
+            },
+            {
+              "entity": "car",
+              "start": [
+                0,
+                5
+              ]
+            }
+          ]
+        },
+        "scheme": "lot",
+        "heights": {
+          "hero": 1.8
+        },
+        "vehicles": [
+          "car"
+        ]
+      },
+      "expected": {
+        "camera": {
+          "side": "south",
+          "size": "wide",
+          "fov": 60
+        },
+        "start": {
+          "looks": "на север",
+          "camera_height": 1.6,
+          "subjects": [
+            {
+              "entity": "hero",
+              "lead": true,
+              "in_frame": true,
+              "x": 0.33,
+              "place": "правая треть",
+              "distance": 10.8,
+              "height": 1.8,
+              "frame_height": 0.26,
+              "whole": true,
+              "hidden_by": []
+            },
+            {
+              "entity": "car",
+              "in_frame": true,
+              "x": -0.33,
+              "place": "левая треть",
+              "distance": 5,
+              "frame_height": 0.46,
+              "whole": true,
+              "hidden_by": []
+            }
+          ],
+          "objects": []
+        },
+        "end": null
       }
     }
   ]

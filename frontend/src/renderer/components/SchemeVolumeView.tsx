@@ -129,6 +129,78 @@ function buildVertices(
 }
 
 /**
+ * Программа шейдеров и раскладка вершин сцены в контексте gl; не собралась — null. Общая для вида на экране и
+ * снимка вида (volumeSnapshot).
+ */
+function createVolumeProgram(gl: WebGLRenderingContext): WebGLUniformLocation | null {
+  const compile = (type: number, source: string): WebGLShader => {
+    const shader = gl.createShader(type)!;
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    return shader;
+  };
+  const program = gl.createProgram()!;
+  gl.attachShader(program, compile(gl.VERTEX_SHADER, VERTEX_SHADER));
+  gl.attachShader(program, compile(gl.FRAGMENT_SHADER, FRAGMENT_SHADER));
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) return null;
+  gl.useProgram(program);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  for (const [name, offset] of [
+    ['position', 0],
+    ['normal', 3],
+    ['color', 6]
+  ] as const) {
+    const location = gl.getAttribLocation(program, name);
+    gl.enableVertexAttribArray(location);
+    gl.vertexAttribPointer(location, 3, gl.FLOAT, false, 36, offset * 4);
+  }
+  gl.enable(gl.DEPTH_TEST);
+  return gl.getUniformLocation(program, 'matrix')!;
+}
+
+/** Цвета вида: земля, сетка и небо светлой и тёмной темы. */
+const SCENE_COLORS = {
+  light: { ground: '#c9d6c0', grid: '#a9bba0', sky: '#e3edf5' },
+  dark: { ground: '#3a4a3a', grid: '#55665a', sky: '#1e2a33' }
+} as const;
+
+/** Размер сцены для сетки и проекции: наибольшая сторона схемы, не меньше 10 м. */
+function sceneExtent(scheme: Scheme): number {
+  const bounds = schemeBounds(scheme.objects) ?? [-10, -10, 10, 10];
+  return Math.max(bounds[2] - bounds[0], bounds[3] - bounds[1], 10);
+}
+
+/**
+ * Снимок вида из камеры camera — PNG (data URL) width × height пикселей: тот же объём схемы и фигуры extras, что на
+ * экране, но всегда в светлых цветах и без подписей и стрелки севера — снимок уходит генератору изображений как
+ * схема композиции, и тема интерфейса на него не влияет. Рисуется на отдельном холсте вне страницы; без WebGL — null.
+ */
+export function volumeSnapshot(scheme: Scheme, camera: Camera3D, extras: readonly VolumeExtra[], width: number, height: number): string | null {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const gl = canvas.getContext('webgl', { antialias: true, preserveDrawingBuffer: true });
+  if (!gl) return null;
+  const matrixLocation = createVolumeProgram(gl);
+  if (!matrixLocation) return null;
+  const colors = SCENE_COLORS.light;
+  const extent = sceneExtent(scheme);
+  const vertices = buildVertices(scheme, null, extras, rgb(colors.ground), rgb(colors.grid), gridStep(extent));
+  gl.bufferData(gl.ARRAY_BUFFER, vertices.data, gl.STATIC_DRAW);
+  gl.viewport(0, 0, width, height);
+  const sky = rgb(colors.sky);
+  gl.clearColor(sky[0], sky[1], sky[2], 1);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  gl.uniformMatrix4fv(matrixLocation, false, new Float32Array(cameraMatrix(camera, width, height, extent)));
+  gl.drawArrays(gl.TRIANGLES, 0, vertices.count);
+  gl.drawArrays(gl.LINES, vertices.count, vertices.lines);
+  const url = canvas.toDataURL('image/png');
+  gl.getExtension('WEBGL_lose_context')?.loseContext();
+  return url;
+}
+
+/**
  * Объём схемы в перспективе (WebGL без библиотек). Без camera — облёт: перетаскивание вращает вид,
  * колесо приближает, стрелки и +/− делают то же с клавиатуры, подписи объектов стоят над их верхом. Щелчок без
  * сдвига выбирает ближайший объект под указателем (onSelect, пустое место — null), выбранный светлеет. Облёт
@@ -189,14 +261,14 @@ export function SchemeVolumeView({
   }, []);
 
   const bounds = schemeBounds(scheme.objects) ?? [-10, -10, 10, 10];
-  const extent = Math.max(bounds[2] - bounds[0], bounds[3] - bounds[1], 10);
+  const extent = sceneExtent(scheme);
   const center: Vec3 = [(bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2, 0];
   const dark = theme.palette.mode === 'dark';
   const step = gridStep(extent);
-  const vertices = useMemo(
-    () => buildVertices(scheme, selected, extras, rgb(dark ? '#3a4a3a' : '#c9d6c0'), rgb(dark ? '#55665a' : '#a9bba0'), step),
-    [scheme, selected, extras, dark, step]
-  );
+  const vertices = useMemo(() => {
+    const colors = SCENE_COLORS[dark ? 'dark' : 'light'];
+    return buildVertices(scheme, selected, extras, rgb(colors.ground), rgb(colors.grid), step);
+  }, [scheme, selected, extras, dark, step]);
   const view: Camera3D = camera ?? orbitCamera(center, orbit.azimuth, orbit.elevation, orbit.distance ?? extent * 1.3);
 
   // Контекст и шейдеры создаются один раз; потеря контекста показывает сообщение.
@@ -208,33 +280,12 @@ export function SchemeVolumeView({
       setFailed(schemesTexts.volumeView.unavailable);
       return;
     }
-    const compile = (type: number, source: string): WebGLShader => {
-      const shader = gl.createShader(type)!;
-      gl.shaderSource(shader, source);
-      gl.compileShader(shader);
-      return shader;
-    };
-    const program = gl.createProgram()!;
-    gl.attachShader(program, compile(gl.VERTEX_SHADER, VERTEX_SHADER));
-    gl.attachShader(program, compile(gl.FRAGMENT_SHADER, FRAGMENT_SHADER));
-    gl.linkProgram(program);
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    const matrix = createVolumeProgram(gl);
+    if (!matrix) {
       setFailed(schemesTexts.volumeView.unavailable);
       return;
     }
-    gl.useProgram(program);
-    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-    for (const [name, offset] of [
-      ['position', 0],
-      ['normal', 3],
-      ['color', 6]
-    ] as const) {
-      const location = gl.getAttribLocation(program, name);
-      gl.enableVertexAttribArray(location);
-      gl.vertexAttribPointer(location, 3, gl.FLOAT, false, 36, offset * 4);
-    }
-    gl.enable(gl.DEPTH_TEST);
-    glRef.current = { gl, matrix: gl.getUniformLocation(program, 'matrix')!, count: 0, lines: 0 };
+    glRef.current = { gl, matrix, count: 0, lines: 0 };
     const lost = (event: Event): void => {
       event.preventDefault();
       setFailed(schemesTexts.volumeView.lost);
@@ -261,7 +312,7 @@ export function SchemeVolumeView({
     canvas.width = Math.round(width * pixelRatio);
     canvas.height = Math.round(frameHeight * pixelRatio);
     gl.viewport(0, 0, canvas.width, canvas.height);
-    const sky = rgb(theme.palette.mode === 'dark' ? '#1e2a33' : '#e3edf5');
+    const sky = rgb(SCENE_COLORS[theme.palette.mode === 'dark' ? 'dark' : 'light'].sky);
     gl.clearColor(sky[0], sky[1], sky[2], 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.uniformMatrix4fv(context.matrix, false, new Float32Array(matrix));

@@ -19,6 +19,7 @@ type caseFile struct {
 			Viewpoint json.RawMessage    `json:"viewpoint"`
 			Scheme    *string            `json:"scheme"`
 			Heights   map[string]float64 `json:"heights"`
+			Vehicles  []string           `json:"vehicles"`
 		} `json:"input"`
 		Expected json.RawMessage `json:"expected"`
 	} `json:"cases"`
@@ -46,7 +47,11 @@ func TestGoldenFrames(t *testing.T) {
 				}
 				scheme = &found
 			}
-			got, err := json.Marshal(Compute(viewpoint, scheme, item.Input.Heights))
+			cast := Cast{Heights: item.Input.Heights, Vehicles: map[string]bool{}}
+			for _, entity := range item.Input.Vehicles {
+				cast.Vehicles[entity] = true
+			}
+			got, err := json.Marshal(Compute(viewpoint, scheme, cast))
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -30,9 +30,10 @@ type Pair struct {
 	End   *float64 `json:"end,omitempty"`
 }
 
-// Subject — герой плана на схеме: сущность кастинга и её путь.
+// Subject — герой плана на схеме: сущность кастинга, её путь и, у машины, своё направление передом (Facing).
 type Subject struct {
-	Entity string `json:"entity"`
+	Entity string   `json:"entity"`
+	Facing *float64 `json:"facing,omitempty"`
 	Path
 }
 
@@ -215,7 +216,7 @@ func (v Viewpoint) LookHeading(phase string) (float64, bool) {
 // Камера со своим направлением без поворота (heading без end) не поворачивается и по высоте: наклон первого
 // кадра держится весь план, как у неподвижной камеры, тележки или крана. Камера, которая целится в героев или
 // поворачивается сама, ведёт главного героя и наклоном.
-func (v Viewpoint) Pitch(phase string, heights map[string]float64) float64 {
+func (v Viewpoint) Pitch(phase string, cast Cast) float64 {
 	if v.Tilt != nil {
 		return pairValue(v.Tilt, phase)
 	}
@@ -234,7 +235,7 @@ func (v Viewpoint) Pitch(phase string, heights map[string]float64) float64 {
 	if reach <= epsilon {
 		return 0
 	}
-	return math.Atan2(figureHeight(heights, v.Subjects[0].Entity)/2-v.EyeHeight(phase), reach) * 180 / math.Pi
+	return math.Atan2(cast.height(v.Subjects[0].Entity)/2-v.EyeHeight(phase), reach) * 180 / math.Pi
 }
 
 // moves — есть ли у пути движение: конец задан и отличается от начала.

@@ -89,6 +89,17 @@ func (s *ProductionWorkflowService) SetGenerationMethod(project, shot, packageDi
 	return wire.Done(s.workflow.SetGenerationMethod(project, shot, packageDir, method))
 }
 
+// SaveComposition — productionWorkflow.saveComposition: снимок вида из камеры, нарисованный интерфейсом по
+// отпечатку digest, сохраняется в пакет попытки как схема композиции опор; доступ к ИИ не нужен.
+func (s *ProductionWorkflowService) SaveComposition(project, shot, packageDir, digest string, images []productionworkflow.CompositionImage) (productionworkflow.View, error) {
+	return wire.Done(s.workflow.SaveComposition(project, shot, packageDir, digest, images))
+}
+
+// SetComposition — productionWorkflow.setComposition: выключатель «Схема композиции» попытки.
+func (s *ProductionWorkflowService) SetComposition(project, shot, packageDir string, enabled bool) (productionworkflow.View, error) {
+	return wire.Done(s.workflow.SetComposition(project, shot, packageDir, enabled))
+}
+
 // Discard — productionWorkflow.discard: отклонение непринятого предложения.
 func (s *ProductionWorkflowService) Discard(project, shot, packageDir, id string) (productionworkflow.View, error) {
 	return wire.Done(s.workflow.Discard(project, shot, packageDir, id))

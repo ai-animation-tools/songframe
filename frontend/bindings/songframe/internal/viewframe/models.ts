@@ -73,10 +73,11 @@ export interface PhaseFacts {
 export type Point = schemes$0.Point;
 
 /**
- * Subject — герой плана на схеме: сущность кастинга и её путь.
+ * Subject — герой плана на схеме: сущность кастинга, её путь и, у машины, своё направление передом (Facing).
  */
 export interface Subject {
     "entity": string;
+    "facing"?: number | null;
     "start": Point;
     "end"?: Point | null;
 }

@@ -11,10 +11,10 @@ import (
 const noteSchemesDamaged = "Схемы локаций повреждены: факты кадра не посчитаны."
 
 // ForProject — факты кадра точки съёмки value (scene.viewpoint как есть) по схеме её локации из
-// plan/schemes.json проекта project и росту героев heights. Повреждённые схемы не прерывают работу: факты
+// plan/schemes.json проекта project и фигурам героев cast (ReadCast). Повреждённые схемы не прерывают работу: факты
 // приходят без кадров с пояснением. Неразборчивая точка съёмки фактов не даёт — false; её отклоняет проверка
 // сценария.
-func ForProject(project string, value any, heights map[string]float64) (Frame, bool) {
+func ForProject(project string, value any, cast Cast) (Frame, bool) {
 	viewpoint, err := ParseViewpoint(value)
 	if err != nil {
 		return Frame{}, false
@@ -24,7 +24,7 @@ func ForProject(project string, value any, heights map[string]float64) (Frame, b
 		camera := CameraFacts{Side: viewpoint.Side, Size: viewpoint.Size, Fov: round(viewpoint.FieldOfView(), 1)}
 		return Frame{Camera: camera, Note: noteSchemesDamaged}, true
 	}
-	return Compute(viewpoint, LocationScheme(document, viewpoint.Location), heights), true
+	return Compute(viewpoint, LocationScheme(document, viewpoint.Location), cast), true
 }
 
 // LocationScheme — схема локации location; nil — у локации схемы нет.

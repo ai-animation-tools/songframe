@@ -286,6 +286,33 @@ export const ViewpointCoordinates: Story = {
   }
 };
 
+export const ViewpointVehicleFacing: Story = {
+  name: 'Точка съёмки · стоящая машина передом к камере, своё направление числом',
+  tags: ['!autodocs', 'ci'],
+  parameters: { songframe: scenarioPageOptions({ route: '/project/scenario?shot=M03', placed: ['M03'], vehicleHero: true }) },
+  play: async (context) => {
+    const screen = await ready(context);
+    await editorHeading(screen, 'M03');
+    await userEvent.click(viewpointBlock(screen));
+    await userEvent.click(await screen.findByRole('button', { name: viewpointTexts.openMap }));
+    const map = within(await screen.findByRole('dialog', { name: viewpointTexts.fullscreenTitle({ shot: 'M03' }) }));
+    const agentFacts = document.querySelector<HTMLElement>('[data-agent-facts]')!;
+    await userEvent.click(within(agentFacts).getByRole('button', { name: new RegExp(viewpointTexts.agentFacts) }));
+    // Машина к югу от камеры не смотрит: без своего направления она стоит передом к камере — на юг, 270°.
+    const hero = within(map.getByRole('group', { name: new RegExp(`^${viewpointTexts.coords}: Герой`) }));
+    const facing = hero.getByRole('spinbutton', { name: viewpointTexts.facingField });
+    await expect(facing).toHaveValue(270);
+    await userEvent.clear(facing);
+    await userEvent.type(facing, '0{Enter}');
+    await waitFor(() => expect(scenarioFrameRequests().at(-1)?.subjects?.[0]?.facing).toBe(0));
+    // Пустое поле возвращает направление по умолчанию.
+    await userEvent.clear(facing);
+    await userEvent.type(facing, '{Enter}');
+    await waitFor(() => expect(scenarioFrameRequests().at(-1)?.subjects?.[0]?.facing).toBeUndefined());
+    await expect(facing).toHaveValue(270);
+  }
+};
+
 export const ViewpointReferenceRemoved: Story = {
   name: 'Точка съёмки · герой, убранный из референсов, уходит и с карты',
   tags: ['!autodocs', 'ci'],

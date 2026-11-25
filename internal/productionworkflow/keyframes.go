@@ -235,6 +235,19 @@ func (k *KeyframeImages) Start(input mediaapi.ImagesInput, request agentexec.Ima
 		stateBase.Set("id", base.ID)
 		stateBase.Set("path", name)
 	}
+	// Снимок вида из камеры — схема композиции создаваемой опоры: ракурс, горизонт и места фигур.
+	var composition *dynvalue.Object
+	if snapshot := input.Composition; snapshot != nil && frameID.MatchString(snapshot.ID) && mediafile.IsImage(snapshot.Path) {
+		name := "composition-" + snapshot.ID + extname(snapshot.Path)
+		digest, err := pinCopy(snapshot.Path, filepath.Join(directory, name))
+		if err != nil {
+			return agents.Job{}, err
+		}
+		inputs = append(inputs, imagesInput{Path: snapshot.Path, Copy: name, SHA256: digest})
+		composition = dynvalue.NewObject()
+		composition.Set("id", snapshot.ID)
+		composition.Set("path", name)
+	}
 	notes := []any{}
 	if input.Notes != nil {
 		for _, note := range *input.Notes {
@@ -263,6 +276,9 @@ func (k *KeyframeImages) Start(input mediaapi.ImagesInput, request agentexec.Ima
 	if stateBase != nil {
 		context.Set("stateBase", stateBase)
 	}
+	if composition != nil {
+		context.Set("composition", composition)
+	}
 	if len(notes) > 0 {
 		context.Set("notes", &dynvalue.Array{Items: notes})
 	}
@@ -276,7 +292,7 @@ func (k *KeyframeImages) Start(input mediaapi.ImagesInput, request agentexec.Ima
 	job, err = k.Agents.StartImages(agents.StartInput{
 		Project: project,
 		Task:    textImagesJobTitle(input.Shot, strings.Join(ids, ", "), providers.Title(request.Provider, generationProviderFallback)),
-		Prompt:  textImagesPrompt(len(approved) > 0, len(notes) > 0, shotFrameCopies, len(previous) > 0, layout, stateBase != nil),
+		Prompt:  textImagesPrompt(len(approved) > 0, len(notes) > 0, shotFrameCopies, len(previous) > 0, layout, stateBase != nil, compositionFigures(composition, input.Composition)),
 		Context: dynvalue.Stringify(context),
 		Place:   &agents.Place{Page: "production", Shot: input.Shot},
 	}, directory, request.Agent)
@@ -664,4 +680,12 @@ func releaseImageJob(localDir, jobID string) {
 		return
 	}
 	_ = os.RemoveAll(directory)
+}
+
+// compositionFigures — легенда снимка вида из камеры для задания; nil — снимок не скопирован в задание (copied nil).
+func compositionFigures(copied *dynvalue.Object, snapshot *mediaapi.CompositionSnapshot) *compositionLegend {
+	if copied == nil || snapshot == nil {
+		return nil
+	}
+	return &compositionLegend{characters: snapshot.Characters, vehicles: snapshot.Vehicles}
 }

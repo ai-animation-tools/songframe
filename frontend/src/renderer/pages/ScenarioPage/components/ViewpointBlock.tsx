@@ -65,6 +65,8 @@ import {
   withoutPoints,
   withoutTilt,
   MAX_TILT,
+  setFacing,
+  subjectFacing,
   type SceneViewpoint,
   type ViewpointPath,
   type ViewpointPhase,
@@ -85,7 +87,7 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import CloseIcon from '@mui/icons-material/Close';
 import PushPinIcon from '@mui/icons-material/PushPin';
 import { ActionIconButton } from '../../../components/ActionIconButton';
-import { lookPitch, type FigureHeights } from '@shared/viewpoint-camera';
+import { lookPitch, type FigureHeights, type FigureVehicles } from '@shared/viewpoint-camera';
 import { castEntityRoute } from '../../../components/castRoutes';
 
 const texts = scenarioTexts.viewpoint;
@@ -120,8 +122,8 @@ const metres = (value: number): string => formatMetres(Math.round(value * 10) / 
 /** Наклон в градусах для подписи: целое со знаком «−» вниз. */
 const degrees = (value: number): string => (value < 0 ? `−${Math.abs(value)}` : `${value}`);
 /** Наклон камеры на кадре phase в целых градусах: свой или по главному герою. */
-const tiltDegrees = (viewpoint: SceneViewpoint, phase: ViewpointPhase, heights: FigureHeights): number =>
-  ownTilt(viewpoint, phase) ?? Math.round((lookPitch(viewpoint, phase, heights) * 180) / Math.PI);
+const tiltDegrees = (viewpoint: SceneViewpoint, phase: ViewpointPhase, heights: FigureHeights, vehicles: FigureVehicles): number =>
+  ownTilt(viewpoint, phase) ?? Math.round((lookPitch(viewpoint, phase, heights, vehicles) * 180) / Math.PI);
 /** Метки ползунка наклона: отвесно вниз, наискось, горизонт и вверх. */
 const TILT_MARKS = [-MAX_TILT, -45, 0, 45, MAX_TILT].map((value) => ({ value, label: `${degrees(value)}°` }));
 
@@ -211,6 +213,7 @@ function ViewpointPlacement({
   linked,
   nameOf,
   heights,
+  vehicles,
   editable,
   height,
   place,
@@ -223,6 +226,8 @@ function ViewpointPlacement({
   heroes: readonly CastEntity[];
   /** Рост сущностей кастинга: фигуры вида из камеры и отметка «рост не задан». */
   heights: FigureHeights;
+  /** Машины среди героев: у стоящей — поле «куда смотрит передом». */
+  vehicles: FigureVehicles;
   /** Референсы плана, нарисованные на схеме объектами: только строки состояния. */
   linked: readonly LinkedReference[];
   nameOf(id: string): string;
@@ -338,6 +343,22 @@ function ViewpointPlacement({
       update(setPoint(viewpoint, rowTarget, phase, axis === 0 ? [value, current[1]] : [current[0], value]));
     };
     const turns = key === 'camera' && (moves(camera) || viewpoint.heading?.end !== undefined);
+    // Стоящая машина: куда она смотрит передом — по нему её коробка стоит на виде из камеры и в фактах кадра.
+    // У едущей направление следует из хода; пустое поле возвращает «передом к камере».
+    const subjectIndex = viewpoint.subjects?.findIndex((subject) => subject.entity === key) ?? -1;
+    const facingField =
+      subjectIndex >= 0 && vehicles.includes(key) && !moves(path) ? (
+        <CommitNumberField
+          label={texts.facingField}
+          value={Math.round(subjectFacing(viewpoint, subjectIndex, 'start')) % 360}
+          disabled={false}
+          helperText=""
+          optional
+          step={1}
+          width={150}
+          onCommit={(next) => update(setFacing(viewpoint, key, next))}
+        />
+      ) : null;
     return (
       <Stack
         spacing={0.75}
@@ -352,6 +373,7 @@ function ViewpointPlacement({
           {path.end ? field(texts.coordXEnd, coordinate(path.end[0]), (value) => point('end', 0, value)) : null}
           {path.end ? field(texts.coordYEnd, coordinate(path.end[1]), (value) => point('end', 1, value)) : null}
         </Stack>
+        {facingField}
         {key === 'camera' && viewpoint.side !== 'top' ? (
           <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
             {field(texts.headingField, headingValue(viewpoint, 'start'), (value) => update(setHeading(viewpoint, 'start', value)), 1)}
@@ -359,7 +381,11 @@ function ViewpointPlacement({
           </Stack>
         ) : null}
         <Typography variant="caption" color="text.secondary">
-          {key === 'camera' && viewpoint.side !== 'top' ? `${texts.coordsHint}; ${texts.headingFieldHint}` : texts.coordsHint}
+          {key === 'camera' && viewpoint.side !== 'top'
+            ? `${texts.coordsHint}; ${texts.headingFieldHint}`
+            : facingField
+              ? `${texts.coordsHint}; ${texts.facingFieldHint}`
+              : texts.coordsHint}
         </Typography>
       </Stack>
     );
@@ -415,8 +441,8 @@ function ViewpointPlacement({
   const tilt = !viewpoint.tilt
     ? null
     : tiltMoves(viewpoint)
-      ? `${degrees(tiltDegrees(viewpoint, 'start', heights))}° → ${degrees(tiltDegrees(viewpoint, 'end', heights))}°`
-      : `${degrees(tiltDegrees(viewpoint, 'start', heights))}°`;
+      ? `${degrees(tiltDegrees(viewpoint, 'start', heights, vehicles))}° → ${degrees(tiltDegrees(viewpoint, 'end', heights, vehicles))}°`
+      : `${degrees(tiltDegrees(viewpoint, 'start', heights, vehicles))}°`;
   // Поля камеры свёрнуты по умолчанию: в заголовке — их итог, чтобы видеть его, не раскрывая.
   const cameraPanel = (
     <Accordion variant="outlined" disableGutters defaultExpanded={false} sx={{ minWidth: 0 }} data-camera-fields="">
@@ -540,6 +566,7 @@ function CameraWindowButton({
   scheme,
   viewpoint,
   heights,
+  vehicles,
   editable,
   onFov
 }: {
@@ -547,12 +574,16 @@ function CameraWindowButton({
   scheme: Scheme;
   viewpoint: SceneViewpoint;
   heights: FigureHeights;
+  vehicles: FigureVehicles;
   editable: boolean;
   onFov(fov: number): void;
 }): ReactElement {
   const { notify, describeError } = useApp();
   const { mode: theme } = useThemeMode();
-  const state = useMemo(() => ({ title, scheme, viewpoint, heights, theme, editable }), [title, scheme, viewpoint, heights, theme, editable]);
+  const state = useMemo(
+    () => ({ title, scheme, viewpoint, heights, vehicles: [...vehicles], theme, editable }),
+    [title, scheme, viewpoint, heights, vehicles, theme, editable]
+  );
   const cameraWindow = useDetachedCamera(state, {
     onFov: (value) => {
       if (editable) onFov(value);
@@ -627,6 +658,7 @@ export function ViewpointBlock({
     () => Object.fromEntries(entities.flatMap((entity) => (entity.height === undefined ? [] : [[entity.id, entity.height]]))),
     [entities]
   );
+  const vehicles = useMemo<FigureVehicles>(() => entities.filter((entity) => entity.kind === 'vehicle').map((entity) => entity.id), [entities]);
   const editable = !locked || unlocked;
   const locationScheme = viewpoint ? (schemes?.schemes.find((scheme) => scheme.location === viewpoint.location) ?? null) : null;
   // Референс, нарисованный на схеме объектом, точкой не ставят: место и размер берутся из схемы. Уже поставленный
@@ -755,7 +787,7 @@ export function ViewpointBlock({
       {current.side === 'top' ? null : (
         <Box data-camera-tilt="">
           {(['start', 'end'] as const).map((phase) => {
-            const value = tiltDegrees(current, phase, heights);
+            const value = tiltDegrees(current, phase, heights, vehicles);
             const label = `camera-tilt-${phase}`;
             return (
               <Box key={phase} sx={{ px: 1 }}>
@@ -774,7 +806,7 @@ export function ViewpointBlock({
                   valueLabelFormat={(next) => `${degrees(next)}°`}
                   slotProps={{ input: { 'aria-labelledby': label } }}
                   data-camera-tilt-phase={phase}
-                  onChange={(_, next) => onChange(setTilt(current, phase, next as number, tiltDegrees(current, 'start', heights)))}
+                  onChange={(_, next) => onChange(setTilt(current, phase, next as number, tiltDegrees(current, 'start', heights, vehicles)))}
                 />
               </Box>
             );
@@ -877,6 +909,7 @@ export function ViewpointBlock({
                         scheme={locationScheme}
                         viewpoint={viewpoint}
                         heights={heights}
+                        vehicles={vehicles}
                         editable={editable}
                         onFov={(value) => update(withFov(viewpoint, value))}
                       />
@@ -904,6 +937,7 @@ export function ViewpointBlock({
                         linked={linked}
                         nameOf={nameOf}
                         heights={heights}
+                        vehicles={vehicles}
                         editable={editable}
                         height={Math.max(MIN_MAP_HEIGHT, window.innerHeight - 330)}
                         place={placeFields(viewpoint)}

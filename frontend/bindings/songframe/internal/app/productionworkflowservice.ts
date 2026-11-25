@@ -113,11 +113,26 @@ export function RetryWithFrames(project: string, shot: string, packageDir: strin
 }
 
 /**
+ * SaveComposition — productionWorkflow.saveComposition: снимок вида из камеры, нарисованный интерфейсом по
+ * отпечатку digest, сохраняется в пакет попытки как схема композиции опор; доступ к ИИ не нужен.
+ */
+export function SaveComposition(project: string, shot: string, packageDir: string, digest: string, images: productionworkflow$0.CompositionImage[]): $CancellablePromise<productionworkflow$0.View> {
+    return $Call.ByID(3227394555, project, shot, packageDir, digest, images);
+}
+
+/**
  * SaveOwn — productionWorkflow.saveOwn: своё описание с планом опор или свой видеопромпт
  * применяются без агента; доступ к ИИ и провайдеру не нужен.
  */
 export function SaveOwn(input: productionworkflow$0.OwnInput): $CancellablePromise<productionworkflow$0.View> {
     return $Call.ByID(2336799677, input);
+}
+
+/**
+ * SetComposition — productionWorkflow.setComposition: выключатель «Схема композиции» попытки.
+ */
+export function SetComposition(project: string, shot: string, packageDir: string, enabled: boolean): $CancellablePromise<productionworkflow$0.View> {
+    return $Call.ByID(283906308, project, shot, packageDir, enabled);
 }
 
 /**

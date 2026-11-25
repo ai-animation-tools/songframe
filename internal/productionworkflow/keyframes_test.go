@@ -124,6 +124,47 @@ func TestKeyframeImagesPreviousFrame(t *testing.T) {
 	}
 }
 
+// TestKeyframeImagesComposition — снимок вида из камеры копируется в задание как composition-Kxx, закрепляется
+// SHA в job.json, попадает в контекст и включает абзац о схеме композиции; без снимка абзаца нет.
+func TestKeyframeImagesComposition(t *testing.T) {
+	images, manager, input := keyframesFixture(t)
+	if _, err := images.Start(input, agentexec.ImagesRequest{Provider: "test-agent", RequestSha: "sha", Agent: agents.Settings{Provider: "codex"}}); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(manager.images[0].input.Prompt, "composition") || strings.Contains(manager.images[0].input.Context, "composition") {
+		t.Fatalf("без снимка: %s", manager.images[0].input.Prompt)
+	}
+	snapshot := filepath.Join(input.Project, "plan", "batches", "M01-attempt-01", "composition-start.png")
+	if err := os.MkdirAll(filepath.Dir(snapshot), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(snapshot, tinyPNG, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	input.Composition = &mediaapi.CompositionSnapshot{ApprovedFrame: mediaapi.ApprovedFrame{ID: "K01", Role: "start", Path: snapshot}, Characters: 1}
+	if _, err := images.Start(input, agentexec.ImagesRequest{Provider: "test-agent", RequestSha: "sha", Agent: agents.Settings{Provider: "codex"}}); err != nil {
+		t.Fatal(err)
+	}
+	start := manager.images[1]
+	if _, err := os.Stat(filepath.Join(start.workDir, "composition-K01.png")); err != nil {
+		t.Fatalf("снимок не скопирован: %v", err)
+	}
+	context, _ := dynvalue.Parse([]byte(start.input.Context))
+	if dynvalue.Get(dynvalue.Get(context, "composition"), "path") != "composition-K01.png" {
+		t.Fatalf("composition в контексте: %s", start.input.Context)
+	}
+	if !strings.Contains(start.input.Prompt, "схема композиции создаваемой опоры") || !strings.Contains(start.input.Prompt, "а не стилем") {
+		t.Fatalf("инструкция без схемы композиции: %s", start.input.Prompt)
+	}
+	if !strings.Contains(start.input.Prompt, "цилиндр — персонаж") || strings.Contains(start.input.Prompt, "транспорт") {
+		t.Fatalf("легенда снимка с одним персонажем: %s", start.input.Prompt)
+	}
+	record, err := os.ReadFile(filepath.Join(start.workDir, "job.json"))
+	if err != nil || !strings.Contains(string(record), "composition-K01.png") {
+		t.Fatalf("снимок не закреплён в job.json: %s %v", record, err)
+	}
+}
+
 func TestKeyframeImagesCollectRefusals(t *testing.T) {
 	for _, test := range []struct{ name, file, answer, want string }{
 		// Ответ не JSON и отсутствующий файл кандидата дают понятные отказы.
@@ -431,26 +472,26 @@ func TestKeyframeImagesLayout(t *testing.T) {
 // TestImagesPromptApprovedBase проверяет, что утверждённые опоры задаются основой кадра, а правка
 // «взять за основу утверждённую опору» по замечанию появляется только вместе с замечаниями.
 func TestImagesPromptApprovedBase(t *testing.T) {
-	withNotes := textImagesPrompt(true, true, false, true, false, false)
+	withNotes := textImagesPrompt(true, true, false, true, false, false, nil)
 	for _, want := range []string{"основа создаваемой опоры", "всё, что он прямо не меняет", "взять за основу утверждённую опору, передай её генератору первым входом", "важнее промпта опоры", "если notes не велят взять за основу"} {
 		if !strings.Contains(withNotes, want) {
 			t.Fatalf("нет %q: %s", want, withNotes)
 		}
 	}
-	if plain := textImagesPrompt(true, false, false, false, false, false); strings.Contains(plain, "взять за основу") {
+	if plain := textImagesPrompt(true, false, false, false, false, false, nil); strings.Contains(plain, "взять за основу") {
 		t.Fatalf("правка по замечанию без замечаний: %s", plain)
 	}
 }
 
 // TestImagesPromptStateBase — абзац о базовой опоре плана из опор есть только у опоры-состояния.
 func TestImagesPromptStateBase(t *testing.T) {
-	state := textImagesPrompt(true, false, false, false, false, true)
+	state := textImagesPrompt(true, false, false, false, false, true, nil)
 	for _, want := range []string{"stateBase — базовая опора плана из опор", "передай stateBase генератору первым входом", "Композицию, ракурс"} {
 		if !strings.Contains(state, want) {
 			t.Fatalf("нет %q: %s", want, state)
 		}
 	}
-	if plain := textImagesPrompt(true, false, false, false, false, false); strings.Contains(plain, "stateBase") {
+	if plain := textImagesPrompt(true, false, false, false, false, false, nil); strings.Contains(plain, "stateBase") {
 		t.Fatalf("абзац о базовой опоре у обычной опоры: %s", plain)
 	}
 }
@@ -474,7 +515,7 @@ func TestKeyframeImagesGeneratorPrompt(t *testing.T) {
 	if got := generatorPrompts(`{"schemaVersion":1,"stage":"frames","images":[{"id":"K01","path":"K01.png","prompt":"  "}]}`); got != nil {
 		t.Fatalf("пустой промпт сохранён: %v", dynvalue.Stringify(got))
 	}
-	if !strings.Contains(textImagesPrompt(false, false, false, false, false, false), `"prompt":"промпт генератора"`) {
+	if !strings.Contains(textImagesPrompt(false, false, false, false, false, false, nil), `"prompt":"промпт генератора"`) {
 		t.Fatal("задание не просит вернуть промпт генератора")
 	}
 }
@@ -490,5 +531,39 @@ func TestKeyframeImagesCollectIgnoresExtraFields(t *testing.T) {
 	candidates, err := images.Collect(job)
 	if err != nil || len(candidates) != 1 || candidates[0].ID != "K01" {
 		t.Fatalf("кандидаты %v, ошибка %v", candidates, err)
+	}
+}
+
+// TestCompositionPromptLegend — легенда болванки называет только то, что на снимке есть.
+func TestCompositionPromptLegend(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		legend       compositionLegend
+		want, absent []string
+	}{
+		{"без героев", compositionLegend{}, []string{"место и размер объектов в кадре", "На болванке плоскости и объёмы — объекты scheme"},
+			[]string{"персонаж", "транспорт", "Оранжевая"}},
+		{"один персонаж", compositionLegend{characters: 1}, []string{"персонажей и объектов", "цилиндр — персонаж, остальные плоскости"},
+			[]string{"транспорт", "Оранжевая"}},
+		{"несколько персонажей", compositionLegend{characters: 2}, []string{"персонажей и объектов", "цилиндры — персонажи, остальные плоскости",
+			"Оранжевая фигура — главная"}, []string{"транспорт", "коробк"}},
+		{"только транспорт", compositionLegend{vehicles: 1}, []string{"транспорта и объектов", "коробка — транспорт", "(форма коробки условная)"},
+			[]string{"персонаж", "Оранжевая"}},
+		{"персонажи и транспорт", compositionLegend{characters: 2, vehicles: 2}, []string{"персонажей, транспорта и объектов", "цилиндры — персонажи, коробки — транспорт",
+			"Оранжевая фигура — главная"}, nil},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			prompt := textCompositionPrompt(test.legend)
+			for _, want := range test.want {
+				if !strings.Contains(prompt, want) {
+					t.Errorf("нет %q: %s", want, prompt)
+				}
+			}
+			for _, absent := range append(test.absent, "неб", "люд", "машин", "реалист") {
+				if strings.Contains(prompt, absent) {
+					t.Errorf("лишнее %q: %s", absent, prompt)
+				}
+			}
+		})
 	}
 }

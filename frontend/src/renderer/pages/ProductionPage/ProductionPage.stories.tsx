@@ -716,6 +716,56 @@ export const FrameInstruction: Story = {
   }
 };
 
+export const CompositionSnapshot: Story = {
+  tags: ['ci'],
+  name: 'Схема композиции · снимок вида из камеры в шаге опор, выключатель попытки',
+  parameters: {
+    songframe: options({
+      shots: () => baseShots({ attention: null, packages: [noCandidates()] }),
+      composition: true,
+      workflowView: () => ({ imageProvider: 'codex' })
+    })
+  },
+  play: async (context) => {
+    const screen = screenOf(context);
+    const composition = productionTexts.composition;
+    await expect(await screen.findByText(steps.now({ text: steps.chooseFrame({ frame: 'K02' }) }), {}, POLL_TIMEOUT)).toBeInTheDocument();
+    const frames = within(planStep(context, 'frames'));
+    const toggle = await frames.findByRole('switch', { name: composition.label }, POLL_TIMEOUT);
+    await expect(toggle).toBeChecked();
+    await expect(frames.getByText(composition.ready)).toBeVisible();
+    // Миниатюра снимка открывает общий просмотр изображений.
+    await userEvent.click(frames.getByRole('button', { name: componentsTexts.gallery.openLarge({ label: composition.phases.start }) }));
+    await expect(await screen.findByRole('dialog')).toBeVisible();
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await userEvent.click(toggle);
+    await waitFor(() => expect(counts(context)).toHaveTextContent('Схема композиции: выкл.'), POLL_TIMEOUT);
+    await expect(await frames.findByText(composition.off)).toBeVisible();
+    await expect(frames.queryByRole('button', { name: componentsTexts.gallery.openLarge({ label: composition.phases.start }) })).not.toBeInTheDocument();
+  }
+};
+
+export const CompositionDrawn: Story = {
+  tags: ['ci'],
+  name: 'Схема композиции · снимка ещё нет: интерфейс рисует и сохраняет его сам',
+  parameters: {
+    songframe: options({
+      shots: () => baseShots({ attention: null, packages: [noCandidates()] }),
+      composition: 'missing',
+      workflowView: () => ({ imageProvider: 'codex' })
+    })
+  },
+  play: async (context) => {
+    const screen = screenOf(context);
+    await expect(await screen.findByText(steps.now({ text: steps.chooseFrame({ frame: 'K02' }) }), {}, POLL_TIMEOUT)).toBeInTheDocument();
+    // Снимок рисуется WebGL на отдельном холсте и уходит PNG; после сохранения вид отдаёт готовую миниатюру.
+    await waitFor(() => expect(counts(context)).toHaveTextContent('Снимков: 1.'), POLL_TIMEOUT);
+    const frames = within(planStep(context, 'frames'));
+    await expect(await frames.findByText(productionTexts.composition.ready, {}, POLL_TIMEOUT)).toBeVisible();
+  }
+};
+
 /** Опора возвращена на доработку: подсказка советует создать её заново и уходит, пока опора создаётся. */
 const returnedFrame = () => ({
   ...noCandidates(),

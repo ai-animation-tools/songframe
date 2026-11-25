@@ -14,6 +14,8 @@ export interface CameraWindowState {
   viewpoint: SceneViewpoint;
   /** Рост героев из кастинга, м. */
   heights: Record<string, number>;
+  /** Машины среди сущностей кастинга: на виде они коробка, а не цилиндр. */
+  vehicles: string[];
   theme: 'light' | 'dark' | 'system';
   /** Точку съёмки можно править: иначе зум в окне выключен (план принят и не открыт для правки). */
   editable: boolean;

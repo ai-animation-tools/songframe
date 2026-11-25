@@ -86,6 +86,8 @@ export interface ScenarioPageOptions {
   videoProvider?: boolean;
   /** Остался черновик прошлого запуска: у M03 расставлены камера и герой. */
   leftDraft?: boolean;
+  /** Герой кастинга — машина (вид «Транспорт»): на карте у стоящей машины поле «куда смотрит передом». */
+  vehicleHero?: boolean;
 }
 
 /** Демонстрационный отчёт проверки: по одной проблеме каждой важности, самая важная записана последней. */
@@ -559,7 +561,8 @@ export function scenarioPageOptions({
   placed = [],
   check = 'none',
   videoProvider = false,
-  leftDraft = false
+  leftDraft = false,
+  vehicleHero = false
 }: ScenarioPageOptions = {}): StoryOptions {
   const state: AppState = {
     packaged: false,
@@ -585,6 +588,7 @@ export function scenarioPageOptions({
       const saved = pageView(variant, gappedTiming);
       if (referencesStale) Object.assign(saved, { referencesStale: true, problems: [scenarioTexts.main.referencesRefresh] });
       if (videoProvider) saved.videoProvider = TEST_PROVIDER;
+      if (vehicleHero && saved.cast) saved.cast.entities[0].kind = 'vehicle';
       for (const shot of saved.scenes?.scenes ?? [])
         if (placed.includes(shot.id))
           shot.viewpoint = { location: 'gate', side: 'south', size: 'medium', camera: { start: [0, -8] }, subjects: [{ entity: 'hero', start: [0, 3] }] };

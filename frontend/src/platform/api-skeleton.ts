@@ -116,6 +116,8 @@ export function apiSkeleton(): Api {
       prepareRequest: stub('productionWorkflow.prepareRequest'),
       requestOptions: stub('productionWorkflow.requestOptions'),
       setGenerationMethod: stub('productionWorkflow.setGenerationMethod'),
+      saveComposition: stub('productionWorkflow.saveComposition'),
+      setComposition: stub('productionWorkflow.setComposition'),
       saveOwn: stub('productionWorkflow.saveOwn'),
       referenceImages: stub('productionWorkflow.referenceImages')
     },

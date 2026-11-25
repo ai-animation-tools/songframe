@@ -12,7 +12,8 @@ import type {
   ProductionRequestChange,
   ProductionRequestOptions,
   ProductionWorkflowStart,
-  ProductionWorkflowView
+  ProductionWorkflowView,
+  ProductionCompositionImage
 } from './production-workflow';
 import type { MediaCapabilities, MediaKind, ProviderAuth } from './media-providers';
 import type {
@@ -156,6 +157,13 @@ export interface Api {
     requestOptions(project: string, shot: string, packageDir: string): Promise<ProductionRequestOptions>;
     /** Способ генерации видео попытки: провайдер проекта или вручную вне приложения; до утверждения видеопромпта. */
     setGenerationMethod(project: string, shot: string, packageDir: string, method: ProductionGenerationMethod): Promise<ProductionWorkflowView>;
+    /**
+     * Снимок вида из камеры, нарисованный по отпечатку digest вида плана, — схема композиции опор попытки. Отпечаток,
+     * разошедшийся с текущим, отклоняется: снимок рисуется заново.
+     */
+    saveComposition(project: string, shot: string, packageDir: string, digest: string, images: ProductionCompositionImage[]): Promise<ProductionWorkflowView>;
+    /** Выключатель «Схема композиции» попытки. */
+    setComposition(project: string, shot: string, packageDir: string, enabled: boolean): Promise<ProductionWorkflowView>;
     /** Своё описание с планом опор или свой видеопромпт без агента; принимает их интерфейс сразу после применения. */
     saveOwn(input: ProductionOwnInput): Promise<ProductionWorkflowView>;
     /** Изображения, которые может назвать опора своего плана (разрешённые входы плана). */

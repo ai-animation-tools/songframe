@@ -22,8 +22,26 @@ const MOVING: CameraWindowState = {
     subjects: [{ entity: 'hero', start: [0, 2] }]
   },
   heights: { hero: 1.8 },
+  vehicles: [],
   theme: 'light',
   editable: true
+};
+
+/** Машина у ворот: стоит боком к камере по своему направлению, рядом герой; машина — коробка, а не цилиндр. */
+const VEHICLE: CameraWindowState = {
+  ...MOVING,
+  viewpoint: {
+    location: 'gate',
+    side: 'south',
+    size: 'medium',
+    fov: 50,
+    camera: { start: [0, -8] },
+    subjects: [
+      { entity: 'hero', start: [-2, 2] },
+      { entity: 'cart', start: [2, 3], facing: 0 }
+    ]
+  },
+  vehicles: ['cart']
 };
 
 /** Сообщения, отправленные страницей окна в истории: play проверяет по ним зум. */
@@ -78,6 +96,21 @@ export const MovingCamera: Story = {
     zoom.focus();
     await userEvent.keyboard('{ArrowUp}');
     await waitFor(() => expect(sent.at(-1)).toEqual({ type: 'fov', fov: 29 }));
+  }
+};
+
+export const Vehicle: Story = {
+  name: 'Машина · коробка по габаритам боком к камере',
+  tags: ['ci'],
+  parameters: { songframe: options(VEHICLE) },
+  play: async ({ canvasElement }) => {
+    const frame = await waitFor(() => {
+      const found = canvasElement.ownerDocument.querySelector<HTMLElement>('[data-camera-frame="start"]');
+      if (!found) throw new Error('Нет кадра.');
+      return found;
+    });
+    await expect(Number(frame.querySelector('[data-volume-view]')?.getAttribute('data-triangles'))).toBeGreaterThan(40);
+    await expect(canvasElement.ownerDocument.querySelector('[data-camera-frame="end"]')).toBeNull();
   }
 };
 

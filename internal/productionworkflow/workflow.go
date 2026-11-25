@@ -203,6 +203,9 @@ type View struct {
 	PromptMaxChars int `json:"promptMaxChars,omitempty"`
 	// Paid — попытка пакета уже оплачена: дальше только новая попытка или возврат с замечанием.
 	Paid bool `json:"paid"`
+	// Composition — снимок вида из камеры для опор (composition.go); nil — у плана нет точки съёмки с камерой
+	// и схемой, нет пакета или опоры создаёт не агент.
+	Composition *CompositionView `json:"composition,omitempty"`
 	// ImageProvider и VideoProvider — generation.image.provider и generation.video.provider
 	// проекта как есть; поле опускается, если значения нет.
 	ImageProvider json.RawMessage `json:"imageProvider,omitempty"`
@@ -358,6 +361,9 @@ func (w *Workflow) view(project, shot, packageDir string) (View, error) {
 	}
 	if value := dynvalue.Get(dynvalue.Get(generation, "video"), "provider"); value != dynvalue.Undefined {
 		view.VideoProvider = dynvalue.Raw(value)
+	}
+	if view.Composition, err = c.composition(agentImageProvider(generation)); err != nil {
+		return View{}, err
 	}
 	if relevant != nil {
 		view.Proposal = dynvalue.Raw(relevant.Proposal())

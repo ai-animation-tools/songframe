@@ -366,3 +366,10 @@ func textModelAspectRatio(value, allowed string) string {
 func textStaticKeyframeCountRange(limit int) string {
 	return "Плану из опор нужна базовая опора и, если что-то переключается, опоры-состояния: выберите от 1 до " + fmt.Sprint(limit) + " опор или «авто»."
 }
+
+// Снимок вида из камеры для опор (composition.go).
+const (
+	textCompositionUnavailable = "Снимок вида из камеры недоступен: у плана нет камеры на схеме локации, пакета попытки или опоры создаёт не агент."
+	textCompositionStale       = "Снимок вида из камеры устарел: точка съёмки, схема или герои изменились. Дождитесь нового снимка в шаге опор или выключите «Схему композиции»."
+	textCompositionInvalid     = "Снимок вида из камеры не сохранён: нужен PNG каждого кадра точки съёмки."
+)

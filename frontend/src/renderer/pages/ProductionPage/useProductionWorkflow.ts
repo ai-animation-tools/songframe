@@ -11,6 +11,7 @@ import type {
 } from '@shared/production-workflow';
 import { useApp } from '../../state';
 import { PRODUCTION_PASS_LABELS } from './constants';
+import { compositionImages } from './composition';
 
 type Notify = ReturnType<typeof useApp>['notify'];
 
@@ -167,6 +168,19 @@ export function useProductionWorkflow(project: string, shot: string, packageDir:
     void apply();
   }, [apply, proposal]);
 
+  // Снимок вида из камеры — схема композиции опор — снимается сам, когда он включён, а сохранённого нет или он
+  // устарел (сдвинули точку съёмки, поменяли схему или героев): человеку не нужна отдельная кнопка. Попытка на
+  // отпечаток одна, чтобы ошибка сохранения не повторялась по кругу; сохранение не мешает другим действиям.
+  const composition = view?.composition;
+  const snapped = useRef<string | null>(null);
+  useEffect(() => {
+    if (!composition?.enabled || composition.frames.length || !packageDir || pending || snapped.current === composition.digest) return;
+    snapped.current = composition.digest;
+    const images = compositionImages(composition);
+    if (!images) return;
+    void execute(() => window.api.productionWorkflow.saveComposition(project, shot, packageDir, composition.digest, images));
+  }, [composition, execute, packageDir, pending, project, shot]);
+
   return {
     view,
     error,
@@ -188,6 +202,9 @@ export function useProductionWorkflow(project: string, shot: string, packageDir:
             change ? productionTexts.useProductionWorkflow.requestChanged : undefined
           )
         : Promise.resolve(false),
+    /** Выключатель «Схема композиции» попытки: снимок вида из камеры в задании опор. */
+    setComposition: (enabled: boolean) =>
+      packageDir ? execute(() => window.api.productionWorkflow.setComposition(project, shot, packageDir, enabled)) : Promise.resolve(false),
     /** Способ генерации попытки; страница перечитывает попытку, как после применения. */
     setGenerationMethod: (method: ProductionGenerationMethod) =>
       packageDir

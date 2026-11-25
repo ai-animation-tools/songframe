@@ -190,7 +190,7 @@ func cameraAngles(root, shot string) (heading, tilt float64, ok bool, err error)
 		if !ok {
 			return 0, 0, false, nil
 		}
-		return heading, viewpoint.Pitch(viewframe.PhaseStart, viewframe.CastHeights(cast.Read(root).Value)), true, nil
+		return heading, viewpoint.Pitch(viewframe.PhaseStart, viewframe.ReadCast(cast.Read(root).Value)), true, nil
 	}
 	return 0, 0, false, errors.New(textShotMissing(shot))
 }

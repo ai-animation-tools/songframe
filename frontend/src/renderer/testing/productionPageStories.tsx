@@ -83,6 +83,31 @@ export const REQUEST_MODELS: ProductionRequestOptions['models'] = [
   { id: 'test-video-short', parameters: [], unavailable: 'Модель не даёт видео длиной 5 с: доступно 10 с.' }
 ];
 
+/** Отпечаток снимка вида из камеры истории. */
+const STORY_COMPOSITION_DIGEST = 'story-composition';
+
+/**
+ * Снимок вида из камеры попытки: камера на юге у причала, лодка — машина нет; снимок уже сохранён, поэтому
+ * интерфейс не рисует его заново, а показывает миниатюру.
+ */
+function storyComposition(enabled: boolean, saved: boolean): NonNullable<ProductionWorkflowView['composition']> {
+  return {
+    enabled,
+    digest: STORY_COMPOSITION_DIGEST,
+    phases: ['start'],
+    viewpoint: { location: 'pier', side: 'south', size: 'wide', camera: { start: [0, 0] }, subjects: [{ entity: 'hero', start: [0, 10] }] },
+    scheme: {
+      id: 's1',
+      location: 'pier',
+      title: 'Причал',
+      objects: [{ id: 'o1', name: 'Настил', shape: { type: 'rect', center: [0, 14], size: [12, 3] }, height: 1 }]
+    },
+    heights: { hero: 1.8 },
+    vehicles: [],
+    frames: saved ? [{ phase: 'start', path: `${STORY_IMAGE_PATH}?composition=start` }] : []
+  };
+}
+
 export interface ProductionPageModelOptions {
   shots: () => ShotProduction[];
   broken?: () => BrokenPackage[];
@@ -109,6 +134,12 @@ export interface ProductionPageModelOptions {
   frameJob?: boolean;
   /** Поля вида прохода агента поверх вычисленных моделью: задание, предложение, доступная доработка. */
   workflowView?: (shot: string, packageDir: string | undefined) => Partial<ProductionWorkflowView>;
+  /**
+   * У плана точка съёмки с камерой: вид попытки отдаёт снимок вида из камеры (ProductionWorkflowView.composition),
+   * снимок сохранён и включён, выключатель записывается в модель. 'missing' — снимка ещё нет: интерфейс рисует и
+   * сохраняет его сам, модель запоминает размер PNG.
+   */
+  composition?: boolean | 'missing';
 }
 
 interface PageModel {
@@ -146,6 +177,10 @@ interface PageModel {
   ownSaves: string[];
   /** Выбранные способы генерации попыток по порядку. */
   methodChanges: string[];
+  /** Положения выключателя «Схема композиции» по порядку (productionWorkflow.setComposition). */
+  compositionChanges: boolean[];
+  /** Сохранённые снимки вида из камеры: размер PNG каждого кадра в байтах (productionWorkflow.saveComposition). */
+  compositionSaves: number[];
   /** Запросы, собранные приложением без агента: модель и выбранные параметры каждого. */
   requestBuilds: string[];
   /** Варианты видеопромпта, утверждённые к отправке (production.decide с promptVariant), по порядку. */
@@ -330,6 +365,8 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
         promptReopens: [],
         ownSaves: [],
         methodChanges: [],
+        compositionChanges: [],
+        compositionSaves: [],
         requestBuilds: [],
         promptVariants: [],
         openedPaths: [],
@@ -432,6 +469,8 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
       };
       // Попытки со способом «Вручную вне приложения» (productionWorkflow.setGenerationMethod).
       const manualMethods = new Set<string>();
+      // Попытки с выключенной «Схемой композиции» (productionWorkflow.setComposition).
+      const compositionOff = new Set<string>();
       // План опор своих описаний по папке попытки: опора без промпта создаётся только своим файлом.
       const ownFramePrompts = new Map<string, ProductionFramePrompt[]>();
       // Свой файл опоры становится предложением только на время между импортом и применением.
@@ -469,6 +508,9 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
           ...(manual ? { manual: true, canBuildManual: !!pkg && !manualReason, videoProvider: TEST_PROVIDER } : {}),
           ...(options.manual ? { singleFrame: true } : {}),
           ...(chosen ? { generationMethod: 'manual' as const } : {}),
+          ...(options.composition && pkg
+            ? { composition: storyComposition(!compositionOff.has(pkg.dir), options.composition !== 'missing' || model.compositionSaves.length > 0) }
+            : {}),
           // У ручной генерации предела промпта нет: у формы сервиса свои правила.
           ...(options.promptMaxChars && !manual ? { promptMaxChars: options.promptMaxChars, videoProvider: TEST_PROVIDER } : {}),
           project: PAGE_PROJECT,
@@ -989,6 +1031,24 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
             publish();
             return workflowSnapshot(project, shot, dir);
           },
+          // Как Go: снимок по чужому отпечатку отклоняется; в истории снимок уже сохранён.
+          saveComposition: async (project, shot, dir, digest, images) => {
+            const { pkg } = find(project, dir);
+            if (digest !== STORY_COMPOSITION_DIGEST) throw new Error('Снимок вида из камеры устарел.');
+            model.compositionSaves = images.map((image) => atob(image.data).length);
+            touch(pkg);
+            publish();
+            return workflowSnapshot(project, shot, dir);
+          },
+          setComposition: async (project, shot, dir, enabled) => {
+            const { pkg } = find(project, dir);
+            if (enabled) compositionOff.delete(dir);
+            else compositionOff.add(dir);
+            model.compositionChanges = [...model.compositionChanges, enabled];
+            touch(pkg);
+            publish();
+            return workflowSnapshot(project, shot, dir);
+          },
           // Как Go: способ попытки меняется, пока запрос не подготовлен; на провайдера — только промпт в пределах его длины.
           setGenerationMethod: async (project, shot, dir, method) => {
             const { pkg } = find(project, dir);
@@ -1255,8 +1315,9 @@ export function ProductionPageStory({ links = [] }: { links?: StoryLink[] }): Re
             {model.frameRetries}. Попыток с первой опорой: {model.firstFrameRetries}. Пакетов ручной генерации: {model.manualBuilds}. Загрузок видео:{' '}
             {model.manualUploads}. Замен видео: {model.manualReplacements}. Своих видео: {model.ownVideos}. Входов своих видео:{' '}
             {model.ownVideoGenerations.join('; ') || 'нет'}. Возвратов промпта: {model.promptReopens.join(', ') || 'нет'}. Своих описаний:{' '}
-            {model.ownSaves.join(', ') || 'нет'}. Способов генерации: {model.methodChanges.join(', ') || 'нет'}. Запросов приложения:{' '}
-            {model.requestBuilds.join(', ') || 'нет'}. Вариантов промпта к отправке: {model.promptVariants.join(', ') || 'нет'}. Открытых папок:{' '}
+            {model.ownSaves.join(', ') || 'нет'}. Способов генерации: {model.methodChanges.join(', ') || 'нет'}. Схема композиции:{' '}
+            {model.compositionChanges.map((enabled) => (enabled ? 'вкл' : 'выкл')).join(', ') || 'нет'}. Снимков: {model.compositionSaves.length}. Запросов
+            приложения: {model.requestBuilds.join(', ') || 'нет'}. Вариантов промпта к отправке: {model.promptVariants.join(', ') || 'нет'}. Открытых папок:{' '}
             {model.openedPaths.join(', ') || 'нет'}. Сборок из опор: {model.staticBuilds}. Новых участков: {model.recuts}
             {model.recutOptions ? ` (${JSON.stringify(model.recutOptions)})` : ''}. Взятых кадров: {model.takenFrames.join(', ') || 'нет'}.
           </Typography>

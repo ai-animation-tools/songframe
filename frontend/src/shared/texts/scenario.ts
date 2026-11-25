@@ -589,6 +589,8 @@ export const scenarioTexts = {
     headingField: 'Направление, °',
     headingFieldEnd: 'В конце, °',
     headingFieldHint: '0° — восток, 90° — север',
+    facingField: 'Передом на, °',
+    facingFieldHint: 'куда смотрит передом стоящий транспорт: 0° — восток, 90° — север; пусто — к камере',
     subjectLabel: ({ name, metres }: { name: string; metres: string | null }) => (metres === null ? name : `${name} · ${metres} м`),
     cameraOpen: 'Вид из камеры в окне',
     cameraSettings: 'Камера',

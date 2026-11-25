@@ -105,6 +105,12 @@ type Context struct {
 	// Scheme — схема локации точки съёмки плана без цвета (schemes.AgentLocation); nil — нет точки съёмки
 	// или схемы её локации, ключ scheme в контекст не пишется.
 	Scheme any
+	// Viewpoint, LocationScheme и Figures — точка съёмки плана как записана, полная схема её локации и фигуры
+	// героев кастинга: из них интерфейс рисует снимок вида из камеры для опор (composition.go). nil — нет точки
+	// съёмки или схемы.
+	Viewpoint      any
+	LocationScheme *schemes.Scheme
+	Figures        viewframe.Cast
 
 	framesApproved, promptApproved *bool
 }
@@ -257,7 +263,12 @@ func ReadContext(path, shot, requested string) (*Context, error) {
 	// Факты кадра считаются по сохранённой точке съёмки, схеме её локации и росту из всего кастинга: герой
 	// на схеме может быть не в списке сущностей плана.
 	if viewpoint := scene.Value("viewpoint"); viewpoint != dynvalue.Undefined {
-		if frame, ok := viewframe.ForProject(project, viewpoint, viewframe.CastHeights(castFile.Value)); ok {
+		context.Viewpoint = viewpoint
+		context.Figures = viewframe.ReadCast(castFile.Value)
+		if document, _, err := schemes.Read(project); err == nil {
+			context.LocationScheme = viewframe.LocationScheme(document, dynvalue.ToString(dynvalue.Get(viewpoint, "location")))
+		}
+		if frame, ok := viewframe.ForProject(project, viewpoint, context.Figures); ok {
 			if context.Frame, err = frame.Tree(); err != nil {
 				return nil, err
 			}

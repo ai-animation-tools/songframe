@@ -92,7 +92,11 @@ describe('поиск по справке', () => {
       'взять текущий кадр': 'accepted-kit-actions',
       'точка съёмки': 'viewpoint',
       'сгенерировать изображение': 'reference-image-generation',
-      'загрузить другой файл': 'own-materials'
+      'загрузить другой файл': 'own-materials',
+      'схема композиции': 'composition-snapshot',
+      'снимок вида из камеры': 'composition-snapshot',
+      'машина на схеме': 'viewpoint',
+      'транспорт на схеме': 'viewpoint'
     };
     for (const [query, id] of Object.entries(queries)) {
       expect(

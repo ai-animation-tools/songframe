@@ -25,7 +25,9 @@ import (
 //     последнем, если камера поднимается или опускается (кран, дрон). Без неё камера на уровне глаз — 1,6 м.
 //   - tilt — свой наклон взгляда в градусах, [-90, 90], минус — вниз: start на первом кадре, end — на
 //     последнем, если камера наклоняется за план. Без него наклон считается по главному герою.
-//   - subjects — герои плана на схеме: entity из references плана, start и необязательный end. Первый —
+//   - subjects — герои плана на схеме: entity из references плана, start, необязательный end и необязательный
+//     facing — куда герой смотрит передом, градусы как у heading; нужен стоящей машине (kind «vehicle»), у
+//     движущейся направление следует из хода, без него машина стоит передом к камере. Первый —
 //     главный: на середину его роста наклоняется камера без своего наклона. Со своим направлением без поворота наклон первого
 //     кадра держится весь план (viewframe.Viewpoint.Pitch).
 //
@@ -42,7 +44,7 @@ var (
 	viewpointKeys = []string{"location", "side", "size", "fov", "camera", "heading", "camera_height", "tilt", "subjects"}
 	pathKeys      = []string{"start", "end"}
 	phaseKeys     = []string{"start", "end"}
-	subjectKeys   = []string{"entity", "start", "end"}
+	subjectKeys   = []string{"entity", "start", "end", "facing"}
 )
 
 func textViewpointShape(shot string) string {
@@ -73,7 +75,7 @@ func textViewpointCamera(shot string) string {
 	return shot + ": место камеры camera — объект со start и необязательным end, каждый — два числа в метрах [x, y]."
 }
 func textViewpointSubjects(shot string) string {
-	return shot + ": герои точки съёмки subjects — список объектов с entity, start и необязательным end; точки — два числа в метрах [x, y]."
+	return shot + ": герои точки съёмки subjects — список объектов с entity, start, необязательными end и facing; точки — два числа в метрах [x, y], facing — градусы от 0 до 360 (360 не входит)."
 }
 func textViewpointSubjectUnknown(shot, entity string) string {
 	return shot + ": герой точки съёмки «" + entity + "» не указан среди референсов плана."
@@ -227,6 +229,9 @@ func viewpointProblems(shot string, value any, locations []string, references []
 			entity, entityOK := "", false
 			if ok {
 				entity, entityOK = subject.Value("entity").(string)
+				if facing := subject.Value("facing"); facing != dynvalue.Undefined && !isAngle(facing) {
+					entityOK = false
+				}
 			}
 			if !entityOK {
 				problems = append(problems, textViewpointSubjects(shot))

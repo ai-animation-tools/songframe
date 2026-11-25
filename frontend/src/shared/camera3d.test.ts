@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { clipPlanes, cameraMatrix, GROUND_REACH, orbitCamera, pixelRay, projectPoint, verticalFov, type Camera3D } from './camera3d';
+import { MAX_CAMERA_HEIGHT } from './viewpoint';
 
 describe('камера объёма', () => {
   const camera: Camera3D = { eye: [0, -10, 1.7], target: [0, 0, 1.7], fov: 60 };
@@ -56,13 +57,15 @@ describe('камера объёма', () => {
     }
   });
 
-  it('край земли виден почти на настоящем горизонте и не срезан дальней плоскостью', () => {
-    // Камера в 3,5 м над землёй с наклоном вниз: край земли в GROUND_REACH под горизонтом меньше чем на 0,5% кадра.
-    const tilted: Camera3D = { eye: [0, 0, 3.5], target: [0, 6, 0.85], fov: 78 };
-    const view = cameraMatrix(tilted, 1280, 720, 30);
-    const edge = projectPoint(view, [0, GROUND_REACH, 0], 1280, 720)!;
-    const horizon = projectPoint(view, [0, GROUND_REACH * 1000, 3.5], 1280, 720)!;
-    expect(Math.abs(edge[1] - horizon[1])).toBeLessThan(720 * 0.005);
-    expect(clipPlanes(tilted, 30)[1]).toBeGreaterThan(Math.hypot(GROUND_REACH, GROUND_REACH));
+  it('край земли виден почти на настоящем горизонте с любой допустимой высоты и не срезан дальней плоскостью', () => {
+    // Камера смотрит вниз под углом около 18°, горизонт в кадре: край земли под ним меньше чем на 0,5% высоты кадра.
+    for (const height of [0.3, 3.5, 10, 120, MAX_CAMERA_HEIGHT]) {
+      const tilted: Camera3D = { eye: [0, 0, height], target: [0, Math.max(6, height * 3), 0.85], fov: 78 };
+      const view = cameraMatrix(tilted, 1280, 720, 30);
+      const edge = projectPoint(view, [0, GROUND_REACH, 0], 1280, 720)!;
+      const horizon = projectPoint(view, [0, GROUND_REACH * 1000, height], 1280, 720)!;
+      expect(Math.abs(edge[1] - horizon[1])).toBeLessThan(720 * 0.005);
+      expect(clipPlanes(tilted, 30)[1]).toBeGreaterThan(Math.hypot(GROUND_REACH, GROUND_REACH));
+    }
   });
 });

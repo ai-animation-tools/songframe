@@ -78,22 +78,38 @@ function gridStep(extent: number): number {
 }
 
 /**
- * Вершины сцены: позиция, нормаль и цвет — по 9 чисел. Сначала треугольники объектов и земли (count), за ними отрезки
- * сетки земли (lines вершин). triangles — число треугольников объектов для истории и проверки.
+ * Вершины сцены: позиция, нормаль и цвет — по 9 чисел. Сначала два треугольника земли (ground вершин), за ними
+ * треугольники объектов (count), затем отрезки сетки земли (lines вершин). triangles — число треугольников объектов для
+ * истории и проверки.
  */
-function buildVertices(
-  scheme: Scheme,
-  selected: string | null,
-  extras: readonly VolumeExtra[],
-  ground: Vec3,
-  gridColor: Vec3,
-  step: number
-): { data: Float32Array; count: number; lines: number; triangles: number } {
+function buildVertices(scheme: Scheme, selected: string | null, extras: readonly VolumeExtra[], ground: Vec3, gridColor: Vec3, step: number): VolumeVertices {
   const values: number[] = [];
   const push = (triangle: Triangle, color: Vec3, lift = 0): void => {
     const normal = triangleNormal(triangle);
     for (const point of triangle) values.push(point[0], point[1], point[2] + lift, ...normal, ...color);
   };
+  // Земля — первой: два треугольника до самого горизонта (GROUND_REACH), сетка — только вокруг схемы.
+  const bounds = schemeBounds(scheme.objects) ?? [-10, -10, 10, 10];
+  const margin = Math.max(10, (bounds[2] - bounds[0] + bounds[3] - bounds[1]) / 2);
+  const [x0, y0, x1, y1] = [bounds[0] - margin, bounds[1] - margin, bounds[2] + margin, bounds[3] + margin];
+  const [g0, h0, g1, h1] = [bounds[0] - GROUND_REACH, bounds[1] - GROUND_REACH, bounds[2] + GROUND_REACH, bounds[3] + GROUND_REACH];
+  push(
+    [
+      [g0, h0, 0],
+      [g1, h0, 0],
+      [g1, h1, 0]
+    ],
+    ground
+  );
+  push(
+    [
+      [g0, h0, 0],
+      [g1, h1, 0],
+      [g0, h1, 0]
+    ],
+    ground
+  );
+  const groundCount = values.length / 9;
   drawOrder(scheme.objects).forEach((object, index) => {
     const flat = objectTopHeight(object) === 0;
     const base = rgb(objectColor(object));
@@ -101,32 +117,33 @@ function buildVertices(
     for (const triangle of objectVolume(object)) push(triangle, color, flat ? FLAT_LIFT * (index + 1) : 0);
   });
   for (const extra of extras) for (const triangle of extra.triangles) push(triangle, rgb(extra.color));
-  const triangles = values.length / 27;
-  // Земля — последней: два треугольника до самого горизонта (GROUND_REACH), сетка — только вокруг схемы.
-  const bounds = schemeBounds(scheme.objects) ?? [-10, -10, 10, 10];
-  const margin = Math.max(10, (bounds[2] - bounds[0] + bounds[3] - bounds[1]) / 2);
-  const [x0, y0, x1, y1] = [bounds[0] - margin, bounds[1] - margin, bounds[2] + margin, bounds[3] + margin];
-  const [g0, h0, g1, h1] = [bounds[0] - GROUND_REACH, bounds[1] - GROUND_REACH, bounds[2] + GROUND_REACH, bounds[3] + GROUND_REACH];
-  push(
-    [
-      [g0, h0, -0.01],
-      [g1, h0, -0.01],
-      [g1, h1, -0.01]
-    ],
-    ground
-  );
-  push(
-    [
-      [g0, h0, -0.01],
-      [g1, h1, -0.01],
-      [g0, h1, -0.01]
-    ],
-    ground
-  );
-  const count = values.length / 9;
+  const triangles = values.length / 27 - 2;
+  const count = values.length / 9 - groundCount;
   for (let x = Math.ceil(x0 / step) * step; x <= x1; x += step) values.push(x, y0, 0, 0, 0, 1, ...gridColor, x, y1, 0, 0, 0, 1, ...gridColor);
   for (let y = Math.ceil(y0 / step) * step; y <= y1; y += step) values.push(x0, y, 0, 0, 0, 1, ...gridColor, x1, y, 0, 0, 0, 1, ...gridColor);
-  return { data: new Float32Array(values), count, lines: values.length / 9 - count, triangles };
+  return { data: new Float32Array(values), ground: groundCount, count, lines: values.length / 9 - groundCount - count, triangles };
+}
+
+/** Раскладка буфера вершин сцены (buildVertices): сколько вершин у земли, объектов и сетки. */
+interface VolumeVertices {
+  data: Float32Array;
+  ground: number;
+  count: number;
+  lines: number;
+  triangles: number;
+}
+
+/**
+ * Рисует сцену из буфера с раскладкой layout. Земля идёт фоном: без проверки и записи глубины, поэтому её размер до
+ * горизонта не портит глубину остального (под землёй ничего нет, заслонять ей нечего), а сетка на ней не мерцает.
+ * Объекты и сетка — с глубиной.
+ */
+function drawVolume(gl: WebGLRenderingContext, layout: Pick<VolumeVertices, 'ground' | 'count' | 'lines'>): void {
+  gl.disable(gl.DEPTH_TEST);
+  gl.drawArrays(gl.TRIANGLES, 0, layout.ground);
+  gl.enable(gl.DEPTH_TEST);
+  gl.drawArrays(gl.TRIANGLES, layout.ground, layout.count);
+  gl.drawArrays(gl.LINES, layout.ground + layout.count, layout.lines);
 }
 
 /**
@@ -194,8 +211,7 @@ export function volumeSnapshot(scheme: Scheme, camera: Camera3D, extras: readonl
   gl.clearColor(sky[0], sky[1], sky[2], 1);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   gl.uniformMatrix4fv(matrixLocation, false, new Float32Array(cameraMatrix(camera, width, height, extent)));
-  gl.drawArrays(gl.TRIANGLES, 0, vertices.count);
-  gl.drawArrays(gl.LINES, vertices.count, vertices.lines);
+  drawVolume(gl, vertices);
   const url = canvas.toDataURL('image/png');
   gl.getExtension('WEBGL_lose_context')?.loseContext();
   return url;
@@ -239,7 +255,7 @@ export function SchemeVolumeView({
   const theme = useTheme();
   const boxRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const glRef = useRef<{ gl: WebGLRenderingContext; matrix: WebGLUniformLocation; count: number; lines: number } | null>(null);
+  const glRef = useRef<{ gl: WebGLRenderingContext; matrix: WebGLUniformLocation; ground: number; count: number; lines: number } | null>(null);
   const [width, setWidth] = useState(640);
   const frameHeight = aspect ? Math.round(width / aspect) : (height ?? 360);
   const [failed, setFailed] = useState<string | null>(null);
@@ -286,7 +302,7 @@ export function SchemeVolumeView({
       setFailed(schemesTexts.volumeView.unavailable);
       return;
     }
-    glRef.current = { gl, matrix, count: 0, lines: 0 };
+    glRef.current = { gl, matrix, ground: 0, count: 0, lines: 0 };
     const lost = (event: Event): void => {
       event.preventDefault();
       setFailed(schemesTexts.volumeView.lost);
@@ -299,6 +315,7 @@ export function SchemeVolumeView({
     const context = glRef.current;
     if (!context) return;
     context.gl.bufferData(context.gl.ARRAY_BUFFER, vertices.data, context.gl.STATIC_DRAW);
+    context.ground = vertices.ground;
     context.count = vertices.count;
     context.lines = vertices.lines;
   }, [vertices]);
@@ -317,8 +334,7 @@ export function SchemeVolumeView({
     gl.clearColor(sky[0], sky[1], sky[2], 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.uniformMatrix4fv(context.matrix, false, new Float32Array(matrix));
-    gl.drawArrays(gl.TRIANGLES, 0, context.count);
-    gl.drawArrays(gl.LINES, context.count, context.lines);
+    drawVolume(gl, context);
   });
 
   // Стрелка севера: направление на экране от центра сцены к точке севернее.

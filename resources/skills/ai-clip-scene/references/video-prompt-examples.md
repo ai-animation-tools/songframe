@@ -2,15 +2,15 @@
 
 Образцы стиля, не шаблоны: копируй подход, а не фразы, место или настроение. Обозначения входов в примерах условные («the first image», «the final image»): в промпте используй обозначения из указаний провайдера видео.
 
-Две опоры, действие руками на ходу, ручная камера отступает перед героем (6 с, монтажное окно 5,5 с). Приём: какой из двух похожих предметов участвует, порядок движений рук и что не меняется в конце:
+Две опоры, действие руками на ходу, ручная камера отступает перед героиней (6 с, монтажное окно 5,5 с). Приём: какой из двух похожих предметов участвует, порядок движений рук и что не меняется в конце:
 
-> The first image is the first frame, the final image is the final state. One continuous frontal medium shot, 6 seconds. Handheld camera slowly backing away along the wet sidewalk in front of the man at his walking pace, keeping the same distance and framing all the way to the final image. The facade stays on the right of the frame, the railing on the left.
+> The first image is the first frame, the final image is the final state. One continuous frontal medium shot, 6 seconds. Handheld camera slowly backing away along the station platform in front of the woman at her walking pace, keeping the same distance and framing all the way to the final image. The train stays on the left of the frame, the row of benches on the right.
 >
-> The man walks toward the camera at a steady pace the whole time, looking ahead past the camera. His jacket is already open. In his right hand, on the left of the frame, he holds the old watch with the brown leather strap. From around 1 s, without stopping, his left hand slowly pulls the left side of the open jacket aside. Then his right hand rises to his chest, slips the watch with its strap into the inside pocket on the left side of the jacket and lets go; by around 3 s the watch is fully hidden. By around 4 s his empty right hand comes back out, the jacket falls back open as in the final image, and both hands swing freely with his steps until the end. The jacket stays open; he does not zip it.
+> The woman walks toward the camera at a steady pace the whole time, looking ahead past the camera. Her backpack hangs on her right shoulder. In her left hand, on the right of the frame, she holds two paper tickets, a blue one and a white one. From around 1 s, without stopping, her right hand pulls open the small pocket on the backpack strap at her chest. Then her left hand rises to the pocket, slips only the blue ticket inside and lowers again; by around 3 s the blue ticket is fully hidden. By around 4 s her right hand presses the pocket shut and drops, swinging freely with her steps until the end. The white ticket stays in her left hand, as in the final image; she does not put it away.
 >
-> A soft green light from off-screen, behind the camera, falls on his face, the wet jacket and the puddles; warm street lamp reflections tremble on the wet tiles. Heavy rain keeps falling.
+> Warm evening light from the platform lamps falls on her face and the backpack; the lamp reflections slide slowly across the train windows behind her.
 >
-> He is alive in every second of the shot, not a still image: steady breathing, natural blinking, slight tension in his jaw and brow, a small sway of the shoulders with each step. His lips stay closed, his face stays heavy and closed, with no relief.
+> She is alive in every second of the shot, not a still image: steady breathing, natural blinking, a small sway of the shoulders with each step. Her lips stay closed, her face calm and focused.
 
 Одна опора, неподвижная камера в интерьере днём (5 с). Приём: конечное состояние отдельным абзацем, единственная движущаяся среда названа, предметы разведены сторонами кадра:
 

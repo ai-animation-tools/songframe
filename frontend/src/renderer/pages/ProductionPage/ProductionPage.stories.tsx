@@ -1082,13 +1082,18 @@ export const AcceptedPlan: Story = {
 
 export const AcceptedPlanRecut: Story = {
   tags: ['ci'],
-  name: 'Принятый план · «Изменить участок» из оригинала комплекта с прежним участком',
+  name: 'Принятый план · «Изменить участок» у плеера принятого участка, из оригинала комплекта с прежним участком',
   parameters: { songframe: acceptedOptions({ acceptedKit: manualKit }) },
   play: async (context) => {
     const screen = screenOf(context);
     const dialogTexts = texts.acceptResultDialog;
     await expect(await screen.findByText(texts.acceptedKit.heading, {}, POLL_TIMEOUT)).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: texts.acceptedKit.recut }));
+    // Кнопка относится к принятому участку: стоит у его плеера рядом с «Взять текущий кадр», а не у оригинала.
+    const recut = screen.getByRole('button', { name: texts.acceptedKit.recut });
+    const accepted = screen.getByText(texts.productionShotCard.acceptedVideo).closest('.MuiChip-root')!.parentElement!;
+    await expect(within(accepted).getByRole('button', { name: texts.acceptedKit.recut })).toBe(recut);
+    await expect(within(recut.parentElement!).getByRole('button', { name: texts.acceptedKit.takeFrame })).toBeInTheDocument();
+    await userEvent.click(recut);
     const dialog = within(await screen.findByRole('dialog'));
     await expect(dialog.getByText(dialogTexts.recutTitle({ shot: 'M01' }))).toBeInTheDocument();
     // Окно открыто с прежним участком комплекта; выбора «целиком» и согласия на замену нет.

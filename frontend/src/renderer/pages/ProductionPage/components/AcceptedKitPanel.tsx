@@ -6,7 +6,7 @@
  * (с переводом — оба варианта переключателем, «Скопировать» копирует показанный) и срез речи. Сведения читает Go
  * (production.acceptedKit) при показе; новая попытка возвращает обычный путь шагов. У своего видео опоры и промпт есть, только если их указали при загрузке; тогда они
  * показываются так же, как у генерации, а пустой промпт не показывается. «Открыть папку» показывает папку комплекта
- * в файловом менеджере ОС. «Изменить участок» открывает окно приёмки с прежним участком: тот же оригинал
+ * в файловом менеджере ОС. «Изменить участок» у плеера «Принятый участок» открывает окно приёмки с прежним участком: тот же оригинал
  * комплекта принимается заново с другими границами, скоростью и удержаниями. «Взять текущий кадр» рядом с «На весь экран»
  * плеера «Принятый участок» сохраняет кадр, на котором стоит этот плеер, в PNG полного размера вне клипа
  * (production.takeFrame): кадр берётся из видео без эффектов; после сохранения — путь и «Открыть папку» с кадрами клипа.
@@ -124,6 +124,20 @@ export function AcceptedKitPanel({
   };
   const shownFrame = taken?.shot === shot.id ? taken : null;
 
+  // «Изменить участок» относится к принятому участку и стоит у его плеера рядом с «Взять текущий кадр».
+  const recutButton = onRecut ? (
+    <ActionButton
+      size="small"
+      startIcon={<ContentCutIcon />}
+      title={texts.recutHint}
+      disabled={busy || !shot.asset.edit?.sourceInterval || !shot.asset.original}
+      disabledReason={busy ? (busyReason ?? null) : texts.recutUnavailable}
+      onClick={onRecut}
+    >
+      {texts.recut}
+    </ActionButton>
+  ) : null;
+
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
       <Stack spacing={2}>
@@ -135,33 +149,23 @@ export function AcceptedKitPanel({
           title={null}
           onAcceptedVideo={setPlayer}
           acceptedActions={
-            <ActionButton
-              size="small"
-              startIcon={<PhotoCameraIcon />}
-              title={texts.takeFrameHint}
-              disabled={!edit || !shot.asset.video || !player || taking}
-              disabledReason={taking ? texts.takeFrameBusy : texts.takeFrameNoVideo}
-              onClick={() => void takeFrame()}
-            >
-              {texts.takeFrame}
-            </ActionButton>
+            <>
+              <ActionButton
+                size="small"
+                startIcon={<PhotoCameraIcon />}
+                title={texts.takeFrameHint}
+                disabled={!edit || !shot.asset.video || !player || taking}
+                disabledReason={taking ? texts.takeFrameBusy : texts.takeFrameNoVideo}
+                onClick={() => void takeFrame()}
+              >
+                {texts.takeFrame}
+              </ActionButton>
+              {recutButton}
+            </>
           }
         />
-        <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
-          {onRecut ? (
-            <ActionButton
-              size="small"
-              variant="outlined"
-              startIcon={<ContentCutIcon />}
-              title={texts.recutHint}
-              disabled={busy || !shot.asset.edit?.sourceInterval || !shot.asset.original}
-              disabledReason={busy ? (busyReason ?? null) : texts.recutUnavailable}
-              onClick={onRecut}
-            >
-              {texts.recut}
-            </ActionButton>
-          ) : null}
-        </Stack>
+        {/* Без принятого видео нет плеера: «Изменить участок» остаётся способом собрать его заново из оригинала. */}
+        {shot.asset.video || !recutButton ? null : <Box>{recutButton}</Box>}
         {shownFrame ? (
           <Alert
             severity="success"

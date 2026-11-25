@@ -43,6 +43,7 @@
           ],
           "stillAt": null,
           "speed": "1",
+          "speedParts": [],
           "holdFirst": 0,
           "holdLast": 0,
           "note": ""
@@ -185,6 +186,7 @@
           ],
           "stillAt": null,
           "speed": "1",
+          "speedParts": [],
           "holdFirst": 0,
           "holdLast": 0,
           "note": ""

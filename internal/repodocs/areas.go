@@ -94,7 +94,7 @@ var Areas = []Area{
 	},
 	{
 		Title: "Производство и приёмка",
-		Docs:  []string{"docs/production-workflow.md", "docs/agent-image-limits.md"},
+		Docs:  []string{"docs/production-workflow.md"},
 		Packages: []string{
 			"internal/production", "internal/productionworkflow", "internal/shotworkflow",
 			"internal/shotstatus", "internal/regenerateshot", "internal/requestsnapshot",
@@ -104,7 +104,10 @@ var Areas = []Area{
 			"internal/checkworkspace", "internal/tools",
 		},
 		Pages: []string{"ProductionPage", "ScenesPage", "ChecksPage"},
-		Paths: []string{"resources/skills/ai-clip-scene", "resources/skills/ai-clip-video-review"},
+		Paths: []string{
+			"resources/skills/ai-clip-scene", "resources/skills/ai-clip-video-review",
+			"frontend/src/shared/production-workflow.ts", "frontend/src/shared/production-labels.ts",
+		},
 	},
 	{
 		Title: "Аниматик и монтаж",
@@ -116,11 +119,12 @@ var Areas = []Area{
 			"internal/exportbundle", "internal/builtoutput", "internal/effects", "internal/shoteffects",
 		},
 		Pages: []string{"AnimaticPage", "MontagePage", "MontagePlayerPage", "EffectsPage"},
+		Paths: []string{"frontend/src/shared/effects.ts", "frontend/src/shared/montage.ts", "frontend/src/shared/derived-shot.ts"},
 	},
 	{
 		Title: "Агенты и провайдеры медиа",
 		Docs: []string{
-			"docs/agents.md", "docs/development.md#агенты-и-провайдеры-медиа",
+			"docs/agents.md", "docs/agent-image-limits.md", "docs/development.md#агенты-и-провайдеры-медиа",
 			"resources/providers/README.md", "resources/skills/README.md",
 		},
 		Packages: []string{

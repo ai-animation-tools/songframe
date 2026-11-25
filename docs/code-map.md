@@ -138,7 +138,7 @@
 
 ## Производство и приёмка
 
-Документы: [docs/production-workflow.md](production-workflow.md), [docs/agent-image-limits.md](agent-image-limits.md).
+Документы: [docs/production-workflow.md](production-workflow.md).
 
 | Пакет | Назначение |
 | --- | --- |
@@ -169,7 +169,7 @@
 | [`ScenesPage`](../frontend/src/renderer/pages/ScenesPage/ScenesPage.tsx) | Дашборд сцен: сводка, шкала, сетка карточек и подробности плана — постановка и состояние до и после. |
 | [`ChecksPage`](../frontend/src/renderer/pages/ChecksPage/ChecksPage.tsx) | Панель проверок: инструменты комплекса, проба стыков и текущие результаты. |
 
-Ещё: [`resources/skills/ai-clip-scene`](../resources/skills/ai-clip-scene), [`resources/skills/ai-clip-video-review`](../resources/skills/ai-clip-video-review).
+Ещё: [`resources/skills/ai-clip-scene`](../resources/skills/ai-clip-scene), [`resources/skills/ai-clip-video-review`](../resources/skills/ai-clip-video-review), [`frontend/src/shared/production-workflow.ts`](../frontend/src/shared/production-workflow.ts), [`frontend/src/shared/production-labels.ts`](../frontend/src/shared/production-labels.ts).
 
 ## Аниматик и монтаж
 
@@ -188,8 +188,8 @@
 | [`internal/deriveshot`](../internal/deriveshot) | Локально собирает производный план из принятого клипа другого плана без платной генерации и принимает показанные байты (инструмент derive_shot). |
 | [`internal/exportbundle`](../internal/exportbundle) | Собирает пакет для монтажёра из сценария, манифестов комплектов и разметки песни (инструмент export_edit_bundle). |
 | [`internal/builtoutput`](../internal/builtoutput) | Задаёт границы удаления готовых результатов: удалять можно только обычные папки и файлы непосредственно в plan/batches выбранного проекта. |
-| [`internal/effects`](../internal/effects) | Библиотека локальных эффектов кадра: сборка плана из опор-состояний и эффекты поверх кадров (дождь, свет, зерно). |
-| [`internal/shoteffects`](../internal/shoteffects) | Эффекты поверх принятого плана (дождь, свет, зерно из internal/effects): рецепт и производный ролик плана рядом с комплектом и единственная точка выбора видео плана для монтажа. |
+| [`internal/effects`](../internal/effects) | Библиотека локальных эффектов кадра: сборка плана из опор-состояний, эффекты поверх кадров (дождь, свет, зерно) и реверс — перестановка кадров принятого видео. |
+| [`internal/shoteffects`](../internal/shoteffects) | Эффекты поверх принятого плана (дождь, свет, зерно и реверс из internal/effects): рецепт и производный ролик плана рядом с комплектом и единственная точка выбора видео плана для монтажа. |
 
 | Страница | Назначение |
 | --- | --- |
@@ -198,9 +198,11 @@
 | [`MontagePlayerPage`](../frontend/src/renderer/pages/MontagePlayerPage/MontagePlayerPage.tsx) | Отдельное окно воспроизводит несохранённый монтаж из основного окна, не создавая второй черновик. |
 | [`EffectsPage`](../frontend/src/renderer/pages/EffectsPage/EffectsPage.tsx) | Страница «Эффекты» раскладкой как у «Монтажа пробы»: выбранный принятый план занимает экран — закреплённая панель с превью кадра «до» и «после» (или ролика), общей шкалой плана и действиями, под ней цепочка эффектов (дождь, свет, зерно и др.) с параметрами. |
 
+Ещё: [`frontend/src/shared/effects.ts`](../frontend/src/shared/effects.ts), [`frontend/src/shared/montage.ts`](../frontend/src/shared/montage.ts), [`frontend/src/shared/derived-shot.ts`](../frontend/src/shared/derived-shot.ts).
+
 ## Агенты и провайдеры медиа
 
-Документы: [docs/agents.md](agents.md), [docs/development.md#агенты-и-провайдеры-медиа](development.md#агенты-и-провайдеры-медиа), [resources/providers/README.md](../resources/providers/README.md), [resources/skills/README.md](../resources/skills/README.md).
+Документы: [docs/agents.md](agents.md), [docs/agent-image-limits.md](agent-image-limits.md), [docs/development.md#агенты-и-провайдеры-медиа](development.md#агенты-и-провайдеры-медиа), [resources/providers/README.md](../resources/providers/README.md), [resources/skills/README.md](../resources/skills/README.md).
 
 | Пакет | Назначение |
 | --- | --- |

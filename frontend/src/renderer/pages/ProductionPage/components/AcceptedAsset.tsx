@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactElement } from 'react';
 import { Alert, Box, Chip, Typography } from '@mui/material';
 import type { AssetEdit, ShotProduction } from '@shared/types';
 import { VideoPlayer } from '../../../components/VideoPlayer';
+import { ratioDecimal } from '@shared/video';
 
 const recipeTexts = productionTexts.productionShotCard.recipe;
 
@@ -19,7 +20,15 @@ export function acceptedCaption(edit: AssetEdit, size: { width: number; height: 
       : edit.sourceInterval
         ? recipeTexts.interval({ start: edit.sourceInterval[0].toFixed(2), end: edit.sourceInterval[1].toFixed(2) })
         : recipeTexts.wholeOriginal,
-    edit.speed && edit.speed !== '1' ? recipeTexts.speed({ speed: edit.speed }) : null,
+    edit.speedParts.length
+      ? recipeTexts.speedParts({
+          parts: edit.speedParts
+            .map((part) => recipeTexts.speedPart({ speed: ratioDecimal(part.speed), start: part.start.toFixed(2), end: part.end.toFixed(2) }))
+            .join(', ')
+        })
+      : edit.speed && edit.speed !== '1'
+        ? recipeTexts.speed({ speed: edit.speed })
+        : null,
     edit.holdFirst ? recipeTexts.holdFirst({ duration: edit.holdFirst }) : null,
     edit.holdLast ? recipeTexts.holdLast({ duration: edit.holdLast }) : null
   ]

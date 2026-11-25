@@ -75,6 +75,17 @@ export function assertDeliveryAcceptOptions(options: AcceptOptions): void {
   const start = frame(options.cutStart);
   const end = frame(options.cutEnd);
   if (end <= start) throw new Error(productionTexts.main.package.acceptEndInvalid);
+  // Части скорости, как их проверяет Go: не меньше двух, концы на кадрах по возрастанию, последний — конец участка.
+  if (options.speedParts) {
+    let from = start;
+    for (const part of options.speedParts) {
+      const to = frame(part.end);
+      if (to <= from) throw new Error('Скорость по частям: концы частей по возрастанию внутри участка.');
+      from = to;
+    }
+    if (options.speedParts.length < 2 || from !== end || options.speed !== undefined)
+      throw new Error('Скорость по частям: не меньше двух частей, последняя кончается концом участка, без общей скорости.');
+  }
 }
 
 export function deliveryJob(kind: JobInfo['kind'], overrides: Partial<JobInfo> = {}): JobInfo {

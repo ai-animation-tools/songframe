@@ -1004,7 +1004,18 @@ const acceptedOptions = (model: Partial<ProductionPageModelOptions> = {}, extra:
             video: '/mock/story-derived-source-150.mp4',
             original: STORY_VIDEO_PATH,
             originalMedia: '1904×1072, 30/1 FPS, кадров: 120, 4.00 с',
-            edit: { fps: 30, frames: 102, duration: 3.4, sourceInterval: [0, 3.4], stillAt: null, speed: '1', holdFirst: 0, holdLast: 0, note: '' }
+            edit: {
+              fps: 30,
+              frames: 102,
+              duration: 3.4,
+              sourceInterval: [0, 3.4],
+              stillAt: null,
+              speed: '1',
+              speedParts: [],
+              holdFirst: 0,
+              holdLast: 0,
+              note: ''
+            }
           }
         })
       ]

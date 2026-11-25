@@ -7,12 +7,17 @@ import FitScreenIcon from '@mui/icons-material/FitScreen';
  * (счёт тот же, что у Go, — cutResultFrames), чтобы несовпадение было видно до «Принять».
  * «Подогнать конец под окно» подставляет конец, при котором план совпадёт с окном (fitCutEnd).
  * «Показать участок под песню» собирает участок так, как его примет приёмка (CutPreviewPanel).
+ * «Скорость по частям» заменяет одну скорость частями со своими скоростями: концы частей — секунды
+ * оригинала, последняя часть кончается концом участка и следует за ним; итог и подгонка конца
+ * считают части по отдельности (partsResultFrames), подгонка двигает конец последней части.
  */
 import type { ReactElement } from 'react';
-import { Alert, Box, Checkbox, FormControlLabel, MenuItem, Stack, TextField } from '@mui/material';
-import type { AcceptOptions, CutPreview } from '@shared/types';
+import { Alert, Box, Checkbox, FormControlLabel, IconButton, MenuItem, Stack, Switch, TextField, Tooltip, Typography } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import type { AcceptOptions, AcceptSpeedPart, CutPreview } from '@shared/types';
 import type { AcceptTarget } from '../decisions';
-import { cutFrameOf, cutResultFrames, cutSeconds, DEFAULT_FPS, fitCutEnd } from '@shared/video';
+import { cutFrameOf, cutResultFrames, cutSeconds, DEFAULT_FPS, fitCutEnd, partsResultFrames } from '@shared/video';
 import { ActionButton } from '../../../components/ActionButton';
 import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 import { CutPreviewPanel } from './CutPreviewPanel';
@@ -54,16 +59,52 @@ export function AcceptResultDialog({
     const text = (index: number): string => String(cutSeconds(index, fps)).replace('.', ',');
     return { helperText: productionTexts.acceptResultDialog.cutBetween({ before: text(before), after: text(before + 1) }), error: true };
   };
+  // Части скорости: последняя часть всегда кончается концом участка.
+  const parts: AcceptSpeedPart[] | null = options.speedParts?.length
+    ? options.speedParts.map((part, index, list) => (index === list.length - 1 ? { ...part, end: options.cutEnd ?? 0 } : part))
+    : null;
+  const withParts = (next: AcceptSpeedPart[]): AcceptOptions => ({ ...options, speed: undefined, speedParts: next });
+  const setCutEnd = (end: number): AcceptOptions =>
+    parts
+      ? { ...options, cutEnd: end, speedParts: parts.map((part, index) => (index === parts.length - 1 ? { ...part, end } : part)) }
+      : { ...options, cutEnd: end };
+  const partFrames = (list: AcceptSpeedPart[]) => list.map((part) => ({ endFrame: cutFrameOf(part.end, fps), speed: part.speed }));
+  // Включение частей делит участок пополам с прежней скоростью; выключение оставляет скорость первой части.
+  const toggleParts = (on: boolean): void => {
+    if (!on) {
+      onOptions({ ...options, speed: parts?.[0]?.speed ?? '1', speedParts: undefined });
+      return;
+    }
+    const start = cutFrameOf(options.cutStart ?? 0, fps) ?? 0;
+    const end = cutFrameOf(options.cutEnd ?? 0, fps) ?? start;
+    const speed = options.speed ?? '1';
+    onOptions(
+      withParts([
+        { end: cutSeconds(Math.floor((start + end) / 2), fps), speed },
+        { end: options.cutEnd ?? 0, speed }
+      ])
+    );
+  };
+  // Новая часть делит последнюю пополам; у неё та же скорость.
+  const addPart = (): void => {
+    if (!parts) return;
+    const last = parts[parts.length - 1];
+    const from = cutFrameOf(parts.length > 1 ? parts[parts.length - 2].end : (options.cutStart ?? 0), fps) ?? 0;
+    const to = cutFrameOf(last.end, fps) ?? from;
+    onOptions(withParts([...parts.slice(0, -1), { end: cutSeconds(Math.floor((from + to) / 2), fps), speed: last.speed }, last]));
+  };
   // Итог участка, как его посчитает Go: сколько кадров получится в плане и совпадает ли с окном.
   const result = (): { severity: 'success' | 'warning' | 'info' | 'error'; text: string } => {
     const texts = productionTexts.acceptResultDialog;
-    const frames = cutResultFrames(
-      cutFrameOf(options.cutStart ?? 0, fps),
-      cutFrameOf(options.cutEnd ?? 0, fps),
-      options.speed ?? '1',
-      options.holdFirst ?? 0,
-      options.holdLast ?? 0
-    );
+    const frames = parts
+      ? partsResultFrames(cutFrameOf(options.cutStart ?? 0, fps), partFrames(parts), options.holdFirst ?? 0, options.holdLast ?? 0)
+      : cutResultFrames(
+          cutFrameOf(options.cutStart ?? 0, fps),
+          cutFrameOf(options.cutEnd ?? 0, fps),
+          options.speed ?? '1',
+          options.holdFirst ?? 0,
+          options.holdLast ?? 0
+        );
     if (frames === null) return { severity: 'error', text: texts.cutResultInvalid };
     const length = { frames, seconds: seconds(frames) };
     const window = target?.windowFrames;
@@ -78,16 +119,21 @@ export function AcceptResultDialog({
   const fit = (): { end: number; reason: null } | { end: null; reason: string } => {
     const texts = productionTexts.acceptResultDialog;
     if (!target?.windowFrames) return { end: null, reason: texts.fitEndNoWindow };
-    const fitted = fitCutEnd(
-      cutFrameOf(options.cutStart ?? 0, fps),
-      options.speed ?? '1',
-      target.windowFrames,
-      options.holdFirst ?? 0,
-      options.holdLast ?? 0,
-      target.originalFrames
-    );
+    // С частями подгоняется последняя часть: окну остаётся то, что не заняли предыдущие части.
+    let from = cutFrameOf(options.cutStart ?? 0, fps);
+    let speed = options.speed ?? '1';
+    let window = target.windowFrames;
+    if (parts) {
+      const before = parts.slice(0, -1);
+      const taken = before.length > 1 ? partsResultFrames(from, partFrames(before)) : cutResultFrames(from, cutFrameOf(before[0].end, fps), before[0].speed);
+      if (taken === null) return { end: null, reason: texts.fitEndInvalid };
+      from = cutFrameOf(before[before.length - 1].end, fps);
+      speed = parts[parts.length - 1].speed;
+      window -= taken;
+    }
+    const fitted = fitCutEnd(from, speed, window, options.holdFirst ?? 0, options.holdLast ?? 0, target.originalFrames);
     if ('endFrame' in fitted) return { end: cutSeconds(fitted.endFrame, fps), reason: null };
-    if (fitted.reason === 'holdsTooLong') return { end: null, reason: texts.fitEndHolds };
+    if (fitted.reason === 'holdsTooLong') return { end: null, reason: parts ? texts.fitEndParts : texts.fitEndHolds };
     if (fitted.reason === 'originalTooShort')
       return { end: null, reason: texts.fitEndOriginal({ needed: seconds(fitted.neededFrames), original: seconds(target.originalFrames) }) };
     return { end: null, reason: texts.fitEndInvalid };
@@ -100,7 +146,7 @@ export function AcceptResultDialog({
           mode: 'cut',
           cutStart: options.cutStart,
           cutEnd: options.cutEnd,
-          speed: options.speed ?? '1',
+          ...(parts ? { speedParts: parts } : { speed: options.speed ?? '1' }),
           holdFirst: options.holdFirst ?? 0,
           holdLast: options.holdLast ?? 0
         }
@@ -165,7 +211,11 @@ export function AcceptResultDialog({
             size="small"
             label={productionTexts.acceptResultDialog.section}
             value={options.mode}
-            onChange={(e) => onOptions({ ...options, mode: e.target.value as AcceptOptions['mode'] })}
+            onChange={(e) => {
+              const mode = e.target.value as AcceptOptions['mode'];
+              // Оригинал целиком берётся без изменения скорости: части к нему не относятся.
+              onOptions(mode === 'full' ? { ...options, mode, speed: parts?.[0]?.speed ?? options.speed, speedParts: undefined } : { ...options, mode });
+            }}
           >
             <MenuItem value="full" disabled={mismatch}>
               {productionTexts.acceptResultDialog.full}
@@ -190,18 +240,20 @@ export function AcceptResultDialog({
               type="number"
               label={productionTexts.acceptResultDialog.cutEnd}
               value={options.cutEnd}
-              onChange={(e) => onOptions({ ...options, cutEnd: thousandths(e.target.value) })}
+              onChange={(e) => onOptions(setCutEnd(thousandths(e.target.value)))}
               inputProps={{ step: 1 / fps }}
               {...boundary(options.cutEnd ?? 0)}
             />
-            <TextField
-              size="small"
-              label={productionTexts.acceptResultDialog.speed}
-              value={options.speed}
-              // Запятая — привычная русская запись дроби; Go разбирает множитель только с точкой.
-              onChange={(e) => onOptions({ ...options, speed: e.target.value.replace(',', '.') })}
-              helperText={productionTexts.acceptResultDialog.speedHint}
-            />
+            {parts ? null : (
+              <TextField
+                size="small"
+                label={productionTexts.acceptResultDialog.speed}
+                value={options.speed}
+                // Запятая — привычная русская запись дроби; Go разбирает множитель только с точкой.
+                onChange={(e) => onOptions({ ...options, speed: e.target.value.replace(',', '.') })}
+                helperText={productionTexts.acceptResultDialog.speedHint}
+              />
+            )}
             <TextField
               size="small"
               type="number"
@@ -220,6 +272,76 @@ export function AcceptResultDialog({
             />
           </Box>
         ) : null}
+        {options.mode === 'cut' ? (
+          <Box>
+            <FormControlLabel
+              control={<Switch checked={!!parts} onChange={(event) => toggleParts(event.target.checked)} />}
+              label={productionTexts.acceptResultDialog.speedParts}
+            />
+            <Typography variant="body2" color="text.secondary">
+              {productionTexts.acceptResultDialog.speedPartsHint}
+            </Typography>
+            {parts ? (
+              <Stack spacing={1} sx={{ mt: 1 }} data-testid="accept-speed-parts">
+                {parts.map((part, index) => {
+                  const last = index === parts.length - 1;
+                  const texts = productionTexts.acceptResultDialog;
+                  return (
+                    <Stack key={index} direction="row" spacing={1} sx={{ alignItems: 'flex-start' }}>
+                      {last ? (
+                        <Typography variant="body2" color="text.secondary" sx={{ flex: '1 1 0', minWidth: 0, pt: 1 }}>
+                          {texts.partLast({ end: String(part.end).replace('.', ',') })}
+                        </Typography>
+                      ) : (
+                        <TextField
+                          size="small"
+                          type="number"
+                          label={texts.partEnd({ index: index + 1 })}
+                          value={part.end}
+                          onChange={(e) => onOptions(withParts(parts.map((item, at) => (at === index ? { ...item, end: thousandths(e.target.value) } : item))))}
+                          inputProps={{ step: 1 / fps }}
+                          sx={{ flex: '1 1 0' }}
+                          {...boundary(part.end)}
+                        />
+                      )}
+                      <TextField
+                        size="small"
+                        label={texts.partSpeed({ index: index + 1 })}
+                        value={part.speed}
+                        onChange={(e) =>
+                          onOptions(withParts(parts.map((item, at) => (at === index ? { ...item, speed: e.target.value.replace(',', '.') } : item))))
+                        }
+                        helperText={texts.speedHint}
+                        sx={{ flex: '1 1 0' }}
+                      />
+                      <Tooltip title={parts.length > 2 ? texts.removePart({ index: index + 1 }) : texts.partsMinimum}>
+                        <span>
+                          <IconButton
+                            aria-label={texts.removePart({ index: index + 1 })}
+                            disabled={parts.length <= 2}
+                            onClick={() => {
+                              // Убранная часть отдаёт свой отрезок следующей; у последней конец переходит предыдущей.
+                              const next = parts.filter((_, at) => at !== index);
+                              if (last) next[next.length - 1] = { ...next[next.length - 1], end: part.end };
+                              onOptions(withParts(next));
+                            }}
+                          >
+                            <DeleteOutlineIcon />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    </Stack>
+                  );
+                })}
+                <Box>
+                  <ActionButton size="small" startIcon={<AddIcon />} title={productionTexts.acceptResultDialog.addPartHint} onClick={addPart}>
+                    {productionTexts.acceptResultDialog.addPart}
+                  </ActionButton>
+                </Box>
+              </Stack>
+            ) : null}
+          </Box>
+        ) : null}
         {fitted ? (
           <Box>
             <ActionButton
@@ -229,7 +351,7 @@ export function AcceptResultDialog({
               title={productionTexts.acceptResultDialog.fitEndHint}
               disabled={fitted.end === null}
               disabledReason={fitted.reason}
-              onClick={() => fitted.end !== null && onOptions({ ...options, cutEnd: fitted.end })}
+              onClick={() => fitted.end !== null && onOptions(setCutEnd(fitted.end))}
             >
               {productionTexts.acceptResultDialog.fitEnd}
             </ActionButton>

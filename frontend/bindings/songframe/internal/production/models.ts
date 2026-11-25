@@ -22,8 +22,23 @@ export interface AcceptOptions {
     "cutStart"?: number | null;
     "cutEnd"?: number | null;
     "speed"?: string;
+
+    /**
+     * SpeedParts — скорость по частям участка вместо Speed: конец каждой части в секундах
+     * оригинала (кадр сетки проекта) и её скорость; последняя часть кончается концом участка.
+     */
+    "speedParts"?: AcceptSpeedPart[];
     "holdFirst"?: number;
     "holdLast"?: number;
+}
+
+/**
+ * AcceptSpeedPart — часть участка со своей скоростью: конец в секундах оригинала и скорость
+ * десятичной строкой, как AcceptOptions.Speed.
+ */
+export interface AcceptSpeedPart {
+    "end": number;
+    "speed": string;
 }
 
 /**
@@ -145,9 +160,24 @@ export interface AssetEdit {
     "sourceInterval": json$0.RawMessage;
     "stillAt": json$0.RawMessage;
     "speed": json$0.RawMessage;
+
+    /**
+     * SpeedParts — части скорости участка (accepted_edit.speed.parts); пусто — одна скорость Speed.
+     */
+    "speedParts": AssetSpeedPart[];
     "holdFirst": number;
     "holdLast": number;
     "note": json$0.RawMessage;
+}
+
+/**
+ * AssetSpeedPart — часть принятого участка: секунды оригинала [start, end) и скорость точной
+ * дробью, как записана в манифесте (ratio, например «3/4»).
+ */
+export interface AssetSpeedPart {
+    "start": number;
+    "end": number;
+    "speed": string;
 }
 
 /**

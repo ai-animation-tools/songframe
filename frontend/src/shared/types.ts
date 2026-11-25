@@ -898,6 +898,8 @@ export interface AssetEdit {
   sourceInterval: [number, number] | null;
   stillAt: number | null;
   speed: string;
+  /** Части скорости участка: секунды оригинала и скорость точной дробью; пусто — одна скорость speed. */
+  speedParts: { start: number; end: number; speed: string }[];
   holdFirst: number;
   holdLast: number;
   note: string;
@@ -1139,8 +1141,19 @@ export interface AcceptOptions {
   cutStart?: number;
   cutEnd?: number;
   speed?: string;
+  /**
+   * Скорость по частям участка вместо speed: конец каждой части в секундах оригинала (кадр сетки
+   * проекта) и её скорость; последняя часть кончается концом участка.
+   */
+  speedParts?: AcceptSpeedPart[];
   holdFirst?: number;
   holdLast?: number;
+}
+
+/** Часть участка со своей скоростью: конец в секундах оригинала и скорость десятичной дробью. */
+export interface AcceptSpeedPart {
+  end: number;
+  speed: string;
 }
 
 export interface ExportBundleOptions {

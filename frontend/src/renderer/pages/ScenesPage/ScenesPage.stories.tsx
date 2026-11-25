@@ -55,7 +55,7 @@ function acceptedShot(index: number): DashboardShot {
       video: STORY_VIDEO_PATH,
       original: STORY_VIDEO_PATH,
       originalMedia: '1280×720, 24 кадр/с',
-      edit: { fps: 30, frames: 120, duration: 5, sourceInterval: [0.5, 5.5], stillAt: null, speed: '1', holdFirst: 0, holdLast: 0, note: '' },
+      edit: { fps: 30, frames: 120, duration: 5, sourceInterval: [0.5, 5.5], stillAt: null, speed: '1', speedParts: [], holdFirst: 0, holdLast: 0, note: '' },
       prompt: null,
       request: null,
       inputs: [],

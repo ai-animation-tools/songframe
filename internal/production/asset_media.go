@@ -18,9 +18,35 @@ type AssetEdit struct {
 	SourceInterval json.RawMessage `json:"sourceInterval"`
 	StillAt        json.RawMessage `json:"stillAt"`
 	Speed          json.RawMessage `json:"speed"`
-	HoldFirst      float64         `json:"holdFirst"`
-	HoldLast       float64         `json:"holdLast"`
-	Note           json.RawMessage `json:"note"`
+	// SpeedParts — части скорости участка (accepted_edit.speed.parts); пусто — одна скорость Speed.
+	SpeedParts []AssetSpeedPart `json:"speedParts"`
+	HoldFirst  float64          `json:"holdFirst"`
+	HoldLast   float64          `json:"holdLast"`
+	Note       json.RawMessage  `json:"note"`
+}
+
+// AssetSpeedPart — часть принятого участка: секунды оригинала [start, end) и скорость точной
+// дробью, как записана в манифесте (ratio, например «3/4»).
+type AssetSpeedPart struct {
+	Start float64 `json:"start"`
+	End   float64 `json:"end"`
+	Speed string  `json:"speed"`
+}
+
+// assetSpeedParts — части скорости accepted_edit в секундах при частоте fps; пропускает записи
+// без интервала или дроби.
+func assetSpeedParts(speed any, fps float64) []AssetSpeedPart {
+	result := []AssetSpeedPart{}
+	parts, _ := dynvalue.AsArray(dynvalue.Get(speed, "parts"))
+	for _, part := range parts {
+		interval, _ := dynvalue.AsArray(dynvalue.Get(part, "source_frame_interval_exclusive"))
+		ratio, ok := dynvalue.Get(part, "ratio").(string)
+		if len(interval) != 2 || !ok || fps <= 0 {
+			continue
+		}
+		result = append(result, AssetSpeedPart{Start: dynvalue.ToNumber(interval[0]) / fps, End: dynvalue.ToNumber(interval[1]) / fps, Speed: ratio})
+	}
+	return result
 }
 
 // textOriginalMedia — подпись параметров оригинала генерации по сведениям ffprobe из манифеста.
@@ -79,6 +105,7 @@ func AssetMedia(manifest any, fps float64) (*string, AssetEdit) {
 		SourceInterval: rawValue(dynvalue.Coalesce(dynvalue.Get(edit, "source_interval_seconds"), nil)),
 		StillAt:        rawValue(dynvalue.Coalesce(dynvalue.Get(edit, "still_source_time_seconds"), nil)),
 		Speed:          rawValue(speedValue),
+		SpeedParts:     assetSpeedParts(speed, editFps),
 		HoldFirst:      dynvalue.ToNumber(dynvalue.Coalesce(dynvalue.Get(edit, "hold_first_seconds"), 0.0)),
 		HoldLast:       dynvalue.ToNumber(dynvalue.Coalesce(dynvalue.Get(edit, "hold_last_seconds"), 0.0)),
 		Note:           rawValue(dynvalue.Coalesce(dynvalue.Get(edit, "processing_note"), "")),

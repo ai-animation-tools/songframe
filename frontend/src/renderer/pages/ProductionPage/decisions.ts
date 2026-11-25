@@ -3,7 +3,7 @@ import { productionTexts } from '@shared/texts/production';
 import type { Api } from '@shared/api';
 import { attemptLabel } from './planPath';
 import type { AcceptOptions, JobInfo, PackageView, ProductionView, ResultMedia, ShotProduction } from '@shared/types';
-import { cutSeconds } from '@shared/video';
+import { cutSeconds, ratioDecimal } from '@shared/video';
 
 export function decisionNoteKey(pkg: PackageView): string {
   return `${pkg.dir}\0${pkg.decisionToken ?? JSON.stringify(pkg.pendingDecision)}`;
@@ -96,7 +96,8 @@ export function recutTargetFor(shot: ShotProduction, fps: number): AcceptTarget 
   return { shot: shot.id, dir: shot.asset?.dir ?? '', fps, windowFrames: Math.round((shot.end - shot.start) * fps) };
 }
 
-/** Прежний участок принятого плана (accepted_edit): границы на кадрах до тысячных, скорость, удержания в кадрах.
+/** Прежний участок принятого плана (accepted_edit): границы на кадрах до тысячных, скорость (или части скорости)
+ * десятичной дробью, как её вводят в окне, удержания в кадрах. Манифест хранит скорость точной дробью («9/10»).
  * null — у комплекта нет участка оригинала (план не из видео или собран из опор). */
 export function recutOptionsFor(shot: ShotProduction, fps: number): AcceptOptions | null {
   const edit = shot.asset?.edit;
@@ -106,7 +107,9 @@ export function recutOptionsFor(shot: ShotProduction, fps: number): AcceptOption
     mode: 'cut',
     cutStart: cutSeconds(Math.round(start * fps), fps),
     cutEnd: cutSeconds(Math.round(end * fps), fps),
-    speed: edit.speed || '1',
+    ...(edit.speedParts.length > 1
+      ? { speedParts: edit.speedParts.map((part) => ({ end: cutSeconds(Math.round(part.end * fps), fps), speed: ratioDecimal(part.speed) })) }
+      : { speed: ratioDecimal(edit.speed || '1') }),
     holdFirst: Math.round(edit.holdFirst * fps),
     holdLast: Math.round(edit.holdLast * fps)
   };

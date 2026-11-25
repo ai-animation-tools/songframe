@@ -3,12 +3,14 @@
 
 export type {
     AcceptOptions,
+    AcceptSpeedPart,
     AcceptedFrame,
     AcceptedImage,
     AcceptedKit,
     AcceptedSpeech,
     Asset,
     AssetEdit,
+    AssetSpeedPart,
     Bounds,
     Broken,
     Bundle,

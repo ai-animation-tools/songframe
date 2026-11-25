@@ -124,6 +124,49 @@ export const HoldFirstFitEnd: Story = {
     await expect(submitted).toHaveTextContent('"cutEnd":3.2');
   }
 };
+export const SpeedParts: Story = {
+  tags: ['ci'],
+  name: 'Скорость по частям · медленное начало, подгонка конца, добавить и убрать часть',
+  play: async ({ canvasElement }) => {
+    const dialog = await open(canvasElement);
+    const result = (): HTMLElement => dialog.getByTestId('accept-cut-result');
+    const fit = (): HTMLElement => dialog.getByRole('button', { name: texts.fitEnd });
+    await userEvent.click(dialog.getByRole('switch', { name: texts.speedParts }));
+    // Включение делит участок 0–5 с пополам с прежней скоростью: одна общая скорость уходит.
+    await expect(dialog.queryByRole('textbox', { name: texts.speed })).not.toBeInTheDocument();
+    const firstEnd = dialog.getByRole('spinbutton', { name: texts.partEnd({ index: 1 }) });
+    await expect(firstEnd).toHaveValue(2.5);
+    await expect(dialog.getByText(texts.partLast({ end: '5' }))).toBeInTheDocument();
+    await expect(result()).toHaveTextContent(texts.cutResultFit({ frames: 150, seconds: '5,00' }));
+    // Первая секунда вдвое медленнее: 60 кадров, остальное 4 с — 120, всего 180 при окне 150.
+    await userEvent.clear(firstEnd);
+    await userEvent.type(firstEnd, '1');
+    const firstSpeed = dialog.getByRole('textbox', { name: texts.partSpeed({ index: 1 }) });
+    await userEvent.clear(firstSpeed);
+    await userEvent.type(firstSpeed, '0,5');
+    await expect(result()).toHaveTextContent(texts.cutResultLong({ frames: 180, window: 150, extra: 30 }));
+    // Подгонка двигает конец последней части: окну остаётся 90 кадров после 60 медленных.
+    await userEvent.click(fit());
+    await expect(dialog.getByRole('spinbutton', { name: texts.cutEnd })).toHaveValue(4);
+    await expect(dialog.getByText(texts.partLast({ end: '4' }))).toBeInTheDocument();
+    await expect(result()).toHaveTextContent(texts.cutResultFit({ frames: 150, seconds: '5,00' }));
+    // Новая часть делит последнюю пополам, итог прежний; убранная отдаёт отрезок следующей.
+    await userEvent.click(dialog.getByRole('button', { name: texts.addPart }));
+    await expect(dialog.getByRole('spinbutton', { name: texts.partEnd({ index: 2 }) })).toHaveValue(2.5);
+    await expect(result()).toHaveTextContent(texts.cutResultFit({ frames: 150, seconds: '5,00' }));
+    await userEvent.click(dialog.getByRole('button', { name: texts.removePart({ index: 2 }) }));
+    await expect(dialog.queryByRole('spinbutton', { name: texts.partEnd({ index: 2 }) })).not.toBeInTheDocument();
+    await expect(dialog.getByRole('button', { name: texts.removePart({ index: 1 }) })).toBeDisabled();
+    // Части уходят в приёмку вместо общей скорости.
+    await userEvent.click(dialog.getByRole('button', { name: texts.accept }));
+    await done(canvasElement);
+    const submitted = within(canvasElement).getByText(/Переданные параметры:/);
+    await expect(submitted).toHaveTextContent('"speedParts":[{"end":1,"speed":"0.5"},{"end":4,"speed":"1"}]');
+    // Общей скорости нет: «speed» встречается только внутри частей.
+    await expect(submitted).not.toHaveTextContent(/"speed":"[^"]*",/);
+  }
+};
+
 export const CutPreviewWithLines: Story = {
   tags: ['ci'],
   name: 'Предпросмотр участка · под песню со строками, правка участка делает показ прежним',

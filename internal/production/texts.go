@@ -392,3 +392,5 @@ func textRetryStatic(shot string) string {
 func textFrameOutside(frame, frames int) string {
 	return fmt.Sprintf("Кадра %d в принятом видео нет: кадров %d.", frame, frames)
 }
+
+const textSpeedPartsFull = "Скорость по частям задаётся только участку оригинала."

@@ -73,6 +73,7 @@ var Parser = toolrt.ArgParser{
 		{Name: "--cut", Value: true, Metavar: "НАЧАЛО:КОНЕЦ", Help: "Участок оригинала на кадровой сетке проекта, конец исключительно"},
 		{Name: "--full", Help: "Оригинал уже совпадает с окном и FPS: побайтовая копия"},
 		{Name: "--speed", Value: true},
+		{Name: "--speed-parts", Value: true, Metavar: "ЧАСТИ"},
 		{Name: "--hold-first", Value: true},
 		{Name: "--hold-last", Value: true},
 		{Name: "--audio", Value: true, Help: "speech.wav для речевого плана"},
@@ -90,9 +91,9 @@ var Parser = toolrt.ArgParser{
 // ArgParser такие группы не печатает.
 const usage = "использование: accept_shot [-h] (--package PACKAGE | --work-dir WORK_DIR)\n" +
 	"                           (--review REVIEW | --cut НАЧАЛО:КОНЕЦ | --full)\n" +
-	"                           [--speed SPEED] [--hold-first HOLD_FIRST]\n" +
-	"                           [--hold-last HOLD_LAST] [--audio AUDIO]\n" +
-	"                           [--audio-recipe AUDIO_RECIPE]\n" +
+	"                           [--speed SPEED] [--speed-parts ЧАСТИ]\n" +
+	"                           [--hold-first HOLD_FIRST] [--hold-last HOLD_LAST]\n" +
+	"                           [--audio AUDIO] [--audio-recipe AUDIO_RECIPE]\n" +
 	"                           [--preparation [PREPARATION ...]] [--clean]\n" +
 	"                           [--no-views] [--replace]\n" +
 	"                           shot\n"
@@ -113,6 +114,9 @@ const help = usage + `
                         исключительно
   --full                Оригинал уже совпадает с окном и FPS: побайтовая копия
   --speed SPEED
+  --speed-parts ЧАСТИ   Скорость по частям участка вместо --speed:
+                        КОНЕЦ:СКОРОСТЬ через запятую, концы — кадры сетки
+                        проекта, последний — конец участка
   --hold-first HOLD_FIRST
   --hold-last HOLD_LAST
   --audio AUDIO         speech.wav для речевого плана
@@ -320,11 +324,14 @@ func frozenRequestFiles(request *toolrt.Dict, workDir string) (string, []string,
 // (НАЧАЛО и КОНЕЦ — кадры сетки частоты проекта) со Speed (десятичная строка, как --speed; «1» — без
 // изменения скорости) и удержаниями.
 type Options struct {
-	Package, WorkDir   string
-	Full               bool
-	Review             *string
-	Cut                *[2]toolrt.Int
-	Speed              string
+	Package, WorkDir string
+	Full             bool
+	Review           *string
+	Cut              *[2]toolrt.Int
+	Speed            string
+	// SpeedParts — скорость по частям участка Cut вместо Speed: конец каждой части (кадр сетки
+	// проекта, исключительно) и её скорость; последняя часть кончается концом участка.
+	SpeedParts         []SpeedPart
 	HoldFirst          toolrt.Int
 	HoldLast           toolrt.Int
 	Audio, AudioRecipe string
@@ -332,6 +339,19 @@ type Options struct {
 	UpdateViews        bool
 	// LocalDir — каталог состояния для наблюдения расхода.
 	LocalDir string
+}
+
+// SpeedPart — часть участка со своей скоростью: конец части на кадровой сетке проекта
+// (исключительно) и скорость десятичной строкой, как --speed.
+type SpeedPart struct {
+	End   int64
+	Speed string
+}
+
+// editPart — часть участка после расчёта: кадры оригинала, скорость и кадры в плане.
+type editPart struct {
+	start, end, motion *big.Int
+	speed              string
 }
 
 // editPlan — параметры обработки принятого участка: рецепт одного плана build_review либо
@@ -342,8 +362,10 @@ type editPlan struct {
 	start, end, motion  *big.Int
 	holdFirst, holdLast *big.Int
 	speed               string
-	intervalSeconds     []any
-	durationChange      float64
+	// parts — части скорости; пусто — одна скорость speed.
+	parts           []editPart
+	intervalSeconds []any
+	durationChange  float64
 }
 
 // fullPlan — план режима --full: оригинал целиком, без скорости и удержаний.
@@ -402,6 +424,14 @@ func toInt(value any) (*big.Int, error) {
 func planEdit(ctx context.Context, shot, original string, frames toolrt.Int, fps int64, root string, options Options) (editPlan, error) {
 	var cut [2]any
 	var speed, holdFirst, holdLast any = options.Speed, options.HoldFirst, options.HoldLast
+	var parts any
+	if len(options.SpeedParts) > 0 {
+		list := make([]any, 0, len(options.SpeedParts))
+		for _, part := range options.SpeedParts {
+			list = append(list, toolcli.Record("end_frame_exclusive", toolrt.NewInt(part.End), "speed", part.Speed))
+		}
+		parts = list
+	}
 	if options.Cut != nil {
 		cut = [2]any{options.Cut[0], options.Cut[1]}
 	}
@@ -462,6 +492,27 @@ func planEdit(ctx context.Context, shot, original string, frames toolrt.Int, fps
 			}
 		}
 		speed, _ = toolrt.DictGet(item, "speed", "1")
+		// Части скорости пробы — в записи рецепта (кадры оригинала и кадры в плане): участку нужны
+		// только конец и скорость каждой части.
+		if recorded, _ := toolrt.DictGet(item, "speed_parts", nil); recorded != nil {
+			entries, err := toolrt.Iter(recorded)
+			if err != nil {
+				return editPlan{}, err
+			}
+			list := make([]any, 0, len(entries))
+			for _, entry := range entries {
+				end, err := toolrt.Item(entry, "source_end_frame_exclusive")
+				if err != nil {
+					return editPlan{}, err
+				}
+				partSpeed, err := toolrt.Item(entry, "speed")
+				if err != nil {
+					return editPlan{}, err
+				}
+				list = append(list, toolcli.Record("end_frame_exclusive", end, "speed", partSpeed))
+			}
+			parts = list
+		}
 		holdFirst, _ = toolrt.DictGet(item, "hold_first_frames", toolrt.NewInt(0))
 		holdLast, _ = toolrt.DictGet(item, "hold_last_frames", toolrt.NewInt(0))
 	} else if options.Cut == nil {
@@ -475,7 +526,7 @@ func planEdit(ctx context.Context, shot, original string, frames toolrt.Int, fps
 		}
 		values[index] = value
 	}
-	spec := toolcli.Record("schema_version", toolrt.NewInt(1), "shots", []any{toolcli.Record(
+	config := toolcli.Record(
 		"scene", shot,
 		"path", original,
 		"kind", "video",
@@ -484,7 +535,11 @@ func planEdit(ctx context.Context, shot, original string, frames toolrt.Int, fps
 		"speed", toolrt.Str(speed),
 		"hold_first_frames", toolrt.IntFromBig(values[2]),
 		"hold_last_frames", toolrt.IntFromBig(values[3]),
-	)})
+	)
+	if parts != nil {
+		config.Set("speed_parts", parts)
+	}
+	spec := toolcli.Record("schema_version", toolrt.NewInt(1), "shots", []any{config})
 	prepared, err := buildreview.Prepare(ctx, spec, root)
 	if err != nil {
 		return editPlan{}, err
@@ -495,7 +550,19 @@ func planEdit(ctx context.Context, shot, original string, frames toolrt.Int, fps
 		return editPlan{}, valueError("Участок с удержаниями даёт " + count.String() + " кадров, а окно плана — " + frames.String() + ".")
 	}
 	number := func(key string) *big.Int { return item.Value(key).(toolrt.Int).Big() }
+	var planParts []editPart
+	if recorded, ok := item.Get("speed_parts"); ok {
+		for _, raw := range recorded.([]any) {
+			part := raw.(*toolrt.Dict)
+			value := func(key string) *big.Int { return part.Value(key).(toolrt.Int).Big() }
+			planParts = append(planParts, editPart{
+				start: value("source_start_frame"), end: value("source_end_frame_exclusive"),
+				motion: value("motion_frames"), speed: part.Value("speed").(string),
+			})
+		}
+	}
 	return editPlan{
+		parts:  planParts,
 		filter: item.Value("filter").(string), frames: count,
 		start: number("source_start_frame"), end: number("source_end_frame_exclusive"), motion: number("motion_frames"),
 		holdFirst: number("hold_first_frames"), holdLast: number("hold_last_frames"),
@@ -544,8 +611,10 @@ func renderEdit(ctx context.Context, original, filter string, frames toolrt.Int,
 
 // CutPreview — параметры предпросмотра участка: кадры сетки проекта, скорость и удержания, как у --cut.
 type CutPreview struct {
-	Start, End          int64
-	Speed               string
+	Start, End int64
+	Speed      string
+	// SpeedParts — скорость по частям вместо Speed, как Options.SpeedParts.
+	SpeedParts          []SpeedPart
 	HoldFirst, HoldLast int64
 }
 
@@ -573,7 +642,7 @@ func RenderCut(ctx context.Context, root, shot, original string, cut CutPreview,
 	if speed == "" {
 		speed = "1"
 	}
-	options := Options{Cut: &bounds, Speed: speed, HoldFirst: toolrt.NewInt(cut.HoldFirst), HoldLast: toolrt.NewInt(cut.HoldLast)}
+	options := Options{Cut: &bounds, Speed: speed, SpeedParts: cut.SpeedParts, HoldFirst: toolrt.NewInt(cut.HoldFirst), HoldLast: toolrt.NewInt(cut.HoldLast)}
 	plan, err := planEdit(ctx, shot, original, frames, fps, root, options)
 	if err != nil {
 		return err
@@ -1256,13 +1325,36 @@ func speedRecord(plan editPlan, fps int64) (*toolrt.Dict, error) {
 	factor, _ := strconv.ParseFloat(speedValue.FormatF(), 64)
 	selected, _ := strconv.ParseFloat(selectedValue.FormatF(), 64)
 	ratio, _ := new(big.Rat).SetString(speedValue.FormatF())
-	return toolcli.Record(
+	if len(plan.parts) > 0 {
+		// У участка из частей общий множитель — средняя скорость: отрезок оригинала к длине в плане.
+		ratio = new(big.Rat).SetFrac(new(big.Int).Sub(plan.end, plan.start), plan.motion)
+		factor, _ = ratio.Float64()
+	}
+	record := toolcli.Record(
 		"factor", factor,
 		"ratio", ratio.RatString(),
 		"selected_source_seconds", selected,
 		"motion_output_seconds", intFloat(plan.motion)/float64(fps),
 		"duration_change_seconds", plan.durationChange,
-	), nil
+	)
+	if len(plan.parts) > 0 {
+		parts := make([]any, 0, len(plan.parts))
+		for _, part := range plan.parts {
+			partRatio, ok := new(big.Rat).SetString(part.speed)
+			if !ok {
+				return nil, valueError("Неверная скорость части: " + part.speed)
+			}
+			partFactor, _ := partRatio.Float64()
+			parts = append(parts, toolcli.Record(
+				"source_frame_interval_exclusive", []any{toolrt.IntFromBig(part.start), toolrt.IntFromBig(part.end)},
+				"factor", partFactor,
+				"ratio", partRatio.RatString(),
+				"motion_frames", toolrt.IntFromBig(part.motion),
+			))
+		}
+		record.Set("parts", parts)
+	}
+	return record, nil
 }
 
 // sourceOrder — имена опций группы источника (--package, --work-dir) в порядке появления в
@@ -1337,6 +1429,26 @@ func Run(ctx context.Context, root string, args []string, localDir string) toolc
 	}
 	if !present("--speed") {
 		options.Speed = "1"
+	}
+	if present("--speed-parts") {
+		if present("--speed") {
+			return argError("аргумент --speed-parts: нельзя вместе с --speed")
+		}
+		if !present("--cut") {
+			return argError("аргумент --speed-parts: только вместе с --cut")
+		}
+		for _, item := range strings.Split(value("--speed-parts"), ",") {
+			end, speed, found := strings.Cut(item, ":")
+			number, ok := toolrt.ParseIntText(end)
+			if !found || !ok || speed == "" {
+				return argError("аргумент --speed-parts: ожидается КОНЕЦ:СКОРОСТЬ через запятую: " + toolrt.Repr(value("--speed-parts")))
+			}
+			end64, err := strconv.ParseInt(number.String(), 10, 64)
+			if err != nil {
+				return argError("аргумент --speed-parts: слишком большой кадр: " + number.String())
+			}
+			options.SpeedParts = append(options.SpeedParts, SpeedPart{End: end64, Speed: speed})
+		}
 	}
 	if present("--review") {
 		review := value("--review")

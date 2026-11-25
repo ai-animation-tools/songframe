@@ -71,7 +71,7 @@ func Recut(ctx context.Context, root, shot string, cut CutPreview) (*toolrt.Dict
 	if speedText == "" {
 		speedText = "1"
 	}
-	options := Options{Cut: &bounds, Speed: speedText, HoldFirst: toolrt.NewInt(cut.HoldFirst), HoldLast: toolrt.NewInt(cut.HoldLast)}
+	options := Options{Cut: &bounds, Speed: speedText, SpeedParts: cut.SpeedParts, HoldFirst: toolrt.NewInt(cut.HoldFirst), HoldLast: toolrt.NewInt(cut.HoldLast)}
 	plan, err := planEdit(ctx, shot, original, frames, fps, root, options)
 	if err != nil {
 		return nil, err

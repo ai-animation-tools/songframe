@@ -271,4 +271,87 @@ func TestPaidCycleWithRealRender(t *testing.T) {
 	if e.paid() != 1 {
 		t.Fatalf("новый участок отправил запрос: %d", e.paid())
 	}
+
+	// Скорость по частям: участок 1–4 с, первая секунда замедлена вдвое, остальное в реальной
+	// скорости — 60 + 60 кадров ровно в окно. Кадры фильтра частей сверяются с кадрами оригинала
+	// без сжатия: каждый кадр медленной части показан дважды, быстрая часть идёт кадр в кадр.
+	partsOptions := production.AcceptOptions{Mode: "cut", CutStart: &recutStart, CutEnd: &recutEnd,
+		SpeedParts: []production.AcceptSpeedPart{{End: 2, Speed: "0.5"}, {End: 4, Speed: "1"}}}
+	partsPreview, err := e.prod.RecutPreview(t.Context(), e.project, "M03", partsOptions)
+	if err != nil || partsPreview.Frames != 120 {
+		t.Fatalf("предпросмотр частей %+v, %v", partsPreview, err)
+	}
+	partsRecut, err := e.prod.Recut(e.project, "M03", partsOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if finished := e.wait(partsRecut); finished.Status != jobs.StatusDone {
+		t.Fatalf("участок по частям: %s", finished.Log)
+	}
+	if got := frameDigests(t, ffmpeg, filepath.Join(kit, "video.mp4")); strings.Join(got, "\n") != strings.Join(frameDigests(t, ffmpeg, partsPreview.Path), "\n") {
+		t.Fatal("кадры участка по частям и его предпросмотра различаются")
+	}
+	partsRaw, err := os.ReadFile(filepath.Join(kit, "manifest.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var partsManifest struct {
+		AcceptedEdit struct {
+			Speed struct {
+				Ratio string `json:"ratio"`
+				Parts []struct {
+					Interval []int  `json:"source_frame_interval_exclusive"`
+					Ratio    string `json:"ratio"`
+					Motion   int    `json:"motion_frames"`
+				} `json:"parts"`
+			} `json:"speed"`
+			Rebuild struct {
+				Stages []struct {
+					Filter string `json:"filter"`
+				} `json:"stages"`
+			} `json:"rebuild"`
+		} `json:"accepted_edit"`
+	}
+	if err := json.Unmarshal(partsRaw, &partsManifest); err != nil {
+		t.Fatal(err)
+	}
+	speed := partsManifest.AcceptedEdit.Speed
+	if speed.Ratio != "3/4" || len(speed.Parts) != 2 || speed.Parts[0].Ratio != "1/2" || speed.Parts[0].Motion != 60 ||
+		speed.Parts[1].Ratio != "1" || speed.Parts[1].Motion != 60 || speed.Parts[0].Interval[0] != 30 || speed.Parts[1].Interval[1] != 120 {
+		t.Fatalf("скорость по частям в манифесте: %+v", speed)
+	}
+	filter := partsManifest.AcceptedEdit.Rebuild.Stages[0].Filter
+	_, tail, found := strings.Cut(filter, "concat=n=2:v=1:a=0,")
+	if !found {
+		t.Fatalf("фильтр частей: %s", filter)
+	}
+	digestsOf := func(graph string) []string {
+		output, err := exec.Command(ffmpeg, "-v", "error", "-i", filepath.Join(kit, "original.mp4"), "-map", "0:v:0", "-vf", graph, "-f", "framemd5", "-").Output()
+		if err != nil {
+			t.Fatalf("framemd5 %s: %v", graph, err)
+		}
+		digests := []string{}
+		for _, line := range strings.Split(string(output), "\n") {
+			if line != "" && !strings.HasPrefix(line, "#") {
+				fields := strings.Split(line, ",")
+				digests = append(digests, strings.TrimSpace(fields[len(fields)-1]))
+			}
+		}
+		return digests
+	}
+	partsFrames := digestsOf(filter)
+	sourceFrames := digestsOf("fps=30,trim=start_frame=30:end_frame=120," + tail)
+	if len(partsFrames) != 120 || len(sourceFrames) != 90 {
+		t.Fatalf("кадров результата %d, оригинала %d", len(partsFrames), len(sourceFrames))
+	}
+	for k := 0; k < 30; k++ {
+		if partsFrames[2*k] != sourceFrames[k] || partsFrames[2*k+1] != sourceFrames[k] {
+			t.Fatalf("медленная часть: кадры %d и %d не кадр %d оригинала", 2*k, 2*k+1, 30+k)
+		}
+	}
+	for k := 0; k < 60; k++ {
+		if partsFrames[60+k] != sourceFrames[30+k] {
+			t.Fatalf("часть в реальной скорости: кадр %d не кадр %d оригинала", 60+k, 60+k)
+		}
+	}
 }

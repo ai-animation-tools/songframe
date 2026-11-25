@@ -16,6 +16,7 @@ package buildreview
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -55,6 +56,7 @@ const (
 	textSpeed        = "Скорость должна быть положительной."
 	textCard         = "Для карточки задавайте длительность через source_end_frame_exclusive без обрезки и скорости."
 	textShort        = "Участок после изменения скорости короче кадра."
+	textSpeedParts   = "Скорость по частям: не меньше двух частей видео без общей скорости, концы частей по возрастанию внутри участка, последний — конец участка, каждая часть не короче кадра."
 	textTransition   = "Неизвестные параметры перехода."
 	textJoin         = "Неизвестный, повторный или последний стык перехода."
 	textSwallow      = "Переходы поглощают весь план."
@@ -451,7 +453,7 @@ func overlap(joins *toolrt.Dict, item *toolrt.Dict) *big.Int {
 // prepareShot — тело цикла по участкам Prepare: выбор материала (явный path, принятый монтаж
 // или карточка реестра), проверка окна, скорости и удержаний и цепочка фильтров участка.
 func prepareShot(ctx context.Context, root string, config any, byID map[string]registryShot, seen map[string]bool, receipt *any, scenesPath string, fps int64) (*toolrt.Dict, error) {
-	if extra, err := unknownKeys(config, "scene", "path", "kind", "source_start_frame", "source_end_frame_exclusive", "speed", "hold_first_frames", "hold_last_frames"); err != nil || extra {
+	if extra, err := unknownKeys(config, "scene", "path", "kind", "source_start_frame", "source_end_frame_exclusive", "speed", "speed_parts", "hold_first_frames", "hold_last_frames"); err != nil || extra {
 		return nil, firstError(err, textShotFields)
 	}
 	hasKind, err := contains(config, "kind")
@@ -572,13 +574,31 @@ func prepareShot(ctx context.Context, root string, config any, byID map[string]r
 	if kind == "card" && (start.Sign() != 0 || unit != 0) {
 		return nil, valueError(textCard)
 	}
-	quotient, err := decimalOf(subInt(end, start)).Div(speed)
+	partsValue, err := get(config, "speed_parts", nil)
 	if err != nil {
 		return nil, err
 	}
-	motion, err := frames(quotient)
-	if err != nil {
-		return nil, err
+	var parts []speedPart
+	var motion *big.Int
+	if partsValue != nil {
+		if kind != "video" || unit != 0 {
+			return nil, valueError(textSpeedParts)
+		}
+		if parts, err = speedParts(partsValue, start, end); err != nil {
+			return nil, err
+		}
+		motion = big.NewInt(0)
+		for _, part := range parts {
+			motion = addInt(motion, part.motion)
+		}
+	} else {
+		quotient, err := decimalOf(subInt(end, start)).Div(speed)
+		if err != nil {
+			return nil, err
+		}
+		if motion, err = frames(quotient); err != nil {
+			return nil, err
+		}
 	}
 	if motion.Cmp(big.NewInt(1)) < 0 {
 		return nil, valueError(textShort)
@@ -594,7 +614,9 @@ func prepareShot(ctx context.Context, root string, config any, byID map[string]r
 	}
 	rate := strconv.FormatInt(fps, 10)
 	filters := []string{}
-	if kind == "video" {
+	if len(parts) > 0 {
+		filters = append(filters, partsGraph(parts, rate))
+	} else if kind == "video" {
 		filters = append(filters,
 			"fps="+rate,
 			"trim=start_frame="+start.String()+":end_frame="+end.String(),
@@ -635,7 +657,7 @@ func prepareShot(ctx context.Context, root string, config any, byID map[string]r
 	if err != nil {
 		return nil, err
 	}
-	return toolcli.Record(
+	record := toolcli.Record(
 		"id", sid,
 		"kind", kind,
 		"origin", origin,
@@ -645,13 +667,129 @@ func prepareShot(ctx context.Context, root string, config any, byID map[string]r
 		"source_end_frame_exclusive", newInt(end),
 		"source_interval_seconds", []any{startSeconds, endSeconds},
 		"speed", speedString,
-		"motion_frames", newInt(motion),
-		"hold_first_frames", newInt(holdFirst),
-		"hold_last_frames", newInt(holdLast),
-		"duration_change_seconds", change,
-		"frames", newInt(addInt(addInt(motion, holdFirst), holdLast)),
-		"filter", strings.Join(filters, ","),
-	), nil
+	)
+	// Части скорости — только у участка из частей: рецепт с одной скоростью прежний байт в байт.
+	if len(parts) > 0 {
+		list := make([]any, 0, len(parts))
+		for _, part := range parts {
+			list = append(list, toolcli.Record(
+				"source_start_frame", newInt(part.start),
+				"source_end_frame_exclusive", newInt(part.end),
+				"speed", part.text,
+				"motion_frames", newInt(part.motion),
+			))
+		}
+		record.Set("speed_parts", list)
+	}
+	for _, field := range []struct {
+		key   string
+		value any
+	}{
+		{"motion_frames", newInt(motion)},
+		{"hold_first_frames", newInt(holdFirst)},
+		{"hold_last_frames", newInt(holdLast)},
+		{"duration_change_seconds", change},
+		{"frames", newInt(addInt(addInt(motion, holdFirst), holdLast))},
+		{"filter", strings.Join(filters, ",")},
+	} {
+		record.Set(field.key, field.value)
+	}
+	return record, nil
+}
+
+// speedPart — часть участка со своей скоростью: кадры оригинала [start, end) на сетке проекта,
+// скорость (text — десятичная запись для рецепта) и число кадров этой части в плане.
+type speedPart struct {
+	start, end *big.Int
+	text       string
+	motion     *big.Int
+}
+
+// speedParts — части скорости участка [start, end) из списка {end_frame_exclusive, speed}: не
+// меньше двух, концы по возрастанию, последний — конец участка. Кадры части в плане округляются
+// так же, как у одной скорости (frames).
+func speedParts(value any, start, end *big.Int) ([]speedPart, error) {
+	items, ok := value.([]any)
+	if !ok || len(items) < 2 {
+		return nil, valueError(textSpeedParts)
+	}
+	parts := make([]speedPart, 0, len(items))
+	from := start
+	for _, item := range items {
+		if extra, err := unknownKeys(item, "end_frame_exclusive", "speed"); err != nil || extra {
+			return nil, firstError(err, textSpeedParts)
+		}
+		endValue, err := get(item, "end_frame_exclusive", nil)
+		if err != nil {
+			return nil, err
+		}
+		to, err := integer(endValue, "end_frame_exclusive", 1)
+		if err != nil {
+			return nil, err
+		}
+		if to.Cmp(from) <= 0 || to.Cmp(end) > 0 {
+			return nil, valueError(textSpeedParts)
+		}
+		speedValue, err := get(item, "speed", nil)
+		if err != nil {
+			return nil, err
+		}
+		text, isText := speedValue.(string)
+		if !isText {
+			return nil, valueError(textSpeedParts)
+		}
+		speed, err := toolrt.NewDecimal(text)
+		if err != nil || !isFinite(speed) {
+			return nil, valueError(textSpeed)
+		}
+		if sign, _ := speed.Cmp(toolrt.DecimalInt(0)); sign <= 0 {
+			return nil, valueError(textSpeed)
+		}
+		normalized, _ := DecimalText(text)
+		quotient, err := decimalOf(subInt(to, from)).Div(speed)
+		if err != nil {
+			return nil, err
+		}
+		motion, err := frames(quotient)
+		if err != nil {
+			return nil, err
+		}
+		if motion.Cmp(big.NewInt(1)) < 0 {
+			return nil, valueError(textShort)
+		}
+		parts = append(parts, speedPart{start: from, end: to, text: normalized, motion: motion})
+		from = to
+	}
+	if from.Cmp(end) != 0 {
+		return nil, valueError(textSpeedParts)
+	}
+	return parts, nil
+}
+
+// partsGraph — граф фильтров участка из частей: вход делится на копии, каждая копия режет свою
+// часть, меняет её скорость и доводит до своего числа кадров тем же способом, что и одна скорость;
+// части склеиваются по порядку. Дальше идёт общая цепочка участка (масштаб, удержания).
+func partsGraph(parts []speedPart, rate string) string {
+	labels := make([]string, len(parts))
+	for index := range parts {
+		labels[index] = fmt.Sprintf("[s%d]", index)
+	}
+	graph := []string{fmt.Sprintf("split=%d%s", len(parts), strings.Join(labels, ""))}
+	outputs := ""
+	for index, part := range parts {
+		output := fmt.Sprintf("[p%d]", index)
+		outputs += output
+		graph = append(graph, labels[index]+strings.Join([]string{
+			"fps=" + rate,
+			"trim=start_frame=" + part.start.String() + ":end_frame=" + part.end.String(),
+			"setpts=(PTS-STARTPTS)/" + part.text,
+			"fps=" + rate,
+			"tpad=stop_mode=clone:stop=1",
+			"trim=end_frame=" + part.motion.String(),
+		}, ",")+output)
+	}
+	graph = append(graph, fmt.Sprintf("%sconcat=n=%d:v=1:a=0", outputs, len(parts)))
+	return strings.Join(graph, ";")
 }
 
 // acceptedEdit — принятый монтаж готовой сцены из её манифеста; повреждённый или чужой монтаж

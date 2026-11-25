@@ -1,7 +1,7 @@
 /** Подтверждение платного действия проверяется на fake API, без запуска CLI и списания кредитов. */
 import { describe, expect, it, vi } from 'vitest';
 import type { Api } from '@shared/api';
-import type { JobInfo, PackageView, ProductionView } from '@shared/types';
+import type { JobInfo, PackageView, ProductionView, ShotProduction } from '@shared/types';
 import {
   acceptShownResult,
   decisionNoteKey,
@@ -10,6 +10,7 @@ import {
   relocatedPackage,
   reviewMontageRoute,
   reviewShots,
+  recutOptionsFor,
   sendConfirmedRequest,
   defaultAcceptOptions,
   unacceptedResults,
@@ -277,5 +278,50 @@ describe('непринятые результаты других попыток'
     expect(unacceptedResults([paid, own, prepared])).toBe('Попытка 1 (оплаченная генерация), Попытка 2');
     expect(unacceptedResults([paid, own, prepared], '/p/02')).toBe('Попытка 1 (оплаченная генерация)');
     expect(unacceptedResults([prepared])).toBeNull();
+  });
+});
+
+describe('прежний участок для «Изменить участок»', () => {
+  const shot = (edit: Partial<NonNullable<NonNullable<ShotProduction['asset']>['edit']>>): ShotProduction =>
+    ({
+      id: 'M30',
+      asset: {
+        dir: '/p/assets/shots/M30',
+        video: '/p/assets/shots/M30/video.mp4',
+        original: '/p/assets/shots/M30/original.mp4',
+        edit: {
+          fps: 30,
+          frames: 120,
+          duration: 4,
+          sourceInterval: [1, 4],
+          stillAt: null,
+          speed: '1',
+          speedParts: [],
+          holdFirst: 0,
+          holdLast: 0,
+          note: '',
+          ...edit
+        }
+      }
+    }) as ShotProduction;
+  it('скорость из манифеста точной дробью подставляется десятичной', () => {
+    expect(recutOptionsFor(shot({ speed: '9/10' }), 30)).toMatchObject({ speed: '0.9' });
+  });
+  it('части скорости подставляются секундами оригинала, без общей скорости', () => {
+    const options = recutOptionsFor(
+      shot({
+        speed: '3/4',
+        speedParts: [
+          { start: 1, end: 2, speed: '1/2' },
+          { start: 2, end: 4, speed: '1' }
+        ]
+      }),
+      30
+    );
+    expect(options?.speed).toBeUndefined();
+    expect(options?.speedParts).toEqual([
+      { end: 2, speed: '0.5' },
+      { end: 4, speed: '1' }
+    ]);
   });
 });

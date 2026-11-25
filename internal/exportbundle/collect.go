@@ -2,6 +2,8 @@ package exportbundle
 
 import (
 	"math/big"
+	"strconv"
+	"strings"
 
 	"songframe/internal/sceneregistry"
 	"songframe/internal/shoteffects"
@@ -235,6 +237,14 @@ func addVideo(row *toolrt.Dict, sid, folder string, kit any, fps int64) error {
 	set("source_out_frame_native", r.frames(sourceOut, rate))
 	set("speed", r.float(r.item(edit, "speed", "factor")))
 	set("speed_ratio", r.item(edit, "speed", "ratio"))
+	// Части скорости: строка M2 EDL одной скоростью их не передаёт, монтажёр получает их списком.
+	if speed, ok := r.get(edit, "speed", nil).(*toolrt.Dict); ok && r.err == nil {
+		if parts, ok := speed.Get("parts"); ok {
+			if list, ok := parts.([]any); ok && len(list) > 0 {
+				set("speed_parts", speedPartsNote(list, rate))
+			}
+		}
+	}
 	set("hold_first_s", r.float(r.get(edit, "hold_first_seconds", toolrt.NewInt(0))))
 	set("hold_last_s", r.float(r.get(edit, "hold_last_seconds", toolrt.NewInt(0))))
 	if still != nil {
@@ -444,4 +454,32 @@ func collect(root string) (*toolrt.Dict, error) {
 		"lyrics", lyrics,
 		"timing_status", status,
 	), nil
+}
+
+// speedPartsNote — части скорости accepted_edit для EDL: «0.75 (1.00–2.50s), 1 (2.50–5.00s)»,
+// секунды — кадры оригинала на сетке rate.
+func speedPartsNote(parts []any, rate *big.Rat) string {
+	items := make([]string, 0, len(parts))
+	grid, _ := rate.Float64()
+	seconds := func(value any) string {
+		frames, _ := new(big.Float).SetString(toolrt.Str(value))
+		if frames == nil || grid <= 0 {
+			return "?"
+		}
+		number, _ := frames.Float64()
+		return strconv.FormatFloat(number/grid, 'f', 2, 64)
+	}
+	for _, raw := range parts {
+		part, ok := raw.(*toolrt.Dict)
+		if !ok {
+			continue
+		}
+		interval, _ := part.Value("source_frame_interval_exclusive").([]any)
+		if len(interval) != 2 {
+			continue
+		}
+		factor := toolrt.Str(part.Value("factor"))
+		items = append(items, factor+" ("+seconds(interval[0])+"–"+seconds(interval[1])+"s)")
+	}
+	return strings.Join(items, ", ")
 }

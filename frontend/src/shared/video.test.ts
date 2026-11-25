@@ -6,7 +6,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { cutFrameOf, cutResultFrames, cutSeconds, fitCutEnd, FRAME_RATES, secondsToFrames } from './video';
+import { cutFrameOf, cutResultFrames, cutSeconds, fitCutEnd, FRAME_RATES, secondsToFrames, partsResultFrames, ratioDecimal } from './video';
 
 describe('сетка кадров build_review', () => {
   it('совпадает с допустимыми частотами реестра и принятых комплектов', () => {
@@ -94,5 +94,52 @@ describe('конец участка под окно', () => {
     expect(fitCutEnd(null, '1', 30)).toEqual({ reason: 'invalid' });
     expect(fitCutEnd(0, '0', 30)).toEqual({ reason: 'invalid' });
     expect(fitCutEnd(0, '1', 30, 1.5)).toEqual({ reason: 'invalid' });
+  });
+});
+
+describe('скорость по частям', () => {
+  it('кадры каждой части округляются отдельно и складываются с удержаниями', () => {
+    expect(
+      partsResultFrames(
+        30,
+        [
+          { endFrame: 60, speed: '0.5' },
+          { endFrame: 120, speed: '1' }
+        ],
+        2,
+        3
+      )
+    ).toBe(125);
+    // 10 кадров на 0,3 — 33,3 → 33; 10 кадров на 0,7 — 14,29 → 14: отдельно, а не 20 / 0,5.
+    expect(
+      partsResultFrames(0, [
+        { endFrame: 10, speed: '0.3' },
+        { endFrame: 20, speed: '0.7' }
+      ])
+    ).toBe(47);
+  });
+  it('одна часть, граница между кадрами или назад — не участок', () => {
+    expect(partsResultFrames(0, [{ endFrame: 10, speed: '1' }])).toBeNull();
+    expect(
+      partsResultFrames(0, [
+        { endFrame: null, speed: '1' },
+        { endFrame: 20, speed: '1' }
+      ])
+    ).toBeNull();
+    expect(
+      partsResultFrames(0, [
+        { endFrame: 20, speed: '1' },
+        { endFrame: 10, speed: '1' }
+      ])
+    ).toBeNull();
+  });
+  it('дробь манифеста — в запись поля скорости', () => {
+    expect(ratioDecimal('9/10')).toBe('0.9');
+    expect(ratioDecimal('1')).toBe('1');
+    expect(ratioDecimal('3/4')).toBe('0.75');
+    expect(ratioDecimal('23/20')).toBe('1.15');
+    expect(ratioDecimal('2/1')).toBe('2');
+    expect(ratioDecimal('2/3')).toBe('0.666667');
+    expect(ratioDecimal('0.8')).toBe('0.8');
   });
 });

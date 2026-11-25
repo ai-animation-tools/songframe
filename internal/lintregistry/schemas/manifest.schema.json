@@ -39,7 +39,11 @@
         "duration_seconds": {"type": "number"},
         "source_interval_seconds": {"type": "array", "minItems": 2, "items": {"type": "number"}},
         "speed": {"type": "object", "required": ["factor", "ratio"],
-                  "properties": {"factor": {"type": "number"}, "ratio": {"type": "string"}}},
+                  "properties": {"factor": {"type": "number"}, "ratio": {"type": "string"},
+                                 "parts": {"type": "array", "minItems": 2, "items": {
+                                   "type": "object", "required": ["source_frame_interval_exclusive", "factor", "ratio", "motion_frames"],
+                                   "properties": {"source_frame_interval_exclusive": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "integer", "minimum": 0}},
+                                                  "factor": {"type": "number"}, "ratio": {"type": "string"}, "motion_frames": {"type": "integer", "minimum": 1}}}}}},
         "repeat": {"type": "object", "required": ["full_cycles", "tail_frames", "cycle_frames"], "additionalProperties": false,
                    "properties": {"full_cycles": {"type": "integer", "minimum": 0}, "tail_frames": {"type": "integer", "minimum": 0}, "cycle_frames": {"type": "integer", "minimum": 1}}},
         "hold_first_seconds": {"type": "number"},

@@ -238,7 +238,9 @@ func videoLines(row *toolrt.Dict, number int, fps int64) ([]string, int, error) 
 	}
 	speed := row.Value("speed").(float64)
 	still := row.Value("still_time_s")
-	if speed != 1 && speed != 0 && still == "" {
+	if parts, ok := row.Get("speed_parts"); ok {
+		lines = append(lines, "* SPEED PARTS "+toolrt.Str(parts))
+	} else if speed != 1 && speed != 0 && still == "" {
 		lines = append(lines, "M2   "+reel(shot)+" "+speedField(float64(fps)*speed)+strings.Repeat(" ", 16)+sourceIn)
 	}
 	first, last := row.Value("hold_first_s").(float64), row.Value("hold_last_s").(float64)

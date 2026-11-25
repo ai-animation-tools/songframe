@@ -96,6 +96,13 @@ func renderCutPreview(ctx context.Context, project, shot, original, directory st
 			song = candidate
 		}
 	}
+	parts, err := speedParts(options, fps)
+	if err != nil {
+		return nil, err
+	}
+	if len(parts) > 0 {
+		speed = "parts:" + speedPartsArg(parts)
+	}
 	key, err := cutPreviewKey(original, song, first, last, speed, holdFirst, holdLast, windowStart, windowEnd, fps)
 	if err != nil {
 		return nil, err
@@ -107,7 +114,7 @@ func renderCutPreview(ctx context.Context, project, shot, original, directory st
 		}
 		silent := filepath.Join(directory, ".cut-"+key+"-video.mp4")
 		_ = os.Remove(silent)
-		cut := acceptshot.CutPreview{Start: int64(first), End: int64(last), Speed: speed, HoldFirst: holdFirst, HoldLast: holdLast}
+		cut := acceptshot.CutPreview{Start: int64(first), End: int64(last), Speed: options.Speed, SpeedParts: parts, HoldFirst: holdFirst, HoldLast: holdLast}
 		if err := acceptshot.RenderCut(ctx, project, shot, original, cut, silent); err != nil {
 			return nil, err
 		}
@@ -239,7 +246,11 @@ func (s *Service) Recut(project, shot string, options AcceptOptions) (jobs.Info,
 	if s.running(s.shotJobs[key]) {
 		return jobs.Info{}, errors.New(textRecutBusy)
 	}
-	cut := acceptshot.CutPreview{Start: int64(first), End: int64(last), Speed: options.Speed, HoldFirst: holdFirst, HoldLast: holdLast}
+	parts, err := speedParts(options, fps)
+	if err != nil {
+		return jobs.Info{}, err
+	}
+	cut := acceptshot.CutPreview{Start: int64(first), End: int64(last), Speed: options.Speed, SpeedParts: parts, HoldFirst: holdFirst, HoldLast: holdLast}
 	step := jobs.Step{
 		Tool: "recut_shot", Label: textRecutStep,
 		Run: func(ctx context.Context, step *jobs.StepContext) error {

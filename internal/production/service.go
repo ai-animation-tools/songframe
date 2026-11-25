@@ -17,6 +17,7 @@ import (
 	"strings"
 	"sync"
 
+	"songframe/internal/acceptshot"
 	"songframe/internal/builtoutput"
 	"songframe/internal/dynvalue"
 	"songframe/internal/jobs"
@@ -1542,8 +1543,46 @@ type AcceptOptions struct {
 	CutStart            *float64 `json:"cutStart,omitempty"`
 	CutEnd              *float64 `json:"cutEnd,omitempty"`
 	Speed               string   `json:"speed,omitempty"`
-	HoldFirst           float64  `json:"holdFirst,omitempty"`
-	HoldLast            float64  `json:"holdLast,omitempty"`
+	// SpeedParts — скорость по частям участка вместо Speed: конец каждой части в секундах
+	// оригинала (кадр сетки проекта) и её скорость; последняя часть кончается концом участка.
+	SpeedParts []AcceptSpeedPart `json:"speedParts,omitempty"`
+	HoldFirst  float64           `json:"holdFirst,omitempty"`
+	HoldLast   float64           `json:"holdLast,omitempty"`
+}
+
+// AcceptSpeedPart — часть участка со своей скоростью: конец в секундах оригинала и скорость
+// десятичной строкой, как AcceptOptions.Speed.
+type AcceptSpeedPart struct {
+	End   float64 `json:"end"`
+	Speed string  `json:"speed"`
+}
+
+// speedParts — части скорости options на кадровой сетке проекта для accept_shot; nil — одна
+// скорость. Концы приводятся к кадрам, как границы участка (cutFrame); порядок, число частей и
+// последний конец проверяет расчёт участка.
+func speedParts(options AcceptOptions, fps float64) ([]acceptshot.SpeedPart, error) {
+	if len(options.SpeedParts) == 0 {
+		return nil, nil
+	}
+	parts := make([]acceptshot.SpeedPart, 0, len(options.SpeedParts))
+	for _, part := range options.SpeedParts {
+		end := part.End
+		frame, err := cutFrame(&end, fps)
+		if err != nil {
+			return nil, err
+		}
+		parts = append(parts, acceptshot.SpeedPart{End: int64(frame), Speed: part.Speed})
+	}
+	return parts, nil
+}
+
+// speedPartsArg — значение --speed-parts: КОНЕЦ:СКОРОСТЬ через запятую.
+func speedPartsArg(parts []acceptshot.SpeedPart) string {
+	items := make([]string, 0, len(parts))
+	for _, part := range parts {
+		items = append(items, fmt.Sprintf("%d:%s", part.End, part.Speed))
+	}
+	return strings.Join(items, ",")
 }
 
 // cutSecondsTolerance — допуск границы участка, секунды. Человек вводит секунды до тысячных
@@ -1619,7 +1658,16 @@ func (s *Service) Accept(project, shot, packageDir string, options AcceptOptions
 		edit = []string{"--cut", fmt.Sprintf("%d:%d", first, last)}
 	}
 	extra := []string{}
-	if options.Speed != "" && options.Speed != "1" {
+	parts, err := speedParts(options, projectfile.FPS(project))
+	if err != nil {
+		return jobs.Info{}, err
+	}
+	if len(parts) > 0 {
+		if options.Mode == "full" {
+			return jobs.Info{}, errors.New(textSpeedPartsFull)
+		}
+		extra = append(extra, "--speed-parts", speedPartsArg(parts))
+	} else if options.Speed != "" && options.Speed != "1" {
 		extra = append(extra, "--speed", options.Speed)
 	}
 	if options.HoldFirst != 0 {

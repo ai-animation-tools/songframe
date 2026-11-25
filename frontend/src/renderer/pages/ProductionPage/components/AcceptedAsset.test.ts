@@ -9,6 +9,7 @@ const edit = (overrides: Partial<AssetEdit> = {}): AssetEdit => ({
   sourceInterval: [0, 3.4],
   stillAt: null,
   speed: '1',
+  speedParts: [],
   holdFirst: 0,
   holdLast: 0,
   note: '',

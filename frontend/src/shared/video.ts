@@ -89,3 +89,51 @@ export function fitCutEnd(startFrame: number | null, speed: string, windowFrames
   if (originalFrames !== undefined && endFrame > originalFrames) return { reason: 'originalTooShort', neededFrames: endFrame };
   return { endFrame, frames: best.frames };
 }
+
+/** Часть участка со своей скоростью: кадр конца на сетке проекта (null — граница между кадрами) и скорость. */
+export interface SpeedPartFrames {
+  endFrame: number | null;
+  speed: string;
+}
+
+/**
+ * Длина участка из частей в кадрах, как её считает Go: кадры движения каждой части округляются
+ * отдельно (cutResultFrames), затем складываются с удержаниями. Частей не меньше двух, концы по
+ * возрастанию; null — участок такой Go отклонит.
+ */
+export function partsResultFrames(startFrame: number | null, parts: SpeedPartFrames[], holdFirst = 0, holdLast = 0): number | null {
+  if (startFrame === null || parts.length < 2) return null;
+  if (![holdFirst, holdLast].every((hold) => Number.isSafeInteger(hold) && hold >= 0)) return null;
+  let from = startFrame;
+  let motion = 0;
+  for (const part of parts) {
+    const frames = cutResultFrames(from, part.endFrame, part.speed);
+    if (frames === null || part.endFrame === null) return null;
+    motion += frames;
+    from = part.endFrame;
+  }
+  return holdFirst + motion + holdLast;
+}
+
+/**
+ * Скорость из манифеста (точная дробь «9/10») в записи поля скорости: десятичная дробь с точкой.
+ * Дробь со знаменателем из двоек и пятёрок переводится точно, иначе — до шести знаков; десятичная
+ * запись остаётся как есть.
+ */
+export function ratioDecimal(ratio: string): string {
+  const match = /^\s*(\d+)\s*\/\s*(\d+)\s*$/.exec(ratio);
+  if (!match) return ratio;
+  const numerator = BigInt(match[1]);
+  const denominator = BigInt(match[2]);
+  if (denominator === 0n) return ratio;
+  let rest = denominator;
+  let digits = 0;
+  for (const prime of [2n, 5n]) while (rest % prime === 0n) rest /= prime;
+  if (rest === 1n) {
+    while (10n ** BigInt(digits) % denominator !== 0n) digits++;
+    const scaled = (numerator * 10n ** BigInt(digits)) / denominator;
+    const text = scaled.toString().padStart(digits + 1, '0');
+    return digits ? `${text.slice(0, -digits)}.${text.slice(-digits)}`.replace(/\.?0+$/, '') : text;
+  }
+  return String(Number((Number(numerator) / Number(denominator)).toFixed(6)));
+}

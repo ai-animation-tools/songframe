@@ -91,13 +91,13 @@ describe('preview производства', () => {
       status: 'invalid',
       before: '',
       after: null,
-      message: 'Описание требует текст, длительность и минимум две опоры.',
+      message: 'Описание требует текст, длительность и от 1 до 20 опор.',
       agentText: 'Для M01 задано точное повторное использование кадра M13; генерация не обеспечит повторение.'
     });
     expect(html).toContain('Агент не подготовил предложение');
     expect(html).toContain('точное повторное использование кадра M13');
     expect(html).toContain('Причина проверки');
-    expect(html).toContain('минимум две опоры');
+    expect(html).toContain('от 1 до 20 опор');
     expect(html).not.toContain('Предложение ещё не получено');
     expect(html).toMatch(/<button[^>]* disabled[^>]*>(?:(?!<\/button>)[\s\S])*Принять<\/button>/);
   });

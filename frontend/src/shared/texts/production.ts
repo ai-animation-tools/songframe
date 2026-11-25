@@ -206,7 +206,7 @@ export const productionTexts = {
       frameFileRequired: ({ frame }: { frame: unknown }) => `${frame}: нужен обычный файл изображения.`,
       frameFormatRequired: ({ frame }: { frame: unknown }) => `${frame}: требуется PNG, JPEG или WebP.`,
       proposalVersionOrStageInvalid: 'Неверная версия или этап предложения.',
-      descriptionInvalid: 'Описание требует текст, длительность и минимум две опоры.',
+      descriptionInvalid: 'Описание требует текст, длительность и от 1 до 20 опор.',
       speechDurationRange: ({ min, max }: { min: number; max: number }) =>
         `Речевой план: длительность запроса должна быть от ${min} до ${max} с — столько звука принимает провайдер видео.`,
       frameStructureInvalid: 'Неверная структура опоры.',

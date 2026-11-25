@@ -75,7 +75,7 @@ const (
 	textFrameCandidateInvalid         = "Неверный кандидат опоры."
 	textFrameCandidateOrderInvalid    = "Кандидаты должны относиться к неутверждённым опорам плана, без повторов и в порядке плана; нужен абсолютный путь изображения."
 	textProposalVersionOrStage        = "Неверная версия или этап предложения."
-	textDescriptionInvalid            = "Описание требует текст, длительность и минимум две опоры."
+	textDescriptionInvalid            = "Описание требует текст, длительность и от 1 до 20 опор."
 	textManualNoRequest               = "Видео этого плана создаётся вне приложения: вместо запроса соберите пакет для ручной генерации."
 	textManualPackageReady            = "Пакет для ручной генерации уже собран."
 	textManualPromptRequired          = "Сначала утвердите видеопромпт."

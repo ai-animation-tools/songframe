@@ -7,9 +7,9 @@
  * (production.acceptedKit) при показе; новая попытка возвращает обычный путь шагов. У своего видео опоры и промпт есть, только если их указали при загрузке; тогда они
  * показываются так же, как у генерации, а пустой промпт не показывается. «Открыть папку» показывает папку комплекта
  * в файловом менеджере ОС. «Изменить участок» открывает окно приёмки с прежним участком: тот же оригинал
- * комплекта принимается заново с другими границами, скоростью и удержаниями. «Взять кадр» сохраняет кадр, на котором
- * стоит плеер принятого видео, в PNG полного размера вне клипа (production.takeFrame): кадр берётся из видео без
- * эффектов; после сохранения — путь и «Открыть папку» с кадрами клипа.
+ * комплекта принимается заново с другими границами, скоростью и удержаниями. «Взять текущий кадр» рядом с «На весь экран»
+ * плеера «Принятый участок» сохраняет кадр, на котором стоит этот плеер, в PNG полного размера вне клипа
+ * (production.takeFrame): кадр берётся из видео без эффектов; после сохранения — путь и «Открыть папку» с кадрами клипа.
  */
 import { useEffect, useState, type ReactElement } from 'react';
 import { Alert, Box, Button, Paper, Stack, Typography } from '@mui/material';
@@ -130,19 +130,24 @@ export function AcceptedKitPanel({
         <Typography variant="subtitle1" fontWeight={600}>
           {texts.heading}
         </Typography>
-        <AcceptedAsset asset={shot.asset} title={null} onAcceptedVideo={setPlayer} />
+        <AcceptedAsset
+          asset={shot.asset}
+          title={null}
+          onAcceptedVideo={setPlayer}
+          acceptedActions={
+            <ActionButton
+              size="small"
+              startIcon={<PhotoCameraIcon />}
+              title={texts.takeFrameHint}
+              disabled={!edit || !shot.asset.video || !player || taking}
+              disabledReason={taking ? texts.takeFrameBusy : texts.takeFrameNoVideo}
+              onClick={() => void takeFrame()}
+            >
+              {texts.takeFrame}
+            </ActionButton>
+          }
+        />
         <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
-          <ActionButton
-            size="small"
-            variant="outlined"
-            startIcon={<PhotoCameraIcon />}
-            title={texts.takeFrameHint}
-            disabled={!edit || !shot.asset.video || !player || taking}
-            disabledReason={taking ? texts.takeFrameBusy : texts.takeFrameNoVideo}
-            onClick={() => void takeFrame()}
-          >
-            {texts.takeFrame}
-          </ActionButton>
           {onRecut ? (
             <ActionButton
               size="small"

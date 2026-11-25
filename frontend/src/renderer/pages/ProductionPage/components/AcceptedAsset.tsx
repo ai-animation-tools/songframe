@@ -1,6 +1,6 @@
 import { productionTexts } from '@shared/texts/production';
 /** Принятое видео плана на шаге «Результат»; у приёмки с обработкой рядом показывается оригинал. */
-import { useEffect, useState, type ReactElement } from 'react';
+import { useEffect, useState, type ReactElement, type ReactNode } from 'react';
 import { Alert, Box, Chip, Typography } from '@mui/material';
 import type { AssetEdit, ShotProduction } from '@shared/types';
 import { VideoPlayer } from '../../../components/VideoPlayer';
@@ -50,7 +50,8 @@ function LabeledVideo({
   label,
   color,
   caption,
-  onVideo
+  onVideo,
+  children
 }: {
   path: string;
   label: string | null;
@@ -59,6 +60,8 @@ function LabeledVideo({
   caption: string | null | ((size: { width: number; height: number } | null) => string);
   /** Узел видео плеера: владелец читает текущее время (кадр для «Взять кадр»). */
   onVideo?(node: HTMLVideoElement | null): void;
+  /** Действия с этим видео рядом с «На весь экран» его плеера: видно, к какому из двух видео они относятся. */
+  children?: ReactNode;
 }): ReactElement {
   const [size, setSize] = useState<{ width: number; height: number } | null>(null);
   // Плеер вызывает ref при каждой отрисовке: узел хранится состоянием (тот же узел не перерисовывает),
@@ -80,7 +83,7 @@ function LabeledVideo({
   return (
     <Box sx={{ minWidth: 0 }}>
       {label ? <Chip size="small" color={color} label={label} sx={{ mb: 1 }} /> : null}
-      <VideoPlayer path={path} videoRef={typeof caption === 'function' || onVideo ? setNode : undefined} />
+      <VideoPlayer path={path} videoRef={typeof caption === 'function' || onVideo ? setNode : undefined} actions={children} />
       {text ? (
         <Typography component="p" variant="caption" color="text.secondary" sx={{ mt: 0.5, overflowWrap: 'anywhere' }}>
           {text}
@@ -92,16 +95,19 @@ function LabeledVideo({
 
 /**
  * title — заголовок блока; null, когда блок вложен в «Принятый комплект» с собственным заголовком.
- * onAcceptedVideo получает узел плеера принятого видео (не оригинала).
+ * onAcceptedVideo получает узел плеера принятого видео (не оригинала), acceptedActions — кнопки
+ * рядом с «На весь экран» этого плеера.
  */
 export function AcceptedAsset({
   asset,
   title = productionTexts.productionShotCard.accepted,
-  onAcceptedVideo
+  onAcceptedVideo,
+  acceptedActions
 }: {
   asset: NonNullable<ShotProduction['asset']>;
   title?: string | null;
   onAcceptedVideo?(node: HTMLVideoElement | null): void;
+  acceptedActions?: ReactNode;
 }): ReactElement {
   const original = asset.original && asset.original !== asset.video ? asset.original : null;
   return (
@@ -135,7 +141,9 @@ export function AcceptedAsset({
             color="success"
             caption={asset.edit ? (size) => acceptedCaption(asset.edit!, size) : null}
             onVideo={onAcceptedVideo}
-          />
+          >
+            {acceptedActions}
+          </LabeledVideo>
         ) : null}
       </Box>
     </Box>

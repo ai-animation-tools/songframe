@@ -1112,7 +1112,7 @@ export const AcceptedPlanRecut: Story = {
 };
 export const AcceptedPlanTakeFrame: Story = {
   tags: ['ci'],
-  name: 'Принятый план · «Взять кадр» принятого видео без эффектов и папка с кадром',
+  name: 'Принятый план · «Взять текущий кадр» у плеера принятого участка, без эффектов, и папка с кадром',
   parameters: { songframe: acceptedOptions({ acceptedKit: manualKit }) },
   play: async (context) => {
     const screen = screenOf(context);
@@ -1121,8 +1121,12 @@ export const AcceptedPlanTakeFrame: Story = {
     // Плеер стоит в начале: берётся кадр 0 принятого видео.
     const take = () => screen.getByRole('button', { name: kit.takeFrame });
     await waitFor(() => expect(take()).toBeEnabled(), POLL_TIMEOUT);
+    // Кнопка стоит у плеера «Принятый участок», рядом с его «На весь экран», а не у оригинала.
+    const accepted = screen.getByText(texts.productionShotCard.acceptedVideo).closest('.MuiChip-root')!.parentElement!;
+    await expect(within(accepted).getByRole('button', { name: kit.takeFrame })).toBe(take());
+    await expect(within(take().parentElement!).getByRole('button', { name: componentsTexts.videoPlayer.fullscreen })).toBeInTheDocument();
     await userEvent.click(take());
-    const alert = await screen.findByText(/^Кадр 0 \(0,00 с\) принятого видео без эффектов сохранён: \/mock\/Загрузки\/.+\/M01-кадр-0000\.png$/);
+    const alert = await screen.findByText(/^Кадр 0 \(0,00 с\) принятого участка без эффектов сохранён: \/mock\/Загрузки\/.+\/M01-кадр-0000\.png$/);
     await expect(await screen.findByText(/Взятых кадров: M01:0\./)).toBeInTheDocument();
     // «Открыть папку» сообщения открывает папку кадров клипа, а не комплекта.
     const message = alert.closest('[role="alert"]') as HTMLElement;

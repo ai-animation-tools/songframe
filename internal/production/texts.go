@@ -369,6 +369,14 @@ func textFrameCopyReopen(frame, source string) string {
 	return "Опора " + frame + " — копия " + source + ": верните на доработку " + source + ", копия обновится после её утверждения."
 }
 
+// textFrameCopyRestore — прежний вариант копии не возвращают: копия повторяет файл источника.
+func textFrameCopyRestore(frame, source string) string {
+	if shot, position, ok := shotFrameOf(source); ok {
+		return "Опора " + frame + " — " + textShotFrame(shot, position) + ": прежнего варианта у неё нет."
+	}
+	return "Опора " + frame + " — копия " + source + ": прежний вариант возвращают у " + source + "."
+}
+
 // textShotFrame — «последний кадр плана M09» или «первый кадр плана M09».
 func textShotFrame(shot, position string) string {
 	if position == "first" {

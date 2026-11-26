@@ -527,6 +527,18 @@ export interface PackageKeyframe {
   /** Абсолютный путь к изображению кандидата или принятой опоры. */
   imagePath: string | null;
   approved: boolean;
+  /** Прежние варианты опоры в истории попытки, от новых к старым; без них поля нет. */
+  variants?: PackageFrameVariant[];
+}
+
+/** Прежний вариант опоры: заменён новым кандидатом и хранится в истории попытки. */
+export interface PackageFrameVariant {
+  /** Имя записи варианта: его передают в production.restoreFrame. */
+  name: string;
+  /** Абсолютный путь изображения. */
+  imagePath: string;
+  /** Когда вариант перестал быть текущим (ISO, UTC). */
+  savedAt: string;
 }
 
 /** Строка песни в окне речевого плана: по ней предлагаются границы среза. */

@@ -91,6 +91,7 @@ export function ProductionPath({
   onNotCreated,
   onSelectImage,
   onReopenFrame,
+  onRestoreFrame,
   onReopenPrompt,
   onKeepForScene,
   onSetKeyframeNote,
@@ -136,6 +137,8 @@ export function ProductionPath({
   onNotCreated(): void;
   onSelectImage(index: number): void;
   onReopenFrame(frame: string, note: string, scope: KeyframeNoteScope): void;
+  /** Прежний вариант опоры снова кандидат. */
+  onRestoreFrame(frame: string, variant: string): void;
   /** Вернуть утверждённый видеопромпт на доработку с замечанием, пока запрос не отправлен. */
   onReopenPrompt(note: string): void;
   onKeepForScene(): void;
@@ -456,6 +459,7 @@ export function ProductionPath({
                 busy={blocked}
                 busyReason={busyReason}
                 onReopen={onReopenFrame}
+                onRestore={onRestoreFrame}
                 onSetNote={onSetKeyframeNote}
                 copies={Object.fromEntries((view?.framePrompts ?? []).flatMap((prompt) => (prompt.copyOf ? [[prompt.id, prompt.copyOf]] : [])))}
                 composition={view?.composition?.enabled ? view.composition.frames : []}

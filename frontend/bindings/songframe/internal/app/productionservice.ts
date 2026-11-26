@@ -250,6 +250,13 @@ export function ReplaceManual(project: string, packageDir: string, result: produ
 }
 
 /**
+ * RestoreFrame — прежний вариант опоры variant (имя из Variants представления) снова кандидат.
+ */
+export function RestoreFrame(project: string, packageDir: string, frame: string, variant: string): $CancellablePromise<void> {
+    return $Call.ByID(1757542316, project, packageDir, frame, variant);
+}
+
+/**
  * ResultMedia — production:resultMedia: длина, кадр и частота показанного оригинала попытки по
  * ffprobe; окно приёмки по ним решает, можно ли принять видео целиком. null — оригинала нет.
  */

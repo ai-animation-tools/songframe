@@ -1,12 +1,17 @@
 import { productionTexts } from '@shared/texts/production';
-/** Опоры пакета создаются и согласуются по одной: у каждой видно состояние, утверждённую можно вернуть на доработку. */
+/**
+ * Опоры пакета создаются и согласуются по одной: у каждой видно состояние, утверждённую можно вернуть на доработку.
+ * Заменённые доработкой или своим файлом варианты опоры хранятся в попытке: «Прежние варианты» открывает их и
+ * возвращает выбранный кандидатом.
+ */
 import { useState, type ReactElement, type ReactNode } from 'react';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
+import HistoryIcon from '@mui/icons-material/History';
 import ReplayIcon from '@mui/icons-material/Replay';
-import { Box, Chip, Typography } from '@mui/material';
+import { Box, Button, Chip, Typography } from '@mui/material';
 import type { KeyframeNoteScope, PackageKeyframe, PackageView } from '@shared/types';
 import { copyShotFrame, type ProductionComposition } from '@shared/production-workflow';
 import { ImageGallery } from '../../../components/ImageGallery';
@@ -16,6 +21,7 @@ import { BUSY_REASON } from '../constants';
 import { FRAME_REOPEN_STAGES } from '../planPath';
 import { KeyframeNotes } from './KeyframeNotes';
 import { KeyframeReopenDialog } from './KeyframeReopenDialog';
+import { FrameVariantsDialog } from './FrameVariantsDialog';
 
 const ROLE_LABELS: Record<string, string> = productionTexts.frameRoleLabels;
 
@@ -58,6 +64,7 @@ export function PackageKeyframes({
   busy,
   busyReason = BUSY_REASON,
   onReopen,
+  onRestore,
   onSetNote,
   renderActions,
   copies = {},
@@ -67,6 +74,8 @@ export function PackageKeyframes({
   busy: boolean;
   busyReason?: string;
   onReopen(frame: string, note: string, scope: KeyframeNoteScope): void;
+  /** Вернуть прежний вариант опоры кандидатом; без обработчика прежние варианты не показываются. */
+  onRestore?(frame: string, variant: string): void;
   onSetNote(id: number, active: boolean): void;
   /** Действия неутверждённой опоры на её карточке: создать или поставить свой файл. */
   renderActions?(frame: PackageKeyframe): ReactNode;
@@ -77,6 +86,7 @@ export function PackageKeyframes({
 }): ReactElement | null {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [reopening, setReopening] = useState<string | null>(null);
+  const [variantsOf, setVariantsOf] = useState<string | null>(null);
   const asked = pkg.pendingDecision?.frame;
   const images = pkg.keyframes
     .filter((k) => k.imagePath)
@@ -177,6 +187,17 @@ export function PackageKeyframes({
                   {productionTexts.packageKeyframes.reopen}
                 </ActionButton>
               ) : null}
+              {onRestore && k.variants?.length ? (
+                <Button
+                  size="small"
+                  startIcon={<HistoryIcon />}
+                  sx={{ mt: 0.5 }}
+                  title={productionTexts.packageKeyframes.variantsHint({ id: k.id })}
+                  onClick={() => setVariantsOf(k.id)}
+                >
+                  {productionTexts.packageKeyframes.variants({ count: k.variants.length })}
+                </Button>
+              ) : null}
               {renderActions?.(k)}
             </Box>
           );
@@ -193,6 +214,21 @@ export function PackageKeyframes({
             label: productionTexts.composition.compareLabel({ phase: productionTexts.composition.phases[frame.phase] })
           }))}
           onClose={() => setActiveIndex(null)}
+        />
+      ) : null}
+      {variantsOf && onRestore ? (
+        <FrameVariantsDialog
+          frame={pkg.keyframes.find((k) => k.id === variantsOf)!}
+          disabledReason={
+            busy
+              ? busyReason
+              : (blocked ?? (copies[variantsOf] ? productionTexts.packageKeyframes.copyRestore({ id: variantsOf, source: copies[variantsOf] }) : null))
+          }
+          onClose={() => setVariantsOf(null)}
+          onRestore={(variant) => {
+            setVariantsOf(null);
+            onRestore(variantsOf, variant);
+          }}
         />
       ) : null}
       {reopening ? (

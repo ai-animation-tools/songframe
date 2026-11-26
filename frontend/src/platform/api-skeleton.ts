@@ -206,6 +206,7 @@ export function apiSkeleton(): Api {
       view: stub('production.view'),
       decide: stub('production.decide'),
       reopenFrame: stub('production.reopenFrame'),
+      restoreFrame: stub('production.restoreFrame'),
       reopenPrompt: stub('production.reopenPrompt'),
       keepPackageForScene: stub('production.keepPackageForScene'),
       addKeyframeNote: stub('production.addKeyframeNote'),

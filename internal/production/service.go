@@ -553,6 +553,31 @@ func (s *Service) ReopenFrame(project, packageDir, frame, note, noteScope string
 	return s.askNextFrame(project, directory)
 }
 
+// RestoreFrame — прежний вариант опоры из истории попытки снова становится её кандидатом
+// (shotworkflow.RestoreFrameVariant), после чего задаётся вопрос о первом неутверждённом кандидате.
+// Копию другой опоры так не меняют: её файл повторяет источник.
+func (s *Service) RestoreFrame(project, packageDir, frame, variant string) error {
+	directory, err := s.available(project, packageDir)
+	if err != nil {
+		return err
+	}
+	if !framePattern.MatchString(frame) {
+		return errors.New(textFrameUnknown)
+	}
+	if source, isCopy := frameCopies(directory)[frame]; isCopy {
+		return errors.New(textFrameCopyRestore(frame, source))
+	}
+	directory, release, err := s.claim(project, directory)
+	if err != nil {
+		return err
+	}
+	defer release()
+	if err := shotworkflow.RestoreFrameVariant(directory, frame, variant); err != nil {
+		return err
+	}
+	return s.askNextFrame(project, directory)
+}
+
 // ReopenPrompt — вернуть утверждённый видеопромпт на доработку с замечанием (shot_workflow
 // reopen-prompt), пока запрос видео не отправлен. Описание и опоры остаются; замечание агент
 // получает при новой подготовке промпта.

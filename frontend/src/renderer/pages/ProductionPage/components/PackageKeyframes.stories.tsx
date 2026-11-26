@@ -226,6 +226,41 @@ export const Reopen: Story = {
     await expect(canvas.queryByRole('button', { name: /Открыть крупно: K01/ })).not.toBeInTheDocument();
   }
 };
+export const FrameVariants: Story = {
+  name: 'Прежние варианты опоры · сравнение с текущей и возврат кандидатом',
+  tags: ['!autodocs', 'ci'],
+  args: {
+    initialPackage: keyframePackage({
+      keyframes: keyframePackage().keyframes.map((frame) =>
+        frame.id === 'K02'
+          ? {
+              ...frame,
+              variants: [
+                { name: 'K02-20261126T142000Z', imagePath: `${STORY_IMAGE_PATH}?variant=2`, savedAt: '2026-11-26T14:20:00+00:00' },
+                { name: 'K02-20261126T141500Z', imagePath: `${STORY_IMAGE_PATH}?variant=1`, savedAt: '2026-11-26T14:15:00+00:00' }
+              ]
+            }
+          : frame
+      )
+    })
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const screen = within(canvasElement.ownerDocument.body);
+    // Кнопка есть только у опоры с прежними вариантами.
+    const open = canvas.getByRole('button', { name: productionTexts.packageKeyframes.variants({ count: 2 }) });
+    await expect(canvas.getAllByRole('button', { name: /^Прежние варианты/ })).toHaveLength(1);
+    await userEvent.click(open);
+    const dialog = within(await screen.findByRole('dialog', { name: productionTexts.packageKeyframes.variantsTitle({ id: 'K02' }) }));
+    const restore = dialog.getAllByRole('button', { name: productionTexts.packageKeyframes.restore });
+    await expect(restore).toHaveLength(2);
+    await userEvent.click(restore[1]);
+    await canvas.findByText(productionTexts.useProductionPage.frameRestored({ frame: 'K02' }));
+    // Вернувшийся вариант — кандидат K02, заменённый файл сам стал прежним вариантом.
+    await expect(canvas.getByRole('button', { name: productionTexts.packageKeyframes.variants({ count: 2 }) })).toBeVisible();
+    await expect(canvas.getByRole('button', { name: /Открыть крупно: K02/ }).querySelector('img')).toHaveAttribute('src', expect.stringContaining('variant=1'));
+  }
+};
 export const AllApproved: Story = {
   name: 'Все опоры утверждены · отдельное согласование промпта впереди',
   args: {

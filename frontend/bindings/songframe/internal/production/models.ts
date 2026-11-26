@@ -6,6 +6,9 @@
 import * as json$0 from "../../../encoding/json/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as shotworkflow$0 from "../shotworkflow/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as speech$0 from "../speech/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -255,7 +258,7 @@ export interface CutPreviewLine {
 
 /**
  * Keyframe — PackageKeyframe: опора пакета из workflow.json. ImagePath — абсолютный путь
- * существующего изображения кандидата или принятой опоры. Note — значение workflow.json как есть
+ * существующего изображения кандидата или принятой опоры; Variants — её прежние варианты. Note — значение workflow.json как есть
  * (отсутствует, null или строка).
  */
 export interface Keyframe {
@@ -265,6 +268,11 @@ export interface Keyframe {
     "note"?: json$0.RawMessage;
     "imagePath": string | null;
     "approved": boolean;
+
+    /**
+     * Variants — прежние варианты опоры в истории попытки, от новых к старым; без них поля нет.
+     */
+    "variants"?: shotworkflow$0.FrameVariant[];
 }
 
 /**

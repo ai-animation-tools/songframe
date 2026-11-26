@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 /** Управляемые родители опор повторяют решения приложения, не вызывая API приложения или генератор. */
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Paper, Stack, Typography } from '@mui/material';
@@ -160,6 +161,30 @@ export function KeyframeReviewStory({
       };
     }, `Утверждение ${frame} снято; замечание сохранено. Остальные опоры сохранены.`);
   };
+  // Production.restoreFrame: вариант становится кандидатом, текущий файл — прежним вариантом, затем askNextFrame.
+  const restore = (frame: string, variant: string): void => {
+    const questionRevision = ++revision.current;
+    run((current) => {
+      const keyframes = current.keyframes.map((item) => {
+        if (item.id !== frame) return item;
+        const chosen = item.variants?.find((entry) => entry.name === variant);
+        if (!chosen) return item;
+        const rest = (item.variants ?? []).filter((entry) => entry.name !== variant);
+        const replaced = item.imagePath ? [{ name: `${frame}-${FIXED_DATE}`, imagePath: item.imagePath, savedAt: FIXED_DATE }] : [];
+        return { ...item, approved: false, imagePath: chosen.imagePath, variants: [...replaced, ...rest] };
+      });
+      const next = keyframes.find((item) => item.imagePath && !item.approved);
+      return {
+        ...current,
+        stage: 'keyframes_review',
+        stageLabel: 'Опоры на согласовании',
+        keyframes,
+        pendingDecision: next ? keyframeQuestion(next.id, questionRevision) : null,
+        decision: null,
+        prompt: current.prompt ? { ...current.prompt, approved: false } : null
+      };
+    }, productionTexts.useProductionPage.frameRestored({ frame }));
+  };
   const locked = busy || running;
   const candidateReason = locked
     ? (busyReason ?? 'Дождитесь сохранения решения.')
@@ -186,6 +211,7 @@ export function KeyframeReviewStory({
             busyReason={busyReason}
             copies={copies}
             onReopen={reopen}
+            onRestore={restore}
             onSetNote={(id, active) =>
               run(
                 (current) => ({ ...current, keyframeNotes: current.keyframeNotes.map((item) => (item.id === id ? { ...item, active } : item)) }),

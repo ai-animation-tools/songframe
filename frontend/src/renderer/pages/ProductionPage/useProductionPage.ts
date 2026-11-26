@@ -401,6 +401,11 @@ export function useProductionPage() {
     );
   };
 
+  /** Прежний вариант опоры снова кандидат: Go откажет, если видеопромпт или запрос видео уже построены на опорах. */
+  const restoreFrame = (pkg: PackageView, frame: string, variant: string): void => {
+    void act(productionTexts.useProductionPage.frameRestored({ frame }), () => window.api.production.restoreFrame(project, pkg.dir, frame, variant), pkg.dir);
+  };
+
   /** Возврат утверждённого видеопромпта: Go откажет, если запрос уже отправлен или попытка в очереди. */
   const reopenPrompt = (pkg: PackageView, note: string): void => {
     void act(productionTexts.useProductionPage.promptReopened, () => window.api.production.reopenPrompt(project, pkg.dir, note), pkg.dir);
@@ -538,6 +543,7 @@ export function useProductionPage() {
     decide,
     answerApplied,
     reopenFrame,
+    restoreFrame,
     reopenPrompt,
     keepPackageForScene,
     setKeyframeNote,

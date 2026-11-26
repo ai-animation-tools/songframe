@@ -147,6 +147,14 @@ func (s *ProductionService) ReopenFrame(project, packageDir, frame, note, noteSc
 	return s.production.ReopenFrame(project, packageDir, frame, note, noteScope)
 }
 
+// RestoreFrame — прежний вариант опоры variant (имя из Variants представления) снова кандидат.
+func (s *ProductionService) RestoreFrame(project, packageDir, frame, variant string) error {
+	if err := s.idle(project, packageDir); err != nil {
+		return err
+	}
+	return s.production.RestoreFrame(project, packageDir, frame, variant)
+}
+
 // KeepPackageForScene — оставить неотправленный пакет в силе для текущей постановки.
 func (s *ProductionService) KeepPackageForScene(project, packageDir string) error {
 	if err := s.idle(project, packageDir); err != nil {

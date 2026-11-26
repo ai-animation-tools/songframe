@@ -14,12 +14,13 @@ import (
 	"songframe/internal/acceptance"
 	"songframe/internal/dynvalue"
 	"songframe/internal/filedigest"
+	"songframe/internal/shotworkflow"
 	"songframe/internal/sourceinputs"
 	"songframe/internal/speech"
 )
 
 // Keyframe — PackageKeyframe: опора пакета из workflow.json. ImagePath — абсолютный путь
-// существующего изображения кандидата или принятой опоры. Note — значение workflow.json как есть
+// существующего изображения кандидата или принятой опоры; Variants — её прежние варианты. Note — значение workflow.json как есть
 // (отсутствует, null или строка).
 type Keyframe struct {
 	ID          string          `json:"id"`
@@ -28,6 +29,8 @@ type Keyframe struct {
 	Note        json.RawMessage `json:"note,omitempty"`
 	ImagePath   *string         `json:"imagePath"`
 	Approved    bool            `json:"approved"`
+	// Variants — прежние варианты опоры в истории попытки, от новых к старым; без них поля нет.
+	Variants []shotworkflow.FrameVariant `json:"variants,omitempty"`
 }
 
 // Prompt — редактируемый видеопромпт пакета и его утверждение. Path и Text — файл, выбранный к
@@ -320,6 +323,13 @@ func readPackage(project, dir string, fingerprint fingerprintFunc) (*PackageView
 			if dynvalue.Exists(file) {
 				item.ImagePath = &file
 			}
+		}
+		variants, err := shotworkflow.FrameVariants(dir, item.ID)
+		if err != nil {
+			return nil, err
+		}
+		if len(variants) > 0 {
+			item.Variants = variants
 		}
 		keyframes = append(keyframes, item)
 	}

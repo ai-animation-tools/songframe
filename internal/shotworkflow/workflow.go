@@ -586,7 +586,8 @@ func mkdir(path string) error {
 }
 
 // approve — approve (принятие) и propose (кандидат): файл снаружи пакета копируется в
-// frames/Kxx.ext, внутри — остаётся на месте; записывается SHA-256. Принятие добавляет опору в
+// frames/Kxx.ext, внутри — остаётся на месте; записывается SHA-256. Прежний собственный файл опоры
+// с другим содержимым переезжает в историю попытки (archiveFrame). Принятие добавляет опору в
 // approved_frames, кандидат — убирает. Этап description_review переходит в keyframes_review.
 func (t *workflowTool) approve(dirArg, id, source string, candidate bool) (*toolrt.Dict, error) {
 	directory, err := t.packageDir(dirArg, true)
@@ -607,6 +608,14 @@ func (t *workflowTool) approve(dirArg, id, source string, candidate bool) (*tool
 			return nil, valueError("Кандидат опоры должен быть существующим изображением.")
 		}
 		return nil, valueError("Опора должна быть существующим изображением.")
+	}
+	// Прежний собственный файл опоры не стирается новым кандидатом: он уходит в историю попытки.
+	incoming, err := sha(source)
+	if err != nil {
+		return nil, err
+	}
+	if err := archiveFrame(directory, keyframe, incoming); err != nil {
+		return nil, err
 	}
 	relative, err := toolrt.RelativeTo(source, directory)
 	if err != nil {

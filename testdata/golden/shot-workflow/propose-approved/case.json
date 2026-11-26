@@ -1,10 +1,11 @@
 {
-  "description": "Кандидат вместо принятой опоры.",
+  "description": "Кандидат вместо принятой опоры: прежний файл опоры уходит в историю попытки.",
   "call": "shot_workflow",
   "project": "project",
   "base": "checks-base",
   "covers": [
-    "approved_frames pop"
+    "approved_frames pop",
+    "frames/history"
   ],
   "stubbedMedia": [],
   "args": [

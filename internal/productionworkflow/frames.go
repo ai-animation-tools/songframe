@@ -204,7 +204,7 @@ func (w *Workflow) GenerateFrames(ctx context.Context, project, shot, packageDir
 	input := mediaapi.ImagesInput{
 		Project: c.Project, Shot: shot, PackageDir: c.PackageDir, Frames: []mediaapi.FramePrompt{frame}, Notes: &notes, ApprovedFrames: &approved,
 		ReferenceEntities: addShotFrameEntities(c, referenceEntities(c.Cast)),
-		Frame:             c.Frame, Scheme: c.Scheme,
+		Frame:             c.Frame, Scheme: c.Scheme, CameraMoves: c.CameraMoves,
 	}
 	if previous := previousFrameFile(c, frame.ID); previous != "" {
 		input.PreviousFrames = []mediaapi.ApprovedFrame{{ID: frame.ID, Role: frame.Role, Path: previous}}

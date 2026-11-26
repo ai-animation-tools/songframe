@@ -258,6 +258,23 @@ func (v Viewpoint) Changes() bool {
 	return false
 }
 
+// CameraMoves — снимает ли камера последний кадр не оттуда и не туда, что первый: сдвигается, меняет высоту,
+// поворачивается или меняет наклон, в том числе следя за идущим героем. Тогда фон, горизонт и масштаб ближних
+// поверхностей у опор плана разные, и опора с другой фазы — не основа кадра. Мелочи меньше сантиметра и
+// полуградуса не считаются: так округляет ввод на карте. Камера сверху или без места на схеме — false.
+func (v Viewpoint) CameraMoves(cast Cast) bool {
+	if v.Side == "top" || v.Camera == nil {
+		return false
+	}
+	startEye, _ := pathPoint(v.Camera, PhaseStart)
+	endEye, _ := pathPoint(v.Camera, PhaseEnd)
+	startHeading, _ := v.LookHeading(PhaseStart)
+	endHeading, _ := v.LookHeading(PhaseEnd)
+	turn := math.Abs(math.Remainder(endHeading-startHeading, 360))
+	return distance(startEye, endEye) > 0.01 || math.Abs(v.EyeHeight(PhaseEnd)-v.EyeHeight(PhaseStart)) > 0.01 ||
+		turn > 0.5 || math.Abs(v.Pitch(PhaseEnd, cast)-v.Pitch(PhaseStart, cast)) > 0.5
+}
+
 // InFrame — входит ли место point в кадр на кадре phase по горизонтали: угол от направления взгляда не больше
 // половины угла обзора. Без камеры или у камеры сверху судить не по чему — второе значение false.
 func (v Viewpoint) InFrame(phase string, point Point) (inFrame, known bool) {

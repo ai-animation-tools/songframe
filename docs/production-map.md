@@ -331,7 +331,7 @@ flowchart LR
     direction LR
     list["frames: опоры этого запуска,<br/>роль, время, промпт, референсы"]
     refs["references: подписи копий,<br/>чья это сущность или кадр какого плана"]
-    approved["approvedFrames:<br/>уже утверждённые опоры"]
+    approved["approvedFrames: уже утверждённые опоры,<br/>при движении камеры — только облик"]
     previous["previousFrames:<br/>снятый кандидат при доработке"]
     base["stateBase: утверждённая K01<br/>только у плана из опор"]
     notes["notes: указания и замечания к опорам"]

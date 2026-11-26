@@ -472,26 +472,51 @@ func TestKeyframeImagesLayout(t *testing.T) {
 // TestImagesPromptApprovedBase проверяет, что утверждённые опоры задаются основой кадра, а правка
 // «взять за основу утверждённую опору» по замечанию появляется только вместе с замечаниями.
 func TestImagesPromptApprovedBase(t *testing.T) {
-	withNotes := textImagesPrompt(true, true, false, true, false, false, nil)
+	withNotes := textImagesPrompt(imagesPrompt{approved: true, notes: true, previous: true})
 	for _, want := range []string{"основа создаваемой опоры", "всё, что он прямо не меняет", "взять за основу утверждённую опору, передай её генератору первым входом", "важнее промпта опоры", "если notes не велят взять за основу"} {
 		if !strings.Contains(withNotes, want) {
 			t.Fatalf("нет %q: %s", want, withNotes)
 		}
 	}
-	if plain := textImagesPrompt(true, false, false, false, false, false, nil); strings.Contains(plain, "взять за основу") {
+	if plain := textImagesPrompt(imagesPrompt{approved: true}); strings.Contains(plain, "взять за основу") {
 		t.Fatalf("правка по замечанию без замечаний: %s", plain)
+	}
+}
+
+// TestImagesPromptMovingCamera — при движущейся камере утверждённые опоры дают облик, а не фон и ракурс; у
+// неподвижной камеры и у опоры-состояния плана из опор они остаются основой кадра.
+func TestImagesPromptMovingCamera(t *testing.T) {
+	moving := textImagesPrompt(imagesPrompt{approved: true, layout: true, cameraMoves: true, composition: &compositionLegend{characters: 2}})
+	for _, want := range []string{"сняты с другой точки и не основа кадра", "нарисуй заново с точки этой опоры по frame и схеме композиции composition", "Не переноси фон утверждённых кадров"} {
+		if !strings.Contains(moving, want) {
+			t.Fatalf("нет %q: %s", want, moving)
+		}
+	}
+	if strings.Contains(moving, "основа создаваемой опоры") {
+		t.Fatalf("утверждённые опоры остались основой при движении камеры: %s", moving)
+	}
+	if plain := textImagesPrompt(imagesPrompt{approved: true, layout: true, cameraMoves: true}); strings.Contains(plain, "схеме композиции composition") {
+		t.Fatalf("ссылка на схему композиции без снимка: %s", plain)
+	}
+	for name, in := range map[string]imagesPrompt{
+		"неподвижная камера": {approved: true, layout: true},
+		"опора-состояние":    {approved: true, layout: true, cameraMoves: true, stateBase: true},
+	} {
+		if text := textImagesPrompt(in); !strings.Contains(text, "основа создаваемой опоры") || strings.Contains(text, "с другой точки") {
+			t.Fatalf("%s: %s", name, text)
+		}
 	}
 }
 
 // TestImagesPromptStateBase — абзац о базовой опоре плана из опор есть только у опоры-состояния.
 func TestImagesPromptStateBase(t *testing.T) {
-	state := textImagesPrompt(true, false, false, false, false, true, nil)
+	state := textImagesPrompt(imagesPrompt{approved: true, stateBase: true})
 	for _, want := range []string{"stateBase — базовая опора плана из опор", "передай stateBase генератору первым входом", "Композицию, ракурс"} {
 		if !strings.Contains(state, want) {
 			t.Fatalf("нет %q: %s", want, state)
 		}
 	}
-	if plain := textImagesPrompt(true, false, false, false, false, false, nil); strings.Contains(plain, "stateBase") {
+	if plain := textImagesPrompt(imagesPrompt{approved: true}); strings.Contains(plain, "stateBase") {
 		t.Fatalf("абзац о базовой опоре у обычной опоры: %s", plain)
 	}
 }
@@ -515,7 +540,7 @@ func TestKeyframeImagesGeneratorPrompt(t *testing.T) {
 	if got := generatorPrompts(`{"schemaVersion":1,"stage":"frames","images":[{"id":"K01","path":"K01.png","prompt":"  "}]}`); got != nil {
 		t.Fatalf("пустой промпт сохранён: %v", dynvalue.Stringify(got))
 	}
-	if !strings.Contains(textImagesPrompt(false, false, false, false, false, false, nil), `"prompt":"промпт генератора"`) {
+	if !strings.Contains(textImagesPrompt(imagesPrompt{}), `"prompt":"промпт генератора"`) {
 		t.Fatal("задание не просит вернуть промпт генератора")
 	}
 }

@@ -111,6 +111,9 @@ type Context struct {
 	Viewpoint      any
 	LocationScheme *schemes.Scheme
 	Figures        viewframe.Cast
+	// CameraMoves — камера точки съёмки снимает последний кадр с другого места, высоты, направления или наклона
+	// (viewframe.Viewpoint.CameraMoves): утверждённая опора другой фазы снята с другой точки.
+	CameraMoves bool
 
 	framesApproved, promptApproved *bool
 }
@@ -265,6 +268,9 @@ func ReadContext(path, shot, requested string) (*Context, error) {
 	if viewpoint := scene.Value("viewpoint"); viewpoint != dynvalue.Undefined {
 		context.Viewpoint = viewpoint
 		context.Figures = viewframe.ReadCast(castFile.Value)
+		if parsed, err := viewframe.ParseViewpoint(viewpoint); err == nil {
+			context.CameraMoves = parsed.CameraMoves(context.Figures)
+		}
 		if document, _, err := schemes.Read(project); err == nil {
 			context.LocationScheme = viewframe.LocationScheme(document, dynvalue.ToString(dynvalue.Get(viewpoint, "location")))
 		}

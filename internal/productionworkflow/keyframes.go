@@ -292,7 +292,10 @@ func (k *KeyframeImages) Start(input mediaapi.ImagesInput, request agentexec.Ima
 	job, err = k.Agents.StartImages(agents.StartInput{
 		Project: project,
 		Task:    textImagesJobTitle(input.Shot, strings.Join(ids, ", "), providers.Title(request.Provider, generationProviderFallback)),
-		Prompt:  textImagesPrompt(len(approved) > 0, len(notes) > 0, shotFrameCopies, len(previous) > 0, layout, stateBase != nil, compositionFigures(composition, input.Composition)),
+		Prompt: textImagesPrompt(imagesPrompt{
+			approved: len(approved) > 0, notes: len(notes) > 0, shotFrames: shotFrameCopies, previous: len(previous) > 0, layout: layout,
+			stateBase: stateBase != nil, cameraMoves: input.CameraMoves, composition: compositionFigures(composition, input.Composition),
+		}),
 		Context: dynvalue.Stringify(context),
 		Place:   &agents.Place{Page: "production", Shot: input.Shot},
 	}, directory, request.Agent)

@@ -101,4 +101,16 @@ func TestAgentContextFrame(t *testing.T) {
 	if _, ok := objects[0].(map[string]any)["color"]; ok {
 		t.Fatalf("цвет в схеме: %+v", objects[0])
 	}
+	// Признак движения камеры для задания опор: у неподвижной камеры его нет, наезд его даёт.
+	if c, err := ReadContext(run.project, shot, ""); err != nil || c.CameraMoves {
+		t.Fatalf("неподвижная камера: %v %v", c.CameraMoves, err)
+	}
+	camera, _ := dynvalue.Parse([]byte(`{"start":[0,0],"end":[0,4]}`))
+	viewpoint.(*dynvalue.Object).Set("camera", camera)
+	if err := os.WriteFile(scenesPath, []byte(dynvalue.Stringify(scenes)), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if c, err := ReadContext(run.project, shot, ""); err != nil || !c.CameraMoves {
+		t.Fatalf("наезд не отмечен: %v", err)
+	}
 }

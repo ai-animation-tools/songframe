@@ -111,9 +111,9 @@ export const BrowseMaterials: Story = {
     await expect(zoomValue()).toBe('100');
     dialog.getByRole('slider', { name: componentsTexts.imageZoom.label }).focus();
     await userEvent.keyboard('{ArrowUp}');
-    await expect(zoomValue()).toBe('150');
+    await expect(zoomValue()).toBe('104');
     await userEvent.keyboard('{ArrowRight}');
-    await expect(zoomValue()).toBe('200');
+    await expect(zoomValue()).toBe('107');
     await expect(dialog.getByText(montageTexts.materialPosition({ position: 3, total: 4 }))).toBeInTheDocument();
     element.focus();
     await userEvent.keyboard('{ArrowRight}');
@@ -121,7 +121,7 @@ export const BrowseMaterials: Story = {
     await expect(dialog.getByRole('button', { name: montageTexts.nextMaterial })).toBeDisabled();
     await userEvent.keyboard('{ArrowLeft}');
     // Масштаб держится при листании материалов.
-    await waitFor(() => expect(zoomValue()).toBe('200'));
+    await waitFor(() => expect(zoomValue()).toBe('107'));
     await userEvent.keyboard('{Escape}');
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     await expect(canvas.getByTestId('source-selection')).toHaveTextContent(MONTAGE_SOURCE);

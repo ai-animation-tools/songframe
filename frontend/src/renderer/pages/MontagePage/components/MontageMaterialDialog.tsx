@@ -53,7 +53,7 @@ export function MontageMaterialDialog({
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
     if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-    // Ползунок масштаба опоры сам ходит стрелками по ступеням: материалы листаются вне него.
+    // Ползунок масштаба опоры сам меняет масштаб стрелками: материалы листаются вне него.
     if (event.target instanceof Element && event.target.closest('[role="slider"], input')) return;
     // Перехватываем стрелки до нативных controls видео, чтобы они листали материалы, в том числе при фокусе на плеере.
     event.preventDefault();

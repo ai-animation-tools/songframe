@@ -67,7 +67,7 @@ export const ImagePreview: Story = {
     await waitFor(() => expect(within(dialog).getByRole('slider', { name: componentsTexts.imageZoom.label })).toBeEnabled());
     within(dialog).getByRole('slider', { name: componentsTexts.imageZoom.label }).focus();
     await userEvent.keyboard('{ArrowUp}');
-    await expect(dialog.querySelector('[data-zoom-value]')).toHaveAttribute('data-zoom-value', '150');
+    await expect(dialog.querySelector('[data-zoom-value]')).toHaveAttribute('data-zoom-value', '104');
     await userEvent.click(within(dialog).getByRole('button', { name: commonTexts.close }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     await expect(trigger).toHaveFocus();

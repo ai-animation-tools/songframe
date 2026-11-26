@@ -1,6 +1,7 @@
 /**
  * Изображение крупного просмотра с увеличением: вписанное в доступную область без обрезки, вертикальный ползунок
- * справа ступенями увеличивает его до 300 % исходного размера (100 % — пиксель в пиксель). Увеличенное двигают
+ * справа плавно увеличивает его до 300 % исходного размера (100 % — пиксель в пиксель, отметка 1:1). Ровно в 1:1
+ * мышью на ползунке не попасть, поэтому двойной щелчок по картинке переключает «вписать» ↔ 1:1. Увеличенное двигают
  * перетаскиванием и прокруткой, колесо прокручивает; при смене масштаба точка в центре окна остаётся на месте.
  * Масштаб хранит владелец (ImageGallery, окно материала «Монтажа»): он держит его при листании и сбрасывает при
  * закрытии. Необязательный слой сравнения лежит поверх в той же рамке без растягивания.
@@ -11,10 +12,15 @@ import { Alert, Box, Slider, Stack, Typography } from '@mui/material';
 
 const texts = componentsTexts.imageZoom;
 
-/** Ступени увеличения в процентах исходного размера; первая ступень ползунка — «вписать» в окно. */
-const ZOOM_STEPS = [25, 50, 75, 100, 150, 200, 250, 300];
-/** Ступень ближе этого к вписанному масштабу не показывается: две отметки слились бы. */
-const ZOOM_STEP_GAP = 5;
+/** Наибольшее увеличение в процентах исходного размера: дальше картинка только размывается. */
+const ZOOM_MAX = 300;
+/**
+ * Шаг ползунка в двоичных логарифмах масштаба: шкала логарифмическая, как у масштаба мини-схемы, — каждое удвоение
+ * занимает одинаковый ход, и диапазон до 1:1, где видны детали, не зажат внизу. Стрелка — примерно 3,5 %.
+ */
+const ZOOM_STEP = 0.05;
+/** Отметка 1:1 ближе этого (в долях удвоения) к вписанному масштабу не подписывается: подписи слились бы. */
+const MARK_GAP = 0.15;
 /** Пропорции, различающиеся меньше этой доли, считаются одинаковыми (округление размеров при генерации). */
 const ASPECT_TOLERANCE = 0.01;
 
@@ -46,7 +52,7 @@ export function ZoomableImage({
 }: {
   src: string;
   alt: string;
-  /** Выбранная ступень в процентах; null — вписать. Ступень ниже вписанного масштаба нового изображения — тоже вписать. */
+  /** Выбранный масштаб в процентах; null — вписать. Масштаб не больше вписанного у нового изображения — тоже вписать. */
   zoom: number | null;
   onZoomChange(zoom: number | null): void;
   overlay?: ZoomOverlay | null;
@@ -75,9 +81,10 @@ export function ZoomableImage({
   const size = natural?.src === src ? natural : null;
   const fit =
     size && viewportSize.width && viewportSize.height ? Math.min(100, (100 * viewportSize.width) / size.width, (100 * viewportSize.height) / size.height) : 100;
-  const steps = [fit, ...ZOOM_STEPS.filter((step) => step > fit + ZOOM_STEP_GAP)];
-  const stepIndex = zoom === null ? 0 : Math.max(0, steps.indexOf(zoom));
-  const percent = steps[stepIndex];
+  // Ползунок — log2 масштаба от вписанного до ZOOM_MAX; масштаб чуть больше вписанного считается вписанным.
+  const min = Math.log2(fit);
+  const max = Math.log2(ZOOM_MAX);
+  const percent = zoom !== null && zoom > fit * 1.001 ? Math.min(zoom, ZOOM_MAX) : fit;
   const display = size ? { width: (size.width * percent) / 100, height: (size.height * percent) / 100 } : null;
   const pannable = display !== null && (display.width > viewportSize.width + 1 || display.height > viewportSize.height + 1);
   const overlaySize = overlay && overlayNatural?.src === overlay.src ? overlayNatural : null;
@@ -93,6 +100,7 @@ export function ZoomableImage({
     viewport.scrollTop = box.offsetTop + point.y * display.height - viewport.clientHeight / 2;
   }, [display?.width, display?.height, viewport]);
 
+  /** next — масштаб в процентах; не больше вписанного — вписать. */
   const changeZoom = (next: number): void => {
     const box = boxRef.current;
     if (viewport && box && box.offsetWidth && box.offsetHeight) {
@@ -101,7 +109,13 @@ export function ZoomableImage({
         y: (viewport.scrollTop + viewport.clientHeight / 2 - box.offsetTop) / box.offsetHeight
       };
     }
-    onZoomChange(next === 0 ? null : steps[next]);
+    onZoomChange(next <= fit * 1.001 ? null : next);
+  };
+
+  /** Двойной щелчок: вписанное — в 1:1, любое другое — снова вписать. */
+  const toggleOriginal = (): void => {
+    if (!size) return;
+    changeZoom(zoom === null && fit < 100 ? 100 : fit);
   };
 
   const startDrag = (event: PointerEvent<HTMLDivElement>): void => {
@@ -122,8 +136,13 @@ export function ZoomableImage({
     setDragging(false);
   };
 
-  const zoomLabel = (position: number): string =>
-    position === 0 ? texts.fitValue({ percent: Math.round(steps[0]) }) : texts.value({ percent: steps[position] });
+  const zoomLabel = (value: number): string =>
+    value <= min + 1e-6 ? texts.fitValue({ percent: Math.round(fit) }) : texts.value({ percent: Math.round(2 ** value) });
+  const marks = [
+    { value: min, label: texts.fitMark },
+    ...(Math.log2(100) - min >= MARK_GAP ? [{ value: Math.log2(100), label: texts.original }] : []),
+    { value: max, label: texts.value({ percent: ZOOM_MAX }) }
+  ];
 
   return (
     <Stack spacing={1} sx={{ flex: 1, minHeight: 0, minWidth: 0, width: '100%' }}>
@@ -139,6 +158,7 @@ export function ZoomableImage({
           onPointerMove={moveDrag}
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
+          onDoubleClick={toggleOriginal}
           data-zoom-viewport={pannable ? 'pannable' : 'fit'}
           sx={{
             position: 'relative',
@@ -194,6 +214,8 @@ export function ZoomableImage({
                     objectFit: 'contain',
                     opacity: overlay.opacity / 100,
                     mixBlendMode: overlay.difference ? 'difference' : 'normal',
+                    // Отдельный слой композитора: мигание меняет только прозрачность, без перерисовки увеличенной картинки.
+                    willChange: 'opacity',
                     pointerEvents: 'none'
                   }}
                 />
@@ -202,26 +224,28 @@ export function ZoomableImage({
           </Box>
         </Box>
         <Stack spacing={1} sx={{ width: 104, flexShrink: 0, alignItems: 'flex-start', py: 1, pl: 1 }} data-zoom="">
-          <Typography variant="body2" fontWeight={600} title={percent > 100 ? texts.upscaleHint : undefined} data-zoom-value={Math.round(percent)}>
+          <Typography
+            variant="body2"
+            fontWeight={600}
+            title={percent > 100 ? `${texts.upscaleHint} ${texts.doubleClickHint}` : texts.doubleClickHint}
+            data-zoom-value={Math.round(percent)}
+          >
             {texts.value({ percent: Math.round(percent) })}
           </Typography>
           <Slider
             orientation="vertical"
             size="small"
-            min={0}
-            max={steps.length - 1}
-            step={1}
-            value={stepIndex}
-            marks={steps.map((step, position) => ({
-              value: position,
-              label: position === 0 ? texts.fitMark : step === 100 ? texts.original : position === steps.length - 1 ? texts.value({ percent: step }) : undefined
-            }))}
-            disabled={!size || steps.length < 2}
+            min={min}
+            max={max}
+            step={ZOOM_STEP}
+            value={Math.log2(percent)}
+            marks={marks}
+            disabled={!size || min >= max}
             aria-label={texts.label}
             getAriaValueText={zoomLabel}
             valueLabelDisplay="auto"
             valueLabelFormat={zoomLabel}
-            onChange={(_, value) => changeZoom(value as number)}
+            onChange={(_, value) => changeZoom(2 ** (value as number))}
             sx={{ flex: 1, minHeight: 120, '& .MuiSlider-markLabel': { fontSize: 11 } }}
           />
         </Stack>

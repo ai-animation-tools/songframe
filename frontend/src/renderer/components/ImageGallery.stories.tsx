@@ -51,7 +51,7 @@ const viewport = (dialog: HTMLElement): HTMLElement => dialog.querySelector<HTML
 const overlay = (dialog: HTMLElement): HTMLImageElement | null => dialog.querySelector<HTMLImageElement>('[data-zoom-overlay]');
 
 export const Zoom: Story = {
-  name: 'Увеличение · вписать → ступени до 300%, перетаскивание, масштаб при листании, сброс при закрытии',
+  name: 'Увеличение · вписать → до 300%, двойной щелчок 1:1, перетаскивание, масштаб при листании, сброс при закрытии',
   tags: ['!autodocs', 'ci'],
   play: async ({ canvasElement }) => {
     const dialog = await openGallery(canvasElement);
@@ -66,7 +66,9 @@ export const Zoom: Story = {
     await expect(zoomValue(dialog)).toBe('300');
     // Стрелки ползунка меняют масштаб, а не листают изображения.
     await userEvent.keyboard('{ArrowLeft}');
-    await expect(zoomValue(dialog)).toBe('250');
+    const zoomed = zoomValue(dialog);
+    await expect(Number(zoomed)).toBeLessThan(300);
+    await expect(Number(zoomed)).toBeGreaterThan(280);
     await expect(within(dialog).getByText(FRAMES[0].label)).toBeVisible();
     await expect(viewport(dialog)).toHaveAttribute('data-zoom-viewport', 'pannable');
 
@@ -82,11 +84,16 @@ export const Zoom: Story = {
 
     await userEvent.click(within(dialog).getByRole('button', { name: texts.nextImage }));
     await expect(within(dialog).getByText(FRAMES[1].label)).toBeVisible();
-    await expect(zoomValue(dialog)).toBe('250');
+    await expect(zoomValue(dialog)).toBe(zoomed);
 
     await userEvent.click(within(dialog).getByRole('button', { name: commonTexts.close }));
     await waitFor(() => expect(within(canvasElement.ownerDocument.body).queryByRole('dialog')).not.toBeInTheDocument());
     const reopened = await openGallery(canvasElement);
+    await expect(Number(zoomValue(reopened))).toBe(fit);
+    // Двойной щелчок по картинке — ровно 1:1, второй — снова вписать.
+    await userEvent.dblClick(viewport(reopened));
+    await expect(zoomValue(reopened)).toBe('100');
+    await userEvent.dblClick(viewport(reopened));
     await expect(Number(zoomValue(reopened))).toBe(fit);
   }
 };
@@ -110,6 +117,17 @@ export const Compare: Story = {
 
     await userEvent.keyboard('c');
     await expect(getComputedStyle(overlay(dialog)!).opacity).toBe('1');
+    await userEvent.keyboard('c');
+    await expect(getComputedStyle(overlay(dialog)!).opacity).toBe('0');
+    // Зажатая клавиша переключает один раз: автоповтор не мигает слоем.
+    // user-event не ставит repeat у повторных keydown: зажатие собирается как у браузера — первое нажатие и автоповтор.
+    const focused = canvasElement.ownerDocument.activeElement ?? dialog;
+    for (let press = 0; press < 6; press += 1) {
+      focused.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', code: 'KeyC', repeat: press > 0, bubbles: true, cancelable: true }));
+    }
+    focused.dispatchEvent(new KeyboardEvent('keyup', { key: 'c', code: 'KeyC', bubbles: true }));
+    // React применяет обновление дискретного события в микрозадаче: ждём её, а не проверяем синхронно.
+    await waitFor(() => expect(getComputedStyle(overlay(dialog)!).opacity).toBe('1'));
     await userEvent.keyboard('c');
     await expect(getComputedStyle(overlay(dialog)!).opacity).toBe('0');
 

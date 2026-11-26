@@ -104,8 +104,11 @@ export function ImageGallery({ images, initialIndex, kind = texts.image, compare
           event.preventDefault();
           navigate(index + (event.key === 'ArrowLeft' ? -1 : 1));
         } else if (event.code === 'KeyC' && overlay && !ownsLetters(event.target)) {
-          // Мигание: слой сравнения целиком или его нет — сдвиг виден лучше всего.
+          // Мигание: слой сравнения целиком или его нет — сдвиг виден лучше всего. Одно нажатие — одно переключение:
+          // автоповтор зажатой клавиши шлёт десятки keydown в секунду, перерисовка увеличенного слоя за ними не
+          // успевает, и окно продолжало бы мигать по накопленной очереди уже после отпускания.
           event.preventDefault();
+          if (event.repeat) return;
           setOpacity((value) => (value < 100 ? 100 : 0));
         }
       }}

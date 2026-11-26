@@ -10,6 +10,7 @@ import {
   Button,
   Chip,
   Divider,
+  Menu,
   MenuItem,
   Paper,
   Slider,
@@ -23,6 +24,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import CenterFocusStrongIcon from '@mui/icons-material/CenterFocusStrong';
 import ClearIcon from '@mui/icons-material/Clear';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CropFreeIcon from '@mui/icons-material/CropFree';
 import EditIcon from '@mui/icons-material/Edit';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -64,6 +66,7 @@ import {
   withoutHeading,
   withoutPoints,
   withoutTilt,
+  viewpointFromShot,
   MAX_TILT,
   setFacing,
   subjectFacing,
@@ -565,6 +568,55 @@ function ViewpointPlacement({
  * открыта карта: размонтирование (закрытие карты) закрывает и окно. Окно получает точку, схему, рост героев и тему
  * при каждом изменении, обратно присылает зум объектива — его применяет onFov, если точку можно править.
  */
+/** Другой план с точкой съёмки: из него переносится расстановка последнего кадра. */
+export interface ViewpointSource {
+  shot: string;
+  viewpoint: SceneViewpoint;
+}
+
+/**
+ * «Взять с плана»: меню других планов с точкой съёмки. Выбор передаёт план в onPick, точку из него строит
+ * viewpointFromShot. Без таких планов кнопка выключена с причиной.
+ */
+function CopyViewpointButton({
+  sources,
+  nameOf,
+  onPick
+}: {
+  sources: readonly ViewpointSource[];
+  nameOf(id: string): string;
+  onPick(source: ViewpointSource): void;
+}): ReactElement {
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  return (
+    <>
+      <ActionButton
+        variant="outlined"
+        startIcon={<ContentCopyIcon />}
+        title={texts.copyFromHint}
+        disabled={!sources.length}
+        disabledReason={texts.copyFromNone}
+        onClick={(event) => setAnchor(event.currentTarget)}
+      >
+        {texts.copyFrom}
+      </ActionButton>
+      <Menu anchorEl={anchor} open={!!anchor} onClose={() => setAnchor(null)}>
+        {sources.map((source) => (
+          <MenuItem
+            key={source.shot}
+            onClick={() => {
+              setAnchor(null);
+              onPick(source);
+            }}
+          >
+            {texts.copyFromItem({ shot: source.shot, location: nameOf(source.viewpoint.location) })}
+          </MenuItem>
+        ))}
+      </Menu>
+    </>
+  );
+}
+
 function CameraWindowButton({
   title,
   scheme,
@@ -609,7 +661,8 @@ function CameraWindowButton({
  * Блок «Точка съёмки» редактора плана: свёрнут, в заголовке заметный бейдж. Внутри только кнопка «Открыть карту»:
  * локация, сторона, крупность, угол обзора, расстановка камеры и героев на мини-схеме и вид из камеры
  * живут в окне во весь экран, чтобы не раздувать сценарий плана. Камера целится в героев или по своему направлению;
- * сторона по точкам считается сама.
+ * сторона по точкам считается сама. «Взять с плана» переносит расстановку последнего кадра другого плана, чтобы
+ * сохранить места героев и поменять только камеру.
  * У принятого плана блок закрыт: правка открывается после подтверждения с описанием риска, дальше — обычное окно
  * сохранения. Схемы читаются при первом раскрытии (requestSchemes).
  */
@@ -624,6 +677,7 @@ export function ViewpointBlock({
   schemes,
   schemesError,
   requestSchemes,
+  sources = [],
   onChange
 }: {
   /** Код плана: для текста подтверждения. */
@@ -641,6 +695,8 @@ export function ViewpointBlock({
   schemes: SchemesFile | null;
   schemesError: string | null;
   requestSchemes(): void;
+  /** Другие планы с точкой съёмки для «Взять с плана», в порядке клипа. */
+  sources?: readonly ViewpointSource[];
   onChange(viewpoint: SceneViewpoint | undefined): void;
 }): ReactElement {
   const [expanded, setExpanded] = useState(false);
@@ -676,6 +732,17 @@ export function ViewpointBlock({
   const fov = viewpoint ? viewpointFov(viewpoint) : 0;
   const derivedSide = !!viewpoint && sideFromPoints(viewpoint);
   const update = (next: SceneViewpoint): void => onChange(syncSide(withFov(next, next.fov)));
+  // Перенесённую расстановку сразу правят на карте, как новую точку.
+  const copyButton = (
+    <CopyViewpointButton
+      sources={sources}
+      nameOf={nameOf}
+      onPick={(source) => {
+        onChange(viewpointFromShot(source.viewpoint, references, vehicles));
+        setFullscreen(true);
+      }}
+    />
+  );
   // Место съёмки: локация и сторона — над картой.
   const placeFields = (current: SceneViewpoint): ReactElement => (
     <Stack spacing={1}>
@@ -867,7 +934,7 @@ export function ViewpointBlock({
               и даёт единственный вход — «Изменить точку съёмки». */}
           {!viewpoint ? (
             !editable ? null : locations.length ? (
-              <Box>
+              <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap', alignItems: 'center' }}>
                 <ActionButton
                   variant="outlined"
                   startIcon={<AddIcon />}
@@ -883,7 +950,8 @@ export function ViewpointBlock({
                 >
                   {texts.create}
                 </ActionButton>
-              </Box>
+                {copyButton}
+              </Stack>
             ) : (
               <Alert severity="info">
                 <LinkedText text={texts.noLocations} />
@@ -896,6 +964,7 @@ export function ViewpointBlock({
                   <Button variant="outlined" startIcon={<MapIcon />} onClick={() => setFullscreen(true)}>
                     {texts.openMap}
                   </Button>
+                  {copyButton}
                   <Button size="small" color="error" startIcon={<ClearIcon />} onClick={() => onChange(undefined)}>
                     {texts.remove}
                   </Button>

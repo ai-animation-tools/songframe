@@ -32,6 +32,7 @@ import {
   withoutHeading,
   withoutPoints,
   withReferences,
+  viewpointFromShot,
   type SceneViewpoint
 } from './viewpoint';
 
@@ -230,6 +231,59 @@ describe('сектор и расстояния', () => {
     expect(fovThrough([0, 0], 0, [10, -10])).toBeCloseTo(90, 9);
     expect(fovThrough([0, 0], 0, [-10, 0])).toBeCloseTo(360, 9);
     expect(distance([0, 0], [3, 4])).toBe(5);
+  });
+});
+
+describe('точка съёмки с другого плана', () => {
+  const source: SceneViewpoint = {
+    location: 'street',
+    side: 'east',
+    size: 'medium',
+    fov: 35,
+    camera: { start: [10, 3], end: [9, 3] },
+    heading: { start: 185, end: 190 },
+    camera_height: { start: 1.45, end: 1.2 },
+    tilt: { start: 0, end: -3 },
+    subjects: [
+      { entity: 'artem', start: [7, 3] },
+      { entity: 'boy', start: [7, 4], end: [7.5, 3.5] },
+      { entity: 'car', start: [5, 20], end: [5, 6] },
+      { entity: 'van', start: [3, 10], facing: 45 }
+    ]
+  };
+  it('берёт последний кадр неподвижно: камеру, направление, высоту, наклон и места героев', () => {
+    expect(viewpointFromShot(source, ['artem', 'boy', 'car', 'van'], ['car', 'van'])).toEqual({
+      location: 'street',
+      side: 'east',
+      size: 'medium',
+      fov: 35,
+      camera: { start: [9, 3] },
+      heading: { start: 190 },
+      camera_height: { start: 1.2 },
+      tilt: { start: -3 },
+      subjects: [
+        { entity: 'artem', start: [7, 3] },
+        { entity: 'boy', start: [7.5, 3.5] },
+        { entity: 'car', start: [5, 6], facing: 270 },
+        { entity: 'van', start: [3, 10], facing: 45 }
+      ]
+    });
+  });
+  it('оставляет только героев из референсов плана, человеку направление по ходу не пишет', () => {
+    const copied = viewpointFromShot(source, ['boy']);
+    expect(copied.subjects).toEqual([{ entity: 'boy', start: [7.5, 3.5] }]);
+  });
+  it('камера без своего направления по-прежнему целится в героев', () => {
+    const aimed: SceneViewpoint = {
+      location: 'street',
+      side: 'south',
+      size: 'wide',
+      camera: { start: [0, 0] },
+      subjects: [{ entity: 'artem', start: [0, 5], end: [5, 5] }]
+    };
+    const copied = viewpointFromShot(aimed, ['artem']);
+    expect('heading' in copied).toBe(false);
+    expect(copied.subjects).toEqual([{ entity: 'artem', start: [5, 5] }]);
   });
 });
 

@@ -167,6 +167,7 @@ export function SceneShotEditor({
         schemes={schemes?.schemes ?? null}
         schemesError={schemes?.error ?? null}
         requestSchemes={schemes?.request ?? noop}
+        sources={scenes.scenes.flatMap((scene) => (scene.id !== shot.id && scene.viewpoint ? [{ shot: scene.id, viewpoint: scene.viewpoint }] : []))}
         onChange={(viewpoint) => updateShot({ viewpoint })}
       />
       <TextField

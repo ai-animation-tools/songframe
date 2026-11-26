@@ -313,6 +313,30 @@ export function withReferences(viewpoint: SceneViewpoint, references: readonly s
   return syncSide(kept.length ? { ...rest, subjects: kept } : rest);
 }
 
+/**
+ * Точка съёмки с последнего кадра другого плана — неподвижная: камера, своё направление, высота и наклон берутся
+ * на конце плана, герои стоят там, где его закончили. Так новый план начинается с той же расстановки, а камеру
+ * дальше двигают на карте. Камера без своего направления по-прежнему целится в героев. Движущаяся машина без
+ * своего направления (vehicles) получает его по ходу, чтобы остановиться передом туда же, куда ехала. Из героев
+ * остаются только референсы плана (withReferences), локация, крупность и угол обзора — как у источника.
+ */
+export function viewpointFromShot(source: SceneViewpoint, references: readonly string[], vehicles: readonly string[] = []): SceneViewpoint {
+  const { camera, heading, camera_height: height, tilt, subjects, ...rest } = source;
+  const still: SceneViewpoint = { ...rest };
+  if (camera) still.camera = { start: pathPoint(camera, 'end')! };
+  if (heading) still.heading = { start: heading.end ?? heading.start };
+  if (height) still.camera_height = { start: height.end ?? height.start };
+  if (tilt) still.tilt = { start: tilt.end ?? tilt.start };
+  if (subjects?.length) {
+    still.subjects = subjects.map(({ entity, facing, ...path }) => {
+      const along = facing === undefined && vehicles.includes(entity) && moves(path) ? headingBetween(path.start, path.end!) : null;
+      const kept = facing ?? (along === null ? undefined : Math.round(along) % 360);
+      return { entity, start: pathPoint(path, 'end')!, ...(kept === undefined ? {} : { facing: kept }) };
+    });
+  }
+  return withReferences(syncSide(still), references);
+}
+
 /** Делает героя главным: он становится первым, остальные сохраняют порядок. */
 export function setLead(viewpoint: SceneViewpoint, entity: string): SceneViewpoint {
   const subjects = viewpoint.subjects ?? [];

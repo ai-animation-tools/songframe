@@ -298,6 +298,31 @@ export const ViewpointCoordinates: Story = {
   }
 };
 
+export const ViewpointCopiedFromShot: Story = {
+  name: 'Точка съёмки · «Взять с плана» переносит расстановку последнего кадра другого плана',
+  tags: ['!autodocs', 'ci'],
+  parameters: { songframe: scenarioPageOptions({ route: '/project/scenario?shot=M03', placed: ['M01'] }) },
+  play: async (context) => {
+    const screen = await ready(context);
+    await editorHeading(screen, 'M03');
+    await userEvent.click(viewpointBlock(screen));
+    // Кнопка стоит рядом с «Задать точку съёмки»; в меню — только планы с точкой съёмки.
+    await userEvent.click(await screen.findByRole('button', { name: viewpointTexts.copyFrom }));
+    const items = await screen.findAllByRole('menuitem');
+    await expect(items.map((item: HTMLElement) => item.textContent)).toEqual([expect.stringMatching(/^M01 · /)]);
+    await userEvent.click(items[0]);
+    // Карта открывается сразу: камера и герой стоят там же, где у M01.
+    const map = within(await screen.findByRole('dialog', { name: viewpointTexts.fullscreenTitle({ shot: 'M03' }) }));
+    // Расстановка M01 сразу в черновике сценария.
+    await waitFor(() => expect(scenarioStateInspection().draft).toContain('"camera":{"start":[0,-8]}'));
+    await expect(scenarioStateInspection().draft).toContain('"subjects":[{"entity":"hero","start":[0,3]}]');
+    const camera = within(map.getByRole('group', { name: new RegExp(`^${viewpointTexts.coords}: ${viewpointTexts.camera}`) }));
+    await expect(camera.getByRole('spinbutton', { name: viewpointTexts.coordY })).toHaveValue(-8);
+    const hero = within(map.getByRole('group', { name: new RegExp(`^${viewpointTexts.coords}: Герой`) }));
+    await expect(hero.getByRole('spinbutton', { name: viewpointTexts.coordY })).toHaveValue(3);
+  }
+};
+
 export const ViewpointVehicleFacing: Story = {
   name: 'Точка съёмки · стоящая машина передом к камере, своё направление числом',
   tags: ['!autodocs', 'ci'],

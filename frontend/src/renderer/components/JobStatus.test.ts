@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import type { JobInfo } from '@shared/types';
+import { commonTexts } from '@shared/texts/common';
 import { JobStatus } from './JobStatus';
 
 function job(overrides: Partial<JobInfo> = {}): JobInfo {
@@ -33,6 +34,13 @@ describe('Результат операции у действия', () => {
     const html = render({ running: true, label: 'Подготовка повтора M44' });
     expect(html).toContain('role="progressbar"');
     expect(html).toContain('Подготовка повтора M44');
+  });
+
+  it('показывает идущее задание заметной плашкой с прошедшим временем', () => {
+    const html = render({ job: job({ startedAt: new Date(Date.now() - 125_000).toISOString() }) });
+    expect(html).toContain('role="status"');
+    expect(html).toContain('2 мин 5 с');
+    expect(commonTexts.job.elapsed(42)).toBe('42 с');
   });
 
   it('показывает выполняющееся задание без содержимого журнала', () => {

@@ -91,7 +91,7 @@ func TestRegistry(t *testing.T) {
 			t.Errorf("сборка из опор: параметр %+v", spec)
 		}
 	}
-	if strings.Join(ids, ",") != "reverse,light,rain,grain" {
+	if strings.Join(ids, ",") != "reverse,push,light,rain,grain" {
 		t.Fatalf("эффекты %v", ids)
 	}
 	if !Reversed([]Step{{ID: "grain"}, {ID: "reverse"}}) || Reversed([]Step{{ID: "rain"}, {ID: "snow"}}) {
@@ -571,5 +571,52 @@ func TestStaticShotPan(t *testing.T) {
 		if got := pixel(plain.Frame(t0), 1, 18); got != [3]uint8{250, 0, 0} {
 			t.Errorf("опора в пропорциях кадра сдвинулась на кадре %d: %v", t0, got)
 		}
+	}
+}
+
+// TestPush — «Наезд» поверх видео идёт тем же ходом, что наезд и отъезд сборки из опор, а вне моментов
+// начала и конца кадр стоит: до начала — весь кадр у наезда, после конца — итоговое приближение.
+func TestPush(t *testing.T) {
+	base := solid(64, 36, 10, 20, 30)
+	setRect(base, 8, 6, 20, 14, 200, 40, 0)
+	setRect(base, 44, 22, 58, 32, 0, 60, 220)
+	size := Size{64, 36, 21}
+	apply := func(params map[string]float64, frame int) *Frame {
+		chain, err := Build([]Step{{ID: "push", Params: params}}, size)
+		if err != nil {
+			t.Fatal(err)
+		}
+		f := base.Clone()
+		chain[0].Apply(&Context{Frame: frame, Frames: size.Frames, FPS: 24}, f)
+		return f
+	}
+	same := func(a, b *Frame) bool {
+		for i := range a.Pix {
+			if a.Pix[i] != b.Pix[i] {
+				return false
+			}
+		}
+		return true
+	}
+	for _, amount := range []float64{0.2, -0.2} {
+		shot, err := NewStaticShot(base, []State{{Image: base, From: 0}}, map[string]float64{"push_in": amount, "center_x": 0.3, "center_y": 0.6}, size)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, frame := range []int{0, 7, 20} {
+			if !same(apply(map[string]float64{"amount": amount, "center_x": 0.3, "center_y": 0.6}, frame), shot.Frame(frame)) {
+				t.Errorf("наезд %v, кадр %d: не как у сборки из опор", amount, frame)
+			}
+		}
+	}
+	window := map[string]float64{"amount": 0.2, "start": 0.25, "end": 0.5}
+	if !same(apply(window, 3), base) {
+		t.Error("до начала движения кадр изменился")
+	}
+	if !same(apply(window, 12), apply(window, 20)) || same(apply(window, 12), base) {
+		t.Error("после конца движения кадр не стоит на итоговом приближении")
+	}
+	if !same(apply(map[string]float64{"amount": 0}, 20), base) {
+		t.Error("нулевой наезд изменил кадр")
 	}
 }

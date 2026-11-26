@@ -5,6 +5,10 @@ import { productionTexts } from '@shared/texts/production';
 import { componentsTexts } from '@shared/texts/components';
 import { receivedPackage, RESULT_ERROR, resultStoryOptions, ResultStory } from '../../../testing/resultStories';
 
+/** Масштаб открытого просмотра (data-zoom-value), проценты: 100 — 1:1. */
+const zoomOf = (dialog: HTMLElement): string | null => dialog.querySelector('[data-zoom-value]')?.getAttribute('data-zoom-value') ?? null;
+const zoomViewport = (dialog: HTMLElement): HTMLElement => dialog.querySelector<HTMLElement>('[data-zoom-viewport]')!;
+
 const meta = {
   title: 'Производство/Пакет/Полученный результат',
   component: ResultStory,
@@ -44,15 +48,16 @@ export const SummaryGallery: Story = {
     await expect(within(dialog).getByRole('button', { name: 'Предыдущее изображение' })).toBeDisabled();
     await userEvent.keyboard('{ArrowRight}');
     await expect(within(dialog).getByRole('img')).toHaveAttribute('src', expect.stringContaining('summary=2'));
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Оригинальный размер (1:1)' }));
-    await expect(within(dialog).getByRole('button', { name: 'Оригинальный размер (1:1)' })).toHaveAttribute('aria-pressed', 'true');
+    // Двойной щелчок — 1:1 (сброс при закрытии проверяет история просмотра изображений).
+    await userEvent.dblClick(zoomViewport(dialog));
+    await expect(zoomOf(dialog)).toBe('100');
     await userEvent.keyboard('{Escape}');
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     await userEvent.click(canvas.getByRole('button', { name: /Открыть крупно: Техническая сводка.*summary=1/ }));
     dialog = await screen.findByRole('dialog');
     await waitFor(() => expect(dialog).toBeVisible());
     await expect(within(dialog).getByRole('img')).toHaveAttribute('src', expect.stringContaining('summary=1'));
-    await expect(within(dialog).getByRole('button', { name: 'Оригинальный размер (1:1)' })).toHaveAttribute('aria-pressed', 'false');
+    await expect(within(dialog).getByRole('slider')).toBeInTheDocument();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Закрыть' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   }

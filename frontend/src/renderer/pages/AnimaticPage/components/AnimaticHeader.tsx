@@ -39,7 +39,9 @@ export function AnimaticHeader({
   return (
     <Box sx={{ display: 'flex', width: '100%', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
       <Typography variant="h5">{navigationTexts.pages.animatic}</Typography>
-      {built ? (
+      {running ? (
+        <Chip size="small" color="info" label={animaticTexts.header.building} />
+      ) : built ? (
         <Chip
           size="small"
           color={accepted ? 'success' : built.fresh ? 'info' : 'warning'}
@@ -49,7 +51,7 @@ export function AnimaticHeader({
         <Chip size="small" variant="outlined" label={animaticTexts.header.notBuilt} />
       )}
       {/* Индикатор сборки в закреплённой панели виден при любой прокрутке. */}
-      <JobStatus running={running} />
+      {running ? <JobStatus running label={animaticTexts.header.buildingStatus} /> : null}
       {running && runningJobId ? (
         <Button component={Link} to={jobLogRoute(runningJobId)} size="small" startIcon={<ListAltIcon />}>
           {commonTexts.job.openLog}

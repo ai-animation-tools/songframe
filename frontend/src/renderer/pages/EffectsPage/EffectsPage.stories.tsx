@@ -128,6 +128,11 @@ export const AddAndApply: Story = {
     await expect(canvasElement.querySelector('video')).toBeNull();
     await userEvent.click(canvas.getByRole('button', { name: texts.apply }));
     await expect(effectsPageInspection().renders).toEqual([{ shot: 'M02', steps: [{ effect: 'rain', given: {} }] }]);
+    // Пока ролик считается, вместо прежнего состояния — заметная плашка идущего задания.
+    const running = await canvas.findByRole('status', {}, WAIT);
+    await expect(within(running).getByText('Эффект M02')).toBeVisible();
+    await expect(canvas.queryByText(texts.status.none)).toBeNull();
+    await expect(canvas.queryByText(texts.status.dirty)).toBeNull();
     await screen.findByText(texts.applied, undefined, WAIT);
     await canvas.findByText(texts.status.fresh, undefined, WAIT);
     await expect(canvas.queryByText(texts.status.dirty)).toBeNull();

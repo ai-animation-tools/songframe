@@ -76,7 +76,8 @@ export const componentsTexts = {
     },
     pages: {
       production: { label: 'В производстве', title: 'на странице «Производство»' },
-      scenario: { label: 'В сценарии', title: 'на странице «Сценарий»' }
+      scenario: { label: 'В сценарии', title: 'на странице «Сценарий»' },
+      effects: { label: 'Эффекты', title: 'на странице «Эффекты»' }
     },
     openPlan: ({ shot, title }: { shot: string; title: string }) => `Открыть план ${shot} ${title}`
   },

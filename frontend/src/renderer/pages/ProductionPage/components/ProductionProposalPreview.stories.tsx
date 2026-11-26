@@ -11,6 +11,10 @@ import { WORKFLOW_STORY_DESCRIPTION, workflowProposal } from '../../../testing/p
 const labels = productionTexts.productionProposalPreview;
 const dialogLabels = productionTexts.productionProposalDialog;
 
+/** Масштаб открытого просмотра (data-zoom-value), проценты: 100 — 1:1. */
+const zoomOf = (dialog: HTMLElement): string | null => dialog.querySelector('[data-zoom-value]')?.getAttribute('data-zoom-value') ?? null;
+const zoomViewport = (dialog: HTMLElement): HTMLElement => dialog.querySelector<HTMLElement>('[data-zoom-viewport]')!;
+
 const meta = {
   title: 'Производство/Подготовка/Предложение и сравнение',
   component: ProposalPreviewStory,
@@ -155,16 +159,17 @@ export const Frames: Story = {
     await expect(within(gallery).getByRole('button', { name: 'Предыдущее изображение' })).toBeDisabled();
     await userEvent.keyboard('{ArrowRight}');
     await expect(within(gallery).getByText('Кандидат опоры · 2 / 2')).toBeInTheDocument();
-    await userEvent.click(within(gallery).getByRole('button', { name: 'Оригинальный размер (1:1)' }));
-    await expect(within(gallery).getByRole('button', { name: 'Оригинальный размер (1:1)' })).toHaveAttribute('aria-pressed', 'true');
+    // Двойной щелчок — 1:1, масштаб держится при листании (сброс при закрытии проверяет история просмотра изображений).
+    await userEvent.dblClick(zoomViewport(gallery));
+    await expect(zoomOf(gallery)).toBe('100');
     await userEvent.keyboard('{ArrowLeft}');
-    await expect(within(gallery).getByRole('button', { name: 'Оригинальный размер (1:1)' })).toHaveAttribute('aria-pressed', 'false');
+    await expect(zoomOf(gallery)).toBe('100');
     await userEvent.keyboard('{Escape}');
     await waitFor(() => expect(body.queryByRole('dialog')).not.toBeInTheDocument());
     await userEvent.click(canvas.getByRole('button', { name: /Открыть крупно: K02/ }));
     gallery = body.getByRole('dialog');
     await expect(within(gallery).getByText('Кандидат опоры · 2 / 2')).toBeInTheDocument();
-    await expect(within(gallery).getByRole('button', { name: 'Оригинальный размер (1:1)' })).toHaveAttribute('aria-pressed', 'false');
+    await expect(within(gallery).getByRole('slider')).toBeInTheDocument();
     await userEvent.click(within(gallery).getByRole('button', { name: 'Закрыть' }));
     await waitFor(() => expect(body.queryByRole('dialog')).not.toBeInTheDocument());
     await userEvent.click(canvas.getByRole('button', { name: labels.apply }));

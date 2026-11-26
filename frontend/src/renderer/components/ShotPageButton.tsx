@@ -1,16 +1,21 @@
-/** Переход к тому же плану на другой странице: «В сценарии» открывает редактор его постановки, «В производстве» — его пакеты. */
+/**
+ * Переход к тому же плану на другой странице: «В сценарии» открывает редактор его постановки, «В производстве» — его
+ * пакеты, «Эффекты» — эффекты поверх его принятого участка.
+ */
 import { componentsTexts } from '@shared/texts/components';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BuildIcon from '@mui/icons-material/Build';
 import TheatersIcon from '@mui/icons-material/Theaters';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { ActionButton } from './ActionButton';
 import { shotPageRoute, type ShotPage } from './shotRoutes';
 
 // Значки те же, что у страниц в боковой навигации.
 const PAGES: Record<ShotPage, { label: string; title: string; icon: ReactElement }> = {
   production: { ...componentsTexts.shot.pages.production, icon: <BuildIcon /> },
-  scenario: { ...componentsTexts.shot.pages.scenario, icon: <TheatersIcon /> }
+  scenario: { ...componentsTexts.shot.pages.scenario, icon: <TheatersIcon /> },
+  effects: { ...componentsTexts.shot.pages.effects, icon: <AutoAwesomeIcon /> }
 };
 
 export function ShotPageButton({

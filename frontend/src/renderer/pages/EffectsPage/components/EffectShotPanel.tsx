@@ -127,6 +127,7 @@ export function EffectShotPanel({
     [...steps].sort((a, b) => kinds.findIndex((kind) => kind.id === a.effect) - kinds.findIndex((kind) => kind.id === b.effect));
   const status = !shot.applied ? texts.status.none : shot.stale ? texts.status.stale({ reason: shot.stale }) : texts.status.fresh;
   const fresh = shot.applied && !shot.stale;
+  const rendering = job?.status === 'running';
   // Эффект с источником и лучом (свет): его ручки показывает общее превью.
   const beamIndex = draft.findIndex((step) => !!byId.get(step.effect)?.beam);
   const beamStep = beamIndex >= 0 ? draft[beamIndex] : null;
@@ -223,10 +224,18 @@ export function EffectShotPanel({
 
   const actions = (
     <Stack spacing={1} sx={{ minWidth: 0 }}>
-      <Alert severity={fresh ? 'success' : shot.applied ? 'warning' : 'info'}>
-        <LinkedText text={status} />
-      </Alert>
-      {dirty ? <Alert severity="warning">{texts.status.dirty}</Alert> : null}
+      {/* Пока ролик считается, вместо прежнего состояния («нет эффекта», «несохранённые изменения») — идущее
+          задание: иначе рядом с ним читалось бы, что ничего не происходит. */}
+      {rendering ? (
+        <JobStatus job={job} />
+      ) : (
+        <>
+          <Alert severity={fresh ? 'success' : shot.applied ? 'warning' : 'info'}>
+            <LinkedText text={status} />
+          </Alert>
+          {dirty ? <Alert severity="warning">{texts.status.dirty}</Alert> : null}
+        </>
+      )}
       <ActionButton
         variant="contained"
         startIcon={<AutoAwesomeIcon />}
@@ -304,7 +313,7 @@ export function EffectShotPanel({
           <LinkedText text={actionError} />
         </Alert>
       ) : null}
-      <JobStatus job={job ?? undefined} />
+      {rendering ? null : <JobStatus job={job ?? undefined} />}
     </Stack>
   );
 

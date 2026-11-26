@@ -48,7 +48,8 @@ export function AnimaticPage(): ReactElement {
       </PageActionBar>
       {/* Сбой последней сборки виден и после уведомления: причина и переход к её журналу. */}
       {page.failedJob && !running ? <JobStatus job={page.failedJob} /> : null}
-      <AnimaticProblems problems={view.problems} built={Boolean(built)} />
+      {/* Причины пересборки к идущей сборке уже не относятся: на её время список скрыт. */}
+      {running ? null : <AnimaticProblems problems={view.problems} built={Boolean(built)} />}
       {built?.videoPath ? (
         <Box
           sx={{

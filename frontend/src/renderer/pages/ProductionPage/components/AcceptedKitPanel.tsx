@@ -7,7 +7,8 @@
  * (production.acceptedKit) при показе; новая попытка возвращает обычный путь шагов. У своего видео опоры и промпт есть, только если их указали при загрузке; тогда они
  * показываются так же, как у генерации, а пустой промпт не показывается. «Открыть папку» показывает папку комплекта
  * в файловом менеджере ОС. «Изменить участок» у плеера «Принятый участок» открывает окно приёмки с прежним участком: тот же оригинал
- * комплекта принимается заново с другими границами, скоростью и удержаниями. «Взять текущий кадр» рядом с «На весь экран»
+ * комплекта принимается заново с другими границами, скоростью и удержаниями; «Эффекты» рядом открывает страницу «Эффекты» с этим
+ * планом. «Взять текущий кадр» рядом с «На весь экран»
  * плеера «Принятый участок» сохраняет кадр, на котором стоит этот плеер, в PNG полного размера вне клипа
  * (production.takeFrame): кадр берётся из видео без эффектов; после сохранения — путь и «Открыть папку» с кадрами клипа.
  */
@@ -17,6 +18,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ContentCutIcon from '@mui/icons-material/ContentCut';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import { useInRouterContext } from 'react-router-dom';
 import { commonTexts } from '@shared/texts/common';
 import { productionTexts } from '@shared/texts/production';
 import { mediaProviderInfo } from '@shared/media-providers';
@@ -26,6 +28,7 @@ import { ActionButton } from '../../../components/ActionButton';
 import { AudioPlayer } from '../../../components/AudioPlayer';
 import { ImageGallery } from '../../../components/ImageGallery';
 import { ImageThumbnail } from '../../../components/ImageThumbnail';
+import { ShotPageButton } from '../../../components/ShotPageButton';
 import { AcceptedAsset } from './AcceptedAsset';
 import { ManualGenerationInfo } from './ManualGeneration';
 import { PromptVariantsText, promptVariantText } from './PromptVariantsText';
@@ -56,6 +59,8 @@ export function AcceptedKitPanel({
   onRecut?(): void;
 }): ReactElement | null {
   const { notify, describeError } = useApp();
+  // Вне маршрутизатора (изолированная история панели) переходить некуда: кнопки «Эффекты» нет.
+  const routed = useInRouterContext();
   const [kit, setKit] = useState<AcceptedKit | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [active, setActive] = useState<number | null>(null);
@@ -124,7 +129,8 @@ export function AcceptedKitPanel({
   };
   const shownFrame = taken?.shot === shot.id ? taken : null;
 
-  // «Изменить участок» относится к принятому участку и стоит у его плеера рядом с «Взять текущий кадр».
+  // «Изменить участок» относится к принятому участку и стоит у его плеера рядом с «Взять текущий кадр»; за ним —
+  // переход на «Эффекты» с этим планом: эффекты ложатся на принятый участок.
   const recutButton = onRecut ? (
     <ActionButton
       size="small"
@@ -161,6 +167,7 @@ export function AcceptedKitPanel({
                 {texts.takeFrame}
               </ActionButton>
               {recutButton}
+              {routed ? <ShotPageButton page="effects" shot={shot.id} /> : null}
             </>
           }
         />

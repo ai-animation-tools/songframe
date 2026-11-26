@@ -74,6 +74,13 @@ export const commonTexts = {
     openLog: 'Открыть журнал',
     done: ({ title }: { title: string }) => `${title}: выполнено.`,
     running: 'Выполняется',
+    /** Сколько идёт задание: секунды, с минуты — минуты и секунды, с часа — часы и минуты. */
+    elapsed: (seconds: number) =>
+      seconds < 60
+        ? `${seconds} с`
+        : seconds < 3600
+          ? `${Math.floor(seconds / 60)} мин ${seconds % 60} с`
+          : `${Math.floor(seconds / 3600)} ч ${Math.floor((seconds % 3600) / 60)} мин`,
     interrupted: 'Прервано'
   },
   // Общие поля обозначают те же данные в редакторе плана и в сравнении предложения.

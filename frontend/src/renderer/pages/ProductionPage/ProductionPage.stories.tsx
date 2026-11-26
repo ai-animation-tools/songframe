@@ -1224,7 +1224,7 @@ export const AcceptedPlan: Story = {
 
 export const AcceptedPlanRecut: Story = {
   tags: ['ci'],
-  name: 'Принятый план · «Изменить участок» у плеера принятого участка, из оригинала комплекта с прежним участком',
+  name: 'Принятый план · «Изменить участок» и «Эффекты» у плеера принятого участка, участок из оригинала комплекта с прежним',
   parameters: { songframe: acceptedOptions({ acceptedKit: manualKit }) },
   play: async (context) => {
     const screen = screenOf(context);
@@ -1235,6 +1235,8 @@ export const AcceptedPlanRecut: Story = {
     const accepted = screen.getByText(texts.productionShotCard.acceptedVideo).closest('.MuiChip-root')!.parentElement!;
     await expect(within(accepted).getByRole('button', { name: texts.acceptedKit.recut })).toBe(recut);
     await expect(within(recut.parentElement!).getByRole('button', { name: texts.acceptedKit.takeFrame })).toBeInTheDocument();
+    // Рядом — переход на «Эффекты» с этим планом.
+    await expect(within(recut.parentElement!).getByRole('button', { name: componentsTexts.shot.pages.effects.label })).toBeEnabled();
     await userEvent.click(recut);
     const dialog = within(await screen.findByRole('dialog'));
     await expect(dialog.getByText(dialogTexts.recutTitle({ shot: 'M01' }))).toBeInTheDocument();

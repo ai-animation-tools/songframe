@@ -2,11 +2,12 @@
 
 export const SHOT_PARAM = 'shot';
 
-export type ShotPage = 'production' | 'scenario';
+export type ShotPage = 'production' | 'scenario' | 'effects';
 
 const SHOT_PAGE_PATHS: Record<ShotPage, string> = {
   production: '/project/production',
-  scenario: '/project/scenario'
+  scenario: '/project/scenario',
+  effects: '/project/effects'
 };
 
 /** Маршрут страницы с выбранным планом; код плана кодируется как значение параметра. */

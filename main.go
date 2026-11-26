@@ -47,6 +47,7 @@ var assets embed.FS
 // main возвращает ненулевой код при неготовом frontend или невозможности записать smoke-отчёт.
 // Обычный запуск не создаёт отчёт и не завершает окно автоматически.
 func main() {
+	restoreSnapEnvironment()
 	if err := run(); err != nil {
 		log.Print(err)
 		os.Exit(1)

@@ -179,6 +179,8 @@ interface ScenarioModel {
   approvals: number;
   callbacks: number;
   note: string;
+  /** Планы последней запущенной доработки. */
+  noteIds: string[];
   savedDraft: string;
   subscribe(listener: () => void): () => void;
   revision(): number;
@@ -223,6 +225,7 @@ export function scenarioWorkflowOptions(mode: ScenarioStoryMode = 'prepare'): St
         approvals: 0,
         callbacks: 0,
         note: '',
+        noteIds: [],
         savedDraft: '',
         subscribe(listener) {
           listeners.add(listener);
@@ -248,6 +251,7 @@ export function scenarioWorkflowOptions(mode: ScenarioStoryMode = 'prepare'): St
           model.approvals = 0;
           model.callbacks = 0;
           model.note = '';
+          model.noteIds = [];
           model.savedDraft = '';
           failedApply = false;
           if (['scenes', 'revise', 'drafts', 'accepted'].includes(mode))
@@ -314,9 +318,10 @@ export function scenarioWorkflowOptions(mode: ScenarioStoryMode = 'prepare'): St
               !(pass === 'treatment' ? model.view.canStartTreatment : pass === 'scenes' ? model.view.canStartScenes : model.view.canRevise)
             )
               throw new Error('Сначала согласуйте входы сценария.');
-            if (pass === 'revise' && (!note?.trim() || selectedIds?.join(',') !== 'M01')) throw new Error('Выберите M01 и заполните замечание.');
+            if (pass === 'revise' && (!note?.trim() || !selectedIds?.length)) throw new Error('Отметьте планы и заполните замечание.');
             model.starts++;
             model.note = note?.trim() ?? '';
+            model.noteIds = selectedIds ?? [];
             model.completeRequested = false;
             model.view.proposal = scenarioProposal(pass, {
               id: `scenario-proposal-${model.starts + 1}`,
@@ -478,6 +483,7 @@ function ScenarioPanelContent({ model, hasShots }: { model: ScenarioModel; hasSh
       workflow={workflow}
       selected="M01"
       hasShots={hasShots}
+      shots={SCENARIO_STORY_SHOTS}
       scenesDirty={model.dirty}
       editorBusy={false}
       scenesInputProblem={model.inputsReady ? null : 'Согласуйте разметку и добавьте изображения кастинга.'}
@@ -490,6 +496,13 @@ function ScenarioPanelContent({ model, hasShots }: { model: ScenarioModel; hasSh
     />
   );
 }
+
+/** Планы окна доработки: выбранный на странице M01 и соседи, которых можно отметить вместе с ним. */
+const SCENARIO_STORY_SHOTS = [
+  { id: 'M01', action: 'Герой подходит к старым воротам и останавливается.' },
+  { id: 'M02', action: 'Крупно: рука касается ржавой щеколды.' },
+  { id: 'M03', action: 'Ворота открываются, за ними пустой двор.' }
+];
 
 /** hasShots — в сценарии есть планы; без них доработки выбранного плана нет. */
 export function ScenarioWorkflowStory({ hasShots = true }: { hasShots?: boolean }) {
@@ -507,7 +520,11 @@ export function ScenarioWorkflowStory({ hasShots = true }: { hasShots?: boolean 
       <Typography data-testid="scenario-drafts">
         {model.savedDraft || (model.dirty ? 'В обоих редакторах есть несохранённые правки.' : 'Черновики не изменены.')}
       </Typography>
-      {model.note && <Typography data-testid="scenario-note">Отправленное замечание для M01: {model.note}</Typography>}
+      {model.note && (
+        <Typography data-testid="scenario-note">
+          Отправленное замечание для {model.noteIds.join(', ')}: {model.note}
+        </Typography>
+      )}
       <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
         {model.view.busy && (
           <Button

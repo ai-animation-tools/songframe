@@ -1238,7 +1238,7 @@ export const CheckRevise: Story = {
     const revise = await panel.findByRole('button', { name: scenarioTexts.check.revise });
     await expect(panel.queryByRole('button', { name: scenarioTexts.check.fixButton })).not.toBeInTheDocument();
     await userEvent.click(revise);
-    const dialog = within(await screen.findByRole('dialog', { name: scenarioTexts.revise.title }));
+    const dialog = within(await screen.findByRole('dialog', { name: scenarioTexts.revise.dialogTitle }));
     await expect(dialog.getByText(scenarioTexts.revise.context({ ids: ['M04'] }))).toBeInTheDocument();
     const note = dialog.getByRole('textbox', { name: scenarioTexts.revise.note }) as HTMLTextAreaElement;
     await expect(note.value).toContain('Сосед появляется раньше куплета');

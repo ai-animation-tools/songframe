@@ -312,6 +312,30 @@ export const Revise: Story = {
     await expect(screen.getByTestId('scenario-drafts')).toHaveTextContent('Черновики сброшены');
   }
 };
+export const ReviseSeveral: Story = {
+  name: 'Доработка нескольких планов · выбранный отмечен, соседи добавляются одним заданием',
+  tags: ['ci'],
+  parameters: { songframe: scenarioWorkflowOptions('revise') },
+  play: async (context) => {
+    const screen = await ready(context);
+    await userEvent.click(screen.getByRole('button', { name: scenarioTexts.revise.title }));
+    const dialog = within(await screen.findByRole('dialog', { name: scenarioTexts.revise.dialogTitle }));
+    const list = within(dialog.getByRole('group', { name: scenarioTexts.revise.shots }));
+    await expect(list.getByRole('checkbox', { name: /M01/ })).toBeChecked();
+    await expect(list.getByRole('checkbox', { name: /M02/ })).not.toBeChecked();
+    // Снятый единственный план не даёт запустить доработку.
+    await userEvent.click(list.getByRole('checkbox', { name: /M01/ }));
+    await userEvent.type(dialog.getByRole('textbox', { name: scenarioTexts.revise.note }), 'Один ракурс на все три плана.');
+    await expect(dialog.getByRole('button', { name: scenarioTexts.revise.prepare })).toBeDisabled();
+    await userEvent.click(list.getByRole('checkbox', { name: /M03/ }));
+    await userEvent.click(list.getByRole('checkbox', { name: /M01/ }));
+    await userEvent.click(list.getByRole('checkbox', { name: /M02/ }));
+    await expect(dialog.getByText(scenarioTexts.revise.context({ ids: ['M01', 'M02', 'M03'] }))).toBeVisible();
+    await userEvent.click(dialog.getByRole('button', { name: scenarioTexts.revise.prepare }));
+    await waitFor(() => expect(screen.getByTestId('scenario-counts')).toHaveTextContent('Запусков: 1.'));
+    await expect(screen.getByTestId('scenario-note')).toHaveTextContent('Отправленное замечание для M01, M02, M03: Один ракурс на все три плана.');
+  }
+};
 export const ReviseNoteReset: Story = {
   name: 'Доработка M01 · отмена хранит черновик, запуск очищает замечание',
   tags: ['ci'],

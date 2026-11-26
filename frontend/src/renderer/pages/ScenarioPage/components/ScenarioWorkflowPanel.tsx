@@ -12,7 +12,7 @@ import { AiProblemAlert } from '../../../components/AiProblemAlert';
 import { AgentJobCard } from '../../../components/AgentJobCard';
 import type { useScenarioWorkflow } from '../useScenarioWorkflow';
 import { ScenarioDraftConflictDialog } from './ScenarioDraftConflictDialog';
-import { ScenarioReviseDialog } from './ScenarioReviseDialog';
+import { ScenarioReviseDialog, type ReviseShotOption } from './ScenarioReviseDialog';
 import { ScenarioProposalDialog } from './ScenarioProposalDialog';
 import { LinkedText } from '../../../components/LinkedText';
 import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
@@ -27,6 +27,7 @@ export function ScenarioWorkflowPanel({
   editorBusy,
   scenesInputProblem,
   reviseRequest = null,
+  shots = [],
   onResolveDrafts
 }: {
   project: string;
@@ -40,6 +41,8 @@ export function ScenarioWorkflowPanel({
   scenesInputProblem?: string | null;
   /** Доработка, открытая из отчёта проверки: планы, замечание и номер проблемы; seq различает повторные запросы. */
   reviseRequest?: { ids: string[]; note: string; issue: number; seq: number } | null;
+  /** Сохранённые планы сценария по порядку: из них в окне доработки отмечают несколько. */
+  shots?: ReviseShotOption[];
   onResolveDrafts(action: 'save' | 'discard'): Promise<boolean>;
 }): ReactElement {
   const [preview, setPreview] = useState(false);
@@ -285,7 +288,9 @@ export function ScenarioWorkflowPanel({
         </ConfirmationDialog>
         <ScenarioReviseDialog
           open={revise}
+          shots={shots}
           ids={reviseIds}
+          onIds={setReviseIds}
           acceptedIds={reviseIds.filter((id) => acceptedShots.includes(id))}
           note={note}
           busy={disabled}

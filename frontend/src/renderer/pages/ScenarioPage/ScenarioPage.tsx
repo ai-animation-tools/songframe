@@ -137,6 +137,7 @@ export function ScenarioPage(): ReactElement {
         editorBusy={busy}
         scenesInputProblem={scenario.scenesInputProblem}
         reviseRequest={reviseRequest}
+        shots={(view?.scenes?.scenes ?? []).map((shot) => ({ id: shot.id, action: shot.action }))}
         onResolveDrafts={scenario.resolveWorkflowDrafts}
       />
       <ScenarioCheckPanel

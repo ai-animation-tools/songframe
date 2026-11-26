@@ -3,7 +3,7 @@ import { commonTexts } from '@shared/texts/common';
 import type { ReactElement } from 'react';
 import { Box, MenuItem, TextField } from '@mui/material';
 import type { CastEntity, SourceKind } from '@shared/types';
-import { WORLD, hasHeight } from '../constants';
+import { VEHICLE, WORLD, hasHeight } from '../constants';
 
 interface CastEntityIdentityFieldsProps {
   entity: CastEntity;
@@ -23,8 +23,16 @@ export function CastEntityIdentityFields({ entity, entities, kinds, onUpdate, on
         select
         label={commonTexts.type}
         value={entity.kind}
-        // У мира и локаций роста нет: смена типа на них снимает рост, иначе запись отклонит его.
-        onChange={(e) => onUpdate(hasHeight(e.target.value) ? { kind: e.target.value } : { kind: e.target.value, height: undefined })}
+        // У мира и локаций роста нет, длина и ширина есть только у транспорта: смена типа снимает лишние размеры,
+        // иначе запись отклонит их.
+        onChange={(e) => {
+          const kind = e.target.value;
+          onUpdate({
+            kind,
+            ...(hasHeight(kind) ? {} : { height: undefined }),
+            ...(kind === VEHICLE ? {} : { length: undefined, width: undefined })
+          });
+        }}
         disabled={entity.kind === WORLD}
       >
         {kinds.map((k) => (

@@ -13,7 +13,7 @@ const FRAME_ASPECT = 16 / 9;
 const LEAD_COLOR = '#ef6c00';
 const SUBJECT_COLOR = '#7b1fa2';
 /** Пустой список машин: один на все отрисовки, чтобы кадры не пересчитывались. */
-const NO_VEHICLES: FigureVehicles = [];
+const NO_VEHICLES: FigureVehicles = {};
 
 /** Фигуры героев кадра phase для объёма: главный — оранжевый, остальные — фиолетовые; машины — коробкой. */
 export function figureExtras(viewpoint: SceneViewpoint, phase: ViewpointPhase, heights: FigureHeights, vehicles: FigureVehicles): VolumeExtra[] {
@@ -29,7 +29,7 @@ export function figureExtras(viewpoint: SceneViewpoint, phase: ViewpointPhase, h
  * поворачивается или меняет высоту либо герои движутся, последний. Общие для карты точки съёмки и отдельного окна вида
  * из камеры. Кадры пересчитываются только при смене точки, схемы или роста: новый массив фигур перестраивал бы сцену
  * при каждой отрисовке. minFrameWidth — ширина, от которой кадры встают рядом, а не друг под другом. vehicles — машины
- * среди героев: они рисуются коробкой, а не цилиндром.
+ * среди героев с длиной и шириной: они рисуются коробкой, а не цилиндром.
  */
 export function CameraFrames({
   viewpoint,

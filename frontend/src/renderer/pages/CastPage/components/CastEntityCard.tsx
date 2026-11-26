@@ -9,7 +9,7 @@ import type { CastEntity, CastProperty, SourceKind } from '@shared/types';
 import { ImageGenerateButton } from '../../../components/ImageGenerateButton';
 import { AiProblemAlert } from '../../../components/AiProblemAlert';
 import { StateEditor } from '../../../components';
-import { WORLD, hasHeight } from '../constants';
+import { VEHICLE, WORLD, hasHeight } from '../constants';
 import type { CastImageOption } from '../types';
 import { CastEntityIdentityFields } from './CastEntityIdentityFields';
 import { CastEntityImages } from './CastEntityImages';
@@ -122,7 +122,42 @@ export function CastEntityCard({
       <AccordionDetails>
         <Stack spacing={2}>
           <CastEntityIdentityFields entity={entity} entities={entities} kinds={kinds} onUpdate={onUpdate} onRename={onRename} />
-          {hasHeight(entity.kind) ? (
+          {entity.kind === VEHICLE ? (
+            <Stack spacing={1.5}>
+              <TextField
+                label={castTexts.role}
+                value={entity.role}
+                onChange={(e) => onUpdate({ role: e.target.value })}
+                placeholder={castTexts.rolePlaceholder}
+              />
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 1.5, alignItems: 'start' }}>
+                <NumberField
+                  label={castTexts.vehicleLength}
+                  value={entity.length}
+                  optional
+                  min={0}
+                  helperText={castTexts.vehicleLengthHint}
+                  onChange={(length) => onUpdate({ length })}
+                />
+                <NumberField
+                  label={castTexts.vehicleWidth}
+                  value={entity.width}
+                  optional
+                  min={0}
+                  helperText={castTexts.vehicleWidthHint}
+                  onChange={(width) => onUpdate({ width })}
+                />
+                <NumberField
+                  label={castTexts.vehicleHeight}
+                  value={entity.height}
+                  optional
+                  min={0}
+                  helperText={castTexts.vehicleHeightHint}
+                  onChange={(height) => onUpdate({ height })}
+                />
+              </Box>
+            </Stack>
+          ) : hasHeight(entity.kind) ? (
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 220px' }, gap: 1.5, alignItems: 'start' }}>
               <TextField
                 label={castTexts.role}

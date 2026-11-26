@@ -2240,6 +2240,94 @@
         },
         "end": null
       }
+    },
+    {
+      "name": "vehicle-long-truck",
+      "description": "Грузовик длиной 12 м из кастинга боком к камере заслоняет героя, которого легковая машина той же точки не закрыла бы; высота — из кастинга.",
+      "input": {
+        "viewpoint": {
+          "location": "lot",
+          "side": "south",
+          "size": "wide",
+          "camera": {
+            "start": [
+              0,
+              0
+            ]
+          },
+          "subjects": [
+            {
+              "entity": "hero",
+              "start": [
+                5.5,
+                10
+              ]
+            },
+            {
+              "entity": "truck",
+              "start": [
+                0,
+                5
+              ],
+              "facing": 0
+            }
+          ]
+        },
+        "scheme": "lot",
+        "heights": {
+          "hero": 1.8,
+          "truck": 3.2
+        },
+        "vehicles": [
+          "truck"
+        ],
+        "sizes": {
+          "truck": [
+            12,
+            2.5
+          ]
+        }
+      },
+      "expected": {
+        "camera": {
+          "side": "south",
+          "size": "wide",
+          "fov": 60
+        },
+        "start": {
+          "looks": "на север",
+          "camera_height": 1.6,
+          "subjects": [
+            {
+              "entity": "hero",
+              "lead": true,
+              "in_frame": true,
+              "x": 0.44,
+              "place": "правая треть",
+              "distance": 11.4,
+              "height": 1.8,
+              "frame_height": 0.25,
+              "whole": true,
+              "hidden_by": [
+                "truck"
+              ]
+            },
+            {
+              "entity": "truck",
+              "in_frame": true,
+              "x": -0.44,
+              "place": "левая треть",
+              "distance": 5,
+              "height": 3.2,
+              "frame_height": 0.91,
+              "whole": false,
+              "hidden_by": []
+            }
+          ],
+          "objects": []
+        },
+        "end": null
+      }
     }
   ]
 }

@@ -73,7 +73,7 @@ var Areas = []Area{
 		Docs:     []string{"docs/schemes.md"},
 		Packages: []string{"internal/schemes", "internal/viewframe"},
 		Pages:    []string{"SchemesPage", "CameraViewPage"},
-		Paths:    []string{"frontend/src/shared/schemes.ts", "frontend/src/shared/scheme-editing.ts", "frontend/src/shared/scheme-canvas.ts", "frontend/src/shared/scheme-volume.ts", "frontend/src/shared/camera3d.ts", "frontend/src/renderer/components/SchemeVolumeView.tsx", "frontend/src/shared/viewpoint.ts", "frontend/src/shared/viewpoint-camera.ts", "frontend/src/renderer/components/SchemePreview.tsx", "frontend/src/renderer/components/CameraFrames.tsx", "frontend/src/shared/camera-window.ts", "internal/app/camera_window.go", "internal/scenario/viewpoint.go", "frontend/src/shared/viewframe.ts", "frontend/src/shared/viewframe.test.ts", "frontend/src/renderer/pages/ScenarioPage/components/ViewpointAgentFacts.tsx"},
+		Paths:    []string{"frontend/src/shared/schemes.ts", "frontend/src/shared/scheme-presets.ts", "frontend/src/shared/scheme-editing.ts", "frontend/src/shared/scheme-canvas.ts", "frontend/src/shared/scheme-volume.ts", "frontend/src/shared/camera3d.ts", "frontend/src/renderer/components/SchemeVolumeView.tsx", "frontend/src/shared/viewpoint.ts", "frontend/src/shared/viewpoint-camera.ts", "frontend/src/renderer/components/SchemePreview.tsx", "frontend/src/renderer/components/CameraFrames.tsx", "frontend/src/shared/camera-window.ts", "internal/app/camera_window.go", "internal/scenario/viewpoint.go", "frontend/src/shared/viewframe.ts", "frontend/src/shared/viewframe.test.ts", "frontend/src/renderer/pages/ScenarioPage/components/ViewpointAgentFacts.tsx"},
 	},
 	{
 		Title:    "Разметка песни",

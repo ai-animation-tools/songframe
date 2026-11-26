@@ -1,5 +1,5 @@
 import type { DetachedWindowApi, DetachedWindowEvent } from './detached-window';
-import type { Scheme } from './schemes';
+import type { Scheme, SchemePoint } from './schemes';
 import type { SceneViewpoint } from './viewpoint';
 
 /**
@@ -14,8 +14,8 @@ export interface CameraWindowState {
   viewpoint: SceneViewpoint;
   /** Рост героев из кастинга, м. */
   heights: Record<string, number>;
-  /** Машины среди сущностей кастинга: на виде они коробка, а не цилиндр. */
-  vehicles: string[];
+  /** Машины среди сущностей кастинга с длиной и шириной, м: на виде они коробка, а не цилиндр. */
+  vehicles: Record<string, SchemePoint>;
   theme: 'light' | 'dark' | 'system';
   /** Точку съёмки можно править: иначе зум в окне выключен (план принят и не открыт для правки). */
   editable: boolean;

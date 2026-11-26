@@ -79,7 +79,8 @@ export function SchemeCanvas({
   viewKey,
   onSelect,
   onChange,
-  onToolCancel
+  onToolCancel,
+  onViewCenter
 }: {
   scheme: Scheme;
   /** Высота холста, px: страница отдаёт ему свободную высоту окна под закреплённой панелью инструментов. */
@@ -94,6 +95,8 @@ export function SchemeCanvas({
   onChange(scheme: Scheme): void;
   /** Esc без черновика при включённом рисовании: страница возвращает инструмент выбора. */
   onToolCancel(): void;
+  /** Центр видимой области (метры схемы) при каждом сдвиге вида: редактор ставит сюда заготовки. */
+  onViewCenter?(center: SchemePoint): void;
 }): ReactElement {
   const theme = useTheme();
   const boxRef = useRef<HTMLDivElement>(null);
@@ -140,6 +143,9 @@ export function SchemeCanvas({
   useEffect(() => {
     if (chosen.current && viewKey) storeView(viewKey, viewport);
   }, [viewport, viewKey]);
+  useEffect(() => {
+    onViewCenter?.(viewport.center);
+  }, [viewport.center, onViewCenter]);
 
   useEffect(() => {
     setDraft([]);

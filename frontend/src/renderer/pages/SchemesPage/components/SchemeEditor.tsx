@@ -1,6 +1,6 @@
 import { schemesTexts } from '@shared/texts/schemes';
 import { commonTexts } from '@shared/texts/common';
-import { useLayoutEffect, useRef, useState, type ReactElement, type RefObject } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState, type ReactElement, type RefObject } from 'react';
 import { Alert, AlertTitle, Box, Paper, Stack, TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CropSquareIcon from '@mui/icons-material/CropSquare';
@@ -12,10 +12,12 @@ import PentagonOutlinedIcon from '@mui/icons-material/PentagonOutlined';
 import PlaceIcon from '@mui/icons-material/Place';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
-import type { Scheme, SchemeEntity, SchemeLocation } from '@shared/schemes';
+import type { Scheme, SchemeEntity, SchemeLocation, SchemePoint } from '@shared/schemes';
+import { addPresetObjects } from '@shared/scheme-presets';
 import { ActionButton } from '../../../components/ActionButton';
 import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 import { ObjectProperties } from './ObjectProperties';
+import { SchemePresetMenu, type PresetAddition } from './SchemePresetMenu';
 import { MIN_CANVAS_HEIGHT, SchemeCanvas, type SchemeTool } from './SchemeCanvas';
 import { SchemeVolumeView } from '../../../components/SchemeVolumeView';
 
@@ -138,6 +140,20 @@ export function SchemeEditor({
   const [volume, setVolume] = useState(false);
   const object = scheme?.objects.find((item) => item.id === selected) ?? null;
   const name = location.name || location.id;
+  // Центр видимой части холста: туда встают объекты заготовок. Хранится вне состояния, чтобы сдвиг вида не перерисовывал редактор.
+  const viewCenter = useRef<SchemePoint>([0, 0]);
+  const rememberCenter = useCallback((center: SchemePoint): void => {
+    viewCenter.current = center;
+  }, []);
+  /** Вносит объекты заготовки в схему одной правкой и выделяет первый из них. */
+  const addPreset = (addition: PresetAddition): void => {
+    if (!scheme) return;
+    const { scheme: next, added } = addPresetObjects(scheme, addition.objects, addition.name);
+    onChange(next);
+    setSelected(added[0]?.id ?? null);
+  };
+  // Центр кладётся на клетку в полметра: объекты встают ровно, а не на дробную координату вида.
+  const presetAt = (): SchemePoint => [Math.round(viewCenter.current[0] * 2) / 2, Math.round(viewCenter.current[1] * 2) / 2];
   const { rootRef, toolbarRef, canvasRef, wide, canvasHeight } = useEditorLayout(stickyTop, !!scheme);
 
   return (
@@ -230,6 +246,7 @@ export function SchemeEditor({
                 >
                   {schemesTexts.fit}
                 </ActionButton>
+                <SchemePresetMenu at={presetAt()} onAdd={addPreset} />
                 {onFullscreen ? (
                   <ActionButton startIcon={<OpenInFullIcon />} onClick={onFullscreen}>
                     {commonTexts.fullscreen.open}
@@ -274,6 +291,7 @@ export function SchemeEditor({
                 onSelect={setSelected}
                 onChange={onChange}
                 onToolCancel={() => setTool('select')}
+                onViewCenter={rememberCenter}
               />
             )}
             {/* Справа от холста свойства прокручиваются сами в его высоту: страница не уезжает под закреплённую панель. */}

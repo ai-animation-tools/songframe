@@ -1,6 +1,7 @@
 /** Карточки используют общую модель черновика, сохранения и привязок референсов. */
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { castTexts } from '@shared/texts/cast';
 import { CastStory, castStoryOptions } from '../../../testing/castStories';
 
 const meta = {
@@ -37,6 +38,21 @@ export const LongNames: Story = {
     await waitFor(() => expect(heading).toHaveAttribute('aria-expanded', 'false'));
     await userEvent.click(heading);
     await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Название' })).toBeVisible());
+  }
+};
+export const Vehicle: Story = {
+  name: 'Транспорт · длина, ширина и высота; смена типа снимает длину и ширину',
+  args: { variant: 'vehicle' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('spinbutton', { name: castTexts.vehicleLength })).toHaveValue(7);
+    await expect(canvas.getByRole('spinbutton', { name: castTexts.vehicleWidth })).toHaveValue(null);
+    await expect(canvas.getByText(castTexts.vehicleWidthHint)).toBeVisible();
+    await expect(canvas.getByRole('spinbutton', { name: castTexts.vehicleHeight })).toHaveValue(3.2);
+    await userEvent.click(canvas.getByRole('combobox', { name: 'Тип' }));
+    await userEvent.click(await within(canvasElement.ownerDocument.body).findByRole('option', { name: 'Предмет' }));
+    await waitFor(() => expect(canvas.queryByRole('spinbutton', { name: castTexts.vehicleLength })).not.toBeInTheDocument());
+    await expect(canvas.getByRole('spinbutton', { name: castTexts.height })).toHaveValue(3.2);
   }
 };
 export const WithoutDictionary: Story = { name: 'Нет словаря · свои свойства состояния', args: { variant: 'no-dictionary' } };

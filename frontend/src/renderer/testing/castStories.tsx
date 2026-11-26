@@ -81,7 +81,7 @@ export function makeCastStory(): CastFile {
   };
 }
 
-export type CastStoryVariant = 'regular' | 'no-images' | 'broken-image' | 'long' | 'world' | 'no-dictionary' | 'no-kinds' | 'invalid';
+export type CastStoryVariant = 'regular' | 'no-images' | 'broken-image' | 'long' | 'world' | 'vehicle' | 'no-dictionary' | 'no-kinds' | 'invalid';
 
 /** Отдельные варианты меняют только демонстрационные данные, сохраняя контракт рабочего cast.json. */
 export function castStoryFixture(variant: CastStoryVariant = 'regular'): CastFile {
@@ -95,6 +95,20 @@ export function castStoryFixture(variant: CastStoryVariant = 'regular'): CastFil
     cast.entities[0].appearance = 'Сохранять синюю куртку, рабочие перчатки, направление вечернего света и следы предыдущей сцены. '.repeat(5);
     cast.properties.character[0].label = 'Одежда и отличительные детали внешности для непрерывности между соседними сценами';
     cast.properties.character[0].hint = 'Подробно опишите одежду, повреждения и аксессуары, которые должны сохраняться во всех последующих планах.';
+  }
+  if (variant === 'vehicle') {
+    cast.entities.unshift({
+      id: 'truck',
+      kind: 'vehicle',
+      name: 'Грузовик',
+      short_name: 'Грузовик',
+      role: 'привозит доски к воротам',
+      appearance: 'Синяя кабина, открытый кузов с досками.',
+      length: 7,
+      height: 3.2,
+      images: [],
+      initial_state: {}
+    });
   }
   if (variant === 'no-dictionary') cast.properties = {};
   if (variant === 'no-kinds') {

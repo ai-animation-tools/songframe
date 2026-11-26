@@ -150,7 +150,7 @@ func subjectFigures(viewpoint Viewpoint, cast Cast, phase string) []figure {
 	for index, subject := range viewpoint.Subjects {
 		figures[index] = figure{at: points[index], height: cast.height(subject.Entity)}
 		if cast.Vehicles[subject.Entity] {
-			footprint := vehicleFootprint(points[index], viewpoint.Facing(index, phase))
+			footprint := vehicleFootprint(points[index], viewpoint.Facing(index, phase), cast.VehicleSize(subject.Entity))
 			figures[index].vehicle = &footprint
 		}
 	}

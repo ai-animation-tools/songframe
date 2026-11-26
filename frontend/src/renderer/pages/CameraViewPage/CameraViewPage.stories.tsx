@@ -22,12 +22,12 @@ const MOVING: CameraWindowState = {
     subjects: [{ entity: 'hero', start: [0, 2] }]
   },
   heights: { hero: 1.8 },
-  vehicles: [],
+  vehicles: {},
   theme: 'light',
   editable: true
 };
 
-/** Машина у ворот: стоит боком к камере по своему направлению, рядом герой; машина — коробка, а не цилиндр. */
+/** Грузовая телега у ворот длиной 7 м из кастинга: стоит боком к камере по своему направлению, рядом герой; машина — коробка, а не цилиндр. */
 const VEHICLE: CameraWindowState = {
   ...MOVING,
   viewpoint: {
@@ -41,7 +41,7 @@ const VEHICLE: CameraWindowState = {
       { entity: 'cart', start: [2, 3], facing: 0 }
     ]
   },
-  vehicles: ['cart']
+  vehicles: { cart: [7, 2.5] }
 };
 
 /** Сообщения, отправленные страницей окна в истории: play проверяет по ним зум. */

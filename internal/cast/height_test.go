@@ -55,12 +55,12 @@ func TestHeight(t *testing.T) {
 	}
 }
 
-// TestKeepHeights — ответ агента не меняет рост: заданный человеком остаётся, придуманный отбрасывается.
-func TestKeepHeights(t *testing.T) {
+// TestKeepMeasures — ответ агента не меняет рост: заданный человеком остаётся, придуманный отбрасывается.
+func TestKeepMeasures(t *testing.T) {
 	previous := heightCast(t, `,"height":1.2`)
 	next := heightCast(t, `,"height":1.7`)
 	dynvalue.Get(next, "entities").(*dynvalue.Array).Items[2].(*dynvalue.Object).Set("height", 0.1)
-	KeepHeights(next, previous)
+	KeepMeasures(next, previous)
 	normalized, err := Normalize(next, LoadDefaults())
 	if err != nil {
 		t.Fatal(err)
@@ -71,8 +71,50 @@ func TestKeepHeights(t *testing.T) {
 	}
 	// Без прежнего кастинга агенту нечего сохранять: рост не появляется.
 	fresh := heightCast(t, `,"height":1.7`)
-	KeepHeights(fresh, nil)
+	KeepMeasures(fresh, nil)
 	if strings.Contains(dynvalue.Stringify(fresh), "height") {
 		t.Fatal("рост без прежнего кастинга")
+	}
+}
+
+// TestVehicleSize — длина и ширина: необязательные числа после роста, только у транспорта, в тех же границах;
+// ответ агента их не меняет.
+func TestVehicleSize(t *testing.T) {
+	truck := func(kind, size string) any {
+		value, err := dynvalue.Parse([]byte(`{"schema_version":1,"entities":[
+			{"id":"truck","kind":"` + kind + `","name":"Грузовик","short_name":"Грузовик","role":"","appearance":"","images":[],"initial_state":{}` + size + `}
+		],"properties":{}}`))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return value
+	}
+	normalized, err := Normalize(truck(VehicleKind, `,"width":2.5,"height":3.2,"length":7`), LoadDefaults())
+	if err != nil {
+		t.Fatal(err)
+	}
+	entity := dynvalue.Get(normalized, "entities").(*dynvalue.Array).Items[0].(*dynvalue.Object)
+	if !slices.Equal(entity.Keys(), []string{"id", "kind", "name", "short_name", "role", "appearance", "height", "length", "width", "images", "initial_state"}) {
+		t.Fatalf("порядок ключей: %v", entity.Keys())
+	}
+	if _, err := Normalize(truck(VehicleKind, `,"length":"7"`), LoadDefaults()); err == nil || err.Error() != textEntityStructureInvalid {
+		t.Fatalf("длина строкой: %v", err)
+	}
+	for _, size := range []string{`,"length":0`, `,"width":-1`, `,"length":501`} {
+		if problems, err := Validate(truck(VehicleKind, size)); err != nil || !slices.Contains(problems, textSizeInvalid("Грузовик")) {
+			t.Fatalf("%s: %v %v", size, problems, err)
+		}
+	}
+	if problems, _ := Validate(truck("prop", `,"length":7`)); !slices.Contains(problems, textSizeNotAllowed("Грузовик")) {
+		t.Fatalf("длина не у транспорта: %v", problems)
+	}
+	if problems, _ := Validate(truck(VehicleKind, `,"length":7`)); len(problems) != 0 {
+		t.Fatalf("одна длина без ширины: %v", problems)
+	}
+	next := truck(VehicleKind, `,"length":12`)
+	KeepMeasures(next, truck(VehicleKind, `,"length":7,"width":2.5`))
+	text := dynvalue.Stringify(next)
+	if !strings.Contains(text, `"length":7`) || !strings.Contains(text, `"width":2.5`) || strings.Contains(text, `"length":12`) {
+		t.Fatalf("размеры после ответа агента: %s", text)
 	}
 }

@@ -1,7 +1,7 @@
 import { productionTexts } from './texts/production';
 /** Предметные задания производства; вопросы и решения принадлежат workflow.json пакета. */
 import type { AgentJob } from './agents';
-import type { Scheme } from './schemes';
+import type { Scheme, SchemePoint } from './schemes';
 import type { SceneViewpoint, ViewpointPhase } from './viewpoint';
 
 export type ProductionPass = 'description' | 'frames' | 'prompt' | 'request';
@@ -119,6 +119,8 @@ export interface ProductionComposition {
   scheme: Scheme;
   heights: Record<string, number>;
   vehicles: string[];
+  /** Длина и ширина машин, заданные в кастинге, м; у машины без размеров — типовые. */
+  sizes: Record<string, SchemePoint>;
   frames: { phase: ViewpointPhase; path: string }[];
 }
 

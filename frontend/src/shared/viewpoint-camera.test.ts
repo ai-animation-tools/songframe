@@ -1,6 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { cameraMatrix, projectPoint } from './camera3d';
-import { EYE_HEIGHT, FIGURE_HEIGHT, VEHICLE_HEIGHT, VEHICLE_LENGTH, VEHICLE_WIDTH, lookPitch, subjectFigures, viewpointCamera } from './viewpoint-camera';
+import {
+  EYE_HEIGHT,
+  FIGURE_HEIGHT,
+  VEHICLE_HEIGHT,
+  VEHICLE_LENGTH,
+  VEHICLE_WIDTH,
+  castVehicles,
+  compositionVehicles,
+  lookPitch,
+  subjectFigures,
+  vehicleSize,
+  viewpointCamera
+} from './viewpoint-camera';
 import type { SceneViewpoint } from './viewpoint';
 
 const placed: SceneViewpoint = {
@@ -125,7 +137,12 @@ describe('вид из камеры', () => {
   it('машина — коробка по габаритам: стоящая передом к камере, со своим направлением — по нему, едущая — по ходу', () => {
     const span = (points: number[][], axis: 0 | 1): number => Math.max(...points.map((point) => point[axis])) - Math.min(...points.map((point) => point[axis]));
     const car = (subject: SceneViewpoint['subjects'] & object): number[][] =>
-      subjectFigures({ location: 'yard', side: 'south', size: 'wide', camera: { start: [0, 0] }, subjects: subject }, 'start', {}, ['car'])[0].triangles.flat();
+      subjectFigures(
+        { location: 'yard', side: 'south', size: 'wide', camera: { start: [0, 0] }, subjects: subject },
+        'start',
+        {},
+        { car: vehicleSize() }
+      )[0].triangles.flat();
     // Камера на юге: стоящая машина без своего направления длинной стороной к камере — вдоль Y.
     const facing = car([{ entity: 'car', start: [0, 10] }]);
     expect(span(facing, 1)).toBeCloseTo(VEHICLE_LENGTH, 6);
@@ -143,6 +160,25 @@ describe('вид из камеры', () => {
     expect(span(person.triangles.flat(), 1)).toBeLessThan(1);
   });
 
+  it('длина и ширина машины из кастинга: незаданная сторона — типовая, не-транспорт не машина', () => {
+    const vehicles = castVehicles([
+      { id: 'truck', kind: 'vehicle', length: 7 },
+      { id: 'car', kind: 'vehicle' },
+      { id: 'box', kind: 'prop', length: 3 }
+    ]);
+    expect(vehicles).toEqual({ truck: [7, VEHICLE_WIDTH], car: [VEHICLE_LENGTH, VEHICLE_WIDTH] });
+    expect(compositionVehicles(['truck', 'car'], { truck: [12, 2.5] })).toEqual({ truck: [12, 2.5], car: [VEHICLE_LENGTH, VEHICLE_WIDTH] });
+    const span = (points: number[][], axis: 0 | 1): number => Math.max(...points.map((point) => point[axis])) - Math.min(...points.map((point) => point[axis]));
+    const truck = subjectFigures(
+      { location: 'yard', side: 'south', size: 'wide', camera: { start: [0, 0] }, subjects: [{ entity: 'truck', start: [0, 10], facing: 0 }] },
+      'start',
+      {},
+      { truck: [12, 2.5] }
+    )[0].triangles.flat();
+    expect(span(truck, 0)).toBeCloseTo(12, 6);
+    expect(span(truck, 1)).toBeCloseTo(2.5, 6);
+  });
+
   it('наклон камеры к машине — на середину её типовой высоты', () => {
     const viewpoint: SceneViewpoint = {
       location: 'yard',
@@ -151,6 +187,6 @@ describe('вид из камеры', () => {
       camera: { start: [0, 0] },
       subjects: [{ entity: 'car', start: [0, 10] }]
     };
-    expect(lookPitch(viewpoint, 'start', {}, ['car'])).toBeCloseTo(Math.atan2(VEHICLE_HEIGHT / 2 - EYE_HEIGHT, 10), 9);
+    expect(lookPitch(viewpoint, 'start', {}, { car: vehicleSize() })).toBeCloseTo(Math.atan2(VEHICLE_HEIGHT / 2 - EYE_HEIGHT, 10), 9);
   });
 });

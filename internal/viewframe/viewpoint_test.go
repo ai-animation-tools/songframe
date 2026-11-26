@@ -1,6 +1,10 @@
 package viewframe
 
-import "testing"
+import (
+	"testing"
+
+	"songframe/internal/dynvalue"
+)
 
 // TestCameraMoves — камера «движется», если последний кадр снят с другого места, высоты, направления или наклона,
 // в том числе когда без своего направления она следит за идущим героем; движение одного героя при камере со своим
@@ -30,5 +34,28 @@ func TestCameraMoves(t *testing.T) {
 		if got := item.viewpoint.CameraMoves(Cast{}); got != item.want {
 			t.Errorf("%s: CameraMoves = %v, want %v", item.name, got, item.want)
 		}
+	}
+}
+
+// TestReadCastVehicleSize — длина и ширина машины из кастинга: незаданная сторона типовая, без размеров — типовые
+// обе, у не-транспорта размеры не читаются.
+func TestReadCastVehicleSize(t *testing.T) {
+	value, err := dynvalue.Parse([]byte(`{"entities":[
+		{"id":"truck","kind":"vehicle","length":7},
+		{"id":"bus","kind":"vehicle","length":12,"width":2.5},
+		{"id":"car","kind":"vehicle"},
+		{"id":"box","kind":"prop","length":3}
+	]}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	figures := ReadCast(value)
+	for entity, want := range map[string]Point{"truck": {7, VehicleWidth}, "bus": {12, 2.5}, "car": {VehicleLength, VehicleWidth}} {
+		if got := figures.VehicleSize(entity); got != want {
+			t.Fatalf("%s: %v, ожидалось %v", entity, got, want)
+		}
+	}
+	if _, ok := figures.Sizes["box"]; ok || figures.Vehicles["box"] {
+		t.Fatal("предмет прочитан как машина")
 	}
 }

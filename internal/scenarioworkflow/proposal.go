@@ -393,7 +393,7 @@ func proposalDocuments(raw, pass string, before Documents, scaffold any, selecte
 	}
 	if pass == "treatment" {
 		// Рост сущностей задаёт человек: ответ агента его не меняет.
-		cast.KeepHeights(value.Value("cast"), before.Cast)
+		cast.KeepMeasures(value.Value("cast"), before.Cast)
 		normalized, err := cast.Normalize(value.Value("cast"), cast.LoadDefaults())
 		if err != nil {
 			return Documents{}, err

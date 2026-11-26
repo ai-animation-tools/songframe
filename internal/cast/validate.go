@@ -61,9 +61,28 @@ func textHeightInvalid(label string) string {
 func textHeightNotAllowed(label string) string {
 	return label + ": у мира и локаций роста нет — размеры локации задаёт её схема."
 }
+func textSizeInvalid(label string) string {
+	return label + ": длина и ширина — положительные числа метров не больше 500."
+}
+func textSizeNotAllowed(label string) string {
+	return label + ": длина и ширина задаются только у транспорта."
+}
 
 // MaxHeight — верхняя граница роста или высоты сущности, м: заведомо выше любого предмета в кадре.
 const MaxHeight = 500.0
+
+// VehicleKind — тип транспорта: только у него есть длина и ширина, на виде из камеры он — коробка, а не фигура.
+const VehicleKind = "vehicle"
+
+// measureKeys — необязательные размеры сущности в метрах в порядке записи: рост или высота, длина и ширина
+// (последние две — только у транспорта). Их задаёт человек на странице «Кастинг».
+var measureKeys = []string{"height", "length", "width"}
+
+// validMeasure — размер сущности: конечное положительное число метров не больше MaxHeight.
+func validMeasure(value any) bool {
+	number, ok := value.(float64)
+	return ok && !math.IsNaN(number) && !math.IsInf(number, 0) && number > 0 && number <= MaxHeight
+}
 
 // heightlessKinds — типы без роста: мир сцены — общие условия, а размеры локации задаёт её схема.
 var heightlessKinds = []string{WorldID, "location"}
@@ -167,10 +186,18 @@ func Validate(cast any) ([]string, error) {
 			}
 		}
 		if height := dynvalue.Get(entity, "height"); height != dynvalue.Undefined {
-			if value, ok := height.(float64); !ok || math.IsNaN(value) || math.IsInf(value, 0) || value <= 0 || value > MaxHeight {
+			if !validMeasure(height) {
 				problems = append(problems, textHeightInvalid(labelText))
 			} else if kindText, _ := kind.(string); slices.Contains(heightlessKinds, kindText) {
 				problems = append(problems, textHeightNotAllowed(labelText))
+			}
+		}
+		length, width := dynvalue.Get(entity, "length"), dynvalue.Get(entity, "width")
+		if length != dynvalue.Undefined || width != dynvalue.Undefined {
+			if (length != dynvalue.Undefined && !validMeasure(length)) || (width != dynvalue.Undefined && !validMeasure(width)) {
+				problems = append(problems, textSizeInvalid(labelText))
+			} else if !dynvalue.StrictEqual(kind, VehicleKind) {
+				problems = append(problems, textSizeNotAllowed(labelText))
 			}
 		}
 		state, err := dynvalue.Entries(dynvalue.Get(entity, "initial_state"))
@@ -255,7 +282,7 @@ func validProperty(value any) bool {
 
 // Normalize — строгая проверка типов документа (ответ агента и ручной JSON),
 // затем нормализация полей и проверка Validate. Записываемый документ содержит только
-// schema_version, entities (с восемью полями сущности и необязательным ростом height) и properties —
+// schema_version, entities (с восемью полями сущности и необязательными размерами height, length, width) и properties —
 // лишние поля отбрасываются.
 // Ошибка — сообщение отказа сохранения (проблемы через пробел).
 func Normalize(value any, defaults Defaults) (*dynvalue.Object, error) {
@@ -281,9 +308,11 @@ func Normalize(value any, defaults Defaults) (*dynvalue.Object, error) {
 		if valid {
 			state, stateOK := dynvalue.AsObject(entity.Value("initial_state"))
 			valid = isStrings(entity.Value("images")) && stateOK
-			if height := entity.Value("height"); height != dynvalue.Undefined {
-				_, isNumber := height.(float64)
-				valid = valid && isNumber
+			for _, key := range measureKeys {
+				if measure := entity.Value(key); measure != dynvalue.Undefined {
+					_, isNumber := measure.(float64)
+					valid = valid && isNumber
+				}
 			}
 			for _, key := range keysOf(state) {
 				if _, isString := state.Value(key).(string); !isString {
@@ -338,9 +367,11 @@ func Normalize(value any, defaults Defaults) (*dynvalue.Object, error) {
 		result.Set("role", dynvalue.Trim(text("role")))
 		// Общее описание переносится дословно: правка другого поля не должна менять canonical source.
 		result.Set("appearance", text("appearance"))
-		// Рост — только у сущности, где его задали: отсутствие ключа и есть «не задан».
-		if height := entity.Value("height"); height != dynvalue.Undefined {
-			result.Set("height", height)
+		// Размеры — только у сущности, где их задали: отсутствие ключа и есть «не задан».
+		for _, key := range measureKeys {
+			if measure := entity.Value(key); measure != dynvalue.Undefined {
+				result.Set(key, measure)
+			}
 		}
 		result.Set("images", entity.Value("images"))
 		result.Set("initial_state", state)
@@ -406,17 +437,22 @@ func References(cast any) (*dynvalue.Object, error) {
 	return result, nil
 }
 
-// KeepHeights переносит рост сущностей из previous в документ next, пришедший от агента: рост задаёт
-// человек на странице «Кастинг», агент его не меняет — заданный остаётся, придуманный агентом отбрасывается.
-// Сущности сопоставляются по коду; next меняется на месте и потом проходит Normalize, которая ставит ключ на
-// его место. Документы другой формы пропускаются: их отклонит Normalize.
-func KeepHeights(next, previous any) {
-	heights := map[string]any{}
+// KeepMeasures переносит размеры сущностей (рост, длину и ширину) из previous в документ next, пришедший от
+// агента: размеры задаёт человек на странице «Кастинг», агент их не меняет — заданные остаются, придуманные
+// агентом отбрасываются. Сущности сопоставляются по коду; next меняется на месте и потом проходит Normalize,
+// которая ставит ключи на их место. Документы другой формы пропускаются: их отклонит Normalize.
+func KeepMeasures(next, previous any) {
+	measures := map[string]map[string]any{}
 	if entities, ok := dynvalue.AsArray(dynvalue.Get(previous, "entities")); ok {
 		for _, entity := range entities {
 			if id, ok := dynvalue.Get(entity, "id").(string); ok {
-				if height := dynvalue.Get(entity, "height"); height != dynvalue.Undefined {
-					heights[id] = height
+				for _, key := range measureKeys {
+					if measure := dynvalue.Get(entity, key); measure != dynvalue.Undefined {
+						if measures[id] == nil {
+							measures[id] = map[string]any{}
+						}
+						measures[id][key] = measure
+					}
 				}
 			}
 		}
@@ -427,10 +463,11 @@ func KeepHeights(next, previous any) {
 		if !ok {
 			continue
 		}
-		entity.Delete("height")
-		if id, ok := entity.Value("id").(string); ok {
-			if height, found := heights[id]; found {
-				entity.Set("height", height)
+		id, _ := entity.Value("id").(string)
+		for _, key := range measureKeys {
+			entity.Delete(key)
+			if measure, found := measures[id][key]; found {
+				entity.Set(key, measure)
 			}
 		}
 	}

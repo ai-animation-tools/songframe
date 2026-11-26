@@ -340,3 +340,79 @@ export const Volume: Story = {
     await canvasOf(canvas, 'Перекрёсток');
   }
 };
+
+const presetMenuItem = async (canvasElement: HTMLElement, canvas: Canvas, name: string): Promise<void> => {
+  await userEvent.click(canvas.getByRole('button', { name: schemesTexts.presets.add }));
+  await userEvent.click(await within(canvasElement.ownerDocument.body).findByRole('menuitem', { name }));
+};
+
+export const AddPresetSingle: Story = {
+  name: 'Набор заготовок · грузовик ставится обычным объектом и выделяется',
+  tags: ['ci'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await canvasOf(canvas, 'Перекрёсток');
+    await presetMenuItem(canvasElement, canvas, schemesTexts.presets.names.truck);
+    await expect(((await canvas.findByRole('textbox', { name: schemesTexts.objectName })) as HTMLInputElement).value).toBe(schemesTexts.presets.names.truck);
+    await expect(canvas.getByText(commonTexts.unsavedChanges)).toBeVisible();
+    await userEvent.click(saveButton(canvas));
+    await waitFor(() => expect(schemesStorySnapshot().saves).toBe(1));
+    const added = schemesStorySnapshot().document.schemes[0].objects.slice(7);
+    await expect(added).toHaveLength(1);
+    await expect(added[0]).toMatchObject({ id: 'o8', name: 'Грузовик', height: 3.2, shape: { type: 'rect', size: [7, 2.5] } });
+  }
+};
+
+export const AddPresetCompound: Story = {
+  name: 'Набор заготовок · дерево даёт ствол и крону одной правкой',
+  tags: ['ci'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await canvasOf(canvas, 'Перекрёсток');
+    await expect(canvas.getByText(schemesTexts.objectsCount({ count: 7 }))).toBeVisible();
+    await presetMenuItem(canvasElement, canvas, schemesTexts.presets.names.tree);
+    await expect(await canvas.findByText(schemesTexts.objectsCount({ count: 9 }))).toBeVisible();
+    await userEvent.click(saveButton(canvas));
+    await waitFor(() => expect(schemesStorySnapshot().saves).toBe(1));
+    const [trunk, crown] = schemesStorySnapshot().document.schemes[0].objects.slice(7);
+    await expect(trunk).toMatchObject({ name: 'Дерево, ствол', height: 2, shape: { type: 'point' } });
+    await expect(crown).toMatchObject({ name: 'Дерево, крона', height: 4, elevation: 2, body: 'ellipsoid', shape: { type: 'ellipse', radii: [2.5, 2.5] } });
+  }
+};
+
+export const AddRoom: Story = {
+  name: 'Набор заготовок · комната по введённым размерам: пол и четыре стены',
+  tags: ['ci'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    await canvasOf(canvas, 'Перекрёсток');
+    await presetMenuItem(canvasElement, canvas, schemesTexts.presets.room.menu);
+    const dialog = within(await page.findByRole('dialog', { name: schemesTexts.presets.room.title }));
+    for (const [label, value] of [
+      [schemesTexts.presets.room.width, '6'],
+      [schemesTexts.presets.room.length, '8'],
+      [schemesTexts.presets.room.height, '3']
+    ]) {
+      const field = dialog.getByRole('spinbutton', { name: label });
+      await userEvent.clear(field);
+      await userEvent.type(field, value);
+    }
+    await userEvent.click(dialog.getByRole('button', { name: schemesTexts.presets.room.confirm }));
+    // Пока окно закрывается, страница под ним недоступна для поиска по ролям.
+    await waitFor(() => expect(page.queryByRole('dialog', { name: schemesTexts.presets.room.title })).not.toBeInTheDocument());
+    await expect(await canvas.findByText(schemesTexts.objectsCount({ count: 12 }))).toBeVisible();
+    await userEvent.click(saveButton(canvas));
+    await waitFor(() => expect(schemesStorySnapshot().saves).toBe(1));
+    const [floor, ...walls] = schemesStorySnapshot().document.schemes[0].objects.slice(7);
+    await expect(floor).toMatchObject({ name: 'Комната, пол', shape: { type: 'rect', size: [6, 8] } });
+    await expect(floor.height).toBeUndefined();
+    await expect(walls.map((wall) => wall.name)).toEqual([
+      'Комната, северная стена',
+      'Комната, южная стена',
+      'Комната, западная стена',
+      'Комната, восточная стена'
+    ]);
+    await expect(walls.every((wall) => wall.height === 3)).toBe(true);
+  }
+};

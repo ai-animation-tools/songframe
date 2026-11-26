@@ -299,6 +299,9 @@ export interface CastEntity {
   appearance: string;
   /** Рост или высота в метрах; нет ключа — не задан. У мира и локаций не бывает: размеры локации задаёт её схема. */
   height?: number;
+  /** Длина и ширина транспорта в плане, м; нет ключа — типовые легкового автомобиля. Только у вида «Транспорт». */
+  length?: number;
+  width?: number;
   /** Пути изображений внутри source; первый основной для карточек. */
   images: string[];
   initial_state: Record<string, string>;

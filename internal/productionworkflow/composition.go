@@ -45,6 +45,8 @@ type CompositionView struct {
 	Scheme    json.RawMessage    `json:"scheme"`
 	Heights   map[string]float64 `json:"heights"`
 	Vehicles  []string           `json:"vehicles"`
+	// Sizes — длина и ширина машин, заданные в кастинге, м; у машины без размеров — типовые.
+	Sizes map[string]viewframe.Point `json:"sizes"`
 	// Frames — сохранённые снимки, если они свежие; пусто — снимка нет или он устарел.
 	Frames []CompositionFrame `json:"frames"`
 	// figures — сколько героев точки съёмки стоит на болванке (персонажи и транспорт).
@@ -84,12 +86,16 @@ func (c *Context) composition(agentImages bool) (*CompositionView, error) {
 	}
 	heights := map[string]float64{}
 	vehicles := []string{}
+	sizes := map[string]viewframe.Point{}
 	for _, subject := range viewpoint.Subjects {
 		if height, ok := c.Figures.Heights[subject.Entity]; ok {
 			heights[subject.Entity] = height
 		}
 		if c.Figures.Vehicles[subject.Entity] {
 			vehicles = append(vehicles, subject.Entity)
+			if size, ok := c.Figures.Sizes[subject.Entity]; ok {
+				sizes[subject.Entity] = size
+			}
 		}
 	}
 	viewpointJSON := json.RawMessage(dynvalue.Stringify(c.Viewpoint))
@@ -101,16 +107,21 @@ func (c *Context) composition(agentImages bool) (*CompositionView, error) {
 	if viewpoint.Changes() {
 		phases = append(phases, viewframe.PhaseEnd)
 	}
-	digestJSON, err := json.Marshal(map[string]any{
+	digest := map[string]any{
 		"version": compositionVersion, "viewpoint": viewpointJSON, "scheme": json.RawMessage(schemeJSON), "heights": heights, "vehicles": vehicles, "phases": phases,
-	})
+	}
+	// Размеры машин входят в отпечаток, только если заданы: снимки машин с типовыми габаритами остаются свежими.
+	if len(sizes) > 0 {
+		digest["sizes"] = sizes
+	}
+	digestJSON, err := json.Marshal(digest)
 	if err != nil {
 		return nil, err
 	}
 	sum := sha256.Sum256(digestJSON)
 	view := &CompositionView{
 		Enabled: c.workflowValue(compositionKey) != false, Digest: hex.EncodeToString(sum[:]), Phases: phases,
-		Viewpoint: viewpointJSON, Scheme: schemeJSON, Heights: heights, Vehicles: vehicles, Frames: []CompositionFrame{},
+		Viewpoint: viewpointJSON, Scheme: schemeJSON, Heights: heights, Vehicles: vehicles, Sizes: sizes, Frames: []CompositionFrame{},
 		figures: len(viewpoint.Subjects),
 	}
 	view.Frames = c.freshComposition(view.Digest, phases)

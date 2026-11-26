@@ -73,7 +73,7 @@ import type { CameraWindowEvent } from '@shared/camera-window';
 import type { MontageDraft, MontageView } from '@shared/montage';
 import type { DerivedShotView } from '@shared/derived-shot';
 import type { EffectsView } from '@shared/effects';
-import type { Scheme, SchemesFile, SchemesView } from '@shared/schemes';
+import type { Scheme, SchemePoint, SchemesFile, SchemesView } from '@shared/schemes';
 import type { SceneViewpoint, ViewpointPhase } from '@shared/viewpoint';
 import type { ViewFrame } from '@shared/viewframe';
 import type * as mediaapi from '../../bindings/songframe/internal/mediaapi/models';
@@ -326,6 +326,8 @@ function toProductionWorkflowView({
             phases: composition.phases as ViewpointPhase[],
             viewpoint: composition.viewpoint as SceneViewpoint,
             scheme: composition.scheme as Scheme,
+            // Go Point — массив ровно из двух чисел (длина, ширина).
+            sizes: composition.sizes as Record<string, SchemePoint>,
             frames: composition.frames.map((frame) => ({ ...frame, phase: frame.phase as ViewpointPhase }))
           }
         }

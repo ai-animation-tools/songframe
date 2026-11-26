@@ -4,7 +4,7 @@
  * сохраняется обратно productionWorkflow.saveComposition.
  */
 import type { ProductionComposition, ProductionCompositionImage } from '@shared/production-workflow';
-import { viewpointCamera } from '@shared/viewpoint-camera';
+import { compositionVehicles, viewpointCamera } from '@shared/viewpoint-camera';
 import { figureExtras } from '../../components/CameraFrames';
 import { volumeSnapshot } from '../../components/SchemeVolumeView';
 
@@ -15,10 +15,11 @@ export const COMPOSITION_HEIGHT = 720;
 /** PNG каждого кадра снимка в base64; без камеры кадра или без WebGL — null. */
 export function compositionImages(composition: ProductionComposition): ProductionCompositionImage[] | null {
   const images: ProductionCompositionImage[] = [];
+  const vehicles = compositionVehicles(composition.vehicles, composition.sizes);
   for (const phase of composition.phases) {
-    const camera = viewpointCamera(composition.viewpoint, phase, composition.heights, composition.vehicles);
+    const camera = viewpointCamera(composition.viewpoint, phase, composition.heights, vehicles);
     if (!camera) return null;
-    const extras = figureExtras(composition.viewpoint, phase, composition.heights, composition.vehicles);
+    const extras = figureExtras(composition.viewpoint, phase, composition.heights, vehicles);
     const url = volumeSnapshot(composition.scheme, camera, extras, COMPOSITION_WIDTH, COMPOSITION_HEIGHT);
     if (!url) return null;
     images.push({ phase, data: url.slice(url.indexOf(',') + 1) });

@@ -20,6 +20,7 @@ type caseFile struct {
 			Scheme    *string            `json:"scheme"`
 			Heights   map[string]float64 `json:"heights"`
 			Vehicles  []string           `json:"vehicles"`
+			Sizes     map[string]Point   `json:"sizes"`
 		} `json:"input"`
 		Expected json.RawMessage `json:"expected"`
 	} `json:"cases"`
@@ -47,7 +48,7 @@ func TestGoldenFrames(t *testing.T) {
 				}
 				scheme = &found
 			}
-			cast := Cast{Heights: item.Input.Heights, Vehicles: map[string]bool{}}
+			cast := Cast{Heights: item.Input.Heights, Vehicles: map[string]bool{}, Sizes: item.Input.Sizes}
 			for _, entity := range item.Input.Vehicles {
 				cast.Vehicles[entity] = true
 			}

@@ -104,6 +104,7 @@ function storyComposition(enabled: boolean, saved: boolean): NonNullable<Product
     },
     heights: { hero: 1.8 },
     vehicles: [],
+    sizes: {},
     frames: saved ? [{ phase: 'start', path: `${STORY_IMAGE_PATH}?composition=start` }] : []
   };
 }

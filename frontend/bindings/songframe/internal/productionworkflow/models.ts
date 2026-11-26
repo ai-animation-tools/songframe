@@ -7,6 +7,9 @@ import * as json$0 from "../../../encoding/json/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as agents$0 from "../agents/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as viewframe$0 from "../viewframe/models.js";
 
 /**
  * CompositionFrame — сохранённый снимок кадра phase (start или end), абсолютный путь PNG.
@@ -36,6 +39,11 @@ export interface CompositionView {
     "scheme": json$0.RawMessage;
     "heights": { [_ in string]: number };
     "vehicles": string[];
+
+    /**
+     * Sizes — длина и ширина машин, заданные в кастинге, м; у машины без размеров — типовые.
+     */
+    "sizes": { [_ in string]: viewframe$0.Point };
 
     /**
      * Frames — сохранённые снимки, если они свежие; пусто — снимка нет или он устарел.

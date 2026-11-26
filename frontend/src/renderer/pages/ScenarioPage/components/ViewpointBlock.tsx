@@ -90,7 +90,7 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import CloseIcon from '@mui/icons-material/Close';
 import PushPinIcon from '@mui/icons-material/PushPin';
 import { ActionIconButton } from '../../../components/ActionIconButton';
-import { lookPitch, type FigureHeights, type FigureVehicles } from '@shared/viewpoint-camera';
+import { castVehicles, isVehicle, lookPitch, type FigureHeights, type FigureVehicles } from '@shared/viewpoint-camera';
 import { castEntityRoute } from '../../../components/castRoutes';
 
 const texts = scenarioTexts.viewpoint;
@@ -353,7 +353,7 @@ function ViewpointPlacement({
     // У едущей направление следует из хода; пустое поле возвращает «передом к камере».
     const subjectIndex = viewpoint.subjects?.findIndex((subject) => subject.entity === key) ?? -1;
     const facingField =
-      subjectIndex >= 0 && vehicles.includes(key) && !moves(path) ? (
+      subjectIndex >= 0 && isVehicle(vehicles, key) && !moves(path) ? (
         <CommitNumberField
           label={texts.facingField}
           value={Math.round(subjectFacing(viewpoint, subjectIndex, 'start')) % 360}
@@ -637,7 +637,7 @@ function CameraWindowButton({
   const { notify, describeError } = useApp();
   const { mode: theme } = useThemeMode();
   const state = useMemo(
-    () => ({ title, scheme, viewpoint, heights, vehicles: [...vehicles], theme, editable }),
+    () => ({ title, scheme, viewpoint, heights, vehicles, theme, editable }),
     [title, scheme, viewpoint, heights, vehicles, theme, editable]
   );
   const cameraWindow = useDetachedCamera(state, {
@@ -718,7 +718,7 @@ export function ViewpointBlock({
     () => Object.fromEntries(entities.flatMap((entity) => (entity.height === undefined ? [] : [[entity.id, entity.height]]))),
     [entities]
   );
-  const vehicles = useMemo<FigureVehicles>(() => entities.filter((entity) => entity.kind === 'vehicle').map((entity) => entity.id), [entities]);
+  const vehicles = useMemo<FigureVehicles>(() => castVehicles(entities), [entities]);
   const editable = !locked || unlocked;
   const locationScheme = viewpoint ? (schemes?.schemes.find((scheme) => scheme.location === viewpoint.location) ?? null) : null;
   // Референс, нарисованный на схеме объектом, точкой не ставят: место и размер берутся из схемы. Уже поставленный
@@ -738,7 +738,7 @@ export function ViewpointBlock({
       sources={sources}
       nameOf={nameOf}
       onPick={(source) => {
-        onChange(viewpointFromShot(source.viewpoint, references, vehicles));
+        onChange(viewpointFromShot(source.viewpoint, references, Object.keys(vehicles)));
         setFullscreen(true);
       }}
     />

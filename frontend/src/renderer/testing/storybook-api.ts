@@ -206,6 +206,7 @@ export function unconfiguredStoryApi(): Api {
       decide: async () => unconfigured('production.decide'),
       reopenFrame: async () => unconfigured('production.reopenFrame'),
       restoreFrame: async () => unconfigured('production.restoreFrame'),
+      replaceFrame: async () => unconfigured('production.replaceFrame'),
       reopenPrompt: async () => unconfigured('production.reopenPrompt'),
       keepPackageForScene: async () => unconfigured('production.keepPackageForScene'),
       addKeyframeNote: async () => unconfigured('production.addKeyframeNote'),

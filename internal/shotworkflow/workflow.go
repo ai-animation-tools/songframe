@@ -1117,14 +1117,28 @@ func sameDigest(path string, expected any) (bool, error) {
 	return toolrt.Equal(digest, expected), nil
 }
 
-// reopen — утверждённая опора возвращается на доработку с
-// обязательным замечанием; промпт согласуется заново. Пока видеопромпт не утверждён, нет
-// video-запроса и этап из reopenStages.
+// reopen — команда reopen: утверждённая опора возвращается на доработку с обязательным
+// замечанием (reopenFrame).
 func (t *workflowTool) reopen(dirArg, frame, note, scope string) (*toolrt.Dict, error) {
 	directory, err := t.packageDir(dirArg, true)
 	if err != nil {
 		return nil, err
 	}
+	return reopenFrame(directory, frame, note, scope, true)
+}
+
+// ReopenFrame — утверждённая опора попытки directory возвращается на доработку; замечание
+// необязательно: без него агент пересоздаёт опору по уже действующим замечаниям и прежнему
+// варианту. Так её возвращает приложение («Вернуть на доработку»).
+func ReopenFrame(directory, frame, note, scope string) error {
+	_, err := reopenFrame(directory, frame, note, scope, false)
+	return err
+}
+
+// reopenFrame — утверждённая опора снимается с утверждения, кандидат убирается, замечание (если
+// есть или требуется — noteRequired) записывается; промпт согласуется заново. Пока видеопромпт не
+// утверждён, нет video-запроса и этап из reopenStages.
+func reopenFrame(directory, frame, note, scope string, noteRequired bool) (*toolrt.Dict, error) {
 	data, err := load(directory)
 	if err != nil {
 		return nil, err
@@ -1136,7 +1150,7 @@ func (t *workflowTool) reopen(dirArg, frame, note, scope string) (*toolrt.Dict, 
 	if !toolrt.Truthy(keyframe.Value("approved")) {
 		return nil, valueError(frame + ": опора не утверждена; доработка задаётся ответом revise на её вопрос.")
 	}
-	if toolrt.Strip(note) == "" {
+	if noteRequired && toolrt.Strip(note) == "" {
 		return nil, valueError("Для возврата опоры на доработку нужно замечание.")
 	}
 	if !contains(noteScopes, scope) {
@@ -1174,7 +1188,11 @@ func (t *workflowTool) reopen(dirArg, frame, note, scope string) (*toolrt.Dict, 
 	data.Set("stage", "keyframes_review")
 	data.Set("wait_reason", nil)
 	data.Set("pending_decision", nil)
-	data.Set("decision", record("stage", "keyframes_review", "verdict", "revise", "note", entry.Value("note"), "at", entry.Value("at")))
+	if entry != nil {
+		data.Set("decision", record("stage", "keyframes_review", "verdict", "revise", "note", entry.Value("note"), "at", entry.Value("at")))
+	} else {
+		data.Set("decision", record("stage", "keyframes_review", "verdict", "revise", "note", "", "at", Now()))
+	}
 	return save(directory, data)
 }
 

@@ -293,6 +293,8 @@ export interface Api {
     reopenFrame(project: string, packageDir: string, frame: string, note: string, noteScope: KeyframeNoteScope): Promise<void>;
     /** Прежний вариант опоры (имя из variants опоры пакета) снова становится её кандидатом; текущий файл уходит в прежние. */
     restoreFrame(project: string, packageDir: string, frame: string, variant: string): Promise<void>;
+    /** Свой файл source (абсолютный путь) вместо утверждённой опоры, без замечания; прежний файл — в прежние варианты. */
+    replaceFrame(project: string, packageDir: string, frame: string, source: string): Promise<void>;
     /** Вернуть утверждённый видеопромпт на доработку с замечанием, пока запрос видео не отправлен; описание и опоры остаются. */
     reopenPrompt(project: string, packageDir: string, note: string): Promise<void>;
     /** Оставить неотправленный пакет в силе для текущей постановки плана: правка сценария не меняет его материалы. */

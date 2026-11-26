@@ -331,6 +331,7 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
       decide: guardedAsync(merged.production.decide),
       reopenFrame: guardedAsync(merged.production.reopenFrame),
       restoreFrame: guardedAsync(merged.production.restoreFrame),
+      replaceFrame: guardedAsync(merged.production.replaceFrame),
       reopenPrompt: guardedAsync(merged.production.reopenPrompt),
       keepPackageForScene: guardedAsync(merged.production.keepPackageForScene),
       addKeyframeNote: guardedAsync(merged.production.addKeyframeNote),

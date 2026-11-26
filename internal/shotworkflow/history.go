@@ -188,28 +188,16 @@ func FrameVariants(directory, id string) ([]FrameVariant, error) {
 
 // RestoreFrameVariant — прежний вариант name снова становится кандидатом опоры id: текущий файл
 // уходит в историю, вариант — на место frames/<id>.<ext> с прежней отметкой генератора. Условия —
-// как у возврата утверждённой опоры (reopen): видеопромпт не утверждён, запроса нет, этап из
-// reopenStages. Опора снимается с утверждения, видеопромпт согласуется заново, этап —
-// keyframes_review без вопроса: вопрос о кандидате задаёт производство.
+// как у возврата утверждённой опоры (reopen), см. replaceableFrame. Опора снимается с утверждения,
+// видеопромпт согласуется заново, этап — keyframes_review без вопроса: вопрос о кандидате задаёт
+// производство.
 func RestoreFrameVariant(directory, id, name string) error {
-	data, err := load(directory)
-	if err != nil {
-		return err
-	}
-	keyframe, err := keyframeOf(data, id)
+	data, keyframe, err := replaceableFrame(directory, id, "прежний вариант опоры в этой попытке не вернуть")
 	if err != nil {
 		return err
 	}
 	if !strings.HasPrefix(name, id+"-") || name != filepath.Base(name) {
 		return valueError(id + ": такого прежнего варианта нет.")
-	}
-	prompt, _ := data.Value("prompt").(*toolrt.Dict)
-	if (prompt != nil && toolrt.Truthy(prompt.Value("approved"))) || toolrt.Truthy(data.Value("request_dir")) {
-		return valueError("Видеопромпт уже утверждён или запрос подготовлен: прежний вариант опоры в этой попытке не вернуть; создайте исправленную попытку.")
-	}
-	stage := toolrt.Str(data.Value("stage"))
-	if !contains(reopenStages, stage) {
-		return valueError("На этапе " + stage + " опору не заменить: сначала завершите текущую отправку изображения и выберите её результат.")
 	}
 	folder := historyDir(directory)
 	entry, err := readVariant(folder, name)
@@ -237,24 +225,91 @@ func RestoreFrameVariant(directory, id, name string) error {
 	if err := os.Remove(filepath.Join(folder, name+variantSuffix)); err != nil {
 		return toolrt.OSErrorFrom(err, folder)
 	}
+	return setCandidate(directory, data, keyframe, target, digest, entry.Provider, entry.GeneratorPrompt)
+}
+
+// ReplaceFrameFile — свой файл source (PNG, JPEG или WebP вне попытки) становится кандидатом
+// утверждённой опоры id одним действием, без замечания: текущий файл уходит в прежние варианты,
+// копия source ложится на место frames/<id>.<ext> без отметки генератора — учёт расхода считает её
+// своим файлом. Условия — как у возврата варианта (replaceableFrame). Неутверждённой опоре свой
+// файл ставит предложение опор (productionworkflow.ImportFrames); здесь — только утверждённой.
+func ReplaceFrameFile(directory, id, source string) error {
+	data, keyframe, err := replaceableFrame(directory, id, "утверждённую опору в этой попытке не заменить")
+	if err != nil {
+		return err
+	}
+	if !toolrt.Truthy(keyframe.Value("approved")) {
+		return valueError(id + ": опора не утверждена; свой файл ставится кнопкой «Свой файл» её карточки.")
+	}
+	suffix := strings.ToLower(filepath.Ext(source))
+	if !contains(imageSuffixes, suffix) || !toolrt.IsFile(source) {
+		return valueError(id + ": нужен файл PNG, JPEG или WebP.")
+	}
+	digest, err := sha(source)
+	if err != nil {
+		return err
+	}
+	if current := ownFramePath(directory, keyframe); current != "" && toolrt.IsFile(current) {
+		if same, err := sha(current); err != nil {
+			return err
+		} else if same == digest {
+			return valueError(id + ": этот файл уже стоит опорой.")
+		}
+	}
+	if err := archiveFrame(directory, keyframe, digest); err != nil {
+		return err
+	}
+	target := filepath.Join(directory, "frames", id+suffix)
+	if err := copyFile(source, target); err != nil {
+		return err
+	}
+	return setCandidate(directory, data, keyframe, target, digest, nil, nil)
+}
+
+// replaceableFrame — workflow.json попытки и опора id, если её файл можно заменить кандидатом:
+// видеопромпт не утверждён, запроса видео нет, этап из reopenStages (как у reopen). what —
+// окончание отказа после утверждённого промпта («… в этой попытке не вернуть»).
+func replaceableFrame(directory, id, what string) (*toolrt.Dict, *toolrt.Dict, error) {
+	data, err := load(directory)
+	if err != nil {
+		return nil, nil, err
+	}
+	keyframe, err := keyframeOf(data, id)
+	if err != nil {
+		return nil, nil, err
+	}
+	prompt, _ := data.Value("prompt").(*toolrt.Dict)
+	if (prompt != nil && toolrt.Truthy(prompt.Value("approved"))) || toolrt.Truthy(data.Value("request_dir")) {
+		return nil, nil, valueError("Видеопромпт уже утверждён или запрос подготовлен: " + what + "; создайте исправленную попытку.")
+	}
+	stage := toolrt.Str(data.Value("stage"))
+	if !contains(reopenStages, stage) {
+		return nil, nil, valueError("На этапе " + stage + " опору не заменить: сначала завершите текущую отправку изображения и выберите её результат.")
+	}
+	return data, keyframe, nil
+}
+
+// setCandidate — файл target с SHA digest становится неутверждённым кандидатом опоры с отметкой
+// генератора provider и его промптом (nil — свой файл). Промпт строился по прежним опорам и
+// согласуется заново, как после возврата опоры; этап — keyframes_review без вопроса.
+func setCandidate(directory string, data, keyframe *toolrt.Dict, target, digest string, provider, generatorPrompt *string) error {
 	keyframe.Set("path", "frames/"+filepath.Base(target))
 	keyframe.Set("sha256", digest)
 	keyframe.Set("approved", false)
 	keyframe.Delete("provider")
 	keyframe.Delete("generator_prompt")
-	if entry.Provider != nil {
-		keyframe.Set("provider", *entry.Provider)
+	if provider != nil {
+		keyframe.Set("provider", *provider)
 	}
-	if entry.GeneratorPrompt != nil {
-		keyframe.Set("generator_prompt", *entry.GeneratorPrompt)
+	if generatorPrompt != nil {
+		keyframe.Set("generator_prompt", *generatorPrompt)
 	}
 	frames, err := approvedFrames(data)
 	if err != nil {
 		return err
 	}
-	frames.Delete(id)
-	// Промпт строился по прежним опорам и согласуется заново, как после возврата опоры.
-	if prompt != nil && prompt.Len() > 0 {
+	frames.Delete(toolrt.Str(keyframe.Value("id")))
+	if prompt, _ := data.Value("prompt").(*toolrt.Dict); prompt != nil && prompt.Len() > 0 {
 		data.Set("prompt", unapprovedPrompt(prompt))
 	}
 	data.Set("approved_prompt_sha256", nil)

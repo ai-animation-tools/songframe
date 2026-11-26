@@ -687,8 +687,9 @@ export const OwnFrameFile: Story = {
     const generate = texts.productionFrameGenerationButton.prepareRequest({ frame: 'K02', title: testProviderInfo.title });
     await expect(await screen.findByRole('button', { name: generate })).toBeEnabled();
     const own = await frames.findAllByRole('button', { name: texts.frameActions.own });
-    await expect(own).toHaveLength(3);
-    await userEvent.click(own[0]);
+    // Первая — замена утверждённой K01 своим файлом, за ней — неутверждённые K02–K04.
+    await expect(own).toHaveLength(4);
+    await userEvent.click(own[1]);
     // Файл применяется без окна сравнения: решение принимается вопросом у самой опоры.
     await expect(await screen.findByText('Утвердить опору K02?', {}, POLL_TIMEOUT)).toBeInTheDocument();
     await expect(screen.queryByRole('dialog')).not.toBeInTheDocument();

@@ -155,6 +155,14 @@ func (s *ProductionService) RestoreFrame(project, packageDir, frame, variant str
 	return s.production.RestoreFrame(project, packageDir, frame, variant)
 }
 
+// ReplaceFrame — свой файл source (абсолютный путь из диалога выбора) вместо утверждённой опоры.
+func (s *ProductionService) ReplaceFrame(project, packageDir, frame, source string) error {
+	if err := s.idle(project, packageDir); err != nil {
+		return err
+	}
+	return s.production.ReplaceFrame(project, packageDir, frame, source)
+}
+
 // KeepPackageForScene — оставить неотправленный пакет в силе для текущей постановки.
 func (s *ProductionService) KeepPackageForScene(project, packageDir string) error {
 	if err := s.idle(project, packageDir); err != nil {

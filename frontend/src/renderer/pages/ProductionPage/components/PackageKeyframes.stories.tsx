@@ -121,6 +121,10 @@ export const PromptApproved: Story = {
       stage: 'prompt_review',
       prompt: { path: '/mock/video-prompt.txt', text: 'Камера плавно приближается к воротам.', approved: true }
     })
+  },
+  play: async ({ canvasElement }) => {
+    const replace = within(canvasElement).getAllByRole('button', { name: productionTexts.packageKeyframes.replace });
+    for (const button of replace) await expect(button).toBeDisabled();
   }
 };
 export const VideoPrepared: Story = {
@@ -224,6 +228,34 @@ export const Reopen: Story = {
     await expect(canvas.getByRole('button', { name: 'Подставить готового кандидата' })).toBeDisabled();
     await expect(canvas.queryByText('Нет открытого вопроса. Следующий кандидат требует отдельной подготовки и согласования.')).not.toBeInTheDocument();
     await expect(canvas.queryByRole('button', { name: /Открыть крупно: K01/ })).not.toBeInTheDocument();
+  }
+};
+export const ReopenWithoutNote: Story = {
+  name: 'Вернуть утверждённую опору без замечания · замечание не появляется',
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const screen = within(canvasElement.ownerDocument.body);
+    await userEvent.click(canvas.getByRole('button', { name: productionTexts.packageKeyframes.reopen }));
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: productionTexts.keyframeReopenDialog.confirm }));
+    await canvas.findByText('Утверждение K01 снято без замечания. Остальные опоры сохранены.');
+    await expect(canvas.getByText(/Опоры · утверждено 0 из 4/)).toBeInTheDocument();
+    await expect(canvas.queryByText(/только K01/)).not.toBeInTheDocument();
+  }
+};
+export const ReplaceApproved: Story = {
+  name: 'Свой файл вместо утверждённой опоры · без замечания, прежняя — в прежних вариантах',
+  tags: ['!autodocs', 'ci'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // Кнопка есть только у утверждённой опоры.
+    await expect(canvas.getAllByRole('button', { name: productionTexts.packageKeyframes.replace })).toHaveLength(1);
+    await userEvent.click(canvas.getByRole('button', { name: productionTexts.packageKeyframes.replace }));
+    await canvas.findByText(productionTexts.useProductionPage.frameReplaced({ frame: 'K01' }));
+    await expect(canvas.getByText(/Опоры · утверждено 0 из 4/)).toBeInTheDocument();
+    await expect(canvas.getByRole('button', { name: /Открыть крупно: K01/ }).querySelector('img')).toHaveAttribute('src', expect.stringContaining('own=K01'));
+    await expect(canvas.getByRole('button', { name: productionTexts.packageKeyframes.variants({ count: 1 }) })).toBeVisible();
+    await expect(canvas.queryByRole('dialog')).not.toBeInTheDocument();
   }
 };
 export const FrameVariants: Story = {

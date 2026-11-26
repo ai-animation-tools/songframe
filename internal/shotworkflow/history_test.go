@@ -152,3 +152,80 @@ func TestRestoreFrameVariantGuards(t *testing.T) {
 		t.Fatalf("после утверждения промпта: %v", err)
 	}
 }
+
+// Свой файл вместо утверждённой опоры: одним действием, без замечания; прежняя опора уходит в
+// прежние варианты, утверждение и согласование видеопромпта снимаются, отметки генератора нет.
+func TestReplaceFrameFile(t *testing.T) {
+	fixedNow(t)
+	directory := writeFrameNotePackage(t)
+	outside := t.TempDir()
+	tool := &workflowTool{}
+	if _, err := tool.approve(directory, "K01", writeImage(t, filepath.Join(outside, "agent.png"), "агент"), false); err != nil {
+		t.Fatal(err)
+	}
+	data, _ := load(directory)
+	keyframe, _ := keyframeOf(data, "K01")
+	keyframe.Set("provider", "codex")
+	keyframe.Set("generator_prompt", "промпт агента")
+	if _, err := save(directory, data); err != nil {
+		t.Fatal(err)
+	}
+	if err := ReplaceFrameFile(directory, "K01", filepath.Join(outside, "agent.png")); err == nil || !strings.Contains(err.Error(), "уже стоит") {
+		t.Fatalf("тот же файл: %v", err)
+	}
+	if err := ReplaceFrameFile(directory, "K01", writeImage(t, filepath.Join(outside, "own.txt"), "текст")); err == nil {
+		t.Fatal("не изображение принято")
+	}
+	if err := ReplaceFrameFile(directory, "K01", writeImage(t, filepath.Join(outside, "own.png"), "свой")); err != nil {
+		t.Fatal(err)
+	}
+	if got := frameBytes(t, directory, "K01"); got != "свой" {
+		t.Fatalf("опора %q", got)
+	}
+	data, _ = load(directory)
+	keyframe, _ = keyframeOf(data, "K01")
+	if keyframe.Value("approved") != false || keyframe.Value("provider") != nil || keyframe.Value("generator_prompt") != nil {
+		t.Fatalf("опора после замены: %v", keyframe)
+	}
+	if notes := data.Value("keyframe_notes").([]any); len(notes) != 0 {
+		t.Fatalf("появились замечания: %v", notes)
+	}
+	if data.Value("stage") != "keyframes_review" || data.Value("decision") != nil {
+		t.Fatalf("этап %v, решение %v", data.Value("stage"), data.Value("decision"))
+	}
+	variants, _ := FrameVariants(directory, "K01")
+	if len(variants) != 1 {
+		t.Fatalf("вариантов %d", len(variants))
+	}
+	if content, _ := os.ReadFile(variants[0].ImagePath); string(content) != "агент" {
+		t.Fatalf("прежний вариант %q", content)
+	}
+	// Неутверждённой опоре свой файл ставит предложение опор, а не эта замена.
+	if err := ReplaceFrameFile(directory, "K01", writeImage(t, filepath.Join(outside, "again.png"), "ещё")); err == nil || !strings.Contains(err.Error(), "не утверждена") {
+		t.Fatalf("неутверждённая опора: %v", err)
+	}
+}
+
+// Возврат без замечания приложением: утверждение снято, замечание не записано; команда reopen
+// по-прежнему требует замечания.
+func TestReopenFrameWithoutNote(t *testing.T) {
+	fixedNow(t)
+	directory := writeFrameNotePackage(t)
+	if _, err := (&workflowTool{}).reopen(directory, "K02", "  ", "following"); err == nil {
+		t.Fatal("команда reopen приняла пустое замечание")
+	}
+	if err := ReopenFrame(directory, "K02", "", "following"); err != nil {
+		t.Fatal(err)
+	}
+	data, _ := load(directory)
+	keyframe, _ := keyframeOf(data, "K02")
+	if keyframe.Value("approved") != false {
+		t.Fatalf("опора осталась утверждённой: %v", keyframe)
+	}
+	if notes := data.Value("keyframe_notes").([]any); len(notes) != 0 {
+		t.Fatalf("появились замечания: %v", notes)
+	}
+	if verdict, _ := get(data.Value("decision"), "verdict", nil); verdict != "revise" {
+		t.Fatalf("решение %v", data.Value("decision"))
+	}
+}

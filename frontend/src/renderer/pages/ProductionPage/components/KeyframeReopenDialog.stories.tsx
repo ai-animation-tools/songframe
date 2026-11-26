@@ -104,7 +104,7 @@ async function expectCleanForm(context: PlayContext): Promise<void> {
   const input = dialog.getByRole('textbox', { name: productionTexts.keyframeReopenDialog.note });
   await expect(input).toHaveValue('');
   await expect(dialog.getByRole('checkbox', { name: productionTexts.keyframeNoteScopeField.following })).toBeChecked();
-  await expect(dialog.getByRole('button', { name: productionTexts.keyframeReopenDialog.confirm })).toBeDisabled();
+  await expect(dialog.getByRole('button', { name: productionTexts.keyframeReopenDialog.confirm })).toBeEnabled();
   await waitFor(() => expect(input).toHaveFocus());
 }
 
@@ -134,17 +134,21 @@ async function confirm(context: PlayContext, scope: KeyframeNoteScope): Promise<
   await expect(screenOf(context).queryByRole('dialog')).not.toBeInTheDocument();
 }
 
-export const RequiredNote: Story = {
-  name: 'Обязательное замечание — пустая форма и фокус',
+export const OptionalNote: Story = {
+  name: 'Необязательное замечание — пустая форма и фокус',
   play: expectCleanForm
 };
 
-export const WhitespaceNote: Story = {
-  name: 'Пробелы и переносы не разрешают подтверждение',
+export const WithoutNote: Story = {
+  name: 'Без замечания — пробелы и переносы дают пустое замечание',
   play: async (context) => {
     const dialog = await dialogOf(context);
     await userEvent.type(dialog.getByRole('textbox', { name: productionTexts.keyframeReopenDialog.note }), '   {enter}   ');
-    await expect(dialog.getByRole('button', { name: productionTexts.keyframeReopenDialog.confirm })).toBeDisabled();
+    await userEvent.click(dialog.getByRole('button', { name: productionTexts.keyframeReopenDialog.confirm }));
+    const result = await within(context.canvasElement).findByRole('status');
+    await expect(result).toHaveTextContent('Решение сохранено в памяти истории.');
+    await expect(result).not.toHaveTextContent(NOTE);
+    await expect(screenOf(context).queryByRole('dialog')).not.toBeInTheDocument();
   }
 };
 

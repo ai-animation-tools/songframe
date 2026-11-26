@@ -145,9 +145,37 @@ export function KeyframeReviewStory({
   };
   const reopen = (frame: string, value: string, scope: KeyframeNoteScope): void => {
     const questionRevision = ++revision.current;
+    run(
+      (current) => {
+        const keyframes = current.keyframes.map((item) => (item.id === frame ? { ...item, approved: false, imagePath: null } : item));
+        // Production.reopenFrame после возврата вызывает askNextFrame для оставшегося готового кандидата.
+        const next = keyframes.find((item) => item.imagePath && !item.approved);
+        return {
+          ...current,
+          stage: 'keyframes_review',
+          stageLabel: 'Опоры на согласовании',
+          keyframes,
+          pendingDecision: next ? keyframeQuestion(next.id, questionRevision) : null,
+          decision: next ? null : { stage: 'keyframes_review', verdict: 'revise', note: value.trim(), at: FIXED_DATE },
+          prompt: current.prompt ? { ...current.prompt, approved: false } : null,
+          // Без замечания возврат его не записывает: опору пересоздают по действующим замечаниям.
+          keyframeNotes: value.trim() ? addNote(current, frame, value, scope) : current.keyframeNotes
+        };
+      },
+      value.trim()
+        ? `Утверждение ${frame} снято; замечание сохранено. Остальные опоры сохранены.`
+        : `Утверждение ${frame} снято без замечания. Остальные опоры сохранены.`
+    );
+  };
+  // Production.replaceFrame: свой файл становится кандидатом утверждённой опоры, прежний — прежним вариантом.
+  const replace = (frame: string): void => {
+    const questionRevision = ++revision.current;
     run((current) => {
-      const keyframes = current.keyframes.map((item) => (item.id === frame ? { ...item, approved: false, imagePath: null } : item));
-      // Production.reopenFrame после возврата вызывает askNextFrame для оставшегося готового кандидата.
+      const keyframes = current.keyframes.map((item) => {
+        if (item.id !== frame) return item;
+        const replaced = item.imagePath ? [{ name: `${frame}-${FIXED_DATE}`, imagePath: item.imagePath, savedAt: FIXED_DATE }] : [];
+        return { ...item, approved: false, imagePath: `${STORY_IMAGE_PATH}?own=${frame}`, variants: [...replaced, ...(item.variants ?? [])] };
+      });
       const next = keyframes.find((item) => item.imagePath && !item.approved);
       return {
         ...current,
@@ -155,11 +183,10 @@ export function KeyframeReviewStory({
         stageLabel: 'Опоры на согласовании',
         keyframes,
         pendingDecision: next ? keyframeQuestion(next.id, questionRevision) : null,
-        decision: next ? null : { stage: 'keyframes_review', verdict: 'revise', note: value.trim(), at: FIXED_DATE },
-        prompt: current.prompt ? { ...current.prompt, approved: false } : null,
-        keyframeNotes: addNote(current, frame, value, scope)
+        decision: null,
+        prompt: current.prompt ? { ...current.prompt, approved: false } : null
       };
-    }, `Утверждение ${frame} снято; замечание сохранено. Остальные опоры сохранены.`);
+    }, productionTexts.useProductionPage.frameReplaced({ frame }));
   };
   // Production.restoreFrame: вариант становится кандидатом, текущий файл — прежним вариантом, затем askNextFrame.
   const restore = (frame: string, variant: string): void => {
@@ -212,6 +239,7 @@ export function KeyframeReviewStory({
             copies={copies}
             onReopen={reopen}
             onRestore={restore}
+            onReplace={replace}
             onSetNote={(id, active) =>
               run(
                 (current) => ({ ...current, keyframeNotes: current.keyframeNotes.map((item) => (item.id === id ? { ...item, active } : item)) }),

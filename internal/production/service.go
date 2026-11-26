@@ -523,7 +523,8 @@ func scope(noteScope string) string {
 	return "following"
 }
 
-// ReopenFrame — вернуть утверждённую опору на доработку с замечанием (shot_workflow reopen).
+// ReopenFrame — вернуть утверждённую опору на доработку (shotworkflow.ReopenFrame). Замечание
+// необязательно: без него опору пересоздают по действующим замечаниям и прежнему варианту.
 func (s *Service) ReopenFrame(project, packageDir, frame, note, noteScope string) error {
 	directory, err := s.available(project, packageDir)
 	if err != nil {
@@ -531,9 +532,6 @@ func (s *Service) ReopenFrame(project, packageDir, frame, note, noteScope string
 	}
 	if !framePattern.MatchString(frame) {
 		return errors.New(textFrameUnknown)
-	}
-	if dynvalue.Trim(note) == "" {
-		return errors.New(textFrameRevisionRequired)
 	}
 	if source, isCopy := frameCopies(directory)[frame]; isCopy {
 		return errors.New(textFrameCopyReopen(frame, source))
@@ -543,12 +541,37 @@ func (s *Service) ReopenFrame(project, packageDir, frame, note, noteScope string
 		return err
 	}
 	defer release()
-	result, err := s.run(project, "shot_workflow", "reopen", "--dir", directory, frame, "--note", dynvalue.Trim(note), "--note-scope", scope(noteScope))
+	if err := shotworkflow.ReopenFrame(directory, frame, dynvalue.Trim(note), scope(noteScope)); err != nil {
+		return err
+	}
+	return s.askNextFrame(project, directory)
+}
+
+// ReplaceFrame — свой файл source вместо утверждённой опоры одним действием, без замечания
+// (shotworkflow.ReplaceFrameFile): прежний файл уходит в прежние варианты, затем задаётся вопрос
+// о первом неутверждённом кандидате. Файл должен декодироваться как изображение. Копию другой
+// опоры так не меняют: её файл повторяет источник.
+func (s *Service) ReplaceFrame(project, packageDir, frame, source string) error {
+	directory, err := s.available(project, packageDir)
 	if err != nil {
 		return err
 	}
-	if !ok(result) {
-		return failure(result, textReopenFrameFailed)
+	if !framePattern.MatchString(frame) {
+		return errors.New(textFrameUnknown)
+	}
+	if source, isCopy := frameCopies(directory)[frame]; isCopy {
+		return errors.New(textFrameCopyReopen(frame, source))
+	}
+	if !filepath.IsAbs(source) || !mediafile.IsImage(source) || !mediafile.Decodes(source) {
+		return errors.New(textFrameImageRequired)
+	}
+	directory, release, err := s.claim(project, directory)
+	if err != nil {
+		return err
+	}
+	defer release()
+	if err := shotworkflow.ReplaceFrameFile(directory, frame, source); err != nil {
+		return err
 	}
 	return s.askNextFrame(project, directory)
 }

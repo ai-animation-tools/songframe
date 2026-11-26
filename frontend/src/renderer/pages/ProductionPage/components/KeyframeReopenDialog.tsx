@@ -1,5 +1,5 @@
 import { productionTexts } from '@shared/texts/production';
-/** Возврат утверждённой опоры: замечание обязательно, кандидат снимается, видеопромпт согласуется заново. */
+/** Возврат утверждённой опоры: замечание необязательно, кандидат снимается, видеопромпт согласуется заново. */
 import { useState, type ReactElement } from 'react';
 import ReplayIcon from '@mui/icons-material/Replay';
 import { TextField } from '@mui/material';
@@ -27,8 +27,6 @@ export function KeyframeReopenDialog({
       confirmLabel={productionTexts.keyframeReopenDialog.confirm}
       confirmIcon={<ReplayIcon />}
       confirmColor="warning"
-      confirmDisabled={!note.trim()}
-      confirmDisabledReason={productionTexts.keyframeReopenDialog.reason}
       onClose={onClose}
       onConfirm={() => onConfirm(note.trim(), scope)}
     >

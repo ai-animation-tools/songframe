@@ -242,6 +242,13 @@ export function ReopenQuestion(project: string, packageDir: string): $Cancellabl
 }
 
 /**
+ * ReplaceFrame — свой файл source (абсолютный путь из диалога выбора) вместо утверждённой опоры.
+ */
+export function ReplaceFrame(project: string, packageDir: string, frame: string, source: string): $CancellablePromise<void> {
+    return $Call.ByID(3421596202, project, packageDir, frame, source);
+}
+
+/**
  * ReplaceManual — другое видео вместо загруженного вручную и ещё не принятого: новый файл
  * проверяется до записей, прежняя копия в попытке заменяется, сведения попытки остаются.
  */

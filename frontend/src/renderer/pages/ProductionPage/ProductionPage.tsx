@@ -83,6 +83,7 @@ export function ProductionPage(): ReactElement {
     answerApplied,
     reopenFrame,
     restoreFrame,
+    replaceFrame,
     reopenPrompt,
     keepPackageForScene,
     setKeyframeNote,
@@ -217,6 +218,7 @@ export function ProductionPage(): ReactElement {
                         }
                         onReopenFrame={(frame, note, scope) => selectedPackage && reopenFrame(selectedPackage, frame, note, scope)}
                         onRestoreFrame={(frame, variant) => selectedPackage && restoreFrame(selectedPackage, frame, variant)}
+                        onReplaceFrame={(frame) => selectedPackage && void replaceFrame(selectedPackage, frame)}
                         onReopenPrompt={(note) => selectedPackage && reopenPrompt(selectedPackage, note)}
                         onKeepForScene={() => selectedPackage && keepPackageForScene(selectedPackage)}
                         onSetKeyframeNote={(id, active) => selectedPackage && setKeyframeNote(selectedPackage, id, active)}

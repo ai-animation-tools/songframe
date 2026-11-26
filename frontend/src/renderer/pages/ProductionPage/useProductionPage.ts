@@ -1,4 +1,5 @@
 import { productionTexts } from '@shared/texts/production';
+import { commonTexts } from '@shared/texts/common';
 /** Состояние производства и действия выбранного пакета; платная отправка требует подтверждения снимка. */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -406,6 +407,23 @@ export function useProductionPage() {
     void act(productionTexts.useProductionPage.frameRestored({ frame }), () => window.api.production.restoreFrame(project, pkg.dir, frame, variant), pkg.dir);
   };
 
+  /** Свой файл вместо утверждённой опоры одним действием: файл выбирают в диалоге, Go откажет на тех же условиях, что у прежнего варианта. */
+  const replaceFrame = async (pkg: PackageView, frame: string): Promise<void> => {
+    let files: string[];
+    try {
+      files = await window.api.dialog.pickFiles({
+        title: productionTexts.packageKeyframes.replaceTitle({ id: frame }),
+        multiple: false,
+        filters: [{ name: commonTexts.files.images, extensions: ['png', 'jpg', 'jpeg', 'webp'] }]
+      });
+    } catch (reason) {
+      notify(describeError(reason), 'error');
+      return;
+    }
+    if (!files[0]) return;
+    await act(productionTexts.useProductionPage.frameReplaced({ frame }), () => window.api.production.replaceFrame(project, pkg.dir, frame, files[0]), pkg.dir);
+  };
+
   /** Возврат утверждённого видеопромпта: Go откажет, если запрос уже отправлен или попытка в очереди. */
   const reopenPrompt = (pkg: PackageView, note: string): void => {
     void act(productionTexts.useProductionPage.promptReopened, () => window.api.production.reopenPrompt(project, pkg.dir, note), pkg.dir);
@@ -544,6 +562,7 @@ export function useProductionPage() {
     answerApplied,
     reopenFrame,
     restoreFrame,
+    replaceFrame,
     reopenPrompt,
     keepPackageForScene,
     setKeyframeNote,

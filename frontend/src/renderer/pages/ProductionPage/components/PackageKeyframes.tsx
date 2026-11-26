@@ -10,6 +10,7 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import HistoryIcon from '@mui/icons-material/History';
+import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import ReplayIcon from '@mui/icons-material/Replay';
 import { Box, Button, Chip, Typography } from '@mui/material';
 import type { KeyframeNoteScope, PackageKeyframe, PackageView } from '@shared/types';
@@ -65,6 +66,7 @@ export function PackageKeyframes({
   busyReason = BUSY_REASON,
   onReopen,
   onRestore,
+  onReplace,
   onSetNote,
   renderActions,
   copies = {},
@@ -76,6 +78,8 @@ export function PackageKeyframes({
   onReopen(frame: string, note: string, scope: KeyframeNoteScope): void;
   /** Вернуть прежний вариант опоры кандидатом; без обработчика прежние варианты не показываются. */
   onRestore?(frame: string, variant: string): void;
+  /** Свой файл вместо утверждённой опоры без замечания (файл выбирает обработчик); без обработчика кнопки нет. */
+  onReplace?(frame: string): void;
   onSetNote(id: number, active: boolean): void;
   /** Действия неутверждённой опоры на её карточке: создать или поставить свой файл. */
   renderActions?(frame: PackageKeyframe): ReactNode;
@@ -185,6 +189,19 @@ export function PackageKeyframes({
                   onClick={() => setReopening(k.id)}
                 >
                   {productionTexts.packageKeyframes.reopen}
+                </ActionButton>
+              ) : null}
+              {k.approved && onReplace ? (
+                <ActionButton
+                  size="small"
+                  startIcon={<FolderOpenIcon />}
+                  sx={{ mt: 0.5 }}
+                  title={productionTexts.packageKeyframes.replaceHint({ id: k.id })}
+                  disabled={busy || !!blocked || !!copies[k.id]}
+                  disabledReason={busy ? busyReason : (blocked ?? (copies[k.id] ? copyReopenReason(k.id, copies[k.id]) : null))}
+                  onClick={() => onReplace(k.id)}
+                >
+                  {productionTexts.packageKeyframes.replace}
                 </ActionButton>
               ) : null}
               {onRestore && k.variants?.length ? (

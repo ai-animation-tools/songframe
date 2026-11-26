@@ -21,6 +21,7 @@ import { WORLD } from './constants';
 import { castImageOptions } from './helpers';
 import { cleanProperties, dictionaryProblem } from './properties';
 import { LinkedText } from '../../components/LinkedText';
+import { ReferenceAdvicePanel } from '../../components/ReferenceAdvicePanel';
 import { ActionButton } from '../../components/ActionButton';
 import { ENTITY_PARAM } from '../../components/castRoutes';
 import { coveredArea, revealAnchor } from '../../hooks/useAnchorTarget';
@@ -215,6 +216,7 @@ export function CastPage(): ReactElement {
           <LinkedText text={castTexts.sourcesMissing} />
         </Alert>
       ) : null}
+      {project ? <ReferenceAdvicePanel project={project} /> : null}
       {!cast ? (
         <CastEmptyState hasReadProblem={view.problems.length > 0} />
       ) : (

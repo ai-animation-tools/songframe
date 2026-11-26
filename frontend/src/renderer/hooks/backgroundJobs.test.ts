@@ -63,6 +63,7 @@ describe('сохранение фоновых уведомлений', () => {
     for (const [task, page, route] of [
       ['ai-clip-scenario', 'Сценарий', '/project/scenario'],
       ['ai-clip-scenario:scenes', 'Сценарий', '/project/scenario'],
+      ['ai-clip-reference-advice', 'Кастинг', '/project/cast'],
       ['ai-clip-scene:prepare', 'Производство', '/project/production']
     ]) {
       const notice = agentFinishedNotice({ task, status });

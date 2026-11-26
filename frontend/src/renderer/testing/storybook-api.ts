@@ -127,7 +127,21 @@ export function unconfiguredStoryApi(): Api {
       startCheck: async () => unconfigured('scenarioWorkflow.startCheck'),
       checkFixPreview: async () => unconfigured('scenarioWorkflow.checkFixPreview'),
       applyCheckFixes: async () => unconfigured('scenarioWorkflow.applyCheckFixes'),
-      resolveCheckIssue: async () => unconfigured('scenarioWorkflow.resolveCheckIssue')
+      resolveCheckIssue: async () => unconfigured('scenarioWorkflow.resolveCheckIssue'),
+      // Панель рекомендаций стоит на «Кастинге» и «Исходниках»: по умолчанию совета нет и запросить его нельзя,
+      // чтобы истории этих страниц не настраивали её каждая; истории самой панели подменяют вид.
+      adviceView: async () => ({
+        status: 'none',
+        canStart: false,
+        reason: 'Рекомендации в этой истории не запрашиваются.',
+        preliminary: false,
+        stale: false,
+        report: null,
+        message: null,
+        job: null
+      }),
+      startAdvice: async () => unconfigured('scenarioWorkflow.startAdvice'),
+      saveAdvice: async () => unconfigured('scenarioWorkflow.saveAdvice')
     },
     agents: {
       getSettings: async () => unconfigured('agents.getSettings'),

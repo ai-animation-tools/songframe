@@ -138,6 +138,36 @@ export interface ScenarioCheckView {
   job: AgentJob | null;
 }
 
+/** Пункт рекомендаций по референсам: entity — ID кастинга или '' для того, чего в кастинге ещё нет. */
+export interface ReferenceAdviceItem {
+  entity: string;
+  name: string;
+  need: string;
+  views: string[];
+  count: number;
+  states: string[];
+  why: string;
+  have: string;
+}
+
+export interface ReferenceAdviceReport {
+  summary: string;
+  items: ReferenceAdviceItem[];
+}
+
+/** Рекомендации агента по референсам: те же состояния, что у проверки сценария; preliminary — совет без сценария. */
+export interface ReferenceAdviceView {
+  status: ScenarioCheckView['status'];
+  canStart: boolean;
+  reason: string | null;
+  preliminary: boolean;
+  /** Исходники, кастинг или сценарий изменились после совета. */
+  stale: boolean;
+  report: ReferenceAdviceReport | null;
+  message: string | null;
+  job: AgentJob | null;
+}
+
 /** Перед публикацией проверяются хеши именно файлов, а не только отправленного агенту текста. */
 export interface ScenarioPublication {
   project: string;

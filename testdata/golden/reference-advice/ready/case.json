@@ -1,0 +1,127 @@
+{
+  "base": "checks-base",
+  "call": "ReferenceAdvice",
+  "covers": [],
+  "description": "Совет по сценарию: запуск, готовый ответ, вид и текст файла.",
+  "project": "project",
+  "steps": [
+    {
+      "op": "view",
+      "view": {
+        "canStart": true,
+        "job": null,
+        "message": null,
+        "preliminary": false,
+        "reason": null,
+        "report": null,
+        "stale": false,
+        "status": "none"
+      }
+    },
+    {
+      "context": "context-0.txt",
+      "op": "start",
+      "view": {
+        "canStart": false,
+        "job": {
+          "exitCode": null,
+          "finishedAt": null,
+          "id": "job-0",
+          "inputHashes": {
+            "context": "3fa85dd3cee6d081c558b13b743cb5f78146a8adb51eb81b77d26859e42aca10",
+            "prompt": "87c797ddd2f281731eccef03a26c11208fec52420682e5ff88a2481f403e7872"
+          },
+          "log": "",
+          "permissions": "read-only",
+          "phase": "работает",
+          "project": "<project>",
+          "provider": "codex",
+          "result": "",
+          "schemaVersion": 1,
+          "sequence": 1,
+          "startedAt": "2026-11-04T12:00:00.000Z",
+          "status": "running",
+          "task": "ai-clip-reference-advice"
+        },
+        "message": null,
+        "preliminary": false,
+        "reason": "Дождитесь окончания задания агента в этом проекте.",
+        "report": null,
+        "stale": false,
+        "status": "running"
+      }
+    },
+    {
+      "op": "finish",
+      "result": "{\"schemaVersion\": 1, \"summary\": \"Главные герои и лодка с референсами; не хватает видов сбоку и со спины.\", \"items\": [{\"entity\": \"mira\", \"name\": \"Мира\", \"need\": \"Вид в полный рост сбоку и со спины.\", \"views\": [\"сбоку\", \"со спины\"], \"count\": 2, \"states\": [], \"why\": \"В M02, M04 и M05 Мира у воды, а изображение одно — спереди.\", \"have\": \"Портрет спереди.\"}, {\"entity\": \"\", \"name\": \"Фонарик\", \"need\": \"Фонарик Миры крупно, зажжённый и погашенный.\", \"views\": [\"крупно\"], \"count\": 2, \"states\": [\"зажжён\", \"погашен\"], \"why\": \"Фонарик в руках Миры в M02 и M04, карточки у него нет.\", \"have\": \"\"}]}"
+    },
+    {
+      "op": "view",
+      "view": {
+        "canStart": true,
+        "job": {
+          "exitCode": 0,
+          "finishedAt": null,
+          "id": "job-0",
+          "inputHashes": {
+            "context": "3fa85dd3cee6d081c558b13b743cb5f78146a8adb51eb81b77d26859e42aca10",
+            "prompt": "87c797ddd2f281731eccef03a26c11208fec52420682e5ff88a2481f403e7872"
+          },
+          "log": "",
+          "permissions": "read-only",
+          "phase": "работает",
+          "project": "<project>",
+          "provider": "codex",
+          "result": "{\"schemaVersion\": 1, \"summary\": \"Главные герои и лодка с референсами; не хватает видов сбоку и со спины.\", \"items\": [{\"entity\": \"mira\", \"name\": \"Мира\", \"need\": \"Вид в полный рост сбоку и со спины.\", \"views\": [\"сбоку\", \"со спины\"], \"count\": 2, \"states\": [], \"why\": \"В M02, M04 и M05 Мира у воды, а изображение одно — спереди.\", \"have\": \"Портрет спереди.\"}, {\"entity\": \"\", \"name\": \"Фонарик\", \"need\": \"Фонарик Миры крупно, зажжённый и погашенный.\", \"views\": [\"крупно\"], \"count\": 2, \"states\": [\"зажжён\", \"погашен\"], \"why\": \"Фонарик в руках Миры в M02 и M04, карточки у него нет.\", \"have\": \"\"}]}",
+          "schemaVersion": 1,
+          "sequence": 1,
+          "startedAt": "2026-11-04T12:00:00.000Z",
+          "status": "completed",
+          "task": "ai-clip-reference-advice"
+        },
+        "message": null,
+        "preliminary": false,
+        "reason": null,
+        "report": {
+          "items": [
+            {
+              "count": 2,
+              "entity": "mira",
+              "have": "Портрет спереди.",
+              "name": "Мира",
+              "need": "Вид в полный рост сбоку и со спины.",
+              "states": [],
+              "views": [
+                "сбоку",
+                "со спины"
+              ],
+              "why": "В M02, M04 и M05 Мира у воды, а изображение одно — спереди."
+            },
+            {
+              "count": 2,
+              "entity": "",
+              "have": "",
+              "name": "Фонарик",
+              "need": "Фонарик Миры крупно, зажжённый и погашенный.",
+              "states": [
+                "зажжён",
+                "погашен"
+              ],
+              "views": [
+                "крупно"
+              ],
+              "why": "Фонарик в руках Миры в M02 и M04, карточки у него нет."
+            }
+          ],
+          "summary": "Главные герои и лодка с референсами; не хватает видов сбоку и со спины."
+        },
+        "stale": false,
+        "status": "ready"
+      }
+    },
+    {
+      "op": "markdown",
+      "text": "# Рекомендации по референсам\n\nГлавные герои и лодка с референсами; не хватает видов сбоку и со спины.\n\n## Мира\n\nВид в полный рост сбоку и со спины.\n\n- Изображений: 2\n- Ракурсы: сбоку, со спины\n- Почему: В M02, M04 и M05 Мира у воды, а изображение одно — спереди.\n- Уже есть: Портрет спереди.\n\n## Фонарик\n\nФонарик Миры крупно, зажжённый и погашенный.\n\n- Изображений: 2\n- Ракурсы: крупно\n- Состояния: зажжён, погашен\n- Почему: Фонарик в руках Миры в M02 и M04, карточки у него нет.\n"
+    }
+  ]
+}

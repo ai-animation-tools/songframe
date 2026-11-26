@@ -392,6 +392,7 @@ export function useSourcesForm() {
   const generationReference = referenceTarget?.project === project ? refs.find((reference) => reference.key === referenceTarget.key) : null;
 
   return {
+    project,
     view,
     loadError,
     busy,

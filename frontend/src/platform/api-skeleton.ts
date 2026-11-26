@@ -132,7 +132,10 @@ export function apiSkeleton(): Api {
       startCheck: stub('scenarioWorkflow.startCheck'),
       checkFixPreview: stub('scenarioWorkflow.checkFixPreview'),
       applyCheckFixes: stub('scenarioWorkflow.applyCheckFixes'),
-      resolveCheckIssue: stub('scenarioWorkflow.resolveCheckIssue')
+      resolveCheckIssue: stub('scenarioWorkflow.resolveCheckIssue'),
+      adviceView: stub('scenarioWorkflow.adviceView'),
+      startAdvice: stub('scenarioWorkflow.startAdvice'),
+      saveAdvice: stub('scenarioWorkflow.saveAdvice')
     },
     agents: {
       getSettings: stub('agents.getSettings'),

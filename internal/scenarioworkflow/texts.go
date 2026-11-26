@@ -314,3 +314,50 @@ func textCheckFixMissing(shot, entity string) string {
 func textCheckFixKeepInvalid(shot string) string {
 	return "План " + shot + " не принят или не задет этими правками. Откройте исправление снова."
 }
+
+// Тексты рекомендаций по референсам (advice.go).
+const (
+	textAdviceBusy            = "Дождитесь окончания задания агента в этом проекте."
+	textAdviceNoInputs        = "Для рекомендаций нужны идея клипа и текст песни на странице «Исходники» или сценарий."
+	textAdviceScenarioInvalid = "Сначала исправьте ошибки сценария: агенту нужен читаемый сценарий."
+	textAdviceInterrupted     = "Подготовка рекомендаций прервалась: задание агента не завершилось. Запустите её снова."
+	textAdviceCancelled       = "Подготовка рекомендаций остановлена."
+	textAdviceAgentFailed     = "Агент не закончил рекомендации. Запустите их снова."
+	textAdviceNotObject       = "Агент вернул рекомендации не в формате JSON. Запустите их снова."
+	textAdviceShape           = "Ответ агента не того вида: нужны schemaVersion 1, summary и items без других полей. Запустите рекомендации снова."
+	textAdviceNotReady        = "Готовых рекомендаций нет: сначала получите их от агента."
+	// Заголовок и подписи файла рекомендаций (AdviceMarkdown) — как на странице.
+	textAdviceHeading         = "Рекомендации по референсам"
+	textAdvicePreliminaryNote = "Предварительно: совет дан без сценария и уточнится после него."
+	textAdviceCountLabel      = "Изображений"
+	textAdviceViewsLabel      = "Ракурсы"
+	textAdviceStatesLabel     = "Состояния"
+	textAdviceWhyLabel        = "Почему"
+	textAdviceHaveLabel       = "Уже есть"
+)
+
+func textAdviceTooLarge(length, limit int) string {
+	return "Контекст рекомендаций занимает " + strconv.Itoa(length) + " знаков при пределе задания агента " + strconv.Itoa(limit) + "."
+}
+
+func textAdviceSummary(reason string) string {
+	return "Итог рекомендаций агента не принят: " + reason + ". Запустите их снова."
+}
+
+func textAdviceTooMany(count, limit int) string {
+	return "Агент вернул " + strconv.Itoa(count) + " пунктов при пределе " + strconv.Itoa(limit) + ". Запустите рекомендации снова."
+}
+
+func textAdviceItem(number int, reason string) string {
+	return "Пункт " + strconv.Itoa(number) + " рекомендаций агента не принят: " + reason + ". Запустите их снова."
+}
+
+func textAdviceRepeated(id string) string { return "второй пункт о сущности " + id }
+
+func textAdviceCount(limit int) string {
+	return "count: нужно целое число от 1 до " + strconv.Itoa(limit)
+}
+
+func textAdviceList(limit int) string {
+	return "нужен список до " + strconv.Itoa(limit) + " строк"
+}

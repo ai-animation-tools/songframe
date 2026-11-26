@@ -1,0 +1,30 @@
+{
+  "base": "checks-base",
+  "call": "ReferenceAdvice",
+  "covers": [],
+  "description": "Без сценария и текста песни советовать не по чему.",
+  "project": "project",
+  "remove": [
+    "plan/scenes.json",
+    "source/text.md"
+  ],
+  "steps": [
+    {
+      "op": "view",
+      "view": {
+        "canStart": false,
+        "job": null,
+        "message": null,
+        "preliminary": true,
+        "reason": "Для рекомендаций нужны идея клипа и текст песни на странице «Исходники» или сценарий.",
+        "report": null,
+        "stale": false,
+        "status": "none"
+      }
+    },
+    {
+      "error": "Для рекомендаций нужны идея клипа и текст песни на странице «Исходники» или сценарий.",
+      "op": "start"
+    }
+  ]
+}

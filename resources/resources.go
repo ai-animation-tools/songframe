@@ -64,6 +64,8 @@ const (
 	SkillScene       = "ai-clip-scene"
 	// SkillScenarioCheck — проверка сценария до производства (internal/scenarioworkflow, check.go).
 	SkillScenarioCheck = "ai-clip-scenario-check"
+	// SkillReferenceAdvice — рекомендации по референсам (internal/scenarioworkflow, advice.go).
+	SkillReferenceAdvice = "ai-clip-reference-advice"
 )
 
 // SkillFile возвращает файл встроенного скилла по пути от его папки (SKILL.md или

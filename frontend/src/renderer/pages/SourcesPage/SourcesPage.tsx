@@ -14,6 +14,7 @@ import { useSourcesForm } from './useSourcesForm';
 import { ImageGenerateDialog } from '../../components/ImageGenerateDialog';
 import { CoverGenerateDialog } from './components/CoverGenerateDialog';
 import { LinkedText } from '../../components/LinkedText';
+import { ReferenceAdvicePanel } from '../../components/ReferenceAdvicePanel';
 
 export function SourcesPage(): ReactElement {
   const form = useSourcesForm();
@@ -108,6 +109,8 @@ export function SourcesPage(): ReactElement {
           ) : null}
         </Stack>
       ) : null}
+      {/* Без сценария совет предварительный; основной вход — «Кастинг». */}
+      {form.project ? <ReferenceAdvicePanel project={form.project} /> : null}
       {/* Референсы занимают отдельную колонку только при достаточной ширине рабочей области. */}
       <Box
         sx={{

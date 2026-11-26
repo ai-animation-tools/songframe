@@ -52,8 +52,15 @@ export function finishedNotice(job: Pick<JobInfo, 'title' | 'status' | 'error'>)
     : { message: commonTexts.job.done({ title: job.title }), severity: 'success' };
 }
 
-/** Задания агента ведут страницы «Сценарий» и «Производство» (опоры провайдера-агента тоже); правило совпадает с системными уведомлениями. */
+/** Задание рекомендаций по референсам (scenarioworkflow.AdviceTask): его итог показывает «Кастинг». */
+export const REFERENCE_ADVICE_TASK = 'ai-clip-reference-advice';
+
+/**
+ * Задания агента ведут страницы «Сценарий», «Кастинг» (рекомендации по референсам) и «Производство» (опоры
+ * провайдера-агента тоже); правило совпадает с системными уведомлениями.
+ */
 function agentPage(task: string): { route: string; page: string } {
+  if (task === REFERENCE_ADVICE_TASK) return { route: '/project/cast', page: navigationTexts.pages.cast };
   return task.startsWith('ai-clip-scenario:') || task === 'ai-clip-scenario'
     ? { route: '/project/scenario', page: navigationTexts.pages.scenario }
     : { route: '/project/production', page: navigationTexts.pages.production };

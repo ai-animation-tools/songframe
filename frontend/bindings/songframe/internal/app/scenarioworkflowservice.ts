@@ -18,6 +18,13 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 import * as scenarioworkflow$0 from "../scenarioworkflow/models.js";
 
 /**
+ * AdviceView — scenarioWorkflow.adviceView: последние рекомендации агента по референсам и доступность новых.
+ */
+export function AdviceView(project: string): $CancellablePromise<scenarioworkflow$0.AdviceView> {
+    return $Call.ByID(2762719870, project);
+}
+
+/**
  * Apply — scenarioWorkflow.apply: проверка и публикация готового предложения.
  */
 export function Apply(project: string, id: string): $CancellablePromise<scenarioworkflow$0.View> {
@@ -75,10 +82,25 @@ export function ResolveCheckIssue(input: scenarioworkflow$0.CheckResolveInput): 
 }
 
 /**
+ * SaveAdvice — scenarioWorkflow.saveAdvice: готовые рекомендации текстом Markdown в файл, выбранный в
+ * системном диалоге окна вызова. Отмена диалога — nil без ошибки.
+ */
+export function SaveAdvice(project: string): $CancellablePromise<string | null> {
+    return $Call.ByID(4224457966, project);
+}
+
+/**
  * Start — scenarioWorkflow.start: запуск прохода агентом в режиме предложения.
  */
 export function Start(input: scenarioworkflow$0.StartInput): $CancellablePromise<scenarioworkflow$0.View> {
     return $Call.ByID(722864869, input);
+}
+
+/**
+ * StartAdvice — scenarioWorkflow.startAdvice: запуск рекомендаций по референсам; проект не меняется.
+ */
+export function StartAdvice(project: string): $CancellablePromise<scenarioworkflow$0.AdviceView> {
+    return $Call.ByID(1823598609, project);
 }
 
 /**

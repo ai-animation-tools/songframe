@@ -2,6 +2,10 @@ package app
 
 import (
 	"context"
+	"errors"
+	"os"
+
+	"github.com/wailsapp/wails/v3/pkg/application"
 
 	"songframe/internal/projectgit"
 	"songframe/internal/scenarioworkflow"
@@ -12,7 +16,28 @@ import (
 // (кастинг и части, планы, доработка), утверждения пары и сцен, применение и отклонение предложения.
 // Состояние — локальные записи в каталоге состояния и задания менеджера агентов внутри
 // scenarioworkflow.Workflow; файлы проекта меняет только применение через журнал публикаций.
-type ScenarioWorkflowService struct{ workflow *scenarioworkflow.Workflow }
+type ScenarioWorkflowService struct {
+	workflow *scenarioworkflow.Workflow
+	// saveDialog — системный диалог сохранения рекомендаций для окна вызова; nil до ConfigureScenarioDesktop.
+	saveDialog func(window application.Window) (string, error)
+}
+
+// ConfigureScenarioDesktop подключает системный диалог сохранения рекомендаций по референсам.
+func ConfigureScenarioDesktop(s *ScenarioWorkflowService, desktop *application.App) {
+	s.saveDialog = func(window application.Window) (string, error) {
+		return desktop.Dialog.SaveFileWithOptions(&application.SaveFileDialogOptions{
+			Title: textSaveAdvice, Filename: adviceFileName, Window: window,
+			Filters: []application.FileFilter{{DisplayName: textAdviceFilter, Pattern: "*.md"}},
+		}).PromptForSingleSelection()
+	}
+}
+
+// Тексты диалога сохранения рекомендаций и имя файла по умолчанию.
+const (
+	textSaveAdvice   = "Сохранить рекомендации по референсам"
+	textAdviceFilter = "Текст Markdown"
+	adviceFileName   = "Рекомендации по референсам.md"
+)
 
 // NewScenarioWorkflowService оборачивает сценарный проход для Wails.
 func NewScenarioWorkflowService(workflow *scenarioworkflow.Workflow) *ScenarioWorkflowService {
@@ -54,6 +79,36 @@ func (s *ScenarioWorkflowService) Discard(project, id string) (scenarioworkflow.
 // CheckView — scenarioWorkflow.checkView: последняя проверка сценария агентом и доступность новой.
 func (s *ScenarioWorkflowService) CheckView(project string) (scenarioworkflow.CheckView, error) {
 	return wire.Done(s.workflow.CheckView(project))
+}
+
+// AdviceView — scenarioWorkflow.adviceView: последние рекомендации агента по референсам и доступность новых.
+func (s *ScenarioWorkflowService) AdviceView(project string) (scenarioworkflow.AdviceView, error) {
+	return wire.Done(s.workflow.AdviceView(project))
+}
+
+// StartAdvice — scenarioWorkflow.startAdvice: запуск рекомендаций по референсам; проект не меняется.
+func (s *ScenarioWorkflowService) StartAdvice(project string) (scenarioworkflow.AdviceView, error) {
+	return wire.Done(s.workflow.StartAdvice(project))
+}
+
+// SaveAdvice — scenarioWorkflow.saveAdvice: готовые рекомендации текстом Markdown в файл, выбранный в
+// системном диалоге окна вызова. Отмена диалога — nil без ошибки.
+func (s *ScenarioWorkflowService) SaveAdvice(ctx context.Context, project string) (*string, error) {
+	text, err := s.workflow.AdviceMarkdown(project)
+	if err != nil {
+		return nil, err
+	}
+	if s.saveDialog == nil {
+		return nil, errors.New("нативное приложение ещё не запущено")
+	}
+	destination, err := s.saveDialog(window(ctx))
+	if err != nil || destination == "" {
+		return nil, err
+	}
+	if err := os.WriteFile(destination, []byte(text), 0o666); err != nil {
+		return nil, err
+	}
+	return &destination, nil
 }
 
 // StartCheck — scenarioWorkflow.startCheck: запуск проверки сценария агентом; сценарий не меняется.

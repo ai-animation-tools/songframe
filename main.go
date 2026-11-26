@@ -226,6 +226,8 @@ func run() error {
 		},
 		CheckImageBudget: shell.ReviewImageBudget(agentSettings),
 	})
+	scenarioService := shell.NewScenarioWorkflowService(scenarioWorkflow)
+
 	shell.ConnectScenarioReview(projects, scenarioWorkflow)
 	productionService := production.New(production.Options{Jobs: jobManager, Layer: providerLayer, LocalDir: profilePath})
 	// Проход агента производства: записи предложений в каталоге состояния, тот же каталог моделей,
@@ -290,7 +292,7 @@ func run() error {
 		application.NewService(environmentService), application.NewService(shell.NewMediaService(providerLayer)),
 		// Сценарный проход агента: журнал публикаций тот же каталог состояния, что у scenarioJournal;
 		// перед запуском проверяется доступ к агенту.
-		application.NewService(shell.NewScenarioWorkflowService(scenarioWorkflow)),
+		application.NewService(scenarioService),
 		// Проверка видео агентом не запускается, пока над пакетом идёт производственная операция.
 		application.NewService(shell.NewVideoReviewService(videoreview.New(videoreview.Options{
 			Agents: agentManager, Tools: shell.VideoReviewTools(componentManager), Brief: shell.ContinuityBrief,
@@ -357,6 +359,7 @@ func run() error {
 	shell.ConfigureMontageWindow(montageWindow, desktop)
 	shell.ConfigureCameraWindow(cameraWindow, desktop)
 	shell.ConfigureMontageDesktop(montageService, desktop)
+	shell.ConfigureScenarioDesktop(scenarioService, desktop)
 	defer shell.ConfigureAgentEvents(agentManager, desktop)()
 	shell.ConfigureEnvironmentEvents(environmentService, desktop)
 	openURL = func(url string) error { return desktop.Browser.OpenURL(url) }

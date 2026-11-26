@@ -1,0 +1,82 @@
+{
+  "base": "checks-base",
+  "call": "ReferenceAdvice",
+  "covers": [],
+  "description": "Ответ с неизвестной сущностью отклоняется целиком; файла рекомендаций нет.",
+  "project": "project",
+  "steps": [
+    {
+      "context": "context-0.txt",
+      "op": "start",
+      "view": {
+        "canStart": false,
+        "job": {
+          "exitCode": null,
+          "finishedAt": null,
+          "id": "job-0",
+          "inputHashes": {
+            "context": "3fa85dd3cee6d081c558b13b743cb5f78146a8adb51eb81b77d26859e42aca10",
+            "prompt": "87c797ddd2f281731eccef03a26c11208fec52420682e5ff88a2481f403e7872"
+          },
+          "log": "",
+          "permissions": "read-only",
+          "phase": "работает",
+          "project": "<project>",
+          "provider": "codex",
+          "result": "",
+          "schemaVersion": 1,
+          "sequence": 1,
+          "startedAt": "2026-11-04T12:00:00.000Z",
+          "status": "running",
+          "task": "ai-clip-reference-advice"
+        },
+        "message": null,
+        "preliminary": false,
+        "reason": "Дождитесь окончания задания агента в этом проекте.",
+        "report": null,
+        "stale": false,
+        "status": "running"
+      }
+    },
+    {
+      "op": "finish",
+      "result": "{\"schemaVersion\": 1, \"summary\": \"Итог\", \"items\": [{\"entity\": \"ghost\", \"name\": \"Призрак\", \"need\": \"…\", \"views\": [], \"count\": 1, \"states\": [], \"why\": \"…\", \"have\": \"\"}]}"
+    },
+    {
+      "op": "view",
+      "view": {
+        "canStart": true,
+        "job": {
+          "exitCode": 0,
+          "finishedAt": null,
+          "id": "job-0",
+          "inputHashes": {
+            "context": "3fa85dd3cee6d081c558b13b743cb5f78146a8adb51eb81b77d26859e42aca10",
+            "prompt": "87c797ddd2f281731eccef03a26c11208fec52420682e5ff88a2481f403e7872"
+          },
+          "log": "",
+          "permissions": "read-only",
+          "phase": "работает",
+          "project": "<project>",
+          "provider": "codex",
+          "result": "{\"schemaVersion\": 1, \"summary\": \"Итог\", \"items\": [{\"entity\": \"ghost\", \"name\": \"Призрак\", \"need\": \"…\", \"views\": [], \"count\": 1, \"states\": [], \"why\": \"…\", \"have\": \"\"}]}",
+          "schemaVersion": 1,
+          "sequence": 1,
+          "startedAt": "2026-11-04T12:00:00.000Z",
+          "status": "completed",
+          "task": "ai-clip-reference-advice"
+        },
+        "message": "Пункт 1 рекомендаций агента не принят: неизвестная сущность ghost. Запустите их снова.",
+        "preliminary": false,
+        "reason": null,
+        "report": null,
+        "stale": false,
+        "status": "invalid"
+      }
+    },
+    {
+      "error": "Готовых рекомендаций нет: сначала получите их от агента.",
+      "op": "markdown"
+    }
+  ]
+}

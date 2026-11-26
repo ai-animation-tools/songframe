@@ -9,6 +9,45 @@ import * as json$0 from "../../../encoding/json/models.js";
 import * as agents$0 from "../agents/models.js";
 
 /**
+ * AdviceItem — пункт рекомендаций по одной сущности: Entity — ID кастинга или "" для того, чего в
+ * кастинге ещё нет; Views и States — ракурсы и состояния, для которых нужен свой референс.
+ */
+export interface AdviceItem {
+    "entity": string;
+    "name": string;
+    "need": string;
+    "views": string[];
+    "count": number;
+    "states": string[];
+    "why": string;
+    "have": string;
+}
+
+/**
+ * AdviceReport — проверенный ответ агента.
+ */
+export interface AdviceReport {
+    "summary": string;
+    "items": AdviceItem[];
+}
+
+/**
+ * AdviceView — ReferenceAdviceView: последние рекомендации проекта и доступность новых. Status —
+ * те же состояния, что у проверки сценария (CheckNone, CheckRunning, CheckReady, …);
+ * Preliminary — совет дан без сценария; Stale — входы изменились после совета.
+ */
+export interface AdviceView {
+    "status": string;
+    "job": AgentJob | null;
+    "report": AdviceReport | null;
+    "message": string | null;
+    "preliminary": boolean;
+    "stale": boolean;
+    "canStart": boolean;
+    "reason": string | null;
+}
+
+/**
  * AgentJob — снимок задания внешнего агента (Job менеджера internal/agents, ключи TS AgentJob),
  * который вид сценария отдаёт renderer как view.job. Сценарий читает только Project, Status,
  * ExitCode, Message и Result: в Result итоговый текст агента — JSON предложения.

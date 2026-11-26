@@ -134,7 +134,7 @@
 | --- | --- |
 | [`ScenarioPage`](../frontend/src/renderer/pages/ScenarioPage/ScenarioPage.tsx) | Страница сценария: один черновик plan/scenes.json — блок «Общие правила и части» над планами. |
 
-Ещё: [`resources/skills/ai-clip-scenario`](../resources/skills/ai-clip-scenario).
+Ещё: [`resources/skills/ai-clip-scenario`](../resources/skills/ai-clip-scenario), [`resources/skills/ai-clip-reference-advice`](../resources/skills/ai-clip-reference-advice), [`frontend/src/renderer/components/ReferenceAdvicePanel.tsx`](../frontend/src/renderer/components/ReferenceAdvicePanel.tsx).
 
 ## Производство и приёмка
 

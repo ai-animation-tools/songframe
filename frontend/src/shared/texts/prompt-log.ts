@@ -13,6 +13,7 @@ export const promptLogTexts = {
   title: (title: string): string => {
     const scene = /^ai-clip-scene:(M\d{2}(?:\.\d+)?):(\w+)$/.exec(title);
     if (scene) return `${scene[1]} · ${STAGE_TITLES[scene[2]] ?? scene[2]}`;
+    if (title === 'ai-clip-reference-advice') return `${navigationTexts.pages.cast} · рекомендации по референсам`;
     const scenario = /^ai-clip-scenario:(\w+)$/.exec(title);
     if (scenario) return `${navigationTexts.pages.scenario} · ${SCENARIO_PASSES[scenario[1]] ?? scenario[1]}`;
     return title;

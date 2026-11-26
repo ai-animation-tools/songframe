@@ -90,7 +90,7 @@ var Areas = []Area{
 			"internal/scenarioapply", "internal/continuitybrief", "internal/lintregistry",
 		},
 		Pages: []string{"ScenarioPage"},
-		Paths: []string{"resources/skills/ai-clip-scenario"},
+		Paths: []string{"resources/skills/ai-clip-scenario", "resources/skills/ai-clip-reference-advice", "frontend/src/renderer/components/ReferenceAdvicePanel.tsx"},
 	},
 	{
 		Title: "Производство и приёмка",

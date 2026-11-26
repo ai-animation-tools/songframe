@@ -56,7 +56,14 @@ import type { ReferenceImageGenerationInput } from '@shared/reference-image-gene
 import type { AiAccess } from '@shared/ai-access';
 import type { UpdateView } from '@shared/updates';
 import type * as scenarioworkflow from '../../bindings/songframe/internal/scenarioworkflow/models';
-import type { ScenarioCheckFixPreview, ScenarioCheckView, ScenarioDocuments, ScenarioProposal, ScenarioWorkflowView } from '@shared/scenario-workflow';
+import type {
+  ReferenceAdviceView,
+  ScenarioCheckFixPreview,
+  ScenarioCheckView,
+  ScenarioDocuments,
+  ScenarioProposal,
+  ScenarioWorkflowView
+} from '@shared/scenario-workflow';
 import type * as productionworkflow from '../../bindings/songframe/internal/productionworkflow/models';
 import type { ProductionFramePrompt, ProductionPass, ProductionProposal, ProductionWorkflowView } from '@shared/production-workflow';
 import type { VocalModelId, VocalPreparationView } from '@shared/vocals';
@@ -272,6 +279,15 @@ function toWorkflowView({ proposal, job, ...view }: scenarioworkflow.View): Scen
  * Вид проверки сценария: статус, группа и важность проблем Go хранит строками, отчёт проверен
  * разбором ответа агента; адаптер только сужает типы.
  */
+function toAdviceView({ job, report, ...view }: scenarioworkflow.AdviceView): ReferenceAdviceView {
+  return {
+    ...view,
+    status: view.status as ReferenceAdviceView['status'],
+    report: report ? (report as ReferenceAdviceView['report']) : null,
+    job: job ? toAgentJob(job) : null
+  };
+}
+
 function toCheckView({ job, report, ...view }: scenarioworkflow.CheckView): ScenarioCheckView {
   return {
     ...view,
@@ -727,6 +743,10 @@ export function createApi(b: Bindings): Api {
     checkView: (project) => call('scenarioWorkflow.checkView', async () => toCheckView(await (await b.scenarioWorkflow()).CheckView(project))),
     // Подготовка уменьшает изображения кастинга (несколько секунд на клипе), поэтому без срока оболочки.
     startCheck: (project) => call('scenarioWorkflow.startCheck', async () => toCheckView(await (await b.scenarioWorkflow()).StartCheck(project)), false),
+    adviceView: (project) => call('scenarioWorkflow.adviceView', async () => toAdviceView(await (await b.scenarioWorkflow()).AdviceView(project))),
+    startAdvice: (project) => call('scenarioWorkflow.startAdvice', async () => toAdviceView(await (await b.scenarioWorkflow()).StartAdvice(project)), false),
+    // Системный диалог ждёт человека: без срока оболочки.
+    saveAdvice: (project) => call('scenarioWorkflow.saveAdvice', async () => (await (await b.scenarioWorkflow()).SaveAdvice(project)) ?? null, false),
     checkFixPreview: (project, issues) =>
       call('scenarioWorkflow.checkFixPreview', async () => (await (await b.scenarioWorkflow()).CheckFixPreview(project, issues)) as ScenarioCheckFixPreview),
     applyCheckFixes: (input) =>

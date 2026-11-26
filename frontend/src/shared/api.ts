@@ -21,6 +21,7 @@ import type {
   ScenarioCheckFixPreview,
   ScenarioCheckResolveInput,
   ScenarioCheckView,
+  ReferenceAdviceView,
   ScenarioWorkflowStart,
   ScenarioWorkflowView
 } from './scenario-workflow';
@@ -186,6 +187,12 @@ export interface Api {
     applyCheckFixes(input: ScenarioCheckFixInput): Promise<ScenarioCheckView>;
     /** Отметка проблемы проверки «решено вручную» или её снятие; сценарий не меняется. */
     resolveCheckIssue(input: ScenarioCheckResolveInput): Promise<ScenarioCheckView>;
+    /** Последние рекомендации агента по референсам и доступность новых; агента не запускает. */
+    adviceView(project: string): Promise<ReferenceAdviceView>;
+    /** Запуск рекомендаций по референсам; проект не меняется. */
+    startAdvice(project: string): Promise<ReferenceAdviceView>;
+    /** Готовые рекомендации текстом Markdown в файл из системного диалога; null — диалог отменён. */
+    saveAdvice(project: string): Promise<string | null>;
   };
   agents: {
     getSettings(): Promise<AgentSettings | null>;

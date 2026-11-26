@@ -63,7 +63,6 @@ export const commonTexts = {
   openFolder: 'Открыть папку',
   clearSelection: 'Снять выбор',
   unsavedChanges: 'Есть несохранённые правки',
-  originalSize: 'Оригинальный размер (1:1)',
   operationPending: 'Дождитесь завершения текущей операции.',
   unavailable: ({ purpose, reason }: { purpose: string; reason: string }) => `${purpose}. Недоступно: ${reason}`,
   job: {

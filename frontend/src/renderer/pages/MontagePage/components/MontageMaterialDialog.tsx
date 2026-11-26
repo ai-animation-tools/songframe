@@ -1,15 +1,20 @@
 import { commonTexts } from '@shared/texts/common';
 import { montageTexts } from '@shared/texts/montage';
-import { Close, FitScreen, AspectRatio } from '@mui/icons-material';
+import { Close } from '@mui/icons-material';
 import { useCallback, useId, useRef, useState, type KeyboardEvent, type ReactElement } from 'react';
 import { ArrowBack, ArrowForward } from '@mui/icons-material';
 import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from '@mui/material';
 import type { MontageSource } from '@shared/montage';
 import { ActionButton } from '../../../components/ActionButton';
+import { ZoomableImage } from '../../../components/ZoomableImage';
 import { projectMediaUrl } from '../model';
 import { MontageMaterialChip } from './MontageMaterialChip';
 
-/** Просмотр материала перед добавлением: видео запускается вручную, опора открывается в масштабе 1:1. */
+/**
+ * Просмотр материала перед добавлением: видео запускается вручную, опора открывается вписанной в окно с общим
+ * увеличением ZoomableImage. Масштаб держится при листании материалов и сбрасывается при закрытии, как в общем
+ * просмотре изображений.
+ */
 export function MontageMaterialDialog({
   project,
   source,
@@ -29,7 +34,8 @@ export function MontageMaterialDialog({
 }): ReactElement {
   const titleId = useId();
   const paperRef = useRef<HTMLDivElement>(null);
-  const [originalSize, setOriginalSize] = useState(true);
+  /** Масштаб опоры в процентах; null — вписать. */
+  const [zoom, setZoom] = useState<number | null>(null);
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const url = projectMediaUrl(project, source.path);
   const failed = failedUrl === url;
@@ -40,7 +46,6 @@ export function MontageMaterialDialog({
     if (!callback) return;
     // Содержимое пересоздаётся при переходе; сохраняем фокус на диалоге, чтобы следующие стрелки продолжали листать материалы.
     paperRef.current?.focus({ preventScroll: true });
-    setOriginalSize(true);
     setFailedUrl(null);
     callback();
   };
@@ -48,6 +53,8 @@ export function MontageMaterialDialog({
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
     if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    // Ползунок масштаба опоры сам ходит стрелками по ступеням: материалы листаются вне него.
+    if (event.target instanceof Element && event.target.closest('[role="slider"], input')) return;
     // Перехватываем стрелки до нативных controls видео, чтобы они листали материалы, в том числе при фокусе на плеере.
     event.preventDefault();
     event.stopPropagation();
@@ -118,41 +125,32 @@ export function MontageMaterialDialog({
           </ActionButton>
         </Box>
       </DialogTitle>
-      <DialogContent key={`${source.id}:${url}`} sx={{ p: 0, mx: 2, minHeight: 0, flex: 1, overflow: 'auto', bgcolor: 'background.default' }}>
+      <DialogContent
+        key={`${source.id}:${url}`}
+        sx={{
+          p: 0,
+          mx: 2,
+          minHeight: 0,
+          flex: 1,
+          // У опоры фон и прокрутку держит область ZoomableImage, ползунок масштаба стоит на фоне окна, как в общем просмотре.
+          ...(isImage ? { overflow: 'hidden', display: 'flex', flexDirection: 'column' } : { overflow: 'auto', bgcolor: 'background.default' })
+        }}
+      >
         {failed ? (
           <Alert severity="error" sx={{ m: 2 }}>
             {isImage ? montageTexts.materialImageFailed : montageTexts.materialVideoFailed}
           </Alert>
         ) : null}
         {isImage ? (
-          <Box
-            key={originalSize ? 'original' : 'fit'}
-            sx={{
-              display: failed ? 'none' : 'flex',
-              width: originalSize ? 'max-content' : '100%',
-              height: originalSize ? 'max-content' : '100%',
-              minWidth: '100%',
-              minHeight: '100%',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            <Box
-              component="img"
+          failed ? null : (
+            <ZoomableImage
               src={url}
               alt={montageTexts.sourceLabel({ title, label: source.label })}
+              zoom={zoom}
+              onZoomChange={setZoom}
               onError={() => setFailedUrl(url)}
-              sx={{
-                display: 'block',
-                flexShrink: 0,
-                width: 'auto',
-                height: 'auto',
-                maxWidth: originalSize ? 'none' : '100%',
-                maxHeight: originalSize ? 'none' : '100%',
-                objectFit: 'contain'
-              }}
             />
-          </Box>
+          )
         ) : (
           <Box
             component="video"
@@ -168,26 +166,6 @@ export function MontageMaterialDialog({
         )}
       </DialogContent>
       <DialogActions sx={{ flexWrap: 'wrap', gap: 1 }}>
-        {isImage ? (
-          <>
-            <Button
-              startIcon={<AspectRatio />}
-              onClick={() => setOriginalSize(true)}
-              aria-pressed={originalSize}
-              variant={originalSize ? 'contained' : 'outlined'}
-            >
-              {montageTexts.originalSize}
-            </Button>
-            <Button
-              startIcon={<FitScreen />}
-              onClick={() => setOriginalSize(false)}
-              aria-pressed={!originalSize}
-              variant={originalSize ? 'outlined' : 'contained'}
-            >
-              {montageTexts.fitToWindow}
-            </Button>
-          </>
-        ) : null}
         <Button startIcon={<Close />} onClick={onClose}>
           {commonTexts.close}
         </Button>

@@ -37,6 +37,15 @@ export const componentsTexts = {
     video: commonTexts.media.video,
     exit: 'Выйти из полноэкранного режима'
   },
+  imageZoom: {
+    label: 'Масштаб',
+    value: ({ percent }: { percent: number }) => `${percent}%`,
+    fitValue: ({ percent }: { percent: number }) => `Вписать: ${percent}%`,
+    fitMark: 'Вписать',
+    original: '1:1',
+    upscaleHint: 'Больше 100% — крупнее, но без новых деталей: картинка размывается.',
+    aspect: 'Пропорции изображений разные: слой сравнения вписан в рамку без растягивания, сравнение приблизительное.'
+  },
   gallery: {
     image: commonTexts.media.image,
     position: ({ kind, position, total }: { kind: string; position: number; total: number }) => `${kind} · ${position} / ${total}`,
@@ -44,12 +53,6 @@ export const componentsTexts = {
     previousImage: 'Предыдущее изображение',
     lastImage: 'Это последнее изображение.',
     nextImage: 'Следующее изображение',
-    zoom: 'Масштаб',
-    zoomValue: ({ percent }: { percent: number }) => `${percent}%`,
-    zoomFit: ({ percent }: { percent: number }) => `Вписать: ${percent}%`,
-    zoomFitMark: 'Вписать',
-    zoomOriginal: '1:1',
-    zoomUpscaleHint: 'Больше 100% — крупнее, но без новых деталей: картинка размывается.',
     compareWith: 'Сравнить с',
     compareNone: 'Не сравнивать',
     compareLayer: ({ label }: { label: string }) => `Слой сравнения: ${label}`,
@@ -58,7 +61,6 @@ export const componentsTexts = {
     compareDifferenceHint: 'Совпадающее чернеет, сдвинутое светится.',
     compareFlickerKey: 'С — мигание',
     compareFlickerHint: 'Клавиша С показывает слой сравнения целиком или убирает его: так сдвиг виден лучше всего.',
-    compareAspect: 'Пропорции изображений разные: слой сравнения вписан в рамку без растягивания, сравнение приблизительное.',
     openLarge: ({ label }: { label: string }) => `Открыть крупно: ${label}`
   },
   shot: {

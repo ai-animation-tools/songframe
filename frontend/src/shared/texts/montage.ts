@@ -99,8 +99,6 @@ export const montageTexts = {
   firstMaterial: 'Это первый материал каталога.',
   nextMaterial: 'Следующий материал',
   lastMaterial: 'Это последний материал каталога.',
-  originalSize: commonTexts.originalSize,
-  fitToWindow: 'Вписать в окно',
   playerSuspended: 'Закройте открытое окно или дождитесь завершения текущей операции.',
   emptyAudioRange: 'Музыкальный участок пуст: задайте его начало и конец.',
   noVideoAtPosition: 'На этой позиции нет видео',

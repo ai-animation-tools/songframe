@@ -42,13 +42,13 @@ type Story = StoryObj<typeof meta>;
 async function openGallery(canvasElement: HTMLElement): Promise<HTMLElement> {
   await userEvent.click(within(canvasElement).getByRole('button', { name: texts.openLarge({ label: FRAMES[0].label }) }));
   const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog');
-  await waitFor(() => expect(within(dialog).getByRole('slider', { name: texts.zoom })).toBeEnabled());
+  await waitFor(() => expect(within(dialog).getByRole('slider', { name: componentsTexts.imageZoom.label })).toBeEnabled());
   return dialog;
 }
 
-const zoomValue = (dialog: HTMLElement): string | null => dialog.querySelector('[data-gallery-zoom-value]')?.getAttribute('data-gallery-zoom-value') ?? null;
-const viewport = (dialog: HTMLElement): HTMLElement => dialog.querySelector<HTMLElement>('[data-gallery-viewport]')!;
-const overlay = (dialog: HTMLElement): HTMLImageElement | null => dialog.querySelector<HTMLImageElement>('[data-gallery-overlay]');
+const zoomValue = (dialog: HTMLElement): string | null => dialog.querySelector('[data-zoom-value]')?.getAttribute('data-zoom-value') ?? null;
+const viewport = (dialog: HTMLElement): HTMLElement => dialog.querySelector<HTMLElement>('[data-zoom-viewport]')!;
+const overlay = (dialog: HTMLElement): HTMLImageElement | null => dialog.querySelector<HTMLImageElement>('[data-zoom-overlay]');
 
 export const Zoom: Story = {
   name: 'Увеличение · вписать → ступени до 300%, перетаскивание, масштаб при листании, сброс при закрытии',
@@ -57,10 +57,10 @@ export const Zoom: Story = {
     const dialog = await openGallery(canvasElement);
     const fit = Number(zoomValue(dialog));
     await expect(fit).toBeLessThan(100);
-    await expect(viewport(dialog)).toHaveAttribute('data-gallery-viewport', 'fit');
+    await expect(viewport(dialog)).toHaveAttribute('data-zoom-viewport', 'fit');
     await expect(within(dialog).queryByRole('combobox', { name: texts.compareWith })).not.toBeInTheDocument();
 
-    const slider = within(dialog).getByRole('slider', { name: texts.zoom });
+    const slider = within(dialog).getByRole('slider', { name: componentsTexts.imageZoom.label });
     slider.focus();
     await userEvent.keyboard('{End}');
     await expect(zoomValue(dialog)).toBe('300');
@@ -68,7 +68,7 @@ export const Zoom: Story = {
     await userEvent.keyboard('{ArrowLeft}');
     await expect(zoomValue(dialog)).toBe('250');
     await expect(within(dialog).getByText(FRAMES[0].label)).toBeVisible();
-    await expect(viewport(dialog)).toHaveAttribute('data-gallery-viewport', 'pannable');
+    await expect(viewport(dialog)).toHaveAttribute('data-zoom-viewport', 'pannable');
 
     const area = viewport(dialog);
     const before = area.scrollLeft;
@@ -114,10 +114,10 @@ export const Compare: Story = {
     await expect(getComputedStyle(overlay(dialog)!).opacity).toBe('0');
 
     await userEvent.click(within(dialog).getByRole('switch', { name: texts.compareDifference }));
-    await expect(overlay(dialog)).toHaveAttribute('data-gallery-overlay', 'difference');
+    await expect(overlay(dialog)).toHaveAttribute('data-zoom-overlay', 'difference');
     await expect(getComputedStyle(overlay(dialog)!).mixBlendMode).toBe('difference');
     await expect(getComputedStyle(overlay(dialog)!).opacity).toBe('1');
-    await expect(dialog.querySelector('[data-gallery-aspect]')).toBeNull();
+    await expect(dialog.querySelector('[data-zoom-aspect]')).toBeNull();
 
     // Переход на опору, выбранную слоем, снимает сравнение: с собой не сравнивают.
     await userEvent.click(within(dialog).getByRole('button', { name: texts.nextImage }));
@@ -134,8 +134,8 @@ export const CompareAspect: Story = {
     const screen = within(canvasElement.ownerDocument.body);
     await userEvent.click(within(dialog).getByRole('combobox', { name: texts.compareWith }));
     await userEvent.click(await screen.findByRole('option', { name: SQUARE.label }));
-    await waitFor(() => expect(dialog.querySelector('[data-gallery-aspect]')).not.toBeNull());
-    await expect(within(dialog).getByText(texts.compareAspect)).toBeVisible();
+    await waitFor(() => expect(dialog.querySelector('[data-zoom-aspect]')).not.toBeNull());
+    await expect(within(dialog).getByText(componentsTexts.imageZoom.aspect)).toBeVisible();
     await expect(getComputedStyle(overlay(dialog)!).objectFit).toBe('contain');
   }
 };

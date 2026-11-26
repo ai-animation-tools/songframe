@@ -2,6 +2,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { commonTexts } from '@shared/texts/common';
+import { componentsTexts } from '@shared/texts/components';
 import { montageTexts } from '@shared/texts/montage';
 import { MONTAGE_SOURCE, MontageSourcesStory } from '../../../testing/montageStories';
 import type { StoryOptions } from '../../../testing/storybook';
@@ -104,14 +105,23 @@ export const BrowseMaterials: Story = {
     await userEvent.keyboard('{ArrowRight}');
     await expect(dialog.getByText(montageTexts.materialPosition({ position: 3, total: 4 }))).toBeInTheDocument();
     await waitFor(() => expect((dialog.getByRole('img') as HTMLImageElement).naturalWidth).toBeGreaterThan(0));
-    await expect(dialog.getByRole('button', { name: montageTexts.originalSize })).toHaveAttribute('aria-pressed', 'true');
-    await userEvent.click(dialog.getByRole('button', { name: montageTexts.fitToWindow }));
-    await expect(dialog.getByRole('button', { name: montageTexts.fitToWindow })).toHaveAttribute('aria-pressed', 'true');
+    // Опора открывается вписанной; ползунок увеличивает её, а его стрелки не листают материалы.
+    const zoomValue = (): string | null | undefined => element.querySelector('[data-zoom-value]')?.getAttribute('data-zoom-value');
+    await waitFor(() => expect(dialog.getByRole('slider', { name: componentsTexts.imageZoom.label })).toBeEnabled());
+    await expect(zoomValue()).toBe('100');
+    dialog.getByRole('slider', { name: componentsTexts.imageZoom.label }).focus();
+    await userEvent.keyboard('{ArrowUp}');
+    await expect(zoomValue()).toBe('150');
+    await userEvent.keyboard('{ArrowRight}');
+    await expect(zoomValue()).toBe('200');
+    await expect(dialog.getByText(montageTexts.materialPosition({ position: 3, total: 4 }))).toBeInTheDocument();
+    element.focus();
     await userEvent.keyboard('{ArrowRight}');
     await expect(dialog.getByText(montageTexts.materialPosition({ position: 4, total: 4 }))).toBeInTheDocument();
     await expect(dialog.getByRole('button', { name: montageTexts.nextMaterial })).toBeDisabled();
     await userEvent.keyboard('{ArrowLeft}');
-    await expect(dialog.getByRole('button', { name: montageTexts.originalSize })).toHaveAttribute('aria-pressed', 'true');
+    // Масштаб держится при листании материалов.
+    await waitFor(() => expect(zoomValue()).toBe('200'));
     await userEvent.keyboard('{Escape}');
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     await expect(canvas.getByTestId('source-selection')).toHaveTextContent(MONTAGE_SOURCE);
@@ -124,7 +134,8 @@ export const BrowseMaterials: Story = {
     element = await screen.findByRole('dialog');
     await waitFor(() => expect(element).toBeVisible());
     dialog = within(element);
-    await expect(dialog.getByRole('button', { name: montageTexts.originalSize })).toHaveAttribute('aria-pressed', 'true');
+    // Закрытие сбросило масштаб: опора снова вписана.
+    await waitFor(() => expect(element.querySelector('[data-zoom-value]')).toHaveAttribute('data-zoom-value', '100'));
     await userEvent.click(dialog.getByRole('button', { name: commonTexts.close }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   }

@@ -802,6 +802,16 @@ export const CompositionUsed: Story = {
     await expect(await screen.findByRole('dialog')).toBeVisible();
     await userEvent.keyboard('{Escape}');
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    // Опору сравнивают наложением с другой опорой попытки или со снимком схемы композиции.
+    await userEvent.click(frames.getAllByRole('button', { name: new RegExp(`^${componentsTexts.gallery.openLarge({ label: 'K01' })}`) })[0]);
+    const dialog = within(await screen.findByRole('dialog'));
+    await userEvent.click(dialog.getByRole('combobox', { name: componentsTexts.gallery.compareWith }));
+    const listbox = within(await screen.findByRole('listbox'));
+    await expect(listbox.getByRole('option', { name: composition.compareLabel({ phase: composition.phases.start }) })).toBeInTheDocument();
+    await expect(listbox.getByRole('option', { name: /^K02/ })).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   }
 };
 

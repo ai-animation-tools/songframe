@@ -8,7 +8,7 @@ import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import ReplayIcon from '@mui/icons-material/Replay';
 import { Box, Chip, Typography } from '@mui/material';
 import type { KeyframeNoteScope, PackageKeyframe, PackageView } from '@shared/types';
-import { copyShotFrame } from '@shared/production-workflow';
+import { copyShotFrame, type ProductionComposition } from '@shared/production-workflow';
 import { ImageGallery } from '../../../components/ImageGallery';
 import { ImageThumbnail } from '../../../components/ImageThumbnail';
 import { ActionButton } from '../../../components/ActionButton';
@@ -60,7 +60,8 @@ export function PackageKeyframes({
   onReopen,
   onSetNote,
   renderActions,
-  copies = {}
+  copies = {},
+  composition = []
 }: {
   pkg: PackageView;
   busy: boolean;
@@ -71,6 +72,8 @@ export function PackageKeyframes({
   renderActions?(frame: PackageKeyframe): ReactNode;
   /** Копии других опор плана (copyOf): ID копии → ID источника. Их возвращают на доработку через источник. */
   copies?: Record<string, string>;
+  /** Свежие снимки схемы композиции попытки: в просмотре опору можно сравнить с ними наложением. */
+  composition?: ProductionComposition['frames'];
 }): ReactElement | null {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [reopening, setReopening] = useState<string | null>(null);
@@ -181,7 +184,16 @@ export function PackageKeyframes({
       </Box>
       <KeyframeNotes notes={pkg.keyframeNotes} busy={busy} busyReason={busyReason} onDeactivate={(id) => onSetNote(id, false)} />
       {activeIndex !== null && images.length ? (
-        <ImageGallery kind={productionTexts.packageKeyframes.galleryKind} images={images} initialIndex={activeIndex} onClose={() => setActiveIndex(null)} />
+        <ImageGallery
+          kind={productionTexts.packageKeyframes.galleryKind}
+          images={images}
+          initialIndex={activeIndex}
+          compare={composition.map((frame) => ({
+            imagePath: frame.path,
+            label: productionTexts.composition.compareLabel({ phase: productionTexts.composition.phases[frame.phase] })
+          }))}
+          onClose={() => setActiveIndex(null)}
+        />
       ) : null}
       {reopening ? (
         <KeyframeReopenDialog

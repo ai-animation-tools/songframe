@@ -248,7 +248,7 @@ export function AcceptedKitPanel({
         </Box>
       </Stack>
       {active !== null && gallery.length ? (
-        <ImageGallery kind={productionTexts.packageKeyframes.galleryKind} images={gallery} initialIndex={active} onClose={() => setActive(null)} />
+        <ImageGallery kind={productionTexts.packageKeyframes.galleryKind} images={gallery} initialIndex={active} compare onClose={() => setActive(null)} />
       ) : null}
     </Paper>
   );

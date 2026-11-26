@@ -458,6 +458,7 @@ export function ProductionPath({
                 onReopen={onReopenFrame}
                 onSetNote={onSetKeyframeNote}
                 copies={Object.fromEntries((view?.framePrompts ?? []).flatMap((prompt) => (prompt.copyOf ? [[prompt.id, prompt.copyOf]] : [])))}
+                composition={view?.composition?.enabled ? view.composition.frames : []}
                 renderActions={
                   current && view
                     ? (frame) => (

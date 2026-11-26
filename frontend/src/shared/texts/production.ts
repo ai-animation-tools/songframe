@@ -1393,7 +1393,8 @@ export const productionTexts = {
     updating: 'снимок обновляется',
     off: 'выключена: опоры создаются по тексту и фактам кадра',
     phases: { start: 'Первый кадр', end: 'Последний кадр' } as Record<'start' | 'end', string>,
-    galleryKind: 'Схема композиции'
+    galleryKind: 'Схема композиции',
+    compareLabel: ({ phase }: { phase: string }) => `Схема композиции: ${phase}`
   },
   generationMethod: {
     heading: 'Способ генерации видео',

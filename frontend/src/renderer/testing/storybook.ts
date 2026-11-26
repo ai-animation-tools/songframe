@@ -28,6 +28,9 @@ export function storyFileUrl(path: string, baseUrl = globalThis.location?.href ?
   const known = [
     'story-video.mp4',
     'story-image.png',
+    'story-frame-a.png',
+    'story-frame-b.png',
+    'story-frame-square.png',
     'story-track.mp3',
     'story-derived-source-150.mp4',
     'story-derived-preview-92.mp4',

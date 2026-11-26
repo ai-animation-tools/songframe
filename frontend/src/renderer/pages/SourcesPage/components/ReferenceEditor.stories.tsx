@@ -63,8 +63,11 @@ export const ImagePreview: Story = {
     await expect(within(dialog).getByRole('img')).toHaveAttribute('src', window.api.shell.fileUrl('/mock/front/story-image.png'));
     await userEvent.keyboard('{ArrowRight}');
     await expect(within(dialog).getByRole('img')).toHaveAttribute('src', window.api.shell.fileUrl('/mock/upload/story-image.png'));
-    await userEvent.click(within(dialog).getByRole('button', { name: componentsTexts.gallery.originalSize }));
-    await expect(within(dialog).getByRole('button', { name: componentsTexts.gallery.originalSize })).toHaveAttribute('aria-pressed', 'true');
+    // Маленькое изображение вписано без увеличения; ползунок увеличивает его от 100%.
+    await waitFor(() => expect(within(dialog).getByRole('slider', { name: componentsTexts.gallery.zoom })).toBeEnabled());
+    within(dialog).getByRole('slider', { name: componentsTexts.gallery.zoom }).focus();
+    await userEvent.keyboard('{ArrowUp}');
+    await expect(dialog.querySelector('[data-gallery-zoom-value]')).toHaveAttribute('data-gallery-zoom-value', '150');
     await userEvent.click(within(dialog).getByRole('button', { name: commonTexts.close }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     await expect(trigger).toHaveFocus();

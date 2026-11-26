@@ -203,7 +203,7 @@ export function OwnVideoGenerationForm({
         </Stack>
       </AccordionDetails>
       {gallery !== null && images.length ? (
-        <ImageGallery kind={productionTexts.packageKeyframes.galleryKind} images={images} initialIndex={gallery} onClose={() => setGallery(null)} />
+        <ImageGallery kind={productionTexts.packageKeyframes.galleryKind} images={images} initialIndex={gallery} compare onClose={() => setGallery(null)} />
       ) : null}
     </Accordion>
   );

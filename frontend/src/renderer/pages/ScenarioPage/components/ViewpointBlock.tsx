@@ -438,9 +438,10 @@ function ViewpointPlacement({
       </Stack>
     </Paper>
   );
+  // Высота хранится до сантиметра и вводится так же: в итоге панели она без округления до дециметра, как у расстояний.
   const eye = heightMoves(viewpoint)
-    ? `${metres(cameraHeight(viewpoint, 'start'))} → ${metres(cameraHeight(viewpoint, 'end'))}`
-    : metres(cameraHeight(viewpoint, 'start'));
+    ? `${formatMetres(cameraHeight(viewpoint, 'start'))} → ${formatMetres(cameraHeight(viewpoint, 'end'))}`
+    : formatMetres(cameraHeight(viewpoint, 'start'));
   const tilt = !viewpoint.tilt
     ? null
     : tiltMoves(viewpoint)

@@ -4,20 +4,23 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Alert, Stack } from '@mui/material';
 import { TEST_AGENT_PROVIDER } from '@shared/testing/media-provider';
 import { imageStoryOptions } from '../testing/imageStories';
-import { ReferenceImageGenerateButton } from './ReferenceImageGenerateButton';
+import { sourcesTexts } from '@shared/texts/sources';
+import { ImageGenerateButton } from './ImageGenerateButton';
 
 function ReferenceButtonStory({ disabledReason }: { disabledReason?: string }) {
   const [clicked, setClicked] = useState(false);
   return (
     <Stack spacing={2} alignItems="flex-start">
-      <ReferenceImageGenerateButton disabledReason={disabledReason} onClick={() => setClicked(true)} />
+      <ImageGenerateButton disabledReason={disabledReason} onClick={() => setClicked(true)}>
+        {sourcesTexts.generateReferenceImage}
+      </ImageGenerateButton>
       {clicked && <Alert severity="info">Запрошено открытие диалога для персонажа «Олег». Генерация требует отдельного согласования в диалоге.</Alert>}
     </Stack>
   );
 }
 
 const meta = {
-  title: 'Общие компоненты/Кнопка генерации референса',
+  title: 'Общие компоненты/Кнопка генерации изображения',
   component: ReferenceButtonStory,
   parameters: { songframe: imageStoryOptions() }
 } satisfies Meta<typeof ReferenceButtonStory>;

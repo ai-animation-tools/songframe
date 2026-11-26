@@ -6,7 +6,7 @@ import { Box, Paper, Stack, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import { FileDropZone } from '../../../components/FileDropZone';
-import { AgentButton } from '../../../components/AgentButton';
+import { ImageGenerateButton } from '../../../components/ImageGenerateButton';
 import { AiProblemAlert } from '../../../components/AiProblemAlert';
 
 interface Props {
@@ -51,13 +51,13 @@ export function CoverSection({ coverSrc, onPick, onRemove, onDrop, onGenerate }:
         hint={sourcesTexts.coverFileHint}
         message={sourcesTexts.coverFileMessage}
       />
-      {/* Обложку готовит провайдер изображений проекта; выбранный агент на неё не влияет, AgentButton сам блокируется по той же причине. */}
+      {/* Обложку готовит провайдер изображений проекта: знак — его исполнителя, выбранный текстовый агент на неё не влияет. */}
       <Stack spacing={1} sx={{ mt: 1 }}>
         <AiProblemAlert kinds={['image']} />
         <Box>
-          <AgentButton onClick={onGenerate} aiKind="image" title={sourcesTexts.generateCoverTitle}>
+          <ImageGenerateButton onClick={onGenerate} title={sourcesTexts.generateCoverTitle}>
             {sourcesTexts.generateCover}
-          </AgentButton>
+          </ImageGenerateButton>
         </Box>
       </Stack>
     </Paper>

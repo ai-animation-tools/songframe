@@ -12,7 +12,7 @@ import type { FileForm, ReferenceForm } from '../types';
 import { ImageGallery } from '../../../components/ImageGallery';
 import { REFERENCE_VIEW_LABELS } from '@shared/types';
 import { ReferenceFileCard } from './ReferenceFileCard';
-import { ReferenceImageGenerateButton } from '../../../components/ReferenceImageGenerateButton';
+import { ImageGenerateButton } from '../../../components/ImageGenerateButton';
 import { AiProblemAlert } from '../../../components/AiProblemAlert';
 import { FileDropZone } from '../../../components/FileDropZone';
 import { LinkedText } from '../../../components/LinkedText';
@@ -200,7 +200,7 @@ export function ReferenceEditor({
           />
           <AiProblemAlert kinds={['image']} />
           <Box>
-            <ReferenceImageGenerateButton onClick={onGenerate} />
+            <ImageGenerateButton onClick={onGenerate}>{sourcesTexts.generateReferenceImage}</ImageGenerateButton>
           </Box>
           <DestructiveButton
             label={sourcesTexts.removeReference({ name: reference.name })}

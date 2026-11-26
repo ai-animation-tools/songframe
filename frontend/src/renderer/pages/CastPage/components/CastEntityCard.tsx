@@ -1,11 +1,12 @@
 import { castTexts } from '@shared/texts/cast';
+import { sourcesTexts } from '@shared/texts/sources';
 import type { ReactElement } from 'react';
 import { Accordion, AccordionDetails, AccordionSummary, Avatar, Box, Chip, Stack, TextField, Typography } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import type { CastEntity, CastProperty, SourceKind } from '@shared/types';
-import { ReferenceImageGenerateButton } from '../../../components/ReferenceImageGenerateButton';
+import { ImageGenerateButton } from '../../../components/ImageGenerateButton';
 import { AiProblemAlert } from '../../../components/AiProblemAlert';
 import { StateEditor } from '../../../components';
 import { WORLD, hasHeight } from '../constants';
@@ -158,7 +159,9 @@ export function CastEntityCard({
           <CastEntityImages images={entity.images} imagePaths={imagePaths} imageOptions={imageOptions} onChange={(images) => onUpdate({ images })} />
           <AiProblemAlert kinds={['image']} />
           <Box>
-            <ReferenceImageGenerateButton onClick={onGenerate} disabledReason={generationDisabledReason} />
+            <ImageGenerateButton onClick={onGenerate} disabledReason={generationDisabledReason}>
+              {sourcesTexts.generateReferenceImage}
+            </ImageGenerateButton>
           </Box>
           <Box>
             <Typography variant="subtitle2" gutterBottom>

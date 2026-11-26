@@ -285,9 +285,10 @@ func animaticFresh(sources *Sources, project *toolrt.Dict, latest string, hashes
 	if err != nil || !match {
 		return false, err
 	}
-	// Эффект плана (shoteffects.MontageVideo): появившийся, снятый или устаревший эффект делает
-	// сборку устаревшей, как и на странице «Аниматик», даже если прежний файл сборки на месте с
-	// теми же байтами. Планы без эффекта ни в сборке, ни сейчас здесь не сверяются по пути.
+	// Видео плана в монтаже сейчас (shoteffects.MontageVideo) сверяется по пути с видео сборки,
+	// как и на странице «Аниматик»: ручной монтаж, новый приём плана, появившийся, снятый или
+	// устаревший эффект делают сборку устаревшей, даже если прежний файл сборки остался на месте
+	// с теми же байтами. План без комплекта (приём снят) тоже делает её устаревшей.
 	listed, err := dictGet(document, "shots", nil)
 	if err != nil {
 		return false, err
@@ -299,8 +300,7 @@ func animaticFresh(sources *Sources, project *toolrt.Dict, latest string, hashes
 			continue
 		}
 		video, err := shoteffects.MontageVideo(sources.Root, toolrt.Str(shot.Value("id")))
-		built := strings.HasPrefix(toolrt.Str(shot.Value("path")), "assets/effects/")
-		if err == nil && (built || video.Effect) && !toolrt.Equal(shot.Value("path"), video.Path) {
+		if err != nil || !toolrt.Equal(shot.Value("path"), video.Path) {
 			return false, nil
 		}
 	}

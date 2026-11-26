@@ -276,6 +276,18 @@ export const ViewpointCoordinates: Story = {
     await userEvent.type(heading, '101{Enter}');
     await waitFor(() => expect(scenarioFrameRequests().at(-1)?.heading?.start).toBe(101));
     await expect(document.querySelector('[data-viewpoint-row="camera"]')).toHaveTextContent(viewpointTexts.headingOwn);
+    // Неподвижная камера: полей конца нет, пока не выбран последний кадр. С ним поля конца показывают место первого
+    // кадра, ввод создаёт конец пути и не трогает начало.
+    await expect(camera.queryByRole('spinbutton', { name: viewpointTexts.coordXEnd })).toBeNull();
+    await userEvent.click(within(map.getByRole('group', { name: viewpointTexts.phase })).getByRole('button', { name: viewpointTexts.phases.end }));
+    const xEnd = camera.getByRole('spinbutton', { name: viewpointTexts.coordXEnd });
+    await expect(xEnd).toHaveValue(2.5);
+    await expect(camera.getByRole('spinbutton', { name: viewpointTexts.headingFieldEnd })).toHaveValue(101);
+    await userEvent.clear(xEnd);
+    await userEvent.type(xEnd, '3.5{Enter}');
+    await waitFor(() => expect(scenarioFrameRequests().at(-1)?.camera?.end?.[0]).toBe(3.5));
+    await expect(scenarioFrameRequests().at(-1)?.camera?.start?.[0]).toBe(2.5);
+    await expect(camera.getByRole('spinbutton', { name: viewpointTexts.coordX })).toHaveValue(2.5);
     // У героя — только место: направление задаёт камера.
     const hero = within(map.getByRole('group', { name: new RegExp(`^${viewpointTexts.coords}: Герой`) }));
     await expect(hero.queryByRole('spinbutton', { name: viewpointTexts.headingField })).toBeNull();

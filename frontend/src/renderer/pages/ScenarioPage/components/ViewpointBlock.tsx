@@ -324,7 +324,9 @@ function ViewpointPlacement({
 
   // Числовой ввод места (и у камеры — направления): точные значения, рассчитанные по фактам кадра, без подгонки мышью.
   // Запись идёт теми же setPoint и setHeading, что щелчок и перетаскивание на схеме, поэтому ограничения схемы и
-  // пересчёт стороны общие. Конец пути — только у движущихся: движение по-прежнему задаётся на последнем кадре схемы.
+  // пересчёт стороны общие. Поля конца пути видны у движущихся и всегда, пока выбран «Последний кадр»: рядом стоящий
+  // переключатель кадра читается как относящийся и к числам, и ввод конца не должен молча затирать начало. Пока конца
+  // нет, поле показывает место первого кадра, а ввод создаёт конец так же, как щелчок по схеме на последнем кадре.
   const coordinateFields = (key: string, rowTarget: ViewpointTarget, path: ViewpointPath): ReactElement => {
     const field = (label: string, value: number | undefined, commit: (value: number) => void, step = 0.1): ReactElement => (
       <CommitNumberField
@@ -338,11 +340,12 @@ function ViewpointPlacement({
         onCommit={(next) => next !== undefined && commit(next)}
       />
     );
-    const point = (phase: ViewpointPhase, axis: 0 | 1, value: number): void => {
-      const current = phase === 'end' ? path.end! : path.start;
-      update(setPoint(viewpoint, rowTarget, phase, axis === 0 ? [value, current[1]] : [current[0], value]));
+    const point = (pointPhase: ViewpointPhase, axis: 0 | 1, value: number): void => {
+      const current = pointPhase === 'end' ? (path.end ?? path.start) : path.start;
+      update(setPoint(viewpoint, rowTarget, pointPhase, axis === 0 ? [value, current[1]] : [current[0], value]));
     };
-    const turns = key === 'camera' && (moves(camera) || viewpoint.heading?.end !== undefined);
+    const end = path.end ?? (phase === 'end' ? path.start : null);
+    const turns = key === 'camera' && (phase === 'end' || moves(camera) || viewpoint.heading?.end !== undefined);
     // Стоящая машина: куда она смотрит передом — по нему её коробка стоит на виде из камеры и в фактах кадра.
     // У едущей направление следует из хода; пустое поле возвращает «передом к камере».
     const subjectIndex = viewpoint.subjects?.findIndex((subject) => subject.entity === key) ?? -1;
@@ -370,8 +373,8 @@ function ViewpointPlacement({
         <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
           {field(texts.coordX, coordinate(path.start[0]), (value) => point('start', 0, value))}
           {field(texts.coordY, coordinate(path.start[1]), (value) => point('start', 1, value))}
-          {path.end ? field(texts.coordXEnd, coordinate(path.end[0]), (value) => point('end', 0, value)) : null}
-          {path.end ? field(texts.coordYEnd, coordinate(path.end[1]), (value) => point('end', 1, value)) : null}
+          {end ? field(texts.coordXEnd, coordinate(end[0]), (value) => point('end', 0, value)) : null}
+          {end ? field(texts.coordYEnd, coordinate(end[1]), (value) => point('end', 1, value)) : null}
         </Stack>
         {facingField}
         {key === 'camera' && viewpoint.side !== 'top' ? (

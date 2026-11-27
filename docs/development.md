@@ -111,7 +111,7 @@ FFmpeg/ffprobe, ONNX Runtime CPU и модели (выделение вокал�
 | Go-часть реестра | [`internal/mediaproviders`](../internal/mediaproviders/mediaproviders.go): только поля, нужные Go; совпадение с TS-реестром проверяет `TestRegistryMatchesFrontend` |
 | Документ провайдера | `resources/providers/<вид>/<id>.md` на каждый вид медиа; раздел `## Указания агенту` слой провайдеров вкладывает в промпт задания |
 | Адаптер | папка `internal/providers/<id>/`; платный провайдер дополнительно получает строку в таблице `adapters` пакета [`internal/mediaadapters`](../internal/mediaadapters/mediaadapters.go) и файл-связку там же, провайдер-исполнитель на агенте — строку в таблице `agentAdapters` пакета [`internal/providers`](../internal/providers/providers.go) |
-| Контракт адаптера | [`internal/mediaapi`](../internal/mediaapi): необязательные возможности — отдельные интерфейсы с одним методом |
+| Контракт адаптера | [`internal/mediaapi`](../internal/mediaapi): необязательные возможности — отдельные интерфейсы с одним методом; сохранённые образы аккаунта (`SavedLooks`: список, просмотр, создание, удаление) — один интерфейс, способ передачи облика модели объявляет `AppearanceDescriber` |
 | Общий цикл платной попытки | [`internal/mediarequest`](../internal/mediarequest): заморозка запроса, замок, единственная отправка, получение, неизвестный исход, ручной результат |
 
 ### Добавить или удалить провайдера

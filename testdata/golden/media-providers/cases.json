@@ -7615,6 +7615,86 @@
         "problems": [],
         "generationVerified": false
       }
+    },
+    {
+      "name": "appearance",
+      "kind": "video",
+      "code": 0,
+      "stderr": "",
+      "stdout": "{\"reports\":[{\"command\":\"image_to_video\",\"models\":{\"with-looks\":{\"arguments\":{\"duration\":{\"allowed\":[\"5\"]},\"looks\":{\"max_items\":2}},\"slots\":{\"first_image\":{\"required\":true}},\"limits\":{}},\"no-looks\":{\"arguments\":{\"duration\":{\"allowed\":[\"5\"]}},\"slots\":{\"first_image\":{\"required\":true}},\"limits\":{}}}}],\"problems\":[]}",
+      "calls": [
+        {
+          "name": "media_request",
+          "args": [
+            "capabilities",
+            "--provider",
+            "test",
+            "--kind",
+            "video",
+            "--json",
+            "--timeout",
+            "30"
+          ],
+          "options": {
+            "timeoutMs": 35000
+          }
+        }
+      ],
+      "result": {
+        "provider": "test",
+        "kind": "video",
+        "available": true,
+        "models": [
+          {
+            "id": "with-looks",
+            "command": "image_to_video",
+            "arguments": {
+              "duration": {
+                "allowed": [
+                  "5"
+                ]
+              },
+              "looks": {
+                "max_items": 2
+              }
+            },
+            "slots": {
+              "first_image": {
+                "required": true
+              }
+            },
+            "limits": {},
+            "appearance": {
+              "method": "saved",
+              "maxItems": 2,
+              "kinds": [
+                "character",
+                "prop",
+                "costume"
+              ]
+            }
+          },
+          {
+            "id": "no-looks",
+            "command": "image_to_video",
+            "arguments": {
+              "duration": {
+                "allowed": [
+                  "5"
+                ]
+              }
+            },
+            "slots": {
+              "first_image": {
+                "required": true
+              }
+            },
+            "limits": {}
+          }
+        ],
+        "problems": [],
+        "generationVerified": false
+      }
     }
   ],
   "guides": [

@@ -968,9 +968,13 @@ func (p *PaidMedia) Capabilities(ctx context.Context, project string) mediaapi.C
 					failure = textInvalidArguments(p.title())
 					break
 				}
-				commandModels = append(commandModels, mediaapi.Model{
+				item := mediaapi.Model{
 					ID: id, Command: command, Arguments: dynvalue.Raw(arguments), Slots: dynvalue.Raw(slots), Limits: dynvalue.Raw(limits),
-				})
+				}
+				if describer, ok := p.Paid.adapter.(mediaapi.AppearanceDescriber); ok {
+					item.Appearance = describer.Appearance(p.Kind, command, item.Arguments)
+				}
+				commandModels = append(commandModels, item)
 			}
 			if failure != "" {
 				problems = append(problems, command+": "+failure)

@@ -12,6 +12,7 @@ import (
 	"songframe/internal/golden"
 	"songframe/internal/mediaapi"
 	"songframe/internal/mediaproviders"
+	"songframe/internal/mediatest"
 	"songframe/internal/providers/kling"
 	"songframe/internal/tools"
 )
@@ -221,9 +222,12 @@ func TestSelectPaidRequestGolden(t *testing.T) {
 }
 
 // TestCapabilitiesGolden сверяет разбор каталога и проблемы команд с PaidMediaProvider.capabilities.
+// Способ передачи облика объявляет тестовый сервис (mediatest): модель с аргументом looks
+// принимает сохранённые образы, остальные модели выводятся без поля appearance.
 func TestCapabilitiesGolden(t *testing.T) {
 	cases := loadGolden(t)
 	test := registerTest(t)
+	test.adapter = &mediatest.Service{}
 	for _, item := range cases.Capabilities {
 		t.Run(item.Name, func(t *testing.T) {
 			var calls [][]string

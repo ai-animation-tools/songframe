@@ -310,12 +310,27 @@ export interface MediaArgument {
   max_items?: number;
   [key: string]: unknown;
 }
+/**
+ * Как модель принимает облик сущности кастинга помимо опор: сохранённым образом в аккаунте
+ * провайдера или картинками сущности в запросе. Объявляет адаптер провайдера; нет поля у модели —
+ * облик передают только опоры и текст.
+ */
+export interface MediaAppearance {
+  method: 'saved' | 'images';
+  /** Сколько образов (картинок сущностей) принимает один запрос. */
+  maxItems: number;
+  /** Общие виды образов (character, vehicle, location, prop, costume), которые принимает модель. */
+  kinds?: string[];
+  /** Для картинок в запросе: первая опора остаётся первым кадром видео. */
+  keepsFirstFrame?: boolean;
+}
 export interface MediaModel {
   id: string;
   command: string;
   arguments: Record<string, MediaArgument>;
   slots: Record<string, MediaArgument>;
   limits: Record<string, unknown>;
+  appearance?: MediaAppearance;
 }
 export interface MediaCapabilities {
   provider: string;

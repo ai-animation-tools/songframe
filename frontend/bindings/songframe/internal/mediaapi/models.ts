@@ -6,6 +6,33 @@
 import * as json$0 from "../../../encoding/json/models.js";
 
 /**
+ * Appearance — как модель принимает облик сущности кастинга. nil у модели — никак: облик
+ * передают только опоры и текст.
+ */
+export interface Appearance {
+    /**
+     * Method — AppearanceSaved или AppearanceImages.
+     */
+    "method": string;
+
+    /**
+     * MaxItems — сколько образов (или картинок сущностей) принимает один запрос модели, ≥ 1.
+     */
+    "maxItems": number;
+
+    /**
+     * Kinds — общие виды образов, которые модель принимает (для AppearanceSaved).
+     */
+    "kinds"?: string[];
+
+    /**
+     * KeepsFirstFrame — для AppearanceImages: первая опора остаётся первым кадром видео, а не
+     * перекомпонуется вместе с картинками.
+     */
+    "keepsFirstFrame"?: boolean;
+}
+
+/**
  * Capabilities — MediaCapabilities контракта: объявления моделей провайдера вида медиа.
  * GenerationVerified всегда false: наличие объявлений не доказывает работу генератора аккаунта.
  */
@@ -48,7 +75,9 @@ export interface EnvironmentCheck {
 /**
  * Model — MediaModel контракта: модель одной команды. Arguments и Slots — объекты объявлений
  * MediaArgument (required, default, allowed, max_items и прочие поля сервиса), Limits — лимиты
- * модели; все три хранятся JSON как есть, в порядке ключей ответа сервиса.
+ * модели; все три хранятся JSON как есть, в порядке ключей ответа сервиса. Appearance — способ
+ * передачи облика сущности по объявлению адаптера (AppearanceDescriber); nil — никак, поле
+ * опускается из JSON.
  */
 export interface Model {
     "id": string;
@@ -56,6 +85,7 @@ export interface Model {
     "arguments": json$0.RawMessage;
     "slots": json$0.RawMessage;
     "limits": json$0.RawMessage;
+    "appearance"?: Appearance | null;
 }
 
 /**

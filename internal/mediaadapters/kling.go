@@ -2,6 +2,7 @@ package mediaadapters
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"time"
@@ -47,6 +48,8 @@ var (
 	_ mediaapi.AuthStatusReader     = klingAdapter{}
 	_ mediaapi.RulesProvider        = klingAdapter{}
 	_ mediaapi.EnvironmentProvider  = klingAdapter{}
+	_ mediaapi.AppearanceDescriber  = klingAdapter{}
+	_ mediaapi.SavedLooks           = klingAdapter{}
 )
 
 // RequestRules — правила платного запроса Kling для слоя провайдеров приложения.
@@ -204,6 +207,50 @@ func (k klingAdapter) AuthStatus(ctx context.Context, timeout time.Duration) med
 	status, _ := answer.Value("status").(string)
 	message, _ := answer.Value("message").(string)
 	return mediaapi.AuthStatus{Status: status, Message: message}
+}
+
+// Appearance — способ передачи облика модели Kling по объявлению who_am_i.
+func (klingAdapter) Appearance(kind, command string, arguments json.RawMessage) *mediaapi.Appearance {
+	return kling.ModelAppearance(kind, command, arguments)
+}
+
+// SavedLookRules — ограничения элемента Kling.
+func (klingAdapter) SavedLookRules() mediaapi.SavedLookRules { return kling.LookRules() }
+
+// ListSavedLooks — элементы аккаунта Kling.
+func (k klingAdapter) ListSavedLooks(ctx context.Context, timeout time.Duration) ([]mediaapi.SavedLook, error) {
+	adapter, err := k.client()
+	if err != nil {
+		return nil, err
+	}
+	return adapter.ListLooks(ctx, timeout)
+}
+
+// GetSavedLook — элемент аккаунта Kling целиком.
+func (k klingAdapter) GetSavedLook(ctx context.Context, id string, timeout time.Duration) (mediaapi.SavedLookDetails, error) {
+	adapter, err := k.client()
+	if err != nil {
+		return mediaapi.SavedLookDetails{}, err
+	}
+	return adapter.GetLook(ctx, id, timeout)
+}
+
+// CreateSavedLook — новый элемент Kling из снимков референса.
+func (k klingAdapter) CreateSavedLook(ctx context.Context, draft mediaapi.SavedLookDraft, timeout time.Duration) (mediaapi.SavedLook, error) {
+	adapter, err := k.client()
+	if err != nil {
+		return mediaapi.SavedLook{}, err
+	}
+	return adapter.CreateLook(ctx, draft, timeout)
+}
+
+// DeleteSavedLook — удаление элемента Kling; вызывается только после подтверждения пользователя.
+func (k klingAdapter) DeleteSavedLook(ctx context.Context, id string, timeout time.Duration) error {
+	adapter, err := k.client()
+	if err != nil {
+		return err
+	}
+	return adapter.DeleteLook(ctx, id, timeout)
 }
 
 // SnapshotWarnings — модельные предупреждения снимка принятого комплекта (lint_registry).

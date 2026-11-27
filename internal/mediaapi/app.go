@@ -165,13 +165,16 @@ type LoginOptions struct {
 
 // Model — MediaModel контракта: модель одной команды. Arguments и Slots — объекты объявлений
 // MediaArgument (required, default, allowed, max_items и прочие поля сервиса), Limits — лимиты
-// модели; все три хранятся JSON как есть, в порядке ключей ответа сервиса.
+// модели; все три хранятся JSON как есть, в порядке ключей ответа сервиса. Appearance — способ
+// передачи облика сущности по объявлению адаптера (AppearanceDescriber); nil — никак, поле
+// опускается из JSON.
 type Model struct {
-	ID        string          `json:"id"`
-	Command   string          `json:"command"`
-	Arguments json.RawMessage `json:"arguments"`
-	Slots     json.RawMessage `json:"slots"`
-	Limits    json.RawMessage `json:"limits"`
+	ID         string          `json:"id"`
+	Command    string          `json:"command"`
+	Arguments  json.RawMessage `json:"arguments"`
+	Slots      json.RawMessage `json:"slots"`
+	Limits     json.RawMessage `json:"limits"`
+	Appearance *Appearance     `json:"appearance,omitempty"`
 }
 
 // Capabilities — MediaCapabilities контракта: объявления моделей провайдера вида медиа.

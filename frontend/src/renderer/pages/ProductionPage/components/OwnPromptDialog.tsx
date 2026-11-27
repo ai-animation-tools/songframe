@@ -2,15 +2,18 @@
  * Свой видеопромпт без агента: текст с длиной и пределом провайдера. «Сохранить и принять» отдаёт текст Go: он проверяет его
  * правилами ответа агента и пределом, записывает в попытку, а интерфейс сразу утверждает:
  * автор своего текста — сам пользователь. Сверх предела сохранить нельзя:
- * такой промпт не утверждается. Черновик закрывается только кнопкой отмены.
+ * такой промпт не утверждается. Черновик закрывается только кнопкой отмены. Над полем — метки героев с сохранёнными
+ * образами (SavedLookMarks): кнопка вставляет [@код] в позицию курсора.
  */
-import { useState, type ReactElement } from 'react';
+import { useRef, useState, type ReactElement } from 'react';
 import { Alert, Stack, TextField, Typography } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
 import { productionTexts } from '@shared/texts/production';
 import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 import { LinkedText } from '../../../components/LinkedText';
+import { insertSavedLookMark } from '@shared/saved-looks';
 import { promptOverLimit } from '../promptLimit';
+import { SavedLookMarks } from './SavedLookMarks';
 
 const texts = productionTexts.ownPromptDialog;
 
@@ -22,6 +25,7 @@ export function ownPromptProblem(text: string, limit: number | null | undefined)
 }
 
 export function OwnPromptDialog({
+  project,
   shot,
   initial,
   limit,
@@ -30,6 +34,8 @@ export function OwnPromptDialog({
   onClose,
   onSave
 }: {
+  /** Проект плана: по нему окно узнаёт образы героев «В кадре». */
+  project: string;
   shot: string;
   initial: string;
   /** Предел длины провайдера видео (ProductionWorkflowView.promptMaxChars); нет — длина не ограничена. */
@@ -41,6 +47,17 @@ export function OwnPromptDialog({
   onSave(prompt: string): void;
 }): ReactElement {
   const [text, setText] = useState(initial);
+  const field = useRef<HTMLTextAreaElement | null>(null);
+  // Метка встаёт в позицию курсора, курсор — сразу за ней, фокус возвращается в поле.
+  const insertMark = (code: string): void => {
+    const input = field.current;
+    const next = insertSavedLookMark(text, input?.selectionStart ?? text.length, input?.selectionEnd ?? text.length, code);
+    setText(next.text);
+    requestAnimationFrame(() => {
+      input?.focus();
+      input?.setSelectionRange(next.caret, next.caret);
+    });
+  };
   const problem = ownPromptProblem(text, limit);
   const over = promptOverLimit(text.trim(), limit);
   return (
@@ -67,7 +84,9 @@ export function OwnPromptDialog({
             <LinkedText text={error} />
           </Alert>
         ) : null}
+        <SavedLookMarks project={project} shot={shot} onInsert={insertMark} />
         <TextField
+          inputRef={field}
           label={texts.prompt}
           multiline
           minRows={6}

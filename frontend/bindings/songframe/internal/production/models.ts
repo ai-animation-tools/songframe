@@ -6,6 +6,9 @@
 import * as json$0 from "../../../encoding/json/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as mediaapi$0 from "../mediaapi/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as shotworkflow$0 from "../shotworkflow/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -474,6 +477,12 @@ export interface Request {
      * видео пользователь сделал сам; поле опускается у остальных запросов.
      */
     "ownVideo"?: boolean;
+
+    /**
+     * SavedLooks — образы сущностей замороженного запроса (request.json saved_looks): какой образ
+     * аккаунта уходит у какого героя; поле опускается у запросов без образов.
+     */
+    "savedLooks"?: mediaapi$0.SavedLookUse[];
 
     /**
      * Downloads — абсолютные пути существующих скачанных оригиналов.

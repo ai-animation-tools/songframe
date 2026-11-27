@@ -235,3 +235,15 @@ func TestModelAppearance(t *testing.T) {
 		}
 	}
 }
+
+// Разметка элемента и аргумент elements: компактная JSON-строка {id, bindName} в порядке образов
+// запроса, как её объявляет who_am_i.
+func TestLookRequest(t *testing.T) {
+	if got := LookMention("1001"); got != "<<<1001>>>" {
+		t.Fatalf("разметка: %s", got)
+	}
+	name, value := LookArgument([]mediaapi.SavedLookUse{{Code: "hero", Entity: "Герой", Look: "1001", Name: "Герой"}, {Code: "gull", Look: "1002"}})
+	if name != "elements" || value != `[{"id":"1001","bindName":"hero"},{"id":"1002","bindName":"gull"}]` {
+		t.Fatalf("аргумент: %s = %v", name, value)
+	}
+}

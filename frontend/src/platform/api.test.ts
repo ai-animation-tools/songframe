@@ -174,7 +174,16 @@ describe('Граница window.api', () => {
         return view;
       };
     const api = createApi(
-      bindings({ savedLooks: { View: record('View'), Create: record('Create'), Bind: record('Bind'), Unbind: record('Unbind'), Remove: record('Remove') } })
+      bindings({
+        savedLooks: {
+          View: record('View'),
+          Create: record('Create'),
+          Bind: record('Bind'),
+          Unbind: record('Unbind'),
+          Remove: record('Remove'),
+          Shot: record('Shot')
+        }
+      })
     );
     const input = { name: 'Герой', description: '', kind: 'character', cover: 'heroes/a.png', extra: ['heroes/b.png'] };
     await expect(api.savedLooks.view('/клип')).resolves.toStrictEqual(view);
@@ -182,12 +191,14 @@ describe('Граница window.api', () => {
     await api.savedLooks.bind('/клип', 'hero', '7');
     await api.savedLooks.unbind('/клип', 'hero');
     await api.savedLooks.remove('/клип', '7');
+    await api.savedLooks.shot('/клип', 'M01');
     expect(calls).toEqual([
       ['View', '/клип'],
       ['Create', '/клип', 'hero', input],
       ['Bind', '/клип', 'hero', '7'],
       ['Unbind', '/клип', 'hero'],
-      ['Remove', '/клип', '7']
+      ['Remove', '/клип', '7'],
+      ['Shot', '/клип', 'M01']
     ]);
   });
 

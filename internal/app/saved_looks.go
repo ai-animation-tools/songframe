@@ -11,6 +11,7 @@ import (
 	"songframe/internal/dynvalue"
 	"songframe/internal/mediaadapters"
 	"songframe/internal/mediaapi"
+	"songframe/internal/productionworkflow"
 	"songframe/internal/projectfile"
 	"songframe/internal/savedlooks"
 	"songframe/internal/sources"
@@ -43,6 +44,26 @@ type SavedLookInput struct {
 	Kind        string   `json:"kind"`
 	Cover       string   `json:"cover"`
 	Extra       []string `json:"extra"`
+}
+
+// ShotLook — герой «В кадре» плана и его образ: по ним окно своего видеопромпта предлагает
+// метки героев с образами.
+type ShotLook struct {
+	Code string `json:"code"`
+	Name string `json:"name"`
+	// Status — savedlooks.Status*; Look и LookName — привязанный образ.
+	Status   string `json:"status"`
+	Look     string `json:"look,omitempty"`
+	LookName string `json:"lookName,omitempty"`
+}
+
+// ShotLooksView — образы героев «В кадре» плана.
+type ShotLooksView struct {
+	// Supported — провайдер видео проекта хранит образы.
+	Supported bool       `json:"supported"`
+	Heroes    []ShotLook `json:"heroes"`
+	// Error — почему статусы неизвестны; статусы героев тогда none.
+	Error string `json:"error"`
 }
 
 // SavedLooksService реализует группу window.api.savedLooks: статусы, создание, привязку, отвязку
@@ -267,4 +288,40 @@ func (s *SavedLooksService) Remove(ctx context.Context, project, look string) (S
 		return wire.Done(SavedLooksView{}, err)
 	}
 	return s.View(ctx, project)
+}
+
+// Shot — savedLooks.shot: герои «В кадре» плана shot со статусами образов одним бесплатным
+// списком библиотеки. Сбой списка приходит в Error, как у View.
+func (s *SavedLooksService) Shot(ctx context.Context, project, shot string) (ShotLooksView, error) {
+	provider, looks, err := s.library(project)
+	if err != nil || looks == nil {
+		return wire.Done(ShotLooksView{}, err)
+	}
+	entities, err := productionworkflow.ShotEntities(project, shot)
+	if err != nil {
+		return wire.Done(ShotLooksView{}, err)
+	}
+	view := ShotLooksView{Supported: true, Heroes: make([]ShotLook, len(entities))}
+	for index, entity := range entities {
+		view.Heroes[index] = ShotLook{Code: entity.Code, Name: entity.Name, Status: savedlooks.StatusNone}
+	}
+	store, err := s.store()
+	if err != nil {
+		return wire.Done(view, err)
+	}
+	ctx, cancel := context.WithTimeout(ctx, savedLooksTimeout)
+	defer cancel()
+	report, err := store.Check(ctx, looks, provider, project, savedLooksTimeout)
+	if err != nil {
+		view.Error = err.Error()
+		return wire.Done(view, nil)
+	}
+	for index, hero := range view.Heroes {
+		for _, state := range report.States {
+			if state.Reference == hero.Code {
+				view.Heroes[index].Status, view.Heroes[index].Look, view.Heroes[index].LookName = state.Status, state.Look, state.Name
+			}
+		}
+	}
+	return wire.Done(view, nil)
 }

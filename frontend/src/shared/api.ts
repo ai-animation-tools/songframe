@@ -16,7 +16,7 @@ import type {
   ProductionCompositionImage
 } from './production-workflow';
 import type { MediaCapabilities, MediaKind, ProviderAuth } from './media-providers';
-import type { SavedLookInput, SavedLooksView } from './saved-looks';
+import type { SavedLookInput, SavedLooksView, ShotLooksView } from './saved-looks';
 import type {
   ScenarioCheckFixInput,
   ScenarioCheckFixPreview,
@@ -256,6 +256,8 @@ export interface Api {
     unbind(project: string, reference: string): Promise<SavedLooksView>;
     /** Удаляет образ из аккаунта необратимо: вызывать только после отдельного подтверждения пользователя. */
     remove(project: string, look: string): Promise<SavedLooksView>;
+    /** Герои «В кадре» плана со статусами образов одним бесплатным списком; сбой списка — в error. */
+    shot(project: string, shot: string): Promise<ShotLooksView>;
   };
   timing: {
     vocalsView(project: string): Promise<VocalPreparationView>;

@@ -163,6 +163,10 @@ func savedSpec(data *toolrt.Dict, shot string, kind any, inputs []any, promptFil
 	if value, ok := data.Get("model_selection"); ok {
 		spec.Set("model_selection", value)
 	}
+	// Образы сущностей уходят и в повторе: промпт и параметры уже содержат их разметку и ID.
+	if value, ok := data.Get("saved_looks"); ok {
+		spec.Set("saved_looks", value)
+	}
 	return spec, nil
 }
 

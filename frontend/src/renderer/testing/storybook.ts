@@ -303,7 +303,8 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
       create: guardedAsync(merged.savedLooks.create),
       bind: guardedAsync(merged.savedLooks.bind),
       unbind: guardedAsync(merged.savedLooks.unbind),
-      remove: guardedAsync(merged.savedLooks.remove)
+      remove: guardedAsync(merged.savedLooks.remove),
+      shot: guardedAsync(merged.savedLooks.shot)
     },
     timing: {
       vocalsView: guardedAsync(merged.timing.vocalsView),

@@ -60,6 +60,50 @@ export interface SavedLookInput {
   extra: string[];
 }
 
+/** Герой «В кадре» плана и его образ: по ним окно своего видеопромпта предлагает метки героев. */
+export interface ShotLook {
+  code: string;
+  name: string;
+  status: SavedLookStatus;
+  look?: string;
+  lookName?: string;
+}
+
+export interface ShotLooksView {
+  /** Провайдер видео проекта хранит образы; false — меток героев не предлагается. */
+  supported: boolean;
+  heroes: ShotLook[];
+  /** Почему статусы неизвестны; статусы героев тогда none. */
+  error: string;
+}
+
+/** Образ сущности в замороженном запросе видео: код сущности кастинга, её имя, ID и имя образа аккаунта. */
+export interface SavedLookUse {
+  code: string;
+  entity: string;
+  look: string;
+  name: string;
+}
+
+/** Метка сущности в видеопромпте: до заморозки запроса приложение заменяет её разметкой провайдера или убирает. */
+export function savedLookMark(code: string): string {
+  return `[@${code}]`;
+}
+
+/**
+ * Вставляет метку героя за курсором или за выделением (выделенное упоминание остаётся: метка ставится после него).
+ * Слева от метки — пробел, если там не пробел и не начало текста; справа — пробел, если дальше буква или цифра.
+ * Возвращает новый текст и позицию курсора сразу после метки.
+ */
+export function insertSavedLookMark(text: string, start: number, end: number, code: string): { text: string; caret: number } {
+  const position = Math.max(start, end);
+  const before = text.slice(0, position);
+  const after = text.slice(position);
+  const mark = (before === '' || /\s$/.test(before) ? '' : ' ') + savedLookMark(code);
+  const gap = /^[\p{L}\p{N}]/u.test(after) ? ' ' : '';
+  return { text: before + mark + gap + after, caret: before.length + mark.length };
+}
+
 /** Виды образа, которые общий код знает; костюм — отдельный образ одежды для переодевания героя. */
 export const SAVED_LOOK_KINDS = ['character', 'vehicle', 'location', 'prop', 'costume'] as const;
 

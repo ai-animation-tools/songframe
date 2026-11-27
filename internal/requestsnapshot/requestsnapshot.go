@@ -40,6 +40,7 @@ const (
 	textOwnVideoInputs   = "Входы своего видео плана — только изображения."
 	textInputHashChanged = "Хеш входа отличается от указанного в запросе."
 	textInputChanged     = "Вход изменился при подготовке."
+	textSavedLooks       = "saved_looks должен быть непустым списком образов с полями code, entity, look и name."
 )
 
 // specFields — допустимые поля спецификации запроса; inputFields — допустимые поля входа.
@@ -47,7 +48,10 @@ var (
 	specFields = map[string]bool{
 		"schema_version": true, "shot": true, "provider": true, "kind": true, "command": true, "model": true,
 		"model_selection": true, "parameters": true, "outputs": true, "inputs": true, "prompt_file": true,
+		"saved_looks": true,
 	}
+	// lookFields — поля образа сущности в saved_looks (mediaapi.SavedLookUse).
+	lookFields      = []string{"code", "entity", "look", "name"}
 	inputFields     = map[string]bool{"flag": true, "slot": true, "role": true, "path": true, "sha256": true}
 	selectionFields = []string{"preferredModel", "selectedModel", "reason"}
 	sha256Pattern   = regexp.MustCompile(`^[a-f0-9]{64}$`)
@@ -190,6 +194,26 @@ func ValidateSpec(value any) error {
 		}
 		if !nonEmptyString(selection.Value("reason")) {
 			return toolrt.New(toolrt.ValueError, textSelectionReason)
+		}
+	}
+	if value, has := spec.Get("saved_looks"); has {
+		looks, ok := value.([]any)
+		if !ok || len(looks) == 0 {
+			return toolrt.New(toolrt.ValueError, textSavedLooks)
+		}
+		for _, element := range looks {
+			look, ok := element.(*toolrt.Dict)
+			if !ok || look.Len() != len(lookFields) || !hasAll(look, lookFields) {
+				return toolrt.New(toolrt.ValueError, textSavedLooks)
+			}
+			for _, field := range lookFields {
+				if _, isString := look.Value(field).(string); !isString {
+					return toolrt.New(toolrt.ValueError, textSavedLooks)
+				}
+			}
+			if !nonEmptyString(look.Value("code")) || !nonEmptyString(look.Value("look")) {
+				return toolrt.New(toolrt.ValueError, textSavedLooks)
+			}
 		}
 	}
 	// Параметры должны кодироваться без NaN и одиночных суррогатов: иначе SHA не посчитать.
@@ -346,6 +370,11 @@ func freeze(spec *toolrt.Dict, base, staging string, promptBytes []byte, extraFi
 	}
 	if selection, has := spec.Get("model_selection"); has {
 		frozen.Set("model_selection", selection)
+	}
+	// Образы сущностей запроса: какой образ аккаунта уходит у какого героя. Поле есть только у
+	// запросов с образами и входит в SHA, поэтому подтверждение «Отправить» относится и к нему.
+	if looks, has := spec.Get("saved_looks"); has {
+		frozen.Set("saved_looks", looks)
 	}
 	digest, err := Digest(frozen)
 	if err != nil {

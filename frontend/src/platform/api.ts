@@ -41,7 +41,7 @@ import type {
   TimingFile
 } from '@shared/types';
 import type { ScenarioStatus } from '@shared/scenario-status';
-import type { SavedLooksView } from '@shared/saved-looks';
+import type { SavedLooksView, ShotLooksView } from '@shared/saved-looks';
 import type * as status from '../../bindings/songframe/internal/status/models';
 import type * as jobs from '../../bindings/songframe/internal/jobs/models';
 import type * as checks from '../../bindings/songframe/internal/checks/models';
@@ -606,6 +606,7 @@ export function createApi(b: Bindings): Api {
     call('savedLooks.unbind', async () => (await (await b.savedLooks()).Unbind(project, reference)) as SavedLooksView, false);
   api.savedLooks.remove = (project, look) =>
     call('savedLooks.remove', async () => (await (await b.savedLooks()).Remove(project, look)) as SavedLooksView, false);
+  api.savedLooks.shot = (project, shot) => call('savedLooks.shot', async () => (await (await b.savedLooks()).Shot(project, shot)) as ShotLooksView, false);
 
   api.timing.view = (project) =>
     call('timing.view', async () => {

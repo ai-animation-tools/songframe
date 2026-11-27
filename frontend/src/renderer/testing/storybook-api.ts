@@ -189,7 +189,8 @@ export function unconfiguredStoryApi(): Api {
       create: async () => unconfigured('savedLooks.create'),
       bind: async () => unconfigured('savedLooks.bind'),
       unbind: async () => unconfigured('savedLooks.unbind'),
-      remove: async () => unconfigured('savedLooks.remove')
+      remove: async () => unconfigured('savedLooks.remove'),
+      shot: async () => ({ supported: false, heroes: [], error: '' })
     },
     timing: {
       vocalsView: async () => unconfigured('timing.vocalsView'),

@@ -244,6 +244,14 @@ func (k klingAdapter) CreateSavedLook(ctx context.Context, draft mediaapi.SavedL
 	return adapter.CreateLook(ctx, draft, timeout)
 }
 
+// SavedLookMention — разметка элемента в промпте Kling.
+func (klingAdapter) SavedLookMention(id string) string { return kling.LookMention(id) }
+
+// SavedLookArgument — аргумент elements запроса видео Kling.
+func (klingAdapter) SavedLookArgument(uses []mediaapi.SavedLookUse) (string, any) {
+	return kling.LookArgument(uses)
+}
+
 // DeleteSavedLook — удаление элемента Kling; вызывается только после подтверждения пользователя.
 func (k klingAdapter) DeleteSavedLook(ctx context.Context, id string, timeout time.Duration) error {
 	adapter, err := k.client()

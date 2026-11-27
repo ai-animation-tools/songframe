@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"songframe/internal/golden"
 	"songframe/internal/mediatest"
 	"songframe/internal/savedlooks"
 	"songframe/internal/toolrt"
@@ -126,4 +127,52 @@ func treeDigest(t *testing.T, dir string) string {
 		t.Fatal(err)
 	}
 	return builder.String()
+}
+
+// TestSavedLooksShot — герои «В кадре» плана со статусами образов: мир не входит, привязанный
+// образ — ready, остальные — none; провайдер без образов — Supported false.
+func TestSavedLooksShot(t *testing.T) {
+	ctx := context.Background()
+	root, err := golden.Root()
+	if err != nil {
+		t.Fatal(err)
+	}
+	project := t.TempDir()
+	if err := os.CopyFS(project, os.DirFS(filepath.Join(root, "checks-base", "project"))); err != nil {
+		t.Fatal(err)
+	}
+	document := `{"schema_version":1,"name":"Клип","fps":30,"generation":{"video":{"provider":"test","provider_selected":true}}}`
+	if err := os.WriteFile(filepath.Join(project, "plan", "project.json"), []byte(document), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	service, err := mediatest.New(t.TempDir(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(service.Register())
+	state := t.TempDir()
+	looks := &SavedLooksService{stateDir: func() (string, error) { return state, nil }}
+	entry := toolrt.NewDict()
+	entry.Set("id", "look-9")
+	entry.Set("name", "Лодка")
+	values := toolrt.NewDict()
+	values.Set("saved_looks", []any{entry})
+	if err := service.Configure(values); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := looks.Bind(ctx, project, "boat", "look-9"); err != nil {
+		t.Fatal(err)
+	}
+	view, err := looks.Shot(ctx, project, "M01")
+	if err != nil || !view.Supported || view.Error != "" {
+		t.Fatalf("вид %+v %v", view, err)
+	}
+	want := []ShotLook{{Code: "boat", Name: "Лодка", Status: savedlooks.StatusReady, Look: "look-9", LookName: "Лодка"}, {Code: "pier", Name: "Причал", Status: savedlooks.StatusNone}}
+	if len(view.Heroes) != len(want) || view.Heroes[0] != want[0] || view.Heroes[1] != want[1] {
+		t.Fatalf("герои %+v", view.Heroes)
+	}
+	unsupported := looksProject(t, "none")
+	if view, err := looks.Shot(ctx, unsupported, "M01"); err != nil || view.Supported || view.Heroes == nil || len(view.Heroes) != 0 {
+		t.Fatalf("без образов %+v %v", view, err)
+	}
 }

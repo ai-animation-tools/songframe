@@ -92,5 +92,7 @@ export type {
     ProjectHistoryEntry,
     ProviderBalance,
     SavedLookInput,
-    SavedLooksView
+    SavedLooksView,
+    ShotLook,
+    ShotLooksView
 } from "./models.js";

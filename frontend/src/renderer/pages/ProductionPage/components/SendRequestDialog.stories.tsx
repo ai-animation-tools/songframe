@@ -4,6 +4,7 @@ import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { productionTexts } from '@shared/texts/production';
 import { expectImplicitCloseBlocked } from '../../../testing/dialogStories';
 import { commonTexts } from '@shared/texts/common';
+import { savedLooksTexts } from '@shared/texts/saved-looks';
 import { SendRequestStory, sendRequestOptions } from '../../../testing/sendRequestStories';
 
 const labels = productionTexts.sendRequestDialog;
@@ -51,6 +52,17 @@ export const KnownPrice: Story = {
     await closed(context);
     await counts(context, 1, 1);
     await expect(screenOf(context).getByText('Запрос отправлен. Задание получения: running. Результат ещё не получен.')).toBeInTheDocument();
+  }
+};
+export const SavedLooks: Story = {
+  name: 'Образы героев · итоговый текст и какой образ уходит у какого героя',
+  parameters: { songframe: sendRequestOptions({ savedLooks: true }) },
+  play: async (context) => {
+    const dialog = await ready(context);
+    await expect(dialog.getByText('Лодка {look:11} плывёт к причалу {look:12}; у причала лодка {look:11} замедляется.')).toBeVisible();
+    const list = dialog.getByRole('list', { name: savedLooksTexts.requestLooks });
+    await expect(within(list).getByText(savedLooksTexts.requestLook({ entity: 'Лодка', name: 'Лодка у причала' }))).toBeVisible();
+    await expect(within(list).getByText(savedLooksTexts.requestLook({ entity: 'Причал', name: 'Причал' }))).toBeVisible();
   }
 };
 export const UnknownPrice: Story = {

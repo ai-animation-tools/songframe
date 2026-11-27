@@ -14,6 +14,7 @@ import (
 	"songframe/internal/acceptance"
 	"songframe/internal/dynvalue"
 	"songframe/internal/filedigest"
+	"songframe/internal/mediaapi"
 	"songframe/internal/shotworkflow"
 	"songframe/internal/sourceinputs"
 	"songframe/internal/speech"
@@ -90,6 +91,9 @@ type Request struct {
 	// и промпт — только указанные пользователем),
 	// видео пользователь сделал сам; поле опускается у остальных запросов.
 	OwnVideo bool `json:"ownVideo,omitempty"`
+	// SavedLooks — образы сущностей замороженного запроса (request.json saved_looks): какой образ
+	// аккаунта уходит у какого героя; поле опускается у запросов без образов.
+	SavedLooks []mediaapi.SavedLookUse `json:"savedLooks,omitempty"`
 	// Downloads — абсолютные пути существующих скачанных оригиналов.
 	Downloads []string `json:"downloads"`
 }
@@ -558,6 +562,11 @@ func readRequest(dir string, workflow, active any, imageRequest bool, problems *
 	}
 	if selection := dynvalue.Get(frozen, "model_selection"); dynvalue.Truthy(selection) {
 		request.ModelSelection = dynvalue.Raw(selection)
+	}
+	if looks := dynvalue.Get(frozen, "saved_looks"); dynvalue.Truthy(looks) {
+		if err := json.Unmarshal(dynvalue.Raw(looks), &request.SavedLooks); err != nil {
+			return nil, err
+		}
 	}
 	if dynvalue.Exists(frozenPrompt) {
 		text, err := readText(frozenPrompt)

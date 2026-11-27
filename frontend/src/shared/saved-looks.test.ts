@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { defaultSavedLookKind, defaultSavedLookName, savedLookNameLength, savedLookState, type SavedLookRules, type SavedLooksView } from './saved-looks';
+import {
+  defaultSavedLookKind,
+  insertSavedLookMark,
+  defaultSavedLookName,
+  savedLookNameLength,
+  savedLookState,
+  type SavedLookRules,
+  type SavedLooksView
+} from './saved-looks';
 
 const rules: SavedLookRules = { nameMaxChars: 5, extraMin: 1, extraMax: 3, kinds: ['character', 'prop', 'costume'], coverFixed: true };
 
@@ -28,5 +36,18 @@ describe('сохранённые образы', () => {
     expect(defaultSavedLookName('  Мальчик в плаще ', rules)).toBe('Мальчи'.slice(0, 5));
     expect(defaultSavedLookName('🙂🙂🙂🙂🙂🙂', rules)).toBe('🙂🙂🙂🙂🙂');
     expect(savedLookNameLength(' 🙂я ')).toBe(2);
+  });
+});
+
+describe('метка героя в своём видеопромпте', () => {
+  it('встаёт за курсором с пробелами по краям и курсором за меткой', () => {
+    expect(insertSavedLookMark('The man walks.', 7, 7, 'hero')).toEqual({ text: 'The man [@hero] walks.', caret: 15 });
+    expect(insertSavedLookMark('The man walks.', 8, 8, 'hero')).toEqual({ text: 'The man [@hero] walks.', caret: 15 });
+    expect(insertSavedLookMark('The man, tired.', 7, 7, 'hero')).toEqual({ text: 'The man [@hero], tired.', caret: 15 });
+    expect(insertSavedLookMark('', 0, 0, 'hero')).toEqual({ text: '[@hero]', caret: 7 });
+  });
+
+  it('не удаляет выделенное упоминание: метка встаёт после него', () => {
+    expect(insertSavedLookMark('The gull flies.', 4, 8, 'gull')).toEqual({ text: 'The gull [@gull] flies.', caret: 16 });
   });
 });

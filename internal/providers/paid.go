@@ -244,6 +244,8 @@ type PaidInput struct {
 	Inputs         []PaidInputItem
 	Outputs        int
 	FrameID        string
+	// SavedLooks — образы сущностей запроса после подстановки меток промпта; пусто — без образов.
+	SavedLooks []mediaapi.SavedLookUse
 }
 
 // model — объявление модели, разобранное для проверки запроса.
@@ -898,6 +900,12 @@ func NewPaidMedia(paid Paid, kind string, options PaidOptions) *PaidMedia {
 	return &PaidMedia{Paid: paid, Kind: kind, options: options}
 }
 
+// SavedLooks — библиотека образов аккаунта провайдера, если адаптер её поддерживает.
+func (p *PaidMedia) SavedLooks() (mediaapi.SavedLooks, bool) {
+	looks, ok := p.Paid.adapter.(mediaapi.SavedLooks)
+	return looks, ok
+}
+
 // title — название провайдера для текстов.
 func (p *PaidMedia) title() string { return Title(p.Paid.ID, p.Paid.ID) }
 
@@ -1044,6 +1052,18 @@ func (p *PaidMedia) Prepare(ctx context.Context, input PaidInput, caps mediaapi.
 	spec.Set("outputs", float64(input.Outputs))
 	spec.Set("inputs", &dynvalue.Array{Items: inputs})
 	spec.Set("prompt_file", "prompt.txt")
+	if len(input.SavedLooks) > 0 {
+		looks := make([]any, len(input.SavedLooks))
+		for index, use := range input.SavedLooks {
+			look := dynvalue.NewObject()
+			look.Set("code", use.Code)
+			look.Set("entity", use.Entity)
+			look.Set("look", use.Look)
+			look.Set("name", use.Name)
+			looks[index] = look
+		}
+		spec.Set("saved_looks", &dynvalue.Array{Items: looks})
+	}
 	specPath := filepath.Join(directory, "spec.json")
 	if err := os.WriteFile(specPath, []byte(dynvalue.Stringify(spec)), 0o666); err != nil {
 		return PreparedRequest{}, err

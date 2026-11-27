@@ -703,6 +703,17 @@
     }
   },
   {
+    "name": "validate_spec saved looks",
+    "call": "validate_spec",
+    "description": "Запрос с образами: аргумент elements и список saved_looks принимаются.",
+    "args": {
+      "spec": "{\"schema_version\": 1, \"shot\": \"M05\", \"kind\": \"video\", \"provider\": \"kling\", \"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\", \"parameters\": {\"duration\": 6, \"resolution\": \"720p\", \"enable_audio\": false, \"elements\": \"[{\\\"id\\\":\\\"1001\\\",\\\"bindName\\\":\\\"hero\\\"},{\\\"id\\\":\\\"1002\\\",\\\"bindName\\\":\\\"gull\\\"}]\", \"prefer_multi_shots\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1, \"saved_looks\": [{\"code\": \"hero\", \"entity\": \"Герой\", \"look\": \"1001\", \"name\": \"Герой\"}, {\"code\": \"gull\", \"entity\": \"Чайка\", \"look\": \"1002\", \"name\": \"Чайка\"}]}"
+    },
+    "expected": {
+      "result": "null"
+    }
+  },
+  {
     "name": "validate_prompt empty",
     "call": "validate_prompt",
     "description": "",
@@ -1683,6 +1694,19 @@
         "type": "неверное значение",
         "message": "в JSON нельзя записать nan"
       }
+    }
+  },
+  {
+    "name": "envelope saved looks",
+    "call": "envelope",
+    "description": "Сохранённые образы: аргумент elements — JSON-строка массива {id, bindName} без изменений, разметка <<<id>>> у каждого упоминания остаётся в промпте.",
+    "args": {
+      "request": "{\"model\": \"kling-video-v3_0\", \"parameters\": {\"resolution\": \"720p\", \"duration\": 6, \"elements\": \"[{\\\"id\\\":\\\"1001\\\",\\\"bindName\\\":\\\"hero\\\"},{\\\"id\\\":\\\"1002\\\",\\\"bindName\\\":\\\"gull\\\"}]\", \"enable_audio\": false}}",
+      "prompt": "\"The man <<<1001>>> walks to the gull <<<1002>>>; the man <<<1001>>> stops.\\n\"",
+      "inputs": "[[\"first_image\", \"https://cdn.test/a.png\"]]"
+    },
+    "expected": {
+      "result": "{\"model\": \"kling-video-v3_0\", \"arguments\": [{\"name\": \"prompt\", \"value\": \"The man <<<1001>>> walks to the gull <<<1002>>>; the man <<<1001>>> stops.\\n\"}, {\"name\": \"duration\", \"value\": \"6\"}, {\"name\": \"elements\", \"value\": \"[{\\\"id\\\":\\\"1001\\\",\\\"bindName\\\":\\\"hero\\\"},{\\\"id\\\":\\\"1002\\\",\\\"bindName\\\":\\\"gull\\\"}]\"}, {\"name\": \"enable_audio\", \"value\": \"false\"}, {\"name\": \"resolution\", \"value\": \"720p\"}], \"rationale\": \"\", \"inputs\": [{\"name\": \"first_image\", \"inputType\": \"URL\", \"url\": \"https://cdn.test/a.png\"}]}"
     }
   },
   {

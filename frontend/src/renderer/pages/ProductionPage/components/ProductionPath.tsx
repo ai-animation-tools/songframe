@@ -658,6 +658,7 @@ export function ProductionPath({
       ) : null}
       {ownPrompt !== null ? (
         <OwnPromptDialog
+          project={project}
           shot={shot.id}
           initial={ownPrompt}
           limit={view?.promptMaxChars}

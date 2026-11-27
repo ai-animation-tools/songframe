@@ -7,6 +7,7 @@ import (
 
 	"songframe/internal/dynvalue"
 	"songframe/internal/requestsnapshot"
+	"songframe/internal/savedlooks"
 	"songframe/internal/speech"
 )
 
@@ -116,6 +117,12 @@ func (w *Workflow) buildManual(ctx context.Context, c *Context) error {
 	if err != nil {
 		return err
 	}
+	// Ручная генерация идёт на сайте провайдера: метки сущностей там — простой текст, их нет и в
+	// тексте для копирования. Опечатка в метке — та же ошибка, что при сборке запроса.
+	if _, err := checkMarks(c, prompt); err != nil {
+		return err
+	}
+	prompt = savedlooks.Strip(prompt)
 	seconds := int64(dynvalue.ToNumber(dynvalue.Get(c.workflowValue("timing"), "request_seconds")))
 	number := 1
 	for dynvalue.Exists(filepath.Join(c.PackageDir, "request-"+twoDigits(number))) {

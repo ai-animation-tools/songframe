@@ -78,12 +78,18 @@ func (s Store) path(provider string) string {
 	return filepath.Join(s.Dir, "providers", strings.ToLower(strings.TrimSpace(provider)), "saved-looks.json")
 }
 
-// ProjectKey — ключ проекта в привязках: абсолютный очищенный путь папки.
+// ProjectKey — ключ проекта в привязках: настоящий путь папки (символические ссылки раскрыты),
+// чтобы «Исходники», открытые по ссылке, и сборка запроса по настоящему пути нашли одну запись.
+// Папки нет — абсолютный очищенный путь.
 func ProjectKey(project string) string {
-	if absolute, err := filepath.Abs(project); err == nil {
-		return absolute
+	absolute, err := filepath.Abs(project)
+	if err != nil {
+		return filepath.Clean(project)
 	}
-	return filepath.Clean(project)
+	if real, err := filepath.EvalSymlinks(absolute); err == nil {
+		return real
+	}
+	return absolute
 }
 
 // read — все привязки провайдера; нет файла — пусто.

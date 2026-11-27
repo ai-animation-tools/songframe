@@ -178,7 +178,8 @@ export function apiSkeleton(): Api {
       create: stub('savedLooks.create'),
       bind: stub('savedLooks.bind'),
       unbind: stub('savedLooks.unbind'),
-      remove: stub('savedLooks.remove')
+      remove: stub('savedLooks.remove'),
+      shot: stub('savedLooks.shot')
     },
     timing: {
       vocalsView: stub('timing.vocalsView'),

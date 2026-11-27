@@ -1,6 +1,7 @@
 import type { VocalModelId } from './vocals';
 /** Общие типы API и renderer: состояние приложения, проект, исходники, среда. */
 import type { MediaModelSelection } from './media-providers';
+import type { SavedLookUse } from './saved-looks';
 import type { ProductionProposalSummary } from './production-workflow';
 import type { FrameRate } from './video';
 import type { SceneViewpoint } from './viewpoint';
@@ -877,6 +878,8 @@ export interface PackageView {
     attemptStatus: string | null;
     /** Замороженный текст из папки попытки; может отличаться от черновика пакета. */
     promptText?: string | null;
+    /** Образы сущностей замороженного запроса: какой образ аккаунта уходит у какого героя; нет — запрос без образов. */
+    savedLooks?: SavedLookUse[];
     generationId: string | null;
     /** Оригинал загрузил пользователь из истории генераций сервиса после неизвестного исхода отправки; ID задания нет. */
     manualResult: boolean;

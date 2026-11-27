@@ -126,6 +126,21 @@ type SavedLooks interface {
 	// CreateSavedLook загружает снимки и создаёт образ; занятое имя — ошибка до создания.
 	CreateSavedLook(ctx context.Context, draft SavedLookDraft, timeout time.Duration) (SavedLook, error)
 	DeleteSavedLook(ctx context.Context, id string, timeout time.Duration) error
+	// SavedLookMention — разметка упоминания образа id в тексте промпта: ею приложение заменяет
+	// метку сущности до заморозки запроса.
+	SavedLookMention(id string) string
+	// SavedLookArgument — имя аргумента модели и его значение для образов запроса (в порядке
+	// первого упоминания). Значение должно кодироваться в JSON: оно входит в параметры запроса.
+	SavedLookArgument(uses []SavedLookUse) (string, any)
+}
+
+// SavedLookUse — образ сущности в запросе видео: код сущности кастинга, её имя, ID и имя образа
+// аккаунта. Список замораживается в запросе (saved_looks) и показывается в вопросе «Отправить».
+type SavedLookUse struct {
+	Code   string `json:"code"`
+	Entity string `json:"entity"`
+	Look   string `json:"look"`
+	Name   string `json:"name"`
 }
 
 // Тексты проверки нового образа.

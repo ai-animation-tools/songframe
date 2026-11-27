@@ -43,6 +43,14 @@ export function Remove(project: string, look: string): $CancellablePromise<$mode
 }
 
 /**
+ * Shot — savedLooks.shot: герои «В кадре» плана shot со статусами образов одним бесплатным
+ * списком библиотеки. Сбой списка приходит в Error, как у View.
+ */
+export function Shot(project: string, shot: string): $CancellablePromise<$models.ShotLooksView> {
+    return $Call.ByID(142195193, project, shot);
+}
+
+/**
  * Unbind — savedLooks.unbind: убирает привязку референса; образ остаётся в аккаунте.
  */
 export function Unbind(project: string, reference: string): $CancellablePromise<$models.SavedLooksView> {

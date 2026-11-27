@@ -1171,6 +1171,10 @@ func buildKit(ctx context.Context, root, shot string, frames toolrt.Int, fps int
 	outputs, _ := toolrt.DictGet(request, "outputs", toolrt.NewInt(1))
 	snapshot.Set("parameters", parameters)
 	snapshot.Set("outputs", outputs)
+	// Образы сущностей запроса — только у запросов с ними: повтор из комплекта перечисляет те же образы.
+	if looks, ok := request.Get("saved_looks"); ok {
+		snapshot.Set("saved_looks", looks)
+	}
 	snapshot.Set("request_sha256", attempt.Value("request_sha256"))
 	snapshot.Set("inputs", snapshotInputs)
 	snapshot.Set("prompt", "generation-prompt.txt")

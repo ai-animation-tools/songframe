@@ -176,3 +176,15 @@ var (
 	_ mediaapi.AppearanceDescriber = (*Service)(nil)
 	_ mediaapi.SavedLooks          = (*Service)(nil)
 )
+
+// SavedLookMention — разметка образа в промпте тестового сервиса.
+func (s *Service) SavedLookMention(id string) string { return "{look:" + id + "}" }
+
+// SavedLookArgument — аргумент looks: массив ID образов по порядку.
+func (s *Service) SavedLookArgument(uses []mediaapi.SavedLookUse) (string, any) {
+	ids := make([]string, len(uses))
+	for index, use := range uses {
+		ids[index] = use.Look
+	}
+	return LookArgument, ids
+}

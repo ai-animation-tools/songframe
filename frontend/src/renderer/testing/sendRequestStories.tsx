@@ -23,6 +23,8 @@ export interface SendRequestOptions {
   submitPending?: boolean;
   missingSha?: boolean;
   offline?: boolean;
+  /** Запрос с сохранёнными образами: разметка провайдера в тексте и список «герой → образ». */
+  savedLooks?: boolean;
 }
 
 interface SendModel {
@@ -58,6 +60,18 @@ export function sendRequestOptions(options: SendRequestOptions = {}): StoryOptio
       };
       const initial = (): PackageView => {
         const pkg = deliveryPackage('video', 'prepared');
+        if (options.savedLooks)
+          return {
+            ...pkg,
+            request: {
+              ...pkg.request!,
+              promptText: 'Лодка {look:11} плывёт к причалу {look:12}; у причала лодка {look:11} замедляется.',
+              savedLooks: [
+                { code: 'boat', entity: 'Лодка', look: '11', name: 'Лодка у причала' },
+                { code: 'pier', entity: 'Причал', look: '12', name: 'Причал' }
+              ]
+            }
+          };
         return options.missingSha ? { ...pkg, request: { ...pkg.request!, sha256: null } } : pkg;
       };
       const model: SendModel = {

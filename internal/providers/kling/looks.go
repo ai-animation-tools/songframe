@@ -15,8 +15,9 @@ import (
 
 // Сохранённые образы Kling — элементы библиотеки аккаунта (element_list, element_get,
 // element_create, element_delete). Создание и удаление кредитов не тратят. Запрос видео
-// ссылается на элемент аргументом elements, а промпт — разметкой <<<id>>> у упоминания героя;
-// это собирает запрос, а здесь — только библиотека и объявление моделей.
+// ссылается на элемент аргументом elements (JSON-строка массива {id, bindName}), а промпт —
+// разметкой <<<id>>> у каждого упоминания героя: строка-привязка в начале промпта вместо разметки
+// у упоминаний раздваивает героя в кадре.
 
 // lookTags — тег каталога Kling для общего вида образа. Транспорт у Kling — предмет: отдельного
 // тега для него нет.
@@ -287,4 +288,24 @@ func (a *Adapter) DeleteLook(ctx context.Context, id string, timeout time.Durati
 	arguments.Set("id", id)
 	_, err := a.open(timeout, nil).Call(ctx, "element_delete", arguments, 0, nil)
 	return lookError(textLookDeleteFailed, err)
+}
+
+// LookMention — упоминание элемента в промпте Kling.
+func LookMention(id string) string { return "<<<" + id + ">>>" }
+
+// lookBinding — элемент в аргументе elements: ID и имя привязки (код сущности кастинга).
+type lookBinding struct {
+	ID       string `json:"id"`
+	BindName string `json:"bindName"`
+}
+
+// LookArgument — аргумент elements: компактная JSON-строка массива {id, bindName}, как его
+// объявляет who_am_i.
+func LookArgument(uses []mediaapi.SavedLookUse) (string, any) {
+	items := make([]lookBinding, len(uses))
+	for index, use := range uses {
+		items[index] = lookBinding{ID: use.Look, BindName: use.Code}
+	}
+	text, _ := json.Marshal(items)
+	return "elements", string(text)
 }

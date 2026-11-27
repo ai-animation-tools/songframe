@@ -8,5 +8,6 @@ export type {
     Model,
     ReferenceImage,
     SavedLook,
-    SavedLookRules
+    SavedLookRules,
+    SavedLookUse
 } from "./models.js";

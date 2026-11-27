@@ -127,7 +127,7 @@ export function PackageRequest({
               </Stack>
             </AccordionDetails>
           </Accordion>
-          {pkg.request.promptText ? <RequestPrompt text={pkg.request.promptText} /> : null}
+          {pkg.request.promptText ? <RequestPrompt text={pkg.request.promptText} looks={pkg.request.savedLooks} /> : null}
           {canSubmit ? (
             <AiButton
               aiKind={pkg.request?.kind === 'image' ? 'image' : 'video'}

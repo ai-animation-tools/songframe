@@ -208,3 +208,21 @@ func TestCheck(t *testing.T) {
 		t.Fatalf("сбой списка: %v", err)
 	}
 }
+
+// Проект, открытый по символической ссылке, и тот же проект по настоящему пути — одна запись
+// привязок: «Исходники» и сборка запроса находят один образ.
+func TestProjectKeySymlink(t *testing.T) {
+	real := t.TempDir()
+	link := filepath.Join(t.TempDir(), "clip")
+	if err := os.Symlink(real, link); err != nil {
+		t.Skip("символические ссылки недоступны:", err)
+	}
+	store := Store{Dir: t.TempDir()}
+	if err := store.Bind("test", Binding{Account: "a", Project: link, Reference: "hero", Look: "7", Name: "Герой"}); err != nil {
+		t.Fatal(err)
+	}
+	bindings, err := store.Bindings("test", "a", real)
+	if err != nil || len(bindings) != 1 || bindings[0].Look != "7" {
+		t.Fatalf("по настоящему пути: %+v %v", bindings, err)
+	}
+}

@@ -1,4 +1,4 @@
-/** Свой видеопромпт: длина и предел провайдера, отказ Go; сохранённый текст остаётся только в памяти истории. */
+/** Свой видеопромпт: длина и предел провайдера, отказ Go, метки героев с образами; сохранённый текст остаётся только в памяти истории. */
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
@@ -6,6 +6,8 @@ import { Alert, Stack } from '@mui/material';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import { commonTexts } from '@shared/texts/common';
 import { productionTexts } from '@shared/texts/production';
+import { savedLooksTexts } from '@shared/texts/saved-looks';
+import { createSavedLooksModel } from '../../../testing/savedLooksStories';
 import { expectImplicitCloseBlocked } from '../../../testing/dialogStories';
 import { ActionButton } from '../../../components/ActionButton';
 import { OwnPromptDialog } from './OwnPromptDialog';
@@ -40,6 +42,7 @@ function OwnPromptStory({ initial = '', limit = 40, rejectFirst = false }: { ini
       </div>
       {open && (
         <OwnPromptDialog
+          project="/story/project"
           shot="M02"
           initial={initial}
           limit={limit}
@@ -124,5 +127,55 @@ export const NoLimit: Story = {
     const body = within(await dialog(context));
     await expect(body.getByText(texts.chars({ chars: 18, limit: 0 }))).toBeVisible();
     await expect(save(context)).toBeEnabled();
+  }
+};
+
+// Герои «В кадре»: у Лодки образ есть, у Причала устарел, у Чайки нет — кнопок две, у Чайки кнопки нет.
+const heroLooks = () => ({
+  savedLooks: createSavedLooksModel(
+    {
+      looks: [
+        { id: '11', name: 'Лодка' },
+        { id: '12', name: 'Причал' }
+      ],
+      bindings: { boat: { look: '11' }, pier: { look: '12', stale: true } },
+      heroes: [
+        { code: 'boat', name: 'Лодка' },
+        { code: 'pier', name: 'Причал' },
+        { code: 'gull', name: 'Чайка' }
+      ]
+    },
+    () => ['boat', 'pier', 'gull']
+  )
+});
+
+export const HeroMarks: Story = {
+  name: 'Метки героев с образами · вставка в позицию курсора',
+  args: { initial: 'Лодка плывёт к причалу.', limit: 0 },
+  parameters: { songframe: { createApi: heroLooks } },
+  play: async (context) => {
+    const body = within(await dialog(context));
+    await expect(await body.findByText(savedLooksTexts.marksTitle)).toBeVisible();
+    await expect(body.queryByRole('button', { name: savedLooksTexts.markLabel({ name: 'Чайка' }) })).not.toBeInTheDocument();
+    const field = body.getByRole('textbox', { name: texts.prompt }) as HTMLTextAreaElement;
+    await userEvent.click(field);
+    field.setSelectionRange(5, 5);
+    await userEvent.click(body.getByRole('button', { name: savedLooksTexts.markLabel({ name: 'Лодка' }) }));
+    await waitFor(() => expect(field).toHaveValue('Лодка [@boat] плывёт к причалу.'));
+    field.setSelectionRange(field.value.length - 1, field.value.length - 1);
+    await userEvent.click(body.getByRole('button', { name: savedLooksTexts.markLabel({ name: 'Причал' }) }));
+    await waitFor(() => expect(field).toHaveValue('Лодка [@boat] плывёт к причалу [@pier].'));
+    await userEvent.click(save(context));
+    await waitFor(() => expect(screenOf(context).getByTestId('own-prompt-saved')).toHaveTextContent('Сохранено: Лодка [@boat] плывёт к причалу [@pier].'));
+  }
+};
+
+export const HeroMarksNone: Story = {
+  name: 'Метки героев · у героев в кадре нет образов',
+  args: { initial: 'Лодка плывёт.', limit: 0 },
+  parameters: { songframe: { createApi: () => ({ savedLooks: createSavedLooksModel({ heroes: [{ code: 'boat', name: 'Лодка' }] }, () => ['boat']) }) } },
+  play: async (context) => {
+    const body = within(await dialog(context));
+    await expect(await body.findByText(savedLooksTexts.marksNone)).toBeVisible();
   }
 };

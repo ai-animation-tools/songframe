@@ -132,3 +132,14 @@ export interface SavedLookRules {
      */
     "coverFixed": boolean;
 }
+
+/**
+ * SavedLookUse — образ сущности в запросе видео: код сущности кастинга, её имя, ID и имя образа
+ * аккаунта. Список замораживается в запросе (saved_looks) и показывается в вопросе «Отправить».
+ */
+export interface SavedLookUse {
+    "code": string;
+    "entity": string;
+    "look": string;
+    "name": string;
+}

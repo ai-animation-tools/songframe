@@ -4,7 +4,7 @@
  * через savedLooksStoryCalls().
  */
 import type { Api } from '@shared/api';
-import type { SavedLook, SavedLookInput, SavedLookRules, SavedLookStatus, SavedLooksView } from '@shared/saved-looks';
+import type { SavedLook, SavedLookInput, SavedLookRules, SavedLookStatus, SavedLooksView, ShotLooksView } from '@shared/saved-looks';
 
 export const SAVED_LOOKS_STORY_RULES: SavedLookRules = {
   nameMaxChars: 20,
@@ -25,6 +25,8 @@ export interface SavedLooksStoryOptions {
   bindings?: Record<string, { look: string; stale?: boolean }>;
   /** Ошибка одного создания. */
   failCreateOnce?: string;
+  /** Герои «В кадре» плана для savedLooks.shot: код и имя; по умолчанию — референсы описи под своими кодами. */
+  heroes?: { code: string; name: string }[];
 }
 
 export type SavedLooksStoryCall = [string, ...unknown[]];
@@ -61,8 +63,17 @@ export function createSavedLooksModel(options: SavedLooksStoryOptions, reference
       error: ''
     };
   };
+  const shot = (): ShotLooksView => {
+    const current = view();
+    const heroes = (options.heroes ?? references().map((code) => ({ code, name: code }))).map((hero) => {
+      const state = current.report?.states.find((item) => item.reference === hero.code);
+      return { ...hero, status: state?.status ?? ('none' as SavedLookStatus), look: state?.look, lookName: state?.name };
+    });
+    return { supported: current.supported, heroes: current.supported ? heroes : [], error: current.error };
+  };
   return {
     view: async () => view(),
+    shot: async () => shot(),
     create: async (_project: string, reference: string, input: SavedLookInput) => {
       calls.push(['create', reference, structuredClone(input)]);
       if (failCreate) {

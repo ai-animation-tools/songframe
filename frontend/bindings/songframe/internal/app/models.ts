@@ -238,3 +238,35 @@ export interface SavedLooksView {
      */
     "error": string;
 }
+
+/**
+ * ShotLook — герой «В кадре» плана и его образ: по ним окно своего видеопромпта предлагает
+ * метки героев с образами.
+ */
+export interface ShotLook {
+    "code": string;
+    "name": string;
+
+    /**
+     * Status — savedlooks.Status*; Look и LookName — привязанный образ.
+     */
+    "status": string;
+    "look"?: string;
+    "lookName"?: string;
+}
+
+/**
+ * ShotLooksView — образы героев «В кадре» плана.
+ */
+export interface ShotLooksView {
+    /**
+     * Supported — провайдер видео проекта хранит образы.
+     */
+    "supported": boolean;
+    "heroes": ShotLook[];
+
+    /**
+     * Error — почему статусы неизвестны; статусы героев тогда none.
+     */
+    "error": string;
+}

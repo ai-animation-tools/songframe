@@ -61,5 +61,14 @@ export const savedLooksTexts = {
   chooseLabel: 'Образы аккаунта',
   bind: 'Привязать',
   working: 'Выполняется…',
-  coverAlt: ({ view }: { view: string }) => `Снимок: ${view}`
+  coverAlt: ({ view }: { view: string }) => `Снимок: ${view}`,
+
+  marksTitle: 'Метки героев с образами',
+  marksHint:
+    'Метка ставится сразу после упоминания героя, например «The man [@hero] walks»: приложение передаст его образ в запрос видео, а модели без образов отдаст текст без меток.',
+  markLabel: ({ name }: { name: string }) => `Вставить метку героя ${name}`,
+  marksNone: 'У героев в кадре нет сохранённых образов: метки ставить некому. Образ создаётся у референса на «Исходниках».',
+  marksLoading: 'Проверка образов героев…',
+  requestLooks: 'Образы героев в запросе',
+  requestLook: ({ entity, name }: { entity: string; name: string }) => `${entity} — образ «${name}»`
 };

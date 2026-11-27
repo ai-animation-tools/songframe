@@ -209,6 +209,9 @@ func (w *Workflow) buildRequest(ctx context.Context, c *Context, change *Request
 	if err != nil {
 		return "", err
 	}
+	if err := applySavedLooks(ctx, c, media, caps, &draft); err != nil {
+		return "", err
+	}
 	number := 1
 	for dynvalue.Exists(filepath.Join(c.PackageDir, "request-"+twoDigits(number))) {
 		number++

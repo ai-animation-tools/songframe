@@ -6,5 +6,7 @@ export type {
     Capabilities,
     EnvironmentCheck,
     Model,
-    ReferenceImage
+    ReferenceImage,
+    SavedLook,
+    SavedLookRules
 } from "./models.js";

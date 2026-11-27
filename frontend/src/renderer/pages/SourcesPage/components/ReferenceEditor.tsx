@@ -16,6 +16,20 @@ import { ImageGenerateButton } from '../../../components/ImageGenerateButton';
 import { AiProblemAlert } from '../../../components/AiProblemAlert';
 import { FileDropZone } from '../../../components/FileDropZone';
 import { LinkedText } from '../../../components/LinkedText';
+import { ActionButton } from '../../../components/ActionButton';
+import { SavedLookChip } from '../../../components/SavedLookChip';
+import { referenceAnchor } from '../../../components/linkTargets';
+import FaceRetouchingNaturalOutlinedIcon from '@mui/icons-material/FaceRetouchingNaturalOutlined';
+import type { SavedLookState } from '@shared/saved-looks';
+import { savedLooksTexts } from '@shared/texts/saved-looks';
+
+/** Сохранённый образ референса у провайдера видео проекта; нет — провайдер образов не хранит или статусы неизвестны. */
+export interface ReferenceSavedLook {
+  state: SavedLookState;
+  /** Почему окно образа недоступно (несохранённые снимки); null — доступно. */
+  disabledReason: string | null;
+  onOpen: () => void;
+}
 
 interface Props {
   reference: ReferenceForm;
@@ -35,6 +49,7 @@ interface Props {
   onDropFiles: (paths: string[]) => void;
   onUpdateFile: (key: number, patch: Partial<FileForm>) => void;
   onRemoveFile: (key: number) => void;
+  savedLook?: ReferenceSavedLook;
 }
 
 export function ReferenceEditor({
@@ -53,7 +68,8 @@ export function ReferenceEditor({
   onAddFiles,
   onDropFiles,
   onUpdateFile,
-  onRemoveFile
+  onRemoveFile,
+  savedLook
 }: Props): ReactElement {
   const [previewKey, setPreviewKey] = useState<number | null>(null);
   const previewIndex = reference.files.findIndex((file) => file.key === previewKey);
@@ -76,6 +92,8 @@ export function ReferenceEditor({
       // Свёрнутое содержимое не держим в DOM: скрытые поля и кнопки не попадают в обход и проверки доступности.
       slotProps={{ transition: { unmountOnExit: true } }}
       sx={{ '&:before': { display: 'none' }, ...(hasErrors ? { borderColor: 'warning.main' } : {}) }}
+      // Переход из кастинга по статусу образа прокручивает к этой карточке.
+      data-anchor={reference.id ? referenceAnchor(reference.id) : undefined}
     >
       <AccordionSummary expandIcon={<ExpandMoreIcon />} id={`reference-${reference.key}-summary`} aria-controls={`reference-${reference.key}-details`}>
         <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, flexWrap: 'wrap', minWidth: 0 }}>
@@ -90,6 +108,7 @@ export function ReferenceEditor({
               {sourcesTexts.needsCorrection}
             </Typography>
           ) : null}
+          {savedLook ? <SavedLookChip state={savedLook.state} /> : null}
           {reference.promptError || reference.files.some((file) => file.promptError) ? (
             <Typography component="span" variant="caption" color="warning.main">
               {sourcesTexts.promptReadFailed}
@@ -199,8 +218,19 @@ export function ReferenceEditor({
             message={sourcesTexts.referenceFilesMessage}
           />
           <AiProblemAlert kinds={['image']} />
-          <Box>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <ImageGenerateButton onClick={onGenerate}>{sourcesTexts.generateReferenceImage}</ImageGenerateButton>
+            {savedLook ? (
+              <ActionButton
+                variant="outlined"
+                startIcon={<FaceRetouchingNaturalOutlinedIcon />}
+                disabled={!!savedLook.disabledReason}
+                disabledReason={savedLook.disabledReason}
+                onClick={savedLook.onOpen}
+              >
+                {savedLooksTexts.openDialog}
+              </ActionButton>
+            ) : null}
           </Box>
           <DestructiveButton
             label={sourcesTexts.removeReference({ name: reference.name })}

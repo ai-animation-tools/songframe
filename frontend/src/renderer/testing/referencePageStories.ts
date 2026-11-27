@@ -1,5 +1,6 @@
 /** Минимальные модели настоящих страниц: исходники и состав читаются локально, генерация использует общий цикл imageStories. */
 import type { AppState, CastFile, CastView, SourceManifest, SourcesView } from '@shared/types';
+import { createSavedLooksModel, type SavedLooksStoryOptions } from './savedLooksStories';
 import { registerMediaProviderForTests } from '@shared/media-providers';
 import { TEST_PROVIDER, testProviderInfo } from '@shared/testing/media-provider';
 import { createStoryApi, type StoryOptions } from './storybook';
@@ -95,6 +96,8 @@ export interface ReferencePageModelOptions {
   failCastRead?: boolean;
   /** Код референса → планы с готовыми материалами, как в sources.view: файлы при смене типа остаются на месте. */
   pinnedReferences?: Record<string, string[]>;
+  /** Сохранённые образы провайдера видео; нет — провайдер их не хранит. */
+  savedLooks?: SavedLooksStoryOptions;
 }
 interface ReferencePageSnapshot {
   manifest: SourceManifest;
@@ -180,6 +183,7 @@ export function referencePageOptions(page: 'sources' | 'cast', options: Referenc
       });
       const session = createStoryApi({
         ...images.api,
+        ...(options.savedLooks ? { savedLooks: createSavedLooksModel(options.savedLooks, () => savedManifest.references.map((ref) => ref.id)) } : {}),
         sources: {
           view: async (): Promise<SourcesView> => ({
             manifest: structuredClone(savedManifest),

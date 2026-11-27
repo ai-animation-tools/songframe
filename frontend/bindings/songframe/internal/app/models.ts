@@ -9,7 +9,13 @@ import * as effects$0 from "../effects/models.js";
 import * as jobs$0 from "../jobs/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as mediaapi$0 from "../mediaapi/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as project$0 from "../project/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as savedlooks$0 from "../savedlooks/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as shoteffects$0 from "../shoteffects/models.js";
@@ -189,4 +195,46 @@ export interface ProjectHistoryEntry {
 export interface ProviderBalance {
     "credits": number;
     "checkedAt": string;
+}
+
+/**
+ * SavedLookInput — новый образ из сохранённых снимков референса: пути — как в описи (внутри source).
+ */
+export interface SavedLookInput {
+    "name": string;
+    "description": string;
+    "kind": string;
+    "cover": string;
+    "extra": string[];
+}
+
+/**
+ * SavedLooksView — состояние сохранённых образов проекта для «Исходников» и кастинга.
+ */
+export interface SavedLooksView {
+    /**
+     * Supported — провайдер видео проекта хранит образы; false — блок образов не показывается, а
+     * остальные поля пусты.
+     */
+    "supported": boolean;
+
+    /**
+     * Provider — id провайдера видео проекта; "" — не выбран.
+     */
+    "provider": string;
+
+    /**
+     * Rules — ограничения образа у провайдера (окно создания).
+     */
+    "rules": mediaapi$0.SavedLookRules | null;
+
+    /**
+     * Report — статусы референсов и образы аккаунта; nil — список не получен (см. Error).
+     */
+    "report": savedlooks$0.Report | null;
+
+    /**
+     * Error — почему статусы неизвестны: нет входа, сервис не ответил, повреждён файл привязок.
+     */
+    "error": string;
 }

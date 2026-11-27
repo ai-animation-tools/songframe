@@ -98,3 +98,37 @@ export interface ReferenceImage {
     "sha256": string;
     "bytes": number;
 }
+
+/**
+ * SavedLook — сохранённый образ в аккаунте провайдера: ID действителен только в этом аккаунте.
+ */
+export interface SavedLook {
+    "id": string;
+    "name": string;
+}
+
+/**
+ * SavedLookRules — ограничения образа у провайдера, по которым интерфейс строит окно создания.
+ */
+export interface SavedLookRules {
+    /**
+     * NameMaxChars — предел длины имени в символах; имя уникально в аккаунте.
+     */
+    "nameMaxChars": number;
+
+    /**
+     * ExtraMin и ExtraMax — сколько дополнительных снимков нужно образу.
+     */
+    "extraMin": number;
+    "extraMax": number;
+
+    /**
+     * Kinds — общие виды образов, которые провайдер хранит.
+     */
+    "kinds": string[];
+
+    /**
+     * CoverFixed — главный снимок нельзя сменить без удаления и создания образа заново.
+     */
+    "coverFixed": boolean;
+}

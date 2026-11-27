@@ -20,6 +20,7 @@ function bindings(scenario: Record<string, unknown>, cast: Record<string, unknow
     projects: missing,
     timing: missing,
     sources: missing,
+    savedLooks: missing,
     cast: async () => cast as never,
     schemes: missing,
     scenario: async () => scenario as never,

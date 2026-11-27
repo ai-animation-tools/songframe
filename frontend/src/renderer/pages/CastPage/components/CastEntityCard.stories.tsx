@@ -2,6 +2,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { castTexts } from '@shared/texts/cast';
+import { savedLooksTexts } from '@shared/texts/saved-looks';
 import { CastStory, castStoryOptions } from '../../../testing/castStories';
 
 const meta = {
@@ -161,5 +162,21 @@ export const LocalStateRemoval: Story = {
     await canvas.findByText('Кастинг сохранён в локальную модель.');
     await expect(hero.getByRole('combobox', { name: 'Одежда' })).toHaveValue('Синяя куртка');
     await expect(canvas.getByRole('button', { name: 'Сохранить' })).toBeDisabled();
+  }
+};
+
+export const SavedLook: Story = {
+  name: 'Статус сохранённого образа · длинные имена не выходят за рамку, переход к референсу',
+  args: { variant: 'long', savedLook: 'missing' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const chips = await canvas.findAllByText('Образ не найден: Образ с очень длинным именем');
+    const card = chips[0].closest('[data-cast-entity]')!;
+    await waitFor(() => {
+      const bounds = card.getBoundingClientRect();
+      for (const item of card.querySelectorAll('.MuiChip-root')) expect(item.getBoundingClientRect().right).toBeLessThanOrEqual(bounds.right);
+    });
+    await userEvent.click(canvas.getByRole('button', { name: savedLooksTexts.openFromCast }));
+    await expect(await canvas.findByText('Переход к референсу на «Исходниках»')).toBeVisible();
   }
 };

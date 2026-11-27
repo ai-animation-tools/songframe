@@ -1,4 +1,5 @@
 /** Управляемая модель кастинга: черновик и сохранённый снимок живут отдельно, API приложения и генератор не вызываются. */
+import type { SavedLookStatus } from '@shared/saved-looks';
 import { useRef, useState, type ReactElement } from 'react';
 import { Alert, Box, Chip, Stack, Typography } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
@@ -127,10 +128,12 @@ export interface CastStoryProps {
   mode?: 'entities' | 'properties';
   collapsed?: boolean;
   failSaveOnce?: boolean;
+  /** Статус сохранённого образа на всех карточках; нет — провайдер видео образов не хранит. */
+  savedLook?: SavedLookStatus;
 }
 
 /** Сохранение нормализует словарь как страница; ошибка оставляет черновик, сброс восстанавливает исходный снимок. */
-export function CastStory({ variant = 'regular', mode = 'entities', collapsed = false, failSaveOnce = false }: CastStoryProps): ReactElement {
+export function CastStory({ variant = 'regular', mode = 'entities', collapsed = false, failSaveOnce = false, savedLook }: CastStoryProps): ReactElement {
   const [saved, setSaved] = useState(() => castStoryFixture(variant === 'invalid' ? 'regular' : variant));
   const [draft, setDraft] = useState(() => castStoryFixture(variant));
   const [expanded, setExpanded] = useState<string | null>(() =>
@@ -255,6 +258,8 @@ export function CastStory({ variant = 'regular', mode = 'entities', collapsed = 
               imageOptions={imageOptions}
               expanded={expanded === entity.id}
               onExpandedChange={(open) => setExpanded(open ? entity.id : null)}
+              savedLook={savedLook ? { reference: entity.id, status: savedLook, look: '7', name: 'Образ с очень длинным именем' } : undefined}
+              onOpenSavedLook={savedLook ? () => setNotice({ text: 'Переход к референсу на «Исходниках»' }) : undefined}
               onUpdate={(patch) => update(entity.id, patch)}
               onRename={(id) => {
                 if (draft.entities.some((other) => other !== entity && other.id === id)) {

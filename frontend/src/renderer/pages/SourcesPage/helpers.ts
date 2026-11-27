@@ -1,6 +1,6 @@
 /** Преобразования локальной формы: коды, ключи и сравнение сохранённых значений. */
 import { sourcesTexts } from '@shared/texts/sources';
-import type { ReferenceKind, SourceKind } from '@shared/types';
+import type { ReferenceKind, SourceKind, SourceManifest, SourceReference } from '@shared/types';
 import type { ReferenceForm } from './types';
 
 let keyCounter = 1;
@@ -94,4 +94,18 @@ export function kindChangeNotice(reference: ReferenceForm, kinds: SourceKind[], 
   if (!dir || !misplaced?.existingPath) return null;
   const current = folder(misplaced.existingPath);
   return pinnedShots ? sourcesTexts.kindKeepsFiles({ dir: current, shots: pinnedShots }) : sourcesTexts.kindMovesFiles({ dir });
+}
+
+/**
+ * Сохранённый референс описи, из снимков которого можно делать образ: тот же код и ровно те же сохранённые
+ * файлы, что в форме. Новый референс, новые или удалённые снимки — null: образ создаётся только из сохранённых
+ * снимков, иначе SHA в привязке не совпали бы с описью.
+ */
+export function savedLookReference(reference: ReferenceForm, manifest: SourceManifest | null | undefined): SourceReference | null {
+  const saved = manifest?.references.find((item) => item.id === reference.id);
+  if (!saved) return null;
+  const formPaths = reference.files.map((file) => (file.sourcePath ? null : (file.existingPath ?? null)));
+  if (formPaths.some((path) => path === null)) return null;
+  const savedPaths = saved.files.map((file) => file.path);
+  return formPaths.length === savedPaths.length && formPaths.every((path) => savedPaths.includes(path!)) ? saved : null;
 }

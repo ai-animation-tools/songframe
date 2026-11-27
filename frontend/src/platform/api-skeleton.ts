@@ -173,6 +173,13 @@ export function apiSkeleton(): Api {
       validate: stub('sources.validate'),
       save: stub('sources.save')
     },
+    savedLooks: {
+      view: stub('savedLooks.view'),
+      create: stub('savedLooks.create'),
+      bind: stub('savedLooks.bind'),
+      unbind: stub('savedLooks.unbind'),
+      remove: stub('savedLooks.remove')
+    },
     timing: {
       vocalsView: stub('timing.vocalsView'),
       downloadVocalModel: stub('timing.downloadVocalModel'),

@@ -26,6 +26,9 @@ import {
 } from '../../testing/referencePageStories';
 import { SourcesPage } from './SourcesPage';
 import { expectImplicitCloseBlocked } from '../../testing/dialogStories';
+import { savedLooksStoryCalls } from '../../testing/savedLooksStories';
+import { savedLooksTexts } from '@shared/texts/saved-looks';
+import { ANCHOR_HIGHLIGHT_ATTR } from '../../hooks/useAnchorTarget';
 
 const meta = {
   title: 'Страницы/Исходники',
@@ -534,5 +537,159 @@ export const TrackPlayback: Story = {
     await waitFor(() => expect(audio?.paused).toBe(false), { timeout: 10000 });
     await userEvent.click(canvas.getByRole('button', { name: commonTexts.player.pause }));
     await waitFor(() => expect(audio?.paused).toBe(true));
+  }
+};
+
+/** Открывает карточку героя и окно его образа. */
+async function openSavedLook(canvasElement: HTMLElement): Promise<HTMLElement> {
+  const canvas = within(canvasElement);
+  await userEvent.click(await canvas.findByRole('button', { name: new RegExp(REFERENCE_PAGE_NAME) }));
+  await userEvent.click(await canvas.findByRole('button', { name: savedLooksTexts.openDialog }));
+  return within(canvasElement.ownerDocument.body).findByRole('dialog', { name: savedLooksTexts.dialogTitle({ name: REFERENCE_PAGE_NAME }) });
+}
+
+export const SavedLookCreate: Story = {
+  name: 'Сохранённый образ — плашка, создание из сохранённых снимков и статус',
+  tags: ['ci'],
+  parameters: { songframe: referencePageOptions('sources', { multipleImages: true, savedLooks: { looks: [{ id: '7', name: 'Чужой' }] } }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(await canvas.findByText(savedLooksTexts.bannerTitle)).toBeVisible();
+    await expect(canvas.getByText(savedLooksTexts.accountCount({ count: 1 }), { exact: false })).toBeVisible();
+    await expect(canvas.getByRole('link', { name: savedLooksTexts.helpLink })).toHaveAttribute('href', expect.stringContaining('anchor=saved-looks'));
+    await expect((await canvas.findAllByText(savedLooksTexts.status.none))[0]).toBeVisible();
+    const dialog = await openSavedLook(canvasElement);
+    const panel = within(dialog);
+    // Окно с набранным описанием не закрывается Escape: закрытие — только кнопкой.
+    await userEvent.type(panel.getByRole('textbox', { name: savedLooksTexts.description }), 'Mechanic, about 40.');
+    await expectImplicitCloseBlocked(dialog);
+    const name = panel.getByRole('textbox', { name: savedLooksTexts.name });
+    await userEvent.clear(name);
+    await userEvent.type(name, 'чужой');
+    await expect(panel.getByText(savedLooksTexts.nameTaken)).toBeVisible();
+    await expect(panel.getByRole('button', { name: savedLooksTexts.create })).toBeDisabled();
+    await userEvent.clear(name);
+    await userEvent.type(name, REFERENCE_PAGE_NAME);
+    await userEvent.click(panel.getByRole('button', { name: savedLooksTexts.create }));
+    await expect(await panel.findByText(savedLooksTexts.readyNotice({ name: REFERENCE_PAGE_NAME }))).toBeVisible();
+    const [call] = savedLooksStoryCalls();
+    await expect(call).toEqual([
+      'create',
+      'hero',
+      {
+        name: REFERENCE_PAGE_NAME,
+        description: 'Mechanic, about 40.',
+        kind: 'character',
+        cover: REFERENCE_PAGE_SAVED,
+        extra: [REFERENCE_PAGE_PROFILE, REFERENCE_PAGE_BACK]
+      }
+    ]);
+    await userEvent.click(panel.getByRole('button', { name: commonTexts.close }));
+    await expect(await canvas.findByText(`${savedLooksTexts.status.ready}: ${REFERENCE_PAGE_NAME}`)).toBeVisible();
+  }
+};
+
+export const SavedLookRemove: Story = {
+  name: 'Сохранённый образ — удаление из аккаунта только после подтверждения',
+  tags: ['ci'],
+  parameters: {
+    songframe: referencePageOptions('sources', {
+      multipleImages: true,
+      savedLooks: { looks: [{ id: '7', name: 'Механик' }], bindings: { hero: { look: '7' } } }
+    })
+  },
+  play: async ({ canvasElement }) => {
+    const screen = within(canvasElement.ownerDocument.body);
+    const dialog = await openSavedLook(canvasElement);
+    await userEvent.click(within(dialog).getByRole('button', { name: savedLooksTexts.remove }));
+    const confirmation = await screen.findByRole('dialog', { name: `${savedLooksTexts.remove}?` });
+    await expect(confirmation).toHaveTextContent(savedLooksTexts.removeDescription({ name: 'Механик' }));
+    await expect(savedLooksStoryCalls()).toEqual([]);
+    await userEvent.click(within(confirmation).getByRole('button', { name: savedLooksTexts.remove }));
+    await expect(await within(dialog).findByRole('tab', { name: savedLooksTexts.tabCreate })).toBeVisible();
+    await expect(savedLooksStoryCalls()).toEqual([['remove', '7']]);
+  }
+};
+
+export const SavedLookStaleAndBind: Story = {
+  name: 'Сохранённый образ — устаревший образ, отвязка и привязка готового из аккаунта',
+  tags: ['ci'],
+  parameters: {
+    songframe: referencePageOptions('sources', {
+      multipleImages: true,
+      savedLooks: {
+        looks: [
+          { id: '7', name: 'Механик' },
+          { id: '8', name: 'Механик с сайта' }
+        ],
+        bindings: { hero: { look: '7', stale: true } }
+      }
+    })
+  },
+  play: async ({ canvasElement }) => {
+    const dialog = await openSavedLook(canvasElement);
+    const panel = within(dialog);
+    await expect(panel.getByText(savedLooksTexts.staleNotice({ name: 'Механик' }))).toBeVisible();
+    await userEvent.click(panel.getByRole('button', { name: savedLooksTexts.unbind }));
+    await userEvent.click(await panel.findByRole('tab', { name: savedLooksTexts.tabChoose }));
+    await userEvent.click(panel.getByRole('radio', { name: 'Механик с сайта' }));
+    await userEvent.click(panel.getByRole('button', { name: savedLooksTexts.bind }));
+    await expect(await panel.findByText(savedLooksTexts.readyNotice({ name: 'Механик с сайта' }))).toBeVisible();
+    await expect(savedLooksStoryCalls()).toEqual([
+      ['unbind', 'hero'],
+      ['bind', 'hero', '8']
+    ]);
+  }
+};
+
+export const SavedLookListError: Story = {
+  name: 'Сохранённый образ — статусы неизвестны без входа, страница работает',
+  parameters: { songframe: referencePageOptions('sources', { savedLooks: { listError: 'Войдите в сервис на странице «Среда».' } }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(await canvas.findByText(savedLooksTexts.bannerTitle)).toBeVisible();
+    await expect(canvas.getByRole('link', { name: /Сред/ })).toBeVisible();
+    await userEvent.click(canvas.getByRole('button', { name: new RegExp(REFERENCE_PAGE_NAME) }));
+    await expect(canvas.queryByRole('button', { name: savedLooksTexts.openDialog })).not.toBeInTheDocument();
+  }
+};
+
+export const SavedLookUnsupported: Story = {
+  name: 'Сохранённый образ — провайдер видео без образов: ни плашки, ни кнопки',
+  parameters: { songframe: referencePageOptions('sources', { savedLooks: { supported: false } }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(await canvas.findByRole('button', { name: new RegExp(REFERENCE_PAGE_NAME) }));
+    await expect(canvas.queryByText(savedLooksTexts.bannerTitle)).not.toBeInTheDocument();
+    await expect(canvas.queryByRole('button', { name: savedLooksTexts.openDialog })).not.toBeInTheDocument();
+  }
+};
+
+export const SavedLookNeedsSave: Story = {
+  name: 'Сохранённый образ — новые снимки сначала сохраняются',
+  parameters: { songframe: referencePageOptions('sources', { savedLooks: {} }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(await canvas.findByRole('button', { name: new RegExp(REFERENCE_PAGE_NAME) }));
+    await userEvent.click(
+      await canvas.findByRole('button', { name: (name) => name.startsWith(sourcesTexts.pickReferenceImages({ name: REFERENCE_PAGE_NAME })) })
+    );
+    await waitFor(() => expect(canvas.getByRole('button', { name: savedLooksTexts.openDialog })).toBeDisabled());
+  }
+};
+
+export const SavedLookFromCast: Story = {
+  name: 'Сохранённый образ — статус в кастинге ведёт к референсу на «Исходниках»',
+  tags: ['ci'],
+  parameters: {
+    songframe: referencePageOptions('cast', { savedLooks: { looks: [{ id: '7', name: 'Механик' }], bindings: { hero: { look: '7' } } } })
+  },
+  render: () => <ReferencePagesJourney />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(await canvas.findByText(`${savedLooksTexts.status.ready}: Механик`)).toBeVisible();
+    await userEvent.click(await canvas.findByRole('button', { name: savedLooksTexts.openFromCast }));
+    await waitFor(() => expect(canvasElement.querySelector('[data-anchor="reference-hero"]')).toHaveAttribute(ANCHOR_HIGHLIGHT_ATTR));
+    await expect(await canvas.findByText(savedLooksTexts.bannerTitle)).toBeVisible();
   }
 };

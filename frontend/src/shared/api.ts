@@ -16,6 +16,7 @@ import type {
   ProductionCompositionImage
 } from './production-workflow';
 import type { MediaCapabilities, MediaKind, ProviderAuth } from './media-providers';
+import type { SavedLookInput, SavedLooksView } from './saved-looks';
 import type {
   ScenarioCheckFixInput,
   ScenarioCheckFixPreview,
@@ -238,6 +239,23 @@ export interface Api {
     view(project: string): Promise<SourcesView>;
     validate(project: string, input: SourcesInput): Promise<string[]>;
     save(project: string, input: SourcesInput): Promise<SourceManifest>;
+  };
+  /**
+   * Сохранённые образы у референсов «Исходников» в аккаунте провайдера видео проекта. Действия бесплатные;
+   * привязки хранятся в каталоге состояния приложения, проект не меняется. Каждое действие возвращает новое
+   * состояние целиком.
+   */
+  savedLooks: {
+    /** Статусы образов референсов одним бесплатным списком библиотеки; сбой списка — в error, без отказа. */
+    view(project: string): Promise<SavedLooksView>;
+    /** Создаёт образ из сохранённых снимков референса и привязывает его. */
+    create(project: string, reference: string, input: SavedLookInput): Promise<SavedLooksView>;
+    /** Привязывает к референсу готовый образ аккаунта. */
+    bind(project: string, reference: string, look: string): Promise<SavedLooksView>;
+    /** Убирает привязку; образ остаётся в аккаунте. */
+    unbind(project: string, reference: string): Promise<SavedLooksView>;
+    /** Удаляет образ из аккаунта необратимо: вызывать только после отдельного подтверждения пользователя. */
+    remove(project: string, look: string): Promise<SavedLooksView>;
   };
   timing: {
     vocalsView(project: string): Promise<VocalPreparationView>;

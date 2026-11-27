@@ -132,6 +132,7 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
     app: { ...defaults.app, ...overrides.app },
     projects: { ...defaults.projects, ...overrides.projects },
     sources: { ...defaults.sources, ...overrides.sources },
+    savedLooks: { ...defaults.savedLooks, ...overrides.savedLooks },
     timing: { ...defaults.timing, ...overrides.timing },
     cast: { ...defaults.cast, ...overrides.cast },
     schemes: { ...defaults.schemes, ...overrides.schemes },
@@ -296,6 +297,13 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
       view: guardedAsync(merged.sources.view),
       validate: guardedAsync(merged.sources.validate),
       save: guardedAsync(merged.sources.save)
+    },
+    savedLooks: {
+      view: guardedAsync(merged.savedLooks.view),
+      create: guardedAsync(merged.savedLooks.create),
+      bind: guardedAsync(merged.savedLooks.bind),
+      unbind: guardedAsync(merged.savedLooks.unbind),
+      remove: guardedAsync(merged.savedLooks.remove)
     },
     timing: {
       vocalsView: guardedAsync(merged.timing.vocalsView),

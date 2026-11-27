@@ -1,7 +1,8 @@
 import { castTexts } from '@shared/texts/cast';
 import { sourcesTexts } from '@shared/texts/sources';
 import type { ReactElement } from 'react';
-import { Accordion, AccordionDetails, AccordionSummary, Avatar, Box, Chip, Stack, TextField, Typography } from '@mui/material';
+import { Accordion, AccordionDetails, AccordionSummary, Avatar, Box, Button, Chip, Stack, TextField, Typography } from '@mui/material';
+import FaceRetouchingNaturalOutlinedIcon from '@mui/icons-material/FaceRetouchingNaturalOutlined';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { DestructiveButton } from '../../../components/DestructiveButton';
@@ -15,6 +16,9 @@ import { CastEntityIdentityFields } from './CastEntityIdentityFields';
 import { CastEntityImages } from './CastEntityImages';
 import { LinkedText } from '../../../components/LinkedText';
 import { NumberField } from '../../../components/NumberField';
+import { SavedLookChip } from '../../../components/SavedLookChip';
+import type { SavedLookState } from '@shared/saved-looks';
+import { savedLooksTexts } from '@shared/texts/saved-looks';
 
 interface CastEntityCardProps {
   entity: CastEntity;
@@ -33,6 +37,10 @@ interface CastEntityCardProps {
   generationDisabledReason?: string | null;
   /** Общее описание есть только при совпадении кода сущности с референсом исходников. */
   hasSharedDescription?: boolean;
+  /** Статус сохранённого образа референса с тем же кодом; нет — провайдер видео образов не хранит. */
+  savedLook?: SavedLookState;
+  /** Переход к референсу на «Исходниках», где образ создаётся и привязывается (кнопка в раскрытой карточке). */
+  onOpenSavedLook?: () => void;
 }
 
 /** Карточка объединяет сведения о сущности, её изображения и редактор начального состояния. */
@@ -51,7 +59,9 @@ export function CastEntityCard({
   onRemove,
   onGenerate,
   generationDisabledReason,
-  hasSharedDescription = false
+  hasSharedDescription = false,
+  savedLook,
+  onOpenSavedLook
 }: CastEntityCardProps): ReactElement {
   const thumb = entity.images[0] ? window.api.shell.fileUrl(imagePaths[entity.images[0]] ?? '') : undefined;
   const stateCount = Object.keys(entity.initial_state).length;
@@ -110,13 +120,17 @@ export function CastEntityCard({
           <Typography variant="caption" color="text.secondary" noWrap title={entity.role || undefined} sx={{ gridArea: 'role', minWidth: 0 }}>
             {entity.role}
           </Typography>
-          <Chip
-            size="small"
-            label={stateCount ? castTexts.stateCount({ count: stateCount }) : castTexts.noState}
-            color={stateCount ? 'default' : 'warning'}
-            variant="outlined"
-            sx={{ gridArea: 'state', minWidth: 0 }}
-          />
+          <Stack direction="row" spacing={0.5} sx={{ gridArea: 'state', minWidth: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }} useFlexGap>
+            {/* В заголовке-кнопке статус только показывается: переход — кнопкой внутри карточки, без вложенных элементов управления. */}
+            {savedLook ? <SavedLookChip state={savedLook} /> : null}
+            <Chip
+              size="small"
+              label={stateCount ? castTexts.stateCount({ count: stateCount }) : castTexts.noState}
+              color={stateCount ? 'default' : 'warning'}
+              variant="outlined"
+              sx={{ minWidth: 0 }}
+            />
+          </Stack>
         </Box>
       </AccordionSummary>
       <AccordionDetails>
@@ -193,10 +207,15 @@ export function CastEntityCard({
           />
           <CastEntityImages images={entity.images} imagePaths={imagePaths} imageOptions={imageOptions} onChange={(images) => onUpdate({ images })} />
           <AiProblemAlert kinds={['image']} />
-          <Box>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <ImageGenerateButton onClick={onGenerate} disabledReason={generationDisabledReason}>
               {sourcesTexts.generateReferenceImage}
             </ImageGenerateButton>
+            {savedLook && onOpenSavedLook ? (
+              <Button variant="outlined" startIcon={<FaceRetouchingNaturalOutlinedIcon />} onClick={onOpenSavedLook}>
+                {savedLooksTexts.openFromCast}
+              </Button>
+            ) : null}
           </Box>
           <Box>
             <Typography variant="subtitle2" gutterBottom>

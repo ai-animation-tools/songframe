@@ -183,6 +183,14 @@ export function unconfiguredStoryApi(): Api {
       validate: async () => unconfigured('sources.validate'),
       save: async () => unconfigured('sources.save')
     },
+    // Провайдер видео без сохранённых образов: страницы без своей модели образов показывают обычный вид.
+    savedLooks: {
+      view: async () => ({ supported: false, provider: '', rules: null, report: null, error: '' }),
+      create: async () => unconfigured('savedLooks.create'),
+      bind: async () => unconfigured('savedLooks.bind'),
+      unbind: async () => unconfigured('savedLooks.unbind'),
+      remove: async () => unconfigured('savedLooks.remove')
+    },
     timing: {
       vocalsView: async () => unconfigured('timing.vocalsView'),
       downloadVocalModel: async () => unconfigured('timing.downloadVocalModel'),

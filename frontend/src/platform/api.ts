@@ -41,6 +41,7 @@ import type {
   TimingFile
 } from '@shared/types';
 import type { ScenarioStatus } from '@shared/scenario-status';
+import type { SavedLooksView } from '@shared/saved-looks';
 import type * as status from '../../bindings/songframe/internal/status/models';
 import type * as jobs from '../../bindings/songframe/internal/jobs/models';
 import type * as checks from '../../bindings/songframe/internal/checks/models';
@@ -163,6 +164,7 @@ export interface Bindings {
   projects: () => Promise<typeof import('../../bindings/songframe/internal/app/projectservice')>;
   timing: () => Promise<typeof import('../../bindings/songframe/internal/app/timingservice')>;
   sources: () => Promise<typeof import('../../bindings/songframe/internal/app/sourcesservice')>;
+  savedLooks: () => Promise<typeof import('../../bindings/songframe/internal/app/savedlooksservice')>;
   cast: () => Promise<typeof import('../../bindings/songframe/internal/app/castservice')>;
   schemes: () => Promise<typeof import('../../bindings/songframe/internal/app/schemesservice')>;
   scenario: () => Promise<typeof import('../../bindings/songframe/internal/app/scenarioservice')>;
@@ -200,6 +202,7 @@ export const nativeBindings: Bindings = {
   projects: () => import('../../bindings/songframe/internal/app/projectservice'),
   timing: () => import('../../bindings/songframe/internal/app/timingservice'),
   sources: () => import('../../bindings/songframe/internal/app/sourcesservice'),
+  savedLooks: () => import('../../bindings/songframe/internal/app/savedlooksservice'),
   cast: () => import('../../bindings/songframe/internal/app/castservice'),
   schemes: () => import('../../bindings/songframe/internal/app/schemesservice'),
   scenario: () => import('../../bindings/songframe/internal/app/scenarioservice'),
@@ -591,6 +594,18 @@ export function createApi(b: Bindings): Api {
   api.sources.validate = (project, input) => call('sources.validate', async () => (await b.sources()).Validate(project, input));
   // Сохранение копирует трек и изображения: ожидание не ограничено, чтобы не показать ложную ошибку.
   api.sources.save = (project, input) => call('sources.save', async () => (await (await b.sources()).Save(project, input)) as SourceManifest, false);
+
+  // Список библиотеки и действия образов идут к сервису провайдера: срок ожидания задаёт Go (до 90 с на
+  // загрузку снимков), поэтому общий предел вызова здесь не ставится.
+  api.savedLooks.view = (project) => call('savedLooks.view', async () => (await (await b.savedLooks()).View(project)) as SavedLooksView, false);
+  api.savedLooks.create = (project, reference, input) =>
+    call('savedLooks.create', async () => (await (await b.savedLooks()).Create(project, reference, input)) as SavedLooksView, false);
+  api.savedLooks.bind = (project, reference, look) =>
+    call('savedLooks.bind', async () => (await (await b.savedLooks()).Bind(project, reference, look)) as SavedLooksView, false);
+  api.savedLooks.unbind = (project, reference) =>
+    call('savedLooks.unbind', async () => (await (await b.savedLooks()).Unbind(project, reference)) as SavedLooksView, false);
+  api.savedLooks.remove = (project, look) =>
+    call('savedLooks.remove', async () => (await (await b.savedLooks()).Remove(project, look)) as SavedLooksView, false);
 
   api.timing.view = (project) =>
     call('timing.view', async () => {

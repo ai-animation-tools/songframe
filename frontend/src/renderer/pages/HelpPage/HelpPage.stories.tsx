@@ -1,9 +1,10 @@
 /** Настоящая справка работает без проекта и API; поиск сохраняет нейтральные статьи и имена из реестра. */
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, userEvent, within } from 'storybook/test';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { AGENT_PROVIDER_IDS, AGENT_PROVIDERS } from '@shared/agent-providers';
 import type { StoryOptions } from '../../testing/storybook';
 import { HelpPage } from './HelpPage';
+import { ANCHOR_HIGHLIGHT_ATTR } from '../../hooks/useAnchorTarget';
 
 const meta = {
   title: 'Страницы/Справка',
@@ -55,5 +56,16 @@ export const SearchByAgentName: Story = {
         await expect(article).toHaveTextContent(`Также называется: ${AGENT_PROVIDERS[id].title}`);
       }
     }
+  }
+};
+
+export const ArticleLink: Story = {
+  name: 'Переход к статье по ссылке с другой страницы',
+  tags: ['ci'],
+  parameters: { songframe: { route: '/help?anchor=saved-looks', shell: 'page' } satisfies StoryOptions },
+  play: async ({ canvasElement }) => {
+    const article = canvasElement.querySelector('#saved-looks');
+    await expect(article).toHaveTextContent('Сохранённый образ');
+    await waitFor(() => expect(article).toHaveAttribute(ANCHOR_HIGHLIGHT_ATTR));
   }
 };

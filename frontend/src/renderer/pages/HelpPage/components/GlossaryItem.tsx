@@ -15,7 +15,8 @@ export function GlossaryItem({ entry, words }: { entry: GlossaryEntry; words: st
   const highlight = (text: string): ReactElement => <HighlightedText text={text} words={words} />;
   const aliases = entry.aliases.filter((alias) => words.some((word) => !visible.includes(word) && searchable(alias).includes(word)));
   return (
-    <Box component="article" id={entry.id} sx={{ py: 2, scrollMarginTop: 160 }}>
+    // data-anchor: ссылка на статью с другой страницы (HelpArticleLink) прокручивает к ней и подсвечивает.
+    <Box component="article" id={entry.id} data-anchor={entry.id} sx={{ py: 2, scrollMarginTop: 160 }}>
       <Typography variant="subtitle1" component="h3" fontWeight={600} gutterBottom>
         <HighlightedText text={entry.term} words={words} />
       </Typography>

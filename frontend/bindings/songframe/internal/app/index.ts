@@ -26,6 +26,7 @@ import * as ProjectHistoryService from "./projecthistoryservice.js";
 import * as ProjectService from "./projectservice.js";
 import * as PromptLogService from "./promptlogservice.js";
 import * as ReferenceImagesService from "./referenceimagesservice.js";
+import * as SavedLooksService from "./savedlooksservice.js";
 import * as ScenarioService from "./scenarioservice.js";
 import * as ScenarioWorkflowService from "./scenarioworkflowservice.js";
 import * as SchemesService from "./schemesservice.js";
@@ -61,6 +62,7 @@ export {
     ProjectService,
     PromptLogService,
     ReferenceImagesService,
+    SavedLooksService,
     ScenarioService,
     ScenarioWorkflowService,
     SchemesService,
@@ -88,5 +90,7 @@ export type {
     PickOptions,
     PreviewInput,
     ProjectHistoryEntry,
-    ProviderBalance
+    ProviderBalance,
+    SavedLookInput,
+    SavedLooksView
 } from "./models.js";

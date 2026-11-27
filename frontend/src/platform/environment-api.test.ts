@@ -21,6 +21,7 @@ function bindings(services: { environment?: Record<string, unknown>; media?: Rec
     projects: missing,
     timing: missing,
     sources: missing,
+    savedLooks: missing,
     cast: missing,
     schemes: missing,
     scenario: missing,

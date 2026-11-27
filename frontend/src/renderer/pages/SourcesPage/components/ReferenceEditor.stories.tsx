@@ -7,9 +7,10 @@ import { sourcesTexts } from '@shared/texts/sources';
 import { componentsTexts } from '@shared/texts/components';
 import { commonTexts } from '@shared/texts/common';
 import type { ReferenceForm } from '../types';
-import { ReferenceEditor } from './ReferenceEditor';
+import { ReferenceEditor, type ReferenceSavedLook } from './ReferenceEditor';
+import { savedLooksTexts } from '@shared/texts/saved-looks';
 
-function Preview({ checking = false }: { checking?: boolean }) {
+function Preview({ checking = false, savedLook }: { checking?: boolean; savedLook?: ReferenceSavedLook }) {
   const [reference, setReference] = useState<ReferenceForm>({
     key: 1,
     id: 'hero',
@@ -41,6 +42,7 @@ function Preview({ checking = false }: { checking?: boolean }) {
         setReference((current) => ({ ...current, files: current.files.map((file) => (file.key === key ? { ...file, ...patch } : file)) }))
       }
       onRemoveFile={(key) => setReference((current) => ({ ...current, files: current.files.filter((file) => file.key !== key) }))}
+      savedLook={savedLook}
     />
   );
 }
@@ -84,5 +86,18 @@ export const CheckingUsage: Story = {
     await expect(canvas.getByRole('status')).toHaveTextContent(sourcesTexts.referenceRemovalChecking);
     await expect(canvas.getByRole('button', { name: sourcesTexts.removeReferenceImage({ view: 'Спереди' }) })).toBeDisabled();
     await expect(canvas.getByRole('button', { name: sourcesTexts.removeReference({ name: 'Герой' }) })).toBeDisabled();
+  }
+};
+
+export const SavedLookStatus: Story = {
+  name: 'Статус сохранённого образа в шапке и кнопка окна — сначала сохранить новые снимки',
+  args: {
+    savedLook: { state: { reference: 'hero', status: 'stale', look: '7', name: 'Герой' }, disabledReason: savedLooksTexts.saveFirst, onOpen: () => undefined }
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText(`${savedLooksTexts.status.stale}: Герой`)).toBeVisible();
+    await userEvent.click(canvas.getByRole('button', { name: /Герой/ }));
+    await expect(canvas.getByRole('button', { name: savedLooksTexts.openDialog })).toBeDisabled();
   }
 };

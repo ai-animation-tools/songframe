@@ -2,14 +2,27 @@ import { navigationTexts } from '@shared/texts/navigation';
 import { commonTexts } from '@shared/texts/common';
 import { sourcesTexts } from '@shared/texts/sources';
 /** Исходники проекта: трек, текст песни, идея, обложка и референсы. */
-import { useEffect, useRef, type ReactElement } from 'react';
+import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { usePageLoading } from '../../components/PageLoader';
 import { Alert, Box, Button, Chip, Stack, Typography } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { ActionButton } from '../../components/ActionButton';
 import { PageActionBar } from '../../components/PageActionBar';
-import { CoverSection, IdeaSection, LyricsSection, ReferenceKindDialog, ReferencesSection, TrackSection } from './components';
+import {
+  CoverSection,
+  IdeaSection,
+  LyricsSection,
+  ReferenceKindDialog,
+  ReferencesSection,
+  SavedLookDialog,
+  SavedLooksBanner,
+  TrackSection
+} from './components';
+import { useSavedLooks } from '../../hooks/useSavedLooks';
+import { savedLookState } from '@shared/saved-looks';
+import { savedLooksTexts } from '@shared/texts/saved-looks';
+import { savedLookReference } from './helpers';
 import { useSourcesForm } from './useSourcesForm';
 import { ImageGenerateDialog } from '../../components/ImageGenerateDialog';
 import { CoverGenerateDialog } from './components/CoverGenerateDialog';
@@ -19,6 +32,9 @@ import { ReferenceAdvicePanel } from '../../components/ReferenceAdvicePanel';
 export function SourcesPage(): ReactElement {
   const form = useSourcesForm();
   const problemsRef = useRef<HTMLDivElement>(null);
+  // Статусы образов зависят от сохранённых снимков: после сохранения исходников они пересчитываются сами.
+  const looks = useSavedLooks(form.project ?? null, form.view?.manifest?.updated_at);
+  const [lookReference, setLookReference] = useState<string | null>(null);
   useEffect(() => {
     // Файл, брошенный мимо области загрузки, не должен открыться вместо приложения.
     const preventNavigation = (event: DragEvent): void => {
@@ -147,9 +163,39 @@ export function SourcesPage(): ReactElement {
             <IdeaSection {...form.ideaProps} />
           </Box>
         </Stack>
-        <ReferencesSection {...form.referencesProps} />
+        <ReferencesSection
+          {...form.referencesProps}
+          savedLooksBanner={<SavedLooksBanner view={looks.view} loading={looks.loading} loadError={looks.loadError} />}
+          savedLookFor={(reference) => {
+            const state = savedLookState(looks.view, reference.id);
+            if (!state) return undefined;
+            const saved = savedLookReference(reference, form.view?.manifest);
+            return { state, disabledReason: saved ? null : savedLooksTexts.saveFirst, onOpen: () => setLookReference(reference.id) };
+          }}
+        />
       </Box>
       <ReferenceKindDialog {...form.kindDialogProps} />
+      {(() => {
+        // Окно образа работает с сохранённым референсом описи; его статус и образы аккаунта — из общего состояния.
+        const reference = lookReference ? form.view?.manifest?.references.find((item) => item.id === lookReference) : undefined;
+        const state = reference ? savedLookState(looks.view, reference.id) : null;
+        if (!reference || !state || !looks.view?.rules) return null;
+        return (
+          <SavedLookDialog
+            key={reference.id}
+            reference={reference}
+            rules={looks.view.rules}
+            state={state}
+            looks={looks.view.report?.looks ?? []}
+            fileUrl={(path) => form.referencesProps.fileUrl(path)}
+            onClose={() => setLookReference(null)}
+            onCreate={(input) => looks.run((project) => window.api.savedLooks.create(project, reference.id, input))}
+            onBind={(look) => looks.run((project) => window.api.savedLooks.bind(project, reference.id, look))}
+            onUnbind={() => looks.run((project) => window.api.savedLooks.unbind(project, reference.id))}
+            onRemove={(look) => looks.run((project) => window.api.savedLooks.remove(project, look))}
+          />
+        );
+      })()}
       {form.referenceGenerationProps ? (
         <ImageGenerateDialog key={`${form.referenceGenerationProps.project}:reference`} mode="reference" {...form.referenceGenerationProps} />
       ) : null}

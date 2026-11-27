@@ -1,11 +1,11 @@
 import { sourcesTexts } from '@shared/texts/sources';
 /** Список референсов объединяет редакторы сущностей и настройку типов. */
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { Box, Button, Paper, Stack, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import type { SourceKind } from '@shared/types';
 import type { FileForm, ReferenceForm } from '../types';
-import { ReferenceEditor } from './ReferenceEditor';
+import { ReferenceEditor, type ReferenceSavedLook } from './ReferenceEditor';
 import { ReferenceKinds } from './ReferenceKinds';
 
 interface Props {
@@ -28,6 +28,9 @@ interface Props {
   onRemoveFile: (refKey: number, fileKey: number) => void;
   onRemoveKind: (id: string) => void;
   onAddKind: () => void;
+  /** Плашка сохранённых образов над списком; нет — провайдер видео их не хранит. */
+  savedLooksBanner?: ReactNode;
+  savedLookFor?: (reference: ReferenceForm) => ReferenceSavedLook | undefined;
 }
 
 export function ReferencesSection({
@@ -48,7 +51,9 @@ export function ReferencesSection({
   onUpdateFile,
   onRemoveFile,
   onRemoveKind,
-  onAddKind
+  onAddKind,
+  savedLooksBanner,
+  savedLookFor
 }: Props): ReactElement {
   // Повтор кода виден только по всему списку, поэтому считается здесь и передаётся каждой карточке.
   const idCounts = new Map<string, number>();
@@ -65,6 +70,7 @@ export function ReferencesSection({
           </Typography>
         </Box>
       </Box>
+      {savedLooksBanner ? <Box sx={{ mb: 1.5 }}>{savedLooksBanner}</Box> : null}
       <ReferenceKinds kinds={kinds} onRemove={onRemoveKind} onAdd={onAddKind} />
       <Stack spacing={1}>
         {refs.length === 0 ? (
@@ -91,6 +97,7 @@ export function ReferencesSection({
             onDropFiles={(paths) => onDropFiles(reference.key, paths)}
             onUpdateFile={(fileKey, patch) => onUpdateFile(reference.key, fileKey, patch)}
             onRemoveFile={(fileKey) => onRemoveFile(reference.key, fileKey)}
+            savedLook={savedLookFor?.(reference)}
           />
         ))}
       </Stack>

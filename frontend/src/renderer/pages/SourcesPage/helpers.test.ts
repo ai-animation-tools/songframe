@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { sourcesTexts } from '@shared/texts/sources';
 import type { SourceKind } from '@shared/types';
-import { kindChangeNotice, kindForId } from './helpers';
+import { kindChangeNotice, kindForId, savedLookReference } from './helpers';
 import type { ReferenceForm } from './types';
 
 const kinds: SourceKind[] = [
@@ -39,5 +39,48 @@ describe('kindChangeNotice', () => {
     expect(kindChangeNotice(changed, kinds, ['M03'])).toBe(sourcesTexts.kindKeepsFiles({ dir: 'heroes', shots: ['M03'] }));
     expect(kindChangeNotice(reference({ savedKind: 'character', files: [saved] }), kinds, undefined)).toBeNull();
     expect(kindChangeNotice(reference({ kind: 'prop', files: [saved] }), kinds, undefined)).toBeNull();
+  });
+});
+
+describe('референс для окна образа', () => {
+  const manifest = {
+    schema_version: 1 as const,
+    track: null,
+    lyrics: null,
+    idea: null,
+    cover: null,
+    updated_at: '',
+    references: [
+      {
+        id: 'hero',
+        kind: 'character' as const,
+        name: 'Герой',
+        short_name: '',
+        description: '',
+        prompt: null,
+        files: [
+          { path: 'heroes/a.png', sha256: 's1', bytes: 1, view: 'front' as const, note: '' },
+          { path: 'heroes/b.png', sha256: 's2', bytes: 1, view: 'side' as const, note: '' }
+        ]
+      }
+    ]
+  };
+  const form = (files: { existingPath?: string; sourcePath?: string }[], id = 'hero') => ({
+    key: 1,
+    id,
+    kind: 'character' as const,
+    name: 'Герой',
+    short_name: '',
+    description: '',
+    prompt: '',
+    files: files.map((file, key) => ({ key, view: 'front' as const, note: '', prompt: '', ...file }))
+  });
+
+  it('доступен только сохранённый референс с теми же снимками', () => {
+    expect(savedLookReference(form([{ existingPath: 'heroes/b.png' }, { existingPath: 'heroes/a.png' }]), manifest)?.id).toBe('hero');
+    expect(savedLookReference(form([{ existingPath: 'heroes/a.png' }]), manifest)).toBeNull();
+    expect(savedLookReference(form([{ existingPath: 'heroes/a.png' }, { existingPath: 'heroes/b.png' }, { sourcePath: '/tmp/c.png' }]), manifest)).toBeNull();
+    expect(savedLookReference(form([{ existingPath: 'heroes/a.png' }, { existingPath: 'heroes/b.png' }], 'new_hero'), manifest)).toBeNull();
+    expect(savedLookReference(form([]), null)).toBeNull();
   });
 });

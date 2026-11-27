@@ -7,7 +7,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import { usePageLoading } from '../../components/PageLoader';
 import AddIcon from '@mui/icons-material/Add';
 import { type ReactElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Alert, Box, Button, Stack, Typography } from '@mui/material';
 import { joinPath } from '../../format';
 import { referenceImagePrompt } from '@shared/reference-image-generation';
@@ -25,10 +25,15 @@ import { ReferenceAdvicePanel } from '../../components/ReferenceAdvicePanel';
 import { ActionButton } from '../../components/ActionButton';
 import { ENTITY_PARAM } from '../../components/castRoutes';
 import { coveredArea, revealAnchor } from '../../hooks/useAnchorTarget';
+import { useSavedLooks } from '../../hooks/useSavedLooks';
+import { savedLookState } from '@shared/saved-looks';
+import { linkLocation, referenceAnchor } from '../../components/linkTargets';
 
 export function CastPage(): ReactElement {
   const { state, refresh, notify, describeError } = useApp();
   const project = state?.current ?? '';
+  const navigate = useNavigate();
+  const location = useLocation();
   const projectScope = useRef(new RequestScope());
   projectScope.current.update(project);
   const projectCurrent = projectScope.current.capture(project);
@@ -173,6 +178,8 @@ export function CastPage(): ReactElement {
   };
 
   // Пока данные страницы не готовы, общий прелоадер оболочки показывает индикатор.
+  // Статусы образов только показываются; создание и привязка — у референса на «Исходниках».
+  const looks = useSavedLooks(project);
   usePageLoading(!view && !loadError);
   if (loadError)
     return (
@@ -241,6 +248,10 @@ export function CastPage(): ReactElement {
               imagePaths={view.imagePaths}
               imageOptions={imageOptions}
               hasSharedDescription={view.manifest?.references.some((reference) => reference.id === entity.id) ?? false}
+              savedLook={
+                view.manifest?.references.some((reference) => reference.id === entity.id) ? (savedLookState(looks.view, entity.id) ?? undefined) : undefined
+              }
+              onOpenSavedLook={() => navigate(linkLocation({ path: '/project/sources', anchor: referenceAnchor(entity.id) }, location))}
               expanded={expanded === entity.id}
               onExpandedChange={(open) => setExpanded(open ? entity.id : null)}
               onUpdate={(patch) => update(entity.id, patch)}

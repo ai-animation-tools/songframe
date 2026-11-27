@@ -19,6 +19,7 @@ function bindings(cover: Record<string, unknown>, referenceImages: Record<string
     projects: missing,
     timing: missing,
     sources: missing,
+    savedLooks: missing,
     cast: missing,
     schemes: missing,
     scenario: missing,

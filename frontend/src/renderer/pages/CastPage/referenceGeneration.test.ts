@@ -33,7 +33,11 @@ vi.mock('react', async (original) => ({
   useCallback: (value: unknown) => value,
   useMemo: (calculate: () => unknown) => calculate()
 }));
-vi.mock('react-router-dom', () => ({ useSearchParams: () => [new URLSearchParams(), vi.fn()] }));
+vi.mock('react-router-dom', () => ({
+  useSearchParams: () => [new URLSearchParams(), vi.fn()],
+  useNavigate: () => vi.fn(),
+  useLocation: () => ({ pathname: '/project/cast', search: '', hash: '' })
+}));
 vi.mock('../../components/PageLoader', () => ({ usePageLoading: vi.fn() }));
 vi.mock('../../state', () => ({
   useApp: () => ({ state: { current: fixture.project }, refresh: fixture.refresh, notify: fixture.notify, describeError: fixture.describeError })
@@ -77,7 +81,14 @@ beforeEach(() => {
   api.view.mockResolvedValue(view);
   api.attach.mockResolvedValue(undefined);
   api.close.mockResolvedValue(undefined);
-  vi.stubGlobal('window', { api: { cast: { view: api.view }, referenceImages: { attach: api.attach, close: api.close } } });
+  vi.stubGlobal('window', {
+    api: {
+      cast: { view: api.view },
+      referenceImages: { attach: api.attach, close: api.close },
+      // Провайдер видео без сохранённых образов: статусов образов на карточках нет.
+      savedLooks: { view: async () => ({ supported: false, provider: '', rules: null, report: null, error: '' }) }
+    }
+  });
 });
 
 describe('генерация для сохранённой сущности кастинга', () => {

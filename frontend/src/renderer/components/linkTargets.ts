@@ -28,8 +28,15 @@ export const ANCHORS = {
   checksReview: 'checks-review',
   projectVideoGeneration: 'project-video-generation',
   projectImageGeneration: 'project-image-generation',
-  projectAnimaticName: 'project-animatic-name'
+  projectAnimaticName: 'project-animatic-name',
+  /** Статья справки о сохранённых образах (id статьи в GLOSSARY). */
+  helpSavedLooks: 'saved-looks'
 } as const;
+
+/** Якорь карточки референса на «Исходниках» по его коду: туда ведут статусы сохранённого образа из кастинга. */
+export function referenceAnchor(id: string): string {
+  return `reference-${id}`;
+}
 
 const PRODUCTION = '/project/production';
 const CHECKS = '/project/checks';

@@ -19,6 +19,7 @@ function bindings(
     on?: (name: string, listener: (event: { data: unknown }) => void) => () => void;
     projects?: Record<string, unknown>;
     sources?: Record<string, unknown>;
+    savedLooks?: Record<string, unknown>;
     animatic?: Record<string, unknown>;
     checks?: Record<string, unknown>;
   } = {}
@@ -36,6 +37,7 @@ function bindings(
     projects: overrides.projects ? service(overrides.projects) : missing,
     timing: missing,
     sources: overrides.sources ? service(overrides.sources) : missing,
+    savedLooks: overrides.savedLooks ? service(overrides.savedLooks) : missing,
     cast: missing,
     schemes: missing,
     scenario: missing,
@@ -160,6 +162,33 @@ describe('Граница window.api', () => {
     const view = { manifest, lyricsText: '', ideaText: '', coverPath: null, referenceFilePaths: {}, problems: [] };
     const api = createApi(bindings({ sources: { View: async () => view } }));
     await expect(api.sources.view('/клип')).resolves.toStrictEqual(view);
+  });
+
+  it('передаёт действия сохранённых образов в Go с аргументами по порядку', async () => {
+    const view = { supported: true, provider: 'test', rules: null, report: null, error: 'Нет входа.' };
+    const calls: unknown[][] = [];
+    const record =
+      (name: string) =>
+      async (...args: unknown[]) => {
+        calls.push([name, ...args]);
+        return view;
+      };
+    const api = createApi(
+      bindings({ savedLooks: { View: record('View'), Create: record('Create'), Bind: record('Bind'), Unbind: record('Unbind'), Remove: record('Remove') } })
+    );
+    const input = { name: 'Герой', description: '', kind: 'character', cover: 'heroes/a.png', extra: ['heroes/b.png'] };
+    await expect(api.savedLooks.view('/клип')).resolves.toStrictEqual(view);
+    await api.savedLooks.create('/клип', 'hero', input);
+    await api.savedLooks.bind('/клип', 'hero', '7');
+    await api.savedLooks.unbind('/клип', 'hero');
+    await api.savedLooks.remove('/клип', '7');
+    expect(calls).toEqual([
+      ['View', '/клип'],
+      ['Create', '/клип', 'hero', input],
+      ['Bind', '/клип', 'hero', '7'],
+      ['Unbind', '/клип', 'hero'],
+      ['Remove', '/клип', '7']
+    ]);
   });
 
   it('передаёт аниматик и пробы стыков в Go без изменения данных', async () => {

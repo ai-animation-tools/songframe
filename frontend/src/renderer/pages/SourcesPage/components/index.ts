@@ -5,3 +5,5 @@ export { LyricsSection } from './LyricsSection';
 export { IdeaSection } from './IdeaSection';
 export { ReferencesSection } from './ReferencesSection';
 export { ReferenceKindDialog } from './ReferenceKindDialog';
+export { SavedLooksBanner } from './SavedLooksBanner';
+export { SavedLookDialog } from './SavedLookDialog';

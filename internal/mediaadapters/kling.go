@@ -217,11 +217,11 @@ func (klingAdapter) Appearance(kind, command string, arguments json.RawMessage) 
 // SavedLookRules — ограничения элемента Kling.
 func (klingAdapter) SavedLookRules() mediaapi.SavedLookRules { return kling.LookRules() }
 
-// ListSavedLooks — элементы аккаунта Kling.
-func (k klingAdapter) ListSavedLooks(ctx context.Context, timeout time.Duration) ([]mediaapi.SavedLook, error) {
+// ListSavedLooks — аккаунт Kling и его элементы.
+func (k klingAdapter) ListSavedLooks(ctx context.Context, timeout time.Duration) (mediaapi.SavedLookLibrary, error) {
 	adapter, err := k.client()
 	if err != nil {
-		return nil, err
+		return mediaapi.SavedLookLibrary{}, err
 	}
 	return adapter.ListLooks(ctx, timeout)
 }

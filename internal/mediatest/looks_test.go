@@ -30,9 +30,9 @@ func TestSavedLooks(t *testing.T) {
 	if _, err := service.CreateSavedLook(ctx, draft, 0); err != nil {
 		t.Fatal(err)
 	}
-	looks, err := service.ListSavedLooks(ctx, 0)
-	if err != nil || len(looks) != 2 || looks[1] != (mediaapi.SavedLook{ID: "look-2", Name: "Плащ"}) {
-		t.Fatalf("список %+v %v", looks, err)
+	library, err := service.ListSavedLooks(ctx, 0)
+	if err != nil || library.Account != DefaultAccount || len(library.Looks) != 2 || library.Looks[1] != (mediaapi.SavedLook{ID: "look-2", Name: "Плащ"}) {
+		t.Fatalf("библиотека %+v %v", library, err)
 	}
 	details, err := service.GetSavedLook(ctx, "look-2", 0)
 	if err != nil || details.Kind != mediaapi.LookCostume || details.Images != 2 {
@@ -44,8 +44,8 @@ func TestSavedLooks(t *testing.T) {
 	if err := service.DeleteSavedLook(ctx, "look-1", 0); err == nil || !strings.Contains(err.Error(), "не найден") {
 		t.Fatalf("повторное удаление: %v", err)
 	}
-	if looks, _ := service.ListSavedLooks(ctx, 0); len(looks) != 1 || looks[0].ID != "look-2" {
-		t.Fatalf("после удаления %+v", looks)
+	if library, _ := service.ListSavedLooks(ctx, 0); len(library.Looks) != 1 || library.Looks[0].ID != "look-2" {
+		t.Fatalf("после удаления %+v", library)
 	}
 	created := service.Calls("create_look")
 	if len(created) != 2 || created[0].Value("cover") != "front.png" {

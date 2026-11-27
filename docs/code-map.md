@@ -221,6 +221,7 @@
 | [`internal/mediatest/scenario`](../internal/mediatest/scenario) | Проигрывает сценарии эталонов платной попытки (домены media-request и cost-check в testdata/golden) и сравнивает каждый шаг с эталоном. |
 | [`internal/mediafile`](../internal/mediafile) | Проверяет файлы медиа — формат и размеры изображения и расположение файла внутри своей папки — одинаково для слоя провайдеров (оригиналы платного провайдера, опоры провайдера-агента, референсы обложки) и производства. |
 | [`internal/mediacmd`](../internal/mediacmd) | Запускает FFmpeg/ffprobe для медиаинструментов: cut_speech, contact_sheet, build_review, build_animatic и рендер участка accept_shot. |
+| [`internal/savedlooks`](../internal/savedlooks) | Хранит привязки «референс → сохранённый образ провайдера» и считает их статусы. |
 
 | Страница | Назначение |
 | --- | --- |

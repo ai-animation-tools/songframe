@@ -143,9 +143,38 @@ func listLooks(ctx context.Context, call session) ([]mediaapi.SavedLook, error) 
 	return looks, nil
 }
 
-// ListLooks — все элементы аккаунта (бесплатно).
-func (a *Adapter) ListLooks(ctx context.Context, timeout time.Duration) ([]mediaapi.SavedLook, error) {
-	return listLooks(ctx, a.open(timeout, nil))
+// textLookAccount — who_am_i не сообщил ID пользователя.
+var textLookAccount = mcp.Title + " не сообщил аккаунт."
+
+// lookAccount — ID пользователя Kling (who_am_i user.userId) в открытом сеансе. who_am_i
+// спрашивается об одной команде: объявления моделей здесь не нужны, а полный каталог тяжелее.
+func lookAccount(ctx context.Context, call session) (string, error) {
+	arguments := toolrt.NewDict()
+	arguments.Set("tools", []any{"text_to_image"})
+	body, err := call.Call(ctx, "who_am_i", arguments, 0, nil)
+	if err != nil {
+		return "", lookError(strings.TrimSuffix(textLookAccount, "."), err)
+	}
+	user, _ := body.(*toolrt.Dict).Value("user").(*toolrt.Dict)
+	account := lookID(user.Value("userId"))
+	if account == "" {
+		return "", errors.New(textLookAccount)
+	}
+	return account, nil
+}
+
+// ListLooks — аккаунт и все его элементы одним сеансом (бесплатно).
+func (a *Adapter) ListLooks(ctx context.Context, timeout time.Duration) (mediaapi.SavedLookLibrary, error) {
+	call := a.open(timeout, nil)
+	account, err := lookAccount(ctx, call)
+	if err != nil {
+		return mediaapi.SavedLookLibrary{}, err
+	}
+	looks, err := listLooks(ctx, call)
+	if err != nil {
+		return mediaapi.SavedLookLibrary{}, err
+	}
+	return mediaapi.SavedLookLibrary{Account: account, Looks: looks}, nil
 }
 
 // GetLook — элемент целиком: описание, вид по первому известному тегу, число снимков, признак

@@ -18,6 +18,9 @@ import (
 // {id, name, description?, kind?, images?}. Поле looks_error — текст ошибки всех действий
 // библиотеки (сбой сервиса). Создание и удаление меняют saved_looks и пишутся в журнал.
 
+// DefaultAccount — аккаунт тестового сервиса, если конфигурация не задаёт account.
+const DefaultAccount = "test-account"
+
 // LookArgument — аргумент модели тестового сервиса, объявляющий сохранённые образы.
 const LookArgument = "looks"
 
@@ -71,13 +74,18 @@ func (s *Service) saveLibrary(entries []*toolrt.Dict) error {
 	return s.Configure(values)
 }
 
-// ListSavedLooks — образы saved_looks по порядку.
-func (s *Service) ListSavedLooks(context.Context, time.Duration) ([]mediaapi.SavedLook, error) {
+// ListSavedLooks — аккаунт (поле account конфигурации, по умолчанию test-account) и образы
+// saved_looks по порядку.
+func (s *Service) ListSavedLooks(context.Context, time.Duration) (mediaapi.SavedLookLibrary, error) {
 	if err := s.journal("list_looks"); err != nil {
-		return nil, err
+		return mediaapi.SavedLookLibrary{}, err
 	}
 	if err := s.libraryError(); err != nil {
-		return nil, err
+		return mediaapi.SavedLookLibrary{}, err
+	}
+	account, _ := s.Config().Value("account").(string)
+	if account == "" {
+		account = DefaultAccount
 	}
 	looks := []mediaapi.SavedLook{}
 	for _, entry := range s.library() {
@@ -85,7 +93,7 @@ func (s *Service) ListSavedLooks(context.Context, time.Duration) ([]mediaapi.Sav
 		name, _ := entry.Value("name").(string)
 		looks = append(looks, mediaapi.SavedLook{ID: id, Name: name})
 	}
-	return looks, nil
+	return mediaapi.SavedLookLibrary{Account: account, Looks: looks}, nil
 }
 
 // GetSavedLook — запись saved_looks по ID; нет такой — ошибка «не найден».

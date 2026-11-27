@@ -59,29 +59,41 @@ func lookAdapter(s *lookSession) *Adapter {
 
 const lookList = `{"elements": [{"id": "1001", "name": "Герой"}, {"id": 1002, "name": "Шляпа"}]}`
 
+const lookWho = `{"user": {"userId": 4242}, "mcpVersion": "1", "availableModels": {}}`
+
 func TestListLooks(t *testing.T) {
-	adapter := lookAdapter(&lookSession{answers: map[string]string{"element_list": lookList}})
-	looks, err := adapter.ListLooks(context.Background(), time.Second)
+	s := &lookSession{answers: map[string]string{"who_am_i": lookWho, "element_list": lookList}}
+	library, err := lookAdapter(s).ListLooks(context.Background(), time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []mediaapi.SavedLook{{ID: "1001", Name: "Герой"}, {ID: "1002", Name: "Шляпа"}}
-	if !reflect.DeepEqual(looks, want) {
-		t.Fatalf("список %+v", looks)
+	want := mediaapi.SavedLookLibrary{Account: "4242", Looks: []mediaapi.SavedLook{{ID: "1001", Name: "Герой"}, {ID: "1002", Name: "Шляпа"}}}
+	if !reflect.DeepEqual(library, want) {
+		t.Fatalf("библиотека %+v", library)
 	}
-	empty := lookAdapter(&lookSession{answers: map[string]string{"element_list": `{"elements": []}`}})
-	if looks, err := empty.ListLooks(context.Background(), time.Second); err != nil || looks == nil || len(looks) != 0 {
-		t.Fatalf("пустая библиотека %v %v", looks, err)
+	if got := strings.Join(*s.log, "; "); got != "call who_am_i; call element_list" {
+		t.Fatalf("вызовы: %s", got)
 	}
-	broken := lookAdapter(&lookSession{answers: map[string]string{"element_list": `{"items": []}`}})
+	if tools := s.calls["who_am_i"].Value("tools").([]any); len(tools) != 1 {
+		t.Fatalf("who_am_i спрашивает обо всех командах: %v", tools)
+	}
+	empty := lookAdapter(&lookSession{answers: map[string]string{"who_am_i": lookWho, "element_list": `{"elements": []}`}})
+	if library, err := empty.ListLooks(context.Background(), time.Second); err != nil || library.Looks == nil || len(library.Looks) != 0 {
+		t.Fatalf("пустая библиотека %v %v", library, err)
+	}
+	anonymous := lookAdapter(&lookSession{answers: map[string]string{"who_am_i": `{"user": {}}`, "element_list": lookList}})
+	if _, err := anonymous.ListLooks(context.Background(), time.Second); err == nil || err.Error() != textLookAccount {
+		t.Fatalf("без аккаунта: %v", err)
+	}
+	broken := lookAdapter(&lookSession{answers: map[string]string{"who_am_i": lookWho, "element_list": `{"items": []}`}})
 	if _, err := broken.ListLooks(context.Background(), time.Second); err == nil || err.Error() != textLookListFailed {
 		t.Fatalf("неверный ответ: %v", err)
 	}
-	auth := lookAdapter(&lookSession{errors: map[string]error{"element_list": &mcp.AuthRequiredError{Message: "Войдите в Kling."}}})
+	auth := lookAdapter(&lookSession{errors: map[string]error{"who_am_i": &mcp.AuthRequiredError{Message: "Войдите в Kling."}}})
 	if _, err := auth.ListLooks(context.Background(), time.Second); err == nil || err.Error() != "Войдите в Kling." {
 		t.Fatalf("нет входа: %v", err)
 	}
-	down := lookAdapter(&lookSession{errors: map[string]error{"element_list": &mcp.TransportError{Status: 503, Text: "сервер недоступен"}}})
+	down := lookAdapter(&lookSession{answers: map[string]string{"who_am_i": lookWho}, errors: map[string]error{"element_list": &mcp.TransportError{Status: 503, Text: "сервер недоступен"}}})
 	if _, err := down.ListLooks(context.Background(), time.Second); err == nil || !strings.HasPrefix(err.Error(), mcp.Title+" не вернул список образов аккаунта: ") {
 		t.Fatalf("сбой сервиса: %v", err)
 	}

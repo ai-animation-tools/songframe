@@ -132,7 +132,7 @@ var Areas = []Area{
 			"internal/providers/codex", "internal/providers/kling", "internal/providers/kling/mcp",
 			"internal/mediaproviders", "internal/mediaadapters", "internal/mediaapi",
 			"internal/mediarequest", "internal/mediatest", "internal/mediatest/scenario",
-			"internal/mediafile", "internal/mediacmd",
+			"internal/mediafile", "internal/mediacmd", "internal/savedlooks",
 		},
 		Pages: []string{"SettingsPage", "EnvironmentPage", "PromptLogPage"},
 		Paths: []string{

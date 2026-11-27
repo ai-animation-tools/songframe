@@ -66,6 +66,13 @@ type SavedLook struct {
 	Name string `json:"name"`
 }
 
+// SavedLookLibrary — библиотека образов аккаунта: ID аккаунта у провайдера и его образы. По
+// аккаунту приложение хранит привязки «референс → образ»: ID образа в другом аккаунте недействителен.
+type SavedLookLibrary struct {
+	Account string      `json:"account"`
+	Looks   []SavedLook `json:"looks"`
+}
+
 // SavedLookDetails — образ аккаунта целиком (просмотр перед привязкой и проверка).
 type SavedLookDetails struct {
 	ID          string `json:"id"`
@@ -113,8 +120,8 @@ type SavedLookRules struct {
 // удаление в аккаунте необратимо. Ошибки — с текстом для пользователя без секретов.
 type SavedLooks interface {
 	SavedLookRules() SavedLookRules
-	// ListSavedLooks — все образы аккаунта; по нему строятся статусы привязок.
-	ListSavedLooks(ctx context.Context, timeout time.Duration) ([]SavedLook, error)
+	// ListSavedLooks — аккаунт и все его образы; по ним строятся статусы привязок. Looks не nil.
+	ListSavedLooks(ctx context.Context, timeout time.Duration) (SavedLookLibrary, error)
 	GetSavedLook(ctx context.Context, id string, timeout time.Duration) (SavedLookDetails, error)
 	// CreateSavedLook загружает снимки и создаёт образ; занятое имя — ошибка до создания.
 	CreateSavedLook(ctx context.Context, draft SavedLookDraft, timeout time.Duration) (SavedLook, error)

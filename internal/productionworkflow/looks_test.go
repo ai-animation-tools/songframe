@@ -455,7 +455,7 @@ func TestPrepareRequestPrefersLookModel(t *testing.T) {
 			t.Fatalf("модель и образы: %v %s", request.Value("model"), dynvalue.Stringify(request.Value("saved_looks")))
 		}
 		reason, _ := dynvalue.Get(request.Value("model_selection"), "reason").(string)
-		if want := "Предпочтительная модель test-keyframes не подходит: не примет сохранённые образы героев с меткой в видеопромпте (Лодка), и они потеряли бы облик. Выбрана совместимая модель test-cheap."; reason != want {
+		if want := "Предпочтительная модель test-keyframes не подходит: в запросе по опорам она не принимает сохранённые образы, а в видеопромпте отмечены герои с образом (Лодка): без образа они потеряли бы облик. Выбрана совместимая модель test-cheap."; reason != want {
 			t.Fatalf("причина выбора: %q", reason)
 		}
 		change := &RequestChange{Model: "test-keyframes", Parameters: map[string]any{}}

@@ -134,7 +134,7 @@ export function PackageRequest({
           </Accordion>
           {pkg.request.promptText ? <RequestPrompt text={pkg.request.promptText} looks={pkg.request.savedLooks} lostLooks={pkg.request.lostLooks} /> : null}
           {pkg.request.attemptStatus === 'prepared' && pkg.request.kind !== 'image' && probeAdvised(pkg.request.parameters) ? (
-            <Alert severity="info" sx={{ mt: 1.5 }}>
+            <Alert severity="warning" sx={{ mt: 1.5 }}>
               <AlertTitle>{productionTexts.packageRequest.probeTitle({ resolution: PROBE_VIDEO_RESOLUTION })}</AlertTitle>
               <LinkedText text={productionTexts.packageRequest.probeAdvice({ resolution: PROBE_VIDEO_RESOLUTION })} />
             </Alert>

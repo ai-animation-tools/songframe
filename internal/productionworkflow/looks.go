@@ -62,10 +62,15 @@ func textLookShared(first, second, name string) string {
 	return fmt.Sprintf("У «%s» и «%s» один и тот же образ «%s»: в запросе образ передаёт облик одного героя. Привяжите другому герою свой образ на «Исходниках» либо уберите одну из меток.", first, second, name)
 }
 
-// textModelWithoutLooks — причина пропуска модели при выборе модели с образами; селектор вставляет
-// её в «Предпочтительная модель … не подходит: <причина> Выбрана совместимая модель …».
-func textModelWithoutLooks(entities []string) string {
-	return fmt.Sprintf("не примет сохранённые образы героев с меткой в видеопромпте (%s), и они потеряли бы облик.", strings.Join(entities, ", "))
+// textModelWithoutLooks — причина пропуска модели при выборе модели с образами: модель в запросе по
+// опорам образов не принимает (limit 0) или принимает меньше, чем отмечено. Селектор вставляет её в
+// «Предпочтительная модель … не подходит: <причина> Выбрана совместимая модель …».
+func textModelWithoutLooks(limit int, entities []string) string {
+	names := strings.Join(entities, ", ")
+	if limit == 0 {
+		return fmt.Sprintf("в запросе по опорам она не принимает сохранённые образы, а в видеопромпте отмечены герои с образом (%s): без образа они потеряли бы облик.", names)
+	}
+	return fmt.Sprintf("она принимает не больше %d образов в запросе, а в видеопромпте отмечено %d героев с образом (%s).", limit, len(entities), names)
 }
 
 func textLooksDropped(model string, entities []string) string {
@@ -240,8 +245,8 @@ func lookModelDraft(c *Context, paid providers.Paid, input providers.PaidInput, 
 		entities[index] = names[code]
 	}
 	checked := func(item mediaapi.Model) (*dynvalue.Object, error) {
-		if looksLimit(item.Appearance, true) < len(codes) {
-			return nil, errors.New(textModelWithoutLooks(entities))
+		if limit := looksLimit(item.Appearance, true); limit < len(codes) {
+			return nil, errors.New(textModelWithoutLooks(limit, entities))
 		}
 		return candidate(item), nil
 	}

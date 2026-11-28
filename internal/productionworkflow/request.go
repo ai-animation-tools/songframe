@@ -212,7 +212,8 @@ func (w *Workflow) buildRequest(ctx context.Context, c *Context, change *Request
 		return "", errors.New(textChooseVideoProvider())
 	}
 	caps := media.Capabilities(ctx, c.Project)
-	draft, err := requestDraft(c, media.Paid, settings, caps, change)
+	_, looksSupported := media.SavedLooks()
+	draft, err := requestDraft(c, media.Paid, settings, caps, change, looksSupported)
 	if err != nil {
 		return "", err
 	}
@@ -234,13 +235,17 @@ func (w *Workflow) buildRequest(ctx context.Context, c *Context, change *Request
 }
 
 // requestDraft — черновик запроса попытки без записи: текст утверждённого промпта, входы, модель и
-// параметры по снимку caps. У речевого плана длительность покрывает весь срез.
-func requestDraft(c *Context, paid providers.Paid, settings *dynvalue.Object, caps mediaapi.Capabilities, change *RequestChange) (providers.PaidInput, error) {
+// параметры по снимку caps. У речевого плана длительность покрывает весь срез. looksSupported —
+// адаптер видео работает с сохранёнными образами (выбор модели с образами, lookModelDraft).
+func requestDraft(c *Context, paid providers.Paid, settings *dynvalue.Object, caps mediaapi.Capabilities, change *RequestChange, looksSupported bool) (providers.PaidInput, error) {
 	input, ordered, candidate, err := requestSelection(c, paid, settings, caps, change)
 	if err != nil {
 		return providers.PaidInput{}, err
 	}
-	draft, err := providers.SelectPaidRequest(paid, input, ordered, candidate)
+	draft, found := lookModelDraft(c, paid, input, ordered, candidate, change, looksSupported)
+	if !found {
+		draft, err = providers.SelectPaidRequest(paid, input, ordered, candidate)
+	}
 	if err != nil {
 		return providers.PaidInput{}, err
 	}

@@ -2,7 +2,8 @@ import { productionTexts } from '@shared/texts/production';
 /**
  * Действия одной опоры на её карточке: создать следующую по порядку или поставить свой файл.
  * Файл сразу становится кандидатом; утверждение остаётся отдельным вопросом шага. Опору своего описания без промпта
- * создать нечем: кнопка создания недоступна с причиной, остаётся свой файл. У копии другой опоры действий нет.
+ * создать нечем: кнопка создания недоступна с причиной, остаётся свой файл. «Взять кадр» ставит кандидатом кадр
+ * принятого плана клипа тем же путём, что свой файл. У копии другой опоры действий нет.
  */
 import { useState, type ReactElement } from 'react';
 import EditNoteIcon from '@mui/icons-material/EditNote';
@@ -15,6 +16,7 @@ import { ActionButton } from '../../../components/ActionButton';
 import { BUSY_REASON } from '../constants';
 import { KeyframeNoteScopeField } from './KeyframeNoteScopeField';
 import { ProductionFrameGenerationButton } from './ProductionFrameGenerationButton';
+import { ShotFrameButton, type ShotFrameSource } from './ShotFrameDialog';
 
 /** Необязательное указание к опоре перед её созданием. */
 export interface FrameInstruction {
@@ -27,13 +29,16 @@ export function FrameActions({
   view,
   busy,
   onGenerate,
-  onImport
+  onImport,
+  shotFrames
 }: {
   frame: PackageKeyframe;
   view: ProductionWorkflowView;
   busy: boolean;
   onGenerate(instruction?: FrameInstruction): void;
   onImport(images: ProductionFrameCandidate[]): Promise<boolean>;
+  /** Принятые планы для «Взять кадр»; без них кнопки нет. */
+  shotFrames?: ShotFrameSource;
 }): ReactElement | null {
   const { notify, describeError } = useApp();
   const [instructionOpen, setInstructionOpen] = useState(false);
@@ -108,6 +113,15 @@ export function FrameActions({
       <ActionButton startIcon={<FolderOpenIcon />} size="small" disabled={busy || !available} disabledReason={reason} onClick={() => void choose()}>
         {frame.imagePath ? productionTexts.frameActions.other : productionTexts.frameActions.own}
       </ActionButton>
+      {shotFrames ? (
+        <ShotFrameButton
+          frame={frame.id}
+          source={shotFrames}
+          disabled={busy || !available}
+          disabledReason={reason}
+          onPicked={(path) => onImport([{ id: frame.id, path }])}
+        />
+      ) : null}
     </Stack>
   );
 }

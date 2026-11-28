@@ -62,6 +62,12 @@ func textLookShared(first, second, name string) string {
 	return fmt.Sprintf("У «%s» и «%s» один и тот же образ «%s»: в запросе образ передаёт облик одного героя. Привяжите другому герою свой образ на «Исходниках» либо уберите одну из меток.", first, second, name)
 }
 
+// textModelWithoutLooks — причина пропуска модели при выборе модели с образами; селектор вставляет
+// её в «Предпочтительная модель … не подходит: <причина> Выбрана совместимая модель …».
+func textModelWithoutLooks(entities []string) string {
+	return fmt.Sprintf("не примет сохранённые образы героев с меткой в видеопромпте (%s), и они потеряли бы облик.", strings.Join(entities, ", "))
+}
+
 func textLooksDropped(model string, entities []string) string {
 	return fmt.Sprintf("Модель %s не принимает сохранённые образы: облик по образу не получат %s.", model, strings.Join(entities, ", "))
 }
@@ -210,6 +216,42 @@ func applySavedLooks(ctx context.Context, c *Context, media *providers.PaidMedia
 	return nil
 }
 
+// lookModelDraft — черновик запроса моделью, которая примет все метки образов видеопромпта:
+// модель проекта без образов (например, модель промежуточных опор) пропускается с причиной, и
+// выбор достаётся первой совместимой модели с образами. found=false — правило не применяется:
+// выбор пользователя в «Изменить» (change), речевой план, промпт без меток или с ошибочными метками
+// (о них скажет applySavedLooks), адаптер без образов, или ни одна модель с образами запрос не примет
+// (например, опор больше, чем она берёт). Тогда модель выбирается как раньше, а о потерянном облике
+// говорят шаг «Запрос» и вопрос «Отправить».
+func lookModelDraft(c *Context, paid providers.Paid, input providers.PaidInput, caps mediaapi.Capabilities, candidate providers.CandidateParameters, change *RequestChange, looksSupported bool) (providers.PaidInput, bool) {
+	if change != nil || !looksSupported || dynvalue.Truthy(c.Scene.Value("lipsync")) {
+		return providers.PaidInput{}, false
+	}
+	codes := savedlooks.Codes(input.Prompt)
+	if len(codes) == 0 {
+		return providers.PaidInput{}, false
+	}
+	names, err := checkMarks(c, input.Prompt)
+	if err != nil {
+		return providers.PaidInput{}, false
+	}
+	entities := make([]string, len(codes))
+	for index, code := range codes {
+		entities[index] = names[code]
+	}
+	checked := func(item mediaapi.Model) (*dynvalue.Object, error) {
+		if looksLimit(item.Appearance, true) < len(codes) {
+			return nil, errors.New(textModelWithoutLooks(entities))
+		}
+		return candidate(item), nil
+	}
+	draft, err := providers.SelectCheckedPaidRequest(paid, input, caps, checked)
+	if err != nil {
+		return providers.PaidInput{}, false
+	}
+	return draft, true
+}
+
 // modelAppearance — способ передачи облика модели id команды command в снимке caps; nil — модель
 // его не объявляет.
 func modelAppearance(caps mediaapi.Capabilities, command, id string) *mediaapi.Appearance {
@@ -256,8 +298,9 @@ func looksWarning(c *Context, prompt string, item mediaapi.Model, supported bool
 	return ""
 }
 
-// LookModel — модель видео, которую сборка запроса плана пробует первой (предпочтение проекта,
-// иначе первая модель адаптера), и сколько сохранённых образов она примет: по ней проверка перед
+// LookModel — модель видео, которая получит образы героев плана (предпочтение проекта, иначе первая
+// модель адаптера; если она образы не принимает — первая модель адаптера с образами: на неё сборка
+// перейдёт по меткам), и сколько сохранённых образов она примет: по ней проверка перед
 // описанием плана спрашивает о героях без образа. Limit 0 — модель образы не принимает; Kinds —
 // виды сущностей, чей образ она принимает. Число опор выбирается позже, поэтому модель здесь —
 // ожидаемая: если сборка выберет другую, о потерянном облике скажет сама сборка.
@@ -309,6 +352,13 @@ func (w *Workflow) expectedLookModel(ctx context.Context, project string) (LookM
 		chosen = candidates[index]
 	}
 	_, supported := media.SavedLooks()
+	// Модель проекта без образов не лишает героев облика: метки в видеопромпте переведут сборку
+	// запроса на модель с образами (lookModelDraft), поэтому ожидается первая такая модель.
+	if looksLimit(chosen.Appearance, supported) == 0 {
+		if index := slices.IndexFunc(candidates, func(item mediaapi.Model) bool { return looksLimit(item.Appearance, supported) > 0 }); index >= 0 {
+			chosen = candidates[index]
+		}
+	}
 	model := LookModel{Model: chosen.ID, Limit: looksLimit(chosen.Appearance, supported), Kinds: []string{}}
 	if model.Limit == 0 {
 		return model, nil, nil

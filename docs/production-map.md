@@ -110,6 +110,8 @@ flowchart TD
   how -- "провайдер-исполнитель" --> exec["Задание агента изображений<br/>после подтверждения расхода лимита"]
   how -- "платный провайдер изображений" --> image["Image-запрос<br/>см. Платная отправка"]
   how -- "Свой файл" --> file["PNG, JPEG или WebP"]
+  how -- "Взять кадр" --> shotframe["Кадр принятого плана<br/>без эффектов"]
+  shotframe --> candidate
   exec --> candidate["Кандидат Kxx"]
   image -- "Выбрать как опору" --> candidate
   file --> candidate

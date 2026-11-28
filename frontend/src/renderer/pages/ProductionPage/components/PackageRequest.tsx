@@ -1,13 +1,18 @@
 import { productionTexts } from '@shared/texts/production';
-/** Сохранённые параметры запроса и переход к общему подтверждению отправки. */
+/**
+ * Сохранённые параметры запроса и переход к общему подтверждению отправки. Неотправленный запрос видео в разрешении
+ * выше пробного показывает совет сначала проверить план пробой в 720p: до вопроса о запросе и после «Отложить».
+ */
 import type { ReactElement } from 'react';
-import { Accordion, AccordionDetails, AccordionSummary, Box, Stack, Table, TableBody, TableCell, TableRow, Typography } from '@mui/material';
+import { Accordion, AccordionDetails, AccordionSummary, Alert, AlertTitle, Box, Stack, Table, TableBody, TableCell, TableRow, Typography } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SendIcon from '@mui/icons-material/Send';
 import { AiButton } from '../../../components/AiButton';
 import type { PackageView } from '@shared/types';
 import { ATTEMPT_LABELS, productionInputLabel } from '@shared/production-labels';
 import { MEDIA_PROVIDERS, mediaCommandLabel, normalizeMediaProvider } from '@shared/media-providers';
+import { PROBE_VIDEO_RESOLUTION, probeAdvised } from '@shared/resolution';
+import { LinkedText } from '../../../components/LinkedText';
 import { RequestModelSelection } from './RequestModelSelection';
 import { RequestParameterRows } from './RequestParameters';
 import { RequestPrompt } from './RequestPrompt';
@@ -128,6 +133,12 @@ export function PackageRequest({
             </AccordionDetails>
           </Accordion>
           {pkg.request.promptText ? <RequestPrompt text={pkg.request.promptText} looks={pkg.request.savedLooks} lostLooks={pkg.request.lostLooks} /> : null}
+          {pkg.request.attemptStatus === 'prepared' && pkg.request.kind !== 'image' && probeAdvised(pkg.request.parameters) ? (
+            <Alert severity="info" sx={{ mt: 1.5 }}>
+              <AlertTitle>{productionTexts.packageRequest.probeTitle({ resolution: PROBE_VIDEO_RESOLUTION })}</AlertTitle>
+              <LinkedText text={productionTexts.packageRequest.probeAdvice({ resolution: PROBE_VIDEO_RESOLUTION })} />
+            </Alert>
+          ) : null}
           {canSubmit ? (
             <AiButton
               aiKind={pkg.request?.kind === 'image' ? 'image' : 'video'}

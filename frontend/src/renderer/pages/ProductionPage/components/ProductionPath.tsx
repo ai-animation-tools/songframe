@@ -42,6 +42,7 @@ import { GenerationMethodChoice } from './GenerationMethodChoice';
 import { ProductionSpeechPanel, SpeechSlice } from './ProductionSpeechPanel';
 import { ProductionWorkflowPanel } from './ProductionWorkflowPanel';
 import { StaticShotPanel } from './StaticShotPanel';
+import type { ShotFrameSource } from './ShotFrameDialog';
 import { useSavedLooksCheck } from '../useSavedLooksCheck';
 
 /** Вопросы результата на случай, когда прежний ответ уже записан: решение доступно всегда. */
@@ -95,6 +96,8 @@ export function ProductionPath({
   onReopenFrame,
   onRestoreFrame,
   onReplaceFrame,
+  onReplaceFrameWith,
+  shotFrames,
   onReopenPrompt,
   onKeepForScene,
   onSetKeyframeNote,
@@ -144,6 +147,10 @@ export function ProductionPath({
   onRestoreFrame(frame: string, variant: string): void;
   /** Свой файл вместо утверждённой опоры; без обработчика кнопки на карточке нет. */
   onReplaceFrame?(frame: string): void;
+  /** Кадр принятого плана (путь из «Взять кадр») вместо утверждённой опоры; без обработчика кнопки нет. */
+  onReplaceFrameWith?(frame: string, path: string): Promise<void>;
+  /** Принятые планы клипа для «Взять кадр» у опор; без них кнопки нет. */
+  shotFrames?: ShotFrameSource;
   /** Вернуть утверждённый видеопромпт на доработку с замечанием, пока запрос не отправлен. */
   onReopenPrompt(note: string): void;
   onKeepForScene(): void;
@@ -473,6 +480,8 @@ export function ProductionPath({
                 onReopen={onReopenFrame}
                 onRestore={onRestoreFrame}
                 onReplace={onReplaceFrame}
+                onReplaceWith={onReplaceFrameWith}
+                shotFrames={shotFrames}
                 onSetNote={onSetKeyframeNote}
                 copies={Object.fromEntries((view?.framePrompts ?? []).flatMap((prompt) => (prompt.copyOf ? [[prompt.id, prompt.copyOf]] : [])))}
                 composition={view?.composition?.enabled ? view.composition.frames : []}
@@ -485,6 +494,7 @@ export function ProductionPath({
                           busy={blocked}
                           onGenerate={(instruction) => void createFrame(frame.id, instruction)}
                           onImport={workflow.importFrames}
+                          shotFrames={shotFrames}
                         />
                       )
                     : undefined

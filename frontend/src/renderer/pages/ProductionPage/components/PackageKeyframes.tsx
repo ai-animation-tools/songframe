@@ -2,7 +2,8 @@ import { productionTexts } from '@shared/texts/production';
 /**
  * Опоры пакета создаются и согласуются по одной: у каждой видно состояние, утверждённую можно вернуть на доработку.
  * Заменённые доработкой или своим файлом варианты опоры хранятся в попытке: «Прежние варианты» открывает их и
- * возвращает выбранный кандидатом.
+ * возвращает выбранный кандидатом. У утверждённой опоры «Свой файл» и «Взять кадр» (кадр принятого плана клипа)
+ * ставят новый файл кандидатом.
  */
 import { useState, type ReactElement, type ReactNode } from 'react';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -23,6 +24,7 @@ import { FRAME_REOPEN_STAGES } from '../planPath';
 import { KeyframeNotes } from './KeyframeNotes';
 import { KeyframeReopenDialog } from './KeyframeReopenDialog';
 import { FrameVariantsDialog } from './FrameVariantsDialog';
+import { ShotFrameButton, type ShotFrameSource } from './ShotFrameDialog';
 
 const ROLE_LABELS: Record<string, string> = productionTexts.frameRoleLabels;
 
@@ -67,6 +69,8 @@ export function PackageKeyframes({
   onReopen,
   onRestore,
   onReplace,
+  onReplaceWith,
+  shotFrames,
   onSetNote,
   renderActions,
   copies = {},
@@ -78,6 +82,10 @@ export function PackageKeyframes({
   onReopen(frame: string, note: string, scope: KeyframeNoteScope): void;
   /** Вернуть прежний вариант опоры кандидатом; без обработчика прежние варианты не показываются. */
   onRestore?(frame: string, variant: string): void;
+  /** Файл path кандидатом утверждённой опоры frame (кадр принятого плана из «Взять кадр»). */
+  onReplaceWith?(frame: string, path: string): Promise<void>;
+  /** Принятые планы для «Взять кадр»; без них или без onReplaceWith кнопки нет. */
+  shotFrames?: ShotFrameSource;
   /** Свой файл вместо утверждённой опоры без замечания (файл выбирает обработчик); без обработчика кнопки нет. */
   onReplace?(frame: string): void;
   onSetNote(id: number, active: boolean): void;
@@ -203,6 +211,15 @@ export function PackageKeyframes({
                 >
                   {productionTexts.packageKeyframes.replace}
                 </ActionButton>
+              ) : null}
+              {k.approved && onReplaceWith && shotFrames ? (
+                <ShotFrameButton
+                  frame={k.id}
+                  source={shotFrames}
+                  disabled={busy || !!blocked || !!copies[k.id]}
+                  disabledReason={busy ? busyReason : (blocked ?? (copies[k.id] ? copyReopenReason(k.id, copies[k.id]) : null))}
+                  onPicked={(path) => onReplaceWith(k.id, path)}
+                />
               ) : null}
               {onRestore && k.variants?.length ? (
                 <Button

@@ -1,5 +1,6 @@
 /** Каталог задаёт провайдер; порядок известных моделей в интерфейсе — из реестра провайдеров. */
 import { mediaProviderInfo, type MediaModel } from '@shared/media-providers';
+import { resolutionSize } from '@shared/resolution';
 
 const alphabetical = (a: string, b: string): number => a.localeCompare(b, 'en', { numeric: true });
 
@@ -11,13 +12,6 @@ export function modelOptions(models: readonly MediaModel[], kind: 'image' | 'vid
   };
   // Разные команды могут объявлять один ID; разные ID одной марки не подменяем друг другом.
   return [...new Set(models.map((model) => model.id))].sort((a, b) => priority(a) - priority(b) || alphabetical(a, b));
-}
-
-function resolutionSize(value: string): number {
-  const match = /^(\d+(?:\.\d+)?)\s*([kp])$/i.exec(value);
-  if (match) return Number(match[1]) * (match[2].toLowerCase() === 'k' ? 1024 : 16 / 9);
-  const dimensions = /^(\d+)\s*[x×]\s*(\d+)$/i.exec(value);
-  return dimensions ? Math.sqrt(Number(dimensions[1]) * Number(dimensions[2])) : 0;
 }
 
 export function sortResolutions(values: readonly string[]): string[] {

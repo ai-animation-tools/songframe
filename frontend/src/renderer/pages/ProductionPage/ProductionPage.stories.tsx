@@ -701,6 +701,61 @@ export const OwnFrameFile: Story = {
   }
 };
 
+/** Принятый M01 со сведениями участка: из него «Взять кадр» берёт кадр для опоры M02. */
+function shotFrameShots(): ShotProduction[] {
+  return baseShots({ attention: null, packages: [noCandidates()] }).map((shot) =>
+    shot.id === 'M01'
+      ? {
+          ...shot,
+          asset: {
+            dir: '/mock/assets/shots/M01',
+            video: '/mock/story-derived-source-150.mp4',
+            original: STORY_VIDEO_PATH,
+            edit: {
+              fps: 30,
+              frames: 102,
+              duration: 3.4,
+              sourceInterval: [0, 3.4],
+              stillAt: null,
+              speed: '1',
+              speedParts: [],
+              holdFirst: 0,
+              holdLast: 0,
+              note: ''
+            }
+          }
+        }
+      : shot
+  );
+}
+
+export const TakeShotFrame: Story = {
+  tags: ['ci'],
+  name: 'Взять кадр · кадр принятого плана кандидатом опоры, по умолчанию последний кадр предшественника',
+  parameters: { songframe: options({ shots: shotFrameShots }) },
+  play: async (context) => {
+    const screen = screenOf(context);
+    const shotFrame = texts.shotFrame;
+    await expect(await screen.findByText(steps.now({ text: steps.chooseFrame({ frame: 'K02' }) }), {}, POLL_TIMEOUT)).toBeInTheDocument();
+    const frames = within(planStep(context, 'frames'));
+    // Первая — у утверждённой K01, за ней — у неутверждённых K02–K04.
+    const take = await frames.findAllByRole('button', { name: shotFrame.open });
+    await expect(take).toHaveLength(4);
+    await userEvent.click(take[1]);
+    const dialog = within(await screen.findByRole('dialog', { name: shotFrame.title({ id: 'K02' }) }));
+    await expect(dialog.getByRole('combobox', { name: shotFrame.shot })).toHaveTextContent('M01 · Подъезд к даче');
+    await expect(dialog.getByRole('spinbutton', { name: shotFrame.frame })).toHaveValue(101);
+    await expectImplicitCloseBlocked(screen.getByRole('dialog'));
+    await userEvent.click(dialog.getByRole('button', { name: shotFrame.first }));
+    await expect(dialog.getByRole('spinbutton', { name: shotFrame.frame })).toHaveValue(0);
+    await userEvent.click(dialog.getByRole('button', { name: commonTexts.save }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument(), POLL_TIMEOUT);
+    await waitFor(() => expect(counts(context)).toHaveTextContent('Взятых кадров: M01:0.'), POLL_TIMEOUT);
+    await expect(counts(context)).toHaveTextContent('Своих файлов опор: 1.');
+    await expect(await screen.findByText('Утвердить опору K02?', {}, POLL_TIMEOUT)).toBeInTheDocument();
+  }
+};
+
 export const FrameInstruction: Story = {
   tags: ['ci'],
   name: 'Указание к опоре · необязательно, сохраняется замечанием перед созданием',
@@ -946,6 +1001,38 @@ export const RequestByApp: Story = {
     await expect(await reopened.findByRole('combobox', { name: change.model })).toHaveTextContent('test-video-pro');
     await expect(reopened.getByRole('combobox', { name: 'enable_audio' })).toHaveTextContent(change.yes);
     await userEvent.click(reopened.getByRole('button', { name: commonTexts.cancel }));
+  }
+};
+
+/** Неотправленный запрос видео: в 1080p шаг «Запрос» советует пробу в 720p, в 720p совета нет. */
+function probeShots(resolution: string): ShotProduction[] {
+  const source = preparedPackage();
+  const pkg = { ...source, request: { ...source.request!, parameters: { duration: 5, resolution } } };
+  return baseShots({ stageLabel: 'Запрос подготовлен', attention: null, packages: [pkg] });
+}
+
+export const RequestProbeAdvice: Story = {
+  tags: ['ci'],
+  name: 'Запрос · совет пробы в 720p перед финальной генерацией',
+  parameters: { songframe: options({ shots: () => probeShots('1080p') }) },
+  play: async (context) => {
+    await waitFor(() => expect(planStep(context, 'request')).not.toBeNull(), POLL_TIMEOUT);
+    const step = within(planStep(context, 'request'));
+    await expect(await step.findByText(texts.packageRequest.probeTitle({ resolution: '720p' }), {}, POLL_TIMEOUT)).toBeVisible();
+    // Отсылка к блоку настроек проекта — ссылка с переходом.
+    await expect(step.getByRole('link', { name: '«Генерация видео»' })).toBeInTheDocument();
+  }
+};
+
+export const RequestProbeResolution: Story = {
+  tags: ['ci'],
+  name: 'Запрос · в 720p совета пробы нет',
+  parameters: { songframe: options({ shots: () => probeShots('720p') }) },
+  play: async (context) => {
+    await waitFor(() => expect(planStep(context, 'request')).not.toBeNull(), POLL_TIMEOUT);
+    const step = within(planStep(context, 'request'));
+    await expect(await step.findByText('720p', {}, POLL_TIMEOUT)).toBeInTheDocument();
+    await expect(step.queryByText(texts.packageRequest.probeTitle({ resolution: '720p' }))).not.toBeInTheDocument();
   }
 };
 

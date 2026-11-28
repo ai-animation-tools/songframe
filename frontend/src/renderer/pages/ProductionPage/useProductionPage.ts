@@ -424,6 +424,11 @@ export function useProductionPage() {
     await act(productionTexts.useProductionPage.frameReplaced({ frame }), () => window.api.production.replaceFrame(project, pkg.dir, frame, files[0]), pkg.dir);
   };
 
+  /** Файл path (кадр принятого плана из «Взять кадр») вместо утверждённой опоры — тем же путём, что свой файл. */
+  const replaceFrameWith = async (pkg: PackageView, frame: string, path: string): Promise<void> => {
+    await act(productionTexts.useProductionPage.frameReplaced({ frame }), () => window.api.production.replaceFrame(project, pkg.dir, frame, path), pkg.dir);
+  };
+
   /** Возврат утверждённого видеопромпта: Go откажет, если запрос уже отправлен или попытка в очереди. */
   const reopenPrompt = (pkg: PackageView, note: string): void => {
     void act(productionTexts.useProductionPage.promptReopened, () => window.api.production.reopenPrompt(project, pkg.dir, note), pkg.dir);
@@ -563,6 +568,7 @@ export function useProductionPage() {
     reopenFrame,
     restoreFrame,
     replaceFrame,
+    replaceFrameWith,
     reopenPrompt,
     keepPackageForScene,
     setKeyframeNote,

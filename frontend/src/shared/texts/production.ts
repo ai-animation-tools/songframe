@@ -777,6 +777,23 @@ export const productionTexts = {
     noteRequired: 'Опишите в поле выше, что нужно исправить.',
     noteFilled: 'Сначала отправьте или очистите замечание.'
   },
+  shotFrame: {
+    open: 'Взять кадр',
+    openHint: ({ id }: { id: string }) => `Поставить кандидатом ${id} кадр принятого плана, например последний кадр предыдущего для непрерывного стыка`,
+    noShots: 'В клипе ещё нет принятых планов с видео: кадр взять не из чего.',
+    title: ({ id }: { id: string }) => `Кадр принятого плана для ${id}`,
+    intro: ({ id }: { id: string }) =>
+      `Кадр берётся из принятого участка без эффектов и становится кандидатом ${id}, как свой файл: его нужно утвердить. Прежняя опора уходит в прежние варианты.`,
+    shot: 'План',
+    shotOption: ({ id, title }: { id: string; title: string }) => (title ? `${id} · ${title}` : id),
+    frame: 'Номер кадра',
+    frameRange: ({ last }: { last: number }) => `От 0 до ${last}`,
+    first: 'Первый',
+    last: 'Последний',
+    position: ({ frame, seconds }: { frame: number; seconds: string }) => `Кадр ${frame} · ${seconds} с принятого участка`,
+    preview: ({ shot }: { shot: string }) => `Кадр плана ${shot}`,
+    saving: 'Кадр сохраняется'
+  },
   packageKeyframes: {
     /** Прежние варианты опоры: доработка или свой файл не стирают прежний, его можно вернуть кандидатом. */
     variants: ({ count }: { count: number }) => `Прежние варианты: ${count}`,
@@ -834,6 +851,9 @@ export const productionTexts = {
     galleryKind: commonTexts.media.keyframe
   },
   packageRequest: {
+    probeTitle: ({ resolution }: { resolution: string }) => `Сначала проба в ${resolution}`,
+    probeAdvice: ({ resolution }: { resolution: string }) =>
+      `Если в плане вода, дождь, дым или сложное движение камеры, сначала проверьте их пробой в ${resolution}: движение и физика видны и в меньшем разрешении, а проба дешевле. Разрешение меняется в блоке «Генерация видео» на странице «Проект». Пробу можно сделать и короче, но тогда она проверит движение, а не время событий: время в промпте модель соблюдает буквально.`,
     technical: 'Технические подробности',
     command: 'Команда',
     apiParameters: 'Параметры API',

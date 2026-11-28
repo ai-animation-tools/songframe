@@ -417,3 +417,91 @@ func TestPromptSavedLooks(t *testing.T) {
 		t.Fatalf("ручная генерация: %v", got)
 	}
 }
+
+// preferModel записывает модель видео model предпочтением проекта прохода run.
+func preferModel(t *testing.T, run *goldenRun, model string) {
+	t.Helper()
+	path := filepath.Join(run.project, "plan", "project.json")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	updated := strings.Replace(string(data), `"video":{"provider":"test",`, `"video":{"provider":"test","model":"`+model+`",`, 1)
+	if updated == string(data) {
+		t.Fatal("нет блока видео в настройках проекта")
+	}
+	if err := os.WriteFile(path, []byte(updated), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// Метки образов при модели проекта без образов: сборка берёт совместимую модель с образами и
+// объясняет выбор; при трёх опорах модели с образами нет, и сборка, как раньше, отдаёт запрос
+// модели проекта без меток. Выбор пользователя в «Изменить» правило не трогает.
+func TestPrepareRequestPrefersLookModel(t *testing.T) {
+	text := "Лодка [@boat] плывёт к причалу.\n"
+	t.Run("две опоры", func(t *testing.T) {
+		run := ownRun(t)
+		workflow, service, store := looksWorkflow(t, run, looksCaps)
+		preferModel(t, run, "test-keyframes")
+		dir := promptReady(t, run, 2)
+		markedPrompt(t, dir, text)
+		bindLook(t, run, service, store, "boat", "look-3", "Лодка", true)
+		if _, err := workflow.PrepareRequest(context.Background(), run.project, "M01", dir, nil); err != nil {
+			t.Fatal(err)
+		}
+		request := requestFile(t, dir, "request-01")
+		if request.Value("model") != "test-cheap" || !request.Has("saved_looks") {
+			t.Fatalf("модель и образы: %v %s", request.Value("model"), dynvalue.Stringify(request.Value("saved_looks")))
+		}
+		reason, _ := dynvalue.Get(request.Value("model_selection"), "reason").(string)
+		if want := "Предпочтительная модель test-keyframes не подходит: не примет сохранённые образы героев с меткой в видеопромпте (Лодка), и они потеряли бы облик. Выбрана совместимая модель test-cheap."; reason != want {
+			t.Fatalf("причина выбора: %q", reason)
+		}
+		change := &RequestChange{Model: "test-keyframes", Parameters: map[string]any{}}
+		if _, err := workflow.PrepareRequest(context.Background(), run.project, "M01", dir, change); err != nil {
+			t.Fatal(err)
+		}
+		if got := requestFile(t, dir, "request-02"); got.Value("model") != "test-keyframes" || got.Has("saved_looks") {
+			t.Fatalf("«Изменить»: %v", got.Value("model"))
+		}
+	})
+	t.Run("три опоры", func(t *testing.T) {
+		run := ownRun(t)
+		workflow, service, store := looksWorkflow(t, run, looksCaps)
+		preferModel(t, run, "test-keyframes")
+		dir := promptReady(t, run, 3)
+		markedPrompt(t, dir, text)
+		bindLook(t, run, service, store, "boat", "look-3", "Лодка", true)
+		if _, err := workflow.PrepareRequest(context.Background(), run.project, "M01", dir, nil); err != nil {
+			t.Fatal(err)
+		}
+		request := requestFile(t, dir, "request-01")
+		if request.Value("model") != "test-keyframes" || request.Has("saved_looks") {
+			t.Fatalf("модель и образы: %v", request.Value("model"))
+		}
+		if got := requestPrompt(t, dir, "request-01"); got != "Лодка плывёт к причалу.\n" {
+			t.Fatalf("промпт запроса: %q", got)
+		}
+	})
+}
+
+// Модель проекта без образов: ожидаемая модель перед описанием — первая модель с образами, на
+// которую перейдёт сборка по меткам; без моделей с образами — модель проекта с пределом 0.
+func TestExpectedLookModelSkipsModelWithoutLooks(t *testing.T) {
+	for _, item := range []struct {
+		caps, model string
+		limit       int
+	}{{looksCaps, "test-cheap", 2}, {requestCaps, "test-keyframes", 0}} {
+		run := ownRun(t)
+		workflow, _, _ := looksWorkflow(t, run, item.caps)
+		preferModel(t, run, "test-keyframes")
+		got, err := workflow.ExpectedLookModel(context.Background(), run.project)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got.Model != item.model || got.Limit != item.limit {
+			t.Fatalf("ожидаемая модель: %+v, нужно %s с пределом %d", got, item.model, item.limit)
+		}
+	}
+}

@@ -28,6 +28,7 @@ import { useStickyTop } from '../../hooks/useStickyTop';
 import { ANCHORS } from '../../components/linkTargets';
 import { LinkedText } from '../../components/LinkedText';
 import { BUSY_REASON } from './constants';
+import { shotFrameSource } from './components/ShotFrameDialog';
 
 export function ProductionPage(): ReactElement {
   const [path, setPath] = useState<{ key: string; value: PlanPath } | null>(null);
@@ -84,6 +85,7 @@ export function ProductionPage(): ReactElement {
     reopenFrame,
     restoreFrame,
     replaceFrame,
+    replaceFrameWith,
     reopenPrompt,
     keepPackageForScene,
     setKeyframeNote,
@@ -219,6 +221,10 @@ export function ProductionPage(): ReactElement {
                         onReopenFrame={(frame, note, scope) => selectedPackage && reopenFrame(selectedPackage, frame, note, scope)}
                         onRestoreFrame={(frame, variant) => selectedPackage && restoreFrame(selectedPackage, frame, variant)}
                         onReplaceFrame={(frame) => selectedPackage && void replaceFrame(selectedPackage, frame)}
+                        onReplaceFrameWith={async (frame, path) => {
+                          if (selectedPackage) await replaceFrameWith(selectedPackage, frame, path);
+                        }}
+                        shotFrames={shotFrameSource(project, view.shots, shot.id)}
                         onReopenPrompt={(note) => selectedPackage && reopenPrompt(selectedPackage, note)}
                         onKeepForScene={() => selectedPackage && keepPackageForScene(selectedPackage)}
                         onSetKeyframeNote={(id, active) => selectedPackage && setKeyframeNote(selectedPackage, id, active)}

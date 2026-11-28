@@ -625,6 +625,15 @@ func TestReferencesAfterApprove(t *testing.T) {
 	if len(task.Images) < 3 || !strings.HasSuffix(task.Images[0], "reference-R01.jpg") || !strings.HasSuffix(task.Images[2], "reference-R03.jpg") {
 		t.Fatalf("картинок задания: %v", task.Images)
 	}
+	// Все вложения на месте, включая кадр предшественника: подготовка картинок не стирает его.
+	for _, image := range task.Images {
+		if info, err := os.Stat(image); err != nil || info.Size() == 0 {
+			t.Fatalf("вложение %s: %v", image, err)
+		}
+	}
+	if !slices.ContainsFunc(task.Images, func(image string) bool { return strings.HasSuffix(image, "M01-last.jpg") }) {
+		t.Fatalf("нет кадра предшественника: %v", task.Images)
+	}
 	if view, err := workflow.View(run.project, "M02", dir); err != nil || view.CanEditReferences || view.Reasons.References == nil {
 		t.Fatalf("правка при заданном видеопромпте: %v %+v", err, view.Reasons.References)
 	}

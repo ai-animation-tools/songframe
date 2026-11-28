@@ -965,12 +965,7 @@ func (w *Workflow) launch(ctx context.Context, input StartInput, prepared *prepa
 		contextInput.shotFrames = shotFramesTree(c.Project, prepared.target, prepared.shotFrames, attached, prepared.missingFrames, problem)
 	}
 	if stage == "prompt" && c.PackageDir != "" {
-		images, contextInput.attachedFrames, contextInput.materials = w.promptAttachments(ctx, c, input.Shot)
-		if c.ReferencesMethod {
-			var references []string
-			references, contextInput.attachedReferences = w.referenceAttachments(c, input.Shot)
-			images = append(references, images...)
-		}
+		images, contextInput.attachedFrames, contextInput.materials, contextInput.attachedReferences = w.promptAttachments(ctx, c, input.Shot)
 	}
 	task := agents.StartInput{
 		Project: c.Project, Task: "ai-clip-scene:" + input.Shot + ":" + stage, Prompt: prompt, Context: agentContext(c, contextInput),

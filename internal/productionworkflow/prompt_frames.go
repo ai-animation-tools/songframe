@@ -27,13 +27,18 @@ const (
 )
 
 // promptAttachments — вложения и ключи контекста этапа prompt: attachedFrames (утверждённые опоры
-// по порядку плана и последний кадр предшественника) и materials. Сбой подготовки вложения не
+// по порядку плана и последний кадр предшественника), materials и у попытки по референсам
+// attachedReferences (иначе nil). Сбой подготовки вложения не
 // останавливает задание: в attachedFrames такой кадр отмечен attached=false, а агент получает
 // problem и смотрит файл по пути сам.
-func (w *Workflow) promptAttachments(ctx context.Context, c *Context, shot string) (images []string, attached *dynvalue.Array, materials *dynvalue.Object) {
+func (w *Workflow) promptAttachments(ctx context.Context, c *Context, shot string) (images []string, attached *dynvalue.Array, materials *dynvalue.Object, references *dynvalue.Array) {
 	images = []string{}
 	attached = &dynvalue.Array{Items: []any{}}
 	directory, dirErr := w.attachmentsDir(c.Project, shot)
+	// Картинки попытки по референсам идут первыми, в той же папке, что кадры.
+	if c.ReferencesMethod {
+		images, references = referenceAttachments(c, directory, dirErr)
+	}
 	problem := ""
 	fail := func(err error) {
 		if problem == "" {
@@ -116,7 +121,7 @@ func (w *Workflow) promptAttachments(ctx context.Context, c *Context, shot strin
 	}
 	materials.Set("acceptedShots", &dynvalue.Array{Items: shots})
 	materials.Set("problem", problem)
-	return images, attached, materials
+	return images, attached, materials, references
 }
 
 // acceptedShotMaterials — файлы принятого плана для просмотра агентом: опоры запроса

@@ -546,11 +546,12 @@ func referenceEntityCodes(c *Context) []string {
 }
 
 // referenceAttachments — утверждённые референсы для задания видеопромпта: вложения (уменьшенные
-// JPEG, как опоры) и ключ attachedReferences {id, role, entity, name, path, attached}.
-func (w *Workflow) referenceAttachments(c *Context, shot string) ([]string, *dynvalue.Array) {
+// JPEG, как опоры) и ключ attachedReferences {id, role, entity, name, path, attached}. Папку
+// вложений directory готовит promptAttachments (dirErr — её ошибка): attachmentsDir очищает
+// папку, поэтому второй её вызов удалил бы уже записанные кадры задания.
+func referenceAttachments(c *Context, directory string, dirErr error) ([]string, *dynvalue.Array) {
 	images := []string{}
 	attached := &dynvalue.Array{Items: []any{}}
-	directory, dirErr := w.attachmentsDir(c.Project, shot)
 	for _, item := range referenceItems(c.Workflow) {
 		if !dynvalue.Truthy(dynvalue.Get(item, "approved")) {
 			continue

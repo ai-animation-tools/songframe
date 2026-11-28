@@ -21,6 +21,7 @@ import { ActionButton } from '../../../components/ActionButton';
 import { AgentJobCard } from '../../../components/AgentJobCard';
 import type { ProductionWorkflow } from '../useProductionWorkflow';
 import { ProductionProposalDialog } from './ProductionProposalDialog';
+import { ReferencesMethodChoice, type AttemptMethod } from './ReferencesMethodChoice';
 import { LinkedText } from '../../../components/LinkedText';
 import { BUSY_REASON } from '../constants';
 
@@ -58,6 +59,7 @@ export function ProductionWorkflowPanel({
   onOwnVideo,
   onBeforePrepare,
   descriptionReason,
+  defaultMethod,
   parts = ALL_PARTS,
   onLaunch
 }: {
@@ -87,6 +89,8 @@ export function ProductionWorkflowPanel({
   onBeforePrepare?(proceed: (looks?: string[]) => void): void;
   /** Почему описание сейчас не начинается (идёт проверка перед ним); null — можно. */
   descriptionReason?: string | null;
+  /** Способ последней попытки плана: с него начинается выбор способа новой попытки; нет — по опорам. */
+  defaultMethod?: AttemptMethod;
   parts?: WorkflowPanelParts;
   /** Запуск агента из этого экземпляра: путь показывает ошибку запуска рядом с нажатой кнопкой. */
   onLaunch?(): void;
@@ -109,6 +113,10 @@ export function ProductionWorkflowPanel({
   const [instruction, setInstruction] = useState('');
   // Число опор выбирается перед подготовкой описания; 0 — «авто». Речевой план ручной генерации — всегда одна опора.
   const [keyframes, setKeyframes] = useState(0);
+  // Способ новой попытки: по референсам без опор или по опорам; выбирается только до описания и только там, где Go его разрешает.
+  const [methodChoice, setMethodChoice] = useState<AttemptMethod | null>(null);
+  const method: AttemptMethod = view?.referencesAvailable ? (methodChoice ?? defaultMethod ?? 'keyframes') : 'keyframes';
+  const byReferences = method === 'references';
   // Плану из опор видео не генерируется: предел провайдера видео к нему не относится. Одна опора — неподвижный
   // кадр с наездом сборки, больше — смены состояний.
   const limit = view?.staticShot ? DEFAULT_KEYFRAME_LIMIT : keyframeLimit(view?.videoProvider);
@@ -134,8 +142,9 @@ export function ProductionWorkflowPanel({
     await workflow.start(
       action,
       action === 'revise' ? note.trim() : instructionText || undefined,
-      action === 'prepare' && !view?.singleFrame ? Math.min(keyframes, limit) : undefined,
-      looks
+      action === 'prepare' && !view?.singleFrame && !byReferences ? Math.min(keyframes, limit) : undefined,
+      looks,
+      action === 'prepare' && view?.referencesAvailable ? method : undefined
     );
   };
   const proposal = view?.proposal;
@@ -253,60 +262,67 @@ export function ProductionWorkflowPanel({
               ) : null}
             </Stack>
           ) : (
-            <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              <TextField
-                select
-                size="small"
-                sx={{ width: 120 }}
-                label={productionTexts.productionWorkflowPanel.keyframes}
-                // Речевой план ручной генерации делается по одной опоре: выбор заблокирован, причина — в подсказке.
-                value={view?.singleFrame ? 1 : Math.min(keyframes, limit)}
-                disabled={busy || !!view?.singleFrame}
-                title={
-                  view?.singleFrame ? productionTexts.productionWorkflowPanel.keyframesManual : productionTexts.productionWorkflowPanel.keyframesHint({ limit })
-                }
-                onChange={(event) => setKeyframes(Number(event.target.value))}
-              >
-                {view?.singleFrame ? null : <MenuItem value={0}>{productionTexts.productionWorkflowPanel.keyframesAuto}</MenuItem>}
-                {Array.from({ length: limit }, (_, index) => index + 1).map((count) => (
-                  <MenuItem key={count} value={count}>
-                    {count}
-                  </MenuItem>
-                ))}
-              </TextField>
-              <AgentButton
-                variant="contained"
-                disabled={primaryDisabled || !!descriptionReason}
-                disabledReason={descriptionReason ?? reason ?? productionTexts.productionWorkflowPanel.loadingReason}
-                title={productionTexts.productionWorkflowPanel.prepareHint}
-                onClick={() => (onBeforePrepare ? onBeforePrepare((looks) => void start('prepare', looks)) : void start('prepare'))}
-              >
-                {productionTexts.productionWorkflowPanel.prepare}
-              </AgentButton>
-              {onWriteOwn ? (
-                // Своё описание не требует агента: доступно при той же готовности плана, что и подготовка.
-                <ActionButton
-                  startIcon={<EditNoteIcon />}
-                  title={productionTexts.ownDescriptionDialog.writeOwnHint}
-                  disabled={busy || !view?.canPrepare || !!descriptionReason}
-                  disabledReason={busy ? BUSY_REASON : (descriptionReason ?? view?.reasons.prepare ?? productionTexts.productionWorkflowPanel.loadingReason)}
-                  onClick={onWriteOwn}
+            <Stack spacing={1} sx={{ alignItems: 'flex-start' }}>
+              {view?.referencesAvailable ? <ReferencesMethodChoice method={method} disabled={busy} onChange={setMethodChoice} /> : null}
+              <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                {byReferences ? null : (
+                  <TextField
+                    select
+                    size="small"
+                    sx={{ width: 120 }}
+                    label={productionTexts.productionWorkflowPanel.keyframes}
+                    // Речевой план ручной генерации делается по одной опоре: выбор заблокирован, причина — в подсказке.
+                    value={view?.singleFrame ? 1 : Math.min(keyframes, limit)}
+                    disabled={busy || !!view?.singleFrame}
+                    title={
+                      view?.singleFrame
+                        ? productionTexts.productionWorkflowPanel.keyframesManual
+                        : productionTexts.productionWorkflowPanel.keyframesHint({ limit })
+                    }
+                    onChange={(event) => setKeyframes(Number(event.target.value))}
+                  >
+                    {view?.singleFrame ? null : <MenuItem value={0}>{productionTexts.productionWorkflowPanel.keyframesAuto}</MenuItem>}
+                    {Array.from({ length: limit }, (_, index) => index + 1).map((count) => (
+                      <MenuItem key={count} value={count}>
+                        {count}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                )}
+                <AgentButton
+                  variant="contained"
+                  disabled={primaryDisabled || !!descriptionReason}
+                  disabledReason={descriptionReason ?? reason ?? productionTexts.productionWorkflowPanel.loadingReason}
+                  title={productionTexts.productionWorkflowPanel.prepareHint}
+                  onClick={() => (onBeforePrepare ? onBeforePrepare((looks) => void start('prepare', looks)) : void start('prepare'))}
                 >
-                  {productionTexts.ownDescriptionDialog.writeOwn}
-                </ActionButton>
-              ) : null}
-              {onOwnVideo ? (
-                // Сервис и агент не участвуют: готовность плана проверяет Go при загрузке, отказ показывает окно.
-                <ActionButton
-                  startIcon={<VideoFileOutlinedIcon />}
-                  title={productionTexts.ownVideo.openHint}
-                  disabled={busy || !!descriptionReason}
-                  disabledReason={busy ? BUSY_REASON : (descriptionReason ?? null)}
-                  onClick={onOwnVideo}
-                >
-                  {productionTexts.ownVideo.open}
-                </ActionButton>
-              ) : null}
+                  {productionTexts.productionWorkflowPanel.prepare}
+                </AgentButton>
+                {onWriteOwn && !byReferences ? (
+                  // Своё описание не требует агента: доступно при той же готовности плана, что и подготовка.
+                  <ActionButton
+                    startIcon={<EditNoteIcon />}
+                    title={productionTexts.ownDescriptionDialog.writeOwnHint}
+                    disabled={busy || !view?.canPrepare || !!descriptionReason}
+                    disabledReason={busy ? BUSY_REASON : (descriptionReason ?? view?.reasons.prepare ?? productionTexts.productionWorkflowPanel.loadingReason)}
+                    onClick={onWriteOwn}
+                  >
+                    {productionTexts.ownDescriptionDialog.writeOwn}
+                  </ActionButton>
+                ) : null}
+                {onOwnVideo ? (
+                  // Сервис и агент не участвуют: готовность плана проверяет Go при загрузке, отказ показывает окно.
+                  <ActionButton
+                    startIcon={<VideoFileOutlinedIcon />}
+                    title={productionTexts.ownVideo.openHint}
+                    disabled={busy || !!descriptionReason}
+                    disabledReason={busy ? BUSY_REASON : (descriptionReason ?? null)}
+                    onClick={onOwnVideo}
+                  >
+                    {productionTexts.ownVideo.open}
+                  </ActionButton>
+                ) : null}
+              </Stack>
             </Stack>
           )}
           {packageDir && promptNext && !instructionOpen ? (
@@ -331,7 +347,9 @@ export function ProductionWorkflowPanel({
                 savedNote
                   ? productionTexts.productionWorkflowPanel.savedNote
                   : reviseStage
-                    ? productionTexts.productionWorkflowPanel.noteFor[reviseStage]
+                    ? reviseStage === 'description' && view?.generationMethod === 'references'
+                      ? productionTexts.productionWorkflowPanel.noteForReferences
+                      : productionTexts.productionWorkflowPanel.noteFor[reviseStage]
                     : productionTexts.productionWorkflowPanel.note
               }
               multiline

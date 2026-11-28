@@ -103,6 +103,10 @@ func (w *Workflow) prepareOwn(input OwnInput) (string, string, error) {
 	if prepared.stage != input.Stage {
 		return "", "", errors.New(textStageUnavailable)
 	}
+	// Своё описание задаёт план опор; картинки попытки по референсам предлагает агент описания.
+	if input.Stage == "description" && c.ReferencesMethod {
+		return "", "", errors.New(textReferencesOwnDescription)
+	}
 	rules := c.RulesFor(input.Stage)
 	rules.Own = true
 	if input.Stage == "description" {

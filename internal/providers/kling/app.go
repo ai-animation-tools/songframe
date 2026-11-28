@@ -72,6 +72,20 @@ func RequestRules() mediaapi.RequestRules {
 				{Name: "prefer_multi_shots", Values: []any{false, true}},
 				{Name: "enable_audio", Values: []any{false}},
 			},
+			// По референсам место по картинке держит только v4_0: v3_0_omni его теряет, а
+			// v4_0_flash ограничена 720p. Картинка N в промпте — 图片N, склейки внутри плана
+			// у v4_0 не отключаются (prefer_multi_shots только true).
+			References: &mediaapi.ReferenceRules{
+				Command:   "omni_ref_video",
+				Models:    []string{"kling-video-v4_0"},
+				ImageSlot: func(index int) string { return fmt.Sprintf("image_%d", index+1) },
+				Mention:   func(index int) string { return fmt.Sprintf("图片%d", index+1) },
+				Defaults: []mediaapi.ParameterDefault{
+					{Name: "prefer_multi_shots", Values: []any{false, true}},
+					{Name: "enable_audio", Values: []any{false}},
+					{Name: "keepOriginalSound", Values: []any{false}},
+				},
+			},
 		},
 	}
 }

@@ -45,6 +45,12 @@ type Rules struct {
 	Static bool
 	// Looks — выбор героев с образами для попытки (saved_looks); nil — выбора не было.
 	Looks []string
+	// References — описание попытки по референсам: вместо опор — картинки запроса
+	// (parseReferences). MaxReferences — предел картинок модели режима, 0 — по умолчанию;
+	// ReferenceEntities — коды сущностей кастинга плана, чьи изображения можно предложить.
+	References        bool
+	MaxReferences     int
+	ReferenceEntities []string
 	// Own — свой текст пользователя (предложение с отметкой own): промпт опоры может быть пустым,
 	// такую опору пользователь делает своим файлом. В дерево правил не входит: признак берётся из
 	// предложения при каждом разборе.
@@ -90,6 +96,12 @@ func (r Rules) Tree() *dynvalue.Object {
 	if r.Looks != nil {
 		tree.Set("savedLooks", stringsArray(r.Looks))
 	}
+	// Способ по референсам пишется только у такой попытки: записи остальных не меняются.
+	if r.References {
+		tree.Set("referencesMethod", true)
+		tree.Set("maxReferences", float64(r.MaxReferences))
+		tree.Set("referenceEntities", stringsArray(r.ReferenceEntities))
+	}
 	return tree
 }
 
@@ -103,6 +115,15 @@ func RulesFromTree(value any) Rules {
 	rules.Project, _ = dynvalue.Get(value, "project").(string)
 	rules.Manual = dynvalue.Get(value, "manualGeneration") == true
 	rules.Static = dynvalue.Get(value, "staticShot") == true
+	rules.References = dynvalue.Get(value, "referencesMethod") == true
+	rules.MaxReferences = int(dynvalue.ToNumber(dynvalue.Get(value, "maxReferences")))
+	if codes, ok := dynvalue.AsArray(dynvalue.Get(value, "referenceEntities")); ok {
+		for _, code := range codes {
+			if text, isString := code.(string); isString {
+				rules.ReferenceEntities = append(rules.ReferenceEntities, text)
+			}
+		}
+	}
 	if count, ok := dynvalue.Get(value, "keyframeCount").(float64); ok && dynvalue.IsInteger(count) && count > 0 {
 		rules.Keyframes = int(count)
 	}
@@ -299,6 +320,9 @@ func ParseProposal(raw string, rules Rules) (*dynvalue.Object, error) {
 	}
 	switch rules.Stage {
 	case "description":
+		if rules.References {
+			return value, parseReferences(value, rules)
+		}
 		return value, parseDescription(value, rules)
 	case "frames":
 		if err := keys(value, "schemaVersion", "stage", "images"); err != nil {

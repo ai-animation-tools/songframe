@@ -29,6 +29,14 @@ export function Apply(project: string, shot: string, packageDir: string, id: str
 }
 
 /**
+ * ApproveReferences — productionWorkflow.approveReferences: утвердить все референсы попытки по
+ * референсам; доступ к ИИ не нужен.
+ */
+export function ApproveReferences(project: string, shot: string, packageDir: string): $CancellablePromise<productionworkflow$0.View> {
+    return $Call.ByID(1395107253, project, shot, packageDir);
+}
+
+/**
  * BuildManual — productionWorkflow.buildManual: пакет ручной генерации речевого плана у
  * провайдера без липсинка собирается без агента; доступ к ИИ и провайдеру не нужен.
  */
@@ -84,6 +92,21 @@ export function PrepareRequest(project: string, shot: string, packageDir: string
  */
 export function ReferenceImages(project: string, shot: string): $CancellablePromise<string[]> {
     return $Call.ByID(2855561353, project, shot);
+}
+
+/**
+ * RemoveReference — productionWorkflow.removeReference: убрать референс id из запроса попытки.
+ */
+export function RemoveReference(project: string, shot: string, packageDir: string, id: string): $CancellablePromise<productionworkflow$0.View> {
+    return $Call.ByID(384497215, project, shot, packageDir, id);
+}
+
+/**
+ * ReplaceReference — productionWorkflow.replaceReference: картинка референса id — файл path
+ * (свой файл пользователя или взятый кадр принятого плана).
+ */
+export function ReplaceReference(project: string, shot: string, packageDir: string, id: string, path: string): $CancellablePromise<productionworkflow$0.View> {
+    return $Call.ByID(4016760015, project, shot, packageDir, id, path);
 }
 
 /**

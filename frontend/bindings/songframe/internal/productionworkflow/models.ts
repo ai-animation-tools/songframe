@@ -97,6 +97,12 @@ export interface Reasons {
      * Manual — почему нельзя собрать пакет ручной генерации; nil — можно или план не ручной.
      */
     "manual"?: string | null;
+
+    /**
+     * References — почему референсы попытки по референсам сейчас не меняются; поле опускается,
+     * когда можно или попытка по опорам.
+     */
+    "references"?: string | null;
 }
 
 /**
@@ -170,6 +176,13 @@ export interface StartInput {
     "keyframes"?: number | null;
 
     /**
+     * Method — способ генерации новой попытки с описания: "references" — по референсам без опор,
+     * "keyframes" или "" — по опорам. У остальных запусков способ — способ попытки, другой выбор
+     * отклоняется.
+     */
+    "method"?: string;
+
+    /**
      * Looks — коды героев с сохранёнными образами, выбранных пользователем перед описанием, когда
      * образов больше, чем примет модель; nil — не выбирал (при доработке описания действует выбор
      * попытки).
@@ -229,6 +242,14 @@ export interface View {
     "canBuildManual"?: boolean;
     "singleFrame"?: boolean;
     "generationMethod"?: string;
+
+    /**
+     * ReferencesAvailable — новую попытку плана можно сделать по референсам (режим адаптера есть,
+     * план не речевой, не из опор и не производный). CanEditReferences — референсы попытки по
+     * референсам можно утвердить, убрать или заменить сейчас (иначе причина в Reasons.References).
+     */
+    "referencesAvailable"?: boolean;
+    "canEditReferences"?: boolean;
 
     /**
      * StaticShot — план из опор (Context.StaticShot): опор от одной (K01 и необязательные

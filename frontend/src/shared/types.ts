@@ -860,6 +860,9 @@ export interface PackageView {
   batch: string | null;
   timing: { frames?: number; window_seconds?: number; request_seconds?: number | null } | null;
   keyframes: PackageKeyframe[];
+  /** Попытка по референсам: опор нет, видео строится по картинкам места и героев; у попытки по опорам поля нет. */
+  generationMethod?: 'references';
+  references?: PackageReference[];
   /** Описание этапа 1 из description.md пакета, если агент его записал. */
   description: string | null;
   /** Видеопромпт попытки: path и text — вариант, выбранный к отправке; variants — оригинал и перевод, если агент предложил перевод. */
@@ -907,6 +910,19 @@ export interface PackageView {
   /** Файлы технической сводки (контактный лист, превью), если она уже сделана. */
   preview: string[];
   problems: string[];
+}
+
+/**
+ * Картинка запроса попытки по референсам: role start — кадр принятого предшественника, entity — изображение сущности кастинга
+ * (entity — её ID); source — исходный путь от проекта, imagePath — абсолютный путь копии в попытке; approved — утверждена.
+ */
+export interface PackageReference {
+  id: string;
+  role: 'start' | 'entity';
+  entity: string | null;
+  source: string | null;
+  imagePath: string | null;
+  approved: boolean;
 }
 
 /** Рецепт принятого участка комплекта (manifest.json accepted_edit): подпись под видео принятого участка. */

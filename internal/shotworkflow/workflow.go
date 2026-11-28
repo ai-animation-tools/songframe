@@ -160,6 +160,27 @@ func pendingIDs(data *toolrt.Dict) ([]any, error) {
 	return result, nil
 }
 
+// pendingReferences — ID референсов видео по референсам (workflow references), которые ещё не
+// приняты; пустой или неразборчивый список — нет референсов, их ID «план референсов пуст».
+func pendingReferences(data *toolrt.Dict) []string {
+	items, err := toolrt.Iter(data.Value("references"))
+	if err != nil || len(items) == 0 {
+		return []string{"план референсов пуст"}
+	}
+	result := []string{}
+	for _, entry := range items {
+		reference, ok := entry.(*toolrt.Dict)
+		if !ok || !toolrt.Truthy(reference.Value("approved")) {
+			id := ""
+			if ok {
+				id = toolrt.Str(reference.Value("id"))
+			}
+			result = append(result, id)
+		}
+	}
+	return result
+}
+
 // save записывает workflow.json: current_keyframe — первая непринятая опора; запись атомарная
 // (права 0600, зафиксированы эталоном).
 func save(directory string, data *toolrt.Dict) (*toolrt.Dict, error) {
@@ -338,8 +359,10 @@ func (t *workflowTool) readProject() any {
 // single — только K01: видео плана создаётся вне приложения по одной опоре, промежуточных и
 // конечной нет. static — план из опор: видео собирается из K01 и необязательных опор-состояний локально,
 // поэтому правило длительности запроса не действует, конечной опоры нет, а состояния (middle)
-// лежат строго внутри монтажного окна. Принятые опоры с той же ролью и временем сохраняются.
-func (t *workflowTool) planKeyframes(dirArg string, requestSeconds toolrt.Int, middles []middle, single, static bool) (*toolrt.Dict, error) {
+// лежат строго внутри монтажного окна. none — опор нет: видео по референсам (generation_method
+// references), план задаёт только длительность запроса. Принятые опоры с той же ролью и временем
+// сохраняются.
+func (t *workflowTool) planKeyframes(dirArg string, requestSeconds toolrt.Int, middles []middle, single, static, none bool) (*toolrt.Dict, error) {
 	directory, err := t.packageDir(dirArg, true)
 	if err != nil {
 		return nil, err
@@ -426,8 +449,14 @@ func (t *workflowTool) planKeyframes(dirArg string, requestSeconds toolrt.Int, m
 		}
 		points = append(points, point{item.seconds, "middle", item.note})
 	}
-	// Плану из опор хватает K01: опоры-состояния необязательны, конечной опоры нет.
+	// Плану из опор хватает K01: опоры-состояния необязательны, конечной опоры нет. Видео по
+	// референсам опор не имеет: план задаёт только длительность запроса.
 	switch {
+	case none:
+		if len(middles) > 0 || single || static {
+			return nil, valueError("У плана без опор нет промежуточных опор и других режимов опор.")
+		}
+		points = nil
 	case static:
 	case single:
 		if len(middles) > 0 {
@@ -677,7 +706,15 @@ func (t *workflowTool) approvePromptData(directory string, data *toolrt.Dict, fi
 		return nil, err
 	}
 	items, _ := keyframes(data)
-	if len(items) == 0 || len(pending) > 0 {
+	// У видео по референсам опор нет: промпт утверждается после того, как приняты все референсы.
+	if toolrt.Equal(data.Value("generation_method"), "references") {
+		if waiting := pendingReferences(data); len(waiting) > 0 || len(items) > 0 {
+			if len(waiting) == 0 {
+				return nil, valueError("У видео по референсам нет опор.")
+			}
+			return nil, valueError("Сначала примите все референсы: " + strings.Join(waiting, ", "))
+		}
+	} else if len(items) == 0 || len(pending) > 0 {
 		names := make([]string, len(pending))
 		for index, id := range pending {
 			text, ok := id.(string)

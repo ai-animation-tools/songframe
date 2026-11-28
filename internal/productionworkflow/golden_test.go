@@ -133,6 +133,7 @@ type testRules struct{ *mediatest.Service }
 func (testRules) RequestRules() mediaapi.RequestRules {
 	rules := kling.RequestRules()
 	rules.FrameDefined = nil
+	rules.Video.References = nil
 	return rules
 }
 

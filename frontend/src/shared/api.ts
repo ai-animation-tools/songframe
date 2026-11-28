@@ -159,6 +159,12 @@ export interface Api {
     requestOptions(project: string, shot: string, packageDir: string): Promise<ProductionRequestOptions>;
     /** Способ генерации видео попытки: провайдер проекта или вручную вне приложения; до утверждения видеопромпта. */
     setGenerationMethod(project: string, shot: string, packageDir: string, method: ProductionGenerationMethod): Promise<ProductionWorkflowView>;
+    /** Попытка по референсам: утвердить все её референсы; доступ к агенту не нужен. */
+    approveReferences(project: string, shot: string, packageDir: string): Promise<ProductionWorkflowView>;
+    /** Попытка по референсам: убрать референс id (последний Go не убирает). */
+    removeReference(project: string, shot: string, packageDir: string, id: string): Promise<ProductionWorkflowView>;
+    /** Попытка по референсам: заменить референс id файлом path (абсолютный путь: свой файл или кадр из «Взять кадр»); замена утверждена. */
+    replaceReference(project: string, shot: string, packageDir: string, id: string, path: string): Promise<ProductionWorkflowView>;
     /**
      * Снимок вида из камеры, нарисованный по отпечатку digest вида плана, — схема композиции опор попытки. Отпечаток,
      * разошедшийся с текущим, отклоняется: снимок рисуется заново.

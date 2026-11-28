@@ -69,6 +69,9 @@ const (
 	roleMiddleFrame = "Промежуточный кадр"
 	roleLastFrame   = "Последний кадр"
 	roleSpeech      = "Срез речи"
+	// roleStartReference — референс попытки по референсам: кадр предшественника, с которого
+	// начинается план. Остальные референсы подписаны именем сущности.
+	roleStartReference = "Начало"
 )
 
 // PrepareRequest — productionWorkflow.prepareRequest: приложение готовит запрос видео попытки
@@ -278,6 +281,9 @@ func (w *Workflow) videoMedia(c *Context) (*providers.PaidMedia, *dynvalue.Objec
 // requestInputs — входы запроса: утверждённые опоры по порядку плана в слотах кадров адаптера и,
 // у речевого плана, точный WAV пакета в звуковом слоте. Пути — от проекта.
 func requestInputs(c *Context, rules *mediaapi.VideoRules, lipSync bool) ([]providers.PaidInputItem, error) {
+	if c.ReferencesMethod {
+		return referenceInputs(c, rules.References)
+	}
 	paths := []string{}
 	for _, frame := range keyframes(c.Workflow) {
 		if !dynvalue.Truthy(dynvalue.Get(frame, "approved")) {
@@ -313,6 +319,43 @@ func requestInputs(c *Context, rules *mediaapi.VideoRules, lipSync bool) ([]prov
 	return inputs, nil
 }
 
+// referenceInputs — входы запроса по референсам: утверждённые референсы по порядку попытки в
+// слотах картинок режима, подписи — «Начало» или имя сущности.
+func referenceInputs(c *Context, rules *mediaapi.ReferenceRules) ([]providers.PaidInputItem, error) {
+	if rules == nil {
+		return nil, errors.New(textReferencesUnavailable)
+	}
+	items := referenceItems(c.Workflow)
+	inputs := make([]providers.PaidInputItem, 0, len(items))
+	for index, item := range items {
+		if !dynvalue.Truthy(dynvalue.Get(item, "approved")) {
+			return nil, errors.New(textReferencesNotApproved)
+		}
+		full, err := packageFile(c, dynvalue.Get(item, "path"))
+		if err != nil {
+			return nil, err
+		}
+		inputs = append(inputs, providers.PaidInputItem{Flag: "input", Slot: rules.ImageSlot(index), Path: rel(c.Project, full), Role: referenceLabel(c, item)})
+	}
+	if len(inputs) == 0 {
+		return nil, errors.New(textReferencesNotApproved)
+	}
+	return inputs, nil
+}
+
+// referencePrompt — видеопромпт попытки по референсам для запроса: метки картинок [#R01]
+// заменены обозначением провайдера по месту картинки в запросе.
+func referencePrompt(c *Context, rules *mediaapi.ReferenceRules, prompt string) (string, error) {
+	if err := checkReferenceMarks(c, prompt); err != nil {
+		return "", err
+	}
+	order := []string{}
+	for _, item := range referenceItems(c.Workflow) {
+		order = append(order, dynvalue.ToString(dynvalue.Get(item, "id")))
+	}
+	return replaceReferenceMarks(prompt, order, rules.Mention), nil
+}
+
 // requestSelection — запрос попытки до выбора модели: текст утверждённого промпта, входы, правило
 // длительности и настройки проекта, кандидаты в порядке выбора и параметры каждой модели
 // (videoParameters). С изменением пользователя кандидат один — его модель с его значениями. Той же
@@ -329,9 +372,18 @@ func requestSelection(c *Context, paid providers.Paid, settings *dynvalue.Object
 		return providers.PaidInput{}, caps, nil, err
 	}
 	rules := paid.Rules.Video
+	command, models := rules.Command, rules.Models
 	preferred := ""
 	if model, isString := settings.Value("model").(string); isString {
 		preferred = dynvalue.Trim(model)
+	}
+	if c.ReferencesMethod {
+		// Модель проекта выбрана для запроса по опорам; по референсам автоматическая сборка берёт
+		// только модели режима, остальные модели команды — выбор пользователя в «Изменить».
+		command, models, preferred = rules.References.Command, rules.References.Models, ""
+		if prompt, err = referencePrompt(c, rules.References, prompt); err != nil {
+			return providers.PaidInput{}, caps, nil, err
+		}
 	}
 	if change != nil {
 		preferred = dynvalue.Trim(change.Model)
@@ -341,11 +393,11 @@ func requestSelection(c *Context, paid providers.Paid, settings *dynvalue.Object
 	ordered := caps
 	ordered.Models = []mediaapi.Model{}
 	for _, item := range caps.Models {
-		if change == nil || item.ID == preferred {
+		if change == nil && (!c.ReferencesMethod || slices.Contains(models, item.ID)) || change != nil && item.ID == preferred {
 			ordered.Models = append(ordered.Models, item)
 		}
 	}
-	slices.SortStableFunc(ordered.Models, func(a, b mediaapi.Model) int { return modelRank(rules.Models, a.ID) - modelRank(rules.Models, b.ID) })
+	slices.SortStableFunc(ordered.Models, func(a, b mediaapi.Model) int { return modelRank(models, a.ID) - modelRank(models, b.ID) })
 	constraint := &providers.DurationConstraint{WindowSeconds: c.Window, Rule: dynvalue.ToString(c.DurationRule)}
 	if provider, ok := videoProvider(c.Settings); ok && dynvalue.Truthy(c.Scene.Value("lipsync")) && provider.LipSync != nil {
 		minimum := provider.LipSync.Min
@@ -357,11 +409,15 @@ func requestSelection(c *Context, paid providers.Paid, settings *dynvalue.Object
 	options, _ := settings.Value("options").(*dynvalue.Object)
 	requestSeconds := dynvalue.Get(c.workflowValue("timing"), "request_seconds")
 	input := providers.PaidInput{
-		Project: c.Project, Shot: c.Shot, Kind: mediaproviders.Video, Command: rules.Command, PreferredModel: &preferred,
+		Project: c.Project, Shot: c.Shot, Kind: mediaproviders.Video, Command: command, PreferredModel: &preferred,
 		DurationConstraint: constraint, RequiredParameters: required, ProjectOptions: options, Inputs: inputs, Outputs: 1, Prompt: prompt,
 	}
 	return input, ordered, func(item mediaapi.Model) *dynvalue.Object {
-		parameters := videoParameters(paid.Rules, item, settings, requestSeconds, inputs)
+		defaults := rules.Defaults
+		if c.ReferencesMethod {
+			defaults = rules.References.Defaults
+		}
+		parameters := videoParameters(paid.Rules, defaults, item, settings, requestSeconds, inputs)
 		if change != nil {
 			for name, value := range change.Parameters {
 				parameters.Set(name, fromJSON(value))
@@ -381,8 +437,9 @@ func modelRank(models []string, id string) int {
 
 // videoParameters — параметры запроса для модели item: длительность описания, разрешение и
 // пропорции проекта, если модель их объявляет (пропорции, которые задаёт начальный кадр, не
-// передаются: с настройкой сверяется сам кадр), и значения единого плана адаптера.
-func videoParameters(rules mediaapi.RequestRules, item mediaapi.Model, settings *dynvalue.Object, requestSeconds any, inputs []providers.PaidInputItem) *dynvalue.Object {
+// передаются: с настройкой сверяется сам кадр), и значения единого плана адаптера (defaults —
+// режима по опорам или по референсам).
+func videoParameters(rules mediaapi.RequestRules, defaults []mediaapi.ParameterDefault, item mediaapi.Model, settings *dynvalue.Object, requestSeconds any, inputs []providers.PaidInputItem) *dynvalue.Object {
 	arguments := modelArguments(item)
 	parameters := dynvalue.NewObject()
 	parameters.Set("duration", requestSeconds)
@@ -395,7 +452,7 @@ func videoParameters(rules mediaapi.RequestRules, item mediaapi.Model, settings 
 		}
 		parameters.Set(name, value)
 	}
-	for _, preference := range rules.Video.Defaults {
+	for _, preference := range defaults {
 		name := providers.ArgumentName(arguments, preference.Name)
 		if name == "" {
 			continue
@@ -461,7 +518,7 @@ func (w *Workflow) RequestOptions(ctx context.Context, project, shot, packageDir
 	_, looksSupported := media.SavedLooks()
 	result.Marked = len(savedlooks.Codes(input.Prompt)) > 0
 	for _, item := range caps.Models {
-		if item.Command != rules.Video.Command {
+		if item.Command != input.Command {
 			continue
 		}
 		arguments := modelArguments(item)

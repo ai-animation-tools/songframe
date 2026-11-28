@@ -205,4 +205,55 @@ describe('новая попытка только с первой опорой', 
     const inFlight = { attemptStatus: 'submission_unknown' } as PackageView['request'];
     expect(canRetryFirstFrame(pkg({ stage: 'submitted', keyframes: [frame('K01', true), frame('K02', true)], request: inFlight }))).toBe(false);
   });
+
+  describe('попытка по референсам', () => {
+    const ref = (id: string, approved: boolean) =>
+      ({ id, role: id === 'R01' ? 'start' : 'entity', entity: null, source: null, imagePath: `/p/${id}.png`, approved }) as NonNullable<
+        PackageView['references']
+      >[number];
+    const byReferences = (overrides: Partial<PackageView> = {}): PackageView =>
+      pkg({ generationMethod: 'references', stage: 'description_review', ...overrides });
+    const accepted = { stage: 'description_review', verdict: 'approve' };
+
+    it('вместо опор идёт шаг «Референсы», без описания он остаётся описанием', () => {
+      const attempt = byReferences();
+      expect(planPath(shot(), attempt, view()).steps.map((step) => step.key)).toEqual([
+        'description',
+        'references',
+        'prompt',
+        'request',
+        'generation',
+        'result'
+      ]);
+      expect(planPath(shot(), attempt, view()).current).toBe('description');
+    });
+
+    it('после принятого описания ждёт утверждения референсов и называет их число', () => {
+      const attempt = byReferences({
+        references: [ref('R01', true), ref('R02', false)],
+        decision: accepted as PackageView['decision'],
+        timing: { request_seconds: 5 }
+      });
+      const path = planPath(shot(), attempt, view());
+      expect(path.current).toBe('references');
+      expect(path.now).toBe('Сейчас: утвердите референсы');
+      expect(path.steps[0].summary).toBe('Принято: референсов 2, запрос на 5 с');
+      expect(path.steps[1].summary).toBe('Утверждено 1 из 2');
+      expect(path.steps[2].summary).toBe('После референсов');
+    });
+
+    it('с утверждёнными референсами идёт к видеопромпту, а затем к запросу', () => {
+      const refs = [ref('R01', true), ref('R02', true)];
+      const attempt = byReferences({ references: refs, decision: accepted as PackageView['decision'] });
+      expect(planPath(shot(), attempt, view()).current).toBe('prompt');
+      const prompted = { ...attempt, prompt: { path: 'p', approved: true, text: 'x' } } as PackageView;
+      expect(planPath(shot(), prompted, view()).current).toBe('request');
+    });
+
+    it('не предлагает повтор с опорами', () => {
+      const attempt = byReferences({ stage: 'prompt_review', keyframes: [frame('K01', true), frame('K02', true)] });
+      expect(canRetryWithFrames(attempt)).toBe(false);
+      expect(canRetryFirstFrame(attempt)).toBe(false);
+    });
+  });
 });

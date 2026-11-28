@@ -11,7 +11,7 @@ import { DEFAULT_KEYFRAME_LIMIT, keyframeLimit, mediaProviderInfo, normalizeMedi
 import type { KeyframeNoteScope, ManualVideo, PackageView, PromptVariant, ShotProduction } from '@shared/types';
 import type { ProductionPass } from '@shared/production-workflow';
 import { BUSY_REASON } from '../constants';
-import { manualGeneration, planPath, questionStep, REQUEST_IN_FLIGHT, type PlanPath, type PlanStepKey } from '../planPath';
+import { manualGeneration, planPath, questionStep, referencesAttempt, REQUEST_IN_FLIGHT, type PlanPath, type PlanStepKey } from '../planPath';
 import { useProductionWorkflow, type ProductionWorkflow } from '../useProductionWorkflow';
 import { AcceptedAsset } from './AcceptedAsset';
 import { AcceptedKitPanel } from './AcceptedKitPanel';
@@ -21,6 +21,7 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { ManualGeneration, ManualGenerationInfo } from './ManualGeneration';
 import { PackageDecision } from './PackageDecision';
 import { PackageKeyframes } from './PackageKeyframes';
+import { PackageReferences } from './PackageReferences';
 import { CompositionPanel } from './CompositionPanel';
 import { PackageNotices } from './PackageNotices';
 import { PackageRequest } from './PackageRequest';
@@ -98,6 +99,7 @@ export function ProductionPath({
   onReplaceFrame,
   onReplaceFrameWith,
   shotFrames,
+  defaultMethod,
   onReopenPrompt,
   onKeepForScene,
   onSetKeyframeNote,
@@ -151,6 +153,8 @@ export function ProductionPath({
   onReplaceFrameWith?(frame: string, path: string): Promise<void>;
   /** Принятые планы клипа для «Взять кадр» у опор; без них кнопки нет. */
   shotFrames?: ShotFrameSource;
+  /** Способ последней попытки плана: им по умолчанию начинается новая попытка; нет попыток — по опорам. */
+  defaultMethod?: 'references' | 'keyframes';
   /** Вернуть утверждённый видеопромпт на доработку с замечанием, пока запрос не отправлен. */
   onReopenPrompt(note: string): void;
   onKeepForScene(): void;
@@ -299,11 +303,26 @@ export function ProductionPath({
   // «Запрос» (свой промпт утверждается сразу при сохранении). Речевой план без липсинка — всегда вручную.
   // У способа видео проекта без сервиса все попытки ручные: выбирать нечего.
   const projectManual = !!mediaProviderInfo(view?.videoProvider, 'video')?.manual;
-  const methodShown = !!pkg && !!view && !view.singleFrame && !projectManual && !view.paid && !pkg.request;
+  const byReferences = referencesAttempt(pkg);
+  const methodShown = !!pkg && !!view && !view.singleFrame && !projectManual && !view.paid && !pkg.request && !byReferences;
+  // Имена сущностей кастинга для подписей референсов; пока кастинг не прочитан или без сущности — её код.
+  const [entityNames, setEntityNames] = useState<Record<string, string>>({});
+  const hasReferences = !!pkg?.references?.length;
+  useEffect(() => {
+    if (!hasReferences) return;
+    let active = true;
+    window.api.cast.view(project).then(
+      (cast) => active && setEntityNames(Object.fromEntries((cast.cast?.entities ?? []).map((entity) => [entity.id, entity.name]))),
+      () => undefined
+    );
+    return () => {
+      active = false;
+    };
+  }, [project, hasReferences]);
   const methodReason = view?.derivedFrom ? view.reasons.continue : promptReason;
   const methodChoice = (
     <GenerationMethodChoice
-      method={view?.generationMethod ?? 'provider'}
+      method={view?.generationMethod === 'manual' ? 'manual' : 'provider'}
       disabledReason={methodReason}
       onChange={(method) => void workflow.setGenerationMethod(method)}
     />
@@ -351,6 +370,7 @@ export function ProductionPath({
       onAcceptProposal={acceptProposal}
       onReviseProposal={reviseProposal}
       onWriteOwn={!pkg ? () => beforeDescription(openOwnDescription, false) : view?.nextStage === 'prompt' ? openOwnPrompt : undefined}
+      defaultMethod={defaultMethod}
       onBeforePrepare={(proceed) => beforeDescription(proceed, true)}
       descriptionReason={looksCheck.checking ? savedLooksTexts.beforeChecking : null}
       onOwnVideo={!pkg ? onOwnVideo : undefined}
@@ -381,6 +401,8 @@ export function ProductionPath({
         busy={blocked}
         busyReason={busyReason}
         revisionByAgent={!shown.frame && shown.stage !== 'image_request_choice'}
+        approveLabel={byReferences && shown.stage === 'description_review' ? productionTexts.packageDecision.approveDescription : undefined}
+        approveHint={byReferences && shown.stage === 'description_review' ? productionTexts.packageDecision.approveDescriptionHint : undefined}
         onChangeRequest={requestChange ? () => setChangingRequest(true) : undefined}
         onDecide={(verdict, scope) => {
           // Без открытого вопроса приёмка и повтор не нуждаются в ответе: открываются сразу.
@@ -442,7 +464,7 @@ export function ProductionPath({
         return (
           <>
             {pkg?.description ? <PackageTextSection title={productionTexts.packageCard.description} text={pkg.description} maxHeight={260} /> : null}
-            {pkg?.description && view ? (
+            {pkg?.description && view && !byReferences ? (
               <ActionButton
                 size="small"
                 startIcon={<EditNoteIcon />}
@@ -510,6 +532,26 @@ export function ProductionPath({
                 {result}
               </>
             ) : null}
+            {current ? decision(key) : null}
+          </>
+        );
+      case 'references':
+        return (
+          <>
+            {pkg ? (
+              <PackageReferences
+                pkg={pkg}
+                entityNames={entityNames}
+                busy={blocked}
+                busyReason={busyReason}
+                editReason={view?.canEditReferences ? null : (view?.reasons.references ?? productionTexts.packageReferences.loadingReason)}
+                shotFrames={shotFrames}
+                onApprove={() => void workflow.approveReferences()}
+                onRemove={(id) => void workflow.removeReference(id)}
+                onReplace={(id, path) => workflow.replaceReference(id, path)}
+              />
+            ) : null}
+            {current || (!path.finished && panelSteps.has(key)) ? panel(key, asked) : null}
             {current ? decision(key) : null}
           </>
         );

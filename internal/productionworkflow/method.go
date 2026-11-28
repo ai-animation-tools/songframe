@@ -73,6 +73,10 @@ func methodReason(c *Context, view View, method string) (string, error) {
 		return textStaticNoVideoStage, nil
 	case c.SingleFrame:
 		return textMethodSingleFrame, nil
+	case c.ReferencesMethod:
+		// Попытка по референсам без опор: ручного пакета по опорам у неё нет, а способ выбран до
+		// описания и дальше не меняется.
+		return textReferencesManualNotAllow, nil
 	case mediaproviders.ManualVideo(c.Settings.Value("provider"), false):
 		return textMethodProjectManual, nil
 	case view.Busy:

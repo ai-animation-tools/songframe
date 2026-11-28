@@ -102,7 +102,8 @@ func Parser() *toolrt.Command {
 				toolrt.Action{Name: "--request-seconds", Int: true, Required: true},
 				toolrt.Action{Name: "--middle", Kind: toolrt.AppendValue, Metavar: "СЕК:ЗАМЕТКА"},
 				toolrt.Action{Name: "--single", Kind: toolrt.StoreTrue, Help: "Одна опора K01 на начале плана: видео создаётся вне приложения"},
-				toolrt.Action{Name: "--static", Kind: toolrt.StoreTrue, Help: "План из опор: K01 и опоры-состояния внутри окна, без конечной опоры и правила длительности"}),
+				toolrt.Action{Name: "--static", Kind: toolrt.StoreTrue, Help: "План из опор: K01 и опоры-состояния внутри окна, без конечной опоры и правила длительности"},
+				toolrt.Action{Name: "--no-frames", Kind: toolrt.StoreTrue, Help: "Без опор: видео по референсам, задаётся только длительность запроса"}),
 			sub("approve", dir, toolrt.Action{Name: "keyframe"}, toolrt.Action{Name: "path"}),
 			sub("approve-prompt", dir, toolrt.Action{Name: "--file"}),
 			sub("set-stage", dir, toolrt.Action{Name: "stage"},
@@ -179,7 +180,8 @@ func Run(root string, argv []string) toolcli.Output {
 			}
 			single, _ := args["single"].(bool)
 			static, _ := args["static"].(bool)
-			if _, err := tool.planKeyframes(dir, args["request_seconds"].(toolrt.Int), middles, single, static); err != nil {
+			none, _ := args["no_frames"].(bool)
+			if _, err := tool.planKeyframes(dir, args["request_seconds"].(toolrt.Int), middles, single, static, none); err != nil {
 				return err
 			}
 			return printTable(out, tool, dir)

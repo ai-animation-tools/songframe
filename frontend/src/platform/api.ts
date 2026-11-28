@@ -337,7 +337,7 @@ function toProductionWorkflowView({
       : {}),
     ...(nextStage ? { nextStage: nextStage as ProductionPass } : {}),
     ...(reviseStage ? { reviseStage: reviseStage as NonNullable<ProductionWorkflowView['reviseStage']> } : {}),
-    ...(generationMethod === 'manual' ? { generationMethod } : {}),
+    ...(generationMethod === 'manual' || generationMethod === 'references' ? { generationMethod } : {}),
     ...(imageProvider === undefined ? {} : { imageProvider: imageProvider as string }),
     ...(videoProvider === undefined ? {} : { videoProvider: videoProvider as string }),
     framePrompts: framePrompts as ProductionFramePrompt[],
@@ -1041,6 +1041,14 @@ export function createApi(b: Bindings): Api {
   api.productionWorkflow.setGenerationMethod = (project, shot, packageDir, method) =>
     call('productionWorkflow.setGenerationMethod', async () =>
       productionWorkflow((await b.productionWorkflow()).SetGenerationMethod(project, shot, packageDir, method))
+    );
+  api.productionWorkflow.approveReferences = (project, shot, packageDir) =>
+    call('productionWorkflow.approveReferences', async () => productionWorkflow((await b.productionWorkflow()).ApproveReferences(project, shot, packageDir)));
+  api.productionWorkflow.removeReference = (project, shot, packageDir, id) =>
+    call('productionWorkflow.removeReference', async () => productionWorkflow((await b.productionWorkflow()).RemoveReference(project, shot, packageDir, id)));
+  api.productionWorkflow.replaceReference = (project, shot, packageDir, id, path) =>
+    call('productionWorkflow.replaceReference', async () =>
+      productionWorkflow((await b.productionWorkflow()).ReplaceReference(project, shot, packageDir, id, path))
     );
   api.productionWorkflow.saveComposition = (project, shot, packageDir, digest, images) =>
     call('productionWorkflow.saveComposition', async () =>

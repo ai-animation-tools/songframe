@@ -63,6 +63,35 @@ export function packageForShot(pkg: PackageView, shot: string): PackageView {
   return { ...replaced, shot };
 }
 
+/**
+ * Попытка по референсам: опор нет, у описания принятый кадр предшественника (R01, начало) и изображения героя и места
+ * (R02, R03). Референсы по умолчанию кандидаты; approved утверждает все.
+ */
+export function referencesPackage(approved = false, overrides: Partial<PackageView> = {}): PackageView {
+  const base = packageForShot(keyframePackage(), 'M02');
+  const reference = (id: string, role: 'start' | 'entity', entity: string | null): NonNullable<PackageView['references']>[number] => ({
+    id,
+    role,
+    entity,
+    source: role === 'start' ? 'assets/shots/M01/video.mp4' : `source/${entity}.png`,
+    imagePath: `${STORY_IMAGE_PATH}?reference=${id}`,
+    approved
+  });
+  return {
+    ...base,
+    stage: 'description_review',
+    stageLabel: approved ? 'Референсы утверждены' : 'Референсы на согласовании',
+    keyframes: [],
+    keyframeNotes: [],
+    generationMethod: 'references',
+    references: [reference('R01', 'start', null), reference('R02', 'entity', 'hero'), reference('R03', 'entity', 'gate')],
+    description: 'Герой останавливается у ворот и смотрит на свет в окне.',
+    pendingDecision: null,
+    decision: { stage: 'description_review', verdict: 'approve', at: DATE },
+    ...overrides
+  };
+}
+
 export function pageShot(id: string, overrides: Partial<ShotProduction> = {}): ShotProduction {
   return productionShot({
     id,
@@ -144,6 +173,8 @@ export interface ProductionPageModelOptions {
   composition?: boolean | 'missing';
   /** Сохранённые образы провайдера видео (savedLooks): без модели провайдер образов не хранит. */
   savedLooks?: SavedLooksStoryOptions;
+  /** Провайдер видео делает видео по референсам: новую попытку можно начать этим способом, у попыток по референсам редактируются картинки. */
+  references?: boolean;
 }
 
 interface PageModel {
@@ -181,6 +212,10 @@ interface PageModel {
   ownSaves: string[];
   /** Выбранные способы генерации попыток по порядку. */
   methodChanges: string[];
+  /** Запуски агента productionWorkflow.start: действие и способ новой попытки («prepare:references»). */
+  attemptStarts: string[];
+  /** Действия над референсами попытки по порядку: «утвердить», «убрать R02», «заменить R01». */
+  referenceActions: string[];
   /** Положения выключателя «Схема композиции» по порядку (productionWorkflow.setComposition). */
   compositionChanges: boolean[];
   /** Сохранённые снимки вида из камеры: размер PNG каждого кадра в байтах (productionWorkflow.saveComposition). */
@@ -369,6 +404,8 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
         promptReopens: [],
         ownSaves: [],
         methodChanges: [],
+        attemptStarts: [],
+        referenceActions: [],
         compositionChanges: [],
         compositionSaves: [],
         requestBuilds: [],
@@ -499,15 +536,27 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
                 : null;
         const manual = !!options.manual || chosen;
         // Как Go: после утверждённых опор и промпта следующий шаг — запрос, его собирает приложение без агента.
+        const byReferences = pkg?.generationMethod === 'references';
+        const refsApproved = !!pkg?.references?.length && pkg.references.every((reference) => reference.approved);
         const requestNext =
           !!pkg &&
           !manual &&
           !pkg.request &&
           !pkg.pendingDecision &&
           !!pkg.prompt?.approved &&
-          pkg.keyframes.length > 0 &&
-          pkg.keyframes.every((frame) => frame.approved);
+          (byReferences ? refsApproved : pkg.keyframes.length > 0 && pkg.keyframes.every((frame) => frame.approved));
+        // Как Go: референсы меняются после утверждения описания и до видеопромпта.
+        const referencesEditable = byReferences && !pkg?.pendingDecision && !pkg?.prompt?.approved && !pkg?.request;
+        const promptNext = byReferences && !pkg?.pendingDecision && refsApproved && !pkg?.prompt?.approved;
         return workflowView({
+          ...(options.references ? { referencesAvailable: true } : {}),
+          ...(byReferences
+            ? {
+                generationMethod: 'references' as const,
+                canEditReferences: referencesEditable,
+                ...(promptNext ? { nextStage: 'prompt' as const, canContinue: true } : {})
+              }
+            : {}),
           ...(requestNext ? { nextStage: 'request' as const, canContinue: true } : {}),
           ...(manual ? { manual: true, canBuildManual: !!pkg && !manualReason, videoProvider: TEST_PROVIDER } : {}),
           ...(options.manual ? { singleFrame: true } : {}),
@@ -532,9 +581,12 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
           reasons: packageDir
             ? {
                 prepare: null,
-                continue: requestNext ? null : 'Сначала ответьте на вопрос пакета.',
+                continue: requestNext || promptNext ? null : 'Сначала ответьте на вопрос пакета.',
                 frames: nextFrame ? null : 'Сначала ответьте на вопрос пакета.',
-                ...(manual ? { manual: manualReason } : {})
+                ...(manual ? { manual: manualReason } : {}),
+                ...(byReferences && !referencesEditable
+                  ? { references: 'Референсы меняются после утверждения описания и до видеопромпта; дальше — доработка описания или новая попытка.' }
+                  : {})
               }
             : workflowView().reasons,
           ...options.workflowView?.(shot, packageDir)
@@ -545,6 +597,26 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
       const fragment = fragmentModel();
       const session = createStoryApi({
         animatic: fragment.overrides.animatic,
+        // Имена сущностей на карточках референсов берутся из кастинга проекта.
+        ...(options.references
+          ? {
+              cast: {
+                view: async () => ({
+                  cast: {
+                    schema_version: 1 as const,
+                    entities: [
+                      { id: 'hero', kind: 'character', name: 'Артём', short_name: 'Артём', role: '', appearance: '', images: [], initial_state: {} },
+                      { id: 'gate', kind: 'location', name: 'Старые ворота', short_name: 'Ворота', role: '', appearance: '', images: [], initial_state: {} }
+                    ],
+                    properties: {}
+                  },
+                  manifest: null,
+                  imagePaths: {},
+                  problems: []
+                })
+              }
+            }
+          : {}),
         ...(options.savedLooks
           ? { savedLooks: createSavedLooksModel(options.savedLooks, () => (options.savedLooks?.heroes ?? []).map((hero) => hero.code)) }
           : {}),
@@ -981,6 +1053,43 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
         productionWorkflow: {
           // Подготовка агентом показана отдельной группой историй; здесь есть только свой файл опоры, идущий мимо агента.
           view: async (project, shot, packageDir) => workflowSnapshot(project, shot, packageDir),
+          // Запуск агента здесь не моделируется: фиксируется только действие и способ новой попытки, как их принял бы Go.
+          start: async (input) => {
+            model.attemptStarts = [...model.attemptStarts, `${input.action}:${input.method ?? 'по умолчанию'}`];
+            publish();
+            return workflowSnapshot(input.project, input.shot, input.packageDir);
+          },
+          // Как Go: референсы попытки по референсам — утвердить все, убрать (кроме последнего) или заменить файлом; замена утверждена.
+          approveReferences: async (project, shot, dir) => {
+            const { pkg } = find(project, dir);
+            if (!pkg.references) throw new Error('Эта попытка делается по опорам: референсов у неё нет.');
+            pkg.references = pkg.references.map((reference) => ({ ...reference, approved: true }));
+            model.referenceActions = [...model.referenceActions, 'утвердить'];
+            touch(pkg);
+            publish();
+            return workflowSnapshot(project, shot, dir);
+          },
+          removeReference: async (project, shot, dir, id) => {
+            const { pkg } = find(project, dir);
+            if (!pkg.references?.some((reference) => reference.id === id)) throw new Error('Референса нет в попытке.');
+            if (pkg.references.length === 1) throw new Error('Последний референс не убрать: запросу нужна хотя бы одна картинка.');
+            pkg.references = pkg.references.filter((reference) => reference.id !== id);
+            model.referenceActions = [...model.referenceActions, `убрать ${id}`];
+            touch(pkg);
+            publish();
+            return workflowSnapshot(project, shot, dir);
+          },
+          replaceReference: async (project, shot, dir, id, path) => {
+            const { pkg } = find(project, dir);
+            if (!pkg.references?.some((reference) => reference.id === id)) throw new Error('Референса нет в попытке.');
+            pkg.references = pkg.references.map((reference) =>
+              reference.id === id ? { ...reference, source: path, imagePath: `${STORY_IMAGE_PATH}?replaced=${id}`, approved: true } : reference
+            );
+            model.referenceActions = [...model.referenceActions, `заменить ${id}`];
+            touch(pkg);
+            publish();
+            return workflowSnapshot(project, shot, dir);
+          },
           // Как Go: следующая попытка плана получает описание и утверждённые опоры, промпт — на повторное утверждение.
           retryWithFrames: async (project, shotId, dir) => {
             const { shot, pkg } = find(project, dir);
@@ -1323,7 +1432,8 @@ export function ProductionPageStory({ links = [] }: { links?: StoryLink[] }): Re
             {model.frameRetries}. Попыток с первой опорой: {model.firstFrameRetries}. Пакетов ручной генерации: {model.manualBuilds}. Загрузок видео:{' '}
             {model.manualUploads}. Замен видео: {model.manualReplacements}. Своих видео: {model.ownVideos}. Входов своих видео:{' '}
             {model.ownVideoGenerations.join('; ') || 'нет'}. Возвратов промпта: {model.promptReopens.join(', ') || 'нет'}. Своих описаний:{' '}
-            {model.ownSaves.join(', ') || 'нет'}. Способов генерации: {model.methodChanges.join(', ') || 'нет'}. Схема композиции:{' '}
+            {model.ownSaves.join(', ') || 'нет'}. Способов генерации: {model.methodChanges.join(', ') || 'нет'}. Запусков агента:{' '}
+            {model.attemptStarts.join(', ') || 'нет'}. Действий с референсами: {model.referenceActions.join(', ') || 'нет'}. Схема композиции:{' '}
             {model.compositionChanges.map((enabled) => (enabled ? 'вкл' : 'выкл')).join(', ') || 'нет'}. Снимков: {model.compositionSaves.length}. Запросов
             приложения: {model.requestBuilds.join(', ') || 'нет'}. Вариантов промпта к отправке: {model.promptVariants.join(', ') || 'нет'}. Открытых папок:{' '}
             {model.openedPaths.join(', ') || 'нет'}. Сборок из опор: {model.staticBuilds}. Новых участков: {model.recuts}

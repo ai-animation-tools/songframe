@@ -24,6 +24,11 @@ describe('Подписи материалов сохранённого запр�
     expect(productionInputLabel({ role: 'reference' })).toBe('Референс');
   });
 
+  it('показывает подпись роли, заданную Go, у входа запроса по референсам', () => {
+    expect(productionInputLabel({ role: 'Начало', slot: 'image_1' })).toBe('Начало (Изображение 1)');
+    expect(productionInputLabel({ role: 'Лодка', slot: 'image_2' })).toBe('Лодка (Изображение 2)');
+  });
+
   it('не повторяет одинаковые переводы роли и слота', () => {
     expect(productionInputLabel({ role: 'first', slot: 'first_image' })).toBe('Первый кадр');
     expect(productionInputLabel({ role: 'last', slot: 'tail_image' })).toBe('Последний кадр');

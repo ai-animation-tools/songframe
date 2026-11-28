@@ -11,6 +11,7 @@
 | [ai-clip-scene/SKILL.md](ai-clip-scene/SKILL.md) | `internal/productionworkflow` склеивает три файла `ai-clip-scene` в промпт этапа `description`, `prompt` или `request` | Контекст задания, непрерывность, длительность и опоры, выбор модели и входов, речевые планы |
 | [ai-clip-scene/references/app-proposal.md](ai-clip-scene/references/app-proposal.md) | то же | JSON-контракт ответа каждого этапа |
 | [ai-clip-scene/references/prompt-template.md](ai-clip-scene/references/prompt-template.md) | то же | Каркас промптов опор и видеопромпта |
+| [ai-clip-scene/references/references-video.md](ai-clip-scene/references/references-video.md) | `internal/productionworkflow` добавляет его только в задания попытки по референсам | Картинки запроса без опор, метки `[#R01]`, короткий видеопромпт и стык с предшественником |
 
 Формат ответа и ограничения, которые проверяет приложение, дополнительно задаёт сам код в конце промпта. Особенности конкретных сервисов генерации в эти файлы не входят: к промпту этапа производства приложение добавляет раздел «Указания агенту» из документа выбранного провайдера `resources/providers/<вид>/<id>.md` (`providers.Guide`). Имена скиллов заданы константами `resources/resources.go`, SHA-256 файлов закреплены в `resources/resources_test.go` и эталонах промптов `testdata/golden`: при переименовании или правке меняйте их вместе. Папка встроена в бинарник (`//go:embed skills`).
 

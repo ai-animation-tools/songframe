@@ -185,8 +185,8 @@ export function useProductionWorkflow(project: string, shot: string, packageDir:
     view,
     error,
     busy: pending || !!view?.busy,
-    start: (action: ProductionWorkflowStart['action'], note?: string, keyframes?: number, looks?: string[]) =>
-      execute(() => window.api.productionWorkflow.start({ project, shot, packageDir, action, note, keyframes, looks })),
+    start: (action: ProductionWorkflowStart['action'], note?: string, keyframes?: number, looks?: string[], method?: ProductionWorkflowStart['method']) =>
+      execute(() => window.api.productionWorkflow.start({ project, shot, packageDir, action, note, keyframes, looks, method })),
     generateFrames: () => (packageDir ? execute(() => window.api.productionWorkflow.generateFrames(project, shot, packageDir)) : Promise.resolve(false)),
     /** Пакет ручной генерации собирается без агента: после записи попытка перечитывается, как после применения. */
     buildManual: () => (packageDir ? execute(() => window.api.productionWorkflow.buildManual(project, shot, packageDir), true) : Promise.resolve(false)),
@@ -209,6 +209,24 @@ export function useProductionWorkflow(project: string, shot: string, packageDir:
     setGenerationMethod: (method: ProductionGenerationMethod) =>
       packageDir
         ? execute(() => window.api.productionWorkflow.setGenerationMethod(project, shot, packageDir, method), true, productionTexts.generationMethod.saved)
+        : Promise.resolve(false),
+    /** Попытка по референсам: утверждение всех референсов; страница перечитывает попытку, как после применения. */
+    approveReferences: () =>
+      packageDir
+        ? execute(() => window.api.productionWorkflow.approveReferences(project, shot, packageDir), true, productionTexts.packageReferences.allApproved)
+        : Promise.resolve(false),
+    removeReference: (id: string) =>
+      packageDir
+        ? execute(() => window.api.productionWorkflow.removeReference(project, shot, packageDir, id), true, productionTexts.packageReferences.removed({ id }))
+        : Promise.resolve(false),
+    /** Файл path — свой или кадр из «Взять кадр» — вместо референса id; замена утверждена. */
+    replaceReference: (id: string, path: string) =>
+      packageDir
+        ? execute(
+            () => window.api.productionWorkflow.replaceReference(project, shot, packageDir, id, path),
+            true,
+            productionTexts.packageReferences.replaced({ id })
+          )
         : Promise.resolve(false),
     /** Свой файл сразу становится кандидатом: вопрос об утверждении откроется у опоры, отдельного просмотра нет. */
     importFrames: (images: ProductionFrameCandidate[]) =>

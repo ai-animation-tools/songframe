@@ -337,6 +337,13 @@ export interface PackageView {
     "batch": json$0.RawMessage;
     "timing": json$0.RawMessage;
     "keyframes": Keyframe[];
+
+    /**
+     * GenerationMethod и References — попытка по референсам: способ "references" и её картинки;
+     * у попытки по опорам полей нет.
+     */
+    "generationMethod"?: string;
+    "references"?: Reference[];
     "description": string | null;
     "prompt": Prompt | null;
     "request": Request | null;
@@ -446,6 +453,20 @@ export interface Quote {
      * блокирует отправку, changed и stale — предупреждения. Пустой список — образов нет или все в порядке.
      */
     "looks": savedlooks$0.UseCheck[];
+}
+
+/**
+ * Reference — PackageReference: картинка запроса попытки по референсам из workflow.json. Role —
+ * start (кадр принятого предшественника) или entity (изображение сущности кастинга Entity);
+ * ImagePath — абсолютный путь копии в попытке, если файл есть; Source — исходный путь от проекта.
+ */
+export interface Reference {
+    "id": string;
+    "role": string;
+    "entity": string | null;
+    "source": string | null;
+    "imagePath": string | null;
+    "approved": boolean;
 }
 
 /**

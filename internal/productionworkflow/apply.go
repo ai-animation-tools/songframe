@@ -242,6 +242,16 @@ func (w *Workflow) applyStage(ctx context.Context, plan *applyPlan) error {
 		if !approved {
 			return errors.New(textAcceptedFramesChanged)
 		}
+		// Метки картинок попытки по референсам должны называть её референсы — в обоих текстах.
+		if plan.context.ReferencesMethod {
+			for _, key := range []string{"prompt", "translation"} {
+				if text, ok := plan.after.Value(key).(string); ok {
+					if err := checkReferenceMarks(plan.context, text); err != nil {
+						return err
+					}
+				}
+			}
+		}
 		// Оригинал на языке провайдера и русский перевод — два файла попытки; отправляется выбранный
 		// при утверждении (prompt.path). Перевод прежнего предложения к новому оригиналу не относится.
 		if err := writeProjectFile(filepath.Join(target, promptOriginalFile), []byte(dynvalue.ToString(plan.after.Value("prompt")))); err != nil {
@@ -264,6 +274,14 @@ func (w *Workflow) applyStage(ctx context.Context, plan *applyPlan) error {
 		workflow.Set("request_dir", nil)
 		if err := writeProjectJSON(filepath.Join(target, "workflow.json"), workflow); err != nil {
 			return err
+		}
+		// У попытки по референсам утверждение референсов этап не двигает (опор, принятие которых
+		// переводит description_review в keyframes_review, нет): переход к prompt_review идёт
+		// через следующий этап, set-stage не пропускает этапов.
+		if plan.context.ReferencesMethod && plan.context.workflowValue("stage") == "description_review" {
+			if err := w.run(ctx, project, "shot_workflow", "set-stage", "--dir", target, "keyframes_review"); err != nil {
+				return err
+			}
 		}
 		if err := w.run(ctx, project, "shot_workflow", "set-stage", "--dir", target, "prompt_review"); err != nil {
 			return err
@@ -302,6 +320,9 @@ func (w *Workflow) applyDescription(ctx context.Context, plan *applyPlan) error 
 				return err
 			}
 		}
+	}
+	if plan.stored.Rules().References {
+		return w.applyReferences(ctx, plan, target)
 	}
 	keyframes, _ := dynvalue.AsArray(after.Value("keyframes"))
 	// Кадры других планов, которые опоры назвали референсами, — в пакет до остальных файлов: без
@@ -371,6 +392,50 @@ func (w *Workflow) applyDescription(ctx context.Context, plan *applyPlan) error 
 	} else {
 		workflow.Delete("keyframe_count")
 	}
+	return w.finishDescription(ctx, plan, target, workflow)
+}
+
+// applyReferences — описание попытки по референсам: description.md, длительность запроса без
+// опор (plan-keyframes --no-frames), пустой план опор и копии предложенных картинок в references/
+// с ролями (кадр принятого плана сначала извлекается в continuity/). Способ записывается в
+// попытку: дальше он не меняется.
+func (w *Workflow) applyReferences(ctx context.Context, plan *applyPlan, target string) error {
+	c, after := plan.context, plan.after
+	proposed, _ := dynvalue.AsArray(after.Value("references"))
+	if err := w.placeShotFrames(ctx, c.Project, target, referenceShotFrames(proposed)); err != nil {
+		return err
+	}
+	if err := writeProjectFile(filepath.Join(target, "description.md"), []byte(dynvalue.ToString(after.Value("description"))+"\n")); err != nil {
+		return err
+	}
+	if err := w.run(ctx, c.Project, "shot_workflow", "plan-keyframes", "--dir", target, "--request-seconds", dynvalue.ToString(after.Value("requestSeconds")), "--no-frames"); err != nil {
+		return err
+	}
+	if err := writeProjectJSON(filepath.Join(target, "keyframe-prompts.json"), &dynvalue.Array{Items: []any{}}); err != nil {
+		return err
+	}
+	workflow, err := packageDocument(target, textWorkflowNotCreated)
+	if err != nil {
+		return err
+	}
+	previous := []any{}
+	if target == c.PackageDir {
+		previous = referenceItems(c.Workflow)
+	}
+	references, err := referencesTree(c.Project, target, proposed, previous)
+	if err != nil {
+		return err
+	}
+	workflow.Set("generation_method", methodReferences)
+	workflow.Set("references", references)
+	workflow.Delete("keyframe_count")
+	return w.finishDescription(ctx, plan, target, workflow)
+}
+
+// finishDescription — общий конец применения описания: выбор героев с образами, сброс
+// утверждений описания, промпта и запроса, отпечаток постановки и этап description_review.
+func (w *Workflow) finishDescription(ctx context.Context, plan *applyPlan, target string, workflow *dynvalue.Object) error {
+	c, rules := plan.context, plan.stored.Rules()
 	// Выбор героев с образами — тоже в попытке: по нему видеопромпт получает тех же героев.
 	if rules.Looks != nil {
 		workflow.Set("saved_looks", stringsArray(rules.Looks))

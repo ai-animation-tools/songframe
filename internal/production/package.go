@@ -34,6 +34,18 @@ type Keyframe struct {
 	Variants []shotworkflow.FrameVariant `json:"variants,omitempty"`
 }
 
+// Reference — PackageReference: картинка запроса попытки по референсам из workflow.json. Role —
+// start (кадр принятого предшественника) или entity (изображение сущности кастинга Entity);
+// ImagePath — абсолютный путь копии в попытке, если файл есть; Source — исходный путь от проекта.
+type Reference struct {
+	ID        string  `json:"id"`
+	Role      string  `json:"role"`
+	Entity    *string `json:"entity"`
+	Source    *string `json:"source"`
+	ImagePath *string `json:"imagePath"`
+	Approved  bool    `json:"approved"`
+}
+
 // Prompt — редактируемый видеопромпт пакета и его утверждение. Path и Text — файл, выбранный к
 // отправке (prompt.path, обычно video-prompt.txt).
 type Prompt struct {
@@ -107,25 +119,29 @@ type PackageView struct {
 	// ResultToken — хеш показанных оригиналов: не меняется от записи ответа пользователя.
 	ResultToken string `json:"resultToken,omitempty"`
 	// DecisionToken — связь ответа с показанным вопросом и его материалами.
-	DecisionToken   string          `json:"decisionToken,omitempty"`
-	Dir             string          `json:"dir"`
-	Relative        string          `json:"relative"`
-	Shot            string          `json:"shot"`
-	Stage           string          `json:"stage"`
-	StageLabel      string          `json:"stageLabel"`
-	WaitReason      json.RawMessage `json:"waitReason"`
-	Mode            json.RawMessage `json:"mode"`
-	RetryOf         json.RawMessage `json:"retryOf"`
-	Batch           json.RawMessage `json:"batch"`
-	Timing          json.RawMessage `json:"timing"`
-	Keyframes       []Keyframe      `json:"keyframes"`
-	Description     *string         `json:"description"`
-	Prompt          *Prompt         `json:"prompt"`
-	Request         *Request        `json:"request"`
-	Speech          *speech.Package `json:"speech"`
-	PendingDecision json.RawMessage `json:"pendingDecision"`
-	Decision        json.RawMessage `json:"decision"`
-	KeyframeNotes   json.RawMessage `json:"keyframeNotes"`
+	DecisionToken string          `json:"decisionToken,omitempty"`
+	Dir           string          `json:"dir"`
+	Relative      string          `json:"relative"`
+	Shot          string          `json:"shot"`
+	Stage         string          `json:"stage"`
+	StageLabel    string          `json:"stageLabel"`
+	WaitReason    json.RawMessage `json:"waitReason"`
+	Mode          json.RawMessage `json:"mode"`
+	RetryOf       json.RawMessage `json:"retryOf"`
+	Batch         json.RawMessage `json:"batch"`
+	Timing        json.RawMessage `json:"timing"`
+	Keyframes     []Keyframe      `json:"keyframes"`
+	// GenerationMethod и References — попытка по референсам: способ "references" и её картинки;
+	// у попытки по опорам полей нет.
+	GenerationMethod string          `json:"generationMethod,omitempty"`
+	References       []Reference     `json:"references,omitempty"`
+	Description      *string         `json:"description"`
+	Prompt           *Prompt         `json:"prompt"`
+	Request          *Request        `json:"request"`
+	Speech           *speech.Package `json:"speech"`
+	PendingDecision  json.RawMessage `json:"pendingDecision"`
+	Decision         json.RawMessage `json:"decision"`
+	KeyframeNotes    json.RawMessage `json:"keyframeNotes"`
 	// SceneChanged — постановка плана изменилась после подготовки пакета: отправка и
 	// согласования заблокированы до решения пользователя.
 	SceneChanged bool     `json:"sceneChanged"`
@@ -294,6 +310,47 @@ func projectFingerprint(project string) fingerprintFunc {
 	}
 }
 
+// referencesMethod — PackageView.GenerationMethod: "references" у попытки по референсам.
+func referencesMethod(references bool) string {
+	if references {
+		return "references"
+	}
+	return ""
+}
+
+// readReferences — картинки попытки по референсам (workflow references); у попытки по опорам —
+// nil. Путь копии вне папки попытки — ошибка вызова, как у опор.
+func readReferences(dir string, parsed any) ([]Reference, error) {
+	if dynvalue.Get(parsed, "generation_method") != "references" {
+		return nil, nil
+	}
+	list, _ := dynvalue.AsArray(dynvalue.Get(parsed, "references"))
+	references := make([]Reference, 0, len(list))
+	for _, entry := range list {
+		item := Reference{
+			ID: dynvalue.ToString(dynvalue.Coalesce(dynvalue.Get(entry, "id"), "")), Role: dynvalue.ToString(dynvalue.Coalesce(dynvalue.Get(entry, "role"), "")),
+			Approved: dynvalue.Truthy(dynvalue.Get(entry, "approved")),
+		}
+		if text, ok := dynvalue.Get(entry, "entity").(string); ok {
+			item.Entity = &text
+		}
+		if text, ok := dynvalue.Get(entry, "source").(string); ok {
+			item.Source = &text
+		}
+		if path := dynvalue.Get(entry, "path"); dynvalue.Truthy(path) {
+			file, err := joinArg(dir, path)
+			if err != nil {
+				return nil, err
+			}
+			if dynvalue.Exists(file) {
+				item.ImagePath = &file
+			}
+		}
+		references = append(references, item)
+	}
+	return references, nil
+}
+
 // ReadPackage — вид пакета или nil, если workflow.json не читается или поле shot не строка.
 // Условия проблем пакета зафиксированы эталонами. Ошибка (stage не строка, keyframes не массив,
 // нестроковые пути) отклоняет весь вызов, а не превращается в проблему пакета. Ничего не пишет.
@@ -339,6 +396,10 @@ func readPackage(project, dir string, fingerprint fingerprintFunc) (*PackageView
 			item.Variants = variants
 		}
 		keyframes = append(keyframes, item)
+	}
+	references, err := readReferences(dir, parsed)
+	if err != nil {
+		return nil, err
 	}
 	promptPath, err := joinArg(dir, dynvalue.Coalesce(dynvalue.GetPath(parsed, "prompt", "path"), "video-prompt.txt"))
 	if err != nil {
@@ -419,8 +480,9 @@ func readPackage(project, dir string, fingerprint fingerprintFunc) (*PackageView
 		Dir: dir, Relative: dynvalue.Relative(project, dir), Shot: shot, Stage: stage, StageLabel: stageLabel,
 		WaitReason: rawOrNull(dynvalue.Get(parsed, "wait_reason")), Mode: rawOrNull(dynvalue.Get(parsed, "mode")),
 		RetryOf: rawOrNull(dynvalue.Get(parsed, "retry_of")), Batch: rawOrNull(dynvalue.Get(parsed, "batch")),
-		Timing: rawOrNull(dynvalue.Get(parsed, "timing")), Keyframes: keyframes, Description: description,
-		Prompt: prompt, Request: request, Speech: speech.ReadPackage(dir),
+		Timing: rawOrNull(dynvalue.Get(parsed, "timing")), Keyframes: keyframes, Description: description, References: references,
+		GenerationMethod: referencesMethod(references != nil),
+		Prompt:           prompt, Request: request, Speech: speech.ReadPackage(dir),
 		PendingDecision: rawOrNull(dynvalue.Get(parsed, "pending_decision")),
 		Decision:        rawOrNull(dynvalue.Get(parsed, "decision")),
 		KeyframeNotes:   dynvalue.Raw(dynvalue.Coalesce(dynvalue.Get(parsed, "keyframe_notes"), &dynvalue.Array{})),

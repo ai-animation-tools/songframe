@@ -41,6 +41,8 @@ export function PackageDecision({
   busy,
   busyReason = BUSY_REASON,
   revisionByAgent = false,
+  approveLabel,
+  approveHint,
   onChangeRequest,
   verdictReasons,
   suggestedNote,
@@ -56,6 +58,9 @@ export function PackageDecision({
   busyReason?: string;
   /** Доработка сразу запускает агента: кнопка с полем замечания становится кнопкой агента. */
   revisionByAgent?: boolean;
+  /** Подпись и подсказка ответа «утвердить» этого вопроса, если общие не подходят (описание попытки по референсам). */
+  approveLabel?: string;
+  approveHint?: string;
   /** Ответ «доработать» заменяется кнопкой «Изменить»: запрос собирает приложение с выбранной моделью и параметрами. */
   onChangeRequest?(): void;
   /** Ответы, недоступные по содержанию вопроса, с причиной: например, утверждение промпта сверх предела провайдера. */
@@ -73,7 +78,7 @@ export function PackageDecision({
   const questionKey = `${frame ?? ''}\0${pending?.asked_at ?? ''}`;
   const [scopeDraft, setScopeDraft] = useState<{ key: string; scope: KeyframeNoteScope }>({ key: questionKey, scope: 'following' });
   const scope = scopeDraft.key === questionKey ? scopeDraft.scope : 'following';
-  const hints = frame ? { ...VERDICT_HINTS, ...frameHints(frame) } : VERDICT_HINTS;
+  const hints: Record<string, string> = { ...VERDICT_HINTS, ...(frame ? frameHints(frame) : {}), ...(approveHint ? { approve: approveHint } : {}) };
   // Поле замечания открывается «Доработать…»: пока решение не про доработку, оно только мешает.
   const [revisingKey, setRevisingKey] = useState<string | null>(null);
   // «Доработать с агентом» сразу записывает ответ и запускает агента, поэтому сначала спрашивает подтверждение.
@@ -87,7 +92,9 @@ export function PackageDecision({
       ? productionTexts.packageDecision.approve({ frame })
       : frame && verdict === 'revise'
         ? productionTexts.packageDecision.revise({ frame })
-        : (VERDICT_LABELS[verdict]?.label ?? verdict);
+        : verdict === 'approve' && approveLabel
+          ? approveLabel
+          : (VERDICT_LABELS[verdict]?.label ?? verdict);
   return (
     <>
       {pending ? (

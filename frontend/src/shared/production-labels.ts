@@ -10,7 +10,8 @@ const NUMBERED_INPUT_SLOTS: Record<string, string> = { ...INPUT_SLOTS, keyframe:
 
 /** Роль опоры понятнее пользователю, а номер сохраняет различие между входами одного вида. */
 export function productionInputLabel(input: { slot?: string; role?: string }): string {
-  const role = input.role ? INPUT_ROLES[input.role] : undefined;
+  // Роль, которой нет в словаре, Go уже назвал словами (запрос по референсам: «Начало» или имя героя): показывается как есть.
+  const role = input.role ? (INPUT_ROLES[input.role] ?? input.role) : undefined;
   const numbered = /^(image|video|audio|keyframe|tail_image)_(\d+)$/.exec(input.slot ?? '');
   const slot = numbered ? `${NUMBERED_INPUT_SLOTS[numbered[1]]} ${numbered[2]}` : input.slot ? (INPUT_SLOTS[input.slot] ?? input.slot) : undefined;
   return role ? `${role}${slot && slot !== role ? ` (${slot})` : ''}` : (slot ?? input.role ?? productionTexts.input.input);

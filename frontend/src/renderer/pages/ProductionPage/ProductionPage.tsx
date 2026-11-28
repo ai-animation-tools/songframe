@@ -225,6 +225,7 @@ export function ProductionPage(): ReactElement {
                           if (selectedPackage) await replaceFrameWith(selectedPackage, frame, path);
                         }}
                         shotFrames={shotFrameSource(project, view.shots, shot.id)}
+                        defaultMethod={shot.packages.at(-1)?.generationMethod === 'references' ? 'references' : 'keyframes'}
                         onReopenPrompt={(note) => selectedPackage && reopenPrompt(selectedPackage, note)}
                         onKeepForScene={() => selectedPackage && keepPackageForScene(selectedPackage)}
                         onSetKeyframeNote={(id, active) => selectedPackage && setKeyframeNote(selectedPackage, id, active)}

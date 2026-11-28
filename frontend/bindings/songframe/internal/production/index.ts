@@ -26,6 +26,7 @@ export type {
     Prompt,
     PromptVariants,
     Quote,
+    Reference,
     Request,
     RequestInput,
     ResultMedia,

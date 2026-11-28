@@ -7,7 +7,7 @@ import type { ProductionPass, ProductionWorkflowView } from '@shared/production-
 import type { PackageView, ShotProduction } from '@shared/types';
 import { formatClock } from '../../format';
 
-export type PlanStepKey = 'description' | 'frames' | 'prompt' | 'speech' | 'request' | 'generation' | 'assemble' | 'result';
+export type PlanStepKey = 'description' | 'frames' | 'references' | 'prompt' | 'speech' | 'request' | 'generation' | 'assemble' | 'result';
 export type PlanStepStatus = 'done' | 'current' | 'future';
 /** action — ход пользователя, wait — ждём агента или сервис, done — план принят. */
 export type PlanTone = 'action' | 'wait' | 'done';
@@ -25,6 +25,11 @@ export interface PlanPath {
   finished: boolean;
   now: string;
   tone: PlanTone;
+}
+
+/** Попытка по референсам: видео строится по картинкам места и героев, опор Codex нет. */
+export function referencesAttempt(pkg: PackageView | null): boolean {
+  return pkg?.generationMethod === 'references';
 }
 
 /** Попытка отправлена и ещё не завершена: повторная оплата и удаление запрещены. */
@@ -50,6 +55,7 @@ export const FRAME_REOPEN_STAGES = ['keyframes_review', 'prompt_review', 'image_
  */
 export function canRetryWithFrames(pkg: PackageView): boolean {
   return (
+    !referencesAttempt(pkg) &&
     !pkg.request?.ownVideo &&
     pkg.stage !== 'description_review' &&
     !FRAME_REOPEN_STAGES.includes(pkg.stage) &&
@@ -68,6 +74,7 @@ export function canRetryWithFrames(pkg: PackageView): boolean {
  */
 export function canRetryFirstFrame(pkg: PackageView): boolean {
   return (
+    !referencesAttempt(pkg) &&
     !pkg.request?.ownVideo &&
     pkg.stage !== 'description_review' &&
     pkg.keyframes.length >= 2 &&
@@ -120,6 +127,13 @@ function currentStep(shot: ShotProduction, pkg: PackageView | null, workflow: Pr
   if (returned) return returned;
   // Принятое описание оставляет этап прежним до первой опоры: путь идёт дальше по ответу.
   const descriptionAccepted = pkg.decision?.stage === 'description_review' && pkg.decision.verdict === 'approve';
+  if (referencesAttempt(pkg)) {
+    const references = pkg.references ?? [];
+    if ((stage === 'description_review' && !descriptionAccepted) || !references.length) return 'description';
+    if (references.some((reference) => !reference.approved)) return 'references';
+    if (!pkg.prompt?.approved) return 'prompt';
+    return 'request';
+  }
   if ((stage === 'description_review' && !descriptionAccepted) || !pkg.keyframes.length) return 'description';
   if (pkg.keyframes.some((frame) => !frame.approved)) return 'frames';
   // План из опор собирается приложением: видеопромпта и запроса у него нет.
@@ -135,7 +149,14 @@ function stepSummary(key: PlanStepKey, pkg: PackageView | null, manual: boolean)
   const approved = pkg?.keyframes.filter((frame) => frame.approved).length ?? 0;
   switch (key) {
     case 'description':
-      return texts.descriptionSummary({ frames, seconds: pkg?.timing?.request_seconds });
+      return referencesAttempt(pkg)
+        ? texts.descriptionReferencesSummary({ references: pkg?.references?.length ?? 0, seconds: pkg?.timing?.request_seconds })
+        : texts.descriptionSummary({ frames, seconds: pkg?.timing?.request_seconds });
+    case 'references':
+      return texts.referencesSummary({
+        approved: pkg?.references?.filter((reference) => reference.approved).length ?? 0,
+        references: pkg?.references?.length ?? 0
+      });
     case 'frames':
       return texts.framesSummary({ approved, frames });
     case 'prompt':
@@ -182,6 +203,8 @@ function nowState(
       return action(texts.prepareDescription);
     case 'frames':
       return action(workflow?.nextFrame ? texts.chooseFrame({ frame: workflow.nextFrame }) : texts.questionOpen);
+    case 'references':
+      return action(texts.approveReferences);
     case 'prompt':
       return action(texts.preparePrompt);
     case 'speech':
@@ -223,11 +246,22 @@ export function planPath(
 ): PlanPath {
   const manual = manualGeneration(pkg, workflow);
   const own = ownVideoAttempt(pkg);
+  const byReferences = referencesAttempt(pkg);
   const keys: PlanStepKey[] = own
     ? ['request', 'result']
-    : shot.staticShot
-      ? ['description', 'frames', 'assemble', 'result']
-      : ['description', 'frames', 'prompt', ...(shot.lipsync ? (['speech'] as const) : []), 'request', ...(manual ? [] : (['generation'] as const)), 'result'];
+    : byReferences
+      ? ['description', 'references', 'prompt', 'request', 'generation', 'result']
+      : shot.staticShot
+        ? ['description', 'frames', 'assemble', 'result']
+        : [
+            'description',
+            'frames',
+            'prompt',
+            ...(shot.lipsync ? (['speech'] as const) : []),
+            'request',
+            ...(manual ? [] : (['generation'] as const)),
+            'result'
+          ];
   const current = currentStep(shot, pkg, workflow, newAttempt);
   const index = keys.indexOf(current);
   const finished = current === 'result' && (pkg ? pkg.stage === 'accepted' : !!shot.asset);
@@ -243,8 +277,10 @@ export function planPath(
             ? texts.after.manual
             : shot.staticShot && key === 'result'
               ? texts.after.staticResult
-              : texts.after[key]
-          : status === 'done' || (key === 'frames' && !!pkg?.keyframes.length)
+              : byReferences && key === 'prompt'
+                ? texts.after.promptByReferences
+                : texts.after[key]
+          : status === 'done' || (key === 'frames' && !!pkg?.keyframes.length) || (key === 'references' && !!pkg?.references?.length)
             ? stepSummary(key, pkg, manual)
             : null
     };

@@ -452,6 +452,7 @@ export const productionTexts = {
     titles: {
       description: 'Описание',
       frames: 'Опоры',
+      references: 'Референсы',
       prompt: 'Видеопромпт',
       speech: 'Срез речи',
       request: 'Запрос',
@@ -464,7 +465,9 @@ export const productionTexts = {
     after: {
       description: 'Откроется первым',
       frames: 'После описания',
+      references: 'После описания',
       prompt: 'После опор',
+      promptByReferences: 'После референсов',
       speech: 'После видеопромпта',
       request: 'После видеопромпта',
       manual: 'После среза речи',
@@ -474,6 +477,9 @@ export const productionTexts = {
       staticResult: 'После сборки'
     },
     framesSummary: ({ approved, frames }: { approved: number; frames: number }) => `Утверждено ${approved} из ${frames}`,
+    referencesSummary: ({ approved, references }: { approved: number; references: number }) => `Утверждено ${approved} из ${references}`,
+    descriptionReferencesSummary: ({ references, seconds }: { references: number; seconds: number | null | undefined }) =>
+      `Принято: референсов ${references}${seconds ? `, запрос на ${seconds} с` : ''}`,
     descriptionSummary: ({ frames, seconds }: { frames: number; seconds: number | null | undefined }) =>
       `Принято: опор ${frames}${seconds ? `, запрос на ${seconds} с` : ''}`,
     promptSummary: ({ characters }: { characters: number }) => `Утверждён, символов: ${characters}`,
@@ -497,6 +503,7 @@ export const productionTexts = {
     questionOpen: 'ответьте на вопрос этого шага',
     frameQuestion: ({ frame }: { frame: string }) => `решите по опоре ${frame}`,
     prepareDescription: 'подготовьте описание с агентом',
+    approveReferences: 'утвердите референсы',
     chooseFrame: ({ frame }: { frame: string }) => `создайте опору ${frame} или загрузите свой файл`,
     preparePrompt: 'подготовьте видеопромпт с агентом',
     prepareSpeech: 'подготовьте срез речи',
@@ -760,6 +767,8 @@ export const productionTexts = {
     reviseHint: ({ frame }: { frame: string }) =>
       `Снимает кандидата ${frame} и сохраняет замечание; опору создайте заново кнопкой «Создать ${frame}» на шаге «Опоры».`,
     approve: ({ frame }: { frame: string }) => `Утвердить ${frame}`,
+    approveDescription: 'Утвердить описание',
+    approveDescriptionHint: 'Утверждает описание и предложенные картинки: следующий шаг — «Референсы», где их можно убрать или заменить.',
     revise: ({ frame }: { frame: string }) => `Доработать ${frame}`,
     frame: ({ frame }: { frame: string }) => `Опора ${frame}`,
     candidateHint: ({ frame }: { frame: string }) =>
@@ -1433,6 +1442,36 @@ export const productionTexts = {
     galleryKind: 'Схема композиции',
     compareLabel: ({ phase }: { phase: string }) => `Схема композиции: ${phase}`
   },
+  /** Выбор способа новой попытки перед описанием: по опорам или по референсам. */
+  referencesMethod: {
+    heading: 'Как делать видео',
+    keyframes: 'По опорам',
+    keyframesHint: 'Опоры задают точный первый и последний кадр: надёжный стык, но вода, ветер и дождь движутся сдержаннее',
+    references: 'По референсам',
+    referencesHint: 'Видео по картинкам места и героев без опор: живее движение, стык с предыдущим планом — приблизительный'
+  },
+  packageReferences: {
+    heading: ({ approved, references }: { approved: number; references: number }) => `Референсы: утверждено ${approved} из ${references}`,
+    hint: 'Картинки, по которым сервис построит видео. Агент предложил их в описании: утвердите, уберите лишние или замените своим файлом.',
+    start: 'Начало',
+    title: ({ id, name }: { id: string; name: string }) => `${id} · ${name}`,
+    galleryKind: 'Референс',
+    approved: 'утверждён',
+    candidate: 'кандидат',
+    fileMissing: 'Файл не найден',
+    approve: 'Утвердить референсы',
+    approveHint: 'Утверждает все показанные референсы и открывает видеопромпт',
+    own: 'Свой файл',
+    ownHint: ({ id }: { id: string }) => `Заменить ${id} своим изображением: замена сразу утверждается`,
+    pickTitle: ({ id }: { id: string }) => `Изображение референса ${id}`,
+    remove: 'Убрать',
+    removeHint: ({ id }: { id: string }) => `Убрать ${id} из референсов попытки`,
+    lastReason: 'Последний референс не убрать: для видео нужна хотя бы одна картинка.',
+    loadingReason: 'Дождитесь загрузки состояния плана.',
+    allApproved: 'Референсы утверждены.',
+    removed: ({ id }: { id: string }) => `Референс ${id} убран.`,
+    replaced: ({ id }: { id: string }) => `Референс ${id} заменён.`
+  },
   generationMethod: {
     heading: 'Способ генерации видео',
     provider: 'Провайдер проекта',
@@ -1480,6 +1519,7 @@ export const productionTexts = {
       frames: 'Что исправить в текущем этапе',
       prompt: 'Что исправить в видеопромпте'
     },
+    noteForReferences: 'Что исправить в описании и референсах',
     instructionOpen: `Добавить указания`,
     instruction: `Указания агенту`,
     instructionHint: `Необязательно. Агент учтёт их при подготовке видеопромпта.`,

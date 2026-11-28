@@ -27,16 +27,28 @@ const promptContract = "" +
 	"Если scene.static_shot=true, план — «Сборка из опор»: видео не генерируется, приложение собирает его сменой изображений опор и само добавляет медленный наезд или отъезд, этапа prompt нет. На этапе description K01 — role first на 0, каждая следующая опора — состояние с role middle и временем начала строго внутри windowSeconds, last нет; если постановка не называет смен состояния, опора одна — K01. requestSeconds — windowSeconds, округлённое вверх до целого. Наезд, отъезд или неподвижная камера в постановке этому не противоречат: все опоры одного ракурса и крупности, наезд и отъезд делает сборка. С keyframeCount — ровно столько опор с теми же ролями. " +
 	"На этапе description противоречие сценария, из-за которого непротиворечивые опоры не подготовить, — не текст, а отказ blocked={\"schemaVersion\":1,\"stage\":\"blocked\",\"reason\":\"итог одной фразой\",\"problems\":[{\"phase\":\"before|after\",\"entity\":\"ID сущности\",\"property\":\"ключ свойства\",\"conflict\":\"текущее значение и его источник из stateSources, с чем и почему оно расходится\",\"fix\":\"новое значение свойства или null\"},{\"field\":\"action|camera|continuity|references|viewpoint\",\"conflict\":\"...\"}]} по разделу «Противоречия сценария»."
 
+// referencesContract — дополнение контракта задания попытки по референсам (referencesVideo в
+// контексте). Пишется только в такие задания: промпты и эталоны попыток по опорам не меняются.
+const referencesContract = " " +
+	"Если передан referencesVideo, попытка делается по референсам без опор: на этапе description вместо keyframes верни references — description={\"schemaVersion\":1,\"stage\":\"description\",\"description\":\"текст\",\"requestSeconds\":целое,\"references\":[{\"id\":\"R01\",\"role\":\"start\",\"path\":\"path кадра из continuityFrames\"},{\"id\":\"R02\",\"role\":\"entity\",\"entity\":\"ID сущности кастинга\",\"path\":\"source/...\"}]}. " +
+	"ID R01,R02,... подряд; role start — только первая картинка, кадр принятого плана из continuityFrames, без entity; role entity — изображение сущности плана из allowedPaths с её ID; картинок от одной до referencesVideo.maxImages, одна картинка — один раз. keyframes и copyOf в таком ответе не пиши. " +
+	"requestSeconds выбирай по settings.duration_rule и длительностям модели режима из capabilities. На этапе prompt ссылайся на картинку меткой [#R01] с её ID из attachedReferences, а не обозначением провайдера: приложение заменит метку обозначением по месту картинки в запросе."
+
 // skillText — скилл ai-clip-scene и указания провайдеров, выбранных в проекте: SKILL.md,
 // references/app-proposal.md, references/prompt-template.md, на этапе prompt — примеры принятых
 // видеопромптов (описанию они не нужны и только удлинили бы его задание), раздел «Указания агенту»
-// документа провайдера видео и изображений. Пустые части пропускаются, части разделены пустой
+// документа провайдера видео и изображений, у попытки по референсам — references/references-video.md.
+// Пустые части пропускаются, части разделены пустой
 // строкой. Файлы встроены в бинарник вместо чтения из корня комплекса.
-func skillText(stage string, videoProvider, imageProvider any) string {
+func skillText(stage string, videoProvider, imageProvider any, references bool) string {
 	parts := []string{}
 	files := []string{"SKILL.md", "references/app-proposal.md", "references/prompt-template.md"}
 	if stage == "prompt" {
 		files = append(files, "references/video-prompt-examples.md")
+	}
+	// Правила попытки по референсам — отдельной частью только для неё.
+	if references {
+		files = append(files, "references/references-video.md")
 	}
 	for _, file := range files {
 		if text, err := resources.SkillFile(resources.SkillScene, file); err == nil && text != "" {
@@ -53,10 +65,15 @@ func skillText(stage string, videoProvider, imageProvider any) string {
 	return strings.Join(parts, "\n\n")
 }
 
-// agentPrompt — промпт задания этапа stage: скилл и режим приложения output=proposal.
-func agentPrompt(stage string, videoProvider, imageProvider any) string {
-	return skillText(stage, videoProvider, imageProvider) + "\n\nРежим приложения: output=proposal, stage=" + stage +
+// agentPrompt — промпт задания этапа stage: скилл и режим приложения output=proposal; у попытки
+// по референсам (references) — с её частью скилла и контракта.
+func agentPrompt(stage string, videoProvider, imageProvider any, references bool) string {
+	text := skillText(stage, videoProvider, imageProvider, references) + "\n\nРежим приложения: output=proposal, stage=" + stage +
 		". Верни ровно один JSON без Markdown. Файлы не записывай; материалы клипа по путям из контекста можно открывать и смотреть. " + promptContract
+	if references {
+		text += referencesContract
+	}
+	return text
 }
 
 // readText — содержимое файла или "" без файла; ошибка чтения возвращается.
@@ -101,6 +118,17 @@ type contextInput struct {
 	// savedLooks — герои с сохранёнными образами этапов description и prompt (agentLooks.tree);
 	// nil — ключ не пишется.
 	savedLooks *dynvalue.Object
+	// referencesVideo — попытка по референсам (referencesVideoTree); attachedReferences —
+	// утверждённые референсы этапа prompt (referenceAttachments). nil — ключ не пишется.
+	referencesVideo    *dynvalue.Object
+	attachedReferences *dynvalue.Array
+}
+
+// referencesVideoTree — ключ referencesVideo контекста: предел картинок модели режима.
+func referencesVideoTree(maxImages int) *dynvalue.Object {
+	value := dynvalue.NewObject()
+	value.Set("maxImages", float64(maxImages))
+	return value
 }
 
 // agentContext — JSON контекста задания (порядок ключей зафиксирован эталоном): план, кастинг, врезки,
@@ -180,6 +208,13 @@ func agentContext(c *Context, input contextInput) string {
 	// Герои с образами передаются только плану, где они есть: контекст остальных не меняется.
 	if input.savedLooks != nil {
 		value.Set("savedLooks", input.savedLooks)
+	}
+	// Способ по референсам и его картинки — только у такой попытки: контекст остальных не меняется.
+	if input.referencesVideo != nil {
+		value.Set("referencesVideo", input.referencesVideo)
+	}
+	if input.attachedReferences != nil {
+		value.Set("attachedReferences", input.attachedReferences)
 	}
 	return dynvalue.Stringify(value)
 }

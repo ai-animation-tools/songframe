@@ -89,6 +89,9 @@ type Context struct {
 	// «Вручную вне приложения» (workflow generation_method manual). Агентского этапа request,
 	// предела промпта провайдера и отправки нет.
 	Manual bool
+	// ReferencesMethod — попытка по референсам (workflow generation_method references, а для новой
+	// попытки — выбор запуска): опор нет, запрос получает картинки и образы (references.go).
+	ReferencesMethod bool
 	// SingleFrame — речевой план у провайдера без липсинка: видео всегда создаётся вручную по
 	// одной опоре K01, срезу речи и видеопромпту; число опор не выбирается.
 	SingleFrame bool
@@ -200,6 +203,7 @@ func ReadContext(path, shot, requested string) (*Context, error) {
 		if workflow.Value("generation_method") == "manual" {
 			context.Manual = true
 		}
+		context.ReferencesMethod = workflow.Value("generation_method") == methodReferences
 	}
 	// Тот же отпечаток, что пишет shot_workflow init: пакет, подготовленный по прежней постановке,
 	// дальше не продолжается молча.
@@ -315,6 +319,19 @@ func ReadContext(path, shot, requested string) (*Context, error) {
 				allowed[rel(project, full)] = true
 			}
 		}
+		// Утверждённые референсы попытки по референсам — входы видеопромпта, как опоры.
+		for _, reference := range referenceItems(context.Workflow) {
+			if !dynvalue.Truthy(dynvalue.Get(reference, "approved")) || !dynvalue.Truthy(dynvalue.Get(reference, "path")) {
+				continue
+			}
+			full, err := packageFile(context, dynvalue.Get(reference, "path"))
+			if err != nil {
+				return nil, err
+			}
+			if dynvalue.Exists(full) {
+				allowed[rel(project, full)] = true
+			}
+		}
 		raw, err := readJSON(filepath.Join(context.PackageDir, "keyframe-prompts.json"))
 		if err != nil {
 			return nil, err
@@ -423,6 +440,15 @@ func matchesDigest(path string, expected any) bool {
 func (c *Context) FramesApproved() (bool, error) {
 	if c.framesApproved != nil {
 		return *c.framesApproved, nil
+	}
+	// У попытки по референсам опор нет: их место в пути занимают утверждённые референсы.
+	if c.ReferencesMethod {
+		result, err := c.referencesApproved()
+		if err != nil {
+			return false, err
+		}
+		c.framesApproved = &result
+		return result, nil
 	}
 	frames := keyframes(c.Workflow)
 	result := len(frames) > 0
@@ -629,6 +655,10 @@ func (c *Context) RulesFor(stage string) Rules {
 	}
 	rules.Manual = c.SingleFrame
 	rules.Static = c.StaticShot
+	if c.ReferencesMethod {
+		rules.References = true
+		rules.ReferenceEntities = referenceEntityCodes(c)
+	}
 	if c.Scene.Value("lipsync") == true {
 		if provider, ok := videoProvider(c.Settings); ok && provider.LipSync != nil {
 			limits := *provider.LipSync
@@ -639,10 +669,13 @@ func (c *Context) RulesFor(stage string) Rules {
 }
 
 // generationMethod — View.GenerationMethod: "manual", если для попытки выбран способ «Вручную вне
-// приложения»; иначе пусто (видео делает провайдер проекта, речевой план без липсинка — SingleFrame).
+// приложения», "references" — попытка по референсам; иначе пусто (видео делает провайдер проекта, речевой план без липсинка — SingleFrame).
 func generationMethod(c *Context) string {
-	if c.workflowValue("generation_method") == "manual" {
+	switch c.workflowValue("generation_method") {
+	case "manual":
 		return "manual"
+	case methodReferences:
+		return methodReferences
 	}
 	return ""
 }

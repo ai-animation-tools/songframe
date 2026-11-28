@@ -318,13 +318,14 @@ type LookModel struct {
 // ExpectedLookModel — LookModel проекта project по свежим объявлениям моделей провайдера видео.
 // Без выбранного провайдера видео или его моделей — пустая модель с Limit 0.
 func (w *Workflow) ExpectedLookModel(ctx context.Context, project string) (LookModel, error) {
-	model, _, err := w.expectedLookModel(ctx, project)
+	model, _, err := w.expectedLookModel(ctx, project, false)
 	return model, err
 }
 
 // expectedLookModel — ExpectedLookModel и провайдер видео, по которому она выбрана; провайдер
-// nil, если модель образы не примет.
-func (w *Workflow) expectedLookModel(ctx context.Context, project string) (LookModel, *providers.PaidMedia, error) {
+// nil, если модель образы не примет. references — попытка по референсам: модель — первая модель
+// режима по референсам, предпочтение проекта (модель запроса по опорам) не действует.
+func (w *Workflow) expectedLookModel(ctx context.Context, project string, references bool) (LookModel, *providers.PaidMedia, error) {
 	empty := LookModel{Kinds: []string{}}
 	settings, err := videoSettings(project)
 	if err != nil {
@@ -339,19 +340,26 @@ func (w *Workflow) expectedLookModel(ctx context.Context, project string) (LookM
 		return empty, nil, nil
 	}
 	rules := media.Paid.Rules.Video
-	caps := media.Capabilities(ctx, project)
+	command, models := rules.Command, rules.Models
 	preferred, _ := settings.Value("model").(string)
 	preferred = dynvalue.Trim(preferred)
+	if references {
+		if rules.References == nil {
+			return empty, nil, nil
+		}
+		command, models, preferred = rules.References.Command, rules.References.Models, ""
+	}
+	caps := media.Capabilities(ctx, project)
 	candidates := []mediaapi.Model{}
 	for _, item := range caps.Models {
-		if item.Command == rules.Command {
+		if item.Command == command && (!references || slices.Contains(models, item.ID)) {
 			candidates = append(candidates, item)
 		}
 	}
 	if len(candidates) == 0 {
 		return empty, nil, nil
 	}
-	slices.SortStableFunc(candidates, func(a, b mediaapi.Model) int { return modelRank(rules.Models, a.ID) - modelRank(rules.Models, b.ID) })
+	slices.SortStableFunc(candidates, func(a, b mediaapi.Model) int { return modelRank(models, a.ID) - modelRank(models, b.ID) })
 	chosen := candidates[0]
 	if index := slices.IndexFunc(candidates, func(item mediaapi.Model) bool { return item.ID == preferred }); index >= 0 {
 		chosen = candidates[index]

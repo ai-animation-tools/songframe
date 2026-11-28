@@ -26,6 +26,7 @@ import {
   packageForShot,
   pageShot,
   ProductionPageStory,
+  referencesPackage,
   productionPageOptions,
   type ProductionPageModelOptions
 } from '../../testing/productionPageStories';
@@ -2138,5 +2139,158 @@ export const SavedLooksAllReady: Story = {
     await userEvent.click(await within(planStep(context, 'description')).findByRole('button', { name: texts.ownDescriptionDialog.writeOwn }, POLL_TIMEOUT));
     await expect(await screen.findByRole('dialog', { name: texts.ownDescriptionDialog.title({ shot: 'M04' }) })).toBeInTheDocument();
     await expect(screen.queryByRole('dialog', { name: savedLooksTexts.beforeTitle })).not.toBeInTheDocument();
+  }
+};
+
+/** Описание попытки по референсам: способ выбирается до описания, у попытки без опор нет выбора числа опор и своего описания. */
+export const ReferencesMethodChoice: Story = {
+  tags: ['ci'],
+  name: 'По референсам · выбор способа перед описанием: без числа опор и своего описания, запуск уходит со способом',
+  parameters: { songframe: options({ references: true }, '/project/production?shot=M04') },
+  play: async (context) => {
+    const choice = texts.referencesMethod;
+    await shotHeading(context, 'M04');
+    const step = () => within(planStep(context, 'description'));
+    // По умолчанию — по опорам (у плана нет попыток): число опор и «Написать самому» на месте, оба способа с пояснением.
+    const keyframes = await step().findByRole('radio', { name: new RegExp(choice.keyframes) }, POLL_TIMEOUT);
+    await expect(keyframes).toBeChecked();
+    await expect(step().getByText(choice.keyframesHint)).toBeInTheDocument();
+    await expect(step().getByText(choice.referencesHint)).toBeInTheDocument();
+    await expect(step().getByRole('combobox', { name: texts.productionWorkflowPanel.keyframes })).toBeInTheDocument();
+    await expect(step().getByRole('button', { name: texts.ownDescriptionDialog.writeOwn })).toBeEnabled();
+    await userEvent.click(step().getByRole('radio', { name: new RegExp(choice.references) }));
+    await expect(step().getByRole('radio', { name: new RegExp(choice.references) })).toBeChecked();
+    await expect(step().queryByRole('combobox', { name: texts.productionWorkflowPanel.keyframes })).not.toBeInTheDocument();
+    await expect(step().queryByRole('button', { name: texts.ownDescriptionDialog.writeOwn })).not.toBeInTheDocument();
+    await userEvent.click(step().getByRole('button', { name: texts.productionWorkflowPanel.prepare }));
+    await waitFor(() => expect(counts(context)).toHaveTextContent('Запусков агента: prepare:references.'), POLL_TIMEOUT);
+  }
+};
+
+/** Попытка плана без поддержки референсов провайдером: выбора способа нет, описание как прежде. */
+export const ReferencesMethodUnavailable: Story = {
+  name: 'По референсам · провайдер не умеет: выбора способа нет',
+  parameters: { songframe: options({}, '/project/production?shot=M04') },
+  play: async (context) => {
+    await shotHeading(context, 'M04');
+    const step = within(planStep(context, 'description'));
+    await expect(await step.findByRole('button', { name: texts.productionWorkflowPanel.prepare }, POLL_TIMEOUT)).toBeEnabled();
+    await expect(step.queryByText(texts.referencesMethod.heading)).not.toBeInTheDocument();
+  }
+};
+
+function referencesShots(approved: boolean, overrides: Partial<Parameters<typeof referencesPackage>[1]> = {}): ShotProduction[] {
+  const attempt = referencesPackage(approved, overrides);
+  return baseShots({ stageLabel: attempt.stageLabel, attention: attempt.pendingDecision?.question ?? null, packages: [attempt] });
+}
+
+/** Шаг «Референсы»: кандидаты ждут утверждения; убрать, заменить своим файлом и утвердить; последний не убирается. */
+export const ReferencesStep: Story = {
+  tags: ['ci'],
+  name: 'По референсам · шаг «Референсы»: кандидаты, убрать, свой файл и утверждение',
+  parameters: { songframe: options({ references: true, shots: () => referencesShots(false) }) },
+  play: async (context) => {
+    const refs = texts.packageReferences;
+    await shotHeading(context, 'M02');
+    await expect(await screenOf(context).findByText(steps.now({ text: steps.approveReferences }), {}, POLL_TIMEOUT)).toBeInTheDocument();
+    const step = () => within(planStep(context, 'references'));
+    await expect(planStep(context, 'frames')).toBeNull();
+    await expect(await step().findByText(refs.heading({ approved: 0, references: 3 }))).toBeInTheDocument();
+    // Название: роль «Начало» или имя сущности из кастинга.
+    await expect(await step().findByText(refs.title({ id: 'R01', name: refs.start }))).toBeInTheDocument();
+    await expect(await step().findByText(refs.title({ id: 'R02', name: 'Артём' }), {}, POLL_TIMEOUT)).toBeInTheDocument();
+    await expect(step().getByText(refs.title({ id: 'R03', name: 'Старые ворота' }))).toBeInTheDocument();
+    await expect(step().getAllByText(refs.candidate)).toHaveLength(3);
+    // Убрать лишний.
+    await userEvent.click(step().getAllByRole('button', { name: refs.remove })[2]);
+    await waitFor(() => expect(counts(context)).toHaveTextContent('Действий с референсами: убрать R03.'), POLL_TIMEOUT);
+    await expect(await step().findByText(refs.heading({ approved: 0, references: 2 }))).toBeInTheDocument();
+    // Свой файл заменяет референс и сразу утверждён.
+    await userEvent.click(step().getAllByRole('button', { name: refs.own })[1]);
+    await waitFor(() => expect(counts(context)).toHaveTextContent('заменить R02'), POLL_TIMEOUT);
+    await expect(await step().findByText(refs.heading({ approved: 1, references: 2 }))).toBeInTheDocument();
+    await expect(step().getAllByText(refs.approved)).toHaveLength(1);
+    await expect(step().getAllByText(refs.candidate)).toHaveLength(1);
+    // Утверждение всех открывает видеопромпт.
+    await userEvent.click(step().getByRole('button', { name: refs.approve }));
+    await expect(await screenOf(context).findByText(steps.now({ text: steps.preparePrompt }), {}, POLL_TIMEOUT)).toBeInTheDocument();
+    await expect(within(planStep(context, 'references')).queryByRole('button', { name: refs.approve })).not.toBeInTheDocument();
+  }
+};
+
+/** Один референс: убрать его нельзя, причина в подсказке. */
+export const ReferencesLastOne: Story = {
+  name: 'По референсам · последний референс не убирается',
+  parameters: {
+    songframe: options({
+      references: true,
+      shots: () => {
+        const attempt = referencesPackage(false);
+        return baseShots({ stageLabel: attempt.stageLabel, attention: null, packages: [{ ...attempt, references: attempt.references!.slice(0, 1) }] });
+      }
+    })
+  },
+  play: async (context) => {
+    const refs = texts.packageReferences;
+    await shotHeading(context, 'M02');
+    const remove = await within(planStep(context, 'references')).findByRole('button', { name: refs.remove }, POLL_TIMEOUT);
+    await expect(remove).toBeDisabled();
+    await userEvent.hover(remove.parentElement!);
+    await expect(await screenOf(context).findByRole('tooltip')).toHaveTextContent(refs.lastReason);
+  }
+};
+
+/** Референсы утверждены: следующий шаг — видеопромпт; способа генерации провайдер/вручную у такой попытки нет. */
+export const ReferencesApproved: Story = {
+  tags: ['ci'],
+  name: 'По референсам · все утверждены: дальше видеопромпт, итог шага и без выбора способа генерации',
+  parameters: { songframe: options({ references: true, shots: () => referencesShots(true) }) },
+  play: async (context) => {
+    await shotHeading(context, 'M02');
+    await expect(await screenOf(context).findByText(steps.now({ text: steps.preparePrompt }), {}, POLL_TIMEOUT)).toBeInTheDocument();
+    const references = within(planStep(context, 'references'));
+    await expect(await references.findByText(steps.referencesSummary({ approved: 3, references: 3 }))).toBeInTheDocument();
+    await expect(within(planStep(context, 'description')).queryByText(steps.descriptionReferencesSummary({ references: 3, seconds: 5 }))).toBeInTheDocument();
+    await expect(
+      await within(planStep(context, 'prompt')).findByRole('button', { name: texts.productionWorkflowPanel.continuePrompt }, POLL_TIMEOUT)
+    ).toBeEnabled();
+    await expect(screenOf(context).queryByText(texts.generationMethod.heading)).not.toBeInTheDocument();
+  }
+};
+
+/** Запрос попытки по референсам: входы image_N подписаны ролью — «Начало» и именем героя или места. */
+export const ReferencesRequest: Story = {
+  tags: ['ci'],
+  name: 'По референсам · запрос: входы подписаны ролью референса',
+  parameters: {
+    songframe: options({
+      references: true,
+      shots: () => {
+        const source = preparedPackage();
+        const attempt = referencesPackage(true, {
+          stage: 'request_choice',
+          stageLabel: 'Запрос подготовлен',
+          prompt: { ...source.prompt!, text: 'Камера плавно приближается к [#R02] у [#R03].', approved: true },
+          request: {
+            ...source.request!,
+            inputs: [
+              { slot: 'image_1', role: 'Начало', path: 'references/R01.png', imagePath: `${STORY_IMAGE_PATH}?reference=R01` },
+              { slot: 'image_2', role: 'Артём', path: 'references/R02.png', imagePath: `${STORY_IMAGE_PATH}?reference=R02` },
+              { slot: 'image_3', role: 'Старые ворота', path: 'references/R03.png', imagePath: `${STORY_IMAGE_PATH}?reference=R03` }
+            ]
+          },
+          pendingDecision: source.pendingDecision,
+          decision: { stage: 'prompt_review', verdict: 'approve' }
+        });
+        return baseShots({ stageLabel: attempt.stageLabel, attention: attempt.pendingDecision?.question ?? null, packages: [attempt] });
+      }
+    })
+  },
+  play: async (context) => {
+    await shotHeading(context, 'M02');
+    const step = within(planStep(context, 'request'));
+    await expect(await step.findByText('Начало (Изображение 1): references/R01.png', {}, POLL_TIMEOUT)).toBeInTheDocument();
+    await expect(step.getByText('Артём (Изображение 2): references/R02.png')).toBeInTheDocument();
+    await expect(step.getByText('Старые ворота (Изображение 3): references/R03.png')).toBeInTheDocument();
   }
 };

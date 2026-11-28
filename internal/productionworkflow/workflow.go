@@ -161,6 +161,9 @@ type Reasons struct {
 	Frames   *string `json:"frames"`
 	// Manual — почему нельзя собрать пакет ручной генерации; nil — можно или план не ручной.
 	Manual *string `json:"manual,omitempty"`
+	// References — почему референсы попытки по референсам сейчас не меняются; поле опускается,
+	// когда можно или попытка по опорам.
+	References *string `json:"references,omitempty"`
 }
 
 // View — ProductionWorkflowView: состояние прохода плана и доступность действий панели
@@ -195,6 +198,11 @@ type View struct {
 	CanBuildManual   bool   `json:"canBuildManual,omitempty"`
 	SingleFrame      bool   `json:"singleFrame,omitempty"`
 	GenerationMethod string `json:"generationMethod,omitempty"`
+	// ReferencesAvailable — новую попытку плана можно сделать по референсам (режим адаптера есть,
+	// план не речевой, не из опор и не производный). CanEditReferences — референсы попытки по
+	// референсам можно утвердить, убрать или заменить сейчас (иначе причина в Reasons.References).
+	ReferencesAvailable bool `json:"referencesAvailable,omitempty"`
+	CanEditReferences   bool `json:"canEditReferences,omitempty"`
 	// StaticShot — план из опор (Context.StaticShot): опор от одной (K01 и необязательные
 	// состояния), предел провайдера видео к выбору их числа не относится.
 	StaticShot bool `json:"staticShot,omitempty"`
@@ -342,6 +350,14 @@ func (w *Workflow) view(project, shot, packageDir string) (View, error) {
 		Paid: c.Paid, FramePrompts: dynvalue.Raw(c.FramePrompts), NextFrame: dynvalue.Raw(nextFrame),
 		ApprovedFrameIDs: dynvalue.Raw(&dynvalue.Array{Items: c.ApprovedFrameIDs()}), Problems: c.Problems, Proposal: json.RawMessage("null"), Job: job,
 	}
+	view.ReferencesAvailable = w.referencesReason(c) == ""
+	if c.ReferencesMethod {
+		if reason := referencesEditReason(c, busy, proposalPending); reason != "" {
+			view.Reasons.References = &reason
+		} else {
+			view.CanEditReferences = true
+		}
+	}
 	if view.CanRevise {
 		// Доработка оплаченной попытки начинается с описания в новой попытке (prepare).
 		revise := "description"
@@ -412,6 +428,9 @@ func continueReason(c *Context, derived, common string, imagePhase bool, nextSta
 	case nextStage == "" || nextStage == "description":
 		if framesApproved {
 			return textFramesAcceptedPromptNext
+		}
+		if descriptionApproved && c.ReferencesMethod {
+			return textApproveReferencesFirst
 		}
 		if descriptionApproved {
 			return textCreateAndAcceptFramesFirst
@@ -595,6 +614,10 @@ type StartInput struct {
 	// «авто»; nil при доработке описания — прежний выбор попытки (workflow keyframe_count), при
 	// новой попытке — «авто».
 	Keyframes *int `json:"keyframes,omitempty"`
+	// Method — способ генерации новой попытки с описания: "references" — по референсам без опор,
+	// "keyframes" или "" — по опорам. У остальных запусков способ — способ попытки, другой выбор
+	// отклоняется.
+	Method string `json:"method,omitempty"`
 	// Looks — коды героев с сохранёнными образами, выбранных пользователем перед описанием, когда
 	// образов больше, чем примет модель; nil — не выбирал (при доработке описания действует выбор
 	// попытки).
@@ -689,7 +712,17 @@ func (w *Workflow) prepare(input StartInput) (*preparedStart, error) {
 	if c.StaticShot && prepared.stage == "prompt" {
 		return nil, errors.New(textStaticNoVideoStage)
 	}
-	if prepared.keyframes, err = keyframeChoice(c, prepared.stage, input.Keyframes, input.Action != "prepare"); err != nil {
+	if c.ReferencesMethod, err = w.methodChoice(c, input); err != nil {
+		return nil, err
+	}
+	if c.ReferencesMethod {
+		// Попытку по референсам делает провайдер проекта: ручного способа прежней попытки у неё
+		// нет, а число опор не выбирается.
+		c.Manual = false
+		if input.Keyframes != nil && *input.Keyframes != 0 {
+			return nil, errors.New(textReferencesKeyframes)
+		}
+	} else if prepared.keyframes, err = keyframeChoice(c, prepared.stage, input.Keyframes, input.Action != "prepare"); err != nil {
 		return nil, err
 	}
 	// Кадры других планов разрешены только описанию: опора может назвать их референсами, а видео
@@ -874,6 +907,9 @@ func (w *Workflow) launch(ctx context.Context, input StartInput, prepared *prepa
 	}
 	rules := c.RulesFor(stage)
 	rules.Keyframes = prepared.keyframes
+	if c.ReferencesMethod {
+		rules.MaxReferences = referenceLimit(w.referenceRules(c), reports)
+	}
 	looks, err := w.lookHeroes(ctx, c, stage, input.Looks, input.Action != "prepare")
 	if err != nil {
 		return err
@@ -885,7 +921,7 @@ func (w *Workflow) launch(ctx context.Context, input StartInput, prepared *prepa
 	if err != nil {
 		return err
 	}
-	prompt := agentPrompt(stage, c.Settings.Value("provider"), dynvalue.Get(dynvalue.Get(generation, "image"), "provider"))
+	prompt := agentPrompt(stage, c.Settings.Value("provider"), dynvalue.Get(dynvalue.Get(generation, "image"), "provider"), c.ReferencesMethod)
 	contextInput := contextInput{stage: stage, briefs: briefs, description: nil, prompt: nil, lipSync: rules.LipSync, manual: rules.Manual,
 		manualVideo: c.Manual && !c.SingleFrame, capabilities: capabilities,
 		capabilitiesProblem: capabilitiesProblem}
@@ -893,6 +929,9 @@ func (w *Workflow) launch(ctx context.Context, input StartInput, prepared *prepa
 		contextInput.promptMaxChars = c.PromptLimit()
 	}
 	contextInput.keyframeCount = rules.Keyframes
+	if c.ReferencesMethod {
+		contextInput.referencesVideo = referencesVideoTree(rules.MaxReferences)
+	}
 	if looks != nil && len(looks.entities) > 0 {
 		contextInput.savedLooks = looks.tree()
 	}
@@ -926,6 +965,11 @@ func (w *Workflow) launch(ctx context.Context, input StartInput, prepared *prepa
 	}
 	if stage == "prompt" && c.PackageDir != "" {
 		images, contextInput.attachedFrames, contextInput.materials = w.promptAttachments(ctx, c, input.Shot)
+		if c.ReferencesMethod {
+			var references []string
+			references, contextInput.attachedReferences = w.referenceAttachments(c, input.Shot)
+			images = append(references, images...)
+		}
 	}
 	task := agents.StartInput{
 		Project: c.Project, Task: "ai-clip-scene:" + input.Shot + ":" + stage, Prompt: prompt, Context: agentContext(c, contextInput),
@@ -972,6 +1016,10 @@ func (w *Workflow) capabilities(ctx context.Context, c *Context) ([]providers.Ca
 	var draft []string
 	if c.Scene.Value("lipsync") != true {
 		draft = adapter.Rules.DraftVideoCommands
+	}
+	// Описанию по референсам нужен только режим по референсам: его модели и длительности.
+	if c.ReferencesMethod && adapter.Rules.Video != nil && adapter.Rules.Video.References != nil {
+		draft = []string{adapter.Rules.Video.References.Command}
 	}
 	visible := func(command string) bool { return draft == nil || slices.Contains(draft, command) }
 	catalog, err := w.options.Catalog.Read(ctx, c.Project, adapter.ID, mediaproviders.Video)

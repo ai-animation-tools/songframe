@@ -156,7 +156,7 @@ func (w *Workflow) lookHeroes(ctx context.Context, c *Context, stage string, cho
 	if bound, err := store.Bound(media.Paid.ID, c.Project); err != nil || !bound {
 		return nil, err
 	}
-	model, accepting, err := w.expectedLookModel(ctx, c.Project)
+	model, accepting, err := w.expectedLookModel(ctx, c.Project, c.ReferencesMethod)
 	if err != nil || accepting == nil {
 		return nil, err
 	}

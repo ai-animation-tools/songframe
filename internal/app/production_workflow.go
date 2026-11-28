@@ -89,6 +89,23 @@ func (s *ProductionWorkflowService) SetGenerationMethod(project, shot, packageDi
 	return wire.Done(s.workflow.SetGenerationMethod(project, shot, packageDir, method))
 }
 
+// ApproveReferences — productionWorkflow.approveReferences: утвердить все референсы попытки по
+// референсам; доступ к ИИ не нужен.
+func (s *ProductionWorkflowService) ApproveReferences(project, shot, packageDir string) (productionworkflow.View, error) {
+	return wire.Done(s.workflow.ApproveReferences(project, shot, packageDir))
+}
+
+// RemoveReference — productionWorkflow.removeReference: убрать референс id из запроса попытки.
+func (s *ProductionWorkflowService) RemoveReference(project, shot, packageDir, id string) (productionworkflow.View, error) {
+	return wire.Done(s.workflow.RemoveReference(project, shot, packageDir, id))
+}
+
+// ReplaceReference — productionWorkflow.replaceReference: картинка референса id — файл path
+// (свой файл пользователя или взятый кадр принятого плана).
+func (s *ProductionWorkflowService) ReplaceReference(project, shot, packageDir, id, path string) (productionworkflow.View, error) {
+	return wire.Done(s.workflow.ReplaceReference(project, shot, packageDir, id, path))
+}
+
 // SaveComposition — productionWorkflow.saveComposition: снимок вида из камеры, нарисованный интерфейсом по
 // отпечатку digest, сохраняется в пакет попытки как схема композиции опор; доступ к ИИ не нужен.
 func (s *ProductionWorkflowService) SaveComposition(project, shot, packageDir, digest string, images []productionworkflow.CompositionImage) (productionworkflow.View, error) {

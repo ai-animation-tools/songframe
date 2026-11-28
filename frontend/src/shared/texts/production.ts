@@ -1163,6 +1163,8 @@ export const productionTexts = {
     duration: 'Длительность запроса',
     seconds: ({ requestSeconds }: { requestSeconds: number }) => `${requestSeconds} с`,
     frames: ({ frames }: { frames: number }) => `Опоры · ${frames}`,
+    referencesTitle: ({ count }: { count: number }) => `Референсы · ${count}`,
+    reference: ({ id, name, file }: { id: string; name: string; file: string }) => `${id} · ${name} — ${file}`,
     staleReason: 'Исходные материалы изменились: отклоните предложение и подготовьте новое.',
     invalidReason: 'Агент не подготовил годное предложение: отклоните его и запустите агента заново.',
     emptyReason: 'В предложении нет материалов для применения.',

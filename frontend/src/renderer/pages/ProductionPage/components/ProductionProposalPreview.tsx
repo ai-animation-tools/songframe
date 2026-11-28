@@ -311,9 +311,25 @@ function Proposed({
           <Section title={productionTexts.productionProposalPreview.duration}>
             <Typography variant="body2">{productionTexts.productionProposalPreview.seconds({ requestSeconds: after.requestSeconds })}</Typography>
           </Section>
-          <Section title={productionTexts.productionProposalPreview.frames({ frames: after.keyframes.length })}>
-            <Frames frames={after.keyframes} />
-          </Section>
+          {after.references ? (
+            <Section title={productionTexts.productionProposalPreview.referencesTitle({ count: after.references.length })}>
+              <Stack component="ul" spacing={0.5} sx={{ m: 0, pl: 2.5 }}>
+                {after.references.map((reference) => (
+                  <Typography component="li" variant="body2" key={reference.id} sx={{ overflowWrap: 'anywhere' }}>
+                    {productionTexts.productionProposalPreview.reference({
+                      id: reference.id,
+                      name: reference.role === 'start' ? productionTexts.packageReferences.start : (reference.entity ?? ''),
+                      file: fileName(reference.path)
+                    })}
+                  </Typography>
+                ))}
+              </Stack>
+            </Section>
+          ) : (
+            <Section title={productionTexts.productionProposalPreview.frames({ frames: after.keyframes?.length ?? 0 })}>
+              <Frames frames={after.keyframes ?? []} />
+            </Section>
+          )}
         </Stack>
       );
     case 'prompt':

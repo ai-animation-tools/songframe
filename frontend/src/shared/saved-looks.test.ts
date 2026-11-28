@@ -57,6 +57,7 @@ describe('метка героя в своём видеопромпте', () => {
 describe('вопрос об образах перед описанием плана', () => {
   const view = (heroes: ShotLooksView['heroes'], extra: Partial<ShotLooksView> = {}): ShotLooksView => ({
     supported: true,
+    references: false,
     model: 'test-video',
     limit: 2,
     kinds: ['character', 'prop'],

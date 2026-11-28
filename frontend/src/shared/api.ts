@@ -262,8 +262,11 @@ export interface Api {
     unbind(project: string, reference: string): Promise<SavedLooksView>;
     /** Удаляет образ из аккаунта необратимо: вызывать только после отдельного подтверждения пользователя. */
     remove(project: string, look: string): Promise<SavedLooksView>;
-    /** Герои «В кадре» плана со статусами образов одним бесплатным списком; сбой списка — в error. */
-    shot(project: string, shot: string): Promise<ShotLooksView>;
+    /**
+     * Герои «В кадре» плана со статусами образов одним бесплатным списком; сбой списка — в error. references — для
+     * новой попытки «По референсам»: модель и предел образов берутся из режима по референсам.
+     */
+    shot(project: string, shot: string, references?: boolean): Promise<ShotLooksView>;
   };
   timing: {
     vocalsView(project: string): Promise<VocalPreparationView>;

@@ -606,7 +606,8 @@ export function createApi(b: Bindings): Api {
     call('savedLooks.unbind', async () => (await (await b.savedLooks()).Unbind(project, reference)) as SavedLooksView, false);
   api.savedLooks.remove = (project, look) =>
     call('savedLooks.remove', async () => (await (await b.savedLooks()).Remove(project, look)) as SavedLooksView, false);
-  api.savedLooks.shot = (project, shot) => call('savedLooks.shot', async () => (await (await b.savedLooks()).Shot(project, shot)) as ShotLooksView, false);
+  api.savedLooks.shot = (project, shot, references = false) =>
+    call('savedLooks.shot', async () => (await (await b.savedLooks()).Shot(project, shot, references)) as ShotLooksView, false);
 
   api.timing.view = (project) =>
     call('timing.view', async () => {

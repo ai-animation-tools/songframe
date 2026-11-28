@@ -68,8 +68,11 @@ type ShotLooksView struct {
 	Model string `json:"model"`
 	Limit int    `json:"limit"`
 	// Kinds — виды сущностей, чей образ принимает модель Model.
-	Kinds  []string   `json:"kinds"`
-	Heroes []ShotLook `json:"heroes"`
+	Kinds []string `json:"kinds"`
+	// References — проверка для попытки по референсам: модель — модель режима по референсам, облик
+	// героев без образа держит их картинка, а не опоры.
+	References bool       `json:"references"`
+	Heroes     []ShotLook `json:"heroes"`
 	// Error — почему статусы неизвестны; статусы героев тогда none.
 	Error string `json:"error"`
 }
@@ -87,7 +90,7 @@ type SavedLooksService struct {
 
 // LookModels — источник ожидаемой модели видео плана и её предела образов.
 type LookModels interface {
-	ExpectedLookModel(ctx context.Context, project string) (productionworkflow.LookModel, error)
+	ExpectedLookModel(ctx context.Context, project string, references bool) (productionworkflow.LookModel, error)
 }
 
 // NewSavedLooksService — группа на каталоге состояния и таблице адаптеров приложения; models —
@@ -309,8 +312,9 @@ func (s *SavedLooksService) Remove(ctx context.Context, project, look string) (S
 }
 
 // Shot — savedLooks.shot: герои «В кадре» плана shot со статусами образов одним бесплатным
-// списком библиотеки. Сбой списка приходит в Error, как у View.
-func (s *SavedLooksService) Shot(ctx context.Context, project, shot string) (ShotLooksView, error) {
+// списком библиотеки. references — новая попытка по референсам: модель ожидается из режима по
+// референсам. Сбой списка приходит в Error, как у View.
+func (s *SavedLooksService) Shot(ctx context.Context, project, shot string, references bool) (ShotLooksView, error) {
 	provider, looks, err := s.library(project)
 	if err != nil || looks == nil {
 		return wire.Done(ShotLooksView{}, err)
@@ -319,12 +323,12 @@ func (s *SavedLooksService) Shot(ctx context.Context, project, shot string) (Sho
 	if err != nil {
 		return wire.Done(ShotLooksView{}, err)
 	}
-	view := ShotLooksView{Supported: true, Heroes: make([]ShotLook, len(entities))}
+	view := ShotLooksView{Supported: true, References: references, Heroes: make([]ShotLook, len(entities))}
 	for index, entity := range entities {
 		view.Heroes[index] = ShotLook{Code: entity.Code, Name: entity.Name, Kind: entity.Kind, Status: savedlooks.StatusNone}
 	}
 	if s.models != nil {
-		model, err := s.models.ExpectedLookModel(ctx, project)
+		model, err := s.models.ExpectedLookModel(ctx, project, references)
 		if err != nil {
 			return wire.Done(view, err)
 		}

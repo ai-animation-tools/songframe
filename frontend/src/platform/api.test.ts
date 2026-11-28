@@ -192,13 +192,15 @@ describe('Граница window.api', () => {
     await api.savedLooks.unbind('/клип', 'hero');
     await api.savedLooks.remove('/клип', '7');
     await api.savedLooks.shot('/клип', 'M01');
+    await api.savedLooks.shot('/клип', 'M01', true);
     expect(calls).toEqual([
       ['View', '/клип'],
       ['Create', '/клип', 'hero', input],
       ['Bind', '/клип', 'hero', '7'],
       ['Unbind', '/клип', 'hero'],
       ['Remove', '/клип', '7'],
-      ['Shot', '/клип', 'M01']
+      ['Shot', '/клип', 'M01', false],
+      ['Shot', '/клип', 'M01', true]
     ]);
   });
 

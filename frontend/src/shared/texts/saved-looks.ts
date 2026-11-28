@@ -85,10 +85,14 @@ export const savedLooksTexts = {
   beforeTitle: 'Образы героев плана',
   beforeWithout: ({ model }: { model: string }) =>
     `Модель ${model} держит облик по сохранённому образу, а у этих сущностей «В кадре» образа нет: их облик будет держаться только опорами. Образ создаётся у референса на «Исходниках»; второстепенным героям он не обязателен.`,
+  beforeWithoutReferences: ({ model }: { model: string }) =>
+    `Модель ${model} держит облик по сохранённому образу, а у этих сущностей «В кадре» образа нет: их облик будет держаться картинкой на шаге «Референсы». Образ создаётся у референса на «Исходниках»; второстепенным героям он не обязателен.`,
   beforeOver: ({ model, limit, count }: { model: string; limit: number; count: number }) =>
     `Модель ${model} принимает не больше ${countLabel(limit, 'образа', 'образов', 'образов')} в запросе, а образы есть у ${count} сущностей в кадре: в видеопромпте отметьте не больше ${limit}.`,
   beforeChoose: ({ model, limit, count }: { model: string; limit: number; count: number }) =>
     `Модель ${model} принимает не больше ${countLabel(limit, 'образа', 'образов', 'образов')} в запросе, а образы есть у ${count} сущностей в кадре. Отметьте, чей облик держать образом: план опишут с ними, облик остальных будет держаться опорами.`,
+  beforeChooseReferences: ({ model, limit, count }: { model: string; limit: number; count: number }) =>
+    `Модель ${model} принимает не больше ${countLabel(limit, 'образа', 'образов', 'образов')} в запросе, а образы есть у ${count} сущностей в кадре. Отметьте, чей облик держать образом: план опишут с ними, облик остальных будет держаться картинками на шаге «Референсы».`,
   beforeChooseLabel: 'Облик по образу',
   beforeChosen: ({ count, limit }: { count: number; limit: number }) => `Выбрано ${count} из ${limit}`,
   beforeChooseOver: ({ limit }: { limit: number }) => `Отметьте не больше ${countLabel(limit, 'сущности', 'сущностей', 'сущностей')}.`,

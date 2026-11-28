@@ -11,6 +11,7 @@ import { SavedLooksBeforeDialog } from './SavedLooksBeforeDialog';
 
 const QUESTION: DescriptionLooksQuestion = {
   model: 'test-video',
+  references: false,
   limit: 2,
   without: [],
   choose: [
@@ -20,7 +21,7 @@ const QUESTION: DescriptionLooksQuestion = {
   ]
 };
 
-function DialogStory({ agent }: { agent: boolean }) {
+function DialogStory({ agent, question = QUESTION }: { agent: boolean; question?: DescriptionLooksQuestion }) {
   const [open, setOpen] = useState(true);
   const [result, setResult] = useState('Ответа нет.');
   return (
@@ -29,7 +30,7 @@ function DialogStory({ agent }: { agent: boolean }) {
         {result}
       </Alert>
       <SavedLooksBeforeDialog
-        question={open ? QUESTION : null}
+        question={open ? question : null}
         agent={agent}
         onOpenReference={() => undefined}
         onContinue={(looks) => {
@@ -82,6 +83,22 @@ export const InfoBeforeOwn: Story = {
     await expect(dialog.queryByRole('checkbox')).not.toBeInTheDocument();
     await expect(dialog.getByText(savedLooksTexts.beforeOver({ model: 'test-video', limit: 2, count: 3 }))).toBeVisible();
     await userEvent.click(dialog.getByRole('button', { name: savedLooksTexts.beforeContinue }));
+    await waitFor(() => expect(body.getByRole('status')).toHaveTextContent('Продолжено без выбора.'));
+  }
+};
+
+export const WithoutLookReferences: Story = {
+  tags: ['ci'],
+  name: 'Попытка по референсам · облик героя без образа держит картинка, а не опоры',
+  args: {
+    agent: true,
+    question: { model: 'test-refs', references: true, limit: 7, without: [{ code: 'pasha', name: 'Паша', kind: 'character', status: 'none' }], choose: [] }
+  },
+  play: async ({ canvasElement }) => {
+    const body = within(canvasElement.ownerDocument.body);
+    const dialog = within(await body.findByRole('dialog', { name: savedLooksTexts.beforeTitle }));
+    await expect(dialog.getByText(savedLooksTexts.beforeWithoutReferences({ model: 'test-refs' }))).toBeVisible();
+    await userEvent.click(dialog.getByRole('button', { name: savedLooksTexts.beforeContinueWithout }));
     await waitFor(() => expect(body.getByRole('status')).toHaveTextContent('Продолжено без выбора.'));
   }
 };

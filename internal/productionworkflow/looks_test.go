@@ -277,7 +277,7 @@ func TestExpectedLookModel(t *testing.T) {
 	}{{looksCaps, 2, []string{"character", "prop", "costume"}}, {requestCaps, 0, []string{}}} {
 		run := ownRun(t)
 		workflow, _, _ := looksWorkflow(t, run, item.caps)
-		got, err := workflow.ExpectedLookModel(context.Background(), run.project)
+		got, err := workflow.ExpectedLookModel(context.Background(), run.project, false)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -496,7 +496,7 @@ func TestExpectedLookModelSkipsModelWithoutLooks(t *testing.T) {
 		run := ownRun(t)
 		workflow, _, _ := looksWorkflow(t, run, item.caps)
 		preferModel(t, run, "test-keyframes")
-		got, err := workflow.ExpectedLookModel(context.Background(), run.project)
+		got, err := workflow.ExpectedLookModel(context.Background(), run.project, false)
 		if err != nil {
 			t.Fatal(err)
 		}

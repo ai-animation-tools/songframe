@@ -1,6 +1,7 @@
 /**
  * Вопрос перед описанием плана («Подготовить описание» или «Написать самому»): модель плана держит облик героя по
- * сохранённому образу, а у части сущностей «В кадре» образа нет или образов больше, чем модель примет. Отсутствие образа
+ * сохранённому образу, а у части сущностей «В кадре» образа нет или образов больше, чем модель примет. У попытки
+ * «По референсам» облик остальных держат картинки шага «Референсы», у попытки по опорам — опоры. Отсутствие образа
  * не блокирует: пользователь переходит к референсу на «Исходниках» или продолжает без образа. При избытке образов перед
  * агентом пользователь отмечает, чей облик держать образом (персонажи отмечены первыми), и продолжение передаёт выбор
  * агенту; своё описание пишет сам человек — окно только говорит, сколько меток поставить.
@@ -52,7 +53,9 @@ export function SavedLooksBeforeDialog({
         <Stack spacing={2} sx={{ mt: 1 }}>
           {question.without.length ? (
             <Alert severity="warning">
-              <Typography variant="body2">{savedLooksTexts.beforeWithout({ model: question.model })}</Typography>
+              <Typography variant="body2">
+                {(question.references ? savedLooksTexts.beforeWithoutReferences : savedLooksTexts.beforeWithout)({ model: question.model })}
+              </Typography>
               <Typography id={listId} component="h3" variant="subtitle2" sx={{ mt: 1.5 }}>
                 {savedLooksTexts.beforeWithoutLabel}
               </Typography>
@@ -84,7 +87,11 @@ export function SavedLooksBeforeDialog({
           {choosing ? (
             <Alert severity={over ? 'warning' : 'info'}>
               <Typography variant="body2">
-                {savedLooksTexts.beforeChoose({ model: question.model, limit: question.limit, count: question.choose.length })}
+                {(question.references ? savedLooksTexts.beforeChooseReferences : savedLooksTexts.beforeChoose)({
+                  model: question.model,
+                  limit: question.limit,
+                  count: question.choose.length
+                })}
               </Typography>
               <Typography id={chooseId} component="h3" variant="subtitle2" sx={{ mt: 1.5 }}>
                 {savedLooksTexts.beforeChooseLabel} · {savedLooksTexts.beforeChosen({ count: chosen.length, limit: question.limit })}

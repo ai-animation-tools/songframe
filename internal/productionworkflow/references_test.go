@@ -703,3 +703,19 @@ func TestPrepareReferencesRequest(t *testing.T) {
 		t.Fatalf("смена способа: %v", err)
 	}
 }
+
+// Ожидаемая модель образов для попытки по референсам — первая модель режима, а не модель
+// запроса по опорам; для обычной попытки — прежняя.
+func TestExpectedLookModelReferences(t *testing.T) {
+	run := ownRun(t)
+	workflow := refsWorkflow(t, run)
+	for references, want := range map[bool]string{true: "test-refs", false: "test-cheap"} {
+		got, err := workflow.ExpectedLookModel(context.Background(), run.project, references)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got.Model != want {
+			t.Fatalf("references=%v: модель %q, нужно %q", references, got.Model, want)
+		}
+	}
+}

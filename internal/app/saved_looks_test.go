@@ -164,7 +164,7 @@ func TestSavedLooksShot(t *testing.T) {
 	if _, err := looks.Bind(ctx, project, "boat", "look-9"); err != nil {
 		t.Fatal(err)
 	}
-	view, err := looks.Shot(ctx, project, "M01")
+	view, err := looks.Shot(ctx, project, "M01", false)
 	if err != nil || !view.Supported || view.Error != "" || view.Model != "test-cheap" || view.Limit != 3 || len(view.Kinds) != 1 {
 		t.Fatalf("вид %+v %v", view, err)
 	}
@@ -173,7 +173,7 @@ func TestSavedLooksShot(t *testing.T) {
 		t.Fatalf("герои %+v", view.Heroes)
 	}
 	unsupported := looksProject(t, "none")
-	if view, err := looks.Shot(ctx, unsupported, "M01"); err != nil || view.Supported || view.Heroes == nil || len(view.Heroes) != 0 {
+	if view, err := looks.Shot(ctx, unsupported, "M01", false); err != nil || view.Supported || view.Heroes == nil || len(view.Heroes) != 0 {
 		t.Fatalf("без образов %+v %v", view, err)
 	}
 }
@@ -181,6 +181,6 @@ func TestSavedLooksShot(t *testing.T) {
 // fixedLookModel — ожидаемая модель плана без прохода производства.
 type fixedLookModel productionworkflow.LookModel
 
-func (m fixedLookModel) ExpectedLookModel(context.Context, string) (productionworkflow.LookModel, error) {
+func (m fixedLookModel) ExpectedLookModel(context.Context, string, bool) (productionworkflow.LookModel, error) {
 	return productionworkflow.LookModel(m), nil
 }

@@ -74,6 +74,8 @@ export interface ShotLook {
 export interface ShotLooksView {
   /** Провайдер видео проекта хранит образы; false — меток героев не предлагается. */
   supported: boolean;
+  /** Модель и предел посчитаны для попытки «По референсам»: облик героев без образа держат картинки, а не опоры. */
+  references: boolean;
   /** Модель, которую сборка запроса плана пробует первой, и сколько образов она примет (0 — не принимает). */
   model: string;
   limit: number;
@@ -150,6 +152,8 @@ export function savedLookNameLength(name: string): number {
 /** Вопрос перед описанием плана: сущности «В кадре» без действующего образа и выбор героев сверх предела модели. */
 export interface DescriptionLooksQuestion {
   model: string;
+  /** Попытка «По референсам»: облик героев без образа держат картинки шага «Референсы». */
+  references: boolean;
   limit: number;
   /** Сущности видов, которые принимает модель, без образа или с образом, которого нет в аккаунте. */
   without: ShotLook[];
@@ -173,5 +177,5 @@ export function descriptionLooksQuestion(view: ShotLooksView): DescriptionLooksQ
   const withLook = eligible.filter((hero) => hero.status === 'ready' || hero.status === 'stale');
   const ordered = [...withLook.filter((hero) => hero.kind === 'character'), ...withLook.filter((hero) => hero.kind !== 'character')];
   const choose = ordered.length > view.limit ? ordered : [];
-  return without.length || choose.length ? { model: view.model, limit: view.limit, without, choose } : null;
+  return without.length || choose.length ? { model: view.model, references: view.references, limit: view.limit, without, choose } : null;
 }

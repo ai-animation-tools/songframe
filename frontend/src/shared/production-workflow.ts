@@ -55,8 +55,26 @@ export interface ProductionRequestOptions {
   /** В видеопромпте есть метки героев: запрос можно собрать заново без изменений, чтобы он получил новые образы. */
   marked: boolean;
 }
+/**
+ * Картинка из ответа описания попытки «По референсам»: start — кадр принятого предшественника, entity — изображение
+ * сущности кастинга entity. path — путь от папки проекта.
+ */
+export interface ProductionReferenceProposal {
+  id: string;
+  role: 'start' | 'entity';
+  entity?: string;
+  path: string;
+}
 export type ProductionStageProposal =
-  | { schemaVersion: 1; stage: 'description'; description: string; requestSeconds: number; keyframes: ProductionFramePrompt[] }
+  | {
+      schemaVersion: 1;
+      stage: 'description';
+      description: string;
+      requestSeconds: number;
+      /** План опор; у попытки «По референсам» его нет, вместо него — references. */
+      keyframes?: ProductionFramePrompt[];
+      references?: ProductionReferenceProposal[];
+    }
   | { schemaVersion: 1; stage: 'frames'; images: ProductionFrameCandidate[] }
   /** prompt — на языке провайдера видео; translation — тот же промпт по-русски, если агент его предложил. */
   | { schemaVersion: 1; stage: 'prompt'; prompt: string; translation?: string };

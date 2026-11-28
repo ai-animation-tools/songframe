@@ -221,11 +221,11 @@ func run() error {
 	}
 	// Ожидаемую модель видео знает проход производства, созданный ниже: рекомендации по
 	// референсам спрашивают её при запуске, когда он уже есть.
-	var expectedLooks func(ctx context.Context, project string) (productionworkflow.LookModel, error)
+	var expectedLooks func(ctx context.Context, project string, references bool) (productionworkflow.LookModel, error)
 	scenarioWorkflow := scenarioworkflow.New(scenarioworkflow.Options{
 		LocalDir: profilePath, Agents: agentManager,
 		AdviceLooks: func(project string) (scenarioworkflow.AdviceLooks, error) {
-			model, err := expectedLooks(context.Background(), project)
+			model, err := expectedLooks(context.Background(), project, false)
 			return scenarioworkflow.AdviceLooks{Model: model.Model, Limit: model.Limit, Kinds: model.Kinds}, err
 		},
 		RequireAgentAccess: func(project string) error {

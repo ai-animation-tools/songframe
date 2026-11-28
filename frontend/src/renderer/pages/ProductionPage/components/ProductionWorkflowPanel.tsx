@@ -84,9 +84,9 @@ export function ProductionWorkflowPanel({
   onOwnVideo?(): void;
   /**
    * Проверка перед подготовкой описания агентом (сохранённые образы героев): вызывает proceed сразу или после ответа;
-   * looks — выбранные герои с образами, если образов больше, чем примет модель.
+   * looks — выбранные герои с образами, если образов больше, чем примет модель; references — выбран способ «По референсам».
    */
-  onBeforePrepare?(proceed: (looks?: string[]) => void): void;
+  onBeforePrepare?(proceed: (looks?: string[]) => void, references: boolean): void;
   /** Почему описание сейчас не начинается (идёт проверка перед ним); null — можно. */
   descriptionReason?: string | null;
   /** Способ последней попытки плана: с него начинается выбор способа новой попытки; нет — по опорам. */
@@ -294,7 +294,7 @@ export function ProductionWorkflowPanel({
                   disabled={primaryDisabled || !!descriptionReason}
                   disabledReason={descriptionReason ?? reason ?? productionTexts.productionWorkflowPanel.loadingReason}
                   title={productionTexts.productionWorkflowPanel.prepareHint}
-                  onClick={() => (onBeforePrepare ? onBeforePrepare((looks) => void start('prepare', looks)) : void start('prepare'))}
+                  onClick={() => (onBeforePrepare ? onBeforePrepare((looks) => void start('prepare', looks), byReferences) : void start('prepare'))}
                 >
                   {productionTexts.productionWorkflowPanel.prepare}
                 </AgentButton>

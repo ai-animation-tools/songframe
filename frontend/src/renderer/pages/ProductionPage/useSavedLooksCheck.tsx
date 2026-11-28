@@ -12,9 +12,10 @@ import { SavedLooksBeforeDialog } from './components/SavedLooksBeforeDialog';
 export interface SavedLooksCheck {
   /**
    * Проверить образы и выполнить proceed сразу или после ответа «Продолжить»; agent — продолжение запускает агента.
-   * looks — выбранные герои, если образов больше, чем примет модель; без выбора — undefined.
+   * looks — выбранные герои, если образов больше, чем примет модель; без выбора — undefined. references — описание
+   * новой попытки «По референсам»: модель и тексты вопроса — режима по референсам.
    */
-  check(proceed: (looks?: string[]) => void, agent: boolean): void;
+  check(proceed: (looks?: string[]) => void, agent: boolean, references?: boolean): void;
   /** Идёт проверка: кнопки описания ждут её. */
   checking: boolean;
   dialog: ReactElement;
@@ -34,7 +35,7 @@ export function useSavedLooksCheck(project: string, shot: string, attempt: strin
     setPending(null);
     setChecking(false);
   }, [key]);
-  const check = (proceed: (looks?: string[]) => void, agent: boolean): void => {
+  const check = (proceed: (looks?: string[]) => void, agent: boolean, references = false): void => {
     if (checking || pending) return;
     setChecking(true);
     const finish = (question: DescriptionLooksQuestion | null): void => {
@@ -43,7 +44,7 @@ export function useSavedLooksCheck(project: string, shot: string, attempt: strin
       if (question) setPending({ question, proceed, agent });
       else proceed();
     };
-    window.api.savedLooks.shot(project, shot).then(
+    window.api.savedLooks.shot(project, shot, references).then(
       (view) => finish(descriptionLooksQuestion(view)),
       () => finish(null)
     );

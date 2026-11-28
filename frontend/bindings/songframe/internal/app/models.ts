@@ -280,6 +280,12 @@ export interface ShotLooksView {
      * Kinds — виды сущностей, чей образ принимает модель Model.
      */
     "kinds": string[];
+
+    /**
+     * References — проверка для попытки по референсам: модель — модель режима по референсам, облик
+     * героев без образа держит их картинка, а не опоры.
+     */
+    "references": boolean;
     "heroes": ShotLook[];
 
     /**

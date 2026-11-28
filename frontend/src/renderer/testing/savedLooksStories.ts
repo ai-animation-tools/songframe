@@ -66,7 +66,7 @@ export function createSavedLooksModel(options: SavedLooksStoryOptions, reference
       error: ''
     };
   };
-  const shot = (): ShotLooksView => {
+  const shot = (byReferences = false): ShotLooksView => {
     const current = view();
     const heroes = (options.heroes ?? references().map((code): { code: string; name: string; kind?: string } => ({ code, name: code }))).map((hero) => {
       const state = current.report?.states.find((item) => item.reference === hero.code);
@@ -74,6 +74,7 @@ export function createSavedLooksModel(options: SavedLooksStoryOptions, reference
     });
     return {
       supported: current.supported,
+      references: byReferences,
       model: options.model ?? 'test-video',
       limit: current.supported ? (options.limit ?? 3) : 0,
       kinds: current.supported ? [...SAVED_LOOKS_STORY_RULES.kinds] : [],
@@ -83,7 +84,7 @@ export function createSavedLooksModel(options: SavedLooksStoryOptions, reference
   };
   return {
     view: async () => view(),
-    shot: async () => shot(),
+    shot: async (_project: string, _shot: string, references?: boolean) => shot(references),
     create: async (_project: string, reference: string, input: SavedLookInput) => {
       calls.push(['create', reference, structuredClone(input)]);
       if (failCreate) {

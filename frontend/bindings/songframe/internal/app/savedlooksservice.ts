@@ -44,10 +44,11 @@ export function Remove(project: string, look: string): $CancellablePromise<$mode
 
 /**
  * Shot — savedLooks.shot: герои «В кадре» плана shot со статусами образов одним бесплатным
- * списком библиотеки. Сбой списка приходит в Error, как у View.
+ * списком библиотеки. references — новая попытка по референсам: модель ожидается из режима по
+ * референсам. Сбой списка приходит в Error, как у View.
  */
-export function Shot(project: string, shot: string): $CancellablePromise<$models.ShotLooksView> {
-    return $Call.ByID(142195193, project, shot);
+export function Shot(project: string, shot: string, references: boolean): $CancellablePromise<$models.ShotLooksView> {
+    return $Call.ByID(142195193, project, shot, references);
 }
 
 /**

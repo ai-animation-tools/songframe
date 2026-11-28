@@ -315,10 +315,11 @@ type LookModel struct {
 	Kinds []string `json:"kinds"`
 }
 
-// ExpectedLookModel — LookModel проекта project по свежим объявлениям моделей провайдера видео.
-// Без выбранного провайдера видео или его моделей — пустая модель с Limit 0.
-func (w *Workflow) ExpectedLookModel(ctx context.Context, project string) (LookModel, error) {
-	model, _, err := w.expectedLookModel(ctx, project, false)
+// ExpectedLookModel — LookModel проекта project по свежим объявлениям моделей провайдера видео;
+// references — для попытки по референсам (модель режима по референсам). Без выбранного
+// провайдера видео или его моделей — пустая модель с Limit 0.
+func (w *Workflow) ExpectedLookModel(ctx context.Context, project string, references bool) (LookModel, error) {
+	model, _, err := w.expectedLookModel(ctx, project, references)
 	return model, err
 }
 

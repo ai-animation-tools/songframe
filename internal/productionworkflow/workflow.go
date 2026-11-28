@@ -31,6 +31,7 @@ import (
 	"songframe/internal/agents"
 	"songframe/internal/derivedshot"
 	"songframe/internal/dynvalue"
+	"songframe/internal/mediaapi"
 	"songframe/internal/mediafile"
 	"songframe/internal/mediaproviders"
 	"songframe/internal/providers"
@@ -1017,9 +1018,12 @@ func (w *Workflow) capabilities(ctx context.Context, c *Context) ([]providers.Ca
 	if c.Scene.Value("lipsync") != true {
 		draft = adapter.Rules.DraftVideoCommands
 	}
-	// Описанию по референсам нужен только режим по референсам: его модели и длительности.
+	// Попытке по референсам нужен только режим по референсам и только его модели: запрос соберётся
+	// моделью режима, и другие модели команды не должны попадать в совет агента о модели.
+	var modes *mediaapi.ReferenceRules
 	if c.ReferencesMethod && adapter.Rules.Video != nil && adapter.Rules.Video.References != nil {
-		draft = []string{adapter.Rules.Video.References.Command}
+		modes = adapter.Rules.Video.References
+		draft = []string{modes.Command}
 	}
 	visible := func(command string) bool { return draft == nil || slices.Contains(draft, command) }
 	catalog, err := w.options.Catalog.Read(ctx, c.Project, adapter.ID, mediaproviders.Video)
@@ -1027,9 +1031,19 @@ func (w *Workflow) capabilities(ctx context.Context, c *Context) ([]providers.Ca
 		return reports, err.Error()
 	}
 	for _, report := range catalog.Reports {
-		if visible(report.Command) {
-			reports = append(reports, report)
+		if !visible(report.Command) {
+			continue
 		}
+		if modes != nil && report.Models != nil {
+			models := dynvalue.NewObject()
+			for _, id := range modes.Models {
+				if value, ok := report.Models.Get(id); ok {
+					models.Set(id, value)
+				}
+			}
+			report.Models = models
+		}
+		reports = append(reports, report)
 	}
 	for _, problem := range catalog.Problems {
 		if visible(problem.Command) {

@@ -299,6 +299,10 @@ func TestStartReferencesTask(t *testing.T) {
 	if !strings.Contains(text, "reference_video") || strings.Contains(text, "image_to_video") {
 		t.Fatalf("команды в capabilities: %s", text)
 	}
+	// Модели команды вне режима (test-other) агенту не показываются: запрос соберётся моделью режима.
+	if !strings.Contains(text, "test-refs") || strings.Contains(text, "test-other") {
+		t.Fatalf("модели в capabilities: %s", text)
+	}
 	// Обычное описание такого ключа не получает и скилла по референсам не читает.
 	failed, code := run.agents.last(t), 1
 	failed.Status, failed.ExitCode = "failed", &code

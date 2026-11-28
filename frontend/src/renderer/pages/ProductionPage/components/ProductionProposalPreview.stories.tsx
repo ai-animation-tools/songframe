@@ -102,7 +102,7 @@ export const DescriptionReferences: Story = {
       const { keyframes: _keyframes, ...after } = proposal.after;
       const references = [
         { id: 'R01', role: 'start' as const, path: 'plan/batches/M02-attempt-01/continuity/M01-last.png' },
-        { id: 'R02', role: 'entity' as const, entity: 'garden', path: 'assets/locations/garden.png' }
+        { id: 'R02', role: 'place' as const, entity: 'garden', path: 'assets/locations/garden.png' }
       ];
       return { ...proposal, after: { ...after, references } };
     })()
@@ -111,7 +111,9 @@ export const DescriptionReferences: Story = {
     const canvas = within(canvasElement);
     await expect(canvas.getByText(labels.referencesTitle({ count: 2 }))).toBeVisible();
     await expect(canvas.getByText(labels.reference({ id: 'R01', name: productionTexts.packageReferences.start, file: 'M01-last.png' }))).toBeVisible();
-    await expect(canvas.getByText(labels.reference({ id: 'R02', name: 'garden', file: 'garden.png' }))).toBeVisible();
+    await expect(
+      canvas.getByText(labels.reference({ id: 'R02', name: productionTexts.packageReferences.placeOf({ name: 'garden' }), file: 'garden.png' }))
+    ).toBeVisible();
   }
 };
 export const Prompt: Story = {

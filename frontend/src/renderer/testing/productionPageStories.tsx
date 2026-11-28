@@ -64,12 +64,12 @@ export function packageForShot(pkg: PackageView, shot: string): PackageView {
 }
 
 /**
- * Попытка по референсам: опор нет, у описания принятый кадр предшественника (R01, начало) и изображения героя и места
- * (R02, R03). Референсы по умолчанию кандидаты; approved утверждает все.
+ * Попытка по референсам: опор нет, у описания принятый кадр предшественника (R01, начало), изображение героя (R02) и
+ * картинка места из кастинга (R03). Референсы по умолчанию кандидаты; approved утверждает все.
  */
 export function referencesPackage(approved = false, overrides: Partial<PackageView> = {}): PackageView {
   const base = packageForShot(keyframePackage(), 'M02');
-  const reference = (id: string, role: 'start' | 'entity', entity: string | null): NonNullable<PackageView['references']>[number] => ({
+  const reference = (id: string, role: 'start' | 'place' | 'entity', entity: string | null): NonNullable<PackageView['references']>[number] => ({
     id,
     role,
     entity,
@@ -84,7 +84,7 @@ export function referencesPackage(approved = false, overrides: Partial<PackageVi
     keyframes: [],
     keyframeNotes: [],
     generationMethod: 'references',
-    references: [reference('R01', 'start', null), reference('R02', 'entity', 'hero'), reference('R03', 'entity', 'gate')],
+    references: [reference('R01', 'start', null), reference('R02', 'entity', 'hero'), reference('R03', 'place', 'gate')],
     description: 'Герой останавливается у ворот и смотрит на свет в окне.',
     pendingDecision: null,
     decision: { stage: 'description_review', verdict: 'approve', at: DATE },
@@ -1073,6 +1073,10 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
             const { pkg } = find(project, dir);
             if (!pkg.references?.some((reference) => reference.id === id)) throw new Error('Референса нет в попытке.');
             if (pkg.references.length === 1) throw new Error('Последний референс не убрать: запросу нужна хотя бы одна картинка.');
+            const place = (reference: { role: string }) => reference.role === 'start' || reference.role === 'place';
+            const removed = pkg.references.find((reference) => reference.id === id)!;
+            if (place(removed) && pkg.references.filter(place).length === 1)
+              throw new Error('Это единственная картинка места: без неё модель придумает место сама. Замените её своим файлом или кадром, а не убирайте.');
             pkg.references = pkg.references.filter((reference) => reference.id !== id);
             model.referenceActions = [...model.referenceActions, `убрать ${id}`];
             touch(pkg);

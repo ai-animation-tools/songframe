@@ -7,6 +7,7 @@ import { commonTexts } from '@shared/texts/common';
 import { componentsTexts } from '@shared/texts/components';
 import { navigationTexts } from '@shared/texts/navigation';
 import { videoReviewTexts } from '@shared/texts/video-review';
+import { sourcesTexts } from '@shared/texts/sources';
 import { productionTexts } from '@shared/texts/production';
 import { savedLooksTexts } from '@shared/texts/saved-looks';
 import { mediaProviderInfo } from '@shared/media-providers';
@@ -2196,10 +2197,10 @@ export const ReferencesStep: Story = {
     const step = () => within(planStep(context, 'references'));
     await expect(planStep(context, 'frames')).toBeNull();
     await expect(await step().findByText(refs.heading({ approved: 0, references: 3 }))).toBeInTheDocument();
-    // Название: роль «Начало» или имя сущности из кастинга.
+    // Название: роль «Начало», «Место: …» или имя сущности из кастинга.
     await expect(await step().findByText(refs.title({ id: 'R01', name: refs.start }))).toBeInTheDocument();
     await expect(await step().findByText(refs.title({ id: 'R02', name: 'Артём' }), {}, POLL_TIMEOUT)).toBeInTheDocument();
-    await expect(step().getByText(refs.title({ id: 'R03', name: 'Старые ворота' }))).toBeInTheDocument();
+    await expect(step().getByText(refs.title({ id: 'R03', name: refs.placeOf({ name: 'Старые ворота' }) }))).toBeInTheDocument();
     await expect(step().getAllByText(refs.candidate)).toHaveLength(3);
     // Убрать лишний.
     await userEvent.click(step().getAllByRole('button', { name: refs.remove })[2]);
@@ -2240,6 +2241,36 @@ export const ReferencesLastOne: Story = {
   }
 };
 
+/** Единственная картинка места: убрать её нельзя, причина в подсказке; героя рядом убрать можно. */
+export const ReferencesOnlyPlace: Story = {
+  tags: ['ci'],
+  name: 'По референсам · единственная картинка места не убирается',
+  parameters: {
+    songframe: options({
+      references: true,
+      shots: () => {
+        const attempt = referencesPackage(false);
+        return baseShots({ stageLabel: attempt.stageLabel, attention: null, packages: [{ ...attempt, references: attempt.references!.slice(1) }] });
+      }
+    })
+  },
+  play: async (context) => {
+    const refs = texts.packageReferences;
+    await shotHeading(context, 'M02');
+    const step = within(planStep(context, 'references'));
+    // Кнопки доступны после загрузки состояния плана: элементы ищутся заново, пока героя нельзя убрать.
+    const removes = () => step.getAllByRole('button', { name: refs.remove });
+    await waitFor(() => expect(removes()[0]).toBeEnabled(), POLL_TIMEOUT);
+    await expect(removes()[1]).toBeDisabled();
+    await userEvent.hover(removes()[1].parentElement!);
+    await expect(await screenOf(context).findByRole('tooltip')).toHaveTextContent(refs.placeReason);
+    // «Сгенерировать» у картинки места открывает окно генерации с текстом «то же место без людей».
+    await userEvent.click(step.getAllByRole('button', { name: refs.generate })[1]);
+    const dialog = within(await screenOf(context).findByRole('dialog', {}, POLL_TIMEOUT));
+    await expect(await dialog.findByRole('textbox', { name: sourcesTexts.referenceImagePrompt })).toHaveValue(refs.generatePlacePrompt);
+  }
+};
+
 /** Референсы утверждены: следующий шаг — видеопромпт; способа генерации провайдер/вручную у такой попытки нет. */
 export const ReferencesApproved: Story = {
   tags: ['ci'],
@@ -2276,7 +2307,7 @@ export const ReferencesRequest: Story = {
             inputs: [
               { slot: 'image_1', role: 'Начало', path: 'references/R01.png', imagePath: `${STORY_IMAGE_PATH}?reference=R01` },
               { slot: 'image_2', role: 'Артём', path: 'references/R02.png', imagePath: `${STORY_IMAGE_PATH}?reference=R02` },
-              { slot: 'image_3', role: 'Старые ворота', path: 'references/R03.png', imagePath: `${STORY_IMAGE_PATH}?reference=R03` }
+              { slot: 'image_3', role: 'Место: Старые ворота', path: 'references/R03.png', imagePath: `${STORY_IMAGE_PATH}?reference=R03` }
             ]
           },
           pendingDecision: source.pendingDecision,
@@ -2291,6 +2322,6 @@ export const ReferencesRequest: Story = {
     const step = within(planStep(context, 'request'));
     await expect(await step.findByText('Начало (Изображение 1): references/R01.png', {}, POLL_TIMEOUT)).toBeInTheDocument();
     await expect(step.getByText('Артём (Изображение 2): references/R02.png')).toBeInTheDocument();
-    await expect(step.getByText('Старые ворота (Изображение 3): references/R03.png')).toBeInTheDocument();
+    await expect(step.getByText('Место: Старые ворота (Изображение 3): references/R03.png')).toBeInTheDocument();
   }
 };

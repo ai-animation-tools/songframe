@@ -70,8 +70,9 @@ const (
 	roleLastFrame   = "Последний кадр"
 	roleSpeech      = "Срез речи"
 	// roleStartReference — референс попытки по референсам: кадр предшественника, с которого
-	// начинается план. Остальные референсы подписаны именем сущности.
+	// начинается план; rolePlaceReference — картинка места. Остальные подписаны именем сущности.
 	roleStartReference = "Начало"
+	rolePlaceReference = "Место"
 )
 
 // PrepareRequest — productionWorkflow.prepareRequest: приложение готовит запрос видео попытки

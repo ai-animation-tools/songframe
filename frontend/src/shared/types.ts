@@ -913,12 +913,13 @@ export interface PackageView {
 }
 
 /**
- * Картинка запроса попытки по референсам: role start — кадр принятого предшественника, entity — изображение сущности кастинга
- * (entity — её ID); source — исходный путь от проекта, imagePath — абсолютный путь копии в попытке; approved — утверждена.
+ * Картинка запроса попытки по референсам: role start — кадр принятого предшественника, place — картинка места (изображение
+ * сущности кастинга с entity или кадр принятого плана без entity), entity — изображение героя или предмета (entity — её ID);
+ * source — исходный путь от проекта, imagePath — абсолютный путь копии в попытке; approved — утверждена.
  */
 export interface PackageReference {
   id: string;
-  role: 'start' | 'entity';
+  role: 'start' | 'place' | 'entity';
   entity: string | null;
   source: string | null;
   imagePath: string | null;

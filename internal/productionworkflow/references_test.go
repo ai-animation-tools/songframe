@@ -45,7 +45,8 @@ func parseRefs(rules Rules, seconds string, items ...string) error {
 }
 
 // TestParseReferences — разбор ответа описания по референсам: верный ответ принимается, ошибки ID,
-// ролей, путей, сущностей, повторов, числа картинок, длительности и лишних ключей отклоняются.
+// ролей, путей, сущностей, повторов, числа картинок, длительности, лишних ключей и ответ без
+// картинки места отклоняются.
 func TestParseReferences(t *testing.T) {
 	rules := refsRules()
 	start := refItem("R01", "start", "", refsFrame)
@@ -53,8 +54,15 @@ func TestParseReferences(t *testing.T) {
 	if err := parseRefs(rules, "9", start, mira, refItem("R03", "entity", "boat", refsBoat)); err != nil {
 		t.Fatalf("верный ответ: %v", err)
 	}
-	if err := parseRefs(rules, "9", refItem("R01", "entity", "mira", refsMira)); err != nil {
-		t.Fatalf("одна картинка сущности без начала: %v", err)
+	// Место — кадр «Начало», изображение сущности с ролью place или кадр принятого плана с ролью place.
+	if err := parseRefs(rules, "9", refItem("R01", "place", "boat", refsBoat), refItem("R02", "entity", "mira", refsMira)); err != nil {
+		t.Fatalf("место изображением сущности: %v", err)
+	}
+	if err := parseRefs(rules, "9", refItem("R01", "entity", "mira", refsMira), refItem("R02", "place", "", refsFrame)); err != nil {
+		t.Fatalf("место кадром принятого плана: %v", err)
+	}
+	if err := parseRefs(rules, "9", refItem("R01", "entity", "mira", refsMira)); err == nil || err.Error() != textReferencesPlace {
+		t.Fatalf("без картинки места: %v", err)
 	}
 	invalid := map[string][]string{
 		"ID не по порядку":        {start, refItem("R03", "entity", "mira", refsMira)},
@@ -66,7 +74,9 @@ func TestParseReferences(t *testing.T) {
 		"entity без кода":         {start, refItem("R02", "entity", "", refsMira)},
 		"путь вне allowedPaths":   {start, refItem("R02", "entity", "mira", "source/heroes/other.png")},
 		"путь не изображение":     {start, refItem("R02", "entity", "mira", "source/text.md")},
-		"неизвестная роль":        {start, refItem("R02", "place", "mira", refsMira)},
+		"неизвестная роль":        {start, refItem("R02", "scene", "mira", refsMira)},
+		"place без кода не кадр":  {start, refItem("R02", "place", "", refsMira)},
+		"place чужой сущности":    {start, refItem("R02", "place", "pier", "source/locations/pier.png")},
 		"картинка не объект":      {start, `"R02"`},
 		"нет пути":                {start, `{"id":"R02","role":"entity","entity":"mira"}`},
 		"путь не строка":          {start, `{"id":"R02","role":"entity","entity":"mira","path":5}`},
@@ -456,8 +466,8 @@ func refsPrompt(t *testing.T, run *goldenRun, workflow *Workflow, dir, prompt st
 }
 
 // TestEditReferences — референсы меняются после утверждения описания и до видеопромпта: до
-// утверждения, при предложении и после видеопромпта правка отказывает; последний референс не убрать,
-// чужой ID и не изображение отклоняются.
+// утверждения, при предложении и после видеопромпта правка отказывает; последний референс и
+// единственную картинку места не убрать, чужой ID и не изображение отклоняются.
 func TestEditReferences(t *testing.T) {
 	run := ownRun(t)
 	workflow := refsWorkflow(t, run)
@@ -496,34 +506,37 @@ func TestEditReferences(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(fullDir(run, dir), "references", "R02.png")); err != nil {
 		t.Fatalf("копия убранного референса: %v", err)
 	}
-	if _, err := workflow.RemoveReference(run.project, "M02", dir, "R01"); err != nil {
+	if _, err := workflow.RemoveReference(run.project, "M02", dir, "R01"); err == nil || err.Error() != textReferencePlaceLast {
+		t.Fatalf("единственная картинка места: %v", err)
+	}
+	if _, err := workflow.RemoveReference(run.project, "M02", dir, "R03"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := workflow.RemoveReference(run.project, "M02", dir, "R03"); err == nil || err.Error() != textReferenceLast {
+	if _, err := workflow.RemoveReference(run.project, "M02", dir, "R01"); err == nil || err.Error() != textReferenceLast {
 		t.Fatalf("последний референс: %v", err)
 	}
 
 	// Замена своим файлом внутри проекта: утверждён сразу, исходный путь сохранён; PNG снаружи
 	// проекта — без исходного пути; не изображение отклоняется.
 	inside := filepath.Join(run.project, writePNG(t, run.project, "assets/own.png", "inside"))
-	if _, err := workflow.ReplaceReference(run.project, "M02", dir, "R03", inside); err != nil {
+	if _, err := workflow.ReplaceReference(run.project, "M02", dir, "R01", inside); err != nil {
 		t.Fatal(err)
 	}
-	item := workflowReference(t, run, dir, "R03")
-	if item.Value("approved") != true || item.Value("source") != "assets/own.png" || item.Value("path") != "references/R03.png" {
+	item := workflowReference(t, run, dir, "R01")
+	if item.Value("approved") != true || item.Value("source") != "assets/own.png" || item.Value("path") != "references/R01.png" {
 		t.Fatalf("замена внутри проекта: %s", dynvalue.Stringify(item))
 	}
-	if data, _ := os.ReadFile(filepath.Join(fullDir(run, dir), "references", "R03.png")); !strings.HasSuffix(string(data), "inside") {
-		t.Fatalf("копия R03: %q", data)
+	if data, _ := os.ReadFile(filepath.Join(fullDir(run, dir), "references", "R01.png")); !strings.HasSuffix(string(data), "inside") {
+		t.Fatalf("копия R01: %q", data)
 	}
 	outside := filepath.Join(t.TempDir(), "outside.png")
 	if err := os.WriteFile(outside, append(append([]byte{}, pngSignature...), "outside"...), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := workflow.ReplaceReference(run.project, "M02", dir, "R03", outside); err != nil {
+	if _, err := workflow.ReplaceReference(run.project, "M02", dir, "R01", outside); err != nil {
 		t.Fatal(err)
 	}
-	item = workflowReference(t, run, dir, "R03")
+	item = workflowReference(t, run, dir, "R01")
 	if item.Has("source") || item.Value("approved") != true {
 		t.Fatalf("замена снаружи проекта: %s", dynvalue.Stringify(item))
 	}
@@ -531,10 +544,10 @@ func TestEditReferences(t *testing.T) {
 	if err := os.WriteFile(notImage, []byte("текст"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := workflow.ReplaceReference(run.project, "M02", dir, "R03", notImage); err == nil || err.Error() != textReferenceImageRequired {
+	if _, err := workflow.ReplaceReference(run.project, "M02", dir, "R01", notImage); err == nil || err.Error() != textReferenceImageRequired {
 		t.Fatalf("не изображение: %v", err)
 	}
-	if _, err := workflow.ReplaceReference(run.project, "M02", dir, "R03", "assets/own.png"); err == nil {
+	if _, err := workflow.ReplaceReference(run.project, "M02", dir, "R01", "assets/own.png"); err == nil {
 		t.Fatal("относительный путь принят")
 	}
 	if _, err := workflow.ReplaceReference(run.project, "M02", dir, "R07", inside); err == nil || err.Error() != textReferenceMissing {

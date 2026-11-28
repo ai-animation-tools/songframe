@@ -56,12 +56,12 @@ export interface ProductionRequestOptions {
   marked: boolean;
 }
 /**
- * Картинка из ответа описания попытки «По референсам»: start — кадр принятого предшественника, entity — изображение
- * сущности кастинга entity. path — путь от папки проекта.
+ * Картинка из ответа описания попытки «По референсам»: start — кадр принятого предшественника, place — картинка места
+ * (изображение сущности кастинга entity или кадр принятого плана), entity — изображение сущности кастинга entity. path — путь от папки проекта.
  */
 export interface ProductionReferenceProposal {
   id: string;
-  role: 'start' | 'entity';
+  role: 'start' | 'place' | 'entity';
   entity?: string;
   path: string;
 }

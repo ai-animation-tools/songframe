@@ -21,8 +21,10 @@ import (
 
 // Видео по референсам — второй способ генерации попытки рядом с опорами (generation_method
 // "references" в workflow.json). Опор Codex нет: запрос видео получает готовые картинки — кадр
-// принятого предшественника для стыка и изображения сущностей кастинга без сохранённого образа
-// (место, герой, предмет), — а герои с образом идут образами, как в запросе по опорам. Режим
+// принятого предшественника для стыка, картинку места и изображения сущностей кастинга без
+// сохранённого образа (герой, предмет), — а герои с образом идут образами, как в запросе по
+// опорам. Картинка места обязательна: без неё модель придумает место сама и план выпадет из
+// клипа; её роль несёт кадр «Начало» или картинка с ролью place. Режим
 // провайдера объявляет адаптер (mediaapi.ReferenceRules); без него способ не предлагается.
 //
 // Способ выбирается у попытки до описания (StartInput.Method): описание без опор отличается от
@@ -34,10 +36,13 @@ import (
 // methodReferences — значение generation_method попытки по референсам.
 const methodReferences = "references"
 
-// Роли референса: start — кадр принятого предшественника, с которого начинается план; entity —
-// изображение сущности кастинга.
+// Роли референса: start — кадр принятого предшественника, с которого начинается план; place —
+// картинка места: изображение сущности кастинга (с entity) или кадр принятого плана того же места
+// (без entity), кадрирование которого план не повторяет; entity — изображение героя или предмета.
+// Вид сущности кастинга — свободная строка, поэтому место отмечает роль, а не вид.
 const (
 	referenceStart  = "start"
+	referencePlace  = "place"
 	referenceEntity = "entity"
 )
 
@@ -61,7 +66,9 @@ const (
 	textReferencesPlanKind       = "Способ «По референсам» не подходит речевому плану, плану из опор и производному плану."
 	textReferencesMethodFixed    = "Способ генерации выбирается до описания: в этой попытке его не сменить, начните новую попытку."
 	textReferencesMethodInvalid  = "Неизвестный способ генерации попытки."
-	textReferencesInvalid        = "Референсы описания: R01, R02… подряд, роль start или entity, путь изображения из allowedPaths; start — только первый, кадр принятого плана из continuityFrames, без entity; entity — код сущности кастинга плана."
+	textReferencesInvalid        = "Референсы описания: R01, R02… подряд, роль start, place или entity, путь изображения из allowedPaths; start — только первый, кадр принятого плана из continuityFrames, без entity; place — изображение сущности кастинга плана с её кодом или кадр принятого плана без entity; entity — код сущности кастинга плана."
+	textReferencesPlace          = "Среди картинок нет места: нужен кадр «Начало» или картинка места (изображение локации из кастинга или кадр принятого плана того же места)."
+	textReferencePlaceLast       = "Это единственная картинка места: без неё модель придумает место сама. Замените её своим файлом или кадром, а не убирайте."
 	textReferencesCount          = "Описание по референсам должно предложить от одной картинки до предела модели."
 	textReferencesDuplicate      = "Одна картинка предложена дважды."
 	textReferencesNotMethod      = "Эта попытка делается по опорам: референсов у неё нет."
@@ -187,8 +194,10 @@ func referenceLimit(rules *mediaapi.ReferenceRules, reports []providers.CatalogR
 
 // parseReferences — описание по референсам: description, requestSeconds по правилу длительности и
 // список картинок R01… подряд. Картинка — путь изображения из allowedPaths; роль start — первая
-// картинка, кадр принятого плана из continuityFrames, без сущности; роль entity — изображение
-// сущности кастинга плана (код из rules.ReferenceEntities). Одна картинка не повторяется.
+// картинка, кадр принятого плана из continuityFrames, без сущности; роль place — изображение
+// сущности кастинга плана с её кодом или кадр принятого плана без кода; роль entity — изображение
+// сущности кастинга плана (код из rules.ReferenceEntities). Одна картинка не повторяется; среди
+// картинок есть место (start или place).
 func parseReferences(value *dynvalue.Object, rules Rules) error {
 	if err := keys(value, "schemaVersion", "stage", "description", "requestSeconds", "references"); err != nil {
 		return err
@@ -209,6 +218,7 @@ func parseReferences(value *dynvalue.Object, rules Rules) error {
 		return err
 	}
 	seen := map[string]bool{}
+	place := false
 	for index, item := range items {
 		reference, isObject := item.(*dynvalue.Object)
 		if !isObject {
@@ -223,6 +233,8 @@ func parseReferences(value *dynvalue.Object, rules Rules) error {
 		switch reference.Value("role") {
 		case referenceStart:
 			valid = valid && index == 0 && !reference.Has("entity") && isShotFramePath(path)
+		case referencePlace:
+			valid = valid && (hasEntity && slices.Contains(rules.ReferenceEntities, entity) || !reference.Has("entity") && isShotFramePath(path))
 		case referenceEntity:
 			valid = valid && hasEntity && slices.Contains(rules.ReferenceEntities, entity)
 		default:
@@ -235,8 +247,18 @@ func parseReferences(value *dynvalue.Object, rules Rules) error {
 			return errors.New(textReferencesDuplicate)
 		}
 		seen[path] = true
+		place = place || isPlaceReference(reference)
+	}
+	if !place {
+		return errors.New(textReferencesPlace)
 	}
 	return nil
+}
+
+// isPlaceReference — картинка задаёт место плана: кадр «Начало» или роль place.
+func isPlaceReference(item any) bool {
+	role := dynvalue.Get(item, "role")
+	return role == referenceStart || role == referencePlace
 }
 
 // imageExtension — расширение по содержимому изображения: png, jpg или webp; "" — не изображение.
@@ -325,7 +347,7 @@ func referencesTree(project, target string, proposed []any, previous []any) (*dy
 func referenceShotFrames(proposed []any) []any {
 	frames := []any{}
 	for _, item := range proposed {
-		if dynvalue.Get(item, "role") == referenceStart {
+		if path, _ := dynvalue.Get(item, "path").(string); isShotFramePath(path) {
 			frame := dynvalue.NewObject()
 			frame.Set("referencePaths", &dynvalue.Array{Items: []any{dynvalue.Get(item, "path")}})
 			frames = append(frames, frame)
@@ -417,7 +439,8 @@ func (w *Workflow) ApproveReferences(project, shot, packageDir string) (View, er
 }
 
 // RemoveReference — productionWorkflow.removeReference: убрать референс id из запроса попытки.
-// Файл копии остаётся в папке попытки; ID остальных не меняются. Последний не убирается.
+// Файл копии остаётся в папке попытки; ID остальных не меняются. Последний и единственная
+// картинка места не убираются.
 func (w *Workflow) RemoveReference(project, shot, packageDir, id string) (View, error) {
 	return w.editReferences(project, shot, packageDir, func(_ *Context, items []any) ([]any, error) {
 		index := slices.IndexFunc(items, func(item any) bool { return dynvalue.Get(item, "id") == id })
@@ -427,7 +450,11 @@ func (w *Workflow) RemoveReference(project, shot, packageDir, id string) (View, 
 		if len(items) == 1 {
 			return nil, errors.New(textReferenceLast)
 		}
-		return slices.Delete(items, index, index+1), nil
+		rest := slices.Delete(slices.Clone(items), index, index+1)
+		if isPlaceReference(items[index]) && !slices.ContainsFunc(rest, isPlaceReference) {
+			return nil, errors.New(textReferencePlaceLast)
+		}
+		return rest, nil
 	})
 }
 
@@ -522,18 +549,27 @@ func replaceReferenceMarks(prompt string, order []string, mention func(index int
 	})
 }
 
-// referenceLabel — подпись референса во входах запроса: «Начало» или имя сущности кастинга.
+// referenceLabel — подпись референса во входах запроса: «Начало», «Место» (у изображения
+// сущности — «Место: имя») или имя сущности кастинга.
 func referenceLabel(c *Context, item any) string {
-	if dynvalue.Get(item, "role") == referenceStart {
+	role := dynvalue.Get(item, "role")
+	if role == referenceStart {
 		return roleStartReference
 	}
 	code := dynvalue.ToString(dynvalue.Get(item, "entity"))
+	name := code
 	for _, entity := range shotEntities(c) {
 		if entity.Code == code {
-			return entity.Name
+			name = entity.Name
 		}
 	}
-	return code
+	if role == referencePlace {
+		if code == "" {
+			return rolePlaceReference
+		}
+		return rolePlaceReference + ": " + name
+	}
+	return name
 }
 
 // referenceEntityCodes — коды сущностей кастинга плана, чьи изображения могут стать референсами.

@@ -31,7 +31,7 @@
                      "path": {"type": ["string", "null"]}, "sha256": {"type": ["string", "null"]}, "approved": {"type": "boolean"}, "provider": {"type": "string"}}}},
     "references": {"type": "array", "items": {
       "type": "object", "required": ["id", "role", "path", "approved"],
-      "properties": {"id": {"type": "string", "pattern": "^R\\d{2}$"}, "role": {"enum": ["start", "entity"]},
+      "properties": {"id": {"type": "string", "pattern": "^R\\d{2}$"}, "role": {"enum": ["start", "place", "entity"]},
                      "entity": {"type": ["string", "null"]}, "source": {"type": "string"},
                      "path": {"type": "string"}, "sha256": {"type": ["string", "null"]}, "approved": {"type": "boolean"}}}},
     "approved_frames": {"type": "object"},

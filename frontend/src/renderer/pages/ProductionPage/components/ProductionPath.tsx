@@ -541,6 +541,7 @@ export function ProductionPath({
           <>
             {pkg ? (
               <PackageReferences
+                project={project}
                 pkg={pkg}
                 entityNames={entityNames}
                 busy={blocked}

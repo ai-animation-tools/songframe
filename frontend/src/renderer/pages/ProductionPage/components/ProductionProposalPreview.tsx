@@ -16,6 +16,7 @@ import { Prose } from '../../../components/Prose';
 import { ReadableValue } from '../../../components/ReadableValue';
 import type { PromptVariant } from '@shared/types';
 import { PromptVariantsText } from './PromptVariantsText';
+import { referenceName } from './PackageReferences';
 
 const FRAME_ROLES: Record<ProductionFramePrompt['role'], string> = productionTexts.inputRoles;
 
@@ -318,7 +319,7 @@ function Proposed({
                   <Typography component="li" variant="body2" key={reference.id} sx={{ overflowWrap: 'anywhere' }}>
                     {productionTexts.productionProposalPreview.reference({
                       id: reference.id,
-                      name: reference.role === 'start' ? productionTexts.packageReferences.start : (reference.entity ?? ''),
+                      name: referenceName({ ...reference, entity: reference.entity ?? null }, {}),
                       file: fileName(reference.path)
                     })}
                   </Typography>

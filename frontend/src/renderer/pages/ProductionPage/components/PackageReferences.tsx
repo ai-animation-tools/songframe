@@ -3,10 +3,13 @@ import { productionTexts } from '@shared/texts/production';
  * Референсы попытки «По референсам»: картинки, по которым сервис построит видео, вместо опор Codex. Агент
  * предложил их в описании (кадр принятого предшественника и изображения героев и места); пользователь утверждает
  * их все разом, убирает лишние или заменяет своим файлом либо кадром принятого плана («Взять кадр»). Замена
- * сразу утверждена. Состояние и файлы принадлежат Go, компонент только показывает карточки и вызывает обработчики.
+ * сразу утверждена. «Сгенерировать» открывает общее окно генерации изображения с этой картинкой на входе (у места — текст
+ * «то же место без людей»): так кадр принятого плана с лишними героями становится чистой картинкой места. Состояние и
+ * файлы принадлежат Go, компонент только показывает карточки и вызывает обработчики.
  */
 import { useState, type ReactElement } from 'react';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
@@ -15,19 +18,30 @@ import type { PackageReference, PackageView } from '@shared/types';
 import { useApp } from '../../../state';
 import { ActionButton } from '../../../components/ActionButton';
 import { ImageGallery } from '../../../components/ImageGallery';
+import { ImageGenerateDialog } from '../../../components/ImageGenerateDialog';
+import { referenceImagePrompt } from '@shared/reference-image-generation';
 import { ImageThumbnail } from '../../../components/ImageThumbnail';
 import { BUSY_REASON } from '../constants';
 import { ShotFrameButton, type ShotFrameSource } from './ShotFrameDialog';
 
 const texts = productionTexts.packageReferences;
 
-/** Название референса: роль start — «Начало», роль entity — имя сущности кастинга (нет в кастинге — её код). */
-export function referenceName(reference: PackageReference, entityNames: Record<string, string>): string {
+/** Название референса: start — «Начало», place — «Место» (у изображения сущности — «Место: имя»), entity — имя сущности
+ * кастинга (нет в кастинге — её код). */
+export function referenceName(reference: Pick<PackageReference, 'id' | 'role' | 'entity'>, entityNames: Record<string, string>): string {
   if (reference.role === 'start') return texts.start;
-  return (reference.entity ? entityNames[reference.entity] : undefined) ?? reference.entity ?? reference.id;
+  const name = (reference.entity ? entityNames[reference.entity] : undefined) ?? reference.entity;
+  if (reference.role === 'place') return name ? texts.placeOf({ name }) : texts.place;
+  return name ?? reference.id;
+}
+
+/** Картинка задаёт место плана: кадр «Начало» или картинка места. Запросу нужна хотя бы одна такая. */
+function isPlace(reference: PackageReference): boolean {
+  return reference.role === 'start' || reference.role === 'place';
 }
 
 export function PackageReferences({
+  project,
   pkg,
   entityNames,
   busy,
@@ -38,6 +52,8 @@ export function PackageReferences({
   onRemove,
   onReplace
 }: {
+  /** Папка проекта: окно генерации изображения работает в ней. */
+  project: string;
   pkg: PackageView;
   /** Имена сущностей кастинга по их кодам; без имени показывается код. */
   entityNames: Record<string, string>;
@@ -54,9 +70,11 @@ export function PackageReferences({
 }): ReactElement | null {
   const { notify, describeError } = useApp();
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [generating, setGenerating] = useState<PackageReference | null>(null);
   const references = pkg.references ?? [];
   if (!references.length) return null;
   const approved = references.filter((reference) => reference.approved).length;
+  const places = references.filter(isPlace).length;
   const reason = busy ? busyReason : editReason;
   const images = references
     .filter((reference) => reference.imagePath)
@@ -129,6 +147,16 @@ export function PackageReferences({
                 >
                   {texts.own}
                 </ActionButton>
+                <ActionButton
+                  size="small"
+                  startIcon={<AutoAwesomeIcon />}
+                  title={texts.generateHint({ id: reference.id })}
+                  disabled={!!reason || !reference.imagePath}
+                  disabledReason={reason ?? texts.fileMissing}
+                  onClick={() => setGenerating(reference)}
+                >
+                  {texts.generate}
+                </ActionButton>
                 {shotFrames ? (
                   <ShotFrameButton
                     frame={reference.id}
@@ -142,8 +170,8 @@ export function PackageReferences({
                   size="small"
                   startIcon={<DeleteOutlineIcon />}
                   title={texts.removeHint({ id: reference.id })}
-                  disabled={!!reason || references.length <= 1}
-                  disabledReason={reason ?? texts.lastReason}
+                  disabled={!!reason || references.length <= 1 || (isPlace(reference) && places <= 1)}
+                  disabledReason={reason ?? (references.length <= 1 ? texts.lastReason : texts.placeReason)}
                   onClick={() => onRemove(reference.id)}
                 >
                   {texts.remove}
@@ -165,6 +193,23 @@ export function PackageReferences({
         >
           {texts.approve}
         </ActionButton>
+      ) : null}
+      {generating?.imagePath ? (
+        <ImageGenerateDialog
+          project={project}
+          mode="reference"
+          target={texts.title({ id: generating.id, name: referenceName(generating, entityNames) })}
+          referenceKind={isPlace(generating) ? 'location' : undefined}
+          initialPrompt={isPlace(generating) ? texts.generatePlacePrompt : referenceImagePrompt({ name: referenceName(generating, entityNames) })}
+          referenceInput={{ images: [{ path: generating.imagePath, label: texts.title({ id: generating.id, name: referenceName(generating, entityNames) }) }] }}
+          acceptedHint={texts.generateAccepted}
+          onClose={() => setGenerating(null)}
+          onAccepted={async (result) => {
+            const id = generating.id;
+            setGenerating(null);
+            await onReplace(id, result.path);
+          }}
+        />
       ) : null}
       {activeIndex !== null && images.length ? (
         <ImageGallery kind={texts.galleryKind} images={images} initialIndex={activeIndex} onClose={() => setActiveIndex(null)} />

@@ -50,9 +50,9 @@ func TestSkills(t *testing.T) {
 // самого раздела дополнительно сверяют эталоны промптов (internal/providers, TestGuidesGolden).
 func TestProviderDocs(t *testing.T) {
 	want := map[[2]string]string{
-		{"image", "kling"}:  "df5ac648b48827961f08877ec36660eb13f8aa5fc87b8a9e61b01901eb3da615",
+		{"image", "kling"}:  "a528947659fe2c988ae0037c51cf73d9681a84ecbc63d46e4268388490fafe9e",
 		{"image", "codex"}:  "109a423e5eb1b66d2fccb1635a770bbb0c3d91ad8766274f6a263cd22153610b",
-		{"video", "kling"}:  "b2cb25a18d3b3a712b415e117cda8902c2e8b831cd9ae4f49ac03ec0b19ef925",
+		{"video", "kling"}:  "831ce27bed58261b71a7e18122d6d77b19c69ebd1831d7d2585b946f474c6dd2",
 		{"video", "manual"}: "ec126d8501003cf8f911b35851f4df2c5130c1497a7207376f259f042b2f3f31",
 	}
 	for key, digest := range want {

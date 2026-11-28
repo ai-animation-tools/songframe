@@ -94,6 +94,9 @@ type Request struct {
 	// SavedLooks — образы сущностей замороженного запроса (request.json saved_looks): какой образ
 	// аккаунта уходит у какого героя; поле опускается у запросов без образов.
 	SavedLooks []mediaapi.SavedLookUse `json:"savedLooks,omitempty"`
+	// LostLooks — герои с меткой в видеопромпте попытки, чьи образы запрос не несёт: модель запроса
+	// сохранённые образы не принимает, метки убраны при сборке. Поле опускается, если таких нет.
+	LostLooks []string `json:"lostLooks,omitempty"`
 	// Downloads — абсолютные пути существующих скачанных оригиналов.
 	Downloads []string `json:"downloads"`
 }
@@ -366,6 +369,11 @@ func readPackage(project, dir string, fingerprint fingerprintFunc) (*PackageView
 		request, err = readRequest(dir, parsed, active, imageRequest, &problems)
 		if err != nil {
 			return nil, err
+		}
+		if request != nil && !imageRequest && prompt != nil {
+			if lost := lostLooks(project, prompt.Text, request.SavedLooks); len(lost) > 0 {
+				request.LostLooks = lost
+			}
 		}
 	}
 	var description *string

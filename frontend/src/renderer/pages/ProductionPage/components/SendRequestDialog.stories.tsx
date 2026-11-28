@@ -65,6 +65,50 @@ export const SavedLooks: Story = {
     await expect(within(list).getByText(savedLooksTexts.requestLook({ entity: 'Причал', name: 'Причал' }))).toBeVisible();
   }
 };
+export const SavedLookMissing: Story = {
+  tags: ['ci'],
+  name: 'Образы героев · образа нет в аккаунте: отправка заблокирована, переход к референсу',
+  parameters: {
+    songframe: sendRequestOptions({
+      savedLooks: true,
+      lookChecks: [
+        { code: 'boat', entity: 'Лодка', name: 'Лодка у причала', status: 'missing' },
+        { code: 'pier', entity: 'Причал', name: 'Причал', status: 'stale' }
+      ]
+    })
+  },
+  play: async (context) => {
+    const dialog = await ready(context);
+    await expect(dialog.getByText(savedLooksTexts.checkMissing({ entity: 'Лодка', name: 'Лодка у причала' }))).toBeVisible();
+    await expect(dialog.getByText(savedLooksTexts.checkStale({ entity: 'Причал', name: 'Причал' }))).toBeVisible();
+    await expect(dialog.getByRole('button', { name: `${savedLooksTexts.openFromCast}: Лодка` })).toBeEnabled();
+    // У устаревшего образа переход не нужен: образ тот же, генерация получит прежний облик.
+    await expect(dialog.queryByRole('button', { name: `${savedLooksTexts.openFromCast}: Причал` })).not.toBeInTheDocument();
+    await expect(dialog.getByRole('button', { name: labels.confirm })).toBeDisabled();
+    await counts(context, 1, 0);
+  }
+};
+export const SavedLookWarnings: Story = {
+  name: 'Образы героев · другой образ у референса — предупреждение, отправка доступна',
+  parameters: {
+    songframe: sendRequestOptions({ savedLooks: true, lookChecks: [{ code: 'boat', entity: 'Лодка', name: 'Лодка у причала', status: 'changed' }] })
+  },
+  play: async (context) => {
+    const dialog = await ready(context);
+    await expect(dialog.getByText(savedLooksTexts.checkChanged({ entity: 'Лодка', name: 'Лодка у причала' }))).toBeVisible();
+    await expect(dialog.getByRole('button', { name: `${savedLooksTexts.openFromCast}: Лодка` })).toBeEnabled();
+    await expect(dialog.getByRole('button', { name: labels.confirm })).toBeEnabled();
+  }
+};
+export const LostLooks: Story = {
+  name: 'Образы героев · модель без образов: кто из героев потеряет облик',
+  parameters: { songframe: sendRequestOptions({ lostLooks: ['Лодка', 'Причал'] }) },
+  play: async (context) => {
+    const dialog = await ready(context);
+    await expect(dialog.getByText(savedLooksTexts.lostLooks({ entities: 'Лодка, Причал' }))).toBeVisible();
+    await expect(dialog.getByRole('button', { name: labels.confirm })).toBeEnabled();
+  }
+};
 export const UnknownPrice: Story = {
   tags: ['ci'],
   name: 'Неизвестная цена · отдельное согласие на одну попытку',

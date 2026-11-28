@@ -916,7 +916,11 @@ export function createApi(b: Bindings): Api {
       'production.quote',
       async () => {
         const quote = await (await production()).Quote(project, packageDir, expectedSha, decisionToken ?? '');
-        return { ...quote, verdict: quote.verdict as ProductionQuote['verdict'] };
+        return {
+          ...quote,
+          verdict: quote.verdict as ProductionQuote['verdict'],
+          looks: quote.looks.map((look) => ({ ...look, status: look.status as ProductionQuote['looks'][number]['status'] }))
+        };
       },
       false
     );

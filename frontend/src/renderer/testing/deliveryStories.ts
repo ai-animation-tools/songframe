@@ -59,7 +59,7 @@ export function deliveryPackage(kind: 'video' | 'image' = 'video', phase: 'prepa
 }
 
 export function deliveryQuote(pkg: PackageView, overrides: Partial<ProductionQuote> = {}): ProductionQuote {
-  return { token: 'quote-demo-1', requestSha: pkg.request!.sha256!, verdict: 'ok', credits: 12, balance: 100, reasons: [], ...overrides };
+  return { token: 'quote-demo-1', requestSha: pkg.request!.sha256!, verdict: 'ok', credits: 12, balance: 100, reasons: [], looks: [], ...overrides };
 }
 
 /** Повторяет проверку Go в Production.Accept: неточные и пустые срезы не запускают задание.

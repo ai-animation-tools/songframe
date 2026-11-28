@@ -8,6 +8,7 @@ import { componentsTexts } from '@shared/texts/components';
 import { navigationTexts } from '@shared/texts/navigation';
 import { videoReviewTexts } from '@shared/texts/video-review';
 import { productionTexts } from '@shared/texts/production';
+import { savedLooksTexts } from '@shared/texts/saved-looks';
 import { mediaProviderInfo } from '@shared/media-providers';
 import type { AcceptedKit, ShotProduction } from '@shared/types';
 import { ANCHORS } from '../../components/linkTargets';
@@ -1993,5 +1994,62 @@ export const OwnDescription: Story = {
     await expect(frames.queryByRole('button', { name: texts.frameActions.instructionOpen })).not.toBeInTheDocument();
     // «Свой файл» есть у каждой несозданной опоры, первая — у K01.
     await expect(frames.getAllByRole('button', { name: texts.frameActions.own })[0]).toBeEnabled();
+  }
+};
+
+export const SavedLooksBeforeDescription: Story = {
+  tags: ['ci'],
+  name: 'Образы героев · вопрос перед описанием, если у сущности в кадре нет образа; отмена не открывает редактор',
+  parameters: {
+    songframe: options(
+      {
+        savedLooks: {
+          heroes: [
+            { code: 'hero', name: 'Герой' },
+            { code: 'lamp', name: 'Фонарь', kind: 'prop' }
+          ],
+          looks: [{ id: 'look-1', name: 'Герой' }],
+          bindings: { hero: { look: 'look-1' } }
+        }
+      },
+      '/project/production?shot=M04'
+    )
+  },
+  play: async (context) => {
+    const screen = screenOf(context);
+    await waitFor(() => expect(planStep(context, 'description')).not.toBeNull(), POLL_TIMEOUT);
+    const step = () => within(planStep(context, 'description'));
+    await userEvent.click(await step().findByRole('button', { name: texts.ownDescriptionDialog.writeOwn }, POLL_TIMEOUT));
+    // Спрашивают только о сущности без образа; у героя образ есть.
+    let dialog = within(await screen.findByRole('dialog', { name: savedLooksTexts.beforeTitle }));
+    await expect(dialog.getByText(`Фонарь — ${savedLooksTexts.status.none}`)).toBeInTheDocument();
+    await expect(dialog.queryByText(/^Герой —/)).not.toBeInTheDocument();
+    await expect(dialog.getByRole('button', { name: `${savedLooksTexts.openFromCast}: Фонарь` })).toBeEnabled();
+    await userEvent.click(dialog.getByRole('button', { name: commonTexts.cancel }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    // Продолжение без образа открывает своё описание.
+    await userEvent.click(step().getByRole('button', { name: texts.ownDescriptionDialog.writeOwn }));
+    dialog = within(await screen.findByRole('dialog', { name: savedLooksTexts.beforeTitle }));
+    await userEvent.click(dialog.getByRole('button', { name: savedLooksTexts.beforeContinueWithout }));
+    await expect(await screen.findByRole('dialog', { name: texts.ownDescriptionDialog.title({ shot: 'M04' }) })).toBeInTheDocument();
+  }
+};
+
+export const SavedLooksAllReady: Story = {
+  name: 'Образы героев · у всех сущностей в кадре есть образ: описание без вопроса',
+  parameters: {
+    songframe: options(
+      {
+        savedLooks: { heroes: [{ code: 'hero', name: 'Герой' }], looks: [{ id: 'look-1', name: 'Герой' }], bindings: { hero: { look: 'look-1' } } }
+      },
+      '/project/production?shot=M04'
+    )
+  },
+  play: async (context) => {
+    const screen = screenOf(context);
+    await waitFor(() => expect(planStep(context, 'description')).not.toBeNull(), POLL_TIMEOUT);
+    await userEvent.click(await within(planStep(context, 'description')).findByRole('button', { name: texts.ownDescriptionDialog.writeOwn }, POLL_TIMEOUT));
+    await expect(await screen.findByRole('dialog', { name: texts.ownDescriptionDialog.title({ shot: 'M04' }) })).toBeInTheDocument();
+    await expect(screen.queryByRole('dialog', { name: savedLooksTexts.beforeTitle })).not.toBeInTheDocument();
   }
 };

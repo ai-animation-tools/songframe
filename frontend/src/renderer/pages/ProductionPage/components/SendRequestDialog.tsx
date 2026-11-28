@@ -15,6 +15,8 @@ import { useRequestQuote } from '../useRequestQuote';
 import { RequestModelSelection } from './RequestModelSelection';
 import { RequestParameters } from './RequestParameters';
 import { RequestPrompt } from './RequestPrompt';
+import { RequestLookChecks } from './RequestLookChecks';
+import { savedLooksTexts } from '@shared/texts/saved-looks';
 import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 import { ActionButton } from '../../../components/ActionButton';
 import { BUSY_REASON } from '../constants';
@@ -70,13 +72,16 @@ export function SendRequestDialog({
         : !priceAllowsGeneration(quote, agreedToUnknownCost)
           ? productionTexts.sendRequestDialog.balanceUnconfirmed
           : null;
+  // Образа запроса нет в аккаунте: оплата с ним не состоится, запрос собирается заново.
+  const looksMissing = !!quote?.looks.some((look) => look.status === 'missing');
   const confirmReason =
     commonReason ??
     (!pkg?.request?.sha256
       ? productionTexts.sendRequestDialog.hashMissing
-      : (priceReason ?? (quote?.requestSha !== pkg.request.sha256 ? productionTexts.sendRequestDialog.quoteMismatch : null)));
+      : (priceReason ??
+        (quote?.requestSha !== pkg.request.sha256 ? productionTexts.sendRequestDialog.quoteMismatch : looksMissing ? savedLooksTexts.sendBlocked : null)));
   const confirm = async (): Promise<void> => {
-    if (sendingNow.current || aiProblem || !priceAllowsGeneration(quote, agreedToUnknownCost)) return;
+    if (sendingNow.current || aiProblem || looksMissing || !priceAllowsGeneration(quote, agreedToUnknownCost)) return;
     sendingNow.current = true;
     const token = quote?.token;
     const consentToken = agreedToUnknownCost ? token : undefined;
@@ -109,7 +114,8 @@ export function SendRequestDialog({
         loading ||
         !pkg?.request?.sha256 ||
         !priceAllowsGeneration(quote, agreedToUnknownCost) ||
-        quote?.requestSha !== pkg.request.sha256
+        quote?.requestSha !== pkg.request.sha256 ||
+        looksMissing
       }
       confirmDisabledReason={confirmReason}
       confirmLabel={productionTexts.sendRequestDialog.confirm}
@@ -131,7 +137,7 @@ export function SendRequestDialog({
             })}
           </Typography>
           <RequestParameters parameters={pkg.request.parameters} provider={normalizeMediaProvider(pkg.request.provider)} />
-          {pkg.request.promptText ? <RequestPrompt text={pkg.request.promptText} looks={pkg.request.savedLooks} /> : null}
+          {pkg.request.promptText ? <RequestPrompt text={pkg.request.promptText} looks={pkg.request.savedLooks} lostLooks={pkg.request.lostLooks} /> : null}
           {pkg.request.inputs.map((input) => (
             <Typography key={`${input.slot}:${input.path}`} variant="caption">
               {productionInputLabel(input)}: {input.path}
@@ -141,6 +147,7 @@ export function SendRequestDialog({
           <Stack spacing={1}>
             {loading ? <Alert severity="info">{productionTexts.sendRequestDialog.checking({ providerTitle })}</Alert> : null}
             {error ? <Alert severity="error">{error}</Alert> : null}
+            {quote?.looks.length ? <RequestLookChecks checks={quote.looks} /> : null}
             {quote && notice ? (
               <Alert severity={notice.severity}>
                 {notice.text}

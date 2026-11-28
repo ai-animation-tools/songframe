@@ -1,4 +1,5 @@
 import { productionTexts } from '@shared/texts/production';
+import { savedLooksTexts } from '@shared/texts/saved-looks';
 /**
  * Вертикальный путь плана: открыт текущий шаг со всем, что нужно сейчас; пройденные шаги свёрнуты в
  * итог и открываются для чтения, будущие приглушены. Путь только компонует блоки: состояние и
@@ -41,6 +42,7 @@ import { GenerationMethodChoice } from './GenerationMethodChoice';
 import { ProductionSpeechPanel, SpeechSlice } from './ProductionSpeechPanel';
 import { ProductionWorkflowPanel } from './ProductionWorkflowPanel';
 import { StaticShotPanel } from './StaticShotPanel';
+import { useSavedLooksCheck } from '../useSavedLooksCheck';
 
 /** Вопросы результата на случай, когда прежний ответ уже записан: решение доступно всегда. */
 function resultQuestion(pkg: PackageView): NonNullable<PackageView['pendingDecision']> | null {
@@ -174,6 +176,11 @@ export function ProductionPath({
   // Свой видеопромпт: текст открытого редактора; null — редактор закрыт.
   const [ownPrompt, setOwnPrompt] = useState<string | null>(null);
   const [ownError, setOwnError] = useState<string | null>(null);
+  // Перед описанием плана — вопрос о героях без сохранённого образа, если модель плана держит облик по образу.
+  // План из опор видео не генерирует, ручная генерация получает текст без меток: им вопрос не задаётся.
+  const looksCheck = useSavedLooksCheck(project, shot.id, pkg?.dir ?? '');
+  const looksApply = !(view?.staticShot ?? shot.staticShot) && !view?.manual;
+  const beforeDescription = (proceed: () => void, agent: boolean): void => (looksApply ? looksCheck.check(proceed, agent) : proceed());
   // Видеопромпт с переводом: к отправке выбирается оригинал или перевод, выбор относится к показанным текстам.
   const variants = pkg?.prompt?.variants;
   const variantsKey = `${pkg?.dir ?? ''}\0${variants?.original ?? ''}\0${variants?.translation ?? ''}`;
@@ -336,7 +343,9 @@ export function ProductionPath({
       onReviseOpen={setReviseOpen}
       onAcceptProposal={acceptProposal}
       onReviseProposal={reviseProposal}
-      onWriteOwn={!pkg ? openOwnDescription : view?.nextStage === 'prompt' ? openOwnPrompt : undefined}
+      onWriteOwn={!pkg ? () => beforeDescription(openOwnDescription, false) : view?.nextStage === 'prompt' ? openOwnPrompt : undefined}
+      onBeforePrepare={(proceed) => beforeDescription(proceed, true)}
+      descriptionReason={looksCheck.checking ? savedLooksTexts.beforeChecking : null}
       onOwnVideo={!pkg ? onOwnVideo : undefined}
       parts={{ current: step === path.current, job: step === jobStep, revise: step === reviseStep, error: step === errorStep }}
       onLaunch={() => setLaunchStep(step)}
@@ -631,6 +640,7 @@ export function ProductionPath({
 
   return (
     <Stack spacing={1.5}>
+      {looksCheck.dialog}
       {ownDescription ? (
         <OwnDescriptionDialog
           project={project}

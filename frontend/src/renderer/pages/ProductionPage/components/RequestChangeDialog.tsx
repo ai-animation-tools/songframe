@@ -3,7 +3,9 @@ import { productionTexts } from '@shared/texts/production';
  * «Изменить» на вопросе «Отправить»: пользователь выбирает модель команды видео и значения её выбираемых
  * параметров, приложение собирает запрос заново без агента. Варианты и текущий запрос читает Go
  * (productionWorkflow.requestOptions); длительность, разрешение, пропорции и входы остаются по плану.
- * Модели, которые план не примут, видны выключенными с причиной Go и идут после подходящих.
+ * Модели, которые план не примут, видны выключенными с причиной Go и идут после подходящих. Если в видеопромпте
+ * есть метки героев, у модели видно, что станет с их образами, а запрос можно собрать заново и без изменений:
+ * так он получает образы, привязанные после сборки.
  */
 import { useEffect, useState, type ReactElement } from 'react';
 import EditIcon from '@mui/icons-material/Edit';
@@ -76,7 +78,7 @@ export function RequestChangeDialog({
   }, [describeError, packageDir, project, shot]);
   const selected = options?.models.find((item) => item.id === model);
   const unchanged = !!options && model === options.model && same(parameters, parametersFor(selected, options.parameters));
-  const reason = !options ? texts.loading : selected?.unavailable ? selected.unavailable : unchanged ? texts.unchanged : null;
+  const reason = !options ? texts.loading : selected?.unavailable ? selected.unavailable : unchanged && !options.marked ? texts.unchanged : null;
   return (
     <ConfirmationDialog
       open
@@ -119,15 +121,16 @@ export function RequestChangeDialog({
               <MenuItem key={item.id} value={item.id} disabled={!!item.unavailable}>
                 <Box sx={{ whiteSpace: 'normal' }}>
                   <Typography variant="body2">{item.id}</Typography>
-                  {item.unavailable ? (
+                  {item.unavailable || item.looks ? (
                     <Typography variant="caption" color="text.secondary">
-                      {item.unavailable}
+                      {item.unavailable ?? item.looks}
                     </Typography>
                   ) : null}
                 </Box>
               </MenuItem>
             ))}
           </TextField>
+          {selected?.looks && !selected.unavailable ? <Alert severity="warning">{selected.looks}</Alert> : null}
           {selected?.parameters.length ? (
             selected.parameters.map(({ name, values }) => (
               <TextField

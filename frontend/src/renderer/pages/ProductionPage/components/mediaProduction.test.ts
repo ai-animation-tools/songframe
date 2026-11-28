@@ -315,7 +315,7 @@ describe('Подтверждение промпта и неизвестной ц
     );
 
   it('показывает полный промпт и требует отдельного согласия для неизвестной стоимости', () => {
-    context.quote = { token: 'quote-1', requestSha: 'request-sha', credits: null, balance: 100, verdict: 'cost_or_balance_unknown', reasons: [] };
+    context.quote = { token: 'quote-1', requestSha: 'request-sha', credits: null, balance: 100, verdict: 'cost_or_balance_unknown', reasons: [], looks: [] };
     const html = dialog();
     expect(html).toContain('Вы уверены, что промпт правильный?');
     expect(html).toContain('Проверьте промпт');
@@ -330,14 +330,14 @@ describe('Подтверждение промпта и неизвестной ц
     { credits: 10, balance: null, verdict: 'cost_or_balance_unknown' as const },
     { credits: 10, balance: 0, verdict: 'insufficient_balance' as const }
   ])('не предлагает согласие, обходя блокирующую цену %j', (price) => {
-    context.quote = { token: 'quote-1', requestSha: 'request-sha', reasons: [], ...price };
+    context.quote = { token: 'quote-1', requestSha: 'request-sha', reasons: [], looks: [], ...price };
     const html = dialog();
     expect(html).not.toContain('Я согласен');
     expect(html).toMatch(/<button[^>]*disabled[^>]*data-confirm/);
   });
 
   it('при подтверждённой цене оставляет обычное подтверждение отправки доступным', () => {
-    context.quote = { token: 'quote-1', requestSha: 'request-sha', credits: 10, balance: 100, verdict: 'ok', reasons: [] };
+    context.quote = { token: 'quote-1', requestSha: 'request-sha', credits: 10, balance: 100, verdict: 'ok', reasons: [], looks: [] };
     const html = dialog();
     expect(html).toContain('Стоимость: 10 кредитов');
     expect(html).not.toContain('Я согласен');

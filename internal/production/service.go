@@ -28,6 +28,7 @@ import (
 	"songframe/internal/projectfs"
 	"songframe/internal/promptlog"
 	"songframe/internal/providers"
+	"songframe/internal/savedlooks"
 	"songframe/internal/shotworkflow"
 	"songframe/internal/spend"
 	"songframe/internal/tools"
@@ -75,6 +76,9 @@ type Quote struct {
 	Credits    *float64 `json:"credits"`
 	Balance    *float64 `json:"balance"`
 	Reasons    []string `json:"reasons"`
+	// Looks — образы запроса, требующие внимания перед отправкой (savedlooks.Verify): missing
+	// блокирует отправку, changed и stale — предупреждения. Пустой список — образов нет или все в порядке.
+	Looks []savedlooks.UseCheck `json:"looks"`
 }
 
 // Verdict оценки.
@@ -385,6 +389,10 @@ func (s *Service) Quote(project, packageDir, expectedSha, decisionToken string) 
 	if err != nil {
 		return Quote{}, err
 	}
+	looks, err := checkLooks(project, view.Request)
+	if err != nil {
+		return Quote{}, err
+	}
 	price := s.price(project, view.Request.Dir)
 	current, err := s.ready(project, directory, expectedSha, decisionToken)
 	if err != nil {
@@ -394,6 +402,7 @@ func (s *Service) Quote(project, packageDir, expectedSha, decisionToken string) 
 		return Quote{}, errors.New(textMaterialsChangedDuringQuote)
 	}
 	quote := price
+	quote.Looks = looks
 	quote.Token, quote.RequestSha = s.options.NewToken(), expectedSha
 	root, err := realpath(project)
 	if err != nil {
@@ -1010,6 +1019,18 @@ func (s *Service) Submit(project, packageDir, expectedSha, decisionToken, quoteT
 	}
 	if view.DecisionToken != record.decisionToken {
 		return jobs.Info{}, errors.New(textQuoteMaterialsChanged)
+	}
+	// Образ могли удалить в аккаунте после оценки: оплата с ним не состоится, поэтому список
+	// сверяется заново, а оценка с отсутствующим образом отправку не разрешает.
+	if err := looksBlocked(record.quote.Looks); err != nil {
+		return jobs.Info{}, err
+	}
+	looks, err := checkLooks(project, view.Request)
+	if err != nil {
+		return jobs.Info{}, err
+	}
+	if err := looksBlocked(looks); err != nil {
+		return jobs.Info{}, err
 	}
 	price := s.price(project, view.Request.Dir)
 	fresh, err := s.ready(project, directory, expectedSha, decisionToken)

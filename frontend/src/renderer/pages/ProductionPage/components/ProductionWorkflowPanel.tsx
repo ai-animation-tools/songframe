@@ -56,6 +56,8 @@ export function ProductionWorkflowPanel({
   onReviseProposal,
   onWriteOwn,
   onOwnVideo,
+  onBeforePrepare,
+  descriptionReason,
   parts = ALL_PARTS,
   onLaunch
 }: {
@@ -78,6 +80,10 @@ export function ProductionWorkflowPanel({
   onWriteOwn?(): void;
   /** Своё готовое видео плана без описания, опор и промпта: рядом с подготовкой описания у плана без попытки. */
   onOwnVideo?(): void;
+  /** Проверка перед подготовкой описания агентом (сохранённые образы героев): вызывает proceed сразу или после ответа. */
+  onBeforePrepare?(proceed: () => void): void;
+  /** Почему описание сейчас не начинается (идёт проверка перед ним); null — можно. */
+  descriptionReason?: string | null;
   parts?: WorkflowPanelParts;
   /** Запуск агента из этого экземпляра: путь показывает ошибку запуска рядом с нажатой кнопкой. */
   onLaunch?(): void;
@@ -266,10 +272,10 @@ export function ProductionWorkflowPanel({
               </TextField>
               <AgentButton
                 variant="contained"
-                disabled={primaryDisabled}
-                disabledReason={reason ?? productionTexts.productionWorkflowPanel.loadingReason}
+                disabled={primaryDisabled || !!descriptionReason}
+                disabledReason={descriptionReason ?? reason ?? productionTexts.productionWorkflowPanel.loadingReason}
                 title={productionTexts.productionWorkflowPanel.prepareHint}
-                onClick={() => void start('prepare')}
+                onClick={() => (onBeforePrepare ? onBeforePrepare(() => void start('prepare')) : void start('prepare'))}
               >
                 {productionTexts.productionWorkflowPanel.prepare}
               </AgentButton>
@@ -278,8 +284,8 @@ export function ProductionWorkflowPanel({
                 <ActionButton
                   startIcon={<EditNoteIcon />}
                   title={productionTexts.ownDescriptionDialog.writeOwnHint}
-                  disabled={busy || !view?.canPrepare}
-                  disabledReason={busy ? BUSY_REASON : (view?.reasons.prepare ?? productionTexts.productionWorkflowPanel.loadingReason)}
+                  disabled={busy || !view?.canPrepare || !!descriptionReason}
+                  disabledReason={busy ? BUSY_REASON : (descriptionReason ?? view?.reasons.prepare ?? productionTexts.productionWorkflowPanel.loadingReason)}
                   onClick={onWriteOwn}
                 >
                   {productionTexts.ownDescriptionDialog.writeOwn}
@@ -290,8 +296,8 @@ export function ProductionWorkflowPanel({
                 <ActionButton
                   startIcon={<VideoFileOutlinedIcon />}
                   title={productionTexts.ownVideo.openHint}
-                  disabled={busy}
-                  disabledReason={busy ? BUSY_REASON : null}
+                  disabled={busy || !!descriptionReason}
+                  disabledReason={busy ? BUSY_REASON : (descriptionReason ?? null)}
                   onClick={onOwnVideo}
                 >
                   {productionTexts.ownVideo.open}

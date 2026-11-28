@@ -64,6 +64,8 @@ export interface SavedLookInput {
 export interface ShotLook {
   code: string;
   name: string;
+  /** Вид сущности кастинга (character, prop, …). */
+  kind: string;
   status: SavedLookStatus;
   look?: string;
   lookName?: string;
@@ -72,9 +74,25 @@ export interface ShotLook {
 export interface ShotLooksView {
   /** Провайдер видео проекта хранит образы; false — меток героев не предлагается. */
   supported: boolean;
+  /** Модель, которую сборка запроса плана пробует первой, и сколько образов она примет (0 — не принимает). */
+  model: string;
+  limit: number;
+  /** Виды сущностей, чей образ принимает модель. */
+  kinds: string[];
   heroes: ShotLook[];
   /** Почему статусы неизвестны; статусы героев тогда none. */
   error: string;
+}
+
+/**
+ * Образ замороженного запроса, требующий внимания перед отправкой: missing — образа нет в аккаунте (отправка
+ * невозможна), changed — у референса теперь другой образ или привязки нет, stale — снимки референса изменились.
+ */
+export interface SavedLookCheck {
+  code: string;
+  entity: string;
+  name: string;
+  status: 'missing' | 'changed' | 'stale';
 }
 
 /** Образ сущности в замороженном запросе видео: код сущности кастинга, её имя, ID и имя образа аккаунта. */
@@ -127,4 +145,28 @@ export function defaultSavedLookName(referenceName: string, rules: SavedLookRule
 /** Длина имени в символах, как её считает провайдер. */
 export function savedLookNameLength(name: string): number {
   return Array.from(name.trim()).length;
+}
+
+/** Вопрос перед описанием плана: сущности «В кадре» без действующего образа и сколько образов сверх предела модели. */
+export interface DescriptionLooksQuestion {
+  model: string;
+  limit: number;
+  /** Сущности видов, которые принимает модель, без образа или с образом, которого нет в аккаунте. */
+  without: ShotLook[];
+  /** Сколько сущностей принимаемых видов в кадре с образом, если их больше предела модели; 0 — не больше. */
+  over: number;
+}
+
+/**
+ * Нужен ли вопрос перед описанием плана: модель плана принимает сохранённые образы, а у части сущностей в кадре
+ * образа нет или образов больше, чем модель примет. null — спрашивать не о чем: модель образы не принимает,
+ * статусы неизвестны (сбой списка — сборка запроса проверит сама) или всё в порядке.
+ */
+export function descriptionLooksQuestion(view: ShotLooksView): DescriptionLooksQuestion | null {
+  if (!view.supported || view.limit <= 0 || view.error) return null;
+  const eligible = view.heroes.filter((hero) => view.kinds.includes(hero.kind));
+  const without = eligible.filter((hero) => hero.status === 'none' || hero.status === 'missing');
+  const withLook = eligible.filter((hero) => hero.status === 'ready' || hero.status === 'stale').length;
+  const over = withLook > view.limit ? withLook : 0;
+  return without.length || over ? { model: view.model, limit: view.limit, without, over } : null;
 }

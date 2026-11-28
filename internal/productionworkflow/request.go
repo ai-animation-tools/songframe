@@ -15,6 +15,7 @@ import (
 	"songframe/internal/mediaapi"
 	"songframe/internal/mediaproviders"
 	"songframe/internal/providers"
+	"songframe/internal/savedlooks"
 )
 
 // Запрос видео собирает приложение, без агента. Всё содержимое запроса следует из утверждённого:
@@ -39,15 +40,21 @@ type RequestOptions struct {
 	// Model и Parameters — текущий запрос попытки; Parameters — только выбираемые параметры.
 	Model      string         `json:"model"`
 	Parameters map[string]any `json:"parameters"`
+	// Marked — в видеопромпте есть метки героев: запрос можно собрать заново и без изменений, чтобы
+	// он получил образы, привязанные после сборки (пересозданный образ — новый ID).
+	Marked bool `json:"marked"`
 }
 
 // RequestModel — модель команды видео и её выбираемые параметры. Unavailable — почему модель не
 // подходит плану (опоры, длительность, срез речи, настройки проекта) с её значениями по
-// умолчанию: такую модель окно показывает выключенной.
+// умолчанию: такую модель окно показывает выключенной. Looks — что эта модель сделает с метками
+// героев видеопромпта: какие герои потеряют облик или почему сборка остановится; модель при этом
+// доступна.
 type RequestModel struct {
 	ID          string             `json:"id"`
 	Parameters  []RequestParameter `json:"parameters"`
 	Unavailable string             `json:"unavailable,omitempty"`
+	Looks       string             `json:"looks,omitempty"`
 }
 
 // RequestParameter — параметр с перечнем допустимых значений (JSON-значения: true, 5, "pro").
@@ -446,6 +453,8 @@ func (w *Workflow) RequestOptions(ctx context.Context, project, shot, packageDir
 	if err != nil {
 		return RequestOptions{}, err
 	}
+	_, looksSupported := media.SavedLooks()
+	result.Marked = len(savedlooks.Codes(input.Prompt)) > 0
 	for _, item := range caps.Models {
 		if item.Command != rules.Video.Command {
 			continue
@@ -467,6 +476,7 @@ func (w *Workflow) RequestOptions(ctx context.Context, project, shot, packageDir
 		if err := providers.PaidModelProblem(media.Paid, input, caps, item, candidate); err != nil {
 			model.Unavailable = modelProblem(err, input.Inputs)
 		}
+		model.Looks = looksWarning(c, input.Prompt, item, looksSupported)
 		result.Models = append(result.Models, model)
 	}
 	request, err := readJSON(filepath.Join(c.PackageDir, dynvalue.ToString(c.workflowValue("request_dir")), "request.json"))

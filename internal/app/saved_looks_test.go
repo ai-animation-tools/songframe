@@ -9,6 +9,7 @@ import (
 
 	"songframe/internal/golden"
 	"songframe/internal/mediatest"
+	"songframe/internal/productionworkflow"
 	"songframe/internal/savedlooks"
 	"songframe/internal/toolrt"
 )
@@ -151,7 +152,7 @@ func TestSavedLooksShot(t *testing.T) {
 	}
 	t.Cleanup(service.Register())
 	state := t.TempDir()
-	looks := &SavedLooksService{stateDir: func() (string, error) { return state, nil }}
+	looks := &SavedLooksService{stateDir: func() (string, error) { return state, nil }, models: fixedLookModel{Model: "test-cheap", Limit: 3, Kinds: []string{"character"}}}
 	entry := toolrt.NewDict()
 	entry.Set("id", "look-9")
 	entry.Set("name", "Лодка")
@@ -164,10 +165,10 @@ func TestSavedLooksShot(t *testing.T) {
 		t.Fatal(err)
 	}
 	view, err := looks.Shot(ctx, project, "M01")
-	if err != nil || !view.Supported || view.Error != "" {
+	if err != nil || !view.Supported || view.Error != "" || view.Model != "test-cheap" || view.Limit != 3 || len(view.Kinds) != 1 {
 		t.Fatalf("вид %+v %v", view, err)
 	}
-	want := []ShotLook{{Code: "boat", Name: "Лодка", Status: savedlooks.StatusReady, Look: "look-9", LookName: "Лодка"}, {Code: "pier", Name: "Причал", Status: savedlooks.StatusNone}}
+	want := []ShotLook{{Code: "boat", Name: "Лодка", Kind: "vehicle", Status: savedlooks.StatusReady, Look: "look-9", LookName: "Лодка"}, {Code: "pier", Name: "Причал", Kind: "location", Status: savedlooks.StatusNone}}
 	if len(view.Heroes) != len(want) || view.Heroes[0] != want[0] || view.Heroes[1] != want[1] {
 		t.Fatalf("герои %+v", view.Heroes)
 	}
@@ -175,4 +176,11 @@ func TestSavedLooksShot(t *testing.T) {
 	if view, err := looks.Shot(ctx, unsupported, "M01"); err != nil || view.Supported || view.Heroes == nil || len(view.Heroes) != 0 {
 		t.Fatalf("без образов %+v %v", view, err)
 	}
+}
+
+// fixedLookModel — ожидаемая модель плана без прохода производства.
+type fixedLookModel productionworkflow.LookModel
+
+func (m fixedLookModel) ExpectedLookModel(context.Context, string) (productionworkflow.LookModel, error) {
+	return productionworkflow.LookModel(m), nil
 }

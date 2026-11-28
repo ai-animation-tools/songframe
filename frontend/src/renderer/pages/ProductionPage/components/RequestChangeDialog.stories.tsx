@@ -29,7 +29,8 @@ const OPTIONS: ProductionRequestOptions = {
     }
   ],
   model: 'test-video-fast',
-  parameters: {}
+  parameters: {},
+  marked: false
 };
 
 function RequestChangeStory({ rejectFirst = false }: { rejectFirst?: boolean }) {
@@ -148,6 +149,29 @@ export const CurrentUnavailable: Story = {
     await expect(view.getByRole('button', { name: texts.confirm })).toBeDisabled();
     await choose(context, view.getByRole('combobox', { name: texts.model }), 'test-video-pro');
     await expect(view.getByRole('button', { name: texts.confirm })).toBeEnabled();
+  }
+};
+
+const LOOKS = 'Модель test-video-fast не принимает сохранённые образы: облик по образу не получат Лодка, Причал.';
+
+export const SavedLooks: Story = {
+  tags: ['ci'],
+  name: 'Метки героев · модель без образов предупреждает, кто потеряет облик; запрос собирается заново без изменений',
+  parameters: {
+    songframe: options(async () => ({
+      ...structuredClone(OPTIONS),
+      models: OPTIONS.models.map((model) => (model.id === 'test-video-fast' ? { ...model, looks: LOOKS } : model)),
+      marked: true
+    }))
+  },
+  play: async (context) => {
+    const view = await dialog(context);
+    await expect(await view.findByRole('combobox', { name: texts.model })).toHaveTextContent('test-video-fast');
+    await expect(view.getByText(LOOKS)).toBeVisible();
+    // Те же модель и параметры: запрос можно собрать заново, чтобы он получил образы, привязанные после сборки.
+    await expect(view.getByRole('button', { name: texts.confirm })).toBeEnabled();
+    await choose(context, view.getByRole('combobox', { name: texts.model }), 'test-video-pro');
+    await expect(view.queryByText(LOOKS)).not.toBeInTheDocument();
   }
 };
 

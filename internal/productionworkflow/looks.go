@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -12,6 +13,7 @@ import (
 	"songframe/internal/dynvalue"
 	"songframe/internal/mediaadapters"
 	"songframe/internal/mediaapi"
+	"songframe/internal/mediaproviders"
 	"songframe/internal/providers"
 	"songframe/internal/savedlooks"
 )
@@ -56,10 +58,19 @@ func textLooksOverLimit(model string, limit, count int) string {
 	return fmt.Sprintf("Модель %s принимает не больше %d образов в запросе, а в промпте отмечено %d: уберите лишние метки или выберите другую модель.", model, limit, count)
 }
 
-// ShotEntity — сущность «В кадре» плана: код кастинга и имя.
+func textLookShared(first, second, name string) string {
+	return fmt.Sprintf("У «%s» и «%s» один и тот же образ «%s»: в запросе образ передаёт облик одного героя. Привяжите другому герою свой образ на «Исходниках» либо уберите одну из меток.", first, second, name)
+}
+
+func textLooksDropped(model string, entities []string) string {
+	return fmt.Sprintf("Модель %s не принимает сохранённые образы: облик по образу не получат %s.", model, strings.Join(entities, ", "))
+}
+
+// ShotEntity — сущность «В кадре» плана: код кастинга, имя и вид (character, prop, …).
 type ShotEntity struct {
 	Code string
 	Name string
+	Kind string
 }
 
 // ShotEntities — сущности «В кадре» плана shot, кроме мира, в порядке кастинга. Им интерфейс
@@ -84,7 +95,8 @@ func shotEntities(c *Context) []ShotEntity {
 		if name == "" {
 			name = id
 		}
-		entities = append(entities, ShotEntity{Code: id, Name: name})
+		kind, _ := dynvalue.Get(entity, "kind").(string)
+		entities = append(entities, ShotEntity{Code: id, Name: name, Kind: kind})
 	}
 	return entities
 }
@@ -126,19 +138,16 @@ func applySavedLooks(ctx context.Context, c *Context, media *providers.PaidMedia
 	if err != nil {
 		return err
 	}
-	var appearance *mediaapi.Appearance
-	for _, item := range caps.Models {
-		if item.ID == draft.Model && item.Command == draft.Command {
-			appearance = item.Appearance
-		}
-	}
 	looks, supported := media.SavedLooks()
-	if appearance == nil || appearance.Method != mediaapi.AppearanceSaved || !supported {
+	limit := looksLimit(modelAppearance(caps, draft.Command, draft.Model), supported)
+	if limit == 0 {
+		// Герои потеряют облик: об этом говорят шаг «Запрос» и вопрос «Отправить» (метки
+		// видеопромпта попытки без образов замороженного запроса).
 		draft.Prompt = savedlooks.Strip(draft.Prompt)
 		return nil
 	}
-	if len(codes) > appearance.MaxItems {
-		return errors.New(textLooksOverLimit(draft.Model, appearance.MaxItems, len(codes)))
+	if len(codes) > limit {
+		return errors.New(textLooksOverLimit(draft.Model, limit, len(codes)))
 	}
 	dir, err := mediaadapters.StateDir()
 	if err != nil {
@@ -156,6 +165,7 @@ func applySavedLooks(ctx context.Context, c *Context, media *providers.PaidMedia
 	}
 	uses := make([]mediaapi.SavedLookUse, len(codes))
 	mentions := map[string]string{}
+	owners := map[string]string{}
 	for index, code := range codes {
 		state := states[code]
 		switch state.Status {
@@ -165,6 +175,11 @@ func applySavedLooks(ctx context.Context, c *Context, media *providers.PaidMedia
 		default:
 			return errors.New(textLookMissing(names[code]))
 		}
+		// Один образ — один облик: два героя с одним образом — ошибка привязки, а не два облика.
+		if owner, taken := owners[state.Look]; taken {
+			return errors.New(textLookShared(names[owner], names[code], state.Name))
+		}
+		owners[state.Look] = code
 		uses[index] = mediaapi.SavedLookUse{Code: code, Entity: names[code], Look: state.Look, Name: state.Name}
 		mentions[code] = looks.SavedLookMention(state.Look)
 	}
@@ -193,4 +208,102 @@ func applySavedLooks(ctx context.Context, c *Context, media *providers.PaidMedia
 	draft.Parameters = parameters
 	draft.SavedLooks = uses
 	return nil
+}
+
+// modelAppearance — способ передачи облика модели id команды command в снимке caps; nil — модель
+// его не объявляет.
+func modelAppearance(caps mediaapi.Capabilities, command, id string) *mediaapi.Appearance {
+	for _, item := range caps.Models {
+		if item.ID == id && item.Command == command {
+			return item.Appearance
+		}
+	}
+	return nil
+}
+
+// looksLimit — сколько сохранённых образов модель получит в запросе: 0 — модель их не принимает
+// или адаптер не работает с образами (тогда метки убираются).
+func looksLimit(appearance *mediaapi.Appearance, supported bool) int {
+	if appearance == nil || appearance.Method != mediaapi.AppearanceSaved || !supported {
+		return 0
+	}
+	return appearance.MaxItems
+}
+
+// looksWarning — что случится с метками промпта prompt у модели item: облик потеряют герои, если
+// модель образов не принимает, или сборка остановится, если меток больше её предела; "" — меток
+// нет, они записаны с ошибкой (о ней скажет сборка) или модель примет все.
+func looksWarning(c *Context, prompt string, item mediaapi.Model, supported bool) string {
+	codes := savedlooks.Codes(prompt)
+	if len(codes) == 0 {
+		return ""
+	}
+	names, err := checkMarks(c, prompt)
+	if err != nil {
+		return ""
+	}
+	limit := looksLimit(item.Appearance, supported)
+	if limit == 0 {
+		entities := make([]string, len(codes))
+		for index, code := range codes {
+			entities[index] = names[code]
+		}
+		return textLooksDropped(item.ID, entities)
+	}
+	if len(codes) > limit {
+		return textLooksOverLimit(item.ID, limit, len(codes))
+	}
+	return ""
+}
+
+// LookModel — модель видео, которую сборка запроса плана пробует первой (предпочтение проекта,
+// иначе первая модель адаптера), и сколько сохранённых образов она примет: по ней проверка перед
+// описанием плана спрашивает о героях без образа. Limit 0 — модель образы не принимает; Kinds —
+// виды сущностей, чей образ она принимает. Число опор выбирается позже, поэтому модель здесь —
+// ожидаемая: если сборка выберет другую, о потерянном облике скажет сама сборка.
+type LookModel struct {
+	Model string   `json:"model"`
+	Limit int      `json:"limit"`
+	Kinds []string `json:"kinds"`
+}
+
+// ExpectedLookModel — LookModel проекта project по свежим объявлениям моделей провайдера видео.
+// Без выбранного провайдера видео или его моделей — пустая модель с Limit 0.
+func (w *Workflow) ExpectedLookModel(ctx context.Context, project string) (LookModel, error) {
+	settings, err := videoSettings(project)
+	if err != nil {
+		return LookModel{}, err
+	}
+	provider, _ := settings.Value("provider").(string)
+	if !mediaproviders.Supports(provider, mediaproviders.Video) || w.options.VideoMedia == nil {
+		return LookModel{Kinds: []string{}}, nil
+	}
+	media, ok := w.options.VideoMedia(provider)
+	if !ok || media == nil || media.Paid.Rules.Video == nil {
+		return LookModel{Kinds: []string{}}, nil
+	}
+	rules := media.Paid.Rules.Video
+	caps := media.Capabilities(ctx, project)
+	preferred, _ := settings.Value("model").(string)
+	preferred = dynvalue.Trim(preferred)
+	candidates := []mediaapi.Model{}
+	for _, item := range caps.Models {
+		if item.Command == rules.Command {
+			candidates = append(candidates, item)
+		}
+	}
+	if len(candidates) == 0 {
+		return LookModel{Kinds: []string{}}, nil
+	}
+	slices.SortStableFunc(candidates, func(a, b mediaapi.Model) int { return modelRank(rules.Models, a.ID) - modelRank(rules.Models, b.ID) })
+	chosen := candidates[0]
+	if index := slices.IndexFunc(candidates, func(item mediaapi.Model) bool { return item.ID == preferred }); index >= 0 {
+		chosen = candidates[index]
+	}
+	_, supported := media.SavedLooks()
+	model := LookModel{Model: chosen.ID, Limit: looksLimit(chosen.Appearance, supported), Kinds: []string{}}
+	if model.Limit > 0 {
+		model.Kinds = append(model.Kinds, chosen.Appearance.Kinds...)
+	}
+	return model, nil
 }

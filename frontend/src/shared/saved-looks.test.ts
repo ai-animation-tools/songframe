@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
+  descriptionLooksQuestion,
   defaultSavedLookKind,
   insertSavedLookMark,
   defaultSavedLookName,
   savedLookNameLength,
   savedLookState,
   type SavedLookRules,
-  type SavedLooksView
+  type SavedLooksView,
+  type ShotLooksView
 } from './saved-looks';
 
 const rules: SavedLookRules = { nameMaxChars: 5, extraMin: 1, extraMax: 3, kinds: ['character', 'prop', 'costume'], coverFixed: true };
@@ -49,5 +51,41 @@ describe('метка героя в своём видеопромпте', () => {
 
   it('не удаляет выделенное упоминание: метка встаёт после него', () => {
     expect(insertSavedLookMark('The gull flies.', 4, 8, 'gull')).toEqual({ text: 'The gull [@gull] flies.', caret: 16 });
+  });
+});
+
+describe('вопрос об образах перед описанием плана', () => {
+  const view = (heroes: ShotLooksView['heroes'], extra: Partial<ShotLooksView> = {}): ShotLooksView => ({
+    supported: true,
+    model: 'test-video',
+    limit: 2,
+    kinds: ['character', 'prop'],
+    heroes,
+    error: '',
+    ...extra
+  });
+  const hero = (code: string, kind: string, status: ShotLooksView['heroes'][number]['status']) => ({ code, name: code, kind, status });
+
+  it('спрашивает о сущностях принимаемых видов без образа или с удалённым образом', () => {
+    const question = descriptionLooksQuestion(
+      view([hero('mira', 'character', 'none'), hero('lamp', 'prop', 'missing'), hero('pier', 'location', 'none'), hero('lev', 'character', 'ready')])
+    );
+    expect(question?.without.map((item) => item.code)).toEqual(['mira', 'lamp']);
+    expect(question?.over).toBe(0);
+  });
+
+  it('считает образы принимаемых видов сверх предела модели, устаревший образ — тоже образ', () => {
+    const question = descriptionLooksQuestion(view([hero('a', 'character', 'ready'), hero('b', 'character', 'stale'), hero('c', 'prop', 'ready')]));
+    expect(question).toEqual({ model: 'test-video', limit: 2, without: [], over: 3 });
+    // Образ вида, который модель не принимает, в запрос не пойдёт и предел не занимает.
+    expect(descriptionLooksQuestion(view([hero('a', 'character', 'ready'), hero('b', 'prop', 'ready'), hero('c', 'location', 'ready')]))).toBeNull();
+  });
+
+  it('не спрашивает, если модель образы не принимает, статусы неизвестны или всё в порядке', () => {
+    const missing = [hero('mira', 'character', 'none')];
+    expect(descriptionLooksQuestion(view(missing, { limit: 0 }))).toBeNull();
+    expect(descriptionLooksQuestion(view(missing, { supported: false }))).toBeNull();
+    expect(descriptionLooksQuestion(view(missing, { error: 'Нет входа.' }))).toBeNull();
+    expect(descriptionLooksQuestion(view([hero('lev', 'character', 'ready')]))).toBeNull();
   });
 });

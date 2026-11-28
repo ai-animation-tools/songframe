@@ -1,7 +1,7 @@
 import type { VocalModelId } from './vocals';
 /** Общие типы API и renderer: состояние приложения, проект, исходники, среда. */
 import type { MediaModelSelection } from './media-providers';
-import type { SavedLookUse } from './saved-looks';
+import type { SavedLookCheck, SavedLookUse } from './saved-looks';
 import type { ProductionProposalSummary } from './production-workflow';
 import type { FrameRate } from './video';
 import type { SceneViewpoint } from './viewpoint';
@@ -880,6 +880,8 @@ export interface PackageView {
     promptText?: string | null;
     /** Образы сущностей замороженного запроса: какой образ аккаунта уходит у какого героя; нет — запрос без образов. */
     savedLooks?: SavedLookUse[];
+    /** Герои с меткой в видеопромпте попытки без образа в запросе: модель запроса образы не принимает. */
+    lostLooks?: string[];
     generationId: string | null;
     /** Оригинал загрузил пользователь из истории генераций сервиса после неизвестного исхода отправки; ID задания нет. */
     manualResult: boolean;
@@ -987,6 +989,8 @@ export interface ProductionQuote {
   credits: number | null;
   balance: number | null;
   reasons: string[];
+  /** Образы запроса, требующие внимания: missing блокирует отправку, changed и stale — предупреждения. */
+  looks: SavedLookCheck[];
 }
 
 export type JobKind = 'submit' | 'regenerate' | 'accept' | 'contact_sheet' | 'tool' | 'check' | 'review' | 'animatic' | 'model_download';

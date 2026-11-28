@@ -2,14 +2,15 @@ import { productionTexts } from '@shared/texts/production';
 import { savedLooksTexts } from '@shared/texts/saved-looks';
 import type { SavedLookUse } from '@shared/saved-looks';
 import { useId, type ReactElement } from 'react';
-import { Box, Paper, Typography } from '@mui/material';
+import { Alert, Box, Paper, Typography } from '@mui/material';
 import { Prose } from '../../../components/Prose';
 
 /**
  * Показываем сохранённый текст без правок: перенос меняет только отображение подтверждаемого запроса. У запроса с
- * сохранёнными образами под текстом — какой образ аккаунта уходит у какого героя (часть того же SHA).
+ * сохранёнными образами под текстом — какой образ аккаунта уходит у какого героя (часть того же SHA); если модель
+ * запроса образы не принимает, а в видеопромпте были метки, — предупреждение, кто потеряет облик.
  */
-export function RequestPrompt({ text, looks }: { text: string; looks?: SavedLookUse[] }): ReactElement {
+export function RequestPrompt({ text, looks, lostLooks }: { text: string; looks?: SavedLookUse[]; lostLooks?: string[] }): ReactElement {
   const labelId = useId();
   const looksId = useId();
   return (
@@ -37,6 +38,11 @@ export function RequestPrompt({ text, looks }: { text: string; looks?: SavedLook
             ))}
           </Box>
         </Box>
+      ) : null}
+      {lostLooks?.length ? (
+        <Alert severity="warning" sx={{ mt: 1.5 }}>
+          {savedLooksTexts.lostLooks({ entities: lostLooks.join(', ') })}
+        </Alert>
       ) : null}
     </Paper>
   );

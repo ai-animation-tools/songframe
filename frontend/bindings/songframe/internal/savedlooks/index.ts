@@ -3,5 +3,6 @@
 
 export type {
     Report,
-    State
+    State,
+    UseCheck
 } from "./models.js";

@@ -6,6 +6,7 @@ import SendIcon from '@mui/icons-material/Send';
 import EditIcon from '@mui/icons-material/Edit';
 import type { Api } from '@shared/api';
 import type { JobInfo, PackageView, ProductionQuote } from '@shared/types';
+import type { SavedLookCheck } from '@shared/saved-looks';
 import { priceAllowsGeneration } from '@shared/generation-consent';
 import { registerMediaProviderForTests } from '@shared/media-providers';
 import { TEST_PROVIDER, testProviderInfo } from '@shared/testing/media-provider';
@@ -25,6 +26,10 @@ export interface SendRequestOptions {
   offline?: boolean;
   /** Запрос с сохранёнными образами: разметка провайдера в тексте и список «герой → образ». */
   savedLooks?: boolean;
+  /** Итог сверки образов запроса с аккаунтом в оценке (missing блокирует отправку, как Go). */
+  lookChecks?: SavedLookCheck[];
+  /** Герои с меткой в видеопромпте, чьих образов запрос не несёт: модель запроса образы не принимает. */
+  lostLooks?: string[];
 }
 
 interface SendModel {
@@ -72,6 +77,7 @@ export function sendRequestOptions(options: SendRequestOptions = {}): StoryOptio
               ]
             }
           };
+        if (options.lostLooks) return { ...pkg, request: { ...pkg.request!, lostLooks: [...options.lostLooks] } };
         return options.missingSha ? { ...pkg, request: { ...pkg.request!, sha256: null } } : pkg;
       };
       const model: SendModel = {
@@ -128,7 +134,8 @@ export function sendRequestOptions(options: SendRequestOptions = {}): StoryOptio
               token: `send-story-quote-${++tokenSequence}`,
               ...(options.quote === 'unknown' ? { credits: null, verdict: 'cost_or_balance_unknown' } : {}),
               ...(options.quote === 'insufficient' ? { balance: 2, verdict: 'insufficient_balance' } : {}),
-              ...(options.quote === 'mismatch' ? { requestSha: '0'.repeat(64) } : {})
+              ...(options.quote === 'mismatch' ? { requestSha: '0'.repeat(64) } : {}),
+              looks: structuredClone(options.lookChecks ?? [])
             });
             // Обновление оценки аннулирует прежний токен даже при неизменном SHA.
             quotes.clear();
@@ -143,6 +150,7 @@ export function sendRequestOptions(options: SendRequestOptions = {}): StoryOptio
             }
             if (consent && consent !== token) throw new Error('Согласие относится к другой оценке.');
             if (!priceAllowsGeneration(stored.quote, consent === token)) throw new Error('Стоимость текущего запроса не согласована.');
+            if (stored.quote.looks.some((look) => look.status === 'missing')) throw new Error('Образа запроса нет в аккаунте.');
             // Неуспешная отправка тоже потребляет оценку: повтор требует новой проверки и согласия.
             quotes.delete(token!);
             model.submissions++;

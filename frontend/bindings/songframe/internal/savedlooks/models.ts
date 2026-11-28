@@ -40,3 +40,14 @@ export interface State {
     "look"?: string;
     "name"?: string;
 }
+
+/**
+ * UseCheck — образ замороженного запроса, требующий внимания перед отправкой: код и имя сущности,
+ * имя образа и состояние (Use*).
+ */
+export interface UseCheck {
+    "code": string;
+    "entity": string;
+    "name": string;
+    "status": string;
+}

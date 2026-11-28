@@ -51,6 +51,8 @@ type SavedLookInput struct {
 type ShotLook struct {
 	Code string `json:"code"`
 	Name string `json:"name"`
+	// Kind — вид сущности кастинга: проверка перед описанием спрашивает только о видах из Kinds.
+	Kind string `json:"kind"`
 	// Status — savedlooks.Status*; Look и LookName — привязанный образ.
 	Status   string `json:"status"`
 	Look     string `json:"look,omitempty"`
@@ -60,8 +62,14 @@ type ShotLook struct {
 // ShotLooksView — образы героев «В кадре» плана.
 type ShotLooksView struct {
 	// Supported — провайдер видео проекта хранит образы.
-	Supported bool       `json:"supported"`
-	Heroes    []ShotLook `json:"heroes"`
+	Supported bool `json:"supported"`
+	// Model и Limit — модель, которую сборка запроса плана пробует первой, и сколько образов она
+	// примет (0 — не принимает): по ним проверка перед описанием спрашивает о героях без образа.
+	Model string `json:"model"`
+	Limit int    `json:"limit"`
+	// Kinds — виды сущностей, чей образ принимает модель Model.
+	Kinds  []string   `json:"kinds"`
+	Heroes []ShotLook `json:"heroes"`
 	// Error — почему статусы неизвестны; статусы героев тогда none.
 	Error string `json:"error"`
 }
@@ -73,10 +81,20 @@ type ShotLooksView struct {
 type SavedLooksService struct {
 	// stateDir — каталог состояния приложения; nil — mediaadapters.StateDir.
 	stateDir func() (string, error)
+	// models — ожидаемая модель видео плана (проход производства); nil — модель неизвестна, Limit 0.
+	models LookModels
 }
 
-// NewSavedLooksService — группа на каталоге состояния и таблице адаптеров приложения.
-func NewSavedLooksService() *SavedLooksService { return &SavedLooksService{} }
+// LookModels — источник ожидаемой модели видео плана и её предела образов.
+type LookModels interface {
+	ExpectedLookModel(ctx context.Context, project string) (productionworkflow.LookModel, error)
+}
+
+// NewSavedLooksService — группа на каталоге состояния и таблице адаптеров приложения; models —
+// проход производства, знающий выбор модели видео.
+func NewSavedLooksService(models LookModels) *SavedLooksService {
+	return &SavedLooksService{models: models}
+}
 
 // Тексты группы.
 var (
@@ -303,7 +321,14 @@ func (s *SavedLooksService) Shot(ctx context.Context, project, shot string) (Sho
 	}
 	view := ShotLooksView{Supported: true, Heroes: make([]ShotLook, len(entities))}
 	for index, entity := range entities {
-		view.Heroes[index] = ShotLook{Code: entity.Code, Name: entity.Name, Status: savedlooks.StatusNone}
+		view.Heroes[index] = ShotLook{Code: entity.Code, Name: entity.Name, Kind: entity.Kind, Status: savedlooks.StatusNone}
+	}
+	if s.models != nil {
+		model, err := s.models.ExpectedLookModel(ctx, project)
+		if err != nil {
+			return wire.Done(view, err)
+		}
+		view.Model, view.Limit, view.Kinds = model.Model, model.Limit, model.Kinds
 	}
 	store, err := s.store()
 	if err != nil {

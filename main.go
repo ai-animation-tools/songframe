@@ -285,7 +285,7 @@ func run() error {
 		application.NewService(native), application.NewService(componentService), application.NewService(shell.NewJobsService(jobManager)),
 		application.NewService(shell.NewTimingService(jobManager, componentManager, componentService, profilePath)),
 		application.NewService(shell.NewSourcesService(ffprobePath(componentManager))),
-		application.NewService(shell.NewSavedLooksService()),
+		application.NewService(shell.NewSavedLooksService(productionWorkflow)),
 		application.NewService(shell.NewCastService()), application.NewService(shell.NewSchemesService()),
 		application.NewService(shell.NewScenarioService()),
 		application.NewService(shell.NewToolsService()), application.NewService(shell.NewChecksService(jobManager)),

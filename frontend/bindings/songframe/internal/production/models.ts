@@ -9,6 +9,9 @@ import * as json$0 from "../../../encoding/json/models.js";
 import * as mediaapi$0 from "../mediaapi/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as savedlooks$0 from "../savedlooks/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as shotworkflow$0 from "../shotworkflow/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -437,6 +440,12 @@ export interface Quote {
     "credits": number | null;
     "balance": number | null;
     "reasons": string[];
+
+    /**
+     * Looks — образы запроса, требующие внимания перед отправкой (savedlooks.Verify): missing
+     * блокирует отправку, changed и stale — предупреждения. Пустой список — образов нет или все в порядке.
+     */
+    "looks": savedlooks$0.UseCheck[];
 }
 
 /**
@@ -483,6 +492,12 @@ export interface Request {
      * аккаунта уходит у какого героя; поле опускается у запросов без образов.
      */
     "savedLooks"?: mediaapi$0.SavedLookUse[];
+
+    /**
+     * LostLooks — герои с меткой в видеопромпте попытки, чьи образы запрос не несёт: модель запроса
+     * сохранённые образы не принимает, метки убраны при сборке. Поле опускается, если таких нет.
+     */
+    "lostLooks"?: string[];
 
     /**
      * Downloads — абсолютные пути существующих скачанных оригиналов.

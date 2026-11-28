@@ -248,6 +248,11 @@ export interface ShotLook {
     "name": string;
 
     /**
+     * Kind — вид сущности кастинга: проверка перед описанием спрашивает только о видах из Kinds.
+     */
+    "kind": string;
+
+    /**
      * Status — savedlooks.Status*; Look и LookName — привязанный образ.
      */
     "status": string;
@@ -263,6 +268,18 @@ export interface ShotLooksView {
      * Supported — провайдер видео проекта хранит образы.
      */
     "supported": boolean;
+
+    /**
+     * Model и Limit — модель, которую сборка запроса плана пробует первой, и сколько образов она
+     * примет (0 — не принимает): по ним проверка перед описанием спрашивает о героях без образа.
+     */
+    "model": string;
+    "limit": number;
+
+    /**
+     * Kinds — виды сущностей, чей образ принимает модель Model.
+     */
+    "kinds": string[];
     "heroes": ShotLook[];
 
     /**

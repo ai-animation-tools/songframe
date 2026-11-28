@@ -36,6 +36,7 @@ import { workflowAgentJob, workflowProposal, workflowView } from './productionWo
 import { reviewView } from './videoReviewStories';
 import { createStoryApi, STORY_IMAGE_PATH, STORY_VIDEO_PATH, type StoryOptions } from './storybook';
 import { createSpendModel } from './spendStories';
+import { createSavedLooksModel, type SavedLooksStoryOptions } from './savedLooksStories';
 
 export const PAGE_PROJECT = DELIVERY_PROJECT;
 export const PAGE_READ_ERROR = 'Не удалось прочитать состояние производства: plan/project.json занят. Опрос повторит чтение.';
@@ -141,6 +142,8 @@ export interface ProductionPageModelOptions {
    * сохраняет его сам, модель запоминает размер PNG.
    */
   composition?: boolean | 'missing';
+  /** Сохранённые образы провайдера видео (savedLooks): без модели провайдер образов не хранит. */
+  savedLooks?: SavedLooksStoryOptions;
 }
 
 interface PageModel {
@@ -542,6 +545,9 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
       const fragment = fragmentModel();
       const session = createStoryApi({
         animatic: fragment.overrides.animatic,
+        ...(options.savedLooks
+          ? { savedLooks: createSavedLooksModel(options.savedLooks, () => (options.savedLooks?.heroes ?? []).map((hero) => hero.code)) }
+          : {}),
         production: {
           acceptedKit: async (_project, shot) => structuredClone(options.acceptedKit?.(shot) ?? null),
           // Своё видео с телефона: другой кадр и частота, окно приёмки предлагает только участок.
@@ -1118,7 +1124,8 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
             return {
               models: structuredClone(REQUEST_MODELS),
               model: pkg.request?.model ?? '',
-              parameters: Object.fromEntries(Object.entries(pkg.request?.parameters ?? {}).filter(([name]) => selectable.has(name)))
+              parameters: Object.fromEntries(Object.entries(pkg.request?.parameters ?? {}).filter(([name]) => selectable.has(name))),
+              marked: false
             };
           },
           buildManual: async (project, shot, dir) => {

@@ -45,12 +45,15 @@ export interface ProductionRequestChange {
 /**
  * Модели команды видео провайдера и параметры, которые пользователь выбирает сам, с текущим запросом попытки.
  * unavailable — почему модель не примет план (опоры, длительность, срез речи, настройки проекта): в окне она выключена.
+ * looks — что модель сделает с метками героев видеопромпта: кто потеряет облик или почему сборка остановится.
  */
 export interface ProductionRequestOptions {
-  models: { id: string; parameters: { name: string; values: unknown[] }[]; unavailable?: string }[];
+  models: { id: string; parameters: { name: string; values: unknown[] }[]; unavailable?: string; looks?: string }[];
   /** Модель и выбираемые параметры текущего запроса попытки. */
   model: string;
   parameters: Record<string, unknown>;
+  /** В видеопромпте есть метки героев: запрос можно собрать заново без изменений, чтобы он получил новые образы. */
+  marked: boolean;
 }
 export type ProductionStageProposal =
   | { schemaVersion: 1; stage: 'description'; description: string; requestSeconds: number; keyframes: ProductionFramePrompt[] }

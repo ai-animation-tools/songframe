@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -190,6 +191,11 @@ func TestPrepareRequestSavedLookRefusals(t *testing.T) {
 			}},
 		{name: "сверх предела", caps: strings.Replace(looksCaps, `"max_items":2`, `"max_items":1`, 1), prompt: "Лодка [@boat] у причала [@pier].\n",
 			want: "Модель test-cheap принимает не больше 1 образов в запросе, а в промпте отмечено 2"},
+		{name: "один образ у двух", caps: looksCaps, prompt: "Лодка [@boat] у причала [@pier].\n", want: "У «Лодка» и «Причал» один и тот же образ «Лодка»",
+			setup: func(t *testing.T, run *goldenRun, service *mediatest.Service, store savedlooks.Store) {
+				bindLook(t, run, service, store, "boat", "look-3", "Лодка", true)
+				bindLook(t, run, service, store, "pier", "look-3", "Лодка", false)
+			}},
 		{name: "метка с пробелом", caps: looksCaps, prompt: "Лодка [@boat ] плывёт.\n", want: "метка записана с ошибкой: «[@boat ] плывёт.»"},
 		{name: "метка с пробелом без образов", caps: requestCaps, prompt: "Лодка [@boat плывёт.\n", want: "метка записана с ошибкой: «[@boat плывёт.»"},
 		{name: "длиннее предела после подстановки", caps: looksCaps, prompt: "Лодка [@boat] плывёт.\n", want: "После подстановки образов промпт занимает 27 символов при пределе 25",
@@ -223,5 +229,60 @@ func TestPrepareRequestSavedLookRefusals(t *testing.T) {
 				t.Fatal("папка запроса осталась")
 			}
 		})
+	}
+}
+
+// «Изменить»: у каждой модели сказано, что станет с метками героев — модель без образов теряет
+// облик героев по именам, модель с образами — без предупреждения; модель при этом доступна.
+func TestRequestOptionsLooks(t *testing.T) {
+	run := ownRun(t)
+	workflow, service, store := looksWorkflow(t, run, looksCaps)
+	dir := promptReady(t, run, 2)
+	markedPrompt(t, dir, "Лодка [@boat] плывёт к причалу [@pier].\n")
+	bindLook(t, run, service, store, "boat", "look-3", "Лодка", true)
+	bindLook(t, run, service, store, "pier", "look-7", "Причал", true)
+	if _, err := workflow.PrepareRequest(context.Background(), run.project, "M01", dir, nil); err != nil {
+		t.Fatal(err)
+	}
+	options, err := workflow.RequestOptions(context.Background(), run.project, "M01", dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !options.Marked {
+		t.Fatal("промпт с метками: запрос можно собрать заново без изменений")
+	}
+	looks := map[string]string{}
+	for _, model := range options.Models {
+		looks[model.ID] = model.Looks
+	}
+	want := map[string]string{
+		"test-cheap":     "",
+		"test-keyframes": "Модель test-keyframes не принимает сохранённые образы: облик по образу не получат Лодка, Причал.",
+		"test-short":     "Модель test-short не принимает сохранённые образы: облик по образу не получат Лодка, Причал.",
+	}
+	for id, text := range want {
+		if looks[id] != text {
+			t.Fatalf("%s: %q, нужно %q", id, looks[id], text)
+		}
+	}
+}
+
+// Ожидаемая модель плана до описания — первая модель адаптера, если проект не предпочёл другую;
+// предел — из её способа передачи облика, у модели без образов — 0.
+func TestExpectedLookModel(t *testing.T) {
+	for _, item := range []struct {
+		caps  string
+		limit int
+		kinds []string
+	}{{looksCaps, 2, []string{"character", "prop", "costume"}}, {requestCaps, 0, []string{}}} {
+		run := ownRun(t)
+		workflow, _, _ := looksWorkflow(t, run, item.caps)
+		got, err := workflow.ExpectedLookModel(context.Background(), run.project)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(got, LookModel{Model: "test-cheap", Limit: item.limit, Kinds: item.kinds}) {
+			t.Fatalf("ожидаемая модель: %+v, нужно test-cheap с пределом %d", got, item.limit)
+		}
 	}
 }

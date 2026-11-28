@@ -26,7 +26,10 @@ export interface SavedLooksStoryOptions {
   /** Ошибка одного создания. */
   failCreateOnce?: string;
   /** Герои «В кадре» плана для savedLooks.shot: код и имя; по умолчанию — референсы описи под своими кодами. */
-  heroes?: { code: string; name: string }[];
+  heroes?: { code: string; name: string; kind?: string }[];
+  /** Ожидаемая модель плана для savedLooks.shot и её предел образов (0 — модель образов не принимает); по умолчанию test-video и 3. */
+  model?: string;
+  limit?: number;
 }
 
 export type SavedLooksStoryCall = [string, ...unknown[]];
@@ -65,11 +68,18 @@ export function createSavedLooksModel(options: SavedLooksStoryOptions, reference
   };
   const shot = (): ShotLooksView => {
     const current = view();
-    const heroes = (options.heroes ?? references().map((code) => ({ code, name: code }))).map((hero) => {
+    const heroes = (options.heroes ?? references().map((code): { code: string; name: string; kind?: string } => ({ code, name: code }))).map((hero) => {
       const state = current.report?.states.find((item) => item.reference === hero.code);
-      return { ...hero, status: state?.status ?? ('none' as SavedLookStatus), look: state?.look, lookName: state?.name };
+      return { ...hero, kind: hero.kind ?? 'character', status: state?.status ?? ('none' as SavedLookStatus), look: state?.look, lookName: state?.name };
     });
-    return { supported: current.supported, heroes: current.supported ? heroes : [], error: current.error };
+    return {
+      supported: current.supported,
+      model: options.model ?? 'test-video',
+      limit: current.supported ? (options.limit ?? 3) : 0,
+      kinds: current.supported ? [...SAVED_LOOKS_STORY_RULES.kinds] : [],
+      heroes: current.supported ? heroes : [],
+      error: current.error
+    };
   };
   return {
     view: async () => view(),

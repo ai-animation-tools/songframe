@@ -76,6 +76,12 @@ func (e *env) tool(name string, args ...string) tools.Result {
 // newEnv — проект с пакетом M03 на вопросе отправки подготовленного запроса (request_choice).
 func newEnv(t *testing.T, model string) *env {
 	t.Helper()
+	return newEnvSpec(t, model, "")
+}
+
+// newEnvSpec — newEnv с дополнительными полями extra замороженного запроса (`, "поле": …`).
+func newEnvSpec(t *testing.T, model, extra string) *env {
+	t.Helper()
 	root := t.TempDir()
 	project := filepath.Join(root, "Проект клипа")
 	copyTree(t, filepath.Join("..", "..", "testdata", "golden", "checks-base", "project"), project)
@@ -129,7 +135,7 @@ func newEnv(t *testing.T, model string) *env {
 		t.Fatal(err)
 	}
 	request := `{"schema_version": 1, "shot": "M03", "kind": "video", "provider": "test", "command": "image_to_video", "model": "` + model +
-		`", "parameters": {"duration": 5, "resolution": "1080p"}, "inputs": [{"flag": "input", "slot": "first_image", "path": "frame.png", "role": "first"}], "prompt_file": "prompt.txt", "outputs": 1}`
+		`", "parameters": {"duration": 5, "resolution": "1080p"}, "inputs": [{"flag": "input", "slot": "first_image", "path": "frame.png", "role": "first"}], "prompt_file": "prompt.txt", "outputs": 1` + extra + `}`
 	if err := os.WriteFile(filepath.Join(spec, "spec.json"), []byte(request), 0o644); err != nil {
 		t.Fatal(err)
 	}

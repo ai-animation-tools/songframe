@@ -219,8 +219,15 @@ func run() error {
 			return err
 		}
 	}
+	// Ожидаемую модель видео знает проход производства, созданный ниже: рекомендации по
+	// референсам спрашивают её при запуске, когда он уже есть.
+	var expectedLooks func(ctx context.Context, project string) (productionworkflow.LookModel, error)
 	scenarioWorkflow := scenarioworkflow.New(scenarioworkflow.Options{
 		LocalDir: profilePath, Agents: agentManager,
+		AdviceLooks: func(project string) (scenarioworkflow.AdviceLooks, error) {
+			model, err := expectedLooks(context.Background(), project)
+			return scenarioworkflow.AdviceLooks{Model: model.Model, Limit: model.Limit, Kinds: model.Kinds}, err
+		},
 		RequireAgentAccess: func(project string) error {
 			return aiAccess.RequireAccess(context.Background(), &project, agents.KindAgent)
 		},
@@ -249,6 +256,7 @@ func run() error {
 			return aiAccess.RequireAccess(ctx, &project, agents.KindVideo)
 		},
 	})
+	expectedLooks = productionWorkflow.ExpectedLookModel
 	// Медиаинструменты (accept_shot, apply_montage, build_animatic, build_review, cut_speech, contact_sheet) берут
 	// FFmpeg/ffprobe из менеджера компонентов, иначе ищут их в PATH.
 	mediacmd.Programs = func() (string, string) {

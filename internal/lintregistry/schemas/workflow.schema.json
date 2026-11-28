@@ -31,6 +31,7 @@
                      "path": {"type": ["string", "null"]}, "sha256": {"type": ["string", "null"]}, "approved": {"type": "boolean"}, "provider": {"type": "string"}}}},
     "approved_frames": {"type": "object"},
     "keyframe_count": {"type": "integer", "minimum": 1},
+    "saved_looks": {"type": "array", "items": {"type": "string"}},
     "keyframe_notes": {"type": "array", "items": {
       "type": "object", "required": ["id", "frame", "note", "scope", "active", "at"],
       "properties": {"id": {"type": "integer", "minimum": 1}, "frame": {"type": ["string", "null"], "pattern": "^K\\d{2}$"},

@@ -249,6 +249,14 @@ func (w *Workflow) StartAdvice(project string) (AdviceView, error) {
 			return AdviceView{}, err
 		}
 	}
+	// Объявления моделей могут идти по сети, поэтому до блокировки. Сбой не мешает совету: без
+	// сведений об образах он даётся как для модели без них.
+	looks := AdviceLooks{}
+	if w.options.AdviceLooks != nil {
+		if value, err := w.options.AdviceLooks(project); err == nil {
+			looks = value
+		}
+	}
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	view, input, err := w.adviceView(project)
@@ -262,7 +270,7 @@ func (w *Workflow) StartAdvice(project string) (AdviceView, error) {
 	if err != nil {
 		return AdviceView{}, err
 	}
-	context, entities, err := adviceContext(input)
+	context, entities, err := adviceContext(input, looks)
 	if err != nil {
 		return AdviceView{}, err
 	}
@@ -312,8 +320,9 @@ func advicePrompt(skill string) string {
 // ответ. Факты по сущностям приложение считает само, чтобы агент не пересчитывал планы вручную:
 // shots — планы, где сущность в кадре (scenario.PlanEntities); closeShots — те из них, где
 // крупность точки съёмки «close» или «detail»; cameraSides — стороны камеры точки съёмки по
-// счёту; images — опись изображений сущности с подписью и заметкой автора.
-func adviceContext(input *inputs) (string, []string, error) {
+// счёту; images — опись изображений сущности с подписью и заметкой автора. savedLooks — модель
+// видео с сохранёнными образами, только если она их принимает: контекст остальных не меняется.
+func adviceContext(input *inputs, looks AdviceLooks) (string, []string, error) {
 	idea, err := readText(input.project, "source", dynvalue.ToString(dynvalue.GetPath(input.manifest, "idea", "path")))
 	if err != nil {
 		return "", nil, err
@@ -404,6 +413,13 @@ func adviceContext(input *inputs) (string, []string, error) {
 	context.Set("cast", nullable(castValue))
 	context.Set("scenes", nullable(scenes))
 	context.Set("facts", &dynvalue.Array{Items: factList})
+	if looks.Limit > 0 {
+		value := dynvalue.NewObject()
+		value.Set("model", looks.Model)
+		value.Set("limit", float64(looks.Limit))
+		value.Set("kinds", stringArray(looks.Kinds))
+		context.Set("savedLooks", value)
+	}
 	return dynvalue.Stringify(context), entities, nil
 }
 

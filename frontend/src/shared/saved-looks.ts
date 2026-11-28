@@ -147,26 +147,31 @@ export function savedLookNameLength(name: string): number {
   return Array.from(name.trim()).length;
 }
 
-/** Вопрос перед описанием плана: сущности «В кадре» без действующего образа и сколько образов сверх предела модели. */
+/** Вопрос перед описанием плана: сущности «В кадре» без действующего образа и выбор героев сверх предела модели. */
 export interface DescriptionLooksQuestion {
   model: string;
   limit: number;
   /** Сущности видов, которые принимает модель, без образа или с образом, которого нет в аккаунте. */
   without: ShotLook[];
-  /** Сколько сущностей принимаемых видов в кадре с образом, если их больше предела модели; 0 — не больше. */
-  over: number;
+  /**
+   * Сущности принимаемых видов с образом, если их больше предела модели: из них пользователь выбирает, чей облик держать
+   * образом. Персонажи первыми, остальные в порядке кастинга (тот же порядок у Go). Пусто — выбирать не нужно.
+   */
+  choose: ShotLook[];
 }
 
 /**
  * Нужен ли вопрос перед описанием плана: модель плана принимает сохранённые образы, а у части сущностей в кадре
- * образа нет или образов больше, чем модель примет. null — спрашивать не о чем: модель образы не принимает,
+ * образа нет или образов больше, чем модель примет (тогда героев выбирает пользователь, а агент описания получает только
+ * выбранных). null — спрашивать не о чем: модель образы не принимает,
  * статусы неизвестны (сбой списка — сборка запроса проверит сама) или всё в порядке.
  */
 export function descriptionLooksQuestion(view: ShotLooksView): DescriptionLooksQuestion | null {
   if (!view.supported || view.limit <= 0 || view.error) return null;
   const eligible = view.heroes.filter((hero) => view.kinds.includes(hero.kind));
   const without = eligible.filter((hero) => hero.status === 'none' || hero.status === 'missing');
-  const withLook = eligible.filter((hero) => hero.status === 'ready' || hero.status === 'stale').length;
-  const over = withLook > view.limit ? withLook : 0;
-  return without.length || over ? { model: view.model, limit: view.limit, without, over } : null;
+  const withLook = eligible.filter((hero) => hero.status === 'ready' || hero.status === 'stale');
+  const ordered = [...withLook.filter((hero) => hero.kind === 'character'), ...withLook.filter((hero) => hero.kind !== 'character')];
+  const choose = ordered.length > view.limit ? ordered : [];
+  return without.length || choose.length ? { model: view.model, limit: view.limit, without, choose } : null;
 }

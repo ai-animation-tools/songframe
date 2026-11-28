@@ -71,12 +71,13 @@ describe('вопрос об образах перед описанием пла�
       view([hero('mira', 'character', 'none'), hero('lamp', 'prop', 'missing'), hero('pier', 'location', 'none'), hero('lev', 'character', 'ready')])
     );
     expect(question?.without.map((item) => item.code)).toEqual(['mira', 'lamp']);
-    expect(question?.over).toBe(0);
+    expect(question?.choose).toEqual([]);
   });
 
-  it('считает образы принимаемых видов сверх предела модели, устаревший образ — тоже образ', () => {
-    const question = descriptionLooksQuestion(view([hero('a', 'character', 'ready'), hero('b', 'character', 'stale'), hero('c', 'prop', 'ready')]));
-    expect(question).toEqual({ model: 'test-video', limit: 2, without: [], over: 3 });
+  it('предлагает выбор, если образов принимаемых видов больше предела модели: персонажи первыми, устаревший образ — тоже образ', () => {
+    const question = descriptionLooksQuestion(view([hero('c', 'prop', 'ready'), hero('a', 'character', 'ready'), hero('b', 'character', 'stale')]));
+    expect(question?.choose.map((item) => item.code)).toEqual(['a', 'b', 'c']);
+    expect(question?.without).toEqual([]);
     // Образ вида, который модель не принимает, в запрос не пойдёт и предел не занимает.
     expect(descriptionLooksQuestion(view([hero('a', 'character', 'ready'), hero('b', 'prop', 'ready'), hero('c', 'location', 'ready')]))).toBeNull();
   });

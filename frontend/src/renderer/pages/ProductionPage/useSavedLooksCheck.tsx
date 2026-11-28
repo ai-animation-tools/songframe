@@ -10,8 +10,11 @@ import { linkLocation, referenceAnchor } from '../../components/linkTargets';
 import { SavedLooksBeforeDialog } from './components/SavedLooksBeforeDialog';
 
 export interface SavedLooksCheck {
-  /** Проверить образы и выполнить proceed сразу или после ответа «Продолжить»; agent — продолжение запускает агента. */
-  check(proceed: () => void, agent: boolean): void;
+  /**
+   * Проверить образы и выполнить proceed сразу или после ответа «Продолжить»; agent — продолжение запускает агента.
+   * looks — выбранные герои, если образов больше, чем примет модель; без выбора — undefined.
+   */
+  check(proceed: (looks?: string[]) => void, agent: boolean): void;
   /** Идёт проверка: кнопки описания ждут её. */
   checking: boolean;
   dialog: ReactElement;
@@ -22,7 +25,7 @@ export function useSavedLooksCheck(project: string, shot: string, attempt: strin
   const navigate = useNavigate();
   const location = useLocation();
   const [checking, setChecking] = useState(false);
-  const [pending, setPending] = useState<{ question: DescriptionLooksQuestion; proceed(): void; agent: boolean } | null>(null);
+  const [pending, setPending] = useState<{ question: DescriptionLooksQuestion; proceed(looks?: string[]): void; agent: boolean } | null>(null);
   // Ответ проверки прежнего плана, проекта или попытки не открывает вопрос и не запускает описание у нового.
   const key = `${project}\n${shot}\n${attempt}`;
   const current = useRef(key);
@@ -31,7 +34,7 @@ export function useSavedLooksCheck(project: string, shot: string, attempt: strin
     setPending(null);
     setChecking(false);
   }, [key]);
-  const check = (proceed: () => void, agent: boolean): void => {
+  const check = (proceed: (looks?: string[]) => void, agent: boolean): void => {
     if (checking || pending) return;
     setChecking(true);
     const finish = (question: DescriptionLooksQuestion | null): void => {
@@ -53,10 +56,10 @@ export function useSavedLooksCheck(project: string, shot: string, attempt: strin
         setPending(null);
         navigate(linkLocation({ path: '/project/sources', anchor: referenceAnchor(code) }, location));
       }}
-      onContinue={() => {
+      onContinue={(looks) => {
         const proceed = pending?.proceed;
         setPending(null);
-        proceed?.();
+        proceed?.(looks);
       }}
       onClose={() => setPending(null)}
     />

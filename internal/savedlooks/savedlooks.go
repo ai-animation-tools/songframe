@@ -189,6 +189,19 @@ func (s Store) Bindings(provider, account, project string) ([]Binding, error) {
 	return result, nil
 }
 
+// Bound — есть ли у проекта привязки образов хоть в одном аккаунте провайдера: без них список
+// библиотеки не нужен, и задание агента собирается без обращения к сети.
+func (s Store) Bound(provider, project string) (bool, error) {
+	mu.Lock()
+	bindings, err := s.read(provider)
+	mu.Unlock()
+	if err != nil {
+		return false, err
+	}
+	project = ProjectKey(project)
+	return slices.ContainsFunc(bindings, func(item Binding) bool { return item.Project == project }), nil
+}
+
 // Reference — референс описи с текущими снимками.
 type Reference struct {
 	ID   string

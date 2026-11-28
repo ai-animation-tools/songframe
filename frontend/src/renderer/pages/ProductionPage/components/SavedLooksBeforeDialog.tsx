@@ -1,10 +1,12 @@
 /**
  * Вопрос перед описанием плана («Подготовить описание» или «Написать самому»): модель плана держит облик героя по
- * сохранённому образу, а у части сущностей «В кадре» образа нет или образов больше, чем модель примет. Это не
- * блокировка: пользователь переходит к референсу на «Исходниках» или продолжает без образа.
+ * сохранённому образу, а у части сущностей «В кадре» образа нет или образов больше, чем модель примет. Отсутствие образа
+ * не блокирует: пользователь переходит к референсу на «Исходниках» или продолжает без образа. При избытке образов перед
+ * агентом пользователь отмечает, чей облик держать образом (персонажи отмечены первыми), и продолжение передаёт выбор
+ * агенту; своё описание пишет сам человек — окно только говорит, сколько меток поставить.
  */
-import { useId, type ReactElement } from 'react';
-import { Alert, Box, Button, Stack, Typography } from '@mui/material';
+import { useEffect, useId, useState, type ReactElement } from 'react';
+import { Alert, Box, Button, Checkbox, FormControlLabel, FormGroup, Stack, Typography } from '@mui/material';
 import FaceRetouchingNaturalOutlinedIcon from '@mui/icons-material/FaceRetouchingNaturalOutlined';
 import type { DescriptionLooksQuestion } from '@shared/saved-looks';
 import { savedLooksTexts } from '@shared/texts/saved-looks';
@@ -22,17 +24,28 @@ export function SavedLooksBeforeDialog({
   agent: boolean;
   /** Переход к референсу сущности на «Исходниках»; окно закрывает вызывающий. */
   onOpenReference(code: string): void;
-  onContinue(): void;
+  /** looks — отмеченные герои, если выбор был (агент и question.choose не пуст). */
+  onContinue(looks?: string[]): void;
   onClose(): void;
 }): ReactElement {
   const listId = useId();
+  const chooseId = useId();
+  // Новый вопрос — новый выбор по умолчанию: первые по пределу модели (персонажи стоят первыми).
+  const [chosen, setChosen] = useState<string[]>([]);
+  useEffect(() => {
+    setChosen(question ? question.choose.slice(0, question.limit).map((hero) => hero.code) : []);
+  }, [question]);
+  const choosing = agent && !!question?.choose.length;
+  const over = choosing && chosen.length > question.limit;
   return (
     <ConfirmationDialog
       open={!!question}
       title={savedLooksTexts.beforeTitle}
       confirmLabel={question?.without.length ? savedLooksTexts.beforeContinueWithout : savedLooksTexts.beforeContinue}
       confirmAgent={agent ? {} : undefined}
-      onConfirm={onContinue}
+      confirmDisabled={over}
+      confirmDisabledReason={over ? savedLooksTexts.beforeChooseOver({ limit: question.limit }) : undefined}
+      onConfirm={() => onContinue(choosing ? question.choose.filter((hero) => chosen.includes(hero.code)).map((hero) => hero.code) : undefined)}
       onClose={onClose}
     >
       {question ? (
@@ -65,8 +78,35 @@ export function SavedLooksBeforeDialog({
               </Box>
             </Alert>
           ) : null}
-          {question.over ? (
-            <Alert severity="info">{savedLooksTexts.beforeOver({ model: question.model, limit: question.limit, count: question.over })}</Alert>
+          {question.choose.length && !choosing ? (
+            <Alert severity="info">{savedLooksTexts.beforeOver({ model: question.model, limit: question.limit, count: question.choose.length })}</Alert>
+          ) : null}
+          {choosing ? (
+            <Alert severity={over ? 'warning' : 'info'}>
+              <Typography variant="body2">
+                {savedLooksTexts.beforeChoose({ model: question.model, limit: question.limit, count: question.choose.length })}
+              </Typography>
+              <Typography id={chooseId} component="h3" variant="subtitle2" sx={{ mt: 1.5 }}>
+                {savedLooksTexts.beforeChooseLabel} · {savedLooksTexts.beforeChosen({ count: chosen.length, limit: question.limit })}
+              </Typography>
+              <FormGroup aria-labelledby={chooseId}>
+                {question.choose.map((hero) => (
+                  <FormControlLabel
+                    key={hero.code}
+                    label={hero.name}
+                    control={
+                      <Checkbox
+                        size="small"
+                        checked={chosen.includes(hero.code)}
+                        onChange={(event) =>
+                          setChosen((current) => (event.target.checked ? [...current, hero.code] : current.filter((code) => code !== hero.code)))
+                        }
+                      />
+                    }
+                  />
+                ))}
+              </FormGroup>
+            </Alert>
           ) : null}
         </Stack>
       ) : null}

@@ -43,6 +43,8 @@ type Rules struct {
 	// Static — план из опор: опоры — K01 и состояния (middle) внутри окна, конечной опоры и
 	// правила длительности запроса нет.
 	Static bool
+	// Looks — выбор героев с образами для попытки (saved_looks); nil — выбора не было.
+	Looks []string
 	// Own — свой текст пользователя (предложение с отметкой own): промпт опоры может быть пустым,
 	// такую опору пользователь делает своим файлом. В дерево правил не входит: признак берётся из
 	// предложения при каждом разборе.
@@ -84,6 +86,10 @@ func (r Rules) Tree() *dynvalue.Object {
 	if r.Static {
 		tree.Set("staticShot", true)
 	}
+	// Выбор героев с образами пишется только при выборе: записи остальных не меняются.
+	if r.Looks != nil {
+		tree.Set("savedLooks", stringsArray(r.Looks))
+	}
 	return tree
 }
 
@@ -99,6 +105,14 @@ func RulesFromTree(value any) Rules {
 	rules.Static = dynvalue.Get(value, "staticShot") == true
 	if count, ok := dynvalue.Get(value, "keyframeCount").(float64); ok && dynvalue.IsInteger(count) && count > 0 {
 		rules.Keyframes = int(count)
+	}
+	if codes, ok := dynvalue.AsArray(dynvalue.Get(value, "savedLooks")); ok {
+		rules.Looks = []string{}
+		for _, code := range codes {
+			if text, isString := code.(string); isString {
+				rules.Looks = append(rules.Looks, text)
+			}
+		}
 	}
 	if paths, ok := dynvalue.AsArray(dynvalue.Get(value, "allowedPaths")); ok {
 		for _, path := range paths {

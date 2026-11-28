@@ -286,3 +286,134 @@ func TestExpectedLookModel(t *testing.T) {
 		}
 	}
 }
+
+// startedLooks — ключ savedLooks контекста последнего задания агента; nil — ключа нет.
+func startedLooks(t *testing.T, run *goldenRun) any {
+	t.Helper()
+	run.agents.mu.Lock()
+	input := run.agents.starts[len(run.agents.starts)-1]
+	run.agents.mu.Unlock()
+	value, err := dynvalue.Parse([]byte(input.Context))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if looks := dynvalue.Get(value, "savedLooks"); looks != dynvalue.Undefined {
+		return dynvalue.Stringify(looks)
+	}
+	return nil
+}
+
+// Задание описания получает героев «В кадре» с действующим образом видов, которые принимает
+// модель; без привязок у проекта список аккаунта не запрашивается и ключа нет. При избытке над
+// пределом описание без выбора не начинается, выбранные герои записываются в правила задания.
+func TestDescriptionSavedLooks(t *testing.T) {
+	run := ownRun(t)
+	workflow, service, store := looksWorkflow(t, run, looksCaps)
+	// rules — правила последнего запущенного задания (до его отклонения).
+	var rules Rules
+	start := func(looks []string) error {
+		t.Helper()
+		_, err := workflow.Start(context.Background(), StartInput{Project: run.project, Shot: "M02", Action: "prepare", Looks: looks})
+		if err != nil {
+			return err
+		}
+		rules = workflow.store.Read(run.project, "M02").Rules()
+		// Задание завершается ошибкой, и предложение отклоняется: следующий запуск начинается заново.
+		job := run.agents.last(t)
+		code := 1
+		job.Status, job.ExitCode = "failed", &code
+		if _, err := workflow.View(run.project, "M02", ""); err != nil {
+			t.Fatal(err)
+		}
+		_, err = workflow.Discard(run.project, "M02", "", workflow.store.Read(run.project, "M02").Tree.Value("proposal").(*dynvalue.Object).Value("id").(string))
+		return err
+	}
+	if err := start(nil); err != nil {
+		t.Fatal(err)
+	}
+	if got := startedLooks(t, run); got != nil || len(service.Calls("list_looks")) != 0 {
+		t.Fatalf("без привязок: savedLooks %v, списков %d", got, len(service.Calls("list_looks")))
+	}
+	// Лодка — вид, которого модель не принимает: в задание не идёт.
+	bindLook(t, run, service, store, "lev", "look-1", "Лев", true)
+	bindLook(t, run, service, store, "boat", "look-2", "Лодка", true)
+	if err := start(nil); err != nil {
+		t.Fatal(err)
+	}
+	if got := startedLooks(t, run); got != `{"model":"test-cheap","limit":2,"entities":[{"code":"lev","name":"Лев","kind":"character"}]}` {
+		t.Fatalf("герои с образами: %v", got)
+	}
+	if rules.Looks != nil {
+		t.Fatalf("выбирать было не из чего, а выбор записан: %v", rules.Looks)
+	}
+
+	// Модель с пределом 1 и образы у двоих персонажей.
+	run = ownRun(t)
+	workflow, service, store = looksWorkflow(t, run, strings.Replace(looksCaps, `"max_items":2`, `"max_items":1`, 1))
+	bindLook(t, run, service, store, "lev", "look-1", "Лев", true)
+	bindLook(t, run, service, store, "mira", "look-3", "Мира", true)
+	if err := start(nil); err == nil || !strings.Contains(err.Error(), "Образы есть у 2 героев плана, а модель test-cheap примет не больше 1") {
+		t.Fatalf("избыток без выбора: %v", err)
+	}
+	for _, item := range []struct {
+		looks []string
+		want  string
+	}{{[]string{"boat"}, "Выбранного героя «boat» нет среди героев плана"}, {[]string{"mira", "lev"}, "Выбрано героев: 2, а модель test-cheap примет не больше 1"}} {
+		if err := start(item.looks); err == nil || !strings.Contains(err.Error(), item.want) {
+			t.Fatalf("выбор %v: %v", item.looks, err)
+		}
+	}
+	if err := start([]string{"lev"}); err != nil {
+		t.Fatal(err)
+	}
+	if got := startedLooks(t, run); got != `{"model":"test-cheap","limit":1,"entities":[{"code":"lev","name":"Лев","kind":"character"}]}` {
+		t.Fatalf("выбранный герой: %v", got)
+	}
+	if !reflect.DeepEqual(rules.Looks, []string{"lev"}) {
+		t.Fatalf("выбор в правилах задания: %v", rules.Looks)
+	}
+}
+
+// Видеопромпт получает героев, выбранных для попытки (saved_looks), а без записи — всех героев
+// с образами; ручная генерация героев не получает.
+func TestPromptSavedLooks(t *testing.T) {
+	run := ownRun(t)
+	workflow, service, store := looksWorkflow(t, run, looksCaps)
+	bindLook(t, run, service, store, "mira", "look-1", "Мира", true)
+	bindLook(t, run, service, store, "lev", "look-2", "Лев", true)
+	c, err := ReadContext(run.project, "M02", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.Workflow = dynvalue.NewObject()
+	codes := func() []string {
+		t.Helper()
+		looks, err := workflow.lookHeroes(context.Background(), c, "prompt", nil, true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		result := []string{}
+		if looks != nil {
+			for _, entity := range looks.entities {
+				result = append(result, entity.Code)
+			}
+		}
+		return result
+	}
+	if got := codes(); !reflect.DeepEqual(got, []string{"mira", "lev"}) {
+		t.Fatalf("без записи: %v", got)
+	}
+	c.Workflow.Set("saved_looks", stringsArray([]string{"lev"}))
+	if got := codes(); !reflect.DeepEqual(got, []string{"lev"}) {
+		t.Fatalf("по записи попытки: %v", got)
+	}
+	c.Workflow.Set("saved_looks", stringsArray([]string{}))
+	if got := codes(); len(got) != 0 {
+		t.Fatalf("выбор «никого»: %v", got)
+	}
+	c.Manual = true
+	c.Workflow.Delete("saved_looks")
+	if got := codes(); len(got) != 0 {
+		t.Fatalf("ручная генерация: %v", got)
+	}
+}

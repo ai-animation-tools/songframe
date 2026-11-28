@@ -98,6 +98,9 @@ type contextInput struct {
 	// (promptAttachments); nil — ключ не пишется.
 	attachedFrames *dynvalue.Array
 	materials      *dynvalue.Object
+	// savedLooks — герои с сохранёнными образами этапов description и prompt (agentLooks.tree);
+	// nil — ключ не пишется.
+	savedLooks *dynvalue.Object
 }
 
 // agentContext — JSON контекста задания (порядок ключей зафиксирован эталоном): план, кастинг, врезки,
@@ -173,6 +176,10 @@ func agentContext(c *Context, input contextInput) string {
 	}
 	if input.materials != nil {
 		value.Set("materials", input.materials)
+	}
+	// Герои с образами передаются только плану, где они есть: контекст остальных не меняется.
+	if input.savedLooks != nil {
+		value.Set("savedLooks", input.savedLooks)
 	}
 	return dynvalue.Stringify(value)
 }

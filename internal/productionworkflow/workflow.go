@@ -595,6 +595,10 @@ type StartInput struct {
 	// «авто»; nil при доработке описания — прежний выбор попытки (workflow keyframe_count), при
 	// новой попытке — «авто».
 	Keyframes *int `json:"keyframes,omitempty"`
+	// Looks — коды героев с сохранёнными образами, выбранных пользователем перед описанием, когда
+	// образов больше, чем примет модель; nil — не выбирал (при доработке описания действует выбор
+	// попытки).
+	Looks []string `json:"looks,omitempty"`
 	// own — свой текст пользователя (SaveOwn): открытый вопрос о тексте того же этапа не мешает
 	// его заменить — применение задаст вопрос заново.
 	own bool
@@ -870,6 +874,13 @@ func (w *Workflow) launch(ctx context.Context, input StartInput, prepared *prepa
 	}
 	rules := c.RulesFor(stage)
 	rules.Keyframes = prepared.keyframes
+	looks, err := w.lookHeroes(ctx, c, stage, input.Looks, input.Action != "prepare")
+	if err != nil {
+		return err
+	}
+	if looks != nil && stage == "description" {
+		rules.Looks = looks.chosen
+	}
 	generation, err := projectGeneration(c.Project)
 	if err != nil {
 		return err
@@ -882,6 +893,9 @@ func (w *Workflow) launch(ctx context.Context, input StartInput, prepared *prepa
 		contextInput.promptMaxChars = c.PromptLimit()
 	}
 	contextInput.keyframeCount = rules.Keyframes
+	if looks != nil && len(looks.entities) > 0 {
+		contextInput.savedLooks = looks.tree()
+	}
 	before := ""
 	if c.PackageDir != "" {
 		description, err := readText(filepath.Join(c.PackageDir, "description.md"))

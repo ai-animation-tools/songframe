@@ -43,9 +43,21 @@ func TestAdviceContextFacts(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	context, entities, err := adviceContext(input)
+	context, entities, err := adviceContext(input, AdviceLooks{})
 	if err != nil {
 		t.Fatal(err)
+	}
+	// Модель без образов — ключа нет; с образами — модель, предел и виды.
+	if strings.Contains(context, `"savedLooks"`) {
+		t.Fatalf("savedLooks у модели без образов: %s", context)
+	}
+	withLooks, _, err := adviceContext(input, AdviceLooks{Model: "test-video", Limit: 3, Kinds: []string{"character", "prop"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	looksValue, _ := dynvalue.Parse([]byte(withLooks))
+	if got := dynvalue.Stringify(dynvalue.Get(looksValue, "savedLooks")); got != `{"model":"test-video","limit":3,"kinds":["character","prop"]}` {
+		t.Fatalf("savedLooks: %s", got)
 	}
 	if strings.Join(entities, ",") != "mira,lev,boat,pier" {
 		t.Fatalf("сущности %v", entities)

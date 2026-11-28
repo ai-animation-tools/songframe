@@ -270,17 +270,25 @@ type LookModel struct {
 // ExpectedLookModel — LookModel проекта project по свежим объявлениям моделей провайдера видео.
 // Без выбранного провайдера видео или его моделей — пустая модель с Limit 0.
 func (w *Workflow) ExpectedLookModel(ctx context.Context, project string) (LookModel, error) {
+	model, _, err := w.expectedLookModel(ctx, project)
+	return model, err
+}
+
+// expectedLookModel — ExpectedLookModel и провайдер видео, по которому она выбрана; провайдер
+// nil, если модель образы не примет.
+func (w *Workflow) expectedLookModel(ctx context.Context, project string) (LookModel, *providers.PaidMedia, error) {
+	empty := LookModel{Kinds: []string{}}
 	settings, err := videoSettings(project)
 	if err != nil {
-		return LookModel{}, err
+		return LookModel{}, nil, err
 	}
 	provider, _ := settings.Value("provider").(string)
 	if !mediaproviders.Supports(provider, mediaproviders.Video) || w.options.VideoMedia == nil {
-		return LookModel{Kinds: []string{}}, nil
+		return empty, nil, nil
 	}
 	media, ok := w.options.VideoMedia(provider)
 	if !ok || media == nil || media.Paid.Rules.Video == nil {
-		return LookModel{Kinds: []string{}}, nil
+		return empty, nil, nil
 	}
 	rules := media.Paid.Rules.Video
 	caps := media.Capabilities(ctx, project)
@@ -293,7 +301,7 @@ func (w *Workflow) ExpectedLookModel(ctx context.Context, project string) (LookM
 		}
 	}
 	if len(candidates) == 0 {
-		return LookModel{Kinds: []string{}}, nil
+		return empty, nil, nil
 	}
 	slices.SortStableFunc(candidates, func(a, b mediaapi.Model) int { return modelRank(rules.Models, a.ID) - modelRank(rules.Models, b.ID) })
 	chosen := candidates[0]
@@ -302,8 +310,9 @@ func (w *Workflow) ExpectedLookModel(ctx context.Context, project string) (LookM
 	}
 	_, supported := media.SavedLooks()
 	model := LookModel{Model: chosen.ID, Limit: looksLimit(chosen.Appearance, supported), Kinds: []string{}}
-	if model.Limit > 0 {
-		model.Kinds = append(model.Kinds, chosen.Appearance.Kinds...)
+	if model.Limit == 0 {
+		return model, nil, nil
 	}
-	return model, nil
+	model.Kinds = append(model.Kinds, chosen.Appearance.Kinds...)
+	return model, media, nil
 }

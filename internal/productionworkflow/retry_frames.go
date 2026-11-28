@@ -176,7 +176,7 @@ func (w *Workflow) copyAttempt(ctx context.Context, c *Context, target string, f
 		}
 	}
 	workflow.Set("description_approved", true)
-	for _, field := range []string{"scene_sha256", "timing", "keyframe_count"} {
+	for _, field := range []string{"scene_sha256", "timing", "keyframe_count", "saved_looks"} {
 		if value := c.Workflow.Value(field); value != dynvalue.Undefined {
 			workflow.Set(field, dynvalue.DeepClone(value))
 		}

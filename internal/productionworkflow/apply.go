@@ -371,6 +371,12 @@ func (w *Workflow) applyDescription(ctx context.Context, plan *applyPlan) error 
 	} else {
 		workflow.Delete("keyframe_count")
 	}
+	// Выбор героев с образами — тоже в попытке: по нему видеопромпт получает тех же героев.
+	if rules.Looks != nil {
+		workflow.Set("saved_looks", stringsArray(rules.Looks))
+	} else {
+		workflow.Delete("saved_looks")
+	}
 	workflow.Set("description_approved", false)
 	// Новое описание построено по текущей постановке: пакет снова соответствует сценарию.
 	if current := production.CurrentShotFingerprint(c.Project, plan.shot); current != "" {

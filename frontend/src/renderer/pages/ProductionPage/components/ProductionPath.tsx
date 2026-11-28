@@ -180,7 +180,7 @@ export function ProductionPath({
   // План из опор видео не генерирует, ручная генерация получает текст без меток: им вопрос не задаётся.
   const looksCheck = useSavedLooksCheck(project, shot.id, pkg?.dir ?? '');
   const looksApply = !(view?.staticShot ?? shot.staticShot) && !view?.manual;
-  const beforeDescription = (proceed: () => void, agent: boolean): void => (looksApply ? looksCheck.check(proceed, agent) : proceed());
+  const beforeDescription = (proceed: (looks?: string[]) => void, agent: boolean): void => (looksApply ? looksCheck.check(proceed, agent) : proceed());
   // Видеопромпт с переводом: к отправке выбирается оригинал или перевод, выбор относится к показанным текстам.
   const variants = pkg?.prompt?.variants;
   const variantsKey = `${pkg?.dir ?? ''}\0${variants?.original ?? ''}\0${variants?.translation ?? ''}`;

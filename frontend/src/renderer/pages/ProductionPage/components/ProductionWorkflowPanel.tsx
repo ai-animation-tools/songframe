@@ -80,8 +80,11 @@ export function ProductionWorkflowPanel({
   onWriteOwn?(): void;
   /** Своё готовое видео плана без описания, опор и промпта: рядом с подготовкой описания у плана без попытки. */
   onOwnVideo?(): void;
-  /** Проверка перед подготовкой описания агентом (сохранённые образы героев): вызывает proceed сразу или после ответа. */
-  onBeforePrepare?(proceed: () => void): void;
+  /**
+   * Проверка перед подготовкой описания агентом (сохранённые образы героев): вызывает proceed сразу или после ответа;
+   * looks — выбранные герои с образами, если образов больше, чем примет модель.
+   */
+  onBeforePrepare?(proceed: (looks?: string[]) => void): void;
   /** Почему описание сейчас не начинается (идёт проверка перед ним); null — можно. */
   descriptionReason?: string | null;
   parts?: WorkflowPanelParts;
@@ -118,7 +121,7 @@ export function ProductionWorkflowPanel({
         <LinkedText text={workflow.error} />
       </Alert>
     ) : null;
-  const start = async (action: ProductionWorkflowStart['action']): Promise<void> => {
+  const start = async (action: ProductionWorkflowStart['action'], looks?: string[]): Promise<void> => {
     if (busy) return;
     if (action === 'revise' && !note.trim()) {
       setValidation(productionTexts.productionWorkflowPanel.noteRequired);
@@ -131,7 +134,8 @@ export function ProductionWorkflowPanel({
     await workflow.start(
       action,
       action === 'revise' ? note.trim() : instructionText || undefined,
-      action === 'prepare' && !view?.singleFrame ? Math.min(keyframes, limit) : undefined
+      action === 'prepare' && !view?.singleFrame ? Math.min(keyframes, limit) : undefined,
+      looks
     );
   };
   const proposal = view?.proposal;
@@ -275,7 +279,7 @@ export function ProductionWorkflowPanel({
                 disabled={primaryDisabled || !!descriptionReason}
                 disabledReason={descriptionReason ?? reason ?? productionTexts.productionWorkflowPanel.loadingReason}
                 title={productionTexts.productionWorkflowPanel.prepareHint}
-                onClick={() => (onBeforePrepare ? onBeforePrepare(() => void start('prepare')) : void start('prepare'))}
+                onClick={() => (onBeforePrepare ? onBeforePrepare((looks) => void start('prepare', looks)) : void start('prepare'))}
               >
                 {productionTexts.productionWorkflowPanel.prepare}
               </AgentButton>

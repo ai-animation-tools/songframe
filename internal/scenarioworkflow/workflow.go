@@ -102,6 +102,17 @@ type Options struct {
 	// CheckImageBudget — бюджет вложений выбранного агента для проверки сценария, байт; nil —
 	// DefaultCheckImageBudget.
 	CheckImageBudget func() int
+	// AdviceLooks — способ передачи облика у модели видео проекта для рекомендаций по
+	// референсам; nil или Limit 0 — модель сохранённые образы не принимает, совет о них не просят.
+	AdviceLooks func(project string) (AdviceLooks, error)
+}
+
+// AdviceLooks — модель видео проекта, держащая облик сущности по сохранённому образу: сколько
+// образов она примет в одном запросе (Limit) и каких видов сущностей (Kinds).
+type AdviceLooks struct {
+	Model string
+	Limit int
+	Kinds []string
 }
 
 // Workflow — сценарный проход проектов. Методы безопасны для конкурентного вызова из сервиса

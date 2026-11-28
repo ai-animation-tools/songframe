@@ -9,7 +9,6 @@ import {
   Alert,
   Box,
   Checkbox,
-  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -39,6 +38,7 @@ import { useReferenceImageSupports } from '../hooks/useReferenceImageSupports';
 import { useReferenceImageComposer } from '../hooks/useReferenceImageComposer';
 import { ReferenceImageComposer } from './ReferenceImageComposer';
 import { ImageThumbnail } from './ImageThumbnail';
+import { JobStatus } from './JobStatus';
 import { ImageGallery } from './ImageGallery';
 import { CoverCropEditor } from './CoverCropEditor';
 import { FileDropZone } from './FileDropZone';
@@ -125,6 +125,12 @@ export function ImageGenerateDialog({
   const galleryKey = JSON.stringify({ session: session?.id ?? null, images: referenceOptions });
   const [agreedToken, setAgreedToken] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<CoverGenerationSession | null>(null);
+  // Правка текста в окне подтверждения относится к одной подготовке (её токену); без правки показан текст подготовки.
+  // Изменённый текст не отправляется: по нему запрос готовится заново и подтверждается снова.
+  const [confirmDraft, setConfirmDraft] = useState<{ token: string | null; text: string } | null>(null);
+  const confirmToken = confirmation?.approvalToken ?? null;
+  const confirmText = confirmDraft && confirmation && confirmDraft.token === confirmToken ? confirmDraft.text : (confirmation?.prompt ?? '');
+  const confirmEdited = !!confirmation && confirmText !== confirmation.prompt;
   const alive = useRef(true);
   useEffect(() => {
     alive.current = true;
@@ -299,12 +305,16 @@ export function ImageGenerateDialog({
         : !reference && !crop
           ? sourcesTexts.chooseCoverCrop
           : null;
-  const onGenerate = async (): Promise<void> => {
-    if (preparingClick.current || blockedReason || generationDisabled) return;
+  /**
+   * Подготовка и окно подтверждения. text — текст, правленный в окне подтверждения: он заменяет текст редактора, а запрос
+   * готовится заново (прежняя подготовка и согласие к нему не относятся).
+   */
+  const onGenerate = async (text?: string): Promise<void> => {
+    if (preparingClick.current || blockedReason || (text === undefined && generationDisabled)) return;
     preparingClick.current = true;
     try {
       // Изменённый после попытки текст никогда не использует прежнюю подготовку: next создаст новую сессию.
-      const preparedSession = prepared && !editedAfterAttempt ? session : await (session ? next(prompt) : start(prompt));
+      const preparedSession = text === undefined && prepared && !editedAfterAttempt ? session : await (session ? next(text ?? prompt) : start(text ?? prompt));
       if (!alive.current || !preparedSession?.approvalToken || !preparedSession.requestSha) return;
       if (MEDIA_PROVIDERS[preparedSession.provider].paid && !priceAllowsGeneration(preparedSession.quote, agreedToken === preparedSession.approvalToken))
         return;
@@ -520,10 +530,10 @@ export function ImageGenerateDialog({
               </Alert>
             )}
             {(preparing || generating) && (
-              <Stack direction="row" spacing={1} alignItems="center" role="status">
-                <CircularProgress size={20} aria-hidden />
-                <Typography variant="body2">
-                  {accepting
+              <JobStatus
+                running
+                label={
+                  accepting
                     ? reference
                       ? sourcesTexts.acceptingReferenceImage
                       : sourcesTexts.preparingCrop
@@ -531,9 +541,9 @@ export function ImageGenerateDialog({
                       ? reference
                         ? sourcesTexts.generatingReference
                         : sourcesTexts.generatingCover
-                      : sourcesTexts.preparingRequest}
-                </Typography>
-              </Stack>
+                      : sourcesTexts.preparingRequest
+                }
+              />
             )}
             {(error || session?.error) && <Alert severity="error">{error ?? session?.error}</Alert>}
             {image && !reference && crop && <CoverCropEditor image={image} crop={crop} onCrop={setCrop} disabled={working} />}
@@ -612,28 +622,47 @@ export function ImageGenerateDialog({
         open={!!confirmation}
         title={sourcesTexts.confirmPromptTitle}
         description={sourcesTexts.confirmPromptQuestion}
-        confirmLabel={createLabel}
+        confirmLabel={confirmEdited ? sourcesTexts.prepareEditedPrompt : createLabel}
         // Знак подтверждения — программа-исполнитель провайдера изображений, а не выбранный текстовый агент.
         {...(confirmationInfo?.executor
           ? { confirmAgent: { aiKind: 'image' as const, provider: confirmationInfo.executor } }
           : { confirmIcon: <AutoAwesomeIcon /> })}
         cancelLabel={commonTexts.cancel}
         onClose={() => setConfirmation(null)}
-        onConfirm={confirmGeneration}
-        confirmDisabled={Boolean(blockedReason) || preparing || !confirmation?.approvalToken || confirmation.approvalToken !== session?.approvalToken}
+        onConfirm={() => {
+          if (!confirmEdited) {
+            confirmGeneration();
+            return;
+          }
+          // Правка в окне подтверждения: текст переносится в редактор, прежняя подготовка снимается, а next создаёт
+          // новую сессию с тем же набором опор — её запрос подтверждается снова.
+          const text = confirmText;
+          if (editingBlocked || !editPrompt()) return;
+          setConfirmation(null);
+          setAgreedToken(null);
+          if (reference) composer.edit(text);
+          else setCoverPrompt(text);
+          void onGenerate(text);
+        }}
+        confirmDisabled={
+          Boolean(blockedReason) ||
+          preparing ||
+          (confirmEdited ? !confirmText.trim() : !confirmation?.approvalToken || confirmation.approvalToken !== session?.approvalToken)
+        }
         confirmDisabledReason={blockedReason ?? (preparing ? sourcesTexts.waitRequestPreparation : sourcesTexts.requestChanged)}
       >
         {confirmation && (
           <Stack spacing={2} sx={{ mt: 2 }}>
             <TextField
               label={sourcesTexts.confirmedPrompt}
-              value={confirmation.prompt}
+              value={confirmText}
+              onChange={(event) => setConfirmDraft({ token: confirmToken, text: event.target.value })}
               multiline
               fullWidth
               minRows={4}
               maxRows={10}
-              slotProps={{ input: { readOnly: true } }}
             />
+            {confirmEdited && <Alert severity="warning">{sourcesTexts.confirmedPromptEdited}</Alert>}
             {supportImages(confirmation.referenceImages ?? [], false)}
             <Typography variant="body2">
               {sourcesTexts.executorModel({ provider: confirmationInfo?.title, model: confirmation.model ?? confirmationInfo?.defaultModelLabel })}

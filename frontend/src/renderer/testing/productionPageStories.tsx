@@ -75,6 +75,7 @@ export function referencesPackage(approved = false, overrides: Partial<PackageVi
     entity,
     source: role === 'start' ? 'assets/shots/M01/video.mp4' : `source/${entity}.png`,
     imagePath: `${STORY_IMAGE_PATH}?reference=${id}`,
+    version: `sha-${id}`,
     approved
   });
   return {
@@ -1087,7 +1088,9 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
             const { pkg } = find(project, dir);
             if (!pkg.references?.some((reference) => reference.id === id)) throw new Error('Референса нет в попытке.');
             pkg.references = pkg.references.map((reference) =>
-              reference.id === id ? { ...reference, source: path, imagePath: `${STORY_IMAGE_PATH}?replaced=${id}`, approved: true } : reference
+              reference.id === id
+                ? { ...reference, source: path, imagePath: `${STORY_IMAGE_PATH}?replaced=${id}`, version: `sha-replaced-${id}`, approved: true }
+                : reference
             );
             model.referenceActions = [...model.referenceActions, `заменить ${id}`];
             touch(pkg);

@@ -923,6 +923,8 @@ export interface PackageReference {
   entity: string | null;
   source: string | null;
   imagePath: string | null;
+  /** SHA-256 копии: ключ кэша картинки — замена пишет тот же файл. */
+  version: string;
   approved: boolean;
 }
 

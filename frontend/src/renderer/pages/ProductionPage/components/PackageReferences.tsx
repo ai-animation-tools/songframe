@@ -80,6 +80,7 @@ export function PackageReferences({
     .filter((reference) => reference.imagePath)
     .map((reference) => ({
       imagePath: reference.imagePath!,
+      version: reference.version,
       label: texts.title({ id: reference.id, name: referenceName(reference, entityNames) })
     }));
   const choose = async (id: string): Promise<void> => {
@@ -109,6 +110,7 @@ export function PackageReferences({
               {reference.imagePath ? (
                 <ImageThumbnail
                   path={reference.imagePath}
+                  version={reference.version}
                   label={title}
                   title={reference.imagePath}
                   fit="cover"

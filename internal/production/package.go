@@ -35,14 +35,17 @@ type Keyframe struct {
 }
 
 // Reference — PackageReference: картинка запроса попытки по референсам из workflow.json. Role —
-// start (кадр принятого предшественника) или entity (изображение сущности кастинга Entity);
-// ImagePath — абсолютный путь копии в попытке, если файл есть; Source — исходный путь от проекта.
+// start (кадр принятого предшественника), place (картинка места) или entity (изображение сущности
+// кастинга Entity); ImagePath — абсолютный путь копии в попытке, если файл есть; Source — исходный
+// путь от проекта. Version — SHA-256 копии: замена пишет тот же файл references/<id>.<ext>, и
+// интерфейс добавляет Version к адресу картинки, чтобы не показать прежнюю из кэша.
 type Reference struct {
 	ID        string  `json:"id"`
 	Role      string  `json:"role"`
 	Entity    *string `json:"entity"`
 	Source    *string `json:"source"`
 	ImagePath *string `json:"imagePath"`
+	Version   string  `json:"version"`
 	Approved  bool    `json:"approved"`
 }
 
@@ -331,6 +334,7 @@ func readReferences(dir string, parsed any) ([]Reference, error) {
 			ID: dynvalue.ToString(dynvalue.Coalesce(dynvalue.Get(entry, "id"), "")), Role: dynvalue.ToString(dynvalue.Coalesce(dynvalue.Get(entry, "role"), "")),
 			Approved: dynvalue.Truthy(dynvalue.Get(entry, "approved")),
 		}
+		item.Version, _ = dynvalue.Get(entry, "sha256").(string)
 		if text, ok := dynvalue.Get(entry, "entity").(string); ok {
 			item.Entity = &text
 		}

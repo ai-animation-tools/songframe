@@ -719,6 +719,30 @@ export const ReferenceRetryEditedPrompt: Story = {
     await expect(screen.queryByText(sourcesTexts.retryPromptChanged)).not.toBeInTheDocument();
   }
 };
+export const ReferenceRetryEditInConfirmation: Story = {
+  tags: ['ci'],
+  name: 'Референс — текст правится прямо в окне подтверждения после «Ещё» и подтверждается заново',
+  args: { mode: 'reference' },
+  play: async (context) => {
+    await candidate(context);
+    const screen = screenOf(context);
+    await userEvent.click(moreButton(screen));
+    let confirmation = await screen.findByRole('dialog', { name: sourcesTexts.confirmPromptTitle });
+    const field = within(confirmation).getByRole<HTMLTextAreaElement>('textbox', { name: sourcesTexts.confirmedPrompt });
+    const edited = `${field.value} Без людей.`;
+    await userEvent.type(field, ' Без людей.');
+    await expect(within(confirmation).getByText(sourcesTexts.confirmedPromptEdited)).toBeInTheDocument();
+    // Изменённый текст не отправляется: кнопка готовит запрос заново.
+    await userEvent.click(within(confirmation).getByRole('button', { name: sourcesTexts.prepareEditedPrompt }));
+    await waitFor(() => expect(imageStoryInspection().creates.at(-1)?.prompt).toBe(edited));
+    await expect(imageStoryInspection().generations).toBe(1);
+    confirmation = await screen.findByRole('dialog', { name: sourcesTexts.confirmPromptTitle });
+    await expect(within(confirmation).getByRole('textbox', { name: sourcesTexts.confirmedPrompt })).toHaveValue(edited);
+    await expect(screen.getByRole('textbox', { name: sourcesTexts.referenceImagePrompt, hidden: true })).toHaveValue(edited);
+    await userEvent.click(within(confirmation).getByRole('button', { name: sourcesTexts.generateReferenceImage }));
+    await waitFor(() => expect(imageStoryInspection().generations).toBe(2));
+  }
+};
 export const ReferenceRetryEditedUnknownPrice: Story = {
   tags: ['ci'],
   name: 'Референс — согласие с неизвестной ценой не переходит на «Ещё» с новым промптом',

@@ -215,6 +215,8 @@ export const sourcesTexts = {
   confirmPromptQuestion: commonTexts.generation.confirmPrompt,
   requestChanged: 'Запрос изменился: закройте окно и подготовьте попытку заново.',
   confirmedPrompt: 'Подтверждаемый промпт',
+  confirmedPromptEdited: 'Текст изменён: запрос будет подготовлен заново, и новый текст нужно будет подтвердить ещё раз.',
+  prepareEditedPrompt: 'Подготовить с новым текстом',
   cover: labels.cover,
   optional: '(необязательно)',
   removeCover: 'Убрать обложку',

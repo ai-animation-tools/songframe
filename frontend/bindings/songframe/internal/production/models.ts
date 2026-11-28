@@ -457,8 +457,10 @@ export interface Quote {
 
 /**
  * Reference — PackageReference: картинка запроса попытки по референсам из workflow.json. Role —
- * start (кадр принятого предшественника) или entity (изображение сущности кастинга Entity);
- * ImagePath — абсолютный путь копии в попытке, если файл есть; Source — исходный путь от проекта.
+ * start (кадр принятого предшественника), place (картинка места) или entity (изображение сущности
+ * кастинга Entity); ImagePath — абсолютный путь копии в попытке, если файл есть; Source — исходный
+ * путь от проекта. Version — SHA-256 копии: замена пишет тот же файл references/<id>.<ext>, и
+ * интерфейс добавляет Version к адресу картинки, чтобы не показать прежнюю из кэша.
  */
 export interface Reference {
     "id": string;
@@ -466,6 +468,7 @@ export interface Reference {
     "entity": string | null;
     "source": string | null;
     "imagePath": string | null;
+    "version": string;
     "approved": boolean;
 }
 

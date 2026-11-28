@@ -45,7 +45,7 @@ func TestReadPackageReferences(t *testing.T) {
 		t.Fatalf("способ %q, референсов %d", pkg.GenerationMethod, len(pkg.References))
 	}
 	first, second, third := pkg.References[0], pkg.References[1], pkg.References[2]
-	if first.ID != "R01" || first.Role != "start" || first.Entity != nil || !first.Approved ||
+	if first.ID != "R01" || first.Role != "start" || first.Entity != nil || !first.Approved || first.Version != "a" ||
 		first.Source == nil || !strings.HasSuffix(*first.Source, "M00-last.png") || first.ImagePath == nil || *first.ImagePath != filepath.Join(dir, "references", "R01.png") {
 		t.Fatalf("R01: %+v", first)
 	}

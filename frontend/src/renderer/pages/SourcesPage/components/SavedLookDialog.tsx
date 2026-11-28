@@ -161,27 +161,6 @@ export function SavedLookDialog({
               <LinkedText text={error} />
             </Alert>
           ) : null}
-          {bound || state.status === 'missing' ? (
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-              <Tooltip title={savedLooksTexts.unbindHint} describeChild>
-                <Button variant="outlined" startIcon={<LinkOffIcon />} onClick={() => void act(onUnbind)}>
-                  {savedLooksTexts.unbind}
-                </Button>
-              </Tooltip>
-              {bound && state.look ? (
-                <DestructiveButton
-                  label={savedLooksTexts.remove}
-                  description={savedLooksTexts.removeDescription({ name: state.name ?? state.look })}
-                  descriptionSeverity="warning"
-                  confirmLabel={savedLooksTexts.remove}
-                  startIcon={<DeleteForeverOutlinedIcon />}
-                  variant="outlined"
-                  size="medium"
-                  onConfirm={() => void act(() => onRemove(state.look!))}
-                />
-              ) : null}
-            </Stack>
-          ) : null}
           {!bound ? (
             <>
               <Tabs value={tab} onChange={(_event, value: 'create' | 'choose') => setTab(value)}>
@@ -252,17 +231,6 @@ export function SavedLookDialog({
                     maxRows={10}
                     helperText={savedLooksTexts.descriptionHint}
                   />
-                  <Box>
-                    <ActionButton
-                      variant="contained"
-                      startIcon={<AddPhotoAlternateOutlinedIcon />}
-                      disabled={!!createBlocked}
-                      disabledReason={createBlocked}
-                      onClick={() => void act(() => onCreate({ name: name.trim(), description: description.trim(), kind, cover, extra: extraChosen }))}
-                    >
-                      {savedLooksTexts.create}
-                    </ActionButton>
-                  </Box>
                 </Stack>
               ) : (
                 <Stack spacing={2}>
@@ -278,17 +246,6 @@ export function SavedLookDialog({
                   ) : (
                     <Typography color="text.secondary">{savedLooksTexts.chooseEmpty}</Typography>
                   )}
-                  <Box>
-                    <ActionButton
-                      variant="contained"
-                      startIcon={<LinkIcon />}
-                      disabled={!chosen}
-                      disabledReason={looks.length ? savedLooksTexts.chooseLabel : savedLooksTexts.chooseEmpty}
-                      onClick={() => void act(() => onBind(chosen))}
-                    >
-                      {savedLooksTexts.bind}
-                    </ActionButton>
-                  </Box>
                 </Stack>
               )}
             </>
@@ -296,10 +253,55 @@ export function SavedLookDialog({
         </Stack>
       </DialogContent>
       {busy ? <LinearProgress aria-label={savedLooksTexts.working} /> : null}
-      <DialogActions sx={{ justifyContent: 'flex-start' }}>
-        <Button startIcon={<CancelOutlinedIcon />} onClick={onClose} disabled={busy}>
+      {/* «Закрыть» слева, действия текущего состояния или вкладки справа — одна строка подвала. */}
+      <DialogActions sx={{ flexWrap: 'wrap', gap: 1 }}>
+        <Button startIcon={<CancelOutlinedIcon />} onClick={onClose} disabled={busy} sx={{ mr: 'auto' }}>
           {commonTexts.close}
         </Button>
+        {bound || state.status === 'missing' ? (
+          <>
+            <Tooltip title={savedLooksTexts.unbindHint} describeChild>
+              <span>
+                <Button variant="outlined" startIcon={<LinkOffIcon />} disabled={busy} onClick={() => void act(onUnbind)}>
+                  {savedLooksTexts.unbind}
+                </Button>
+              </span>
+            </Tooltip>
+            {bound && state.look ? (
+              <DestructiveButton
+                label={savedLooksTexts.remove}
+                description={savedLooksTexts.removeDescription({ name: state.name ?? state.look })}
+                descriptionSeverity="warning"
+                confirmLabel={savedLooksTexts.remove}
+                startIcon={<DeleteForeverOutlinedIcon />}
+                variant="outlined"
+                size="medium"
+                disabled={busy}
+                onConfirm={() => void act(() => onRemove(state.look!))}
+              />
+            ) : null}
+          </>
+        ) : tab === 'create' ? (
+          <ActionButton
+            variant="contained"
+            startIcon={<AddPhotoAlternateOutlinedIcon />}
+            disabled={busy || !!createBlocked}
+            disabledReason={createBlocked}
+            onClick={() => void act(() => onCreate({ name: name.trim(), description: description.trim(), kind, cover, extra: extraChosen }))}
+          >
+            {savedLooksTexts.create}
+          </ActionButton>
+        ) : (
+          <ActionButton
+            variant="contained"
+            startIcon={<LinkIcon />}
+            disabled={busy || !chosen}
+            disabledReason={looks.length ? savedLooksTexts.chooseLabel : savedLooksTexts.chooseEmpty}
+            onClick={() => void act(() => onBind(chosen))}
+          >
+            {savedLooksTexts.bind}
+          </ActionButton>
+        )}
       </DialogActions>
     </Dialog>
   );
